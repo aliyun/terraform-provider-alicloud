@@ -1,23 +1,25 @@
-## 1.109.0 (Unreleased)
+## 1.110.0 (Unreleased)
+## 1.109.0 (December 19, 2020)
 
-- **New Resource:** `alicloud_privatelink_vpc_endpoint` [GH-3134]
-- **New Resource:** `alicloud_privatelink_vpc_endpoint_service` [GH-3126]
-- **Data Source:** `alicloud_privatelink_vpc_endpoints` [GH-3134]
-- **Data Source:** `alicloud_privatelink_vpc_endpoint_services` [GH-3126]
+- **New Resource:** `alicloud_privatelink_vpc_endpoint` ([#3134](https://github.com/aliyun/terraform-provider-alicloud/issues/3134))
+- **New Resource:** `alicloud_privatelink_vpc_endpoint_service` ([#3126](https://github.com/aliyun/terraform-provider-alicloud/issues/3126))
+- **Data Source:** `alicloud_privatelink_vpc_endpoints` ([#3134](https://github.com/aliyun/terraform-provider-alicloud/issues/3134))
+- **Data Source:** `alicloud_privatelink_vpc_endpoint_services` ([#3126](https://github.com/aliyun/terraform-provider-alicloud/issues/3126))
 
 IMPROVEMENTS:
 
-- Modify the Supported value of the attribute in the alicloud_elasticsearch_instance [GH-3136]
-- resource/alicloud_hbase_cluster: support new field immediate_delete_flag and cloud_essd [GH-3133]
-- resource/alicloud_db_backup_policy: remove the uncertain valid values [GH-3132]
-- UPDATE CHANGELOG [GH-3124]
-- Generator dcdn_domain resource and datasource by common api [GH-3123]
-- resource/alicloud_db_instance: support encryption_key for PG [GH-3121]
-- adapter zone record datasource and resource [GH-3117]
+- Modify the Supported value of the attribute in the alicloud_elasticsearch_instance ([#3136](https://github.com/aliyun/terraform-provider-alicloud/issues/3136))
+- resource/alicloud_hbase_cluster: support new field immediate_delete_flag and cloud_essd ([#3133](https://github.com/aliyun/terraform-provider-alicloud/issues/3133))
+- resource/alicloud_db_backup_policy: remove the uncertain valid values ([#3132](https://github.com/aliyun/terraform-provider-alicloud/issues/3132))
+- UPDATE CHANGELOG ([#3124](https://github.com/aliyun/terraform-provider-alicloud/issues/3124))
+- Generator dcdn_domain resource and datasource by common api ([#3123](https://github.com/aliyun/terraform-provider-alicloud/issues/3123))
+- resource/alicloud_db_instance: support encryption_key for PG ([#3121](https://github.com/aliyun/terraform-provider-alicloud/issues/3121))
+- adapter zone record datasource and resource ([#3117](https://github.com/aliyun/terraform-provider-alicloud/issues/3117))
 
 BUG FIXES:
 
-- fix privatelink client code error [GH-3129]
+- resource/alicloud_instance: fix ecs disk performance tf plan bug ([#3139](https://github.com/aliyun/terraform-provider-alicloud/issues/3139))
+- fix privatelink client code error ([#3129](https://github.com/aliyun/terraform-provider-alicloud/issues/3129))
 
 ## 1.108.0 (December 11, 2020)
 
