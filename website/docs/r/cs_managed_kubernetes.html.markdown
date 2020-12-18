@@ -182,13 +182,13 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 
 * `worker_number` - (**Required**) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us. From ersion 1.109.0, It is not necessary in the professional managed cluster.
 * `worker_vswtich_ids` - (**Required**) The vswitches used by workers.
-* `worker_instance_types` - (**Required**, ForceNew) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster. From ersion 1.109.0, It is not necessary in the professional managed cluster.
+* `worker_instance_types` - (**Required**) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster. From ersion 1.109.0, It is not necessary in the professional managed cluster.
 * `password` - (**Required**, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.0, It is not necessary in the professional managed cluster.
 * `key_name` - (**Required**) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.0, It is not necessary in the professional managed cluster.
 * `kms_encrypted_password` - (**Required**, Available in 1.57.1+) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 
-* `worker_instance_charge_type` - (Optional, Force new resource) Worker payment type, its valid value is either or `PostPaid` or `PrePaid`. Defaults to `PostPaid`. If value is `PrePaid`, the files `worker_period`, `worker_period_unit`, `worker_auto_renew` and `worker_auto_renew_period` are required.
+* `worker_instance_charge_type` - (Optional, ForceNew) Worker payment type, its valid value is either or `PostPaid` or `PrePaid`. Defaults to `PostPaid`. If value is `PrePaid`, the files `worker_period`, `worker_period_unit`, `worker_auto_renew` and `worker_auto_renew_period` are required.
 * `worker_period` - (Optional) Worker payment period. The unit is `Month`. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
 * `worker_period_unit` - (Optional) Worker payment period unit, the valid value is `Month`.
 * `worker_auto_renew` - (Optional) Enable worker payment auto-renew, defaults to false.
