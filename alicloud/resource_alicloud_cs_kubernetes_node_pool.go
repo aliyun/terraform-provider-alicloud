@@ -538,8 +538,10 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	if err := d.Set("management", flattenManagementNodepoolConfig(&object.Management)); err != nil {
-		return WrapError(err)
+	if m, ok := d.GetOk("management"); ok && m != nil {
+		if err := d.Set("management", flattenManagementNodepoolConfig(&object.Management)); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	return nil
