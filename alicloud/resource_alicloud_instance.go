@@ -171,7 +171,7 @@ func resourceAliyunInstance() *schema.Resource {
 			"system_disk_performance_level": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				Default:          "PL0",
+				Computed:         true,
 				DiffSuppressFunc: ecsSystemDiskPerformanceLevelSuppressFunc,
 				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 			},
@@ -240,8 +240,7 @@ func resourceAliyunInstance() *schema.Resource {
 						"performance_level": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ForceNew:     true,
-							Default:      "PL1",
+							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 						},
 					},
@@ -501,7 +500,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("system_disk_size", disk.Size)
 	d.Set("system_disk_auto_snapshot_policy_id", disk.AutoSnapshotPolicyId)
 	d.Set("volume_tags", ecsService.tagsToMap(disk.Tags.Tag))
-
+	d.Set("system_disk_performance_level", disk.PerformanceLevel)
 	d.Set("instance_name", instance.InstanceName)
 	d.Set("resource_group_id", instance.ResourceGroupId)
 	d.Set("description", instance.Description)
