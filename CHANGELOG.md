@@ -1,5 +1,67 @@
-## 1.107.0 (Unreleased)
-## 1.106.0 (December 28, 2020)
+## 1.110.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Feature: managedk8s support zero node, management nodepool and remove nodepool nodes [GH-3140]
+
+BUG FIXES:
+
+- resource/ecs_instance: fix the period bug [GH-3130]
+
+## 1.109.0 (December 19, 2020)
+
+- **New Resource:** `alicloud_privatelink_vpc_endpoint` ([#3134](https://github.com/aliyun/terraform-provider-alicloud/issues/3134))
+- **New Resource:** `alicloud_privatelink_vpc_endpoint_service` ([#3126](https://github.com/aliyun/terraform-provider-alicloud/issues/3126))
+- **Data Source:** `alicloud_privatelink_vpc_endpoints` ([#3134](https://github.com/aliyun/terraform-provider-alicloud/issues/3134))
+- **Data Source:** `alicloud_privatelink_vpc_endpoint_services` ([#3126](https://github.com/aliyun/terraform-provider-alicloud/issues/3126))
+
+IMPROVEMENTS:
+
+- Modify the Supported value of the attribute in the alicloud_elasticsearch_instance ([#3136](https://github.com/aliyun/terraform-provider-alicloud/issues/3136))
+- resource/alicloud_hbase_cluster: support new field immediate_delete_flag and cloud_essd ([#3133](https://github.com/aliyun/terraform-provider-alicloud/issues/3133))
+- resource/alicloud_db_backup_policy: remove the uncertain valid values ([#3132](https://github.com/aliyun/terraform-provider-alicloud/issues/3132))
+- UPDATE CHANGELOG ([#3124](https://github.com/aliyun/terraform-provider-alicloud/issues/3124))
+- Generator dcdn_domain resource and datasource by common api ([#3123](https://github.com/aliyun/terraform-provider-alicloud/issues/3123))
+- resource/alicloud_db_instance: support encryption_key for PG ([#3121](https://github.com/aliyun/terraform-provider-alicloud/issues/3121))
+- adapter zone record datasource and resource ([#3117](https://github.com/aliyun/terraform-provider-alicloud/issues/3117))
+
+BUG FIXES:
+
+- resource/alicloud_instance: fix ecs disk performance tf plan bug ([#3139](https://github.com/aliyun/terraform-provider-alicloud/issues/3139))
+- fix privatelink client code error ([#3129](https://github.com/aliyun/terraform-provider-alicloud/issues/3129))
+
+## 1.108.0 (December 11, 2020)
+
+- **New Resource:** `alicloud_ros_template` ([#3113](https://github.com/aliyun/terraform-provider-alicloud/issues/3113))
+- **Data Source:** `alicloud_kms_service` ([#3116](https://github.com/aliyun/terraform-provider-alicloud/issues/3116))
+- **Data Source:** `alicloud_ros_templates` ([#3113](https://github.com/aliyun/terraform-provider-alicloud/issues/3113))
+
+IMPROVEMENTS:
+
+- add ecs instance system_disk_performance_level and datadisk performamce_level params ([#3120](https://github.com/aliyun/terraform-provider-alicloud/issues/3120))
+- resource/alicloud_pvtz_zone: change to tea dsl sdk ([#3094](https://github.com/aliyun/terraform-provider-alicloud/issues/3094))
+
+BUG FIXES:
+
+- fix product pvtz gettting endpoint bug ([#3122](https://github.com/aliyun/terraform-provider-alicloud/issues/3122))
+- BugFix: v1.103.2 upgrade error, connections return error ([#3118](https://github.com/aliyun/terraform-provider-alicloud/issues/3118))
+
+## 1.107.0 (December 8, 2020)
+
+- **New Resource:** `alicloud_ros_stack_group` ([[#3109](https://github.com/aliyun/terraform-provider-alicloud/issues/3109)])
+- **Data Source:** `alicloud_ros_stack_groups` ([[#3109](https://github.com/aliyun/terraform-provider-alicloud/issues/3109)])
+
+IMPROVEMENTS:
+
+- resource/alicloud_instance: fix period does not work bug ([#3114](https://github.com/aliyun/terraform-provider-alicloud/issues/3114))
+- Resource/pvtz_zone: Change IsEOFError to NeedRetry ([[#3108](https://github.com/aliyun/terraform-provider-alicloud/issues/3108)])
+- resource/alicloud_kvstore_instance: Add a restriction !d.IsNewResource for the update of param private_connection_prefix. ([[#3107](https://github.com/aliyun/terraform-provider-alicloud/issues/3107)])
+- Error: Change IsEOFError to NeedRerty ([[#3106](https://github.com/aliyun/terraform-provider-alicloud/issues/3106)])
+- resource/alicloud_hbase_instance: change core_disk_instance to optional ([[#3105](https://github.com/aliyun/terraform-provider-alicloud/issues/3105)])
+- Resource/security_group_rule: Add retry wait for rule exist. ([[#3102](https://github.com/aliyun/terraform-provider-alicloud/issues/3102)])
+- datasource/ros_stacks: Add tags and parameters for output. ([[#3101](https://github.com/aliyun/terraform-provider-alicloud/issues/3101)])
+
+## 1.106.0 (December 4, 2020)
 
 - **New Resource:** `alicloud_ros_change_set` ([#3083](https://github.com/aliyun/terraform-provider-alicloud/issues/3083))
 - **Data Source:** `alicloud_hbase_instance_types` ([#3091](https://github.com/aliyun/terraform-provider-alicloud/issues/3091))

@@ -240,7 +240,7 @@ func validateDBConnectionPort(v interface{}, k string) (ws []string, errors []er
 		if err != nil {
 			errors = append(errors, err)
 		}
-		if port < 3001 || len(value) > 3999 {
+		if port < 1000 || port > 5999 {
 			errors = append(errors, fmt.Errorf("%q cannot be less than 3001 and larger than 3999.", k))
 		}
 	}

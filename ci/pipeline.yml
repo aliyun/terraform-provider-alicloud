@@ -642,7 +642,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 17
+        resource: 17Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run

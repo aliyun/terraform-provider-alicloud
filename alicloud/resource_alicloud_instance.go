@@ -168,6 +168,13 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional: true,
 				Default:  40,
 			},
+			"system_disk_performance_level": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: ecsSystemDiskPerformanceLevelSuppressFunc,
+				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+			},
 			"system_disk_auto_snapshot_policy_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -230,6 +237,12 @@ func resourceAliyunInstance() *schema.Resource {
 							ForceNew:     true,
 							ValidateFunc: validation.StringLenBetween(2, 256),
 						},
+						"performance_level": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+						},
 					},
 				},
 			},
@@ -266,16 +279,7 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if PostPaidDiffSuppressFunc(k, old, new, d) {
-						return true
-					}
-					o, n := d.GetChange("period")
-					if o != nil && n != nil && o.(int) != n.(int) {
-						return true
-					}
-					return false
-				},
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"period_unit": {
 				Type:             schema.TypeString,
@@ -487,7 +491,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("system_disk_size", disk.Size)
 	d.Set("system_disk_auto_snapshot_policy_id", disk.AutoSnapshotPolicyId)
 	d.Set("volume_tags", ecsService.tagsToMap(disk.Tags.Tag))
-
+	d.Set("system_disk_performance_level", disk.PerformanceLevel)
 	d.Set("instance_name", instance.InstanceName)
 	d.Set("resource_group_id", instance.ResourceGroupId)
 	d.Set("description", instance.Description)
@@ -596,7 +600,12 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		if err != nil {
 			return WrapError(err)
 		}
-		d.Set("period", period)
+		thisPeriod := d.Get("period").(int)
+		if thisPeriod != 0 && thisPeriod != period {
+			d.Set("period", thisPeriod)
+		} else {
+			d.Set("period", period)
+		}
 		d.Set("period_unit", periodUnit)
 	}
 
@@ -929,6 +938,8 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 
 	request.SystemDiskDescription = Description
 
+	request.SystemDiskPerformanceLevel = d.Get("system_disk_performance_level").(string)
+
 	request.SystemDiskCategory = string(systemDiskCategory)
 	request.SystemDiskSize = strconv.Itoa(d.Get("system_disk_size").(int))
 
@@ -1085,6 +1096,9 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 			dataDiskRequest.Category = disk["category"].(string)
 			if dataDiskRequest.Category == string(DiskEphemeralSSD) {
 				dataDiskRequest.DeleteWithInstance = ""
+			}
+			if performanceLevel, ok := disk["performance_level"]; ok && dataDiskRequest.Category == string(DiskCloudESSD) {
+				dataDiskRequest.PerformanceLevel = performanceLevel.(string)
 			}
 
 			dataDiskRequests = append(dataDiskRequests, dataDiskRequest)

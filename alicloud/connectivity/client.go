@@ -188,7 +188,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.106.0"
+var providerVersion = "1.109.1"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient
@@ -2199,10 +2199,62 @@ func (client *AliyunClient) NewRosClient() (*rpc.Client, error) {
 
 func (client *AliyunClient) NewPvtzClient() (*rpc.Client, error) {
 	productCode := "pvtz"
+	endpoint := "pvtz.aliyuncs.com"
+	if client.config.Endpoints[productCode] == nil {
+		if err := client.loadEndpoint(productCode); err != nil {
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
+			client.config.Endpoints[productCode] = endpoint
+		}
+	}
+	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
+		endpoint = client.config.Endpoints[productCode].(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewPrivatelinkClient() (*rpc.Client, error) {
+	productCode := "privatelink"
 	endpoint := ""
 	if client.config.Endpoints[productCode] == nil {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
+		}
+	}
+	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
+		endpoint = client.config.Endpoints[productCode].(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewDcdnClient() (*rpc.Client, error) {
+	productCode := "dcdn"
+	endpoint := ""
+	if client.config.Endpoints[productCode] == nil {
+		if err := client.loadEndpoint(productCode); err != nil {
+			if strings.Contains(err.Error(), "InvalidRegionId") {
+				endpoint = "dcdn.aliyuncs.com"
+				client.config.Endpoints[productCode] = endpoint
+			} else {
+				log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
+			}
 		}
 	}
 	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {

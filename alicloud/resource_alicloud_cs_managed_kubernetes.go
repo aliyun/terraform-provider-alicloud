@@ -61,16 +61,15 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 
 			"worker_instance_types": {
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				MinItems: 1,
 				MaxItems: 10,
 			},
 			"worker_number": {
 				Type:     schema.TypeInt,
-				Required: true,
+				Optional: true,
 			},
 			"worker_disk_size": {
 				Type:             schema.TypeInt,
@@ -624,6 +623,32 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ack.standard", "ack.pro.small"}, false),
+			},
+			"maintenance_window": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+						"maintenance_time": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"duration": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"weekly_period": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
 			},
 		},
 	}

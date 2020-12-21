@@ -68,6 +68,9 @@ variable "maintain_end_time" {
 variable "deletion_protection" {
   default = true
 }
+variable "immediate_delete_flag" {
+  default = false
+}
 variable "ip_white" {
   default = "127.0.0.1"
 }
