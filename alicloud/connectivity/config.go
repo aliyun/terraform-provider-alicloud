@@ -100,6 +100,7 @@ type Config struct {
 	FnfEndpoint             string
 	RosEndpoint             string
 	PrivatelinkEndpoint     string
+	ResourcesharingEndpoint string
 }
 
 func (c *Config) loadAndValidate() error {
