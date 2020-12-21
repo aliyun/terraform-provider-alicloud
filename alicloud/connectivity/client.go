@@ -2261,3 +2261,26 @@ func (client *AliyunClient) NewOdpsClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
+
+func (client *AliyunClient) NewRessharingClient() (*rpc.Client, error) {
+	productCode := "ressharing"
+	endpoint := ""
+	if client.config.Endpoints[productCode] == nil {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
+		}
+	}
+	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
+		endpoint = client.config.Endpoints[productCode].(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
