@@ -473,6 +473,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_log_project":                         resourceAlicloudLogProject(),
 			"alicloud_log_store":                           resourceAlicloudLogStore(),
 			"alicloud_log_store_index":                     resourceAlicloudLogStoreIndex(),
+			"alicloud_log_project_tags":					resourceAlicloudLogProjectTags(),
 			"alicloud_log_machine_group":                   resourceAlicloudLogMachineGroup(),
 			"alicloud_logtail_config":                      resourceAlicloudLogtailConfig(),
 			"alicloud_logtail_attachment":                  resourceAlicloudLogtailAttachment(),

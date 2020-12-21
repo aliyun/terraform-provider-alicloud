@@ -22,6 +22,7 @@ type Application struct {
 	ClusterId            string `json:"ClusterId" xml:"ClusterId"`
 	RegionId             string `json:"RegionId" xml:"RegionId"`
 	BuildPackageId       int64  `json:"BuildPackageId" xml:"BuildPackageId"`
+	ResourceGroupId      string `json:"ResourceGroupId" xml:"ResourceGroupId"`
 	ApplicationType      string `json:"ApplicationType" xml:"ApplicationType"`
 	ClusterType          int    `json:"ClusterType" xml:"ClusterType"`
 	RunningInstanceCount int    `json:"RunningInstanceCount" xml:"RunningInstanceCount"`

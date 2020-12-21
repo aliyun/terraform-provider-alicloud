@@ -80,6 +80,7 @@ type InvokeCommandRequest struct {
 	OwnerId              requests.Integer       `position:"Query" name:"OwnerId"`
 	InstanceId           *[]string              `position:"Query" name:"InstanceId"  type:"Repeated"`
 	Parameters           map[string]interface{} `position:"Query" name:"Parameters"`
+	Username             string                 `position:"Query" name:"Username"`
 }
 
 // InvokeCommandResponse is the response struct for api InvokeCommand

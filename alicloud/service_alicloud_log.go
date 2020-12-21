@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
-	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -617,6 +618,70 @@ func (s *LogService) WaitForLogDashboard(id string, status Status, timeout int) 
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.DashboardName, name, ProviderERROR)
+		}
+	}
+}
+
+
+func (s *LogService) DescribeLogProjectTags(id string) ([]*sls.ResourceTagResponse, error) {
+	var requestInfo *sls.Client
+	var respTags []*sls.ResourceTagResponse
+
+	part, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	project_name := part[0]
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			raw ,_, err := slsClient.ListTagResources(project_name, "project", []string{project_name}, []sls.ResourceFilterTag{}, "")
+			return raw, err
+		})
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{LogClientTimeout}) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetProjectTags", raw, requestInfo, map[string]string{"project_name": id})
+		}
+		respTags = raw.([]*sls.ResourceTagResponse)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
+			return respTags, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return respTags, WrapErrorf(err, DefaultErrorMsg, id, "GetProejctTags", AliyunLogGoSdkERROR)
+	}
+	return respTags, nil
+}
+
+func (s *LogService) WaitForLogProjectTags(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeLogProjectTags(id)
+		if err != nil {
+			fmt.Println("err", err)
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+
+		if len(object) == 0 && status == Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object, id, ProviderERROR)
 		}
 	}
 }

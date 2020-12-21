@@ -76,6 +76,7 @@ type ModifyImageAttributeRequest struct {
 	Description          string           `position:"Query" name:"Description"`
 	BootMode             string           `position:"Query" name:"BootMode"`
 	ImageName            string           `position:"Query" name:"ImageName"`
+	LicenseType          string           `position:"Query" name:"LicenseType"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`

@@ -88,6 +88,7 @@ type RunCommandRequest struct {
 	Name                 string                 `position:"Query" name:"Name"`
 	Parameters           map[string]interface{} `position:"Query" name:"Parameters"`
 	EnableParameter      requests.Boolean       `position:"Query" name:"EnableParameter"`
+	Username             string                 `position:"Query" name:"Username"`
 }
 
 // RunCommandResponse is the response struct for api RunCommand
