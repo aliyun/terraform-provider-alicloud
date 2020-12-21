@@ -1059,9 +1059,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	// d.Set("taints", object.Taits)
 	// d.Set("rds_instances", object.RdsInstances)
 	// d.Set("node_port_range", object.NodePortRange)
-	if d.Get("maintenance_window") != "" {
-		d.Set("maintenance_window", flattenMaintenanceWindowConfig(&object.MaintenanceWindow))
-	}
+	d.Set("maintenance_window", flattenMaintenanceWindowConfig(&object.MaintenanceWindow))
 
 	var masterNodes []map[string]interface{}
 	var workerNodes []map[string]interface{}
