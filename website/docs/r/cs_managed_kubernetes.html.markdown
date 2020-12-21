@@ -29,7 +29,7 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 -> **NOTE:** From version 1.72.0, Some parameters have been removed from resource,You can check them below and re-import the cluster if necessary.
 
--> **NOTE:** From version 1.109.0, Professional managed cluster supports zero worker node。
+-> **NOTE:** From version 1.109.1, Professional managed cluster supports zero worker node。
 
 ## Example Usage
 
@@ -120,7 +120,7 @@ The following arguments are supported:
   * ack.standard : Standard managed clusters.
   * ack.pro.small : Professional managed clusters.
 * `encryption_provider_key` - (Optional, ForceNew, Available in 1.103.2+) The disk encryption key.
-* `maintenance_window` - (Optional, Available in 1.109.0+) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. Detailed below.
+* `maintenance_window` - (Optional, Available in 1.109.1+) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. Detailed below.
 
 ##### maintenance_window
 
@@ -180,11 +180,11 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 
 ### Worker params
 
-* `worker_number` - (**Required**) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us. From ersion 1.109.0, It is not necessary in the professional managed cluster.
+* `worker_number` - (**Required**) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us. From ersion 1.109.1, It is not necessary in the professional managed cluster.
 * `worker_vswtich_ids` - (**Required**) The vswitches used by workers.
-* `worker_instance_types` - (**Required**) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster. From ersion 1.109.0, It is not necessary in the professional managed cluster.
-* `password` - (**Required**, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.0, It is not necessary in the professional managed cluster.
-* `key_name` - (**Required**) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.0, It is not necessary in the professional managed cluster.
+* `worker_instance_types` - (**Required**) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster. From ersion 1.109.1, It is not necessary in the professional managed cluster.
+* `password` - (**Required**, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
+* `key_name` - (**Required**) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
 * `kms_encrypted_password` - (**Required**, Available in 1.57.1+) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 
