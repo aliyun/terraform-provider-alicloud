@@ -13,9 +13,9 @@ This resource will help you to manager node pool in Kubernetes Cluster.
 
 -> **NOTE:** Available in 1.97.0+.
 
--> **NOTE:** From version 1.109.0, support managed node pools, but only for the professional managed clusters.
+-> **NOTE:** From version 1.109.1, support managed node pools, but only for the professional managed clusters.
 
--> **NOTE:** From version 1.109.0, support remove node pool nodes.
+-> **NOTE:** From version 1.109.1, support remove node pool nodes.
 
 ## Example Usage
 
@@ -133,7 +133,7 @@ The following arguments are supported:
   * value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be a null string.
 * `labels` - (Optional) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument.
 * `taints` - (Optional) A List of Kubernetes taints to assign to the nodes.
-* `management` - (Optional, Available in 1.109.0+) Managed node pool configuration. When using a managed node pool, the node key must use `key_name`. Detailed below.
+* `management` - (Optional, Available in 1.109.1+) Managed node pool configuration. When using a managed node pool, the node key must use `key_name`. Detailed below.
 
 #### management
 
