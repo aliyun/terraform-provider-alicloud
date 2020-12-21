@@ -1,12 +1,13 @@
 ## 1.110.0 (Unreleased)
+## 1.110.0 (December 21, 2020)
 
 IMPROVEMENTS:
 
-- Feature: managedk8s support zero node, management nodepool and remove nodepool nodes [GH-3140]
+- Feature: managedk8s support zero node, management nodepool and remove nodepool nodes ([#3140](https://github.com/aliyun/terraform-provider-alicloud/issues/3140))
 
 BUG FIXES:
 
-- resource/ecs_instance: fix the period bug [GH-3130]
+- resource/ecs_instance: fix the period bug ([#3130](https://github.com/aliyun/terraform-provider-alicloud/issues/3130))
 
 ## 1.109.0 (December 19, 2020)
 
