@@ -101,6 +101,7 @@ type Config struct {
 	RosEndpoint             string
 	PrivatelinkEndpoint     string
 	MaxcomputeEndpoint      string
+	ResourcesharingEndpoint string
 }
 
 func (c *Config) loadAndValidate() error {
