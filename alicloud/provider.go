@@ -357,6 +357,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_privatelink_vpc_endpoint_zones":             dataSourceAlicloudPrivatelinkVpcEndpointZones(),
 			"alicloud_ga_accelerators":                            dataSourceAlicloudGaAccelerators(),
 			"alicloud_eci_container_groups":                       dataSourceAlicloudEciContainerGroups(),
+			"alicloud_resource_manager_shared_resources":          dataSourceAlicloudResourceManagerSharedResources(),
+			"alicloud_resource_manager_shared_targets":            dataSourceAlicloudResourceManagerSharedTargets(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -639,6 +641,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_privatelink_vpc_endpoint_zone":             resourceAlicloudPrivatelinkVpcEndpointZone(),
 			"alicloud_ga_accelerator":                            resourceAlicloudGaAccelerator(),
 			"alicloud_eci_container_group":                       resourceAlicloudEciContainerGroup(),
+			"alicloud_resource_manager_shared_resource":          resourceAlicloudResourceManagerSharedResource(),
+			"alicloud_resource_manager_shared_target":            resourceAlicloudResourceManagerSharedTarget(),
 		},
 
 		ConfigureFunc: providerConfigure,
