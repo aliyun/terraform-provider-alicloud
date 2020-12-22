@@ -476,6 +476,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_pvtz_zone_attachment":                resourceAlicloudPvtzZoneAttachment(),
 			"alicloud_pvtz_zone_record":                    resourceAlicloudPvtzZoneRecord(),
 			"alicloud_log_project":                         resourceAlicloudLogProject(),
+			"alicloud_log_project_tags":                    resourceAlicloudLogProjectTags(),
 			"alicloud_log_store":                           resourceAlicloudLogStore(),
 			"alicloud_log_store_index":                     resourceAlicloudLogStoreIndex(),
 			"alicloud_log_machine_group":                   resourceAlicloudLogMachineGroup(),
