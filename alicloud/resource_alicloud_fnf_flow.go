@@ -55,7 +55,7 @@ func resourceAlicloudFnfFlow() *schema.Resource {
 			"type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"FDL"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"DEFAULT", "FDL"}, false),
 			},
 		},
 	}

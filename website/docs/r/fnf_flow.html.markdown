@@ -63,7 +63,7 @@ The following arguments are supported:
 * `description` - (Required) The description of the flow.
 * `name` - (Required, ForceNew) The name of the flow. The name must be unique in an Alibaba Cloud account.
 * `role_arn` - (Optional) The ARN of the specified RAM role that Serverless Workflow uses to assume the role when Serverless Workflow executes a flow.
-* `type` - (Required) The type of the flow. Set the value to `FDL`.
+* `type` - (Required) The type of the flow. Valid values are `FDL` or `DEFAULT`.
 
 ## Attributes Reference
 
