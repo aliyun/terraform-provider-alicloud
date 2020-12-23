@@ -47,6 +47,7 @@ var NasNotFound = []string{"InvalidMountTarget.NotFound", "InvalidFileSystem.Not
 var SnapshotInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
 var SnapshotPolicyInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
 var DiskNotSupportOnlineChangeErrors = []string{"InvalidDiskCategory.NotSupported", "InvalidRegion.NotSupport", "IncorrectInstanceStatus", "IncorrectDiskStatus", "InvalidOperation.InstanceTypeNotSupport"}
+var InvokeQaError bool
 
 // details at: https://help.aliyun.com/document_detail/27300.html
 var OtsTableIsTemporarilyUnavailable = []string{"no such host", "OTSServerBusy", "OTSPartitionUnavailable", "OTSInternalServerError",
@@ -286,6 +287,7 @@ func Error(msg string, args ...interface{}) error {
 
 // Return a ComplexError which including error occurred file and path
 func WrapError(cause error) error {
+	InvokeQaError = true
 	if cause == nil {
 		return nil
 	}
@@ -303,6 +305,7 @@ func WrapError(cause error) error {
 
 // Return a ComplexError which including extra error message, error occurred file and path
 func WrapErrorf(cause error, msg string, args ...interface{}) error {
+	InvokeQaError = true
 	if cause == nil && strings.TrimSpace(msg) == "" {
 		return nil
 	}
