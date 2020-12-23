@@ -17,7 +17,9 @@ func resourceAliyunDiskAttachment() *schema.Resource {
 		Create: resourceAliyunDiskAttachmentCreate,
 		Read:   resourceAliyunDiskAttachmentRead,
 		Delete: resourceAliyunDiskAttachmentDelete,
-
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,
