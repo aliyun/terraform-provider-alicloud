@@ -237,7 +237,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("engine").(string) != "PostgreSQL"
+					return d.Get("engine").(string) != "PostgreSQL" || d.Get("engine").(string) != "MySQL"
 				},
 			},
 			"zone_id_slave_a": {
@@ -834,7 +834,7 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		request["ResourceGroupId"] = v
 	}
 
-	if request["Engine"] == "PostgreSQL" {
+	if request["Engine"] == "PostgreSQL" || request["Engine"] == "MySQL" {
 		if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
 			request["EncryptionKey"] = v.(string)
 

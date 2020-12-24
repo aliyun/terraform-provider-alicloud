@@ -403,6 +403,12 @@ resource "alicloud_security_group" "default" {
 	name   = "${var.name}"
 	vpc_id = "${alicloud_vpc.default.id}"
 }
+
+resource "alicloud_kms_key" "default" {
+  pending_window_in_days  = "7"
+  key_state               = "Enabled"
+}
+
 `, RdsCommonTestCase, name)
 }
 
