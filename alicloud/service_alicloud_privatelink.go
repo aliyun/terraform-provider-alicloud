@@ -266,3 +266,55 @@ func (s *PrivatelinkService) PrivatelinkVpcEndpointStateRefreshFunc(id string, f
 		return object, object["EndpointStatus"].(string), nil
 	}
 }
+
+func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointServiceResource(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewPrivatelinkClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListVpcEndpointServiceResources"
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"RegionId":  s.client.RegionId,
+		"ServiceId": parts[0],
+	}
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
+				err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointServiceResource", id)), NotFoundMsg, ProviderERROR)
+				return object, err
+			}
+			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return object, err
+		}
+		addDebug(action, response, request)
+		v, err := jsonpath.Get("$.Resources", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Resources", response)
+		}
+		if len(v.([]interface{})) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("PrivateLink", id)), NotFoundWithResponse, response)
+		}
+		for _, v := range v.([]interface{}) {
+			if v.(map[string]interface{})["ResourceId"].(string) == parts[1] {
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+		return object, nil
+	}
+	return
+}

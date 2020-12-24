@@ -33,7 +33,6 @@ output "first_privatelink_vpc_endpoint_service_id" {
 The following arguments are supported:
 
 * `auto_accept_connection` - (Optional, ForceNew) Whether to automatically accept terminal node connections.
-* `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `ids` - (Optional, ForceNew, Computed)  A list of Vpc Endpoint Service IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Vpc Endpoint Service name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -50,9 +49,6 @@ The following attributes are exported in addition to the arguments listed above:
 	* `auto_accept_connection` - Whether to automatically accept terminal node connections..
 	* `connect_bandwidth` - The connection bandwidth.
 	* `id` - The ID of the Vpc Endpoint Service.
-	* `resources` - Service resources added to the endpoint service.
-		* `resource_id` - The id of service resources added to the endpoint service.
-		* `resource_type` - The type of service resource added to the endpoint service.
 	* `service_business_status` - The business status of the terminal node service..
 	* `service_description` - The description of the terminal node service.
 	* `service_domain` - The domain of service.

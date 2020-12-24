@@ -47,23 +47,6 @@ func resourceAlicloudPrivatelinkVpcEndpointService() *schema.Resource {
 				Default:      "Endpoint",
 				ValidateFunc: validation.StringInSlice([]string{"Endpoint", "EndpointService"}, false),
 			},
-			"resources": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"resource_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"resource_type": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-				ForceNew: true,
-			},
 			"service_business_status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -107,17 +90,6 @@ func resourceAlicloudPrivatelinkVpcEndpointServiceCreate(d *schema.ResourceData,
 	}
 
 	request["RegionId"] = client.RegionId
-	if v, ok := d.GetOk("resources"); ok {
-		resources := make([]map[string]interface{}, len(v.(*schema.Set).List()))
-		for i, j := range v.(*schema.Set).List() {
-			resources[i] = make(map[string]interface{})
-			resources[i]["ResourceId"] = j.(map[string]interface{})["resource_id"]
-			resources[i]["ResourceType"] = j.(map[string]interface{})["resource_type"]
-		}
-		request["Resource"] = resources
-
-	}
-
 	if v, ok := d.GetOk("service_description"); ok {
 		request["ServiceDescription"] = v
 	}
@@ -165,28 +137,6 @@ func resourceAlicloudPrivatelinkVpcEndpointServiceRead(d *schema.ResourceData, m
 	d.Set("service_description", object["ServiceDescription"])
 	d.Set("service_domain", object["ServiceDomain"])
 	d.Set("status", object["ServiceStatus"])
-
-	listVpcEndpointServiceResourcesObject, err := privatelinkService.ListVpcEndpointServiceResources(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
-
-	resources := make([]map[string]interface{}, 0)
-	if resourcesList, ok := listVpcEndpointServiceResourcesObject["Resources"].([]interface{}); ok {
-		for _, v := range resourcesList {
-			if m1, ok := v.(map[string]interface{}); ok {
-				temp1 := map[string]interface{}{
-					"resource_id":   m1["ResourceId"],
-					"resource_type": m1["ResourceType"],
-				}
-				resources = append(resources, temp1)
-
-			}
-		}
-	}
-	if err := d.Set("resources", resources); err != nil {
-		return WrapError(err)
-	}
 	return nil
 }
 func resourceAlicloudPrivatelinkVpcEndpointServiceUpdate(d *schema.ResourceData, meta interface{}) error {
