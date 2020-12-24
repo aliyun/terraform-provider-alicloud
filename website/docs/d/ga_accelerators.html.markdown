@@ -1,15 +1,15 @@
 ---
-subcategory: "Ga"
+subcategory: "Global Accelerator (GA)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ga_accelerators"
 sidebar_current: "docs-alicloud-datasource-ga-accelerators"
 description: |-
-  Provides a list of Ga Accelerators to the user.
+  Provides a list of Global Accelerator (GA) Accelerators to the user.
 ---
 
 # alicloud\_ga\_accelerators
 
-This data source provides the Ga Accelerators of the current Alibaba Cloud user.
+This data source provides the Global Accelerator (GA) Accelerators of the current Alibaba Cloud user.
 
 -> **NOTE:** Available in v1.111.0+.
 

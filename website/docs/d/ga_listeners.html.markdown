@@ -1,15 +1,15 @@
 ---
-subcategory: "Ga"
+subcategory: "Global Accelerator (GA)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ga_listeners"
 sidebar_current: "docs-alicloud-datasource-ga-listeners"
 description: |-
-  Provides a list of Ga Listeners to the user.
+  Provides a list of Global Accelerator (GA) Listeners to the user.
 ---
 
 # alicloud\_ga\_listeners
 
-This data source provides the Ga Listeners of the current Alibaba Cloud user.
+This data source provides the Global Accelerator (GA) Listeners of the current Alibaba Cloud user.
 
 -> **NOTE:** Available in v1.111.0+.
 

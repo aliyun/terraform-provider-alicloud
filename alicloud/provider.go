@@ -362,6 +362,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_shared_resources":          dataSourceAlicloudResourceManagerSharedResources(),
 			"alicloud_resource_manager_shared_targets":            dataSourceAlicloudResourceManagerSharedTargets(),
 			"alicloud_ga_listeners":                               dataSourceAlicloudGaListeners(),
+			"alicloud_tsdb_instances":                             dataSourceAlicloudTsdbInstances(),
+			"alicloud_tsdb_zones":                                 dataSourceAlicloudTsdbZones(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -647,6 +649,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_shared_resource":          resourceAlicloudResourceManagerSharedResource(),
 			"alicloud_resource_manager_shared_target":            resourceAlicloudResourceManagerSharedTarget(),
 			"alicloud_ga_listener":                               resourceAlicloudGaListener(),
+			"alicloud_tsdb_instance":                             resourceAlicloudTsdbInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -794,6 +797,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.PrivatelinkEndpoint = strings.TrimSpace(endpoints["privatelink"].(string))
 		config.ResourcesharingEndpoint = strings.TrimSpace(endpoints["resourcesharing"].(string))
 		config.GaEndpoint = strings.TrimSpace(endpoints["ga"].(string))
+		config.HitsdbEndpoint = strings.TrimSpace(endpoints["hitsdb"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -996,6 +1000,8 @@ func init() {
 		"resourcesharing_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom resourcesharing endpoints.",
 
 		"ga_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ga endpoints.",
+
+		"hitsdb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom hitsdb endpoints.",
 	}
 }
 
@@ -1051,6 +1057,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["ga_endpoint"],
+				},
+
+				"hitsdb": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["hitsdb_endpoint"],
 				},
 
 				"privatelink": {
@@ -1477,6 +1490,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["privatelink"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["resourcesharing"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ga"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["hitsdb"].(string)))
 	return hashcode.String(buf.String())
 }
 
