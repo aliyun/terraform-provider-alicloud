@@ -1,17 +1,17 @@
 ---
-subcategory: "Ga"
+subcategory: "Global Accelerator (GA)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ga_accelerator"
 sidebar_current: "docs-alicloud-resource-ga-accelerator"
 description: |-
-  Provides a Alicloud Ga Accelerator resource.
+  Provides a Alicloud Global Accelerator (GA) Accelerator resource.
 ---
 
 # alicloud\_ga\_accelerator
 
-Provides a Ga Accelerator resource.
+Provides a Global Accelerator (GA) Accelerator resource.
 
-For information about Ga Accelerator and how to use it, see [What is Accelerator](https://help.aliyun.com/document_detail/153235.html).
+For information about Global Accelerator (GA) Accelerator and how to use it, see [What is Accelerator](https://help.aliyun.com/document_detail/153235.html).
 
 -> **NOTE:** Available in v1.111.0+.
 

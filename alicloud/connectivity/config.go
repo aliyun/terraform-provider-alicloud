@@ -105,6 +105,7 @@ type Config struct {
 	MaxcomputeEndpoint      string
 	ResourcesharingEndpoint string
 	GaEndpoint              string
+	HitsdbEndpoint          string
 }
 
 func (c *Config) loadAndValidate() error {
