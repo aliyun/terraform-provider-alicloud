@@ -15,6 +15,11 @@ func dataSourceAlicloudFnfFlows() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudFnfFlowsRead,
 		Schema: map[string]*schema.Schema{
+			"limit": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -86,6 +91,9 @@ func dataSourceAlicloudFnfFlowsRead(d *schema.ResourceData, meta interface{}) er
 
 	action := "ListFlows"
 	request := make(map[string]interface{})
+	if v, ok := d.GetOk("limit"); ok {
+		request["Limit"] = v
+	}
 	var objects []map[string]interface{}
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -110,34 +118,41 @@ func dataSourceAlicloudFnfFlowsRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &runtime)
-	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_flows", action, AlibabaCloudSdkGoERROR)
-	}
-	addDebug(action, response, request)
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_flows", action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
 
-	resp, err := jsonpath.Get("$.Flows", response)
-	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Flows", response)
-	}
-	for _, v := range resp.([]interface{}) {
-		item := v.(map[string]interface{})
-		if nameRegex != nil {
-			if !nameRegex.MatchString(item["Name"].(string)) {
-				continue
-			}
+		resp, err := jsonpath.Get("$.Flows", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Flows", response)
 		}
-		if len(idsMap) > 0 {
-			if _, ok := idsMap[fmt.Sprint(item["Name"])]; !ok {
-				continue
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
+			if nameRegex != nil {
+				if !nameRegex.MatchString(fmt.Sprint(item["Name"])) {
+					continue
+				}
 			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["Name"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
 		}
-		objects = append(objects, item)
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
 	}
 	ids := make([]string, 0)
-	names := make([]string, 0)
+	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
@@ -151,7 +166,7 @@ func dataSourceAlicloudFnfFlowsRead(d *schema.ResourceData, meta interface{}) er
 			"type":               object["Type"],
 		}
 		ids = append(ids, fmt.Sprint(object["Name"]))
-		names = append(names, object["Name"].(string))
+		names = append(names, object["Name"])
 		s = append(s, mapping)
 	}
 

@@ -20,6 +20,11 @@ func dataSourceAlicloudFnfSchedules() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"limit": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -92,6 +97,10 @@ func dataSourceAlicloudFnfSchedulesRead(d *schema.ResourceData, meta interface{}
 	action := "ListSchedules"
 	request := make(map[string]interface{})
 	request["FlowName"] = d.Get("flow_name")
+	if v, ok := d.GetOk("limit"); ok {
+		request["Limit"] = v
+	}
+	request["MaxResults"] = PageSizeLarge
 	var objects []map[string]interface{}
 	var scheduleNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -116,34 +125,41 @@ func dataSourceAlicloudFnfSchedulesRead(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapError(err)
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &runtime)
-	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_schedules", action, AlibabaCloudSdkGoERROR)
-	}
-	addDebug(action, response, request)
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_schedules", action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
 
-	resp, err := jsonpath.Get("$.Schedules", response)
-	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Schedules", response)
-	}
-	for _, v := range resp.([]interface{}) {
-		item := v.(map[string]interface{})
-		if scheduleNameRegex != nil {
-			if !scheduleNameRegex.MatchString(item["ScheduleName"].(string)) {
-				continue
-			}
+		resp, err := jsonpath.Get("$.Schedules", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Schedules", response)
 		}
-		if len(idsMap) > 0 {
-			if _, ok := idsMap[fmt.Sprint(item["ScheduleName"])]; !ok {
-				continue
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
+			if scheduleNameRegex != nil {
+				if !scheduleNameRegex.MatchString(fmt.Sprint(item["ScheduleName"])) {
+					continue
+				}
 			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["ScheduleName"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
 		}
-		objects = append(objects, item)
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
 	}
 	ids := make([]string, 0)
-	names := make([]string, 0)
+	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
@@ -154,10 +170,10 @@ func dataSourceAlicloudFnfSchedulesRead(d *schema.ResourceData, meta interface{}
 			"payload":            object["Payload"],
 			"schedule_id":        object["ScheduleId"],
 			"id":                 fmt.Sprint(object["ScheduleName"]),
-			"schedule_name":      object["ScheduleName"],
+			"schedule_name":      fmt.Sprint(object["ScheduleName"]),
 		}
 		ids = append(ids, fmt.Sprint(object["ScheduleName"]))
-		names = append(names, object["ScheduleName"].(string))
+		names = append(names, object["ScheduleName"])
 		s = append(s, mapping)
 	}
 
