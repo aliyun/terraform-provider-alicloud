@@ -7,8 +7,9 @@ description: |-
 Provides a Alicloud log project tags resource.
 ---
 
-# alicloud\_log\_project_tags
+# alicloud\_log\_project\_tags
 Project tags is a resource used to tag a project. You can use this function to tag a project.
+[Refer to details](https://www.alibabacloud.com/help/doc-detail/48873.htm).
 
 ## Example Usage
 
@@ -27,10 +28,6 @@ resource "alicloud_log_project_tags" "default" {
 
 ```
 
-## Module Support
-
-You can use the existing [sls module](https://registry.terraform.io/modules/terraform-alicloud-modules/sls/alicloud)
-to create SLS project, store and store index one-click, like ECS instances.
 
 ## Argument Reference
 
@@ -43,8 +40,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `project_name` - The project name.
-* `tags` - Label of project.
+* `id` - The id of project tags.
 
 
 ## Import
