@@ -35,6 +35,7 @@ The following arguments are supported:
 
 * `flow_name` - (Required, ForceNew) The name of the flow bound to the time-based schedule you want to create.
 * `ids` - (Optional, ForceNew, Computed) A list of Schedule IDs.
+* `limit` - (Optional, ForceNew, Available in v1.110.0+) The number of resource queries.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Schedule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

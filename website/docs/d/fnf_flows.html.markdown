@@ -33,6 +33,7 @@ output "first_fnf_flow_id" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed) A list of Flow IDs.
+* `limit` - (Optional, ForceNew, Available in v1.110.0+) The number of resource queries.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Flow name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
