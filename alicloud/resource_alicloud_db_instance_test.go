@@ -336,6 +336,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 							"value": "70",
 						},
 					},
+					"encryption_key": "${alicloud_kms_key.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
