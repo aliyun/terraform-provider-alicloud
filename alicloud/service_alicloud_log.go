@@ -4,7 +4,7 @@ import (
 	"time"
 
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
-	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -619,4 +619,37 @@ func (s *LogService) WaitForLogDashboard(id string, status Status, timeout int) 
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.DashboardName, name, ProviderERROR)
 		}
 	}
+}
+
+func (s *LogService) DescribeLogProjectTags(project_name string) ([]*sls.ResourceTagResponse, error) {
+	var requestInfo *sls.Client
+	var respTags []*sls.ResourceTagResponse
+
+	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			raw, _, err := slsClient.ListTagResources(project_name, "project", []string{project_name}, []sls.ResourceFilterTag{}, "")
+			return raw, err
+		})
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{LogClientTimeout}) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetProjectTags", raw, requestInfo, map[string]string{"project_name": project_name})
+		}
+		respTags = raw.([]*sls.ResourceTagResponse)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
+			return respTags, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return respTags, WrapErrorf(err, DefaultErrorMsg, project_name, "GetProejctTags", AliyunLogGoSdkERROR)
+	}
+	return respTags, nil
 }
