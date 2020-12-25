@@ -76,7 +76,7 @@ func TestAccAlicloudLogProject_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacclogproject-%d", rand)
+	name := fmt.Sprintf("sls-xuxiaohang-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogProjectConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -136,6 +136,69 @@ func TestAccAlicloudLogProject_basic(t *testing.T) {
 	})
 }
 
+
+func TestAccAlicloudLogProject_tags(t *testing.T) {
+	var v *sls.LogProject
+	resourceId := "alicloud_log_project.default"
+	ra := resourceAttrInit(resourceId, logProjectMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("sls-xuxiaohang-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogProjectConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags":         map[string]string{"the-tag": "aliyun-log-go-sdk", "test": "aliyun"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":         "2",
+						"tags.the-tag":   "aliyun-log-go-sdk",
+						"tags.test": "aliyun",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags":         map[string]string{"the-tag": "aliyun-log-go-sdk","the-tag-3": "aliyun log go sdk"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":      "2",
+						"tags.the-tag":   "aliyun-log-go-sdk",
+						"tags.the-tag-3":  "aliyun log go sdk",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudLogProject_multi(t *testing.T) {
 	var v *sls.LogProject
 	resourceId := "alicloud_log_project.default.4"
@@ -170,6 +233,10 @@ func TestAccAlicloudLogProject_multi(t *testing.T) {
 		},
 	})
 }
+
+
+
+
 
 func resourceLogProjectConfigDependence(name string) string {
 	return ""
