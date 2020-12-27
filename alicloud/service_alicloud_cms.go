@@ -57,7 +57,7 @@ func (s *CmsService) DescribeAlarm(id string) (alarm cms.AlarmInDescribeMetricRu
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InternalError"}) {
+		if IsExpectedErrors(err, []string{"InternalError", "ResourceNotFound"}) {
 			return alarm, WrapErrorf(Error(GetNotFoundMessage("Alarm Rule", id)), NotFoundWithResponse, response)
 		}
 		return alarm, err
