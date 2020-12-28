@@ -392,7 +392,6 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ess_alarm":                          resourceAlicloudEssAlarm(),
 			"alicloud_ess_scalinggroup_vserver_groups":    resourceAlicloudEssScalingGroupVserverGroups(),
 			"alicloud_vpc":                                resourceAliyunVpc(),
-			"alicloud_vpc_cidr_block":                     resourceAliyunVpcCidrBlock(),
 			"alicloud_nat_gateway":                        resourceAliyunNatGateway(),
 			"alicloud_nas_file_system":                    resourceAlicloudNasFileSystem(),
 			"alicloud_nas_mount_target":                   resourceAlicloudNasMountTarget(),
