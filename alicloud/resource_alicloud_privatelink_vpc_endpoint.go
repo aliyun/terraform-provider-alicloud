@@ -22,6 +22,7 @@ func resourceAlicloudPrivatelinkVpcEndpoint() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(6 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Minute),
 			Update: schema.DefaultTimeout(4 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -81,23 +82,6 @@ func resourceAlicloudPrivatelinkVpcEndpoint() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"zone": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"zone_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"vswitch_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-				ForceNew: true,
-			},
 		},
 	}
 }
@@ -135,17 +119,6 @@ func resourceAlicloudPrivatelinkVpcEndpointCreate(d *schema.ResourceData, meta i
 	}
 
 	request["VpcId"] = d.Get("vpc_id")
-	if v, ok := d.GetOk("zone"); ok {
-		zone := make([]map[string]interface{}, len(v.(*schema.Set).List()))
-		for i, j := range v.(*schema.Set).List() {
-			zone[i] = make(map[string]interface{})
-			zone[i]["VSwitchId"] = j.(map[string]interface{})["vswitch_id"]
-			zone[i]["ZoneId"] = j.(map[string]interface{})["zone_id"]
-		}
-		request["Zone"] = zone
-
-	}
-
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -199,28 +172,6 @@ func resourceAlicloudPrivatelinkVpcEndpointRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 	d.Set("security_group_id", convertSecurityGroupIdToStringList(listVpcEndpointSecurityGroupsObject["SecurityGroups"]))
-
-	listVpcEndpointZonesObject, err := privatelinkService.ListVpcEndpointZones(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
-
-	zones := make([]map[string]interface{}, 0)
-	if zonesList, ok := listVpcEndpointZonesObject["Zones"].([]interface{}); ok {
-		for _, v := range zonesList {
-			if m1, ok := v.(map[string]interface{}); ok {
-				temp1 := map[string]interface{}{
-					"vswitch_id": m1["VSwitchId"],
-					"zone_id":    m1["ZoneId"],
-				}
-				zones = append(zones, temp1)
-
-			}
-		}
-	}
-	if err := d.Set("zone", zones); err != nil {
-		return WrapError(err)
-	}
 	return nil
 }
 func resourceAlicloudPrivatelinkVpcEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -283,11 +234,11 @@ func resourceAlicloudPrivatelinkVpcEndpointDelete(d *schema.ResourceData, meta i
 		request["DryRun"] = v
 	}
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"EndpointOperationDenied"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -304,7 +255,6 @@ func resourceAlicloudPrivatelinkVpcEndpointDelete(d *schema.ResourceData, meta i
 	}
 	return nil
 }
-
 func convertSecurityGroupIdToStringList(src interface{}) (result []interface{}) {
 	if err, ok := src.([]interface{}); !ok {
 		panic(err)
