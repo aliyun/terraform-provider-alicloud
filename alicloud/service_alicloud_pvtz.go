@@ -10,7 +10,6 @@ import (
 
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -128,8 +127,8 @@ func (s *PvtzService) DescribePvtzZoneRecord(id string) (object map[string]inter
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"ZoneId":     parts[1],
-		"PageNumber": "1",
-		"PageSize":   "20",
+		"PageNumber": 1,
+		"PageSize":   20,
 	}
 	for {
 		runtime := util.RuntimeOptions{}
@@ -167,16 +166,10 @@ func (s *PvtzService) DescribePvtzZoneRecord(id string) (object map[string]inter
 				return v.(map[string]interface{}), nil
 			}
 		}
-		size, _ := strconv.Atoi(request["PageSize"].(string))
-		if len(v.([]interface{})) < size {
+		if len(v.([]interface{})) < request["PageSize"].(int) {
 			break
 		}
-		number, _ := strconv.Atoi(request["PageNumber"].(string))
-		if page, err := getNextpageNumber(requests.NewInteger(number)); err != nil {
-			return object, WrapError(err)
-		} else {
-			request["PageNumber"] = page
-		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	return
 }
