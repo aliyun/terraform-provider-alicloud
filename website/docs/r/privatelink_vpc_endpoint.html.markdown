@@ -38,14 +38,6 @@ The following arguments are supported:
 * `service_name` - (Optional, Computed, ForceNew) The name of the terminal node service associated with the terminal node.
 * `vpc_endpoint_name` - (Optional) The name of Vpc Endpoint. The length is between 2 and 128 characters, starting with English letters or Chinese, and can include numbers, hyphens (-) and underscores (_).
 * `vpc_id` - (Required, ForceNew) The private network to which the terminal node belongs.
-* `zone` - (Optional, ForceNew) Availability zone.
-
-#### Block zone
-
-The zone supports the following: 
-
-* `zone_id` - (Optional) Availability zone corresponding to terminal node service.
-* `vswitch_id` - (Optional) To create the vswitch of the terminal node network card in the available zone.
 
 ## Attributes Reference
 

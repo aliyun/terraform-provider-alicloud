@@ -61,6 +61,3 @@ The following attributes are exported in addition to the arguments listed above:
 	* `status` - The status of Vpc Endpoint.
 	* `vpc_endpoint_name` - The name of Vpc Endpoint.
 	* `vpc_id` - The private network to which the terminal node belongs.
-	* `zone` - Availability zone.
-		* `vswitch_id` - To create the vswitch of the terminal node network card in the available zone.
-		* `zone_id` - Availability zone corresponding to terminal node service.
