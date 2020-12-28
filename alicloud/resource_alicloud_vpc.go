@@ -73,6 +73,10 @@ func resourceAliyunVpc() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"secondary_cidr_block": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -137,7 +141,6 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-
 	object, err := vpcService.DescribeVpcWithTeadsl(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -146,13 +149,19 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 		}
 		return WrapError(err)
 	}
-
 	d.Set("cidr_block", object["CidrBlock"])
 	d.Set("name", object["VpcName"])
 	d.Set("description", object["Description"])
 	d.Set("router_id", object["VRouterId"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
 
+	m := object["SecondaryCidrBlocks"].(map[string]interface{})
+	if m != nil {
+		i := m["SecondaryCidrBlock"].([]interface{})
+		if i != nil && len(i) > 0 {
+			d.Set("secondary_cidr_block", i[0].(string))
+		}
+	}
 	tags, err := vpcService.ListTagResources(d.Id(), "VPC")
 	if err != nil {
 		return WrapError(err)
@@ -220,16 +229,12 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	conn, err := meta.(*connectivity.AliyunClient).NewVpcClient()
-
+	var response map[string]interface{}
 	if err != nil {
 		return WrapError(err)
 	}
 	if err := vpcService.setInstanceTags(d, TagResourceVpc); err != nil {
 		return WrapError(err)
-	}
-	if d.IsNewResource() {
-		d.Partial(false)
-		return resourceAliyunVpcRead(d, meta)
 	}
 	attributeUpdate := false
 	action := "ModifyVpcAttribute"
@@ -249,7 +254,26 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if attributeUpdate {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+	}
+	attributeUpdate = false
+
+	if d.HasChange("secondary_cidr_block") {
+		attributeUpdate = true
+	}
+
+	if attributeUpdate {
+		request := map[string]interface{}{
+			"RegionId":           client.RegionId,
+			"VpcId":              d.Id(),
+			"SecondaryCidrBlock": d.Get("secondary_cidr_block"),
+		}
+		action = "AssociateVpcCidrBlock"
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
