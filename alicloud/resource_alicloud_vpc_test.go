@@ -276,6 +276,11 @@ func TestAccAlicloudVpcCidrBlock(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 
