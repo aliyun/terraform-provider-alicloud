@@ -58,6 +58,7 @@ The following attributes are exported:
 * `description` - The description of the VPC.
 * `router_id` - The ID of the router created by default on VPC creation.
 * `route_table_id` - The route table ID of the router created by default on VPC creation.
+* `secondary_cidr_block` - The secondary CIDR block for the VPC.
 
 ## Import
 
