@@ -102,6 +102,7 @@ type Config struct {
 	PrivatelinkEndpoint     string
 	MaxcomputeEndpoint      string
 	ResourcesharingEndpoint string
+	GaEndpoint              string
 }
 
 func (c *Config) loadAndValidate() error {
