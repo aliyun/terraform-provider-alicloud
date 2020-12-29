@@ -91,7 +91,6 @@ func resourceAlicloudCmsSiteMonitor() *schema.Resource {
 
 func resourceAlicloudCmsSiteMonitorCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cmsService := CmsService{client}
 
 	taskName := d.Get("task_name").(string)
 	request := cms.CreateCreateSiteMonitorRequest()
@@ -121,7 +120,7 @@ func resourceAlicloudCmsSiteMonitorCreate(d *schema.ResourceData, meta interface
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
 			return cmsClient.CreateSiteMonitor(request)
 		})
 		if err != nil {
@@ -132,18 +131,13 @@ func resourceAlicloudCmsSiteMonitorCreate(d *schema.ResourceData, meta interface
 			return resource.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), request.RpcRequest, request)
+		resp, _ := raw.(*cms.CreateSiteMonitorResponse)
+		d.SetId(resp.CreateResultList.CreateResultListItem[0].TaskId)
 		return nil
 	})
 	if err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_site_monitor", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	siteMonitor, err := cmsService.DescribeSiteMonitor("", taskName)
-	if err != nil {
-		return WrapError(err)
-	}
-
-	d.SetId(siteMonitor.TaskId)
 
 	return resourceAlicloudCmsSiteMonitorRead(d, meta)
 }
