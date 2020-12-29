@@ -20,6 +20,7 @@ Basic Usage
 resource "alicloud_log_project" "example" {
   name        = "tf-log"
   description = "created by terraform"
+  tags = {"test":"test"}
 }
 ```
 
@@ -34,6 +35,7 @@ The following arguments are supported:
 
 * `name` - (Required, ForceNew) The name of the log project. It is the only in one Alicloud account.
 * `description` - (Optional) Description of the log project.
+* `tags` - (Optional) Log project tags.
 
 ## Attributes Reference
 
@@ -42,6 +44,7 @@ The following attributes are exported:
 * `id` - The ID of the log project. It sames as its name.
 * `name` - Log project name.
 * `description` - Log project description.
+* `tags` - Log project tags.
 
 ## Import
 
