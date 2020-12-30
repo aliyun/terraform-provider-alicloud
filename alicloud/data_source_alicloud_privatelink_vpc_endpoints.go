@@ -97,7 +97,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpoints() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"security_group_id": {
+						"security_group_ids": {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
@@ -245,7 +245,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpointsRead(d *schema.ResourceData, meta 
 			return WrapError(err)
 		}
 		if v := getResp["SecurityGroups"].([]interface{}); len(v) > 0 {
-			mapping["security_group_id"] = convertSecurityGroupIdToStringList(v)
+			mapping["security_group_ids"] = convertSecurityGroupIdToStringList(v)
 		}
 		ids = append(ids, fmt.Sprint(object["EndpointId"]))
 		names = append(names, object["EndpointName"])

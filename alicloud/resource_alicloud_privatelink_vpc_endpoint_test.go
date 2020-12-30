@@ -33,18 +33,18 @@ func TestAccAlicloudPrivatelinkVpcEndpoint_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"service_id":        "${alicloud_privatelink_vpc_endpoint_service.default.id}",
-					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
-					"security_group_id": []string{"${alicloud_security_group.default.id}"},
-					"vpc_endpoint_name": "TerraformTest",
-					"depends_on":        []string{"alicloud_privatelink_vpc_endpoint_service.default"},
+					"service_id":         "${alicloud_privatelink_vpc_endpoint_service.default.id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
+					"security_group_ids": []string{"${alicloud_security_group.default.id}"},
+					"vpc_endpoint_name":  "TerraformTest",
+					"depends_on":         []string{"alicloud_privatelink_vpc_endpoint_service.default"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"service_id":          CHECKSET,
-						"vpc_id":              CHECKSET,
-						"security_group_id.#": "1",
-						"vpc_endpoint_name":   "TerraformTest",
+						"service_id":           CHECKSET,
+						"vpc_id":               CHECKSET,
+						"security_group_ids.#": "1",
+						"vpc_endpoint_name":    "TerraformTest",
 					}),
 				),
 			},
@@ -76,11 +76,33 @@ func TestAccAlicloudPrivatelinkVpcEndpoint_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"security_group_ids": []string{"${alicloud_security_group.default.id}", "${alicloud_security_group.default2.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_ids": []string{"${alicloud_security_group.default.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_ids":   []string{"${alicloud_security_group.default.id}", "${alicloud_security_group.default2.id}"},
 					"endpoint_description": "Terraform Test Update",
 					"vpc_endpoint_name":    "TerraformTestUpdate",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"security_group_ids.#": "2",
 						"endpoint_description": "Terraform Test Update",
 						"vpc_endpoint_name":    "TerraformTestUpdate",
 					}),
@@ -109,8 +131,13 @@ func AlicloudPrivatelinkVpcEndpointBasicDependence(name string) string {
 	  description = "privatelink test security group"
 	  vpc_id      = data.alicloud_vpcs.default.ids.0
 	}
+	resource "alicloud_security_group" "default2" {
+	  name        = "%[1]s"
+	  description = "privatelink test security group2"
+	  vpc_id      = data.alicloud_vpcs.default.ids.0
+	}
 	resource "alicloud_privatelink_vpc_endpoint_service" "default" {
-	 service_description = "%s"
+	 service_description = "%[1]s"
 	 connect_bandwidth = 103
      auto_accept_connection = false
 	}
