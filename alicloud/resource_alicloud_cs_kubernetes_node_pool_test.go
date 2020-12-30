@@ -121,9 +121,92 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCSKubernetesNodePool_autoScaling(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.autocaling"
+	ra := resourceAttrInit(resourceId, csdKubernetesNodePoolBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSNodePoolConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                 name,
+					"cluster_id":           "${alicloud_cs_managed_kubernetes.default.0.id}",
+					"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+					"instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"key_name":             "${alicloud_key_pair.default.key_name}",
+					"system_disk_category": "cloud_efficiency",
+					"system_disk_size":     "40",
+					"scaling_config":       []map[string]string{{"min_size": "1", "max_size": "10", "type": "cpu", "is_bond_eip": "true", "eip_internet_charge_type": "PayByBandwidth", "eip_bandwidth": "5"}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                                      name,
+						"cluster_id":                                CHECKSET,
+						"vswitch_ids.#":                             "1",
+						"instance_types.#":                          "1",
+						"key_name":                                  CHECKSET,
+						"system_disk_category":                      "cloud_efficiency",
+						"system_disk_size":                          "40",
+						"scaling_config.#":                          "1",
+						"scaling_config.0.min_size":                 "1",
+						"scaling_config.0.max_size":                 "10",
+						"scaling_config.0.type":                     "cpu",
+						"scaling_config.0.is_bond_eip":              "true",
+						"scaling_config.0.eip_internet_charge_type": "PayByBandwidth",
+						"scaling_config.0.eip_bandwidth":            "5",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "node_count"},
+			},
+			// check: update config
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_config": []map[string]string{{"min_size": "1", "max_size": "20", "type": "cpu", "is_bond_eip": "true", "eip_internet_charge_type": "PayByBandwidth", "eip_bandwidth": "5"}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_config.#":                          "1",
+						"scaling_config.0.min_size":                 "1",
+						"scaling_config.0.max_size":                 "20",
+						"scaling_config.0.type":                     "cpu",
+						"scaling_config.0.is_bond_eip":              "true",
+						"scaling_config.0.eip_internet_charge_type": "PayByBandwidth",
+						"scaling_config.0.eip_bandwidth":            "5",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var csdKubernetesNodePoolBasicMap = map[string]string{
-	"node_count":           "0",
-	"instance_types.0":     CHECKSET,
 	"system_disk_size":     "40",
 	"system_disk_category": "cloud_efficiency",
 }

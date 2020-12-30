@@ -43,7 +43,8 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 			},
 			"node_count": {
 				Type:     schema.TypeInt,
-				Required: true,
+				Optional: true,
+				Computed: true,
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -227,6 +228,42 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 						"max_unavailable": {
 							Type:     schema.TypeInt,
 							Required: true,
+						},
+					},
+				},
+			},
+			"scaling_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"min_size": {
+							Type:         schema.TypeInt,
+							Required:     true,
+							ValidateFunc: validation.IntBetween(0, 1000),
+						},
+						"max_size": {
+							Type:         schema.TypeInt,
+							Required:     true,
+							ValidateFunc: validation.IntBetween(0, 1000),
+						},
+						"type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"is_bond_eip": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"eip_internet_charge_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"eip_bandwidth": {
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
 					},
 				},
@@ -423,19 +460,10 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if d.HasChange("enable_auto_scaling") {
+	if d.HasChange("scaling_config") {
 		update = true
-		args.AutoScaling.Enable = d.Get("enable_auto_scaling").(bool)
-	}
-
-	if d.HasChange("max") {
-		update = true
-		args.AutoScaling.MaxInstance = d.Get("max").(int64)
-	}
-
-	if d.HasChange("min") {
-		update = true
-		args.AutoScaling.MinInstance = d.Get("min").(int64)
+		sc := d.Get("scaling_config").([]interface{})
+		args.AutoScaling = setAutoScalingConfig(sc)
 	}
 
 	if v, ok := d.Get("management").([]interface{}); len(v) > 0 && ok {
@@ -502,16 +530,6 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("user_data", object.UserData)
 	d.Set("scaling_group_id", object.ScalingGroupId)
 
-	if sg, ok := d.GetOk("max"); ok && sg.(string) != "" {
-		d.Set("max", object.MaxInstance)
-	}
-	if _, ok := d.GetOk("enable_auto_scaling"); ok {
-		d.Set("enable_auto_scaling", object.AutoScaling.Enable)
-	}
-	if sg, ok := d.GetOk("min"); ok && sg.(string) != "" {
-		d.Set("min", object.MinInstance)
-	}
-
 	if passwd, ok := d.GetOk("password"); ok && passwd.(string) != "" {
 		d.Set("password", passwd)
 	}
@@ -542,6 +560,10 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 		if err := d.Set("management", flattenManagementNodepoolConfig(&object.Management)); err != nil {
 			return WrapError(err)
 		}
+	}
+
+	if err := d.Set("scaling_config", flattenAutoScalingConfig(&object.AutoScaling)); err != nil {
+		return WrapError(err)
 	}
 
 	return nil
@@ -663,14 +685,10 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 		}
 	}
 
-	if v, ok := d.GetOk("enable_auto_scaling"); ok {
-		if enable, ok := v.(bool); ok && enable {
-			creationArgs.AutoScaling = cs.AutoScaling{
-				Enable:      true,
-				MaxInstance: int64(d.Get("max").(int)),
-				MinInstance: int64(d.Get("min").(int)),
-				Type:        d.Get("type").(string),
-			}
+	// set auto scaling config
+	if v, ok := d.GetOk("scaling_config"); ok {
+		if sc, ok := v.([]interface{}); len(sc) > 0 && ok {
+			creationArgs.AutoScaling = setAutoScalingConfig(sc)
 		}
 	}
 
@@ -802,6 +820,54 @@ func setManagedNodepoolConfig(l []interface{}) (config cs.Management) {
 	}
 
 	return config
+}
+
+func setAutoScalingConfig(l []interface{}) (config cs.AutoScaling) {
+	if len(l) == 0 || l[0] == nil {
+		return config
+	}
+
+	m := l[0].(map[string]interface{})
+
+	// Once "scaling_config" is set, we think of it as creating a auto scaling node pool
+	config.Enable = true
+
+	if v, ok := m["min_size"].(int); ok {
+		config.MinInstances = int64(v)
+	}
+	if v, ok := m["max_size"].(int); ok {
+		config.MaxInstances = int64(v)
+	}
+	if v, ok := m["type"].(string); ok {
+		config.Type = v
+	}
+	if v, ok := m["is_bond_eip"].(bool); ok {
+		config.IsBindEip = &v
+	}
+	if v, ok := m["eip_internet_charge_type"].(string); ok {
+		config.EipInternetChargeType = v
+	}
+	if v, ok := m["eip_bandwidth"].(int); ok {
+		config.EipBandWidth = int64(v)
+	}
+
+	return config
+}
+
+func flattenAutoScalingConfig(config *cs.AutoScaling) (m []map[string]interface{}) {
+	if config == nil {
+		return
+	}
+	m = append(m, map[string]interface{}{
+		"min_size":                 config.MinInstances,
+		"max_size":                 config.MaxInstances,
+		"type":                     config.Type,
+		"is_bond_eip":              config.IsBindEip,
+		"eip_internet_charge_type": config.EipInternetChargeType,
+		"eip_bandwidth":            config.EipBandWidth,
+	})
+
+	return
 }
 
 func flattenManagementNodepoolConfig(config *cs.Management) (m []map[string]interface{}) {
