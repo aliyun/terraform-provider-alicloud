@@ -17,7 +17,7 @@ This resource will help you to manager node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.109.1, support remove node pool nodes.
 
--> **NOTE:** From version 1.110.1, support auto scaling node pool. 
+-> **NOTE:** From version 1.111.0, support auto scaling node pool. 
 
 ## Example Usage
 
@@ -137,7 +137,7 @@ The following arguments are supported:
 * `name` - (Required) The name of node pool.
 * `vswitch_ids` - (Required) The vswitches used by node pool workers.
 * `instance_types` (Required) The instance type of worker node.
-* `node_count` (Optional) The worker node number of the node pool. `node_count` is not required when using an automatic scaling node pool.
+* `node_count` (Optional) The worker node number of the node pool. From version 1.111.0, `node_count` is not required.
 * `password` - (Required, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `key_name` - (Required) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. Only `key_name` is supported in the management node pool.
 * `kms_encrypted_password` - (Required) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
@@ -157,7 +157,7 @@ The following arguments are supported:
 * `labels` - (Optional) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument.
 * `taints` - (Optional) A List of Kubernetes taints to assign to the nodes.
 * `management` - (Optional, Available in 1.109.1+) Managed node pool configuration. When using a managed node pool, the node key must use `key_name`. Detailed below.
-* `scaling_config` - (Optional, Available in 1.110.1+) Auto scaling node pool configuration. For more details, see `scaling_config`.
+* `scaling_config` - (Optional, Available in 1.111.0+) Auto scaling node pool configuration. For more details, see `scaling_config`.
 
 #### management
 
@@ -173,12 +173,12 @@ The following arguments are supported in the `management` configuration block:
 
 The following arguments are supported in the `scaling_config` configuration block:
 
-* `min_size` - (Required, Available in 1.110.1+) Max number of instances in a auto scaling group, its valid value range [0~1000].
-* `max_size` - (Required, Available in 1.110.1+) Min number of instances in a auto scaling group, its valid value range [0~1000]. `max_size` has to be greater than `min_size`.
-* `type` - (Optional, Available in 1.110.1+) Auto scaling of instance types within a group. Vaild value: `cpu`, `gpu`, `gpushare` and `spot`. Default: `cpu`.
-* `is_bond_eip` - (Optional, Available in 1.110.1+) Whether to bind EIP for an instance. Default: `false`.
-* `eip_internet_charge_type` - (Optional, Available in 1.110.1+) EIP billing type. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`.
-* `eip_bandwidth` - (Optional, Available in 1.110.1+) Peak EIP bandwidth. Its valid value range [1~500] in Mbps. Default to `5`.
+* `min_size` - (Required, Available in 1.111.0+) Max number of instances in a auto scaling group, its valid value range [0~1000].
+* `max_size` - (Required, Available in 1.111.0+) Min number of instances in a auto scaling group, its valid value range [0~1000]. `max_size` has to be greater than `min_size`.
+* `type` - (Optional, Available in 1.111.0+) Auto scaling of instance types within a group. Vaild value: `cpu`, `gpu`, `gpushare` and `spot`. Default: `cpu`.
+* `is_bond_eip` - (Optional, Available in 1.111.0+) Whether to bind EIP for an instance. Default: `false`.
+* `eip_internet_charge_type` - (Optional, Available in 1.111.0+) EIP billing type. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`.
+* `eip_bandwidth` - (Optional, Available in 1.111.0+) Peak EIP bandwidth. Its valid value range [1~500] in Mbps. Default to `5`.
 
 ## Attributes Reference
 
