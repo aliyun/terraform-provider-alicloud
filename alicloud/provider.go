@@ -359,6 +359,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eci_container_groups":                       dataSourceAlicloudEciContainerGroups(),
 			"alicloud_resource_manager_shared_resources":          dataSourceAlicloudResourceManagerSharedResources(),
 			"alicloud_resource_manager_shared_targets":            dataSourceAlicloudResourceManagerSharedTargets(),
+			"alicloud_ga_listeners":                               dataSourceAlicloudGaListeners(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -643,6 +644,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eci_container_group":                       resourceAlicloudEciContainerGroup(),
 			"alicloud_resource_manager_shared_resource":          resourceAlicloudResourceManagerSharedResource(),
 			"alicloud_resource_manager_shared_target":            resourceAlicloudResourceManagerSharedTarget(),
+			"alicloud_ga_listener":                               resourceAlicloudGaListener(),
 		},
 
 		ConfigureFunc: providerConfigure,
