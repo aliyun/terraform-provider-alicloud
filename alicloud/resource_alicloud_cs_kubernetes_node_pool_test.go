@@ -202,6 +202,22 @@ func TestAccAlicloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_config": []map[string]string{{"min_size": "1", "max_size": "20", "type": "cpu", "is_bond_eip": "false", "eip_internet_charge_type": "PayByBandwidth", "eip_bandwidth": "5"}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_config.#":                          "1",
+						"scaling_config.0.min_size":                 "1",
+						"scaling_config.0.max_size":                 "20",
+						"scaling_config.0.type":                     "cpu",
+						"scaling_config.0.is_bond_eip":              "false",
+						"scaling_config.0.eip_internet_charge_type": "PayByBandwidth",
+						"scaling_config.0.eip_bandwidth":            "5",
+					}),
+				),
+			},
 		},
 	})
 }
