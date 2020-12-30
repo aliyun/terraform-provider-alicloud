@@ -15,11 +15,9 @@ This data source provides availability zones for HBase that can be accessed by a
 
 ## Example Usage
 
-```
-# Declare the data source
+```terraform
 data "alicloud_hbase_zones" "zones_ids" {}
 
-# Create an HBase instance with the first matched zone
 resource "alicloud_hbase_instance" "hbase" {
     zone_id = data.alicloud_hbase_zones.zones_ids.zones[0].id
 

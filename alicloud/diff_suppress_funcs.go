@@ -569,3 +569,27 @@ func alikafkaInstanceConfigDiffSuppressFunc(k, old, new string, d *schema.Resour
 
 	return true
 }
+
+func payTypePostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return strings.ToLower(d.Get("pay_type").(string)) == "postpaid"
+}
+
+func engineDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return strings.ToLower(d.Get("engine").(string)) == "bds"
+}
+
+func whiteIpListDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	oldArray := strings.Split(old, ",")
+	newArray := strings.Split(new, ",")
+	if len(oldArray) != len(newArray) {
+		return false
+	}
+	sort.Strings(oldArray)
+	sort.Strings(newArray)
+	for i := range newArray {
+		if newArray[i] != oldArray[i] {
+			return false
+		}
+	}
+	return true
+}
