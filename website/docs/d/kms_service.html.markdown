@@ -27,7 +27,9 @@ data "alicloud_kms_service" "open" {
 
 The following arguments are supported:
 
-* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: "On" or "Off".
+* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: "On" or "Off". Default to "Off".
+
+-> **NOTE:** Setting `enable = "On"` to open the KMS service that means you have read and agreed the [KMS Terms of Service](https://help.aliyun.com/document_detail/125937.html). The service can not closed once it is opened.
 
 ## Attributes Reference
 
