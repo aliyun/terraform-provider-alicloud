@@ -27,7 +27,9 @@ data "alicloud_datahub_service" "open" {
 
 The following arguments are supported:
 
-* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: `On` or `Off`.
+* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: `On` or `Off`. Default to `Off`.
+
+-> **NOTE:** Setting `enable = "On"` to open the DataHub service that means you have read and agreed the [DataHub Terms of Service](https://help.aliyun.com/document_detail/158927.html). The service can not closed once it is opened.
 
 ## Attributes Reference
 

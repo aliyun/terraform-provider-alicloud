@@ -20,6 +20,7 @@ func dataSourceAlicloudOnsService() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"On", "Off"}, false),
 				Optional:     true,
+				Default:      "Off",
 			},
 			"status": {
 				Type:     schema.TypeString,

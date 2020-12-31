@@ -27,7 +27,9 @@ data "alicloud_ons_service" "open" {
 
 The following arguments are supported:
 
-* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: `On` or `Off`.
+* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: `On` or `Off`. Default to `Off`.
+
+-> **NOTE:** Setting `enable = "On"` to open the ONS service that means you have read and agreed the [ONS Terms of Service](https://help.aliyun.com/document_detail/39113.html). The service can not closed once it is opened.
 
 ## Attributes Reference
 
