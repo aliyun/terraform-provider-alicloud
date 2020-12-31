@@ -27,7 +27,9 @@ data "alicloud_cms_service" "open" {
 
 The following arguments are supported:
 
-* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: `On` or `Off`.
+* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: `On` or `Off`. Default to `Off`.
+
+-> **NOTE:** Setting `enable = "On"` to open the CMS service that means you have read and agreed the [CMS Terms of Service](https://help.aliyun.com/document_detail/68185.html). The service can not closed once it is opened.
 
 ## Attributes Reference
 

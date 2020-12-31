@@ -201,6 +201,9 @@ func NeedRetry(err error) bool {
 		return re.MatchString(e.Message)
 	}
 	if e, ok := err.(*tea.SDKError); ok {
+		if strings.Contains(*e.Message, "code: 500, 您已开通过") {
+			return false
+		}
 		re := regexp.MustCompile("^code: 5[\\d]{2}")
 		return re.MatchString(*e.Message)
 	}
