@@ -1,4 +1,39 @@
 ## 1.111.0 (Unreleased)
+
+- **New Resource:** `alicloud_ga_listener` [GH-3173]
+- **New Resource:** `alicloud_resource_manager_shared_resource` [GH-3168]
+- **New Resource:** `alicloud_resource_manager_shared_target` [GH-3168]
+- **New Resource:** `alicloud_eci_container_group` [GH-3166]
+- **New Resource:** `alicloud_privatelink_vpc_endpoint_zone` [GH-3163]
+- **New Resource:** `alicloud_ga_accelerator` [GH-3162]
+- **New Resource:** `alicloud_resource_manager_resource_share` [GH-3158]
+- **Data Source:** `alicloud_dcdn_service` [GH-3177]
+- **Data Source:** `alicloud_ga_listeners` [GH-3173]
+- **Data Source:** `alicloud_resource_manager_shared_resources` [GH-3168]
+- **Data Source:** `alicloud_resource_manager_shared_targets` [GH-3168]
+- **Data Source:** `alicloud_datahub_service` [GH-3167]
+- **Data Source:** `alicloud_eci_container_groups` [GH-3166]
+- **Data Source:** `alicloud_ons_service` [GH-3164]
+- **Data Source:** `alicloud_privatelink_vpc_endpoint_zones` [GH-3163]
+- **Data Source:** `alicloud_ga_accelerators` [GH-3162]
+- **Data Source:** `alicloud_cms_service` [GH-3161]
+- **Data Source:** `alicloud_resource_manager_resource_shares` [GH-3158]
+
+IMPROVEMENTS:
+
+- resource/alicloud_db_account_privilege: add retry for error InvalidDBNotFound [GH-3176]
+- data/alicloud_kms_service: adding note for terms of service [GH-3175]
+- resource/alicloud_privatelink_xxx: update security_group_id to security_group_ids [GH-3172]
+- Feature: alicloud_cs_kubernetes_node_pool support autoscaling nodepool [GH-3171]
+- Modify the method of setting id for cms_site_monitor resource [GH-3170]
+- Add Not Found error for DescribeMetricRuleList Api [GH-3160]
+- update changelog [GH-3159]
+
+BUG FIXES:
+
+- resource/alicloud_db_account_privilege: fix deleting other privileges bug [GH-3178]
+- fix pvtz_zone_record paging error [GH-3165]
+
 ## 1.110.0 (December 26, 2020)
 
 - **New Resource:** `alicloud_privatelink_vpc_endpoint_service_resource` ([#3154](https://github.com/aliyun/terraform-provider-alicloud/issues/3154))
