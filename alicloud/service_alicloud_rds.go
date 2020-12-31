@@ -526,7 +526,7 @@ func (s *RdsService) GrantAccountPrivilege(id, dbName string) error {
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"InvalidDB.NotFound"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -568,6 +568,9 @@ func (s *RdsService) RevokeAccountPrivilege(id, dbName string) error {
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"InvalidDB.NotFound"}) {
+				log.Printf("[WARN] Resource alicloud_db_account_privilege RevokeAccountPrivilege Failed!!! %s", err)
+				return nil
 			}
 			return resource.NonRetryableError(err)
 		}
