@@ -48,17 +48,22 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 
 	var existAlikafkaInstancesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                      "1",
-			"instances.#":                "1",
-			"instances.0.name":           fmt.Sprintf("tf-testacc-alikafkainstance%v", rand),
-			"instances.0.topic_quota":    "50",
-			"instances.0.disk_type":      "1",
-			"instances.0.disk_size":      "500",
-			"instances.0.deploy_type":    "5",
-			"instances.0.io_max":         "20",
-			"instances.0.paid_type":      "PostPaid",
-			"instances.0.spec_type":      "normal",
-			"instances.0.security_group": CHECKSET,
+			"ids.#":                       "1",
+			"instances.#":                 "1",
+			"instances.0.name":            fmt.Sprintf("tf-testacc-alikafkainstance%v", rand),
+			"instances.0.topic_quota":     "50",
+			"instances.0.disk_type":       "1",
+			"instances.0.disk_size":       "500",
+			"instances.0.deploy_type":     "5",
+			"instances.0.io_max":          "20",
+			"instances.0.paid_type":       "PostPaid",
+			"instances.0.spec_type":       "normal",
+			"instances.0.service_version": CHECKSET,
+			"instances.0.config":          CHECKSET,
+			"instances.0.security_group":  CHECKSET,
+			"instances.0.vpc_id":          CHECKSET,
+			"instances.0.zone_id":         CHECKSET,
+			"instances.0.end_point":       CHECKSET,
 		}
 	}
 
