@@ -69,6 +69,8 @@ The following arguments are supported:
 * `spec_type` - (Optional) The spec type of the instance. Support two type, "normal": normal version instance, "professional": professional version instance. Default is normal. When modify this value, it only support adjust from normal to professional. Note only pre paid type instance support professional specific type.
 * `vswitch_id` - (Required, ForceNew) The ID of attaching vswitch to instance.
 * `security_group` - （Optional, ForceNew, Available in v1.93.0+） The ID of security group for this instance. If the security group is empty, system will create a default one.
+* `service_version` - （Optional, Available in v1.111.0+） The kafka openSource version for this instance. Only 0.10.2 or 2.2.0 is allowed, default is 0.10.2.
+* `config` - （Optional, Available in v1.111.0+） The basic config for this instance. The input should be json type, only the following key allowed: enable.acl, enable.vpc_sasl_ssl, kafka.log.retention.hours, kafka.message.max.bytes.
 * `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
 
 -> **NOTE:** Arguments io_max, disk_size, topic_quota, eip_max should follow the following constraints.
