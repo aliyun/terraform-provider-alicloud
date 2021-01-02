@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"log"
 	"sort"
 	"strconv"
@@ -529,4 +530,35 @@ func cmsClientCriticalSuppressFunc(k, old, new string, d *schema.ResourceData) b
 		}
 	}
 	return false
+}
+
+func alikafkaInstanceConfigDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if new == "" {
+		return true
+	}
+	if old == "" {
+		return false
+	}
+
+	oldMap := make(map[string]string)
+	err := json.Unmarshal([]byte(old), &oldMap)
+	if err != nil {
+		return false
+	}
+
+	newMap := make(map[string]string)
+	err = json.Unmarshal([]byte(new), &newMap)
+	if err != nil {
+		return false
+	}
+
+	// key exist in oldMap && found new value item different with old item
+	for k, newValueItem := range newMap {
+		oldValueItem, ok := oldMap[k]
+		if ok && newValueItem != oldValueItem {
+			return false
+		}
+	}
+
+	return true
 }

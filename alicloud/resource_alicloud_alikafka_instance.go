@@ -80,6 +80,18 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"service_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"config": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ValidateFunc:     validation.ValidateJsonString,
+				DiffSuppressFunc: alikafkaInstanceConfigDiffSuppressFunc,
+			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -184,6 +196,12 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("security_group"); ok {
 		startInstanceReq.SecurityGroup = v.(string)
 	}
+	if v, ok := d.GetOk("service_version"); ok {
+		startInstanceReq.ServiceVersion = v.(string)
+	}
+	if v, ok := d.GetOk("config"); ok {
+		startInstanceReq.Config = v.(string)
+	}
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
@@ -243,6 +261,9 @@ func resourceAlicloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("spec_type", object.SpecType)
 	d.Set("security_group", object.SecurityGroup)
 	d.Set("end_point", object.EndPoint)
+	// object.UpgradeServiceDetailInfo.UpgradeServiceDetailInfoVO[0].Current2OpenSourceVersion can guaranteed not to be null
+	d.Set("service_version", object.UpgradeServiceDetailInfo.Current2OpenSourceVersion)
+	d.Set("config", object.AllConfig)
 	if object.PaidType == 0 {
 		d.Set("paid_type", PrePaid)
 	}
@@ -414,10 +435,88 @@ func resourceAlicloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
-	err = alikafkaService.WaitForAlikafkaInstance(d.Id(), Running, 2000)
+	err = alikafkaService.WaitForAlikafkaInstance(d.Id(), Running, 6000)
 
 	if err != nil {
 		return WrapError(err)
+	}
+
+	if d.HasChange("service_version") {
+		var serviceVersion string
+		if v, ok := d.GetOk("service_version"); ok {
+			serviceVersion = v.(string)
+		}
+		upgradeInstanceVersionReq := alikafka.CreateUpgradeInstanceVersionRequest()
+		upgradeInstanceVersionReq.RegionId = client.RegionId
+		upgradeInstanceVersionReq.InstanceId = d.Id()
+		upgradeInstanceVersionReq.TargetVersion = serviceVersion
+
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+				return alikafkaClient.UpgradeInstanceVersion(upgradeInstanceVersionReq)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
+					time.Sleep(10 * time.Second)
+					return resource.RetryableError(err)
+				}
+				// means no need to update version
+				if IsExpectedErrors(err, []string{"ONS_INIT_ENV_ERROR"}) {
+					return nil
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(upgradeInstanceVersionReq.GetActionName(), raw, upgradeInstanceVersionReq.RpcRequest, upgradeInstanceVersionReq)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), upgradeInstanceVersionReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		// wait for upgrade task be invoke
+		time.Sleep(60 * time.Second)
+		// upgrade service may be last a long time
+		err = alikafkaService.WaitForAlikafkaInstance(d.Id(), Running, 10000)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("service_version")
+	}
+
+	if d.HasChange("config") {
+		var config string
+		if v, ok := d.GetOk("config"); ok {
+			config = v.(string)
+		}
+		upgradeInstanceConfigReq := alikafka.CreateUpdateInstanceConfigRequest()
+		upgradeInstanceConfigReq.RegionId = client.RegionId
+		upgradeInstanceConfigReq.InstanceId = d.Id()
+		upgradeInstanceConfigReq.Config = config
+
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+				return alikafkaClient.UpdateInstanceConfig(upgradeInstanceConfigReq)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
+					time.Sleep(10 * time.Second)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(upgradeInstanceConfigReq.GetActionName(), raw, upgradeInstanceConfigReq.RpcRequest, upgradeInstanceConfigReq)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), upgradeInstanceConfigReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+
+		// wait for upgrade task be invoke
+		time.Sleep(60 * time.Second)
+		err = alikafkaService.WaitForAlikafkaInstance(d.Id(), Running, 6000)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("config")
 	}
 
 	d.Partial(false)
