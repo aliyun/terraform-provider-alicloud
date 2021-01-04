@@ -744,7 +744,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.CenEndpoint = strings.TrimSpace(endpoints["cen"].(string))
 		config.EssEndpoint = strings.TrimSpace(endpoints["ess"].(string))
 		config.OssEndpoint = strings.TrimSpace(endpoints["oss"].(string))
-		config.OssEndpoint = strings.TrimSpace(endpoints["ons"].(string))
+		config.OnsEndpoint = strings.TrimSpace(endpoints["ons"].(string))
 		config.AlikafkaEndpoint = strings.TrimSpace(endpoints["alikafka"].(string))
 		config.DnsEndpoint = strings.TrimSpace(endpoints["dns"].(string))
 		config.RamEndpoint = strings.TrimSpace(endpoints["ram"].(string))
