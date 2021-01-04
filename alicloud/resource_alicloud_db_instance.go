@@ -526,6 +526,11 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			"TDEStatus":    d.Get("tde_status"),
 			"SourceIp":     client.SourceIp,
 		}
+
+		if "MySQL" == d.Get("engine").(string) && d.Get("EncryptionKey") != nil {
+			request["EncryptionKey"] = d.Get("EncryptionKey")
+		}
+
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
