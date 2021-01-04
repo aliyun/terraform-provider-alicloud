@@ -384,13 +384,13 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 func (client *AliyunClient) NewEcsClient() (*rpc.Client, error) {
 	productCode := "ecs"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -410,13 +410,13 @@ func (client *AliyunClient) NewEcsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewVpcClient() (*rpc.Client, error) {
 	productCode := "vpc"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -436,13 +436,13 @@ func (client *AliyunClient) NewVpcClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewRdsClient() (*rpc.Client, error) {
 	productCode := "rds"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2007,13 +2007,13 @@ func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (inter
 func (client *AliyunClient) NewOnsClient() (*rpc.Client, error) {
 	productCode := "ons"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2030,13 +2030,13 @@ func (client *AliyunClient) NewOnsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewCmsClient() (*rpc.Client, error) {
 	productCode := "cms"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2053,13 +2053,13 @@ func (client *AliyunClient) NewCmsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewConfigClient() (*rpc.Client, error) {
 	productCode := "config"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2076,13 +2076,13 @@ func (client *AliyunClient) NewConfigClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewWafClient() (*rpc.Client, error) {
 	productCode := "waf"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2098,13 +2098,13 @@ func (client *AliyunClient) NewWafClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewBssopenapiClient() (*rpc.Client, error) {
 	productCode := "bssopenapi"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2121,13 +2121,13 @@ func (client *AliyunClient) NewBssopenapiClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewFnfClient() (*rpc.Client, error) {
 	productCode := "fnf"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2144,13 +2144,13 @@ func (client *AliyunClient) NewFnfClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewRosClient() (*rpc.Client, error) {
 	productCode := "ros"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2167,14 +2167,14 @@ func (client *AliyunClient) NewRosClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewPvtzClient() (*rpc.Client, error) {
 	productCode := "pvtz"
 	endpoint := "pvtz.aliyuncs.com"
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 			client.config.Endpoints[productCode] = endpoint
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2191,13 +2191,13 @@ func (client *AliyunClient) NewPvtzClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewPrivatelinkClient() (*rpc.Client, error) {
 	productCode := "privatelink"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2214,7 +2214,7 @@ func (client *AliyunClient) NewPrivatelinkClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewDcdnClient() (*rpc.Client, error) {
 	productCode := "dcdn"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			if strings.Contains(err.Error(), "InvalidRegionId") {
 				endpoint = "dcdn.aliyuncs.com"
@@ -2224,8 +2224,8 @@ func (client *AliyunClient) NewDcdnClient() (*rpc.Client, error) {
 			}
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2242,13 +2242,13 @@ func (client *AliyunClient) NewDcdnClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewOdpsClient() (*rpc.Client, error) {
 	productCode := "odps"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2265,13 +2265,13 @@ func (client *AliyunClient) NewOdpsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewRessharingClient() (*rpc.Client, error) {
 	productCode := "ressharing"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2288,13 +2288,13 @@ func (client *AliyunClient) NewRessharingClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewGaplusClient() (*rpc.Client, error) {
 	productCode := "gaplus"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2311,13 +2311,13 @@ func (client *AliyunClient) NewGaplusClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewEciClient() (*rpc.Client, error) {
 	productCode := "eci"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
