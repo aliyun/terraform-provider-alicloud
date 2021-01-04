@@ -84,7 +84,7 @@ func resourceAliyunSlb() *schema.Resource {
 				ForceNew:         true,
 				Optional:         true,
 				ValidateFunc:     validation.SingleIP(),
-				DiffSuppressFunc: slbAddressDiffSuppressFunc,
+				DiffSuppressFunc: slbInternetDiffSuppressFunc,
 			},
 
 			"tags": {
@@ -139,12 +139,14 @@ func resourceAliyunSlb() *schema.Resource {
 			},
 
 			"address_ip_version": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"ipv4", "ipv6"}, false),
-				Default:          string(IPV4),
-				ForceNew:         true,
-				DiffSuppressFunc: slbAddressIpVersionSuppressFunc,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ipv4", "ipv6"}, false),
+				Default:      string(IPV4),
+				ForceNew:     true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return !slbInternetDiffSuppressFunc(k, old, new, d)
+				},
 			},
 		},
 	}
