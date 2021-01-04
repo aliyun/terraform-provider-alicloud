@@ -124,10 +124,10 @@ func dnsPriorityDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 }
 
 func slbInternetDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if internet, ok := d.GetOkExists("internet"); ok && internet.(bool) {
+	if internet, ok := d.GetOk("address_type"); ok && internet.(string) == "internet" {
 		return true
 	}
-	if internet, ok := d.GetOkExists("address_type"); ok && internet.(string) == "internet" {
+	if internet, ok := d.GetOkExists("internet"); ok && internet.(bool) {
 		return true
 	}
 	return false
@@ -424,25 +424,11 @@ func vpnSslConnectionsDiffSuppressFunc(k, old, new string, d *schema.ResourceDat
 	return false
 }
 
-func actiontrailRoleNmaeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if !d.IsNewResource() && strings.ToLower(old) != strings.ToLower(new) {
-		return false
-	}
-	return true
-}
-
 func slbDeleteProtectionSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if PayType(d.Get("instance_charge_type").(string)) == PrePaid {
 		return true
 	}
 	return false
-}
-
-func slbAddressIpVersionSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if v, ok := d.GetOk("internet"); ok && v.(bool) {
-		return false
-	}
-	return true
 }
 
 func slbRuleStickySessionTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
