@@ -416,6 +416,7 @@ resource "alicloud_instance" "instance" {
 resource "alicloud_slb" "default" {
   	name = "${var.name}"
   	vswitch_id = "${alicloud_vswitch.default.id}"
+    specification = "slb.s1.small"
 }
 
 `)

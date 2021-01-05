@@ -184,6 +184,7 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_slb" "default" {
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
+  specification = "slb.s1.small"
   master_zone_id = "${data.alicloud_zones.default.zones.0.id}"
   tags = {
     tag_a = 1
