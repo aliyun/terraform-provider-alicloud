@@ -336,6 +336,7 @@ resource "alicloud_instance" "default" {
 resource "alicloud_slb" "default" {
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
+  specification = "slb.s1.small"
 }
 
 resource "alicloud_slb_listener" "default" {
