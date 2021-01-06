@@ -292,6 +292,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dcdn_service":                               dataSourceAlicloudDcdnService(),
 			"alicloud_datahub_service":                            dataSourceAlicloudDatahubService(),
 			"alicloud_ons_service":                                dataSourceAlicloudOnsService(),
+			"alicloud_fc_service":                                 dataSourceAlicloudFcService(),
 			"alicloud_edas_applications":                          dataSourceAlicloudEdasApplications(),
 			"alicloud_edas_deploy_groups":                         dataSourceAlicloudEdasDeployGroups(),
 			"alicloud_edas_clusters":                              dataSourceAlicloudEdasClusters(),
