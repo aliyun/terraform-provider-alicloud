@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -118,6 +119,10 @@ func ReadAsString(body io.Reader) (*string, error) {
 	if err != nil {
 		return tea.String(""), err
 	}
+	r, ok := body.(io.ReadCloser)
+	if ok {
+		r.Close()
+	}
 	return tea.String(string(byt)), nil
 }
 
@@ -150,6 +155,10 @@ func ReadAsBytes(body io.Reader) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	r, ok := body.(io.ReadCloser)
+	if ok {
+		r.Close()
+	}
 	return byt, nil
 }
 
@@ -180,7 +189,13 @@ func ReadAsJSON(body io.Reader) (result interface{}, err error) {
 	if string(byt) == "" {
 		return
 	}
-	err = json.Unmarshal(byt, &result)
+	r, ok := body.(io.ReadCloser)
+	if ok {
+		r.Close()
+	}
+	d := json.NewDecoder(bytes.NewReader(byt))
+	d.UseNumber()
+	err = d.Decode(&result)
 	return
 }
 
@@ -308,7 +323,9 @@ func AssertAsReadable(a interface{}) io.Reader {
 
 func ParseJSON(a *string) interface{} {
 	tmp := make(map[string]interface{})
-	err := json.Unmarshal([]byte(tea.StringValue(a)), &tmp)
+	d := json.NewDecoder(bytes.NewReader([]byte(tea.StringValue(a))))
+	d.UseNumber()
+	err := d.Decode(&tmp)
 	if err == nil {
 		return tmp
 	}
@@ -396,7 +413,9 @@ func ToArray(in interface{}) []map[string]interface{} {
 
 	tmp := make([]map[string]interface{}, 0)
 	byt, _ := json.Marshal(in)
-	err := json.Unmarshal(byt, &tmp)
+	d := json.NewDecoder(bytes.NewReader(byt))
+	d.UseNumber()
+	err := d.Decode(&tmp)
 	if err != nil {
 		return nil
 	}

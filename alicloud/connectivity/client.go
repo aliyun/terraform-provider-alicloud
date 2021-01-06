@@ -1,6 +1,7 @@
 package connectivity
 
 import (
+	roa "github.com/alibabacloud-go/tea-roa/client"
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
@@ -89,6 +90,7 @@ type AliyunClient struct {
 	accountIdMutex               sync.RWMutex
 	config                       *Config
 	teaSdkConfig                 rpc.Config
+	teaRoaSdkConfig              roa.Config
 	accountId                    string
 	ecsconn                      *ecs.Client
 	essconn                      *ess.Client
@@ -212,10 +214,14 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	teaRoaSdkConfig, err := c.getTeaRoaDslSdkConfig(true)
+	if err != nil {
+		return nil, err
+	}
 	return &AliyunClient{
 		config:                       c,
 		teaSdkConfig:                 teaSdkConfig,
+		teaRoaSdkConfig:              teaRoaSdkConfig,
 		SourceIp:                     c.SourceIp,
 		Region:                       c.Region,
 		RegionId:                     c.RegionId,
@@ -1103,6 +1109,17 @@ func (client *AliyunClient) NewTeaCommonClient(endpoint string) (*rpc.Client, er
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the tea client: %#v", err)
+	}
+
+	return conn, nil
+}
+func (client *AliyunClient) NewTeaRoaCommonClient(endpoint string) (*roa.Client, error) {
+	sdkConfig := client.teaRoaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+
+	conn, err := roa.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the tea roa client: %#v", err)
 	}
 
 	return conn, nil
