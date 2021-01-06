@@ -6,7 +6,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
@@ -157,7 +156,6 @@ type AliyunClient struct {
 	nasConn                      *nas.Client
 	dcdnConn                     *dcdn.Client
 	mseConn                      *mse.Client
-	actiontrailConn              *actiontrail.Client
 	onsConn                      *ons.Client
 	cmsConn                      *cms.Client
 	r_kvstoreConn                *r_kvstore.Client
@@ -1971,31 +1969,6 @@ func (client *AliyunClient) WithMseClient(do func(*mse.Client) (interface{}, err
 	return do(client.mseConn)
 }
 
-func (client *AliyunClient) WithActiontrailClient(do func(*actiontrail.Client) (interface{}, error)) (interface{}, error) {
-	if client.actiontrailConn == nil {
-		endpoint := client.config.ActiontrailEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, ActiontrailCode)
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(ActiontrailCode), endpoint)
-		}
-
-		actiontrailConn, err := actiontrail.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Actiontrailclient: %#v", err)
-		}
-		actiontrailConn.AppendUserAgent(Terraform, terraformVersion)
-		actiontrailConn.AppendUserAgent(Provider, providerVersion)
-		actiontrailConn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.actiontrailConn = actiontrailConn
-	}
-	return do(client.actiontrailConn)
-}
-
 func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (interface{}, error)) (interface{}, error) {
 	if client.r_kvstoreConn == nil {
 		endpoint := client.config.RKvstoreEndpoint
@@ -2327,6 +2300,29 @@ func (client *AliyunClient) NewGaplusClient() (*rpc.Client, error) {
 
 func (client *AliyunClient) NewEciClient() (*rpc.Client, error) {
 	productCode := "eci"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewActiontrailClient() (*rpc.Client, error) {
+	productCode := "actiontrail"
 	endpoint := ""
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {

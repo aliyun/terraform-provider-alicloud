@@ -31,6 +31,7 @@ The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to filter results by trail name.
 * `include_shadow_trails` - (Optional) Whether to show shadow tracking. Default to `false`.
+* `include_organization_trail` - (Optional, Available in 1.112+) Whether to show organization tracking. Default to `false`.
 * `status` - (Optional) Filter the results by status of the ActionTrail Trail. Valid values: `Disable`, `Enable`, `Fresh`.
 * `ids` - (Optional) A list of ActionTrail Trail IDs. It is the same as trail name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -53,3 +54,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `status` - The status of the ActionTrail Trail.
   * `id` - The id of the ActionTrail Trail. It is the same as trail name.
   * `trail_region` - The regions to which the trail is applied.
+  * `mns_topic_arn` - The ARN of the Message Service (MNS) topic to which ActionTrail sends messages.
