@@ -368,6 +368,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_endpoint_groups":                         dataSourceAlicloudGaEndpointGroups(),
 			"alicloud_brain_industrial_pid_organizations":         dataSourceAlicloudBrainIndustrialPidOrganizations(),
 			"alicloud_ga_ip_sets":                                 dataSourceAlicloudGaIpSets(),
+			"alicloud_eipanycast_anycast_eip_addresses":           dataSourceAlicloudEipanycastAnycastEipAddresses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -659,6 +660,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_brain_industrial_pid_organization":         resourceAlicloudBrainIndustrialPidOrganization(),
 			"alicloud_ga_bandwidth_package_attachment":           resourceAlicloudGaBandwidthPackageAttachment(),
 			"alicloud_ga_ip_set":                                 resourceAlicloudGaIpSet(),
+			"alicloud_eipanycast_anycast_eip_address":            resourceAlicloudEipanycastAnycastEipAddress(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -808,6 +810,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.GaEndpoint = strings.TrimSpace(endpoints["ga"].(string))
 		config.HitsdbEndpoint = strings.TrimSpace(endpoints["hitsdb"].(string))
 		config.BrainIndustrialEndpoint = strings.TrimSpace(endpoints["brain_industrial"].(string))
+		config.EipanycastEndpoint = strings.TrimSpace(endpoints["eipanycast"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1014,6 +1017,8 @@ func init() {
 		"hitsdb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom hitsdb endpoints.",
 
 		"brain_industrial_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom brain_industrial endpoints.",
+
+		"eipanycast_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eipanycast endpoints.",
 	}
 }
 
@@ -1090,6 +1095,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["privatelink_endpoint"],
+				},
+
+				"eipanycast": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["eipanycast_endpoint"],
 				},
 
 				"fnf": {
@@ -1511,6 +1523,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["ga"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["hitsdb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["brain_industrial"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["eipanycast"].(string)))
 	return hashcode.String(buf.String())
 }
 
