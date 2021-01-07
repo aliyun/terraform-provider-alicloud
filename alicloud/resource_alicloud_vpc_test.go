@@ -249,7 +249,7 @@ func TestAccAlicloudVpcMulti(t *testing.T) {
 func TestAccAlicloudVpcCidrBlock(t *testing.T) {
 	var v vpc.Vpc
 	resourceId := "alicloud_vpc.default"
-	ra := resourceAttrInit(resourceId, testCidrCheckVpcCheckMap)
+	ra := resourceAttrInit(resourceId, testAccCheckVpcCheckMap)
 	serviceFunc := func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
@@ -260,7 +260,6 @@ func TestAccAlicloudVpcCidrBlock(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -270,9 +269,8 @@ func TestAccAlicloudVpcCidrBlock(t *testing.T) {
 				Config: testCidrCheckVpcConfig(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                 fmt.Sprintf("tf_testCidrCheckVpcConfigName"),
-						"cidr_block":           fmt.Sprintf("172.16.0.0/12"),
-						"secondary_cidr_block": fmt.Sprintf("10.0.0.0/8"),
+						"name":       fmt.Sprintf("tf_testCidrCheckVpcConfigName"),
+						"cidr_block": fmt.Sprintf("172.16.0.0/12"),
 					}),
 				),
 			},
@@ -380,13 +378,14 @@ resource "alicloud_vpc" "default" {
 func testCidrCheckVpcConfig() string {
 	return fmt.Sprintf(
 		`
-variable "secondary_cidr_block" {
-  default = "10.0.0.0/8"
+variable "secondary_cidr_blocks" {
+  type = "list"
+  default = ["10.0.0.0/8","192.168.0.0/24"]
 }
 resource "alicloud_vpc" "default" {
   name       = "tf_testCidrCheckVpcConfigName"
   cidr_block = "172.16.0.0/12"
-  secondary_cidr_block = "${var.secondary_cidr_block}"
+  secondary_cidr_blocks = "${var.secondary_cidr_blocks}"
 }
 `)
 }
@@ -399,10 +398,4 @@ var testAccCheckVpcCheckMap = map[string]string{
 	"router_id":         CHECKSET,
 	"router_table_id":   CHECKSET,
 	"route_table_id":    CHECKSET,
-}
-
-var testCidrCheckVpcCheckMap = map[string]string{
-	"name":                 "tf_testCidrCheckVpcConfigName",
-	"cidr_block":           "172.16.0.0/12",
-	"secondary_cidr_block": "10.0.0.0/8",
 }

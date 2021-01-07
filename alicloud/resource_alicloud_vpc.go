@@ -73,9 +73,12 @@ func resourceAliyunVpc() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"secondary_cidr_block": {
-				Type:     schema.TypeString,
+			"secondary_cidr_blocks": {
+				Type:     schema.TypeList,
 				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}
@@ -160,8 +163,12 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	m := object["SecondaryCidrBlocks"].(map[string]interface{})
 	if m != nil {
 		i := m["SecondaryCidrBlock"].([]interface{})
+		var items []string
 		if i != nil && len(i) > 0 {
-			d.Set("secondary_cidr_block", i[0].(string))
+			for _, item := range i {
+				items = append(items, item.(string))
+			}
+			d.Set("secondary_cidr_blocks", items)
 		}
 	}
 	tags, err := vpcService.ListTagResources(d.Id(), "VPC")
@@ -246,17 +253,18 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 		"VpcId":    d.Id(),
 	}
 
-	if d.HasChange("secondary_cidr_block") {
-		attributeUpdate = true
-		request["SecondaryCidrBlock"] = d.Get("secondary_cidr_block").(string)
-	}
-
-	if attributeUpdate {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	if d.HasChange("secondary_cidr_blocks") {
+		for _, item := range d.Get("secondary_cidr_blocks").([]interface{}) {
+			attributeUpdate = true
+			request["SecondaryCidrBlock"] = item.(string)
+			if attributeUpdate {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				addDebug(action, response, request)
+			}
 		}
-		addDebug(action, response, request)
 	}
 
 	if d.IsNewResource() {
