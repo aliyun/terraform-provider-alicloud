@@ -1304,3 +1304,49 @@ func (s *VpcService) ignoreTag(t vpc.TagResource) bool {
 	}
 	return false
 }
+
+func (s *VpcService) setInstanceSecondaryCidrBlocks(d *schema.ResourceData) error {
+	if d.HasChange("secondary_cidr_blocks") {
+		oraw, nraw := d.GetChange("secondary_cidr_blocks")
+		removed := oraw.([]interface{})
+		added := nraw.([]interface{})
+		conn, err := s.client.NewVpcClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		if len(removed) > 0 {
+			action := "UnassociateVpcCidrBlock"
+			request := map[string]interface{}{
+				"RegionId": s.client.RegionId,
+				"VpcId":    d.Id(),
+			}
+			for _, item := range removed {
+				request["SecondaryCidrBlock"] = item
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				addDebug(action, response, request)
+			}
+		}
+
+		if len(added) > 0 {
+			action := "AssociateVpcCidrBlock"
+			request := map[string]interface{}{
+				"RegionId": s.client.RegionId,
+				"VpcId":    d.Id(),
+			}
+			for _, item := range added {
+				request["SecondaryCidrBlock"] = item
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				addDebug(action, response, request)
+			}
+		}
+		d.SetPartial("secondary_cidr_blocks")
+	}
+
+	return nil
+}
