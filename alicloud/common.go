@@ -948,6 +948,12 @@ func formatInt(src interface{}) int {
 			panic(err)
 		}
 		return v
+	case "json.Number":
+		v, err := strconv.Atoi(src.(json.Number).String())
+		if err != nil {
+			panic(err)
+		}
+		return v
 	default:
 		panic(fmt.Sprintf("Not support type %s", attrType.String()))
 	}
