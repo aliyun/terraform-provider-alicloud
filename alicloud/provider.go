@@ -364,6 +364,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_listeners":                               dataSourceAlicloudGaListeners(),
 			"alicloud_tsdb_instances":                             dataSourceAlicloudTsdbInstances(),
 			"alicloud_tsdb_zones":                                 dataSourceAlicloudTsdbZones(),
+			"alicloud_ga_bandwidth_packages":                      dataSourceAlicloudGaBandwidthPackages(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -650,6 +651,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_shared_target":            resourceAlicloudResourceManagerSharedTarget(),
 			"alicloud_ga_listener":                               resourceAlicloudGaListener(),
 			"alicloud_tsdb_instance":                             resourceAlicloudTsdbInstance(),
+			"alicloud_ga_bandwidth_package":                      resourceAlicloudGaBandwidthPackage(),
 		},
 
 		ConfigureFunc: providerConfigure,
