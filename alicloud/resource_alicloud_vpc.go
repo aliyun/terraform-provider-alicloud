@@ -238,7 +238,7 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	conn, err := meta.(*connectivity.AliyunClient).NewVpcClient()
-	var response map[string]interface{}
+
 	if err != nil {
 		return WrapError(err)
 	}
@@ -246,34 +246,17 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 
-	attributeUpdate := false
-	action := "AssociateVpcCidrBlock"
-	request := map[string]interface{}{
-		"RegionId": client.RegionId,
-		"VpcId":    d.Id(),
-	}
-
-	if d.HasChange("secondary_cidr_blocks") {
-		for _, item := range d.Get("secondary_cidr_blocks").([]interface{}) {
-			attributeUpdate = true
-			request["SecondaryCidrBlock"] = item.(string)
-			if attributeUpdate {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-				addDebug(action, response, request)
-			}
-		}
+	if err := vpcService.setInstanceSecondaryCidrBlocks(d); err != nil {
+		return WrapError(err)
 	}
 
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAliyunVpcRead(d, meta)
 	}
-	attributeUpdate = false
-	action = "ModifyVpcAttribute"
-	request = map[string]interface{}{
+	attributeUpdate := false
+	action := "ModifyVpcAttribute"
+	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 		"VpcId":    d.Id(),
 	}
@@ -289,7 +272,7 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if attributeUpdate {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
