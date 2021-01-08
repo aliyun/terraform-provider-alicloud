@@ -163,7 +163,7 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	m := object["SecondaryCidrBlocks"].(map[string]interface{})
 	if m != nil {
 		i := m["SecondaryCidrBlock"].([]interface{})
-		var items []string
+		items := make([]interface{}, 0)
 		if i != nil && len(i) > 0 {
 			for _, item := range i {
 				items = append(items, item.(string))

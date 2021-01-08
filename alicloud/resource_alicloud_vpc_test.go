@@ -207,6 +207,28 @@ func TestAccAlicloudVpcBasic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testCreateCidrCheckVpcConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                    fmt.Sprintf("tf_testAccVpcConfigName%d_create_cidr", rand),
+						"description":             fmt.Sprintf("tf_testAccVpcConfigName%d_create_cidr_decription", rand),
+						"secondary_cidr_blocks.0": "10.0.0.0/8",
+						"secondary_cidr_blocks.1": "192.168.0.0/24",
+					}),
+				),
+			},
+			{
+				Config: testModifyCidrCheckVpcConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                    fmt.Sprintf("tf_testAccVpcConfigName%d_modify_cidr", rand),
+						"description":             fmt.Sprintf("tf_testAccVpcConfigName%d_modify_cidr_decription", rand),
+						"secondary_cidr_blocks.0": "10.0.0.0/8",
+						"secondary_cidr_blocks.1": REMOVEKEY,
+					}),
+				),
+			},
 		},
 	})
 
@@ -238,53 +260,6 @@ func TestAccAlicloudVpcMulti(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name": fmt.Sprintf("tf_testAccVpcConfigName%d", rand),
-					}),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudVpcCidrBlock(t *testing.T) {
-	var v vpc.Vpc
-	resourceId := "alicloud_vpc.default"
-	ra := resourceAttrInit(resourceId, testAccCheckVpcCheckMap)
-	serviceFunc := func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckVpcDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testCreateCidrCheckVpcConfig(),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":       fmt.Sprintf("tf_testCidrCheckVpcConfigName"),
-						"cidr_block": fmt.Sprintf("172.16.0.0/12"),
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testModifyCidrCheckVpcConfig(),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":       fmt.Sprintf("tf_testCidrCheckVpcConfigName"),
-						"cidr_block": fmt.Sprintf("172.16.0.0/12"),
 					}),
 				),
 			},
@@ -384,33 +359,33 @@ resource "alicloud_vpc" "default" {
 }
 `, rand)
 }
-func testCreateCidrCheckVpcConfig() string {
+func testCreateCidrCheckVpcConfig(rand int) string {
 	return fmt.Sprintf(
 		`
-variable "secondary_cidr_blocks" {
-  type = "list"
-  default = ["10.0.0.0/8","192.168.0.0/24"]
+variable "name" {
+	default = "tf_testAccVpcConfigName%d"
 }
 resource "alicloud_vpc" "default" {
-  name       = "tf_testCidrCheckVpcConfigName"
+  name = "${var.name}_create_cidr"
+ description = "${var.name}_create_cidr_decription"
   cidr_block = "172.16.0.0/12"
-  secondary_cidr_blocks = "${var.secondary_cidr_blocks}"
+  secondary_cidr_blocks = ["10.0.0.0/8","192.168.0.0/24"]
 }
-`)
+`, rand)
 }
-func testModifyCidrCheckVpcConfig() string {
+func testModifyCidrCheckVpcConfig(rand int) string {
 	return fmt.Sprintf(
 		`
-variable "secondary_cidr_blocks" {
-  type = "list"
-  default = ["10.0.0.0/8"]
+variable "name" {
+	default = "tf_testAccVpcConfigName%d"
 }
 resource "alicloud_vpc" "default" {
-  name       = "tf_testCidrCheckVpcConfigName"
+  name = "${var.name}_modify_cidr"
+  description = "${var.name}_modify_cidr_decription"
   cidr_block = "172.16.0.0/12"
-  secondary_cidr_blocks = "${var.secondary_cidr_blocks}"
+  secondary_cidr_blocks = ["10.0.0.0/8"]
 }
-`)
+`, rand)
 }
 
 var testAccCheckVpcCheckMap = map[string]string{
