@@ -1,4 +1,26 @@
 ## 1.112.0 (Unreleased)
+
+- **New Resource:** `alicloud_ga_bandwidth_package` [GH-3194]
+- **New Resource:** `alicloud_tsdb_instance` [GH-3192]
+- **Data Source:** `alicloud_ga_bandwidth_packages` [GH-3194]
+- **Data Source:** `alicloud_tsdb_instances` [GH-3192]
+- **Data Source:** `alicloud_tsdb_zones` [GH-3192]
+- **Data Source:** `alicloud_fc_service` [GH-3191]
+
+IMPROVEMENTS:
+
+- change actiontrail to common [GH-3193]
+- improve slb test cases [GH-3188]
+- mysql ModifyDBInstanceTDE support custom EncryptionKey [GH-3186]
+- change mse cluster to common [GH-3184]
+- alikafka support new params when create instance [GH-3183]
+- update changelog [GH-3180]
+
+BUG FIXES:
+
+- fix/alicloud_slb: fix the diff bug when setting ipv6 [GH-3187]
+- fix/provider: improve endpoint when building a new client [GH-3185]
+
 ## 1.111.0 (December 31, 2020)
 
 - **New Resource:** `alicloud_ga_listener` ([#3173](https://github.com/aliyun/terraform-provider-alicloud/issues/3173))
