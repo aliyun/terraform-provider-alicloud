@@ -527,8 +527,15 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			"SourceIp":     client.SourceIp,
 		}
 
-		if "MySQL" == d.Get("engine").(string) && d.Get("EncryptionKey") != nil {
-			request["EncryptionKey"] = d.Get("EncryptionKey")
+		if "MySQL" == d.Get("engine").(string) {
+			if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
+				request["EncryptionKey"] = v.(string)
+				roleArn, err := findKmsRoleArn(client, v.(string))
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				request["RoleARN"] = roleArn
+			}
 		}
 
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
