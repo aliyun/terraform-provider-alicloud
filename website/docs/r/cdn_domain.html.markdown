@@ -13,6 +13,8 @@ description: |-
 Please use new resource [alicloud_cdn_domain_new](https://www.terraform.io/docs/providers/alicloud/r/cdn_domain_new.html) and its
 config [alicloud_cdn_domain_config](https://www.terraform.io/docs/providers/alicloud/r/cdn_domain_config.html) instead.
 
+-> **NOTE:** Because the v2014 API will be offlined on February 25, 2021, the resource also will not work on that.
+If your system is still the resource, please update it to the new resource [alicloud_cdn_domain_new](https://www.terraform.io/docs/providers/alicloud/r/cdn_domain_new.html) as soon as possible to avoid your system unavailability after the older API is offline. If you have any questions, please submit a ticket to feedback.
 Provides a CDN Accelerated Domain resource.
 
 ## Example Usage

@@ -15,6 +15,7 @@ IMPROVEMENTS:
 - change mse cluster to common [GH-3184]
 - alikafka support new params when create instance [GH-3183]
 - update changelog [GH-3180]
+- resource/alicloud_vpc: supports new attribute secondary_cidr_blocks [GH-3152]
 
 BUG FIXES:
 

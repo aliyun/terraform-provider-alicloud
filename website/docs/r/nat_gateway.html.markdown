@@ -23,33 +23,6 @@ But, in order to manage stock bandwidth packages, version 1.13.0 re-support conf
 ## Example Usage
 
 Basic usage
-- create notmal nat gateway
-```terraform
-variable "name" {
-  default = "natGatewayExampleName"
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-resource "alicloud_vpc" "default" {
-  name       = var.name
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/21"
-  availability_zone = data.alicloud_zones.default.zones[0].id
-  name              = var.name
-}
-
-resource "alicloud_nat_gateway" "default" {
-  vpc_id = alicloud_vswitch.default.vpc_id
-  name   = var.name
-}
-```
 
 - create enhanced nat gateway
 ```terraform
