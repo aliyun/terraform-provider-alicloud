@@ -109,6 +109,8 @@ groups:
       - NetworkAcl
       - Fnf
       - Ros
+      - Privatelink
+      - Tsdb
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -179,6 +181,7 @@ groups:
       - Cassandra
       - Adb
       - Dms
+      - Tsdb
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -210,6 +213,7 @@ groups:
       - CloudConnectNetwork
       - Sag
       - NetworkAcl
+      - Privatelink
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -1417,6 +1421,32 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "Ros"
+
+  - name: Privatelink
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 1530
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Privatelink"
+
+  - name: Tsdb
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 1630
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Tsdb"
 
   - name: SweeperAfter
     plan:
