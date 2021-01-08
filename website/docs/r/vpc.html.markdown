@@ -38,7 +38,7 @@ The following arguments are supported:
 * `description` - (Optional) The VPC description. Defaults to null.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.40.0+) The Id of resource group which the VPC belongs.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
-* `secondary_cidr_blocks` - (Optional,Available in v1.111.0+) The secondary CIDR blocks for the VPC.
+* `secondary_cidr_blocks` - (Optional,Available in v1.112.0+) The secondary CIDR blocks for the VPC.
 
 ### Timeouts
 
