@@ -104,7 +104,6 @@ The following arguments are supported:
 * `rds_instance` - (Optional, Available in 1.103.2+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `is_enterprise_security_group` - (Optional, Available in 1.91.0+) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
-* `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster .
 * `proxy_mode` - (Optional) Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
 * `image_id` - (Optional) Custom Image support. Must based on CentOS7 or AliyunLinux2.
 * `cluster_domain` - (Optional, ForceNew, Available in 1.103.2+) Cluster local domain name, Default to `cluster.local`. A domain name consists of one or more sections separated by a decimal point (.), each of which is up to 63 characters long, and can be lowercase, numerals, and underscores (-), and must be lowercase or numerals at the beginning and end.
