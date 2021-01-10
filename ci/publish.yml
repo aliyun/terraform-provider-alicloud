@@ -1,0 +1,248 @@
+groups:
+  - name: All
+    jobs:
+      - Start
+      - AlikafkaInstancesDataSource
+      - DBInstancesDataSource
+      - KeyPairsDataSource
+      - KmsKeysDataSource
+      - KvstoreInstancesDataSource
+      - EipsDataSource
+      - OnsInstancesDataSource
+      - OtsInstancesDataSource
+      - NatGatewaysDataSource
+      - VSwitchesDataSource
+      - InstancesDataSource
+      - OssBucketsDataSource
+      - Publish
+
+shared:
+  - &clone-provider
+    get: terraform-provider-alicloud
+    resource: terraform-provider-alicloud
+    trigger: true
+
+  - &get-aliyun-cli
+    get: aliyun-cli
+    resource: aliyun-cli
+
+  - &clone-goreleaser
+    get: goreleaser
+    resource: goreleaser
+    trigger: false
+
+  - &run
+    task: terraform ci
+    file: terraform-provider-alicloud/ci/tasks/run.yml
+    params: &run-params
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
+      ALICLOUD_REGION: {{alicloud_region}}
+      ALICLOUD_ACCOUNT_SITE: {{alicloud_account_site}}
+      TEST_CASE_CODE: ""
+      SWEEPER: false
+      ACCESS_URL: {{access_ci_url}}
+      ACCESS_USER_NAME: {{access_ci_user_name}}
+      ACCESS_PASSWORD: {{access_ci_password}}
+      DING_TALK_TOKEN: {{ding_talk_token}}
+      ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
+      ALICLOUD_RESOURCE_GROUP_ID: {{alicloud_resource_group_id}}
+
+  - &publish
+    task: terraform ci
+    file: terraform-provider-alicloud/ci/tasks/publish.yml
+    params:
+      GITHUB_TOKEN: {{alicloud_github_token}}
+      GPG_FINGERPRINT: {{alicloud_gpg_fingerprint}}
+
+jobs:
+  - name: Start
+    plan:
+      - <<: *clone-provider
+        trigger: false
+      - task: simple-task
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: busybox }
+          run:
+            path: echo
+            args: [ "Start publish Terraform Provider Alicloud!" ]
+
+  - name: AlikafkaInstancesDataSource
+    plan:
+      - <<: *clone-provider
+        passed: [ Start ]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "AlikafkaInstancesDataSource"
+
+  - name: DBInstancesDataSource
+    plan:
+      - <<: *clone-provider
+        passed: [ Start ]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "DBInstancesDataSource"
+
+  - name: EipsDataSource
+    plan:
+      - <<: *clone-provider
+        passed: [ Start ]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "EipsDataSource"
+
+  - name: KeyPairsDataSource
+    plan:
+      - <<: *clone-provider
+        passed: [ Start ]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "KeyPairsDataSource"
+
+  - name: KmsKeysDataSource
+    plan:
+      - <<: *clone-provider
+        passed: [ Start ]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "KmsKeysDataSource"
+
+  - name: VSwitchesDataSource
+    plan:
+      - <<: *clone-provider
+        passed: [ Start ]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "VSwitchesDataSource"
+
+  - name: KvstoreInstancesDataSource
+    plan:
+      - <<: *clone-provider
+        passed: [ Start ]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "KvstoreInstancesDataSource"
+
+  - name: NatGatewaysDataSource
+    plan:
+      - <<: *clone-provider
+        passed: [ Start ]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "NatGatewaysDataSource"
+
+  - name: OtsInstancesDataSource
+    plan:
+      - <<: *clone-provider
+        passed: [ Start ]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "OtsInstancesDataSource"
+
+  - name: OnsInstancesDataSource
+    plan:
+      - <<: *clone-provider
+        passed: [ Start ]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "OnsInstancesDataSource"
+
+  - name: InstancesDataSource
+    plan:
+      - <<: *clone-provider
+        passed: [ Start ]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "InstancesDataSource"
+
+  - name: OssBucketsDataSource
+    plan:
+      - <<: *clone-provider
+        passed: [ Start ]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "OssBucketsDataSource"
+
+  - name: Publish
+    plan:
+      - <<: *clone-provider
+        passed: [
+            DBInstancesDataSource, KeyPairsDataSource,KmsKeysDataSource,
+            KvstoreInstancesDataSource, EipsDataSource, OnsInstancesDataSource,
+            OtsInstancesDataSource, NatGatewaysDataSource, VSwitchesDataSource,
+            InstancesDataSource, OssBucketsDataSource, AlikafkaInstancesDataSource
+        ]
+      - aggregate:
+          - *clone-goreleaser
+      - <<: *publish
+      - put: terraform-provider-alicloud-out
+        params: { repository: terraform-provider-alicloud, rebase: true }
+
+resources:
+- name: terraform-provider-alicloud
+  type: git
+  source:
+    uri: https://github.com/aliyun/terraform-provider-alicloud.git
+    branch: master
+
+- name: terraform-provider-alicloud-out
+  type: git
+  source:
+    uri: git@github.com:aliyun/terraform-provider-alicloud.git
+    branch: master
+    private_key: {{github_terraform-alicloud-provider_private-key}}
+
+- name: goreleaser
+  type: git
+  source:
+    uri: https://github.com/goreleaser/goreleaser
+    branch: v0.154.0
+
+- name: aliyun-cli
+  type: s3
+  source:
+    access_key_id: {{aliyun_cli_access_key}}
+    secret_access_key: {{aliyun_cli_secret_key}}
+    bucket: {{aliyun_cli_bucket}}
+    regexp: .*-cli-linux-3\.0\.(\d+)-amd64\.tgz
+    region_name: {{aliyun_cli_region}}
+    endpoint: oss-((aliyun_cli_region)).aliyuncs.com

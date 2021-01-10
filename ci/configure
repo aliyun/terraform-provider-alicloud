@@ -1,15 +1,114 @@
-# build a new file named var-pipeline.yaml
-# set the values for the following parameters
-# alicloud_access_key=
-# alicloud_secret_key=
-# alicloud_region=
-# alicloud_account_site=
-# time_location=
-# access_ci_url=
-# access_ci_user_name=
-# access_ci_password=
-# ding_talk_token=
+domestic_regions=(cn-beijing cn-hangzhou cn-shanghai)
+domestic_time_location=(Asia/Shanghai Asia/Shanghai Asia/Shanghai)
+international_regions=(eu-central-1 ap-south-1)
+international_time_location=(Europe/London Asia/Kolkata)
+# 国内站账号
+for (( i=0;i<${#domestic_regions[@]};i++)) do
+    fly -t terraform-china sp -p ${domestic_regions[i]} \
+    -c pipeline.yml \
+    -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
+    -v aliyun_cli_region=$ALIYUN_CLI_REGION \
+    -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
+    -v aliyun_cli_secret_key=$ALIYUN_CLI_SECRET_KEY \
+    -v alicloud_account_site="Domestic" \
+    -v access_ci_url=$CHINA_ACCESS_CI_URL \
+    -v access_ci_user_name=$CHINA_ACCESS_CI_USER_NAME \
+    -v access_ci_password=$CHINA_ACCESS_CI_PASSWORD \
+    -v ding_talk_token=$DING_TALK_TOKEN \
+    -v alicloud_accound_id=$ALICLOUD_ACCOUNT_ID \
+    -v alicloud_resource_group_id=$ALICLOUD_RESOURCE_GROUP_ID \
+    -v alicloud_waf_instance_id=$ALICLOUD_WAF_INSTANCE_ID \
+    -v time_location=${domestic_time_location[i]} \
+    -v alicloud_access_key=$ALICLOUD_ACCESS_KEY \
+    -v alicloud_secret_key=$ALICLOUD_SECRET_KEY \
+    -v alicloud_region=${domestic_regions[i]}
+done
 
-fly -t terraform sp -p alicloud-provider \
-  -c pipeline.yml \
-  --load-vars-from=vars-pipeline.yaml
+for (( i=0;i<${#international_regions[@]};i++)) do
+    fly -t terraform-intl sp -p ${international_regions[i]} \
+    -c pipeline.yml \
+    -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
+    -v aliyun_cli_region=$ALIYUN_CLI_REGION \
+    -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
+    -v aliyun_cli_secret_key=$ALIYUN_CLI_SECRET_KEY \
+    -v alicloud_account_site="Domestic" \
+    -v access_ci_url=$INTL_ACCESS_CI_URL \
+    -v access_ci_user_name=$INTL_ACCESS_CI_USER_NAME \
+    -v access_ci_password=$INTL_ACCESS_CI_PASSWORD \
+    -v ding_talk_token=$DING_TALK_TOKEN \
+    -v alicloud_accound_id=$ALICLOUD_ACCOUNT_ID \
+    -v alicloud_resource_group_id=$ALICLOUD_RESOURCE_GROUP_ID \
+    -v alicloud_waf_instance_id=$ALICLOUD_WAF_INSTANCE_ID \
+    -v time_location=${international_time_location[i]} \
+    -v alicloud_access_key=$ALICLOUD_ACCESS_KEY \
+    -v alicloud_secret_key=$ALICLOUD_SECRET_KEY \
+    -v alicloud_region=${international_regions[i]}
+done
+
+
+# 国际站账号
+domestic_regions=(cn-beijing)
+international_regions=(eu-central-1)
+
+for (( i=0;i<${#domestic_regions[@]};i++)) do
+    fly -t terraform-china sp -p ${domestic_regions[i]}-intl \
+    -c pipeline.yml \
+    -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
+    -v aliyun_cli_region=$ALIYUN_CLI_REGION \
+    -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
+    -v aliyun_cli_secret_key=$ALIYUN_CLI_SECRET_KEY \
+    -v alicloud_account_site="International" \
+    -v access_ci_url=$CHINA_ACCESS_CI_URL \
+    -v access_ci_user_name=$CHINA_ACCESS_CI_USER_NAME \
+    -v access_ci_password=$CHINA_ACCESS_CI_PASSWORD \
+    -v ding_talk_token=$DING_TALK_TOKEN \
+    -v alicloud_accound_id=$ALICLOUD_ACCOUNT_ID \
+    -v alicloud_resource_group_id=$ALICLOUD_RESOURCE_GROUP_ID \
+    -v time_location=${domestic_time_location[i]} \
+    -v alicloud_access_key=$ALICLOUD_ACCESS_KEY_INTL \
+    -v alicloud_secret_key=$ALICLOUD_SECRET_KEY_INTL \
+    -v alicloud_region=${domestic_regions[i]}
+done
+
+for (( i=0;i<${#international_regions[@]};i++)) do
+    fly -t terraform-intl sp -p ${international_regions[i]}-intl \
+    -c pipeline.yml \
+    -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
+    -v aliyun_cli_region=$ALIYUN_CLI_REGION \
+    -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
+    -v aliyun_cli_secret_key=$ALIYUN_CLI_SECRET_KEY \
+    -v alicloud_account_site="International" \
+    -v access_ci_url=$INTL_ACCESS_CI_URL \
+    -v access_ci_user_name=$INTL_ACCESS_CI_USER_NAME \
+    -v access_ci_password=$INTL_ACCESS_CI_PASSWORD \
+    -v ding_talk_token=$DING_TALK_TOKEN \
+    -v alicloud_accound_id=$ALICLOUD_ACCOUNT_ID \
+    -v alicloud_resource_group_id=$ALICLOUD_RESOURCE_GROUP_ID \
+    -v time_location=${international_time_location[i]} \
+    -v alicloud_access_key=$ALICLOUD_ACCESS_KEY_INTL \
+    -v alicloud_secret_key=$ALICLOUD_SECRET_KEY_INTL \
+    -v alicloud_region=${international_regions[i]}
+done
+
+
+fly -t terraform-intl sp -p publish-alicloud-provider \
+  -c publish.yml \
+  -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
+  -v aliyun_cli_region=$ALIYUN_CLI_REGION \
+  -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
+  -v aliyun_cli_secret_key=$ALIYUN_CLI_SECRET_KEY \
+  -v alicloud_account_site="Domestic" \
+  -v access_ci_url=$INTL_ACCESS_CI_URL \
+  -v access_ci_user_name=$INTL_ACCESS_CI_USER_NAME \
+  -v access_ci_password=$INTL_ACCESS_CI_PASSWORD \
+  -v ding_talk_token=$DING_TALK_TOKEN \
+  -v alicloud_accound_id=$ALICLOUD_ACCOUNT_ID \
+  -v alicloud_resource_group_id=$ALICLOUD_RESOURCE_GROUP_ID \
+  -v alicloud_waf_instance_id=$ALICLOUD_WAF_INSTANCE_ID \
+  -v time_location="Europe/London" \
+  -v alicloud_access_key=$ALICLOUD_ACCESS_KEY \
+  -v alicloud_secret_key=$ALICLOUD_SECRET_KEY \
+  -v alicloud_region="eu-central-1" \
+  -v alicloud_github_token=$GITHUB_TOKEN \
+  -v alicloud_gpg_fingerprint=$GPG_FINGERPRINT \
+  --load-vars-from=vars-publish.yml

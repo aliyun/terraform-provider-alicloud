@@ -26,6 +26,7 @@ website/node_modules
 *.iml
 *.pem
 vars-pipeline*
+vars-publish*
 develop*
 !vendor/github.com/valyala/**/*.pem
 
