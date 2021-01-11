@@ -1916,7 +1916,7 @@ resources:
     source:
       start: 09:00 AM
       stop: 10:50 PM
-      #    days: [Sunday]
+      days: [Thursday]
       location: {{time_location}}
 
   - name: 1030Thu

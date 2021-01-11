@@ -78,6 +78,7 @@ type ModifySnapshotAttributeRequest struct {
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	DisableInstantAccess requests.Boolean `position:"Query" name:"DisableInstantAccess"`
 }
 
 // ModifySnapshotAttributeResponse is the response struct for api ModifySnapshotAttribute
@@ -91,7 +92,7 @@ func CreateModifySnapshotAttributeRequest() (request *ModifySnapshotAttributeReq
 	request = &ModifySnapshotAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "ModifySnapshotAttribute", "", "")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "ModifySnapshotAttribute", "ecs", "openAPI")
 	request.Method = requests.POST
 	return
 }

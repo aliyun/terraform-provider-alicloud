@@ -83,6 +83,7 @@ type DescribeElasticityAssurancesRequest struct {
 	MaxResults            requests.Integer `position:"Query" name:"MaxResults"`
 	ZoneId                string           `position:"Query" name:"ZoneId"`
 	PackageType           string           `position:"Query" name:"PackageType"`
+	Status                string           `position:"Query" name:"Status"`
 }
 
 // DescribeElasticityAssurancesResponse is the response struct for api DescribeElasticityAssurances
@@ -100,7 +101,7 @@ func CreateDescribeElasticityAssurancesRequest() (request *DescribeElasticityAss
 	request = &DescribeElasticityAssurancesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "DescribeElasticityAssurances", "", "")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "DescribeElasticityAssurances", "ecs", "openAPI")
 	request.Method = requests.POST
 	return
 }

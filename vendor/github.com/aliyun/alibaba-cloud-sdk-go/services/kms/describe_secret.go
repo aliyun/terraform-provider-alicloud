@@ -86,6 +86,12 @@ type DescribeSecretResponse struct {
 	CreateTime        string               `json:"CreateTime" xml:"CreateTime"`
 	UpdateTime        string               `json:"UpdateTime" xml:"UpdateTime"`
 	PlannedDeleteTime string               `json:"PlannedDeleteTime" xml:"PlannedDeleteTime"`
+	AutomaticRotation string               `json:"AutomaticRotation" xml:"AutomaticRotation"`
+	LastRotationDate  string               `json:"LastRotationDate" xml:"LastRotationDate"`
+	RotationInterval  string               `json:"RotationInterval" xml:"RotationInterval"`
+	NextRotationDate  string               `json:"NextRotationDate" xml:"NextRotationDate"`
+	ExtendedConfig    string               `json:"ExtendedConfig" xml:"ExtendedConfig"`
+	SecretType        string               `json:"SecretType" xml:"SecretType"`
 	Tags              TagsInDescribeSecret `json:"Tags" xml:"Tags"`
 }
 

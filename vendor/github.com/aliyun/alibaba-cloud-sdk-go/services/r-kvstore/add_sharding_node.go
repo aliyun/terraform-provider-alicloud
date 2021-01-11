@@ -72,6 +72,7 @@ func (client *Client) AddShardingNodeWithCallback(request *AddShardingNodeReques
 type AddShardingNodeRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ClientToken          string           `position:"Query" name:"ClientToken"`
 	CouponNo             string           `position:"Query" name:"CouponNo"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	ShardCount           requests.Integer `position:"Query" name:"ShardCount"`
@@ -87,9 +88,10 @@ type AddShardingNodeRequest struct {
 // AddShardingNodeResponse is the response struct for api AddShardingNode
 type AddShardingNodeResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	NodeId    string `json:"NodeId" xml:"NodeId"`
-	OrderId   int64  `json:"OrderId" xml:"OrderId"`
+	RequestId string   `json:"RequestId" xml:"RequestId"`
+	OrderId   int64    `json:"OrderId" xml:"OrderId"`
+	NodeId    string   `json:"NodeId" xml:"NodeId"`
+	NodeIds   []string `json:"NodeIds" xml:"NodeIds"`
 }
 
 // CreateAddShardingNodeRequest creates a request to invoke AddShardingNode API
