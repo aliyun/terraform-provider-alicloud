@@ -173,6 +173,7 @@ type CreateInstanceResponse struct {
 	RequestId  string  `json:"RequestId" xml:"RequestId"`
 	InstanceId string  `json:"InstanceId" xml:"InstanceId"`
 	TradePrice float64 `json:"TradePrice" xml:"TradePrice"`
+	OrderId    string  `json:"OrderId" xml:"OrderId"`
 }
 
 // CreateCreateInstanceRequest creates a request to invoke CreateInstance API
@@ -180,7 +181,7 @@ func CreateCreateInstanceRequest() (request *CreateInstanceRequest) {
 	request = &CreateInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "CreateInstance", "", "")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "CreateInstance", "ecs", "openAPI")
 	request.Method = requests.POST
 	return
 }

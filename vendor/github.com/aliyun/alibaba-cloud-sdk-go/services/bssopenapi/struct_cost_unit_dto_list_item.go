@@ -19,6 +19,6 @@ package bssopenapi
 type CostUnitDtoListItem struct {
 	ParentUnitId int64  `json:"ParentUnitId" xml:"ParentUnitId"`
 	UnitName     string `json:"UnitName" xml:"UnitName"`
-	OwnerUid     int64  `json:"OwnerUid" xml:"OwnerUid"`
 	UnitId       int64  `json:"UnitId" xml:"UnitId"`
+	OwnerUid     int64  `json:"OwnerUid" xml:"OwnerUid"`
 }

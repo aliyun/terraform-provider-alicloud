@@ -9,6 +9,8 @@
 
 IMPROVEMENTS:
 
+- Feature/modify tde with custom key for mysql [GH-3208]
+- sync the alikafka sdk vendor [GH-3206]
 - change actiontrail to common [GH-3193]
 - improve slb test cases [GH-3188]
 - mysql ModifyDBInstanceTDE support custom EncryptionKey [GH-3186]
@@ -19,6 +21,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- resource/alicloud_alikafka_instance: fix test case param error [GH-3203]
 - fix/alicloud_slb: fix the diff bug when setting ipv6 [GH-3187]
 - fix/provider: improve endpoint when building a new client [GH-3185]
 

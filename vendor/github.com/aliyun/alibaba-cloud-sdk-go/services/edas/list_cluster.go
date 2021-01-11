@@ -71,6 +71,7 @@ func (client *Client) ListClusterWithCallback(request *ListClusterRequest, callb
 // ListClusterRequest is the request struct for api ListCluster
 type ListClusterRequest struct {
 	*requests.RoaRequest
+	ResourceGroupId string `position:"Query" name:"ResourceGroupId"`
 	LogicalRegionId string `position:"Query" name:"LogicalRegionId"`
 }
 

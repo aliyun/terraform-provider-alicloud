@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeEmrMainVersion invokes the emr.DescribeEmrMainVersion API synchronously
-// api document: https://help.aliyun.com/api/emr/describeemrmainversion.html
 func (client *Client) DescribeEmrMainVersion(request *DescribeEmrMainVersionRequest) (response *DescribeEmrMainVersionResponse, err error) {
 	response = CreateDescribeEmrMainVersionResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeEmrMainVersion(request *DescribeEmrMainVersionRequ
 }
 
 // DescribeEmrMainVersionWithChan invokes the emr.DescribeEmrMainVersion API asynchronously
-// api document: https://help.aliyun.com/api/emr/describeemrmainversion.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeEmrMainVersionWithChan(request *DescribeEmrMainVersionRequest) (<-chan *DescribeEmrMainVersionResponse, <-chan error) {
 	responseChan := make(chan *DescribeEmrMainVersionResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeEmrMainVersionWithChan(request *DescribeEmrMainVer
 }
 
 // DescribeEmrMainVersionWithCallback invokes the emr.DescribeEmrMainVersion API asynchronously
-// api document: https://help.aliyun.com/api/emr/describeemrmainversion.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeEmrMainVersionWithCallback(request *DescribeEmrMainVersionRequest, callback func(response *DescribeEmrMainVersionResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -93,6 +88,7 @@ func CreateDescribeEmrMainVersionRequest() (request *DescribeEmrMainVersionReque
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Emr", "2016-04-08", "DescribeEmrMainVersion", "emr", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

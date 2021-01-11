@@ -21,4 +21,5 @@ type SubInstance struct {
 	InstanceID       string `json:"InstanceID" xml:"InstanceID"`
 	RegionId         string `json:"RegionId" xml:"RegionId"`
 	InstanceStatus   string `json:"InstanceStatus" xml:"InstanceStatus"`
+	InstanceClass    string `json:"InstanceClass" xml:"InstanceClass"`
 }

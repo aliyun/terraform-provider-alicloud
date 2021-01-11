@@ -17,5 +17,5 @@ package emr
 
 // WhiteUserListInListEmrMainVersion is a nested struct in emr response
 type WhiteUserListInListEmrMainVersion struct {
-	WwhiteUser []string `json:"WwhiteUser" xml:"WwhiteUser"`
+	WhiteUser []string `json:"WhiteUser" xml:"WhiteUser"`
 }

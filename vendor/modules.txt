@@ -29,7 +29,7 @@ github.com/alibabacloud-go/tea-rpc/client
 github.com/alibabacloud-go/tea-rpc-utils/service
 # github.com/alibabacloud-go/tea-utils v1.3.6
 github.com/alibabacloud-go/tea-utils/service
-# github.com/aliyun/alibaba-cloud-sdk-go v1.61.684
+# github.com/aliyun/alibaba-cloud-sdk-go v1.61.843
 github.com/aliyun/alibaba-cloud-sdk-go/sdk
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials
@@ -40,7 +40,6 @@ github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils
-github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail
 github.com/aliyun/alibaba-cloud-sdk-go/services/adb
 github.com/aliyun/alibaba-cloud-sdk-go/services/alidns
 github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka
@@ -72,7 +71,6 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/kms
 github.com/aliyun/alibaba-cloud-sdk-go/services/location
 github.com/aliyun/alibaba-cloud-sdk-go/services/market
 github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute
-github.com/aliyun/alibaba-cloud-sdk-go/services/mse
 github.com/aliyun/alibaba-cloud-sdk-go/services/nas
 github.com/aliyun/alibaba-cloud-sdk-go/services/ons
 github.com/aliyun/alibaba-cloud-sdk-go/services/oos

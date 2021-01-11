@@ -77,6 +77,7 @@ type JoinSecurityGroupRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	InstanceId           string           `position:"Query" name:"InstanceId"`
+	NetworkInterfaceId   string           `position:"Query" name:"NetworkInterfaceId"`
 }
 
 // JoinSecurityGroupResponse is the response struct for api JoinSecurityGroup
@@ -90,7 +91,7 @@ func CreateJoinSecurityGroupRequest() (request *JoinSecurityGroupRequest) {
 	request = &JoinSecurityGroupRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "JoinSecurityGroup", "", "")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "JoinSecurityGroup", "ecs", "openAPI")
 	request.Method = requests.POST
 	return
 }
