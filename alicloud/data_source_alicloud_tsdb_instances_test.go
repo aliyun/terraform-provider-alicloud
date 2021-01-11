@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -94,6 +96,7 @@ func TestAccAlicloudTsdbInstancesDataSource(t *testing.T) {
 
 	var perCheck = func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.TsdbInstanceSupportRegions)
 	}
 
 	tsdbInstancesRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, perCheck, idsConf, statusConf, engineTypeConf, allConf)
