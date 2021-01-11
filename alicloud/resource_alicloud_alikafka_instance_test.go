@@ -365,7 +365,7 @@ func TestAccAlicloudAlikafkaInstance_multi(t *testing.T) {
 					"io_max":          "20",
 					"vswitch_id":      "${data.alicloud_vswitches.default.ids.0}",
 					"paid_type":       "PostPaid",
-					"service_version": "2.2.0",
+					"service_version": "0.10.2",
 					"config":          "{}",
 					"spec_type":       "normal",
 				}),
