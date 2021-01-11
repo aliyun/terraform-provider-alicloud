@@ -109,5 +109,6 @@ var KVstoreClassicNetworkInstanceSupportRegions = []Region{}
 var MaxComputeSupportRegions = []Region{}
 var FnfSupportRegions = []Region{Hangzhou, Beijing, Shanghai, Shenzhen, USWest1}
 var PrivateLinkRegions = []Region{EUCentral1}
+var BrainIndustrialRegions = []Region{Hangzhou}
 var EciContainerGroupRegions = []Region{Beijing}
 var TsdbInstanceSupportRegions = []Region{Beijing, Hangzhou, Shenzhen, Shanghai, ShenZhenFinance, Qingdao, Zhangjiakou, ShanghaiFinance, Hongkong, USWest1, APNorthEast1, EUWest1, APSouthEast1, APSouthEast2, APSouthEast3, EUCentral1, APSouthEast5, Zhangjiakou, CnNorth2Gov1}

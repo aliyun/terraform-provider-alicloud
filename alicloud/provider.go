@@ -366,6 +366,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_tsdb_zones":                                 dataSourceAlicloudTsdbZones(),
 			"alicloud_ga_bandwidth_packages":                      dataSourceAlicloudGaBandwidthPackages(),
 			"alicloud_ga_endpoint_groups":                         dataSourceAlicloudGaEndpointGroups(),
+			"alicloud_brain_industrial_pid_organizations":         dataSourceAlicloudBrainIndustrialPidOrganizations(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -654,6 +655,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_tsdb_instance":                             resourceAlicloudTsdbInstance(),
 			"alicloud_ga_bandwidth_package":                      resourceAlicloudGaBandwidthPackage(),
 			"alicloud_ga_endpoint_group":                         resourceAlicloudGaEndpointGroup(),
+			"alicloud_brain_industrial_pid_organization":         resourceAlicloudBrainIndustrialPidOrganization(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -802,6 +804,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ResourcesharingEndpoint = strings.TrimSpace(endpoints["resourcesharing"].(string))
 		config.GaEndpoint = strings.TrimSpace(endpoints["ga"].(string))
 		config.HitsdbEndpoint = strings.TrimSpace(endpoints["hitsdb"].(string))
+		config.BrainIndustrialEndpoint = strings.TrimSpace(endpoints["brain_industrial"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1006,6 +1009,8 @@ func init() {
 		"ga_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ga endpoints.",
 
 		"hitsdb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom hitsdb endpoints.",
+
+		"brain_industrial_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom brain_industrial endpoints.",
 	}
 }
 
@@ -1050,6 +1055,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"brain_industrial": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["brain_industrial_endpoint"],
+				},
+
 				"resourcesharing": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1495,6 +1507,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["resourcesharing"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ga"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["hitsdb"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["brain_industrial"].(string)))
 	return hashcode.String(buf.String())
 }
 
