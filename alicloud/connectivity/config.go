@@ -106,6 +106,7 @@ type Config struct {
 	ResourcesharingEndpoint string
 	GaEndpoint              string
 	HitsdbEndpoint          string
+	BrainIndustrialEndpoint string
 }
 
 func (c *Config) loadAndValidate() error {
