@@ -370,6 +370,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_ip_sets":                                 dataSourceAlicloudGaIpSets(),
 			"alicloud_eipanycast_anycast_eip_addresses":           dataSourceAlicloudEipanycastAnycastEipAddresses(),
 			"alicloud_brain_industrial_pid_projects":              dataSourceAlicloudBrainIndustrialPidProjects(),
+			"alicloud_cms_monitor_groups":                         dataSourceAlicloudCmsMonitorGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -663,6 +664,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_ip_set":                                 resourceAlicloudGaIpSet(),
 			"alicloud_eipanycast_anycast_eip_address":            resourceAlicloudEipanycastAnycastEipAddress(),
 			"alicloud_brain_industrial_pid_project":              resourceAlicloudBrainIndustrialPidProject(),
+			"alicloud_cms_monitor_group":                         resourceAlicloudCmsMonitorGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
