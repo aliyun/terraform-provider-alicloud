@@ -2,12 +2,95 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_ros_template",
+		&resource.Sweeper{
+			Name: "alicloud_ros_template",
+			F:    testSweepRosTemplate,
+		})
+}
+
+func testSweepRosTemplate(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "Error getting Alicloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf-testacc",
+	}
+	request := map[string]interface{}{
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+	var response map[string]interface{}
+	action := "ListTemplates"
+	conn, err := client.NewRosClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ros_template", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.Templates", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Templates", response)
+		}
+		sweeped := false
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(item["TemplateName"].(string)), strings.ToLower(prefix)) {
+					skip = false
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Ros Template: %s", item["TemplateName"].(string))
+				continue
+			}
+			sweeped = true
+			action = "DeleteTemplate"
+			request := map[string]interface{}{
+				"TemplateId": item["TemplateId"],
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Ros Template (%s): %s", item["TemplateName"].(string), err)
+			}
+			if sweeped {
+				// Waiting 5 seconds to ensure Ros Template have been deleted.
+				time.Sleep(5 * time.Second)
+			}
+			log.Printf("[INFO] Delete Ros Template success: %s ", item["TemplateName"].(string))
+		}
+		if len(resp.([]interface{})) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return nil
+}
 
 func TestAccAlicloudRosTemplate_basic(t *testing.T) {
 	var v map[string]interface{}
