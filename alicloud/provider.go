@@ -656,6 +656,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_bandwidth_package":                      resourceAlicloudGaBandwidthPackage(),
 			"alicloud_ga_endpoint_group":                         resourceAlicloudGaEndpointGroup(),
 			"alicloud_brain_industrial_pid_organization":         resourceAlicloudBrainIndustrialPidOrganization(),
+			"alicloud_ga_bandwidth_package_attachment":           resourceAlicloudGaBandwidthPackageAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
