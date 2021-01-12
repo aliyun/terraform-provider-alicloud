@@ -97,7 +97,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 50 mins) Used when creating the adb cluster (until it reaches the initial `Running` status). 
 * `update` - (Defaults to 72 hours) Used when updating the adb cluster (until it reaches the initial `Running` status). 
-* `delete` - (Defaults to 10 mins) Used when terminating the adb cluster. 
+* `delete` - (Defaults to 50 mins) Used when terminating the adb cluster. 
 
 ## Import
 

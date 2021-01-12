@@ -60,7 +60,7 @@ func testSweepAdbCluster(region string) error {
 			}
 		}
 		if skip {
-			log.Printf("[INFO] Skipping Abd Clusters: %s (%s)", name, id)
+			log.Printf("[INFO] Skipping Adb Clusters: %s (%s)", name, id)
 			continue
 		}
 
