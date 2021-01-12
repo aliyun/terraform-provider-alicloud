@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"log"
 	"regexp"
 	"strings"
@@ -525,5 +526,42 @@ func (s *AdbService) AdbClusterStateRefreshFunc(id string, failStates []string) 
 			}
 		}
 		return object, object.DBClusterStatus, nil
+	}
+}
+
+func (s *AdbService) DescribeTask(id, taskId string) (*adb.DescribeTaskInfoResponse, error) {
+	request := adb.CreateDescribeTaskInfoRequest()
+	request.RegionId = s.client.RegionId
+	request.DBClusterId = id
+	request.TaskId = requests.Integer(taskId)
+
+	raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+		return adbClient.DescribeTaskInfo(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*adb.DescribeTaskInfoResponse)
+
+	return response, nil
+}
+
+func (s *AdbService) AdbTaskStateRefreshFunc(id, taskId string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeTask(id, taskId)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		return object, object.TaskInfo.Status, nil
 	}
 }

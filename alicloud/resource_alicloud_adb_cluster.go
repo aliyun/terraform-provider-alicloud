@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -27,7 +29,7 @@ func resourceAlicloudAdbCluster() *schema.Resource {
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(50 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(50 * time.Minute),
 			Update: schema.DefaultTimeout(72 * time.Hour),
 		},
 
@@ -363,14 +365,22 @@ func resourceAlicloudAdbClusterDelete(d *schema.ResourceData, meta interface{}) 
 	if PayType(cluster.PayType) == Prepaid {
 		return nil
 	}
+	var taskId int
+	action := "DeleteDBCluster"
+	request := map[string]interface{}{
+		"RegionId":    client.RegionId,
+		"DBClusterId": d.Id(),
+		"SourceIp":    client.SourceIp,
+	}
+	conn, err := client.NewAdbClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 
-	request := adb.CreateDeleteDBClusterRequest()
-	request.RegionId = client.RegionId
-	request.DBClusterId = d.Id()
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
-			return adbClient.DeleteDBCluster(request)
-		})
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.InvalidDBClusterStatus", "OperationDenied.InvalidAdbClusterStatus"}) {
@@ -378,15 +388,17 @@ func resourceAlicloudAdbClusterDelete(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
+		addDebug(action, response, request)
+
+		taskId = int(response["TaskId"].(float64))
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{"Creating", "Running", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, adbService.AdbClusterStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{"Waiting", "Running", "Failed", "Retry", "Pause", "Stop"}, []string{"Finished", "Closed", "Cancel"}, d.Timeout(schema.TimeoutDelete), 10*time.Minute, adbService.AdbTaskStateRefreshFunc(d.Id(), strconv.Itoa(taskId)))
 	if _, err = stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
