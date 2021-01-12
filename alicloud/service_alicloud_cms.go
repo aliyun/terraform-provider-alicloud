@@ -14,6 +14,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 type CmsService struct {
@@ -290,6 +291,130 @@ func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]in
 		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["RuleId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *CmsService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+
+	if d.HasChange("tags") {
+		added, removed := parsingTags(d)
+		conn, err := s.client.NewCmsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+		if len(removedTagKeys) > 0 {
+			action := "RemoveTags"
+			request := map[string]interface{}{
+				"RegionId":   s.client.RegionId,
+				"GroupIds.1": d.Id(),
+			}
+			oraw, _ := d.GetChange("tags")
+			removedTags := oraw.(map[string]interface{})
+			count := 1
+			for _, key := range removedTagKeys {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = removedTags[key]
+			}
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if IsThrottling(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		if len(added) > 0 {
+			action := "AddTags"
+			request := map[string]interface{}{
+				"RegionId":   s.client.RegionId,
+				"GroupIds.1": d.Id(),
+			}
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = value
+				count++
+			}
+
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if IsThrottling(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		d.SetPartial("tags")
+	}
+	return nil
+}
+
+func (s *CmsService) DescribeCmsMonitorGroup(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCmsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeMonitorGroups"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"GroupId":  id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(action, response, request)
+	if IsExpectedErrorCodes(fmt.Sprintf("%v", response["Code"]), []string{"GroupsNotExists", "ResourceNotFound"}) {
+		err = WrapErrorf(Error(GetNotFoundMessage("CmsMonitorGroup", id)), NotFoundMsg, ProviderERROR)
+		return object, err
+	}
+	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
+		err = Error("DescribeMonitorGroups failed for " + response["Message"].(string))
+		return object, err
+	}
+	v, err := jsonpath.Get("$.Resources.Resource", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Resources.Resource", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(formatInt(v.([]interface{})[0].(map[string]interface{})["GroupId"])) != id {
 			return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
 		}
 	}

@@ -218,7 +218,7 @@ func (s *RosService) SetResourceTags(d *schema.ResourceData, resourceType string
 				"ResourceType": resourceType,
 				"ResourceId.1": d.Id(),
 			}
-			for i, key := range removed {
+			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
