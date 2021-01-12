@@ -367,6 +367,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_bandwidth_packages":                      dataSourceAlicloudGaBandwidthPackages(),
 			"alicloud_ga_endpoint_groups":                         dataSourceAlicloudGaEndpointGroups(),
 			"alicloud_brain_industrial_pid_organizations":         dataSourceAlicloudBrainIndustrialPidOrganizations(),
+			"alicloud_ga_ip_sets":                                 dataSourceAlicloudGaIpSets(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -657,6 +658,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_endpoint_group":                         resourceAlicloudGaEndpointGroup(),
 			"alicloud_brain_industrial_pid_organization":         resourceAlicloudBrainIndustrialPidOrganization(),
 			"alicloud_ga_bandwidth_package_attachment":           resourceAlicloudGaBandwidthPackageAttachment(),
+			"alicloud_ga_ip_set":                                 resourceAlicloudGaIpSet(),
 		},
 
 		ConfigureFunc: providerConfigure,
