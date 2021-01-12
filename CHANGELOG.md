@@ -1,29 +1,30 @@
-## 1.112.0 (Unreleased)
+## 1.113.0 (Unreleased)
+## 1.112.0 (January 12, 2021)
 
-- **New Resource:** `alicloud_ga_bandwidth_package` [GH-3194]
-- **New Resource:** `alicloud_tsdb_instance` [GH-3192]
-- **Data Source:** `alicloud_ga_bandwidth_packages` [GH-3194]
-- **Data Source:** `alicloud_tsdb_instances` [GH-3192]
-- **Data Source:** `alicloud_tsdb_zones` [GH-3192]
-- **Data Source:** `alicloud_fc_service` [GH-3191]
+- **New Resource:** `alicloud_ga_bandwidth_package` ([#3194](https://github.com/aliyun/terraform-provider-alicloud/issues/3194))
+- **New Resource:** `alicloud_tsdb_instance` ([#3192](https://github.com/aliyun/terraform-provider-alicloud/issues/3192))
+- **Data Source:** `alicloud_ga_bandwidth_packages` ([#3194](https://github.com/aliyun/terraform-provider-alicloud/issues/3194))
+- **Data Source:** `alicloud_tsdb_instances` ([#3192](https://github.com/aliyun/terraform-provider-alicloud/issues/3192))
+- **Data Source:** `alicloud_tsdb_zones` ([#3192](https://github.com/aliyun/terraform-provider-alicloud/issues/3192))
+- **Data Source:** `alicloud_fc_service` ([#3191](https://github.com/aliyun/terraform-provider-alicloud/issues/3191))
 
 IMPROVEMENTS:
 
-- Feature/modify tde with custom key for mysql [GH-3208]
-- sync the alikafka sdk vendor [GH-3206]
-- change actiontrail to common [GH-3193]
-- improve slb test cases [GH-3188]
-- mysql ModifyDBInstanceTDE support custom EncryptionKey [GH-3186]
-- change mse cluster to common [GH-3184]
-- alikafka support new params when create instance [GH-3183]
-- update changelog [GH-3180]
-- resource/alicloud_vpc: supports new attribute secondary_cidr_blocks [GH-3152]
+- Feature/modify tde with custom key for mysql ([#3208](https://github.com/aliyun/terraform-provider-alicloud/issues/3208))
+- sync the alikafka sdk vendor ([#3206](https://github.com/aliyun/terraform-provider-alicloud/issues/3206))
+- change actiontrail to common ([#3193](https://github.com/aliyun/terraform-provider-alicloud/issues/3193))
+- improve slb test cases ([#3188](https://github.com/aliyun/terraform-provider-alicloud/issues/3188))
+- mysql ModifyDBInstanceTDE support custom EncryptionKey ([#3186](https://github.com/aliyun/terraform-provider-alicloud/issues/3186))
+- change mse cluster to common ([#3184](https://github.com/aliyun/terraform-provider-alicloud/issues/3184))
+- alikafka support new params when create instance ([#3183](https://github.com/aliyun/terraform-provider-alicloud/issues/3183))
+- update changelog ([#3180](https://github.com/aliyun/terraform-provider-alicloud/issues/3180))
+- resource/alicloud_vpc: supports new attribute secondary_cidr_blocks ([#3152](https://github.com/aliyun/terraform-provider-alicloud/issues/3152))
 
 BUG FIXES:
 
-- resource/alicloud_alikafka_instance: fix test case param error [GH-3203]
-- fix/alicloud_slb: fix the diff bug when setting ipv6 [GH-3187]
-- fix/provider: improve endpoint when building a new client [GH-3185]
+- resource/alicloud_alikafka_instance: fix test case param error ([#3203](https://github.com/aliyun/terraform-provider-alicloud/issues/3203))
+- fix/alicloud_slb: fix the diff bug when setting ipv6 ([#3187](https://github.com/aliyun/terraform-provider-alicloud/issues/3187))
+- fix/provider: improve endpoint when building a new client ([#3185](https://github.com/aliyun/terraform-provider-alicloud/issues/3185))
 
 ## 1.111.0 (December 31, 2020)
 
