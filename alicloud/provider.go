@@ -665,6 +665,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eipanycast_anycast_eip_address":            resourceAlicloudEipanycastAnycastEipAddress(),
 			"alicloud_brain_industrial_pid_project":              resourceAlicloudBrainIndustrialPidProject(),
 			"alicloud_cms_monitor_group":                         resourceAlicloudCmsMonitorGroup(),
+			"alicloud_eipanycast_anycast_eip_address_attachment": resourceAlicloudEipanycastAnycastEipAddressAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
