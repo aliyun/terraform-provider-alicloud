@@ -441,7 +441,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 02
+        resource: 02Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -797,7 +797,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 0930
+        resource: 0930Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1416,7 +1416,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 1430
+        resource: 1430Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1871,6 +1871,14 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
+  - name: 02Thu
+    type: time
+    source:
+      start: 02:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
   - name: 0230Thu
     type: time
     source:
@@ -1927,6 +1935,14 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
+  - name: 0930Thu
+    type: time
+    source:
+      start: 09:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
   - name: 1030Thu
     type: time
     source:
@@ -1947,6 +1963,14 @@ resources:
     type: time
     source:
       start: 12:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: 1430Thu
+    type: time
+    source:
+      start: 02:30 PM
       stop: 10:50 PM
       days: [Thursday]
       location: {{time_location}}
