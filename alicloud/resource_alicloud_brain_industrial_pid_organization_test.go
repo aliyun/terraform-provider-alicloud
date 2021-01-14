@@ -22,7 +22,11 @@ func init() {
 		&resource.Sweeper{
 			Name: "alicloud_brain_industrial_pid_organization",
 			F:    testSweepBrainIndustrialPidOrganization,
+			Dependencies: []string{
+				"alicloud_brain_industrial_pid_project",
+			},
 		})
+
 }
 
 func testSweepBrainIndustrialPidOrganization(region string) error {
@@ -49,8 +53,8 @@ func testSweepBrainIndustrialPidOrganization(region string) error {
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
-	if err != nil {
+	response, _ = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
+	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_brain_industrial_pid_organization", action, AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$.OrganizationList", response)
@@ -76,9 +80,9 @@ func testSweepBrainIndustrialPidOrganization(region string) error {
 		request := map[string]interface{}{
 			"OrganizationId": item["OrganizationId"],
 		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete Brain Industrial Organization (%s): %s", item["OrganizationName"].(string), err)
+		responseDelete, _ := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if fmt.Sprintf(`%v`, responseDelete["Code"]) != "200" {
+			log.Printf("[ERROR] Failed to delete Brain Industrial Organization (%s): %s", item["OrganizationName"].(string), responseDelete["Message"])
 		}
 		if sweeped {
 			// Waiting 5 seconds to ensure  Brain Industrial Organization have been deleted.
@@ -87,7 +91,6 @@ func testSweepBrainIndustrialPidOrganization(region string) error {
 		log.Printf("[INFO] Delete Brain Industrial Organization success: %s ", item["OrganizationName"].(string))
 	}
 	return nil
-
 }
 
 func TestAccAlicloudBrainIndustrialPidOrganization_basic(t *testing.T) {

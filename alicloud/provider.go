@@ -387,6 +387,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_commands":                               dataSourceAlicloudEcsCommands(),
 			"alicloud_cloud_storage_gateway_storage_bundles":      dataSourceAlicloudCloudStorageGatewayStorageBundles(),
 			"alicloud_ecs_hpc_clusters":                           dataSourceAlicloudEcsHpcClusters(),
+			"alicloud_brain_industrial_pid_loops":                 dataSourceAlicloudBrainIndustrialPidLoops(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -690,6 +691,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_storage_gateway_storage_bundle":      resourceAlicloudCloudStorageGatewayStorageBundle(),
 			"alicloud_ecs_hpc_cluster":                           resourceAlicloudEcsHpcCluster(),
 			"alicloud_vpc_flow_log":                              resourceAlicloudVpcFlowLog(),
+			"alicloud_brain_industrial_pid_loop":                 resourceAlicloudBrainIndustrialPidLoop(),
 		},
 
 		ConfigureFunc: providerConfigure,

@@ -5,7 +5,6 @@ import (
 	"log"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -52,17 +51,15 @@ func testSweepBrainIndustrialPidProject(region string) error {
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
-		if err != nil {
+		response, _ = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
+		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_brain_industrial_pid_project", action, AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.PidProjectList", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PidProjectList", response)
 		}
-		sweeped := false
-		result, _ := resp.([]interface{})
-		for _, v := range result {
+		for _, v := range resp.([]interface{}) {
 			item := v.(map[string]interface{})
 			skip := true
 			for _, prefix := range prefixes {
@@ -74,24 +71,63 @@ func testSweepBrainIndustrialPidProject(region string) error {
 				log.Printf("[INFO] Skipping Brain Industrial: %s", item["PidProjectName"].(string))
 				continue
 			}
-			sweeped = true
-			action = "DeletePidProject"
-			request := map[string]interface{}{
+			actionDelete := "DeletePidProject"
+			requestDelete := map[string]interface{}{
 				"PidProjectId": item["PidProjectId"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				log.Printf("[ERROR] Failed to delete Brain Industrial Project (%s): %s", item["PidProjectName"].(string), err)
+			response, err = conn.DoRequest(StringPointer(actionDelete), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, requestDelete, &util.RuntimeOptions{})
+			if fmt.Sprintf(`%v`, response["Code"]) == "200" {
+				log.Printf("[INFO] Delete Brain Industrial Project success: %s ", item["PidProjectName"].(string))
+			} else if fmt.Sprintf(`%v`, response["Code"]) == "-100" && strings.Contains(response["Message"].(string), "存在回路") {
+				log.Printf("[INFO] Firstly, Delete Loop belongs to Project")
+				actionLoopList := "ListPidLoops"
+				requestLoopList := map[string]interface{}{
+					"PidProjectId": item["PidProjectId"],
+					"PageSize":     20,
+					"CurrentPage":  1,
+				}
+				for {
+					runtime := util.RuntimeOptions{}
+					runtime.SetAutoretry(true)
+
+					responseLoop, _ := conn.DoRequest(StringPointer(actionLoopList), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, requestLoopList, &util.RuntimeOptions{})
+					respLoop, _ := jsonpath.Get("$.PidLoopList", responseLoop)
+
+					for _, v := range respLoop.([]interface{}) {
+						itemLoop := v.(map[string]interface{})
+						actionLoopDelete := "DeletePidLoop"
+						requestLoopDelete := map[string]interface{}{
+							"PidLoopId": itemLoop["PidLoopId"],
+						}
+						responseLoopDelete, _ := conn.DoRequest(StringPointer(actionLoopDelete), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, requestLoopDelete, &util.RuntimeOptions{})
+						if fmt.Sprintf(`%v`, responseLoopDelete["Code"]) != "200" {
+							log.Printf("[ERROR] Failed to delete Brain Industrial Loop (%s): %s", itemLoop["PidLoopId"].(string), responseLoopDelete["Message"].(string))
+						} else {
+							log.Printf("[INFO] Delete Brain Industrial Loop success (%s): %s", itemLoop["PidLoopId"].(string), responseLoopDelete["Message"].(string))
+						}
+					}
+					if len(respLoop.([]interface{})) < request["PageSize"].(int) {
+						break
+					}
+					request["CurrentPage"] = request["CurrentPage"].(int) + 1
+				}
+				log.Printf("[INFO] Delete Loop Done, Then delete Brain Industrial Project again")
+				responseAgain, _ := conn.DoRequest(StringPointer(actionDelete), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, requestDelete, &util.RuntimeOptions{})
+				if fmt.Sprintf(`%v`, responseAgain["Code"]) != "200" {
+					log.Printf("[ERROR] Failed to again delete Brain Industrial Project  (%s): %s", item["PidProjectName"].(string), responseAgain["Message"].(string))
+				} else {
+					log.Printf("[INFO] Delete Brain Industrial Project again Success(%s): %s", item["PidProjectName"].(string), responseAgain["Message"].(string))
+				}
+			} else if fmt.Sprintf(`%v`, response["Code"]) != "200" {
+				log.Printf("[ERROR] Failed to delete Brain Industrial Project (%s): %s", item["PidProjectName"].(string), response["Message"].(string))
 			}
-			if sweeped {
-				// Waiting 5 seconds to ensure  Brain Industrial Project have been deleted.
-				time.Sleep(5 * time.Second)
-			}
-			log.Printf("[INFO] Delete Brain Industrial Project success: %s ", item["PidProjectName"].(string))
+		}
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
+			break
 		}
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1
-		return nil
 	}
+	return nil
 }
 
 func TestAccAlicloudBrainIndustrialPidProject_basic(t *testing.T) {
