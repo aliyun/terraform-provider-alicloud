@@ -633,7 +633,7 @@ func terraformToAPI(field string) string {
 }
 
 func compareJsonTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
-	var obj1 interface{}
+	obj1 := make(map[string]interface{})
 	err := json.Unmarshal([]byte(tem1), &obj1)
 	if err != nil {
 		return false, err
@@ -641,7 +641,7 @@ func compareJsonTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
 
 	canonicalJson1, _ := json.Marshal(obj1)
 
-	var obj2 interface{}
+	obj2 := make(map[string]interface{})
 	err = json.Unmarshal([]byte(tem2), &obj2)
 	if err != nil {
 		return false, err
