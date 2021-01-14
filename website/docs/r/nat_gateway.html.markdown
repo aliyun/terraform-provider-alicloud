@@ -71,6 +71,8 @@ The following arguments are supported:
 * `nat_type` - (Optional, ForceNew, Available in 1.102.0+) The type of nat gateway. Default to `Normal`. Valid values: [`Normal`, `Enhanced`].
 * `vswitch_id` - (Optional, ForceNew, Available in 1.102.0+) The id of VSwitch.
 
+-> **NOTE:** The `Normal` Nat Gateway has been offline and please using `Enhanced` Nat Gateway to get the better performance. 
+
 ## Block bandwidth packages
 The bandwidth package mapping supports the following:
 
