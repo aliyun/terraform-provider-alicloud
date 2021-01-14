@@ -26,7 +26,7 @@ func (s *HitsdbService) DescribeTsdbInstance(id string) (object map[string]inter
 	runtime.SetAutoretry(true)
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-01"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Instance.IsNotValidError", "TSDB.Errorcode.InstanceNotFound"}) {
+		if IsExpectedErrors(err, []string{"Instance.IsNotValidError", "TSDB.Errorcode.InstanceDeleted", "TSDB.Errorcode.InstanceNotFound", "TSDB.Errorcode.ParameterInvaild"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("TsdbInstance", id)), NotFoundMsg, ProviderERROR)
 			return object, err
 		}

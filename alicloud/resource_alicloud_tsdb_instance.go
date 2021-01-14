@@ -254,7 +254,7 @@ func resourceAlicloudTsdbInstanceUpdate(d *schema.ResourceData, meta interface{}
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			addDebug(action, response, modifyHiTSDBInstanceClassReq)
 			return nil
 		})
 		if err != nil {
@@ -299,7 +299,7 @@ func resourceAlicloudTsdbInstanceDelete(d *schema.ResourceData, meta interface{}
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"TSDB.Errorcode.InstanceNotFound"}) {
+		if IsExpectedErrors(err, []string{"Instance.IsNotAvailable", "Instance.IsNotPostPay"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
