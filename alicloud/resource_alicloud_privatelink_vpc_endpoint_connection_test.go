@@ -83,7 +83,7 @@ func AlicloudPrivatelinkVpcEndpointConnectionBasicDependence(name string) string
 	resource "alicloud_privatelink_vpc_endpoint" "default" {
 	 service_id = alicloud_privatelink_vpc_endpoint_service.default.id
 	 vpc_id = data.alicloud_vpcs.default.ids.0
-	 security_group_id = [alicloud_security_group.default.id]
+	 security_group_ids = [alicloud_security_group.default.id]
 	 vpc_endpoint_name = "testformaintf"
 	 depends_on = [alicloud_privatelink_vpc_endpoint_service.default]
 	}
