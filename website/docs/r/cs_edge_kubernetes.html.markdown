@@ -85,6 +85,7 @@ The following arguments are supported:
 * `rds_instance` - (Optional, Available in 1.103.2+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.103.2+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `deletion_protection` - (Optional, Available in 1.103.2+)  Whether to enable cluster deletion protection.
+* `force_update` - (Optional, ForceNew, Available in 1.113.0+) Default false, when you want to change `vpc_id`, you have to set this field to true, then the cluster will be recreated.
 
 ### Network params
 
