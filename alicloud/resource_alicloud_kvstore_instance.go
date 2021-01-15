@@ -186,7 +186,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"MASTER_SLAVE", "STAND_ALONE", "double", "single"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"MASTER_SLAVE", "STAND_ALONE", "double", "single", "readone", "readthree", "readfive"}, false),
 				Default:      "double",
 			},
 			"order_type": {
