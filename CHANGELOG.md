@@ -1,4 +1,37 @@
 ## 1.113.0 (Unreleased)
+
+- **New Resource:** `alicloud_eipanycast_anycast_eip_address_attachment` [GH-3215]
+- **New Resource:** `alicloud_brain_industrial_pid_project` [GH-3212]
+- **New Resource:** `alicloud_ga_ip_set` [GH-3211]
+- **New Resource:** `alicloud_brain_industrial_pid_organization` [GH-3209]
+- **New Resource:** `alicloud_ga_bandwidth_package_attachment` [GH-3207]
+- **New Resource:** `alicloud_cms_monitor_group` [GH-3204]
+- **New Resource:** `alicloud_ga_endpoint_group` [GH-3202]
+- **New Resource:** `alicloud_eipanycast_anycast_eip_address` [GH-3198]
+- **Data Source:** `alicloud_privatelink_service` [GH-3224]
+- **Data Source:** `alicloud_ack_service` [GH-3221]
+- **Data Source:** `alicloud_brain_industrial_pid_projects` [GH-3212]
+- **Data Source:** `alicloud_ga_ip_sets` [GH-3211]
+- **Data Source:** `alicloud_brain_industrial_pid_organizations` [GH-3209]
+- **Data Source:** `alicloud_cms_monitor_groups` [GH-3204]
+- **Data Source:** `alicloud_ga_endpoint_groups` [GH-3202]
+- **Data Source:** `alicloud_eipanycast_anycast_eip_addresses` [GH-3198]
+
+IMPROVEMENTS:
+
+- resource/alicloud_nat_gateway: offline Normal NatGateway [GH-3219]
+- resource/tsdb_instance: Add resource no found error code [GH-3217]
+- update pipeline [GH-3216]
+- Add sweeper for privatelink and ros [GH-3214]
+- Modify asynchronous to synchronous when delete adb cluster [GH-3190]
+
+BUG FIXES:
+
+- fix some test case [GH-3222]
+- fix cs_edge_kubernetes missing force_update parameter [GH-3220]
+- testcast/tsdb_instance: fix valid zones [GH-3213]
+- datasource/alicloud_api_gateway_apis: fix testcaas error [GH-3210]
+
 ## 1.112.0 (January 12, 2021)
 
 - **New Resource:** `alicloud_ga_bandwidth_package` ([#3194](https://github.com/aliyun/terraform-provider-alicloud/issues/3194))
