@@ -63,7 +63,12 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				MinItems:         1,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
-
+			"force_update": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  false,
+			},
 			"worker_instance_types": {
 				Type:     schema.TypeList,
 				Required: true,
