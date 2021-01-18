@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -365,7 +366,7 @@ func resourceAlicloudAdbClusterDelete(d *schema.ResourceData, meta interface{}) 
 	if PayType(cluster.PayType) == Prepaid {
 		return nil
 	}
-	var taskId int
+	var taskId string
 	action := "DeleteDBCluster"
 	request := map[string]interface{}{
 		"RegionId":    client.RegionId,
@@ -390,15 +391,14 @@ func resourceAlicloudAdbClusterDelete(d *schema.ResourceData, meta interface{}) 
 		}
 
 		addDebug(action, response, request)
-
-		taskId = int(response["TaskId"].(float64))
+		taskId = response["TaskId"].(json.Number).String()
 		return nil
 	})
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{"Waiting", "Running", "Failed", "Retry", "Pause", "Stop"}, []string{"Finished", "Closed", "Cancel"}, d.Timeout(schema.TimeoutDelete), 10*time.Minute, adbService.AdbTaskStateRefreshFunc(d.Id(), strconv.Itoa(taskId)))
+	stateConf := BuildStateConf([]string{"Waiting", "Running", "Failed", "Retry", "Pause", "Stop"}, []string{"Finished", "Closed", "Cancel"}, d.Timeout(schema.TimeoutDelete), 10*time.Minute, adbService.AdbTaskStateRefreshFunc(d.Id(), taskId))
 	if _, err = stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
