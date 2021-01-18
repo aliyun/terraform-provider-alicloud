@@ -39,8 +39,11 @@ func testSweepOSSBuckets(region string) error {
 		"test-acc-alicloud-",
 	}
 
+	var options []oss.Option
+	options = append(options, oss.MaxKeys(1000))
+
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return ossClient.ListBuckets()
+		return ossClient.ListBuckets(options...)
 	})
 	if err != nil {
 		return fmt.Errorf("Error retrieving OSS buckets: %s", err)
@@ -69,7 +72,7 @@ func testSweepOSSBuckets(region string) error {
 			return fmt.Errorf("Error getting bucket (%s): %#v", name, err)
 		}
 		bucket, _ := raw.(*oss.Bucket)
-		if objects, err := bucket.ListObjects(); err != nil {
+		if objects, err := bucket.ListObjects(options...); err != nil {
 			log.Printf("[ERROR] Failed to list objects: %s", err)
 		} else if len(objects.Objects) > 0 {
 			for _, o := range objects.Objects {
