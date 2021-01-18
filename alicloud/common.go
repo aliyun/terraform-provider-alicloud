@@ -399,9 +399,10 @@ func convertMaptoJsonString(m map[string]interface{}) (string, error) {
 }
 
 func convertMapFloat64ToJsonString(m map[string]interface{}) (string, error) {
-	sm := make(map[string]float64, len(m))
+	sm := make(map[string]json.Number, len(m))
+
 	for k, v := range m {
-		sm[k] = v.(float64)
+		sm[k] = v.(json.Number)
 	}
 
 	if result, err := json.Marshal(sm); err != nil {

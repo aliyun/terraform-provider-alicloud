@@ -2,11 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/oos"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudOosTemplate() *schema.Resource {
@@ -25,8 +28,9 @@ func resourceAlicloudOosTemplate() *schema.Resource {
 				Default:  false,
 			},
 			"content": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.ValidateJsonString,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
@@ -92,27 +96,45 @@ func resourceAlicloudOosTemplate() *schema.Resource {
 
 func resourceAlicloudOosTemplateCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := oos.CreateCreateTemplateRequest()
-	request.Content = d.Get("content").(string)
-	request.RegionId = client.RegionId
+	var response map[string]interface{}
+	action := "CreateTemplate"
+	request := make(map[string]interface{})
+	conn, err := client.NewOosClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request["Content"] = d.Get("content")
+	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("tags"); ok {
-		request.Tags = v.(map[string]interface{})
+		respJson, err := convertMaptoJsonString(v.(map[string]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Tags"] = respJson
 	}
-	request.TemplateName = d.Get("template_name").(string)
+	request["TemplateName"] = d.Get("template_name")
 	if v, ok := d.GetOk("version_name"); ok {
-		request.VersionName = v.(string)
+		request["VersionName"] = v
 	}
 
-	raw, err := client.WithOosClient(func(oosClient *oos.Client) (interface{}, error) {
-		return oosClient.CreateTemplate(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oos_template", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oos_template", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*oos.CreateTemplateResponse)
-	d.SetId(fmt.Sprintf("%v", response.Template.TemplateName))
+	responseTemplate := response["Template"].(map[string]interface{})
+	d.SetId(fmt.Sprint(responseTemplate["TemplateName"]))
 
 	return resourceAlicloudOosTemplateRead(d, meta)
 }
@@ -122,6 +144,7 @@ func resourceAlicloudOosTemplateRead(d *schema.ResourceData, meta interface{}) e
 	object, err := oosService.DescribeOosTemplate(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_oos_template oosService.DescribeOosTemplate Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -129,66 +152,103 @@ func resourceAlicloudOosTemplateRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	d.Set("template_name", d.Id())
-	d.Set("created_by", object.CreatedBy)
-	d.Set("created_date", object.CreatedDate)
-	d.Set("description", object.Description)
-	d.Set("has_trigger", object.HasTrigger)
-	d.Set("share_type", object.ShareType)
-	d.Set("tags", object.Tags)
-	d.Set("template_format", object.TemplateFormat)
-	d.Set("template_id", object.TemplateId)
-	d.Set("template_type", object.TemplateType)
-	d.Set("template_version", object.TemplateVersion)
-	d.Set("updated_by", object.UpdatedBy)
-	d.Set("updated_date", object.UpdatedDate)
+	d.Set("created_by", object["CreatedBy"])
+	d.Set("created_date", object["CreatedDate"])
+	d.Set("description", object["Description"])
+	d.Set("has_trigger", object["HasTrigger"])
+	d.Set("share_type", object["ShareType"])
+	d.Set("tags", object["Tags"])
+	d.Set("template_format", object["TemplateFormat"])
+	d.Set("template_id", object["TemplateId"])
+	d.Set("template_type", object["TemplateType"])
+	d.Set("template_version", object["TemplateVersion"])
+	d.Set("updated_by", object["UpdatedBy"])
+	d.Set("updated_date", object["UpdatedDate"])
 	return nil
 }
 func resourceAlicloudOosTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
 	update := false
-	request := oos.CreateUpdateTemplateRequest()
-	request.TemplateName = d.Id()
+	request := map[string]interface{}{
+		"TemplateName": d.Id(),
+	}
 	if d.HasChange("content") {
 		update = true
 	}
-	request.Content = d.Get("content").(string)
-	request.RegionId = client.RegionId
+	request["Content"] = d.Get("content")
+	request["RegionId"] = client.RegionId
 	if d.HasChange("tags") {
 		update = true
-		request.Tags = d.Get("tags").(map[string]interface{})
+		respJson, err := convertMaptoJsonString(d.Get("tags").(map[string]interface{}))
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_oos_template", "UpdateTemplate", AlibabaCloudSdkGoERROR)
+		}
+		request["Tags"] = respJson
 	}
 	if d.HasChange("version_name") {
 		update = true
-		request.VersionName = d.Get("version_name").(string)
+		request["VersionName"] = d.Get("version_name")
 	}
 	if update {
-		raw, err := client.WithOosClient(func(oosClient *oos.Client) (interface{}, error) {
-			return oosClient.UpdateTemplate(request)
-		})
-		addDebug(request.GetActionName(), raw)
+		action := "UpdateTemplate"
+		conn, err := client.NewOosClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 	return resourceAlicloudOosTemplateRead(d, meta)
 }
 func resourceAlicloudOosTemplateDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := oos.CreateDeleteTemplateRequest()
-	request.TemplateName = d.Id()
-	if v, ok := d.GetOkExists("auto_delete_executions"); ok {
-		request.AutoDeleteExecutions = requests.NewBoolean(v.(bool))
+	action := "DeleteTemplate"
+	var response map[string]interface{}
+	conn, err := client.NewOosClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	request.RegionId = client.RegionId
-	raw, err := client.WithOosClient(func(oosClient *oos.Client) (interface{}, error) {
-		return oosClient.DeleteTemplate(request)
+	request := map[string]interface{}{
+		"TemplateName": d.Id(),
+	}
+
+	if v, ok := d.GetOkExists("auto_delete_executions"); ok {
+		request["AutoDeleteExecutions"] = v
+	}
+	request["RegionId"] = client.RegionId
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
-	addDebug(request.GetActionName(), raw)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Template"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

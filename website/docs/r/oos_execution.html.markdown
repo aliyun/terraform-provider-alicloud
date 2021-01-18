@@ -70,6 +70,7 @@ The following arguments are supported:
 * `safety_check` - (Optional, ForceNew) The mode of safety check.
 * `template_name` - (Required, ForceNew) The name of execution template.
 * `template_version` - (Optional, ForceNew) The version of execution template.
+* `template_content` - (Optional, ForceNew, Available in v1.114.0+) The content of template. When the user selects an existing template to create and execute a task, it is not necessary to pass in this field.
                     
 ## Attributes Reference
 
