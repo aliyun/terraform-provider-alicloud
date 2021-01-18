@@ -72,7 +72,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/oos"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 )
 
@@ -151,7 +150,6 @@ type AliyunClient struct {
 	cassandraConn                *cassandra.Client
 	eciConn                      *eci.Client
 	ecsConn                      *ecs.Client
-	oosConn                      *oos.Client
 	nasConn                      *nas.Client
 	dcdnConn                     *dcdn.Client
 	onsConn                      *ons.Client
@@ -1918,31 +1916,6 @@ func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, err
 	return do(client.eciConn)
 }
 
-func (client *AliyunClient) WithOosClient(do func(*oos.Client) (interface{}, error)) (interface{}, error) {
-	if client.oosConn == nil {
-		endpoint := client.config.OosEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, OosCode)
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(OosCode), endpoint)
-		}
-
-		oosConn, err := oos.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Oosclient: %#v", err)
-		}
-		oosConn.AppendUserAgent(Terraform, terraformVersion)
-		oosConn.AppendUserAgent(Provider, providerVersion)
-		oosConn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.oosConn = oosConn
-	}
-	return do(client.oosConn)
-}
-
 func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, error)) (interface{}, error) {
 	if client.dcdnConn == nil {
 		endpoint := client.config.DcdnEndpoint
@@ -2419,6 +2392,29 @@ func (client *AliyunClient) NewAistudioClient() (*rpc.Client, error) {
 
 func (client *AliyunClient) NewEipanycastClient() (*rpc.Client, error) {
 	productCode := "eipanycast"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewOosClient() (*rpc.Client, error) {
+	productCode := "oos"
 	endpoint := ""
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
