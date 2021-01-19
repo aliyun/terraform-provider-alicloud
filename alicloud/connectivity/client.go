@@ -33,7 +33,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
@@ -95,7 +94,6 @@ type AliyunClient struct {
 	rdsconn                      *rds.Client
 	vpcconn                      *vpc.Client
 	slbconn                      *slb.Client
-	onsconn                      *ons.Client
 	alikafkaconn                 *alikafka.Client
 	ossconn                      *oss.Client
 	dnsconn                      *alidns.Client
@@ -154,7 +152,6 @@ type AliyunClient struct {
 	oosConn                      *oos.Client
 	nasConn                      *nas.Client
 	dcdnConn                     *dcdn.Client
-	onsConn                      *ons.Client
 	cmsConn                      *cms.Client
 	r_kvstoreConn                *r_kvstore.Client
 	maxcomputeConn               *maxcompute.Client
@@ -1522,29 +1519,6 @@ func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (in
 	}
 
 	return do(client.bssopenapiconn)
-}
-
-func (client *AliyunClient) WithOnsClient(do func(*ons.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the ons client if necessary
-	if client.onsconn == nil {
-		endpoint := client.config.OnsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, ONSCode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(ONSCode), endpoint)
-		}
-		onsconn, err := ons.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ONS client: %#v", err)
-		}
-		onsconn.AppendUserAgent(Terraform, terraformVersion)
-		onsconn.AppendUserAgent(Provider, providerVersion)
-		onsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.onsconn = onsconn
-	}
-
-	return do(client.onsconn)
 }
 
 func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interface{}, error)) (interface{}, error) {

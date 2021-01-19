@@ -1,9 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -109,23 +111,22 @@ func dataSourceAlicloudOnsTopics() *schema.Resource {
 func dataSourceAlicloudOnsTopicsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := ons.CreateOnsTopicListRequest()
+	action := "OnsTopicList"
+	request := make(map[string]interface{})
 	if v, ok := d.GetOk("instance_id"); ok {
-		request.InstanceId = v.(string)
+		request["InstanceId"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tags := make([]ons.OnsTopicListTag, len(v.(map[string]interface{})))
-		i := 0
+		tags := make([]map[string]interface{}, 0)
 		for key, value := range v.(map[string]interface{}) {
-			tags[i] = ons.OnsTopicListTag{
-				Key:   key,
-				Value: value.(string),
-			}
-			i++
+			tags = append(tags, map[string]interface{}{
+				"Key":   key,
+				"Value": value.(string),
+			})
 		}
-		request.Tag = &tags
+		request["Tag"] = tags
 	}
-	var objects []ons.PublishInfoDo
+	var objects []map[string]interface{}
 	var topicNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -144,71 +145,81 @@ func dataSourceAlicloudOnsTopicsRead(d *schema.ResourceData, meta interface{}) e
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	var response *ons.OnsTopicListResponse
-	raw, err := client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsTopicList(request)
-	})
+	var response map[string]interface{}
+	conn, err := client.NewOnsClient()
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_topics", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ = raw.(*ons.OnsTopicListResponse)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_topics", action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
 
-	for _, item := range response.Data.PublishInfoDo {
+	resp, err := jsonpath.Get("$.Data.PublishInfoDo", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.PublishInfoDo", response)
+	}
+	for _, v := range resp.([]interface{}) {
+		item := v.(map[string]interface{})
 		if topicNameRegex != nil {
-			if !topicNameRegex.MatchString(item.Topic) {
+			if !topicNameRegex.MatchString(fmt.Sprint(item["Topic"])) {
 				continue
 			}
 		}
 		if len(idsMap) > 0 {
-			if _, ok := idsMap[item.Topic]; !ok {
+			if _, ok := idsMap[fmt.Sprint(item["Topic"])]; !ok {
 				continue
 			}
 		}
 		objects = append(objects, item)
 	}
 	ids := make([]string, 0)
-	names := make([]string, 0)
+	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"independent_naming": object.IndependentNaming,
-			"instance_id":        object.InstanceId,
-			"message_type":       object.MessageType,
-			"owner":              object.Owner,
-			"relation":           object.Relation,
-			"relation_name":      object.RelationName,
-			"remark":             object.Remark,
-			"id":                 object.Topic,
-			"topic_name":         object.Topic,
-			"topic":              object.Topic,
+			"independent_naming": object["IndependentNaming"],
+			"instance_id":        object["InstanceId"],
+			"message_type":       formatInt(object["MessageType"]),
+			"owner":              object["Owner"],
+			"relation":           formatInt(object["Relation"]),
+			"relation_name":      object["RelationName"],
+			"remark":             object["Remark"],
+			"id":                 fmt.Sprint(object["Topic"]),
+			"topic_name":         fmt.Sprint(object["Topic"]),
+			"topic":              fmt.Sprint(object["Topic"]),
 		}
-		ids = append(ids, object.Topic)
-		tags := make(map[string]string)
-		for _, t := range object.Tags.Tag {
-			tags[t.Key] = t.Value
+
+		tags := make(map[string]interface{})
+		t, _ := jsonpath.Get("$.Tags.Tag", object)
+		for _, t := range t.([]interface{}) {
+			key := t.(map[string]interface{})["Key"].(string)
+			value := t.(map[string]interface{})["Value"].(string)
+
+			if !ignoredTags(key, value) {
+				tags[key] = value
+			}
 		}
 		mapping["tags"] = tags
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
-			names = append(names, object.Topic)
+			ids = append(ids, fmt.Sprint(object["Topic"]))
+			names = append(names, object["Topic"])
 			s = append(s, mapping)
 			continue
 		}
 
-		request := ons.CreateOnsTopicStatusRequest()
-		request.RegionId = client.RegionId
-		request.InstanceId = d.Get("instance_id").(string)
-		request.Topic = object.Topic
-		raw, err := client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.OnsTopicStatus(request)
-		})
+		onsService := OnsService{client}
+		id := fmt.Sprint(object["InstanceId"], ":", object["Topic"])
+		getResp, err := onsService.OnsTopicStatus(id)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_topics", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		responseGet, _ := raw.(*ons.OnsTopicStatusResponse)
-		mapping["perm"] = responseGet.Data.Perm
-		names = append(names, object.Topic)
+		mapping["perm"] = getResp["Perm"]
+		ids = append(ids, fmt.Sprint(object["Topic"]))
+		names = append(names, object["Topic"])
 		s = append(s, mapping)
 	}
 

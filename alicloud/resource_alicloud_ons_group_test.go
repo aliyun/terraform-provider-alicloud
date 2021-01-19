@@ -6,9 +6,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -26,7 +28,6 @@ func testSweepOnsGroup(region string) error {
 		return WrapErrorf(err, "error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	onsService := OnsService{client}
 
 	prefixes := []string{
 		"GID-tf-testAcc",
@@ -35,61 +36,71 @@ func testSweepOnsGroup(region string) error {
 		"CID_tf-testacc",
 	}
 
-	instanceListReq := ons.CreateOnsInstanceInServiceListRequest()
-
-	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsInstanceInServiceList(instanceListReq)
-	})
+	action := "OnsInstanceInServiceList"
+	request := make(map[string]interface{})
+	var response map[string]interface{}
+	conn, err := client.NewOnsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve ons instance in service list: %s", err)
 	}
-
-	instanceListResp, _ := raw.(*ons.OnsInstanceInServiceListResponse)
+	resp, err := jsonpath.Get("$.Data.InstanceVO", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.InstanceVO", response)
+	}
 
 	var instanceIds []string
-	for _, v := range instanceListResp.Data.InstanceVO {
-		instanceIds = append(instanceIds, v.InstanceId)
+	for _, v := range resp.([]interface{}) {
+		item := v.(map[string]interface{})
+		instanceIds = append(instanceIds, item["InstanceId"].(string))
 	}
 
 	for _, instanceId := range instanceIds {
-		request := ons.CreateOnsGroupListRequest()
-		request.InstanceId = instanceId
 
-		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.OnsGroupList(request)
-		})
+		action := "OnsGroupList"
+		request := make(map[string]interface{})
+		var response map[string]interface{}
+		conn, err := client.NewOnsClient()
 		if err != nil {
-			log.Printf("[ERROR] Failed to retrieve ons groups on instance (%s): %s", instanceId, err)
-			continue
+			return WrapError(err)
+		}
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_groups", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.Data.SubscribeInfoDo", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.SubscribeInfoDo", response)
 		}
 
-		groupListResp, _ := raw.(*ons.OnsGroupListResponse)
-		groups := groupListResp.Data.SubscribeInfoDo
-
-		for _, v := range groups {
-			groupId := v.GroupId
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
+			name := item["GroupId"].(string)
 			skip := true
 			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(groupId), strings.ToLower(prefix)) {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 					skip = false
 					break
 				}
 			}
 			if skip {
-				log.Printf("[INFO] Skipping ons group: %s ", groupId)
+				log.Printf("[INFO] Skipping ons group: %s ", name)
 				continue
 			}
-			log.Printf("[INFO] delete ons group: %s ", groupId)
+			log.Printf("[INFO] delete ons group: %s ", name)
 
-			request := ons.CreateOnsGroupDeleteRequest()
-			request.InstanceId = instanceId
-			request.GroupId = v.GroupId
-
-			_, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-				return onsClient.OnsGroupDelete(request)
-			})
+			action := "OnsGroupDelete"
+			request := map[string]interface{}{
+				"GroupId":    name,
+				"InstanceId": instanceId,
+			}
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete ons group (%s): %s", groupId, err)
+				log.Printf("[ERROR] Failed to delete ons group (%s): %s", name, err)
+
 			}
 		}
 	}
@@ -98,7 +109,7 @@ func testSweepOnsGroup(region string) error {
 }
 
 func TestAccAlicloudOnsGroup_basic(t *testing.T) {
-	var v ons.SubscribeInfoDo
+	var v map[string]interface{}
 	resourceId := "alicloud_ons_group.default"
 	ra := resourceAttrInit(resourceId, onsGroupBasicMap)
 	serviceFunc := func() interface{} {

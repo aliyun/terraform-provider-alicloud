@@ -88,26 +88,24 @@ func resourceAlicloudOnsInstanceCreate(d *schema.ResourceData, meta interface{})
 		request["Remark"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 10*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Throttling.User"}) {
+			if IsExpectedErrors(err, []string{"Throttling.User"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
-		response = response["Data"].(map[string]interface{})
-		d.SetId(fmt.Sprint(response["InstanceId"]))
 		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ons_instance", action, AlibabaCloudSdkGoERROR)
 	}
+	responseData := response["Data"].(map[string]interface{})
+	d.SetId(fmt.Sprint(responseData["InstanceId"]))
 
 	return resourceAlicloudOnsInstanceUpdate(d, meta)
 }
@@ -126,10 +124,10 @@ func resourceAlicloudOnsInstanceRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("instance_name", object["InstanceName"])
 	d.Set("name", object["InstanceName"])
 	d.Set("instance_type", formatInt(object["InstanceType"]))
-	d.Set("release_time", object["ReleaseTime"])
+	d.Set("release_time", fmt.Sprint(formatInt(object["ReleaseTime"])))
 	d.Set("remark", object["Remark"])
 	d.Set("status", formatInt(object["InstanceStatus"]))
-	d.Set("instance_status", object["InstanceStatus"])
+	d.Set("instance_status", formatInt(object["InstanceStatus"]))
 
 	listTagResourcesObject, err := onsService.ListTagResources(d.Id(), "INSTANCE")
 	if err != nil {
@@ -172,8 +170,19 @@ func resourceAlicloudOnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapError(err)
 		}
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-		addDebug(action, response, request)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
