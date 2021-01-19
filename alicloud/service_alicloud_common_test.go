@@ -889,6 +889,7 @@ resource "alicloud_vswitch" "default" {
 
 const EmrCommonTestCase = `
 data "alicloud_emr_main_versions" "default" {
+	cluster_type = ["HADOOP"]
 }
 
 data "alicloud_emr_instance_types" "default" {
@@ -958,6 +959,7 @@ resource "alicloud_ram_role" "default" {
 
 const EmrGatewayTestCase = `
 data "alicloud_emr_main_versions" "default" {
+	cluster_type = ["HADOOP"]
 }
 
 data "alicloud_emr_instance_types" "default" {
@@ -1092,6 +1094,7 @@ resource "alicloud_emr_cluster" "default" {
 `
 const EmrLocalStorageTestCase = `
 data "alicloud_emr_main_versions" "default" {
+	cluster_type = ["HADOOP"]
 }
 
 data "alicloud_emr_instance_types" "local_disk" {
