@@ -19,6 +19,9 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 		Read:   resourceAlicloudEmrClusterRead,
 		Update: resourceAlicloudEmrClusterUpdate,
 		Delete: resourceAlicloudEmrClusterDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(20 * time.Minute),
@@ -488,6 +491,9 @@ func resourceAlicloudEmrClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("eas_enable", object.ClusterInfo.EasEnable)
 	d.Set("user_defined_emr_ecs_role", object.ClusterInfo.UserDefinedEmrEcsRole)
 	d.Set("related_cluster_id", object.ClusterInfo.RelateClusterInfo.ClusterId)
+	d.Set("zone_id", object.ClusterInfo.ZoneId)
+	d.Set("emr_ver", object.ClusterInfo.SoftwareInfo.EmrVer)
+	d.Set("cluster_type", object.ClusterInfo.SoftwareInfo.ClusterType)
 	tags, err := emrService.DescribeEmrClusterTags(d.Id(), TagResourceInstance)
 	if err != nil {
 		return WrapError(err)

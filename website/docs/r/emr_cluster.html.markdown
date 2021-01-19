@@ -600,3 +600,11 @@ The following attributes are exported:
 
 * `id` - The cluster ID.
 
+## Import
+
+Aliclioud E-MapReduce cluster can be imported using the id e.g.
+
+```
+$ terraform import alicloud_emr_cluster.default C-B47FB8FE96C67XXXX
+```
+
