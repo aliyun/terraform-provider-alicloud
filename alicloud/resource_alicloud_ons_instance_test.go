@@ -6,7 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -29,7 +31,6 @@ func testSweepOnsInstance(region string) error {
 		return WrapErrorf(err, "error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	onsService := OnsService{client}
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -40,20 +41,26 @@ func testSweepOnsInstance(region string) error {
 		"CID_tf-testacc",
 	}
 
-	request := ons.CreateOnsInstanceInServiceListRequest()
-
-	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsInstanceInServiceList(request)
-	})
+	action := "OnsInstanceInServiceList"
+	request := make(map[string]interface{})
+	var response map[string]interface{}
+	conn, err := client.NewOnsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve ONS instance in service list: %s", err)
 	}
 
-	var response *ons.OnsInstanceInServiceListResponse
-	response, _ = raw.(*ons.OnsInstanceInServiceListResponse)
+	resp, err := jsonpath.Get("$.Data.InstanceVO", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.InstanceVO", response)
+	}
 
-	for _, v := range response.Data.InstanceVO {
-		name := v.InstanceName
+	for _, v := range resp.([]interface{}) {
+		item := v.(map[string]interface{})
+		name := item["InstanceName"].(string)
 		skip := true
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
@@ -67,13 +74,15 @@ func testSweepOnsInstance(region string) error {
 		}
 		log.Printf("[INFO] delete ons instance: %s ", name)
 
-		request := ons.CreateOnsInstanceDeleteRequest()
-		request.InstanceId = v.InstanceId
-
-		_, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.OnsInstanceDelete(request)
-		})
-
+		conn, err := client.NewOnsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "OnsInstanceDelete"
+		request := map[string]interface{}{
+			"InstanceId": item["InstanceId"],
+		}
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete ons instance (%s): %s", name, err)
 		}

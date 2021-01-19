@@ -6,7 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -26,46 +27,54 @@ func testSweepOnsTopic(region string) error {
 		return WrapErrorf(err, "error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	onsService := OnsService{client}
 
 	prefixes := []string{
 		"tf-testAcc",
 		"tf-testacc",
 	}
 
-	instanceListReq := ons.CreateOnsInstanceInServiceListRequest()
-
-	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsInstanceInServiceList(instanceListReq)
-	})
+	action := "OnsInstanceInServiceList"
+	request := make(map[string]interface{})
+	var response map[string]interface{}
+	conn, err := client.NewOnsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve ons instance in service list: %s", err)
 	}
-
-	instanceListResp, _ := raw.(*ons.OnsInstanceInServiceListResponse)
+	resp, err := jsonpath.Get("$.Data.InstanceVO", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.InstanceVO", response)
+	}
 
 	var instanceIds []string
-	for _, v := range instanceListResp.Data.InstanceVO {
-		instanceIds = append(instanceIds, v.InstanceId)
+	for _, v := range resp.([]interface{}) {
+		item := v.(map[string]interface{})
+		instanceIds = append(instanceIds, item["InstanceId"].(string))
 	}
 
 	for _, instanceId := range instanceIds {
-		request := ons.CreateOnsTopicListRequest()
-		request.InstanceId = instanceId
-
-		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.OnsTopicList(request)
-		})
+		action := "OnsTopicList"
+		request := make(map[string]interface{})
+		var response map[string]interface{}
+		conn, err := client.NewOnsClient()
 		if err != nil {
-			log.Printf("[ERROR] Failed to retrieve ons topics on instance (%s): %s", instanceId, err)
-			continue
+			return WrapError(err)
+		}
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve ons instance in service list: %s", err)
+		}
+		resp, err := jsonpath.Get("$.Data.PublishInfoDo", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.PublishInfoDo", response)
 		}
 
-		topicListResp, _ := raw.(*ons.OnsTopicListResponse)
-		topics := topicListResp.Data.PublishInfoDo
-
-		for _, v := range topics {
-			name := v.Topic
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
+			name := item["Topic"].(string)
 			skip := true
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
@@ -79,13 +88,12 @@ func testSweepOnsTopic(region string) error {
 			}
 			log.Printf("[INFO] delete ons topic: %s ", name)
 
-			request := ons.CreateOnsTopicDeleteRequest()
-			request.InstanceId = instanceId
-			request.Topic = v.Topic
-
-			_, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-				return onsClient.OnsTopicDelete(request)
-			})
+			action := "OnsTopicDelete"
+			request := map[string]interface{}{
+				"InstanceId": instanceId,
+				"Topic":      item["Topic"],
+			}
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete ons topic (%s): %s", name, err)
 			}
@@ -96,7 +104,7 @@ func testSweepOnsTopic(region string) error {
 }
 
 func TestAccAlicloudOnsTopic_basic(t *testing.T) {
-	var v ons.PublishInfoDo
+	var v map[string]interface{}
 	resourceId := "alicloud_ons_topic.default"
 	ra := resourceAttrInit(resourceId, onsTopicBasicMap)
 	serviceFunc := func() interface{} {
@@ -158,15 +166,6 @@ func TestAccAlicloudOnsTopic_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"message_type": "5",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"message_type": "5"}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"perm": "4",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -176,29 +175,18 @@ func TestAccAlicloudOnsTopic_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"topic":  "tf-testacc-alicloud_ons_default_topic_change",
-					"remark": "default remark",
+					"perm": "2",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"topic":  "tf-testacc-alicloud_ons_default_topic_change",
-						"remark": "default remark"}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"topic":        "${var.topic}",
-					"message_type": "0",
-					"remark":       "alicloud_ons_topic_remark",
-					"perm":         "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"topic":        fmt.Sprintf("tf-testacc%sonstopicbasic%v", defaultRegionToTest, rand),
-						"message_type": "0",
-						"remark":       "alicloud_ons_topic_remark",
 						"perm":         "2",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
 					}),
 				),
 			},
@@ -220,7 +208,6 @@ variable "topic" {
 }
 
 var onsTopicBasicMap = map[string]string{
-	"topic":        "${var.topic}",
 	"message_type": "1",
 	"remark":       "alicloud_ons_topic_remark",
 	"perm":         "6",

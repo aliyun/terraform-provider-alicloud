@@ -5,8 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -73,44 +72,48 @@ func resourceAlicloudOnsGroup() *schema.Resource {
 
 func resourceAlicloudOnsGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := ons.CreateOnsGroupCreateRequest()
+	var response map[string]interface{}
+	action := "OnsGroupCreate"
+	request := make(map[string]interface{})
+	conn, err := client.NewOnsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	if v, ok := d.GetOk("group_name"); ok {
-		request.GroupId = v.(string)
+		request["GroupId"] = v
 	} else if v, ok := d.GetOk("group_id"); ok {
-		request.GroupId = v.(string)
+		request["GroupId"] = v
 	} else {
 		return WrapError(Error(`[ERROR] Argument "group_id" or "group_name" must be set one!`))
 	}
 
 	if v, ok := d.GetOk("group_type"); ok {
-		request.GroupType = v.(string)
+		request["GroupType"] = v
 	}
 
-	request.InstanceId = d.Get("instance_id").(string)
+	request["InstanceId"] = d.Get("instance_id")
 	if v, ok := d.GetOk("remark"); ok {
-		request.Remark = v.(string)
+		request["Remark"] = v
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		raw, err := client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.OnsGroupCreate(request)
-		})
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Throttling.User"}) {
+			if IsExpectedErrors(err, []string{"Throttling.User"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
-		d.SetId(fmt.Sprintf("%v:%v", request.InstanceId, request.GroupId))
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ons_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ons_group", action, AlibabaCloudSdkGoERROR)
 	}
+
+	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["GroupId"]))
 
 	return resourceAlicloudOnsGroupUpdate(d, meta)
 }
@@ -133,19 +136,15 @@ func resourceAlicloudOnsGroupRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("group_name", parts[1])
 	d.Set("group_id", parts[1])
 	d.Set("instance_id", parts[0])
-	d.Set("group_type", object.GroupType)
-	d.Set("remark", object.Remark)
-
-	tags := make(map[string]string)
-	for _, t := range object.Tags.Tag {
-		tags[t.Key] = t.Value
-	}
-	d.Set("tags", tags)
+	d.Set("group_type", object["GroupType"])
+	d.Set("remark", object["Remark"])
+	d.Set("tags", tagsToMap(object["Tags"].(map[string]interface{})["Tag"]))
 	return nil
 }
 func resourceAlicloudOnsGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	onsService := OnsService{client}
+	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -153,22 +152,37 @@ func resourceAlicloudOnsGroupUpdate(d *schema.ResourceData, meta interface{}) er
 	d.Partial(true)
 
 	if d.HasChange("tags") {
-		if err := onsService.SetResourceTagsForGroup(d, "GROUP"); err != nil {
+		if err := onsService.SetResourceTags(d, "GROUP"); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("tags")
 	}
 	if d.HasChange("read_enable") {
-		request := ons.CreateOnsGroupConsumerUpdateRequest()
-		request.GroupId = parts[1]
-		request.InstanceId = parts[0]
-		request.ReadEnable = requests.NewBoolean(d.Get("read_enable").(bool))
-		raw, err := client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.OnsGroupConsumerUpdate(request)
-		})
-		addDebug(request.GetActionName(), raw)
+		request := map[string]interface{}{
+			"GroupId":    parts[1],
+			"InstanceId": parts[0],
+		}
+		request["ReadEnable"] = d.Get("read_enable")
+		action := "OnsGroupConsumerUpdate"
+		conn, err := client.NewOnsClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("read_enable")
 	}
@@ -181,29 +195,35 @@ func resourceAlicloudOnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
-	request := ons.CreateOnsGroupDeleteRequest()
-	request.GroupId = parts[1]
-	request.InstanceId = parts[0]
+	action := "OnsGroupDelete"
+	var response map[string]interface{}
+	conn, err := client.NewOnsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"GroupId":    parts[1],
+		"InstanceId": parts[0],
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		raw, err := client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.OnsGroupDelete(request)
-		})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Throttling.User"}) {
+			if IsExpectedErrors(err, []string{"Throttling.User"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

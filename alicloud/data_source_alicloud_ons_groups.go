@@ -1,9 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -41,8 +43,8 @@ func dataSourceAlicloudOnsGroups() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"http", "tcp"}, false),
 				Default:      "tcp",
+				ValidateFunc: validation.StringInSlice([]string{"http", "tcp"}, false),
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -101,26 +103,25 @@ func dataSourceAlicloudOnsGroups() *schema.Resource {
 func dataSourceAlicloudOnsGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := ons.CreateOnsGroupListRequest()
+	action := "OnsGroupList"
+	request := make(map[string]interface{})
 	if v, ok := d.GetOk("group_type"); ok {
-		request.GroupType = v.(string)
+		request["GroupType"] = v
 	}
 	if v, ok := d.GetOk("instance_id"); ok {
-		request.InstanceId = v.(string)
+		request["InstanceId"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tags := make([]ons.OnsGroupListTag, len(v.(map[string]interface{})))
-		i := 0
+		tags := make([]map[string]interface{}, 0)
 		for key, value := range v.(map[string]interface{}) {
-			tags[i] = ons.OnsGroupListTag{
-				Key:   key,
-				Value: value.(string),
-			}
-			i++
+			tags = append(tags, map[string]interface{}{
+				"Key":   key,
+				"Value": value.(string),
+			})
 		}
-		request.Tag = &tags
+		request["Tag"] = tags
 	}
-	var objects []ons.SubscribeInfoDo
+	var objects []map[string]interface{}
 	var groupNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -146,49 +147,64 @@ func dataSourceAlicloudOnsGroupsRead(d *schema.ResourceData, meta interface{}) e
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	var response *ons.OnsGroupListResponse
-	raw, err := client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsGroupList(request)
-	})
+	var response map[string]interface{}
+	conn, err := client.NewOnsClient()
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ = raw.(*ons.OnsGroupListResponse)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_groups", action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
 
-	for _, item := range response.Data.SubscribeInfoDo {
+	resp, err := jsonpath.Get("$.Data.SubscribeInfoDo", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.SubscribeInfoDo", response)
+	}
+	for _, v := range resp.([]interface{}) {
+		item := v.(map[string]interface{})
 		if groupNameRegex != nil {
-			if !groupNameRegex.MatchString(item.GroupId) {
+			if !groupNameRegex.MatchString(fmt.Sprint(item["GroupId"])) {
 				continue
 			}
 		}
 		if len(idsMap) > 0 {
-			if _, ok := idsMap[item.GroupId]; !ok {
+			if _, ok := idsMap[fmt.Sprint(item["GroupId"])]; !ok {
 				continue
 			}
 		}
 		objects = append(objects, item)
 	}
 	ids := make([]string, 0)
-	names := make([]string, 0)
+	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":                 object.GroupId,
-			"group_name":         object.GroupId,
-			"group_type":         object.GroupType,
-			"independent_naming": object.IndependentNaming,
-			"instance_id":        object.InstanceId,
-			"owner":              object.Owner,
-			"remark":             object.Remark,
+			"id":                 fmt.Sprint(object["GroupId"]),
+			"group_name":         fmt.Sprint(object["GroupId"]),
+			"group_type":         object["GroupType"],
+			"independent_naming": object["IndependentNaming"],
+			"instance_id":        object["InstanceId"],
+			"owner":              object["Owner"],
+			"remark":             object["Remark"],
 		}
-		ids = append(ids, object.GroupId)
-		tags := make(map[string]string)
-		for _, t := range object.Tags.Tag {
-			tags[t.Key] = t.Value
+
+		tags := make(map[string]interface{})
+		t, _ := jsonpath.Get("$.Tags.Tag", object)
+		for _, t := range t.([]interface{}) {
+			key := t.(map[string]interface{})["Key"].(string)
+			value := t.(map[string]interface{})["Value"].(string)
+
+			if !ignoredTags(key, value) {
+				tags[key] = value
+			}
 		}
 		mapping["tags"] = tags
-		names = append(names, object.GroupId)
+		ids = append(ids, fmt.Sprint(object["GroupId"]))
+		names = append(names, object["GroupId"])
 		s = append(s, mapping)
 	}
 

@@ -59,7 +59,7 @@ func TestAccAlicloudOnsTopicsDataSource(t *testing.T) {
 		return map[string]string{
 			"names.#":                     "1",
 			"topics.#":                    "1",
-			"topics.0.topic":              fmt.Sprintf("tf-testacc%sonstopic%v", defaultRegionToTest, rand),
+			"topics.0.topic_name":         fmt.Sprintf("tf-testacc%sonstopic%v", defaultRegionToTest, rand),
 			"topics.0.relation":           "6",
 			"topics.0.relation_name":      "授权发布/订阅",
 			"topics.0.message_type":       "0",
@@ -94,12 +94,12 @@ variable "topic" {
 }
 
 resource "alicloud_ons_instance" "default" {
-name = "tf-testaccOnsInstanceTopicbasic"
+instance_name = var.topic
 }
 
 resource "alicloud_ons_topic" "default" {
   instance_id = "${alicloud_ons_instance.default.id}"
-  topic = "${var.topic}"
+  topic_name = "${var.topic}"
   message_type = "0"
   remark = "alicloud_ons_topic_remark"
   perm = "6"
