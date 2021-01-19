@@ -937,13 +937,14 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	update = false
 	modifyDBInstanceConnectionStringReq := r_kvstore.CreateModifyDBInstanceConnectionStringRequest()
 	modifyDBInstanceConnectionStringReq.DBInstanceId = d.Id()
-	if !d.IsNewResource() && d.HasChange("private_connection_prefix") {
+	if d.HasChange("private_connection_prefix") {
 		update = true
 	}
 	modifyDBInstanceConnectionStringReq.NewConnectionString = d.Get("private_connection_prefix").(string)
 	modifyDBInstanceConnectionStringReq.IPType = "Private"
 	if update {
-		modifyDBInstanceConnectionStringReq.CurrentConnectionString = d.Get("connection_domain").(string)
+		object, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
+		modifyDBInstanceConnectionStringReq.CurrentConnectionString = object.ConnectionDomain
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.ModifyDBInstanceConnectionString(modifyDBInstanceConnectionStringReq)
 		})
