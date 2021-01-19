@@ -1,5 +1,5 @@
 ---
-subcategory: "Anycast Elastic IP Address"
+subcategory: "Elastic IP Address (EIP)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_eipanycast_anycast_eip_addresses"
 sidebar_current: "docs-alicloud-datasource-eipanycast-anycast-eip-addresses"

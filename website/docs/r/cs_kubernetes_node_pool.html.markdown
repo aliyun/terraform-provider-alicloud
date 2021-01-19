@@ -1,5 +1,5 @@
 ---
-subcategory: "Container Service (CS)"
+subcategory: "Container Service for Kubernetes (CSK)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cs_kubernetes_node_pool"
 sidebar_current: "docs-alicloud-resource-cs-kubernetes-node-pool"
