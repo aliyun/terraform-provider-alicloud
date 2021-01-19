@@ -1,5 +1,5 @@
 ---
-subcategory: "BGP-Line Anti-DDoS"
+subcategory: "Anti-DDoS Pro"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ddosbgp_instance"
 sidebar_current: "docs-alicloud-resource-ddosbgp-instance"

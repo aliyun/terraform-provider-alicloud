@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Connect Network"
+subcategory: "Smart Access Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cloud_connect_networks"
 sidebar_current: "docs-alicloud-datasource-cloud-connect-networks"

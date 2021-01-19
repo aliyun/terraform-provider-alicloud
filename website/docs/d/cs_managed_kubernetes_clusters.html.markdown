@@ -1,5 +1,5 @@
 ---
-subcategory: "Container Service (CS)"
+subcategory: "Container Service for Kubernetes (CSK)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cs_managed_kubernetes_clusters"
 sidebar_current: "docs-alicloud-datasource-cs-managed-kubernetes-clusters"
