@@ -373,6 +373,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eipanycast_anycast_eip_addresses":           dataSourceAlicloudEipanycastAnycastEipAddresses(),
 			"alicloud_brain_industrial_pid_projects":              dataSourceAlicloudBrainIndustrialPidProjects(),
 			"alicloud_cms_monitor_groups":                         dataSourceAlicloudCmsMonitorGroups(),
+			"alicloud_ram_saml_providers":                         dataSourceAlicloudRamSamlProviders(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -668,6 +669,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_brain_industrial_pid_project":              resourceAlicloudBrainIndustrialPidProject(),
 			"alicloud_cms_monitor_group":                         resourceAlicloudCmsMonitorGroup(),
 			"alicloud_eipanycast_anycast_eip_address_attachment": resourceAlicloudEipanycastAnycastEipAddressAttachment(),
+			"alicloud_ram_saml_provider":                         resourceAlicloudRamSamlProvider(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -818,6 +820,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.HitsdbEndpoint = strings.TrimSpace(endpoints["hitsdb"].(string))
 		config.BrainIndustrialEndpoint = strings.TrimSpace(endpoints["brain_industrial"].(string))
 		config.EipanycastEndpoint = strings.TrimSpace(endpoints["eipanycast"].(string))
+		config.ImsEndpoint = strings.TrimSpace(endpoints["ims"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1026,6 +1029,8 @@ func init() {
 		"brain_industrial_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom brain_industrial endpoints.",
 
 		"eipanycast_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eipanycast endpoints.",
+
+		"ims_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ims endpoints.",
 	}
 }
 
@@ -1070,6 +1075,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"ims": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ims_endpoint"],
+				},
+
 				"brain_industrial": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1531,6 +1543,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["hitsdb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["brain_industrial"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["eipanycast"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ims"].(string)))
 	return hashcode.String(buf.String())
 }
 
