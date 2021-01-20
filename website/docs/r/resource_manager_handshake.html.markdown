@@ -16,7 +16,7 @@ For information about Resource Manager handshake and how to use it, see [What is
 
 ## Example Usage
 
-```
+```terraform
 # Add a Resource Manager handshake.
 resource "alicloud_resource_manager_handshake" "example" {
   target_entity = "1182775234******"

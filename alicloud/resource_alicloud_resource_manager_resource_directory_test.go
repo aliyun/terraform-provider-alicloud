@@ -3,13 +3,12 @@ package alicloud
 import (
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudResourceManagerResourceDirectory_basic(t *testing.T) {
-	var v resourcemanager.ResourceDirectory
+	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_resource_directory.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerResourceDirectoryMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

@@ -20,7 +20,7 @@ For information about Resource Manager Foler and how to use it, see [What is Res
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_resource_manager_folder" "example" {
     folder_name = "test"
 }

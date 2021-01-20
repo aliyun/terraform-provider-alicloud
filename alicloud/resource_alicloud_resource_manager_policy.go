@@ -3,9 +3,11 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -56,25 +58,39 @@ func resourceAlicloudResourceManagerPolicy() *schema.Resource {
 
 func resourceAlicloudResourceManagerPolicyCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := resourcemanager.CreateCreatePolicyRequest()
+	var response map[string]interface{}
+	action := "CreatePolicy"
+	request := make(map[string]interface{})
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	if v, ok := d.GetOk("description"); ok {
-		request.Description = v.(string)
+		request["Description"] = v
 	}
 
-	request.PolicyDocument = d.Get("policy_document").(string)
-	request.PolicyName = d.Get("policy_name").(string)
-	raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-		return resourcemanagerClient.CreatePolicy(request)
+	request["PolicyDocument"] = d.Get("policy_document")
+	request["PolicyName"] = d.Get("policy_name")
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_policy", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_policy", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*resourcemanager.CreatePolicyResponse)
-	d.SetId(fmt.Sprintf("%v", response.Policy.PolicyName))
+	responsePolicy := response["Policy"].(map[string]interface{})
+	d.SetId(fmt.Sprint(responsePolicy["PolicyName"]))
 
-	return resourceAlicloudResourceManagerPolicyRead(d, meta)
+	return resourceAlicloudResourceManagerPolicyUpdate(d, meta)
 }
 func resourceAlicloudResourceManagerPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -90,46 +106,79 @@ func resourceAlicloudResourceManagerPolicyRead(d *schema.ResourceData, meta inte
 	}
 
 	d.Set("policy_name", d.Id())
-	d.Set("default_version", object.DefaultVersion)
-	d.Set("description", object.Description)
-	d.Set("policy_type", object.PolicyType)
+	d.Set("default_version", object["DefaultVersion"])
+	d.Set("description", object["Description"])
+	d.Set("policy_type", object["PolicyType"])
 
 	getPolicyVersionObject, err := resourcemanagerService.GetPolicyVersion(d.Id(), d)
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("policy_document", getPolicyVersionObject.PolicyDocument)
+	d.Set("policy_document", getPolicyVersionObject["PolicyDocument"])
 	return nil
 }
 func resourceAlicloudResourceManagerPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	if d.HasChange("default_version") {
-		request := resourcemanager.CreateSetDefaultPolicyVersionRequest()
-		request.PolicyName = d.Id()
-		request.VersionId = d.Get("default_version").(string)
-		raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourcemanagerClient.SetDefaultPolicyVersion(request)
-		})
-		addDebug(request.GetActionName(), raw)
+	var response map[string]interface{}
+	if !d.IsNewResource() && d.HasChange("default_version") {
+		request := map[string]interface{}{
+			"PolicyName": d.Id(),
+		}
+		request["VersionId"] = d.Get("default_version")
+		action := "SetDefaultPolicyVersion"
+		conn, err := client.NewResourcemanagerClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 	return resourceAlicloudResourceManagerPolicyRead(d, meta)
 }
 func resourceAlicloudResourceManagerPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := resourcemanager.CreateDeletePolicyRequest()
-	request.PolicyName = d.Id()
-	raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-		return resourcemanagerClient.DeletePolicy(request)
+	action := "DeletePolicy"
+	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"PolicyName": d.Id(),
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
-	addDebug(request.GetActionName(), raw)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

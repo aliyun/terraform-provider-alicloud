@@ -3,7 +3,8 @@ package alicloud
 import (
 	"fmt"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -40,7 +41,7 @@ func dataSourceAlicloudResourceManagerPolicyVersions() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"create_date": {
+						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -48,7 +49,7 @@ func dataSourceAlicloudResourceManagerPolicyVersions() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
-						"id": {
+						"policy_document": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -59,6 +60,11 @@ func dataSourceAlicloudResourceManagerPolicyVersions() *schema.Resource {
 					},
 				},
 			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -66,10 +72,10 @@ func dataSourceAlicloudResourceManagerPolicyVersions() *schema.Resource {
 func dataSourceAlicloudResourceManagerPolicyVersionsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := resourcemanager.CreateListPolicyVersionsRequest()
-	request.PolicyName = d.Get("policy_name").(string)
-	request.PolicyType = d.Get("policy_type").(string)
-	var objects []resourcemanager.PolicyVersion
+	action := "ListPolicyVersions"
+	request := make(map[string]interface{})
+	request["PolicyName"] = d.Get("policy_name")
+	request["PolicyType"] = d.Get("policy_type")
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -79,35 +85,56 @@ func dataSourceAlicloudResourceManagerPolicyVersionsRead(d *schema.ResourceData,
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-		return resourcemanagerClient.ListPolicyVersions(request)
-	})
+	var objects []map[string]interface{}
+	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_policy_versions", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*resourcemanager.ListPolicyVersionsResponse)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_policy_versions", action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
 
-	for _, item := range response.PolicyVersions.PolicyVersion {
+	resp, err := jsonpath.Get("$.PolicyVersions.PolicyVersion", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PolicyVersions.PolicyVersion", response)
+	}
+	for _, v := range resp.([]interface{}) {
+		item := v.(map[string]interface{})
 		if len(idsMap) > 0 {
-			if _, ok := idsMap[request.PolicyName+":"+item.VersionId]; !ok {
+			if _, ok := idsMap[fmt.Sprint(request["PolicyName"], ":", item["VersionId"])]; !ok {
 				continue
 			}
 		}
 		objects = append(objects, item)
 	}
-	ids := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-
-	for i, object := range objects {
+	ids := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"create_date":        object.CreateDate,
-			"is_default_version": object.IsDefaultVersion,
-			"id":                 fmt.Sprintf("%v:%v", request.PolicyName, object.VersionId),
-			"version_id":         object.VersionId,
+			"id":                 fmt.Sprint(request["PolicyName"], ":", object["VersionId"]),
+			"is_default_version": object["IsDefaultVersion"],
+			"version_id":         object["VersionId"],
 		}
-		ids[i] = fmt.Sprintf("%v:%v", request.PolicyName, object.VersionId)
-		s[i] = mapping
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			ids = append(ids, fmt.Sprint(request["PolicyName"], ":", object["VersionId"]))
+			s = append(s, mapping)
+			continue
+		}
+
+		resourcemanagerService := ResourcemanagerService{client}
+		id := fmt.Sprint(request["PolicyName"], ":", object["VersionId"])
+		getResp, err := resourcemanagerService.DescribeResourceManagerPolicyVersion(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		mapping["policy_document"] = getResp["PolicyDocument"]
+		ids = append(ids, fmt.Sprint(request["PolicyName"], ":", object["VersionId"]))
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))

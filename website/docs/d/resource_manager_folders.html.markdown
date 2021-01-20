@@ -17,7 +17,7 @@ This data source provides the resource manager folders of the current Alibaba Cl
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_resource_manager_folders" "example" {
   name_regex = "tftest"
 }
@@ -35,6 +35,8 @@ The following arguments are supported:
 * `name_regex` - (Optional) A regex string to filter results by folder name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `parent_folder_id` (Optional) The ID of the parent folder.
+* `query_keyword` (Optional, ForceNew, Available in 1.114.0+) The query keyword.
+* `enable_details` -(Optional, Available in v1.114.0+) Default to `false`. Set it to true can output more details.
 
 ## Attributes Reference
 
@@ -46,4 +48,5 @@ The following attributes are exported in addition to the arguments listed above:
     * `id` - The ID of the folder.
     * `folder_id`- The ID of the folder.
     * `folder_name`- The name of the folder.
+    * `parent_folder_id`- (Available in v1.114.0+)The ID of the parent folder.
     
