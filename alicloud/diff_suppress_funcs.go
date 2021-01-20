@@ -268,6 +268,13 @@ func redisPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.Resourc
 	return true
 }
 
+func ramSAMLProviderDiffSuppressFunc(old, new string) bool {
+	if strings.Replace(old, "\n", "", -1) != strings.Replace(new, "\n", "", -1) {
+		return false
+	}
+	return true
+}
+
 func redisSecurityGroupIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	oldArray := strings.Split(old, ",")
 	newArray := strings.Split(new, ",")
