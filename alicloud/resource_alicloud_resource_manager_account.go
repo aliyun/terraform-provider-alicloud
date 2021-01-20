@@ -3,9 +3,11 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -19,6 +21,11 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
+			"account_name_prefix": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"display_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -26,6 +33,7 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 			"folder_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"join_method": {
 				Type:     schema.TypeString,
@@ -62,24 +70,44 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 
 func resourceAlicloudResourceManagerAccountCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreateResourceAccount"
+	request := make(map[string]interface{})
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	if v, ok := d.GetOk("account_name_prefix"); ok {
+		request["AccountNamePrefix"] = v
+	}
 
-	request := resourcemanager.CreateCreateResourceAccountRequest()
-	request.DisplayName = d.Get("display_name").(string)
+	request["DisplayName"] = d.Get("display_name")
 	if v, ok := d.GetOk("folder_id"); ok {
-		request.ParentFolderId = v.(string)
+		request["ParentFolderId"] = v
 	}
+
 	if v, ok := d.GetOk("payer_account_id"); ok {
-		request.PayerAccountId = v.(string)
+		request["PayerAccountId"] = v
 	}
-	raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-		return resourcemanagerClient.CreateResourceAccount(request)
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_account", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_account", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*resourcemanager.CreateResourceAccountResponse)
-	d.SetId(fmt.Sprintf("%v", response.Account.AccountId))
+	responseAccount := response["Account"].(map[string]interface{})
+	d.SetId(fmt.Sprint(responseAccount["AccountId"]))
 
 	return resourceAlicloudResourceManagerAccountRead(d, meta)
 }
@@ -89,53 +117,84 @@ func resourceAlicloudResourceManagerAccountRead(d *schema.ResourceData, meta int
 	object, err := resourcemanagerService.DescribeResourceManagerAccount(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_resource_manager_account resourcemanagerService.DescribeResourceManagerAccount Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-
-	d.Set("display_name", object.DisplayName)
-	d.Set("folder_id", object.FolderId)
-	d.Set("join_method", object.JoinMethod)
-	d.Set("join_time", object.JoinTime)
-	d.Set("modify_time", object.ModifyTime)
-	d.Set("resource_directory_id", object.ResourceDirectoryId)
-	d.Set("status", object.Status)
-	d.Set("type", object.Type)
+	d.Set("display_name", object["DisplayName"])
+	d.Set("folder_id", object["FolderId"])
+	d.Set("join_method", object["JoinMethod"])
+	d.Set("join_time", object["JoinTime"])
+	d.Set("modify_time", object["ModifyTime"])
+	d.Set("resource_directory_id", object["ResourceDirectoryId"])
+	d.Set("status", object["Status"])
+	d.Set("type", object["Type"])
 	return nil
 }
 func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
 	d.Partial(true)
 
 	if d.HasChange("folder_id") {
-		request := resourcemanager.CreateMoveAccountRequest()
-		request.AccountId = d.Id()
-		request.DestinationFolderId = d.Get("folder_id").(string)
-		raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourcemanagerClient.MoveAccount(request)
-		})
-		addDebug(request.GetActionName(), raw)
+		request := map[string]interface{}{
+			"AccountId": d.Id(),
+		}
+		request["DestinationFolderId"] = d.Get("folder_id")
+		action := "MoveAccount"
+		conn, err := client.NewResourcemanagerClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("folder_id")
 	}
 	update := false
-	request := resourcemanager.CreateUpdateAccountRequest()
-	request.AccountId = d.Id()
+	request := map[string]interface{}{
+		"AccountId": d.Id(),
+	}
 	if d.HasChange("display_name") {
 		update = true
 	}
-	request.NewDisplayName = d.Get("display_name").(string)
+	request["NewDisplayName"] = d.Get("display_name")
 	if update {
-		raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourcemanagerClient.UpdateAccount(request)
-		})
-		addDebug(request.GetActionName(), raw)
+		action := "UpdateAccount"
+		conn, err := client.NewResourcemanagerClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("display_name")
 	}

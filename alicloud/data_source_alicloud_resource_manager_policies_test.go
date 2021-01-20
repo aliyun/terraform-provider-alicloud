@@ -60,11 +60,10 @@ func TestAccAlicloudResourceManagerPoliciesDataSource(t *testing.T) {
 			"names.#":                     "1",
 			"ids.#":                       "1",
 			"policies.0.attachment_count": CHECKSET,
-			"policies.0.create_date":      CHECKSET,
 			"policies.0.default_version":  "v1",
 			"policies.0.description":      "policy_test",
 			"policies.0.id":               CHECKSET,
-			"policies.0.policy_name":      fmt.Sprintf("tf-%d", rand),
+			"policies.0.policy_name":      fmt.Sprintf("tf-testAccPolicy-%d", rand),
 			"policies.0.policy_type":      "Custom",
 			"policies.0.update_date":      CHECKSET,
 		}

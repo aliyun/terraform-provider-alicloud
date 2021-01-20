@@ -25,7 +25,7 @@ For information about Resource Manager Resource Directory and how to use it, see
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_resource_manager_resource_directory" "example" {}
 ```
 ## Argument Reference

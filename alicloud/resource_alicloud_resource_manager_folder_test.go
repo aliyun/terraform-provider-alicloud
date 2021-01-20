@@ -5,10 +5,11 @@ import (
 	"log"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -27,56 +28,74 @@ func testSweepResourceManagerFolder(region string) error {
 		return WrapErrorf(err, "Error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	resourceManagerService := ResourcemanagerService{client}
 
 	prefixes := []string{
 		"tf-testAcc",
 	}
 
-	request := resourcemanager.CreateListFoldersForParentRequest()
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
+	action := "ListFoldersForParent"
+	request := make(map[string]interface{})
+
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+
+	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	var folderIds []string
 	for {
-		raw, err := resourceManagerService.client.WithResourcemanagerClient(func(resourceManagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourceManagerClient.ListFoldersForParent(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve resoure manager folder in service list: %s", err)
 		}
 
-		response, _ := raw.(*resourcemanager.ListFoldersForParentResponse)
-
-		for _, v := range response.Folders.Folder {
+		resp, err := jsonpath.Get("$.Folders.Folder", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Folders.Folder", response)
+		}
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
 			skip := true
 			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(v.FolderName), strings.ToLower(prefix)) {
+				if strings.HasPrefix(strings.ToLower(item["FolderName"].(string)), strings.ToLower(prefix)) {
 					skip = false
 				}
 			}
 			if skip {
-				log.Printf("[INFO] Skipping resource manager folder: %s ", v.FolderName)
+				log.Printf("[INFO] Skipping resource manager folder: %s ", item["FolderName"].(string))
 			} else {
-				folderIds = append(folderIds, v.FolderId)
+				folderIds = append(folderIds, item["FolderId"].(string))
 			}
 		}
-		if len(response.Folders.Folder) < PageSizeLarge {
+		if len(resp.([]interface{})) < PageSizeLarge {
 			break
 		}
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
 	for _, folderId := range folderIds {
 		log.Printf("[INFO] Delete resource manager folder: %s ", folderId)
 
-		request := resourcemanager.CreateDeleteFolderRequest()
+		request := map[string]interface{}{
+			"FolderId": folderId,
+		}
 
-		_, err = resourceManagerService.client.WithResourcemanagerClient(func(resourceManagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourceManagerClient.DeleteFolder(request)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete resource manager folder(%s): %s", folderId, err)
@@ -86,7 +105,7 @@ func testSweepResourceManagerFolder(region string) error {
 }
 
 func TestAccAlicloudResourceManagerFolder_basic(t *testing.T) {
-	var v resourcemanager.Folder
+	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_folder.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerFolderMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

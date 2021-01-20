@@ -43,17 +43,17 @@ func TestAccAlicloudResourceManagerRolesDataSource(t *testing.T) {
 
 	var existResourceManagerRolesRecordsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"roles.#":                      "1",
-			"names.#":                      "1",
-			"ids.#":                        "1",
-			"roles.0.id":                   fmt.Sprintf("tf-%d", rand),
-			"roles.0.role_id":              CHECKSET,
-			"roles.0.role_name":            fmt.Sprintf("tf-%d", rand),
-			"roles.0.arn":                  CHECKSET,
-			"roles.0.create_date":          CHECKSET,
-			"roles.0.description":          "tf_test",
-			"roles.0.max_session_duration": CHECKSET,
-			"roles.0.update_date":          "",
+			"roles.#":                             "1",
+			"names.#":                             "1",
+			"ids.#":                               "1",
+			"roles.0.id":                          fmt.Sprintf("tf-testAccRole-%d", rand),
+			"roles.0.role_id":                     CHECKSET,
+			"roles.0.role_name":                   fmt.Sprintf("tf-testAccRole-%d", rand),
+			"roles.0.arn":                         CHECKSET,
+			"roles.0.assume_role_policy_document": CHECKSET,
+			"roles.0.description":                 "tf_test",
+			"roles.0.max_session_duration":        CHECKSET,
+			"roles.0.update_date":                 CHECKSET,
 		}
 	}
 
@@ -101,6 +101,7 @@ resource "alicloud_resource_manager_role" "example"{
 }
 
 data "alicloud_resource_manager_roles" "example"{
+	enable_details = true
 %s
 }
 `, rand, strings.Join(pairs, "\n   "))

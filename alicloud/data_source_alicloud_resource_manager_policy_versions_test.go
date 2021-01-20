@@ -13,7 +13,7 @@ func TestAccAlicloudResourceManagerPolicyVersionsDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudResourceManagerPolicyVersionsSourceConfig(rand, map[string]string{
-			"ids":         fmt.Sprintf(`["tf-%d:v1"]`, rand),
+			"ids":         fmt.Sprintf(`["tf-testAccPolicy-%d:v1"]`, rand),
 			"policy_name": `"${alicloud_resource_manager_policy.default.policy_name}"`,
 			"policy_type": `"${alicloud_resource_manager_policy.default.policy_type}"`,
 		}),
@@ -28,7 +28,7 @@ func TestAccAlicloudResourceManagerPolicyVersionsDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                         "1",
 			"versions.#":                    "1",
-			"versions.0.create_date":        CHECKSET,
+			"versions.0.policy_document":    CHECKSET,
 			"versions.0.is_default_version": "true",
 			"versions.0.version_id":         "v1",
 		}
@@ -72,6 +72,7 @@ resource "alicloud_resource_manager_policy" "default"{
 }
 
 data "alicloud_resource_manager_policy_versions" "default"{
+	enable_details = true
 %s
 }
 

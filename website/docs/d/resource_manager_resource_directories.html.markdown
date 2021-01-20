@@ -15,7 +15,7 @@ This data source provides the Resource Manager Resource Directories of the curre
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_resource_manager_resource_directories" "default" {}
 
 output "resource_directory_id" {

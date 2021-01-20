@@ -15,7 +15,7 @@ This data source provides the Resource Manager Policies of the current Alibaba C
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_resource_manager_policies" "example" {
     name_regex = "tftest"
     description_regex = "tftest_policy"

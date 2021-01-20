@@ -12,12 +12,14 @@ import (
 func TestAccAlicloudResourceManagerAccountsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	id := os.Getenv("ALICLOUD_RESOURCE_MANAGER_ACCOUNT_ID")
-	idsConf := dataSourceTestAccConfig{
+	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudResourceManagerAccountsSourceConfig(rand, map[string]string{
-			"ids": fmt.Sprintf(`["%s"]`, id),
+			"ids":    fmt.Sprintf(`["%s"]`, id),
+			"status": `"CreateSuccess"`,
 		}),
 		fakeConfig: testAccCheckAlicloudResourceManagerAccountsSourceConfig(rand, map[string]string{
-			"ids": fmt.Sprintf(`["%s_fake"]`, id),
+			"ids":    fmt.Sprintf(`["%s_fake"]`, id),
+			"status": `"CreateFailed"`,
 		}),
 	}
 
@@ -56,7 +58,7 @@ func TestAccAlicloudResourceManagerAccountsDataSource(t *testing.T) {
 		testAccPreCheckWithResourceManagerAccountsSetting(t)
 	}
 
-	accountsRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
+	accountsRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
 
 }
 

@@ -2,9 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -64,22 +67,37 @@ func resourceAlicloudResourceManagerHandshake() *schema.Resource {
 
 func resourceAlicloudResourceManagerHandshakeCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := resourcemanager.CreateInviteAccountToResourceDirectoryRequest()
-	if v, ok := d.GetOk("note"); ok {
-		request.Note = v.(string)
+	var response map[string]interface{}
+	action := "InviteAccountToResourceDirectory"
+	request := make(map[string]interface{})
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	request.TargetEntity = d.Get("target_entity").(string)
-	request.TargetType = d.Get("target_type").(string)
-	raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-		return resourcemanagerClient.InviteAccountToResourceDirectory(request)
+	if v, ok := d.GetOk("note"); ok {
+		request["Note"] = v
+	}
+
+	request["TargetEntity"] = d.Get("target_entity")
+	request["TargetType"] = d.Get("target_type")
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_handshake", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_handshake", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*resourcemanager.InviteAccountToResourceDirectoryResponse)
-	d.SetId(fmt.Sprintf("%v", response.Handshake.HandshakeId))
+	responseHandshake := response["Handshake"].(map[string]interface{})
+	d.SetId(fmt.Sprint(responseHandshake["HandshakeId"]))
 
 	return resourceAlicloudResourceManagerHandshakeRead(d, meta)
 }
@@ -89,36 +107,53 @@ func resourceAlicloudResourceManagerHandshakeRead(d *schema.ResourceData, meta i
 	object, err := resourcemanagerService.DescribeResourceManagerHandshake(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_resource_manager_handshake resourcemanagerService.DescribeResourceManagerHandshake Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-
-	d.Set("expire_time", object.ExpireTime)
-	d.Set("master_account_id", object.MasterAccountId)
-	d.Set("master_account_name", object.MasterAccountName)
-	d.Set("modify_time", object.ModifyTime)
-	d.Set("note", object.Note)
-	d.Set("resource_directory_id", object.ResourceDirectoryId)
-	d.Set("status", object.Status)
-	d.Set("target_entity", object.TargetEntity)
-	d.Set("target_type", object.TargetType)
+	d.Set("expire_time", object["ExpireTime"])
+	d.Set("master_account_id", object["MasterAccountId"])
+	d.Set("master_account_name", object["MasterAccountName"])
+	d.Set("modify_time", object["ModifyTime"])
+	d.Set("note", object["Note"])
+	d.Set("resource_directory_id", object["ResourceDirectoryId"])
+	d.Set("status", object["Status"])
+	d.Set("target_entity", object["TargetEntity"])
+	d.Set("target_type", object["TargetType"])
 	return nil
 }
 func resourceAlicloudResourceManagerHandshakeDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := resourcemanager.CreateCancelHandshakeRequest()
-	request.HandshakeId = d.Id()
-	raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-		return resourcemanagerClient.CancelHandshake(request)
+	action := "CancelHandshake"
+	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"HandshakeId": d.Id(),
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
-	addDebug(request.GetActionName(), raw)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Handshake", "HandshakeStatusMismatch"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

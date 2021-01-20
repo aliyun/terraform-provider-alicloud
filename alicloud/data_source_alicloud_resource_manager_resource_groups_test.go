@@ -55,15 +55,16 @@ func TestAccAlicloudResourceManagerResourceGroupsDataSource(t *testing.T) {
 
 	var existResourceManagerResourceGroupsRecordsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"groups.#":              "1",
-			"names.#":               "1",
-			"ids.#":                 "1",
-			"groups.0.id":           CHECKSET,
-			"groups.0.name":         fmt.Sprintf("tf-%d", rand),
-			"groups.0.display_name": fmt.Sprintf("terraform_test_%d", rand),
-			"groups.0.account_id":   CHECKSET,
-			"groups.0.create_date":  CHECKSET,
-			"groups.0.status":       "OK",
+			"groups.#":                     "1",
+			"names.#":                      "1",
+			"ids.#":                        "1",
+			"groups.0.id":                  CHECKSET,
+			"groups.0.name":                fmt.Sprintf("tf-%d", rand),
+			"groups.0.resource_group_name": fmt.Sprintf("tf-%d", rand),
+			"groups.0.display_name":        fmt.Sprintf("terraform_test_%d", rand),
+			"groups.0.account_id":          CHECKSET,
+			"groups.0.status":              "OK",
+			"groups.0.region_statuses.#":   CHECKSET,
 		}
 	}
 
@@ -92,7 +93,7 @@ func testAccCheckAlicloudResourceManagerResourceGroupsSourceConfig(rand int, att
 	}
 	config := fmt.Sprintf(`
 resource "alicloud_resource_manager_resource_group" "example"{
-	name = "tf-%[1]d"
+	resource_group_name = "tf-%[1]d"
 	display_name = "terraform_test_%[1]d"
 }
 

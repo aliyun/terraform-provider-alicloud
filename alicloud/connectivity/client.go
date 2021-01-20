@@ -71,7 +71,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 )
 
 type AliyunClient struct {
@@ -141,7 +140,6 @@ type AliyunClient struct {
 	dnsConn                      *alidns.Client
 	edasconn                     *edas.Client
 	dms_enterpriseConn           *dms_enterprise.Client
-	resourcemanagerConn          *resourcemanager.Client
 	bssopenapiConn               *bssopenapi.Client
 	alidnsConn                   *alidns.Client
 	ddoscooConn                  *ddoscoo.Client
@@ -1796,31 +1794,6 @@ func (client *AliyunClient) WithDmsEnterpriseClient(do func(*dms_enterprise.Clie
 	return do(client.dms_enterpriseConn)
 }
 
-func (client *AliyunClient) WithResourcemanagerClient(do func(*resourcemanager.Client) (interface{}, error)) (interface{}, error) {
-	if client.resourcemanagerConn == nil {
-		endpoint := client.config.ResourcemanagerEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, ResourcemanagerCode)
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(ResourcemanagerCode), endpoint)
-		}
-
-		resourcemanagerConn, err := resourcemanager.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Resourcemanagerclient: %#v", err)
-		}
-		resourcemanagerConn.AppendUserAgent(Terraform, terraformVersion)
-		resourcemanagerConn.AppendUserAgent(Provider, providerVersion)
-		resourcemanagerConn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.resourcemanagerConn = resourcemanagerConn
-	}
-	return do(client.resourcemanagerConn)
-}
-
 func (client *AliyunClient) WithAlidnsClient(do func(*alidns.Client) (interface{}, error)) (interface{}, error) {
 	if client.alidnsConn == nil {
 		endpoint := client.config.AlidnsEndpoint
@@ -2447,6 +2420,34 @@ func (client *AliyunClient) NewRamClient() (*rpc.Client, error) {
 				client.config.Endpoints[productCode] = endpoint
 			} else {
 				endpoint = "ram.aliyuncs.com"
+				log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
+			}
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewResourcemanagerClient() (*rpc.Client, error) {
+	productCode := "resourcemanager"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			if strings.Contains(err.Error(), "InvalidRegionId") {
+				endpoint = "resourcemanager.aliyuncs.com"
+				client.config.Endpoints[productCode] = endpoint
+			} else {
 				log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 			}
 		}

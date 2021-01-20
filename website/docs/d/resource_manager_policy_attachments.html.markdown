@@ -15,7 +15,7 @@ This data source provides the Resource Manager Policy Attachments of the current
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_resource_manager_policy_attachments" "example" {}
 
 output "first_attachment_id" {
