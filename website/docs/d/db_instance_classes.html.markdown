@@ -7,7 +7,7 @@ description: |-
     Provides a list of RDS instacne classes info.
 ---
 
-# alicloud\_db\_instances\_classes
+# alicloud\_db\_instance\_classes
 
 This data source provides the RDS instance classes resource available info of Alibaba Cloud.
 
