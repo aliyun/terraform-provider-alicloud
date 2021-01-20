@@ -7,7 +7,7 @@ description: |-
     Provides a list of RDS instacne engines resource info.
 ---
 
-# alicloud\_db\_instances\_engines
+# alicloud\_db\_instance\_engines
 
 This data source provides the RDS instance engines resource available info of Alibaba Cloud.
 
