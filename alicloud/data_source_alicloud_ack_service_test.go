@@ -21,6 +21,7 @@ func TestAccAlicloudAckServiceDataSource(t *testing.T) {
 					testAccCheck(map[string]string{
 						"id":     CHECKSET,
 						"status": "Opened",
+						"type":   "propayasgo",
 					}),
 				),
 			},
@@ -31,5 +32,6 @@ func TestAccAlicloudAckServiceDataSource(t *testing.T) {
 const testAccCheckAlicloudAckServiceDataSource = `
 data "alicloud_ack_service" "current" {
 	enable = "On"
+	type   = "propayasgo"
 }
 `

@@ -22,6 +22,11 @@ func dataSourceAlicloudAckService() *schema.Resource {
 				Optional:     true,
 				Default:      "Off",
 			},
+			"type": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"propayasgo", "edgepayasgo", "gspayasgo"}, false),
+				Required:     true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -36,7 +41,9 @@ func dataSourceAlicloudAckServiceRead(d *schema.ResourceData, meta interface{}) 
 		return nil
 	}
 	action := "OpenAckService"
-	request := map[string]interface{}{}
+	request := map[string]interface{}{
+		"type": d.Get("type"),
+	}
 	conn, err := meta.(*connectivity.AliyunClient).NewTeaRoaCommonClient(connectivity.OpenAckService)
 	if err != nil {
 		return WrapError(err)
