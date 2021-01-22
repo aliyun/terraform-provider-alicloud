@@ -1,14 +1,16 @@
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudRamPolicy() *schema.Resource {
@@ -20,12 +22,66 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Delete: schema.DefaultTimeout(26 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"name": {
+			"default_version": {
 				Type:     schema.TypeString,
-				Required: true,
+				Computed: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
 				ForceNew: true,
+			},
+			"policy_document": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.ValidateJsonString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
+				ConflictsWith: []string{"document", "version", "statement"},
+			},
+			"document": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.ValidateJsonString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
+				Deprecated:    "Field 'document' has been deprecated from provider version 1.114.0. New field 'policy_document' instead.",
+				ConflictsWith: []string{"policy_document", "version", "statement"},
+			},
+			"policy_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"name"},
+			},
+			"name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				Deprecated:    "Field 'name' has been deprecated from provider version 1.114.0. New field 'policy_name' instead.",
+				ConflictsWith: []string{"policy_name"},
+			},
+			"rotate_strategy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "None",
+				ValidateFunc: validation.StringInSlice([]string{"DeleteOldestNonDefaultVersionWhenLimitExceeded", "None"}, false),
+			},
+			"version_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"statement": {
 				Type:       schema.TypeSet,
@@ -57,22 +113,6 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 				},
 				ConflictsWith: []string{"document"},
 			},
-			"document": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ConflictsWith: []string{"statement", "version"},
-				ValidateFunc:  validation.ValidateJsonString,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
-					return equal
-				},
-			},
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"version": {
 				Type:          schema.TypeString,
 				Optional:      true,
@@ -101,318 +141,272 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 
 func resourceAlicloudRamPolicyCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request, err := buildAlicloudRamPolicyCreateArgs(d, meta)
+	var response map[string]interface{}
+	action := "CreatePolicy"
+	request := make(map[string]interface{})
+	conn, err := client.NewRamClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
 
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.CreatePolicy(request)
+	if v, ok := d.GetOk("policy_document"); ok {
+		request["PolicyDocument"] = v
+	} else if v, ok := d.GetOk("document"); ok {
+		request["PolicyDocument"] = v
+	} else if v, ok := d.GetOk("statement"); ok {
+		ramService := RamService{client}
+		doc, err := ramService.AssemblePolicyDocument(v.(*schema.Set).List(), d.Get("version").(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		request["PolicyDocument"] = doc
+	} else {
+		return WrapError(Error("One of 'policy_document', 'document', 'statement'  must be specified."))
+
+	}
+
+	if v, ok := d.GetOk("policy_name"); ok {
+		request["PolicyName"] = v
+	} else if v, ok := d.GetOk("name"); ok {
+		request["PolicyName"] = v
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_policy", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_policy", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ram.CreatePolicyResponse)
-	d.SetId(response.Policy.PolicyName)
-	return resourceAlicloudRamPolicyRead(d, meta)
-}
-
-func resourceAlicloudRamPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	d.Partial(true)
-	request, err := buildAlicloudRamPolicyUpdateArgs(d, meta)
-	if err != nil {
-		return WrapError(err)
-	}
-	//check the quantity of version ,reserved 5 at most ,remove oldest version
-	err = ramPolicyPruneVersions(d.Id(), "Custom", meta)
-	if err != nil {
-		return WrapError(err)
-	}
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.CreatePolicyVersion(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	d.Partial(false)
+	responsePolicy := response["Policy"].(map[string]interface{})
+	d.SetId(fmt.Sprint(responsePolicy["PolicyName"]))
 
 	return resourceAlicloudRamPolicyRead(d, meta)
 }
-
 func resourceAlicloudRamPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
-
 	object, err := ramService.DescribeRamPolicy(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ram_policy ramService.DescribeRamPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	policy := object.Policy
-
-	getPolicyRequest := ram.CreateGetPolicyVersionRequest()
-	getPolicyRequest.VersionId = policy.DefaultVersion
-	getPolicyRequest.PolicyType = policy.PolicyType
-	getPolicyRequest.PolicyName = policy.PolicyName
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.GetPolicyVersion(getPolicyRequest)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), getPolicyRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(getPolicyRequest.GetActionName(), raw)
-	policyVersionResp, _ := raw.(*ram.GetPolicyVersionResponse)
-	statement, version, err := ramService.ParsePolicyDocument(policyVersionResp.PolicyVersion.PolicyDocument)
+	d.Set("policy_name", d.Id())
+	d.Set("name", d.Id())
+	d.Set("default_version", object["Policy"].(map[string]interface{})["DefaultVersion"])
+	d.Set("description", object["Policy"].(map[string]interface{})["Description"])
+	d.Set("policy_document", object["DefaultPolicyVersion"].(map[string]interface{})["PolicyDocument"])
+	d.Set("document", object["DefaultPolicyVersion"].(map[string]interface{})["PolicyDocument"])
+	d.Set("version_id", object["DefaultPolicyVersion"].(map[string]interface{})["VersionId"])
+	statement, version, err := ramService.ParsePolicyDocument(object["DefaultPolicyVersion"].(map[string]interface{})["PolicyDocument"].(string))
 	if err != nil {
 		return WrapError(err)
 	}
-
-	d.Set("name", policy.PolicyName)
-	d.Set("type", policy.PolicyType)
-	d.Set("description", policy.Description)
-	d.Set("attachment_count", policy.AttachmentCount)
 	d.Set("version", version)
 	d.Set("statement", statement)
-	d.Set("document", policyVersionResp.PolicyVersion.PolicyDocument)
+	d.Set("attachment_count", object["Policy"].(map[string]interface{})["AttachmentCount"])
+	d.Set("type", object["Policy"].(map[string]interface{})["PolicyType"])
 
 	return nil
 }
-
-func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudRamPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
-
-	listEntitiesForPolicyRequest := ram.CreateListEntitiesForPolicyRequest()
-	listEntitiesForPolicyRequest.PolicyName = d.Id()
-
-	if d.Get("force").(bool) {
-		listEntitiesForPolicyRequest.PolicyType = "Custom"
-
-		// list and detach entities for this policy
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListEntitiesForPolicy(listEntitiesForPolicyRequest)
+	var response map[string]interface{}
+	update := false
+	request := map[string]interface{}{
+		"PolicyName": d.Id(),
+	}
+	if d.HasChange("policy_document") {
+		update = true
+		request["PolicyDocument"] = d.Get("policy_document")
+	}
+	if d.HasChange("document") {
+		update = true
+		request["PolicyDocument"] = d.Get("document")
+	}
+	request["SetAsDefault"] = true
+	if d.HasChange("statement") || d.HasChange("version") {
+		ramService := RamService{client}
+		document, err := ramService.AssemblePolicyDocument(d.Get("statement").(*schema.Set).List(), d.Get("version").(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		request["PolicyDocument"] = document
+	}
+	if update {
+		if _, ok := d.GetOk("rotate_strategy"); ok {
+			request["RotateStrategy"] = d.Get("rotate_strategy")
+		}
+		action := "CreatePolicyVersion"
+		conn, err := client.NewRamClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), listEntitiesForPolicyRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(listEntitiesForPolicyRequest.GetActionName(), raw)
-		response := raw.(*ram.ListEntitiesForPolicyResponse)
+	}
+	return resourceAlicloudRamPolicyRead(d, meta)
+}
+func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeletePolicy"
+	var response map[string]interface{}
+	conn, err := client.NewRamClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"PolicyName": d.Id(),
+	}
 
-		if len(response.Users.User) > 0 {
-			for _, v := range response.Users.User {
-				request := ram.CreateDetachPolicyFromUserRequest()
-				request.UserName = v.UserName
-				request.PolicyName = d.Id()
-				request.PolicyType = "Custom"
-				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-					return ramClient.DetachPolicyFromUser(request)
-				})
-				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	if d.Get("force").(bool) {
+		listRequest := map[string]interface{}{
+			"PolicyName": d.Id(),
+			"PolicyType": "Custom",
+		}
+		listAction := "ListEntitiesForPolicy"
+		response, err = conn.DoRequest(StringPointer(listAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, listRequest, &util.RuntimeOptions{})
+		userResp, err := jsonpath.Get("$.Users.User", response)
+		if len(userResp.([]interface{})) > 0 {
+			for _, v := range userResp.([]interface{}) {
+				userAction := "DetachPolicyFromUser"
+				userRequest := map[string]interface{}{
+					"PolicyName": d.Id(),
+					"UserName":   v.(map[string]interface{})["UserName"],
+					"PolicyType": "Custom",
 				}
-				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			}
-		}
-
-		if len(response.Groups.Group) > 0 {
-			for _, v := range response.Groups.Group {
-				request := ram.CreateDetachPolicyFromGroupRequest()
-				request.GroupName = v.GroupName
-				request.PolicyName = d.Id()
-				request.PolicyType = "Custom"
-				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-					return ramClient.DetachPolicyFromGroup(request)
-				})
-				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-				}
-				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			}
-		}
-
-		if len(response.Roles.Role) > 0 {
-			for _, v := range response.Roles.Role {
-				request := ram.CreateDetachPolicyFromRoleRequest()
-				request.RoleName = v.RoleName
-				request.PolicyName = d.Id()
-				request.PolicyType = "Custom"
-				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-					return ramClient.DetachPolicyFromRole(request)
-				})
-				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-				}
-				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			}
-		}
-
-		// list and delete policy version which are not default
-		versions, err := ramPolicyListVersions(d.Id(), "Custom", meta)
-		if len(versions) > 1 {
-			for _, v := range versions {
-				if !v.IsDefaultVersion {
-					err = ramPolicyDeleteVersion(v.VersionId, d.Id(), meta)
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(userAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, userRequest, &util.RuntimeOptions{})
 					if err != nil {
-						return WrapError(err)
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
 					}
+					addDebug(action, response, userRequest)
+					return nil
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"EntityNotExist"}) {
+						return nil
+					}
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+		groupResp, err := jsonpath.Get("$.Groups.Group", response)
+		if len(groupResp.([]interface{})) > 0 {
+			for _, v := range groupResp.([]interface{}) {
+				groupAction := "DetachPolicyFromGroup"
+				groupRequest := map[string]interface{}{
+					"PolicyName": d.Id(),
+					"GroupName":  v.(map[string]interface{})["GroupName"],
+					"PolicyType": "Custom",
+				}
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(groupAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, groupRequest, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(action, response, groupRequest)
+					return nil
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"EntityNotExist"}) {
+						return nil
+					}
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+		roleResp, err := jsonpath.Get("$.Roles.Role", response)
+		if len(roleResp.([]interface{})) > 0 {
+			for _, v := range roleResp.([]interface{}) {
+				roleAction := "DetachPolicyFromRole"
+				roleRequest := map[string]interface{}{
+					"PolicyName": d.Id(),
+					"RoleName":   v.(map[string]interface{})["RoleName"],
+					"PolicyType": "Custom",
+				}
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(roleAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, roleRequest, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(action, response, roleRequest)
+					return nil
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"EntityNotExist"}) {
+						return nil
+					}
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 			}
 		}
 	}
 
-	deletePolicyRequest := ram.CreateDeletePolicyRequest()
-	deletePolicyRequest.PolicyName = d.Id()
-
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.DeletePolicy(deletePolicyRequest)
-		})
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"DeleteConflict.Policy.User", "DeleteConflict.Policy.Group", "DeleteConflict.Role.Policy", "DeleteConflict.Policy.Version"}) {
+			if IsExpectedErrors(err, []string{"DeleteConflict.Policy.Group", "DeleteConflict.Policy.User", "DeleteConflict.Policy.Version", "DeleteConflict.Role.Policy"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(deletePolicyRequest.GetActionName(), raw)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deletePolicyRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(ramService.WaitForRamPolicy(d.Id(), Deleted, DefaultTimeout))
-}
-
-func buildAlicloudRamPolicyCreateArgs(d *schema.ResourceData, meta interface{}) (*ram.CreatePolicyRequest, error) {
-	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
-	var document string
-
-	doc, docOk := d.GetOk("document")
-	statement, statementOk := d.GetOk("statement")
-
-	if !docOk && !statementOk {
-		return &ram.CreatePolicyRequest{}, WrapError(Error("One of 'document' and 'statement' must be specified."))
-	}
-
-	if docOk {
-		document = doc.(string)
-	} else {
-		doc, err := ramService.AssemblePolicyDocument(statement.(*schema.Set).List(), d.Get("version").(string))
-		if err != nil {
-			return &ram.CreatePolicyRequest{}, WrapError(err)
-		}
-		document = doc
-	}
-
-	request := ram.CreateCreatePolicyRequest()
-	request.RegionId = client.RegionId
-	request.PolicyDocument = document
-	request.PolicyName = d.Get("name").(string)
-
-	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
-		request.Description = v.(string)
-	}
-
-	return request, nil
-}
-
-func buildAlicloudRamPolicyUpdateArgs(d *schema.ResourceData, meta interface{}) (*ram.CreatePolicyVersionRequest, error) {
-	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
-	request := ram.CreateCreatePolicyVersionRequest()
-	request.RegionId = client.RegionId
-	request.SetAsDefault = "true"
-	request.PolicyName = d.Id()
-
-	if document, ok := d.GetOk("document"); ok {
-		if d.HasChange("document") {
-			d.SetPartial("document")
-		}
-
-		request.PolicyDocument = document.(string)
-	} else {
-		if d.HasChange("statement") {
-			d.SetPartial("statement")
-		}
-		if d.HasChange("version") {
-			d.SetPartial("version")
-		}
-
-		document, err := ramService.AssemblePolicyDocument(d.Get("statement").(*schema.Set).List(), d.Get("version").(string))
-		if err != nil {
-			return &ram.CreatePolicyVersionRequest{}, err
-		}
-
-		request.PolicyDocument = document
-	}
-
-	return request, nil
-}
-
-func ramPolicyPruneVersions(policyName, policyType string, meta interface{}) error {
-	versions, err := ramPolicyListVersions(policyName, policyType, meta)
-	if err != nil {
-		return WrapError(err)
-	}
-	if len(versions) < 5 {
-		return nil
-	}
-	var oldestVersion ram.PolicyVersionInListPolicyVersions
-
-	for _, version := range versions {
-		if version.IsDefaultVersion {
-			continue
-		}
-		if oldestVersion.CreateDate == "" ||
-			version.CreateDate < oldestVersion.CreateDate {
-			oldestVersion = version
-		}
-	}
-	return ramPolicyDeleteVersion(oldestVersion.VersionId, policyName, meta)
-}
-
-func ramPolicyDeleteVersion(versionId, policyName string, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	request := ram.CreateDeletePolicyVersionRequest()
-	request.RegionId = client.RegionId
-	request.VersionId = versionId
-	request.PolicyName = policyName
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.DeletePolicyVersion(request)
-	})
-	if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
-		return WrapErrorf(err, DefaultErrorMsg, policyName, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
-}
-
-func ramPolicyListVersions(policyName, policyType string, meta interface{}) ([]ram.PolicyVersionInListPolicyVersions, error) {
-	client := meta.(*connectivity.AliyunClient)
-	request := ram.CreateListPolicyVersionsRequest()
-	request.RegionId = client.RegionId
-	request.PolicyName = policyName
-	request.PolicyType = policyType
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.ListPolicyVersions(request)
-	})
-	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, policyName, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ram.ListPolicyVersionsResponse)
-
-	return response.PolicyVersions.PolicyVersion, nil
 }

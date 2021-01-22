@@ -36,6 +36,7 @@ The following arguments are supported:
 * `group_name` - (Optional) Filter results by a specific group name. Returned policies are attached to the specified group.
 * `role_name` - (Optional) Filter results by a specific role name. Returned policies are attached to the specified role.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `enable_details` - (Optional, Available in 1.114.0+) Default to `true`. Set it to true can output more details.
 
 ## Attributes Reference
 
@@ -44,6 +45,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `names` - A list of ram group names.
 * `policies` - A list of policies. Each element contains the following attributes:
   * `name` - Name of the policy.
+  * `policy_name` - Name of the policy.
   * `type` - Type of the policy.
   * `description` - Description of the policy.
   * `default_version` - Default version of the policy.
@@ -51,3 +53,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `update_date` - Update date of the policy.
   * `attachment_count` - Attachment count of the policy.
   * `document` - Policy document of the policy.
+  * `policy_document` - Policy document of the policy.
+  * `version_id` - The ID of default policy.

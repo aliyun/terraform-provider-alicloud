@@ -3,14 +3,15 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
-	"strings"
-	"time"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -34,28 +35,43 @@ func testSweepRamPolicies(region string) error {
 		return WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
+	conn, err := client.NewRamClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	action := "ListPolicies"
+	request := map[string]interface{}{
+		"PolicyType": "Custom",
+		"MaxItems":   PageSizeLarge,
+	}
 
 	prefixes := []string{
 		fmt.Sprintf("tf-testAcc%s", region),
 		fmt.Sprintf("tf_testAcc%s", region),
 	}
-
-	request := ram.CreateListPoliciesRequest()
+	var response map[string]interface{}
 	sweeped := false
 	for {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListPolicies(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_policies", action, AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ram.ListPoliciesResponse)
+		addDebug(action, response, request)
 
-		for _, v := range resp.Policies.Policy {
-			name := v.PolicyName
+		resp, err := jsonpath.Get("$.Policies.Policy", response)
+
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Policies.Policy", response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
+			name := item["PolicyName"]
 			skip := true
 			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				if strings.HasPrefix(strings.ToLower(name.(string)), strings.ToLower(prefix)) {
 					skip = false
 					break
 				}
@@ -66,20 +82,20 @@ func testSweepRamPolicies(region string) error {
 			}
 			sweeped = true
 			log.Printf("[INFO] Deleting Ram Policy: %s", name)
-			request := ram.CreateDeletePolicyRequest()
-			request.PolicyName = name
 
-			_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-				return ramClient.DeletePolicy(request)
-			})
+			action = "DeletePolicy"
+			request := map[string]interface{}{
+				"PolicyName": name,
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Ram Policy (%s): %s", name, err)
 			}
 		}
-		if !resp.IsTruncated {
+		if !response["IsTruncated"].(bool) {
 			break
 		}
-		request.Marker = resp.Marker
+		request["Marker"] = response["Marker"]
 	}
 	if sweeped {
 		time.Sleep(5 * time.Second)
@@ -88,7 +104,7 @@ func testSweepRamPolicies(region string) error {
 }
 
 func TestAccAlicloudRamPolicy_basic(t *testing.T) {
-	var v *ram.GetPolicyResponse
+	var v map[string]interface{}
 	resourceId := "alicloud_ram_policy.default"
 	ra := resourceAttrInit(resourceId, ramPolicyMap)
 	serviceFunc := func() interface{} {
@@ -112,19 +128,25 @@ func TestAccAlicloudRamPolicy_basic(t *testing.T) {
 			{
 				Config: testAccRamPolicyCreateConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand)}),
+					testAccCheck(map[string]string{
+						"name":        fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand),
+						"policy_name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand),
+					}),
 				),
 			},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force"},
+				ImportStateVerifyIgnore: []string{"force", "rotate_strategy"},
 			},
 			{
 				Config: testAccRamPolicyNameConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d-N", defaultRegionToTest, rand)}),
+					testAccCheck(map[string]string{
+						"name":        fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d-N", defaultRegionToTest, rand),
+						"policy_name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d-N", defaultRegionToTest, rand),
+					}),
 				),
 			},
 			{
@@ -144,6 +166,7 @@ func TestAccAlicloudRamPolicy_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":        fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand),
+						"policy_name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand),
 						"type":        "Custom",
 						"description": "this is a policy test",
 						"version":     "1",
@@ -156,7 +179,7 @@ func TestAccAlicloudRamPolicy_basic(t *testing.T) {
 }
 
 func TestAccAlicloudRamPolicy_multi(t *testing.T) {
-	var v *ram.GetPolicyResponse
+	var v map[string]interface{}
 	resourceId := "alicloud_ram_policy.default.9"
 	ra := resourceAttrInit(resourceId, ramPolicyMap)
 	serviceFunc := func() interface{} {
@@ -189,6 +212,7 @@ func TestAccAlicloudRamPolicy_multi(t *testing.T) {
 
 var ramPolicyMap = map[string]string{
 	"name":             CHECKSET,
+	"policy_name":      CHECKSET,
 	"type":             "Custom",
 	"description":      "this is a policy test",
 	"version":          "1",
@@ -200,8 +224,8 @@ var ramPolicyMap = map[string]string{
 func testAccRamPolicyCreateConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_policy" "default" {
-	  name = "tf-testAcc%sRamPolicyConfig-%d"
-	  document = <<EOF
+	  policy_name = "tf-testAcc%sRamPolicyConfig-%d"
+	  policy_document = <<EOF
 		{
 		  "Statement": [
 			{
@@ -227,8 +251,8 @@ func testAccRamPolicyCreateConfig(rand int) string {
 func testAccRamPolicyNameConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_policy" "default" {
-	  name = "tf-testAcc%sRamPolicyConfig-%d-N"
-	  document = <<EOF
+	  policy_name = "tf-testAcc%sRamPolicyConfig-%d-N"
+	  policy_document = <<EOF
 		{
 		  "Statement": [
 			{
@@ -254,8 +278,8 @@ func testAccRamPolicyNameConfig(rand int) string {
 func testAccRamPolicyDescriptionConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_policy" "default" {
-	  name = "tf-testAcc%sRamPolicyConfig-%d-N"
-	  document = <<EOF
+	  policy_name = "tf-testAcc%sRamPolicyConfig-%d-N"
+	  policy_document = <<EOF
 		{
 		  "Statement": [
 			{
@@ -280,8 +304,8 @@ func testAccRamPolicyDescriptionConfig(rand int) string {
 func testAccRamPolicyStatementConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_policy" "default" {
-	  name = "tf-testAcc%sRamPolicyConfig-%d-N"
-	  document = <<EOF
+	  policy_name = "tf-testAcc%sRamPolicyConfig-%d-N"
+	  policy_document = <<EOF
 		{
 		  "Statement": [
 			{
@@ -307,8 +331,8 @@ func testAccRamPolicyStatementConfig(rand int) string {
 func testAccRamPolicyMultiConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_policy" "default" {
-	  name = "tf-testAcc%sRamPolicyConfig-%d-${count.index}"
-	  document = <<EOF
+	  policy_name = "tf-testAcc%sRamPolicyConfig-%d-${count.index}"
+	  policy_document = <<EOF
 		{
 		  "Statement": [
 			{
@@ -342,14 +366,19 @@ func testAccCheckRamPolicyDestroy(s *terraform.State) error {
 		// Try to find the policy
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
-		request := ram.CreateGetPolicyRequest()
-		request.PolicyName = rs.Primary.ID
-		request.PolicyType = "Custom"
-
-		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.GetPolicy(request)
-		})
-
+		// Try to find the policy
+		conn, err := client.NewRamClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "GetPolicy"
+		request := map[string]interface{}{
+			"PolicyName": rs.Primary.ID,
+			"PolicyType": "Custom",
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
 			return WrapError(err)
 		}
