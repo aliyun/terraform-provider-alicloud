@@ -893,11 +893,18 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 				}
 			}
 
-			if d.HasChange("worker_disk_snapshot_policy"); ok {
+			if d.HasChange("worker_disk_category") {
+				args.WorkerSystemDiskCategory = aliyungoecs.DiskCategory(d.Get("worker_disk_category").(string))
+			}
+
+			if d.HasChange("worker_disk_size") {
+				args.WorkerSystemDiskSize = int64(d.Get("worker_disk_size").(int))
+			}
+			if d.HasChange("worker_disk_snapshot_policy") {
 				args.WorkerSnapshotPolicyId = d.Get("worker_disk_snapshot_policy").(string)
 			}
 
-			if d.HasChange("worker_disk_performance_level"); ok {
+			if d.HasChange("worker_disk_performance_level") {
 				args.WorkerSystemDiskPerformanceLevel = d.Get("worker_disk_performance_level").(string)
 			}
 
