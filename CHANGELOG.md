@@ -1,4 +1,26 @@
 ## 1.114.0 (Unreleased)
+
+- **New Resource:** `alicloud_ram_saml_provider` [GH-3235]
+- **Data Source:** `alicloud_pvtz_service` [GH-3237]
+- **Data Source:** `alicloud_ram_saml_providers` [GH-3235]
+
+IMPROVEMENTS:
+
+- resource/alicloud_polardb_cluster: support enable audit log collector [GH-3246]
+- improve datasource alicloud_db_instance_classes and engines [GH-3236]
+- improve docs subcategory [GH-3233]
+- support emr importer feature and optimized test case [GH-3232]
+- resource/alicloud_kvstore_instance: Modify code of private_connection_prefix [GH-3231]
+- change oos to common [GH-3227]
+- datasource/alicloud_oss_service: supporting more opened error codes [GH-3226]
+- update changelog [GH-3225]
+- Modify Ons product to common type [GH-3218]
+- Remove duplicate `tags` [GH-3200]
+
+BUG FIXES:
+
+- fix err when delete adb cluster [GH-3234]
+
 ## 1.113.0 (January 15, 2021)
 
 - **New Resource:** `alicloud_eipanycast_anycast_eip_address_attachment` ([#3215](https://github.com/aliyun/terraform-provider-alicloud/issues/3215))
