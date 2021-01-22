@@ -1069,6 +1069,25 @@ func (s *PolarDBService) ModifyDBBackupPolicy(clusterId, backupTime, backupPerio
 	return nil
 }
 
+func (s *PolarDBService) DescribeDBAuditLogCollectorStatus(id string) (collectorStatus string, err error) {
+	request := polardb.CreateDescribeDBClusterAuditLogCollectorRequest()
+	request.RegionId = s.client.RegionId
+	request.DBClusterId = id
+	raw, err := s.client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+		return polardbClient.DescribeDBClusterAuditLogCollector(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return "", WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return collectorStatus, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response := raw.(*polardb.DescribeDBClusterAuditLogCollectorResponse)
+
+	return response.CollectorStatus, nil
+}
+
 func (s *PolarDBService) PolarDBClusterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribePolarDBClusterAttribute(id)

@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-var clusterConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.[a-z]+.rds.aliyuncs.com"
+var clusterConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.rds.aliyuncs.com"
 
 func init() {
 	resource.AddTestSweepers("alicloud_polardb_cluster", &resource.Sweeper{
@@ -186,6 +186,16 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_node_count": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"collector_status": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"collector_status": "Enable",
 					}),
 				),
 			},
