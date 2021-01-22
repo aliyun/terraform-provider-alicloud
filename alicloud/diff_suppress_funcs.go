@@ -401,6 +401,16 @@ func workerDataDiskSizeSuppressFunc(k, old, new string, d *schema.ResourceData) 
 	return !ok || !(d.Id() == "") && !d.Get("force_update").(bool)
 }
 
+func diskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("master_disk_category"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	if v, ok := d.GetOk("worker_disk_category"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
+}
+
 func imageIdSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	// setting image_id is not recommended, but is needed by some users.
 	// when image_id is left blank, server will set a random default to it, we only know the default value after creation.

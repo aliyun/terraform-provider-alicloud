@@ -201,7 +201,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1"}, false),
-				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
+				DiffSuppressFunc: diskPerformanceLevelDiffSuppressFunc,
 			},
 			"worker_data_disk_size": {
 				Type:             schema.TypeInt,
