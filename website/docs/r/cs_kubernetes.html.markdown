@@ -159,7 +159,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `master_disk_category` - (Optional) The system disk category of master node. Its valid value are `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `master_disk_size` - (Optional) The system disk size of master node. Its valid value range [40~500] in GB. Default to `120`.
 * `master_disk_snapshot_policy_id` - (ForceNew, Available in 1.114.0+) The system disk auto snapshot policy of master node.
-* `master_disk_performance_level` - (ForceNew, Available in 1.114.0+) The system disk performance level of master node, only take effect when `master_disk_category` value is `cloud_essd`. Default `PL1`, for more information on how to select disk performance level, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm).
+* `master_disk_performance_level` - (ForceNew, Available in 1.114.0+) The system disk performance level of master node, only take effect when `master_disk_category` value is `cloud_essd`. For more information on how to select disk performance level, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm).
 
 ##### master_vswtich_ids
 
@@ -192,7 +192,7 @@ The following example is the definition of `master_vswtich_ids` block, the `work
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [40~500] in GB. Default to 40.
 * `worker_disk_snapshot_policy_id` - (Optional, Available in 1.114.0+) The system disk auto snapshot policy of worker node.
-* `worker_disk_performance_level` - (Optional, Available in 1.114.0+) The system disk performance level of worker node, only take effect when `worker_disk_category` value is `cloud_essd`. Default `PL1`, for more information on how to select disk performance level, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm).
+* `worker_disk_performance_level` - (Optional, Available in 1.114.0+) The system disk performance level of worker node, only take effect when `worker_disk_category` value is `cloud_essd`. For more information on how to select disk performance level, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm).
 * `worker_data_disks` - (Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size.
   * `category`: the type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
   * `size`: the size of a data disk, Its valid value range [40~32768] in GiB. Default to `40`.
