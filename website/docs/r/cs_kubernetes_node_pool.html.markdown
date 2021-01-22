@@ -17,7 +17,7 @@ This resource will help you to manager node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.109.1, support remove node pool nodes.
 
--> **NOTE:** From version 1.111.0, support auto scaling node pool. 
+-> **NOTE:** From version 1.111.0, support auto scaling node pool. For more information on how to use auto scaling node pools, see [Use Terraform to create an elastic node pool](https://help.aliyun.com/document_detail/197717.htm).
 
 ## Example Usage
 
@@ -124,6 +124,35 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   scaling_config {
     min_size      = 1
     max_size      = 10
+  }
+
+}
+```
+
+Enables auto-scaling of the managed node pool in kubernetes cluster.
+
+```terraform
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  name                         = var.name
+  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids                  = [alicloud_vswitch.default.id]
+  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category         = "cloud_efficiency"
+  system_disk_size             = 40
+  key_name                     = alicloud_key_pair.default.key_name
+
+  # management node pool configuration.
+  management {
+    auto_repair      = true
+    auto_upgrade     = true
+    surge            = 1
+    max_unavailable  = 1
+  }
+  # enable auto-scaling
+  scaling_config {
+    min_size         = 1
+    max_size         = 10
+    type             = "cpu"
   }
 
 }

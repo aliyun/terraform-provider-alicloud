@@ -108,6 +108,7 @@ The following arguments are supported:
 * `service_account_issuer` - (Optional, ForceNew, Available in 1.92.0+) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well).
 * `api_audiences` - (Optional, ForceNew, Available in 1.92.0+) A list of API audiences for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm). Set this to `["kubernetes.default.svc"]` if you want to enable the Token Volume Projection feature (requires specifying `service_account_issuer` as well.
 * `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster . Detailed below.
+* `load_balancer_spec` - (ForceNew, Available in 1.114.0+) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
 
 ##### runtime
 
@@ -156,7 +157,9 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `master_auto_renew` - (Optional) Enable master payment auto-renew, defaults to false.
 * `master_auto_renew_period` - (Optional) Master payment auto-renew period, it can be one of {1, 2, 3, 6, 12}.
 * `master_disk_category` - (Optional) The system disk category of master node. Its valid value are `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `master_disk_size` - (Optional) The system disk size of master node. Its valid value range [20~500] in GB. Default to 20.
+* `master_disk_size` - (Optional) The system disk size of master node. Its valid value range [40~500] in GB. Default to `120`.
+* `master_disk_snapshot_policy_id` - (ForceNew, Available in 1.114.0+) The system disk auto snapshot policy of master node.
+* `master_disk_performance_level` - (ForceNew, Available in 1.114.0+) The system disk performance level of master node, only take effect when `master_disk_category` value is `cloud_essd`. Default `PL1`, for more information on how to select disk performance level, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm).
 
 ##### master_vswtich_ids
 
@@ -188,10 +191,14 @@ The following example is the definition of `master_vswtich_ids` block, the `work
 * `worker_auto_renew_period` - (Optional) Worker payment auto-renew period,, it can be one of {1, 2, 3, 6, 12}.
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [40~500] in GB. Default to 40.
+* `worker_disk_snapshot_policy_id` - (Optional, Available in 1.114.0+) The system disk auto snapshot policy of worker node.
+* `worker_disk_performance_level` - (Optional, Available in 1.114.0+) The system disk performance level of worker node, only take effect when `worker_disk_category` value is `cloud_essd`. Default `PL1`, for more information on how to select disk performance level, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm).
 * `worker_data_disks` - (Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size.
   * `category`: the type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
-  * `size`: the size of a data disk, Its valid value range [40~32768] in GB. Unit: GiB.
+  * `size`: the size of a data disk, Its valid value range [40~32768] in GiB. Default to `40`.
   * `encrypted`: specifies whether to encrypt data disks. Valid values: true and false.
+  * `auto_snapshot_policy_id` - (Optional, Available in 1.114.0+) The data disk auto snapshot policy of worker node.
+  * `performance_Level` - (Optional, Available in 1.114.0+)The data disk performance level of worker node. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm).
 * `node_name_mode` - (Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be `aliyun.com00055test`.
 * `node_port_range`- (Optional, ForceNew, Available in 1.103.2+) The service port range of nodes, valid values: `30000` to `65535`. Default to `30000-32767`.
 * `os_type` - (Optional, ForceNew, Available in 1.103.2+) The operating system of the nodes that run pods, its valid value is either `Linux` or `Windows`. Default to `Linux`.

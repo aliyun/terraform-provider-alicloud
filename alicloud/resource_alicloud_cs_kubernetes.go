@@ -105,6 +105,19 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Default:          DiskCloudEfficiency,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
+			"master_disk_snapshot_policy": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: csForceUpdateSuppressFunc,
+			},
+			"master_disk_performance_level": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1"}, false),
+				DiffSuppressFunc: csForceUpdateSuppressFunc,
+			},
 			"master_instance_charge_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -179,6 +192,17 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Default:          DiskCloudEfficiency,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
+			"worker_disk_snapshot_policy": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
+			},
+			"worker_disk_performance_level": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1"}, false),
+				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
+			},
 			"worker_data_disk_size": {
 				Type:             schema.TypeInt,
 				Optional:         true,
@@ -226,6 +250,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 							Optional: true,
 						},
 						"auto_snapshot_policy_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"performance_level": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -401,6 +429,13 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:         true,
 				Default:          true,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
+			},
+			"load_balancer_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium",
+					"slb.s3.small", "slb.s3.medium", "slb.s3.large", "slb.s3.xlarge", "slb.s3.xxlarge"}, false),
 			},
 			"deletion_protection": {
 				Type:     schema.TypeBool,
@@ -858,6 +893,14 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 				}
 			}
 
+			if d.HasChange("worker_disk_snapshot_policy"); ok {
+				args.WorkerSnapshotPolicyId = d.Get("worker_disk_snapshot_policy").(string)
+			}
+
+			if d.HasChange("worker_disk_performance_level"); ok {
+				args.WorkerSystemDiskPerformanceLevel = d.Get("worker_disk_performance_level").(string)
+			}
+
 			if d.HasChange("worker_data_disks") {
 				if dds, ok := d.GetOk("worker_data_disks"); ok {
 					disks := dds.([]interface{})
@@ -872,6 +915,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 							AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
 							KMSKeyId:             pack["kms_key_id"].(string),
 							Encrypted:            pack["encrypted"].(string),
+							PerformanceLevel:     pack["performance_level"].(string),
 						}
 						createDataDisks = append(createDataDisks, dataDisk)
 					}
@@ -1392,6 +1436,10 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		},
 	}
 
+	if lbSpec, ok := d.GetOk("load_balancer_spec"); ok {
+		creationArgs.LoadBalancerSpec = lbSpec.(string)
+	}
+
 	if osType, ok := d.GetOk("os_type"); ok {
 		creationArgs.OsType = osType.(string)
 	}
@@ -1485,6 +1533,14 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		}
 	}
 
+	if v, ok := d.GetOk("master_disk_snapshot_policy"); ok && v != "" {
+		creationArgs.MasterArgs.MasterSnapshotPolicyId = v.(string)
+	}
+
+	if v, ok := d.GetOk("master_disk_performance_level"); ok && v != "" {
+		creationArgs.MasterArgs.MasterSystemDiskPerformanceLevel = v.(string)
+	}
+
 	if v, ok := d.GetOk("master_instance_charge_type"); ok {
 		creationArgs.MasterInstanceChargeType = v.(string)
 		if creationArgs.MasterInstanceChargeType == string(PrePaid) {
@@ -1513,6 +1569,14 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		creationArgs.WorkerArgs.WorkerSystemDiskCategory = aliyungoecs.DiskCategory(v.(string))
 	}
 
+	if v, ok := d.GetOk("worker_disk_snapshot_policy"); ok && v != "" {
+		creationArgs.WorkerArgs.WorkerSnapshotPolicyId = v.(string)
+	}
+
+	if v, ok := d.GetOk("worker_disk_performance_level"); ok && v != "" {
+		creationArgs.WorkerArgs.WorkerSystemDiskPerformanceLevel = v.(string)
+	}
+
 	if dds, ok := d.GetOk("worker_data_disks"); ok {
 		disks := dds.([]interface{})
 		createDataDisks := make([]cs.DataDisk, 0, len(disks))
@@ -1526,6 +1590,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 				AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
 				KMSKeyId:             pack["kms_key_id"].(string),
 				Encrypted:            pack["encrypted"].(string),
+				PerformanceLevel:     pack["performance_level"].(string),
 			}
 			createDataDisks = append(createDataDisks, dataDisk)
 		}
@@ -1574,8 +1639,8 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	}
 
 	// Cluster maintenance window. Effective only in the professional managed cluster
-	if v := d.Get("maintenance_window").([]interface{}); len(v) > 0 {
-		creationArgs.MaintenanceWindow = expandMaintenanceWindowConfig(v)
+	if mw, ok := d.GetOk("maintenance_window"); ok {
+		creationArgs.MaintenanceWindow = expandMaintenanceWindowConfig(mw.([]interface{}))
 	}
 
 	return creationArgs, nil

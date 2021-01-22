@@ -84,6 +84,17 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Default:          DiskCloudEfficiency,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
+			"worker_disk_snapshot_policy": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
+			},
+			"worker_disk_performance_level": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1"}, false),
+				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
+			},
 			"worker_data_disk_size": {
 				Type:             schema.TypeInt,
 				Optional:         true,
@@ -138,6 +149,10 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 							Optional: true,
 						},
 						"auto_snapshot_policy_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"performance_level": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -303,6 +318,13 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional:         true,
 				Default:          true,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
+			},
+			"load_balancer_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium",
+					"slb.s3.small", "slb.s3.medium", "slb.s3.large", "slb.s3.xlarge", "slb.s3.xxlarge"}, false),
 			},
 			"deletion_protection": {
 				Type:     schema.TypeBool,
@@ -625,10 +647,11 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"ack.standard", "ack.pro.small"}, false),
 			},
 			"maintenance_window": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
-				MaxItems: 1,
+				Type:             schema.TypeList,
+				Optional:         true,
+				Computed:         true,
+				MaxItems:         1,
+				DiffSuppressFunc: csForceUpdateSuppressFunc,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"enable": {
