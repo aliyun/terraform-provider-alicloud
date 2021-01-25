@@ -89,11 +89,8 @@ func resourceAlicloudDmsEnterpriseUserCreate(d *schema.ResourceData, meta interf
 		request.Tid = requests.NewInteger(v.(int))
 	}
 
-	if v, err := strconv.Atoi(d.Get("uid").(string)); err == nil {
-		request.Uid = requests.NewInteger(v)
-	} else {
-		return WrapError(err)
-	}
+	request.Uid = d.Get("uid").(string)
+
 	if v, ok := d.GetOk("user_name"); ok {
 		request.UserNick = v.(string)
 	} else if v, ok := d.GetOk("nick_name"); ok {
@@ -193,11 +190,7 @@ func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interf
 		if object.State != target {
 			if target == "DISABLE" {
 				request := dms_enterprise.CreateDisableUserRequest()
-				if v, err := strconv.Atoi(d.Id()); err == nil {
-					request.Uid = requests.NewInteger(v)
-				} else {
-					return WrapError(err)
-				}
+				request.Uid = d.Id()
 				if v, ok := d.GetOk("tid"); ok {
 					request.Tid = requests.NewInteger(v.(int))
 				}
@@ -211,11 +204,7 @@ func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interf
 			}
 			if target == "NORMAL" {
 				request := dms_enterprise.CreateEnableUserRequest()
-				if v, err := strconv.Atoi(d.Id()); err == nil {
-					request.Uid = requests.NewInteger(v)
-				} else {
-					return WrapError(err)
-				}
+				request.Uid = d.Id()
 				if v, ok := d.GetOk("tid"); ok {
 					request.Tid = requests.NewInteger(v.(int))
 				}
@@ -236,11 +225,7 @@ func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interf
 func resourceAlicloudDmsEnterpriseUserDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := dms_enterprise.CreateDeleteUserRequest()
-	if v, err := strconv.Atoi(d.Id()); err == nil {
-		request.Uid = requests.NewInteger(v)
-	} else {
-		return WrapError(err)
-	}
+	request.Uid = d.Id()
 	if v, ok := d.GetOk("tid"); ok {
 		request.Tid = requests.NewInteger(v.(int))
 	}

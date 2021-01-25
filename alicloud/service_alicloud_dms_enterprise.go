@@ -47,14 +47,7 @@ func (s *Dms_enterpriseService) DescribeDmsEnterpriseInstance(id string) (object
 func (s *Dms_enterpriseService) DescribeDmsEnterpriseUser(id string) (object dms_enterprise.User, err error) {
 	request := dms_enterprise.CreateGetUserRequest()
 	request.RegionId = s.client.RegionId
-
-	if v, err := strconv.Atoi(id); err == nil {
-		request.Uid = requests.NewInteger(v)
-	} else {
-		err = WrapError(err)
-		return object, err
-	}
-
+	request.Uid = id
 	raw, err := s.client.WithDmsEnterpriseClient(func(dms_enterpriseClient *dms_enterprise.Client) (interface{}, error) {
 		return dms_enterpriseClient.GetUser(request)
 	})
