@@ -17,5 +17,5 @@ package dms_enterprise
 
 // UserList is a nested struct in dms_enterprise response
 type UserList struct {
-	User []User `json:"User" xml:"User"`
+	User []UserInListUsers `json:"User" xml:"User"`
 }

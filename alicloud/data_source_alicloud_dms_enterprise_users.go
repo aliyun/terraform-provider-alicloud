@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"regexp"
-	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
@@ -130,7 +129,7 @@ func dataSourceAlicloudDmsEnterpriseUsersRead(d *schema.ResourceData, meta inter
 	}
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-	var objects []dms_enterprise.User
+	var objects []dms_enterprise.UserInListUsers
 	var userNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -167,7 +166,7 @@ func dataSourceAlicloudDmsEnterpriseUsersRead(d *schema.ResourceData, meta inter
 				}
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[strconv.FormatInt(item.Uid, 10)]; !ok {
+				if _, ok := idsMap[item.Uid]; !ok {
 					continue
 				}
 			}
@@ -193,12 +192,12 @@ func dataSourceAlicloudDmsEnterpriseUsersRead(d *schema.ResourceData, meta inter
 			"role_ids":   object.RoleIdList.RoleIds,
 			"role_names": object.RoleNameList.RoleNames,
 			"status":     object.State,
-			"id":         strconv.FormatInt(object.Uid, 10),
+			"id":         object.Uid,
 			"user_id":    object.UserId,
 			"user_name":  object.NickName,
 			"nick_name":  object.NickName,
 		}
-		ids = append(ids, strconv.FormatInt(object.Uid, 10))
+		ids = append(ids, object.Uid)
 		names = append(names, object.NickName)
 		s = append(s, mapping)
 	}

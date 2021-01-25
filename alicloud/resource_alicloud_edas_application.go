@@ -97,7 +97,7 @@ func resourceAlicloudEdasApplicationCreate(d *schema.ResourceData, meta interfac
 	}
 
 	if v, ok := d.GetOk("health_check_url"); ok {
-		request.HealthCheckURL = v.(string)
+		request.HealthCheckUrl = v.(string)
 	}
 
 	if v, ok := d.GetOk("logical_region_id"); ok {
