@@ -34,8 +34,8 @@ resource "alicloud_ga_bandwidth_package" "example" {
   ratio          = 30
 }
 resource "alicloud_ga_bandwidth_package_attachment" "example" {
-  accelerator_id       = "alicloud_ga_accelerator.example.id"
-  bandwidth_package_id = "alicloud_ga_bandwidth_package.example.id"
+  accelerator_id       = alicloud_ga_accelerator.example.id
+  bandwidth_package_id = alicloud_ga_bandwidth_package.example.id
 }
 
 ```

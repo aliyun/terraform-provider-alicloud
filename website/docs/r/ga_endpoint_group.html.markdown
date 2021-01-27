@@ -26,7 +26,7 @@ resource "alicloud_ga_accelerator" "example" {
   spec            = "1"
 }
 resource "alicloud_ga_listener" "example" {
-  accelerator_id = "alicloud_ga_accelerator.example.id"
+  accelerator_id = alicloud_ga_accelerator.example.id
   port_ranges {
     from_port = 60
     to_port   = 70
