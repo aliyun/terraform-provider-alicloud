@@ -11,11 +11,11 @@ description: |-
 
 This data source provides AccessRule available to the user.
 
--> NOTE: Available in 1.35.0+
+-> **NOTE**: Available in 1.35.0+
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_nas_access_rules" "foo" {
   access_group_name = "tf-testAccAccessGroupsdatasource"
   source_cidr_ip    = "168.1.1.0/16"
@@ -43,7 +43,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of rule IDs, Each element set to `access_rule_id` (Each element formats as `<access_group_name>:<access rule id>` before 1.53.0).
+* `ids` - A list of rule IDs, Each element set to `access_rule_id` (Each element formats as `<access_group_name>:<access_rule_id>` before 1.53.0).
 * `rules` - A list of AccessRules. Each element contains the following attributes:
  * `source_cidr_ip` - SourceCidrIp of the AccessRule.
  * `priority` - Priority of the AccessRule.
