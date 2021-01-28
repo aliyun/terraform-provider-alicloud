@@ -12,66 +12,61 @@ func TestAccAlicloudNasAccessRuleDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100000, 999999)
 	ipConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
-			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
-			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}_fake"`,
 		}),
 	}
 	RWAccessConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
-			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
-			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}_fake"`,
 		}),
 	}
 	UserAccessConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
-			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"user_access":       `"${alicloud_nas_access_rule.default.user_access_type}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
-			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"user_access":       `"${alicloud_nas_access_rule.default.user_access_type}_fake"`,
 		}),
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
-			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
-			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}_fake"]`,
-		}),
-	}
-	AccessGroupNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
-			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
-			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"user_access":       `"${alicloud_nas_access_rule.default.user_access_type}"`,
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}"`,
 			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
-			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"user_access":       `"${alicloud_nas_access_rule.default.user_access_type}_fake"`,
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}_fake"`,
 			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}_fake"`,
 		}),
 	}
-	accessRuleCheckInfo.dataSourceTestCheck(t, rand, ipConf, RWAccessConf, UserAccessConf, idsConf, AccessGroupNameConf, allConf)
+	accessRuleCheckInfo.dataSourceTestCheck(t, rand, ipConf, RWAccessConf, UserAccessConf, idsConf, allConf)
 }
 
 func testAccCheckAlicloudAccessRuleDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -84,12 +79,12 @@ variable "name" {
         	default = "tf-testAccAccessGroupsdatasource-%d"
 }
 resource "alicloud_nas_access_group" "default" {
-        	name = "${var.name}"
-	        type = "Vpc"
+        	access_group_name = "${var.name}"
+	        access_group_type = "Vpc"
 	        description = "tf-testAccAccessGroupsdatasource"
 }
 resource "alicloud_nas_access_rule" "default" {
-        	access_group_name = "${alicloud_nas_access_group.default.id}"
+        	access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
 	        source_cidr_ip = "168.1.1.0/16"
         	rw_access_type = "RDWR"
 	        user_access_type = "no_squash"

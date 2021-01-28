@@ -1,8 +1,13 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
+	"fmt"
+	"log"
+	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -47,38 +52,68 @@ func resourceAlicloudNasFileSystem() *schema.Resource {
 
 func resourceAlicloudNasFileSystemCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreateFileSystem"
+	request := make(map[string]interface{})
+	conn, err := client.NewNasClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request["RegiondId"] = client.RegionId
+	request["ProtocolType"] = d.Get("protocol_type")
+	request["StorageType"] = d.Get("storage_type")
 
-	request := nas.CreateCreateFileSystemRequest()
-	request.RegionId = string(client.RegionId)
-	request.ProtocolType = d.Get("protocol_type").(string)
-	request.StorageType = d.Get("storage_type").(string)
-	raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-		return nasClient.CreateFileSystem(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_file_system", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_file_system", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*nas.CreateFileSystemResponse)
-	d.SetId(response.FileSystemId)
+
+	d.SetId(fmt.Sprint(response["FileSystemId"]))
 	return resourceAlicloudNasFileSystemUpdate(d, meta)
 }
 
 func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := nas.CreateModifyFileSystemRequest()
-	request.RegionId = client.RegionId
-	request.FileSystemId = d.Id()
-
+	var response map[string]interface{}
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"FileSystemId": d.Id(),
+	}
 	if d.HasChange("description") {
-		request.Description = d.Get("description").(string)
-		raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.ModifyFileSystem(request)
+		request["Description"] = d.Get("description")
+		action := "ModifyFileSystem"
+		conn, err := client.NewNasClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAlicloudNasFileSystemRead(d, meta)
 }
@@ -89,36 +124,49 @@ func resourceAlicloudNasFileSystemRead(d *schema.ResourceData, meta interface{})
 	object, err := nasService.DescribeNasFileSystem(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_nas_file_system nasService.DescribeNasFileSystem Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("description", object.Description)
-	d.Set("protocol_type", object.ProtocolType)
-	d.Set("storage_type", object.StorageType)
+	d.Set("description", object["Description"])
+	d.Set("protocol_type", object["ProtocolType"])
+	d.Set("storage_type", object["StorageType"])
 	return nil
 }
 
 func resourceAlicloudNasFileSystemDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	nasService := NasService{client}
-	request := nas.CreateDeleteFileSystemRequest()
-	request.RegionId = client.RegionId
-	request.FileSystemId = d.Id()
+	action := "DeleteFileSystem"
+	var response map[string]interface{}
+	conn, err := client.NewNasClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"FileSystemId": d.Id(),
+	}
 
-	raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-		return nasClient.DeleteFileSystem(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound", "Forbidden.NasNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return WrapError(nasService.WaitForNasFileSystem(d.Id(), Deleted, DefaultTimeoutMedium))
+	return nil
 }

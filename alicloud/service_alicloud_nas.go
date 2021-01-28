@@ -1,11 +1,8 @@
 package alicloud
 
 import (
-	"strings"
-	"time"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -14,266 +11,162 @@ type NasService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *NasService) DescribeNasFileSystem(id string) (fs nas.FileSystem, err error) {
-
-	request := nas.CreateDescribeFileSystemsRequest()
-	request.RegionId = s.client.RegionId
-	request.FileSystemId = id
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.DescribeFileSystems(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{ServiceUnavailable, Throttling}) {
-				return resource.RetryableError(err)
-			}
-			if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound", "Forbidden.NasNotFound"}) {
-				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
-			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+func (s *NasService) DescribeNasFileSystem(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewNasClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeFileSystems"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"FileSystemId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound", "Forbidden.NasNotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("NasFileSystem", id)), NotFoundMsg, ProviderERROR)
+			return object, err
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*nas.DescribeFileSystemsResponse)
-		if response.TotalCount <= 0 {
-			return resource.NonRetryableError(WrapErrorf(Error(GetNotFoundMessage("NasFileSystem", id)), NotFoundMsg, ProviderERROR))
-		}
-		fs = response.FileSystems.FileSystem[0]
-		return nil
-	})
-	return fs, WrapError(err)
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.FileSystems.FileSystem", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FileSystems.FileSystem", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
-func (s *NasService) DescribeNasMountTarget(id string) (object nas.MountTarget, err error) {
+func (s *NasService) DescribeNasMountTarget(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewNasClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeMountTargets"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-	request := nas.CreateDescribeMountTargetsRequest()
-	request.RegionId = s.client.RegionId
-	request.FileSystemId = parts[0]
-	request.MountTargetDomain = parts[1]
-
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.DescribeMountTargets(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"ServiceUnavailable", "Throttling"}) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			if IsExpectedErrors(err, []string{"Forbidden.NasNotFound", "InvalidFileSystem.NotFound", "InvalidLBid.NotFound", "InvalidMountTarget.NotFound", "VolumeUnavailable"}) {
-				err = WrapErrorf(Error(GetNotFoundMessage("NasMountTarget", id)), NotFoundMsg, ProviderERROR)
-				return resource.NonRetryableError(err)
-			}
-			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-			return resource.NonRetryableError(err)
+	request := map[string]interface{}{
+		"RegionId":          s.client.RegionId,
+		"FileSystemId":      parts[0],
+		"MountTargetDomain": parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Forbidden.NasNotFound", "InvalidFileSystem.NotFound", "InvalidLBid.NotFound", "InvalidMountTarget.NotFound", "VolumeUnavailable"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("NasMountTarget", id)), NotFoundMsg, ProviderERROR)
+			return object, err
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*nas.DescribeMountTargetsResponse)
-
-		if len(response.MountTargets.MountTarget) < 1 {
-			err = WrapErrorf(Error(GetNotFoundMessage("NasMountTarget", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-			return resource.NonRetryableError(err)
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.MountTargets.MountTarget", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.MountTargets.MountTarget", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["MountTargetDomain"].(string) != parts[1] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
 		}
-		object = response.MountTargets.MountTarget[0]
-		return nil
-	})
-	return object, WrapError(err)
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
-func (s *NasService) DescribeNasAccessGroup(id string) (object nas.AccessGroup, err error) {
+func (s *NasService) DescribeNasAccessGroup(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewNasClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeAccessGroups"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-	request := nas.CreateDescribeAccessGroupsRequest()
-	request.RegionId = s.client.RegionId
-	request.AccessGroupName = parts[0]
-	request.FileSystemType = parts[1]
-
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.DescribeAccessGroups(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"ServiceUnavailable", "Throttling"}) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			if IsExpectedErrors(err, []string{"Forbidden.NasNotFound", "InvalidAccessGroup.NotFound", "Resource.NotFound"}) {
-				err = WrapErrorf(Error(GetNotFoundMessage("NasAccessGroup", id)), NotFoundMsg, ProviderERROR)
-				return resource.NonRetryableError(err)
-			}
-			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*nas.DescribeAccessGroupsResponse)
-
-		if len(response.AccessGroups.AccessGroup) < 1 {
+	request := map[string]interface{}{
+		"RegionId":        s.client.RegionId,
+		"AccessGroupName": parts[0],
+		"FileSystemType":  parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Forbidden.NasNotFound", "InvalidAccessGroup.NotFound", "Resource.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("NasAccessGroup", id)), NotFoundMsg, ProviderERROR)
-			return resource.NonRetryableError(err)
+			return object, err
 		}
-		object = response.AccessGroups.AccessGroup[0]
-		return nil
-	})
-	return object, WrapError(err)
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.AccessGroups.AccessGroup", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AccessGroups.AccessGroup", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
-func (s *NasService) DescribeNasAccessRule(id string) (fs nas.AccessRule, err error) {
-
-	request := nas.CreateDescribeAccessRulesRequest()
-	request.RegionId = string(s.client.Region)
+func (s *NasService) DescribeNasAccessRule(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewNasClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeAccessRules"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-	request.AccessGroupName = parts[0]
-	request.PageNumber = requests.NewInteger(1)
-	request.PageSize = requests.NewInteger(PageSizeXLarge)
-
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.DescribeAccessRules(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{ServiceUnavailable, Throttling}) {
-				return resource.RetryableError(err)
-			}
-			if IsExpectedErrors(err, []string{"InvalidAccessGroup.NotFound", "Forbidden.NasNotFound"}) {
-				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
-			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*nas.DescribeAccessRulesResponse)
-		for _, accessRule := range response.AccessRules.AccessRule {
-			if parts[1] == accessRule.AccessRuleId {
-				fs = accessRule
-				return nil
-			}
-		}
-		err = WrapErrorf(Error(GetNotFoundMessage("NasAccessRule", id)), NotFoundMsg, ProviderERROR)
-		if len(response.AccessRules.AccessRule) < PageSizeXLarge {
-			return resource.NonRetryableError(err)
-		}
-
-		page, e := getNextpageNumber(request.PageNumber)
-		if e != nil {
-			return resource.NonRetryableError(WrapError(e))
-		}
-		request.PageNumber = page
-		return resource.RetryableError(err)
-	})
-	return fs, WrapError(err)
-}
-
-func (s *NasService) WaitForNasMountTarget(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeNasMountTarget(id)
-
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		} else if strings.ToLower(object.Status) == strings.ToLower(string(status)) {
-			//TODO
-			break
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, status, ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+	request := map[string]interface{}{
+		"RegionId":        s.client.RegionId,
+		"AccessGroupName": parts[0],
+		"AccessRuleId":    parts[1],
 	}
-	return nil
-}
-
-func (s *NasService) WaitForNasFileSystem(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeNasFileSystem(id)
-
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidAccessGroup.NotFound", "Forbidden.NasNotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("AccessRule", id)), NotFoundMsg, ProviderERROR)
+			return object, err
 		}
-		if strings.ToLower(object.FileSystemId) == strings.ToLower(id) && status != Deleted {
-			//TODO
-			break
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.FileSystemId, id, ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
 	}
-	return nil
-}
-
-func (s *NasService) WaitForNasAccessRule(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeNasAccessRule(id)
-
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		} else if strings.ToLower(object.AccessRuleId) == strings.ToLower(id) && status != Deleted {
-			//TODO
-			break
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AccessRuleId, id, ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.AccessRules.AccessRule", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AccessRules.AccessRule", response)
 	}
-	return nil
-}
-
-func (s *NasService) WaitForNasAccessGroup(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeNasAccessGroup(id)
-
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-		if strings.ToLower(object.AccessGroupName) == strings.ToLower(id) && status != Deleted {
-			//TODO
-			break
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AccessGroupName, id, ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
 	}
-	return nil
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
 func (s *NasService) NasMountTargetStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
@@ -288,10 +181,10 @@ func (s *NasService) NasMountTargetStateRefreshFunc(id string, failStates []stri
 		}
 
 		for _, failState := range failStates {
-			if object.Status == failState {
-				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			if object["Status"].(string) == failState {
+				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
 			}
 		}
-		return object, object.Status, nil
+		return object, object["Status"].(string), nil
 	}
 }

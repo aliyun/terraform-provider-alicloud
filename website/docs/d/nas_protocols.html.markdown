@@ -15,7 +15,7 @@ Provide  a data source to retrieve the type of protocol used to create NAS file 
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_nas_protocols" "default" {
   type        = "Performance"
   zone_id     = "cn-beijing-e"
@@ -31,7 +31,7 @@ output "nas_protocols_protocol" {
 
 The following arguments are supported:
 
-* `type` - (Required) The file system type. Valid Values: Performance and Capacity.  
+* `type` - (Required) The file system type. Valid Values: `Performance` and `Capacity`.  
 * `zone_id` - (Optional) String to filter results by zone id. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

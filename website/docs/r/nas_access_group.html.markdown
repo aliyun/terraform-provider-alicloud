@@ -20,7 +20,7 @@ For information about NAS Access Group and how to use it, see [What is NAS Acces
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_nas_access_group" "foo" {
   name        = "CreateAccessGroup"
   type        = "Classic"
@@ -31,7 +31,7 @@ resource "alicloud_nas_access_group" "foo" {
 
 Example after v1.92.0
 
-```
+```terraform
 resource "alicloud_nas_access_group" "foo" {
   access_group_name  = "CreateAccessGroup"
   access_group_type  = "Vpc"
