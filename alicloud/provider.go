@@ -287,6 +287,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kms_aliases":                                dataSourceAlicloudKmsAliases(),
 			"alicloud_dns_domain_txt_guid":                        dataSourceAlicloudDnsDomainTxtGuid(),
 			"alicloud_edas_service":                               dataSourceAlicloudEdasService(),
+			"alicloud_fnf_service":                                dataSourceAlicloudFnfService(),
 			"alicloud_kms_service":                                dataSourceAlicloudKmsService(),
 			"alicloud_pvtz_service":                               dataSourceAlicloudPvtzService(),
 			"alicloud_cms_service":                                dataSourceAlicloudCmsService(),
