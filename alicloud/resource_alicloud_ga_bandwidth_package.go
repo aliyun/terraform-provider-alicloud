@@ -262,7 +262,7 @@ func resourceAlicloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta inter
 	return resourceAlicloudGaBandwidthPackageRead(d, meta)
 }
 func resourceAlicloudGaBandwidthPackageDelete(d *schema.ResourceData, meta interface{}) error {
-	if d.Get("payment_type") == "PREPAY" {
+	if d.Get("payment_type") == "Subscription" {
 		log.Printf("[WARN] Cannot destroy resourceAlicloudGaBandwidthPackage prepay type. Terraform will remove this resource from the state file, however resources may remain.")
 		return nil
 	}
