@@ -138,7 +138,8 @@ func dataSourceAlicloudFnfSchedulesRead(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Schedules", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if scheduleNameRegex != nil {
 				if !scheduleNameRegex.MatchString(fmt.Sprint(item["ScheduleName"])) {

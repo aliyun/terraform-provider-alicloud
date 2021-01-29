@@ -121,7 +121,7 @@ func resourceAlicloudTsdbInstanceCreate(d *schema.ResourceData, meta interface{}
 	request["InstanceClass"] = d.Get("instance_class")
 	request["InstanceStorage"] = d.Get("instance_storage")
 	request["PayType"] = convertTSDBInstancePaymentTypeRequest(d.Get("payment_type").(string))
-	if request["PayType"].(string) == "Subscription" {
+	if request["PayType"].(string) == "PREPAY" {
 		request["PricingCycle"] = "Month"
 	}
 	request["RegionId"] = client.RegionId

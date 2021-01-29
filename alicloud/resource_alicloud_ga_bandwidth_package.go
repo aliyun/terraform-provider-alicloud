@@ -150,11 +150,9 @@ func resourceAlicloudGaBandwidthPackageCreate(d *schema.ResourceData, meta inter
 	}
 
 	if v, ok := d.GetOk("payment_type"); ok {
-		if v.(string) == "Subscription" {
-			request["ChargeType"] = convertGaBindwidthPakcagePaymentTypeRequest(v.(string))
+		request["ChargeType"] = convertGaBandwidthPackagePaymentTypeRequest(v.(string))
+		if request["ChargeType"].(string) == "PREPAY" {
 			request["PricingCycle"] = "Month"
-		} else {
-			request["ChargeType"] = convertGaBindwidthPakcagePaymentTypeRequest(v.(string))
 		}
 	}
 
@@ -199,7 +197,7 @@ func resourceAlicloudGaBandwidthPackageRead(d *schema.ResourceData, meta interfa
 	d.Set("cbn_geographic_region_ida", object["CbnGeographicRegionIdA"])
 	d.Set("cbn_geographic_region_idb", object["CbnGeographicRegionIdB"])
 	d.Set("description", object["Description"])
-	d.Set("payment_type", convertGaBandwidthPakcagePaymentTypeResponse(formatGaBandwidthPakcagePaymentTypeString(object["ChargeType"])))
+	d.Set("payment_type", convertGaBandwidthPackagePaymentTypeResponse(object["ChargeType"].(string)))
 	d.Set("status", object["State"])
 	d.Set("type", object["Type"])
 	return nil
@@ -238,7 +236,7 @@ func resourceAlicloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapError(err)
 		}
-		wait := incrementalWait(3*time.Second, 30*time.Second)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
@@ -288,7 +286,7 @@ func resourceAlicloudGaBandwidthPackageDelete(d *schema.ResourceData, meta inter
 	}
 	return nil
 }
-func convertGaBindwidthPakcagePaymentTypeRequest(source string) string {
+func convertGaBandwidthPackagePaymentTypeRequest(source string) string {
 	switch source {
 	case "PayAsYouGo":
 		return "POSTPAY"
@@ -297,7 +295,7 @@ func convertGaBindwidthPakcagePaymentTypeRequest(source string) string {
 	}
 	return source
 }
-func convertGaBandwidthPakcagePaymentTypeResponse(source string) string {
+func convertGaBandwidthPackagePaymentTypeResponse(source string) string {
 	switch source {
 	case "POSTPAY":
 		return "PayAsYouGo"
@@ -305,11 +303,4 @@ func convertGaBandwidthPakcagePaymentTypeResponse(source string) string {
 		return "Subscription"
 	}
 	return source
-}
-func formatGaBandwidthPakcagePaymentTypeString(source interface{}) string {
-	if source == nil {
-		return ""
-	} else {
-		return source.(string)
-	}
 }
