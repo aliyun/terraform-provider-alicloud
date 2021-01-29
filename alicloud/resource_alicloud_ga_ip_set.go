@@ -23,7 +23,7 @@ func resourceAlicloudGaIpSet() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Minute),
+			Create: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
 			Update: schema.DefaultTimeout(2 * time.Minute),
 		},
@@ -91,7 +91,7 @@ func resourceAlicloudGaIpSetCreate(d *schema.ResourceData, meta interface{}) err
 		request["ClientToken"] = buildClientToken("CreateIpSets")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.IpSet"}) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -161,7 +161,7 @@ func resourceAlicloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) err
 			request["ClientToken"] = buildClientToken("UpdateIpSet")
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"StateError.IpSet"}) {
+				if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -202,7 +202,7 @@ func resourceAlicloudGaIpSetDelete(d *schema.ResourceData, meta interface{}) err
 		request["ClientToken"] = buildClientToken("DeleteIpSet")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.IpSet"}) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
 				wait()
 				return resource.RetryableError(err)
 			}

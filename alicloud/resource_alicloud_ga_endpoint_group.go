@@ -22,7 +22,7 @@ func resourceAlicloudGaEndpointGroup() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Minute),
+			Create: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(6 * time.Minute),
 			Update: schema.DefaultTimeout(2 * time.Minute),
 		},
@@ -48,14 +48,6 @@ func resourceAlicloudGaEndpointGroup() *schema.Resource {
 						"endpoint": {
 							Type:     schema.TypeString,
 							Required: true,
-						},
-						"probe_port": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"probe_protocol": {
-							Type:     schema.TypeString,
-							Computed: true,
 						},
 						"type": {
 							Type:         schema.TypeString,
@@ -229,7 +221,7 @@ func resourceAlicloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 		request["ClientToken"] = buildClientToken("CreateEndpointGroup")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Exist.EndpointGroup"}) {
+			if IsExpectedErrors(err, []string{"GA_NOT_STEADY", "StateError.Accelerator", "StateError.EndPointGroup"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -271,8 +263,6 @@ func resourceAlicloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 				temp1 := map[string]interface{}{
 					"enable_clientip_preservation": m1["EnableClientIPPreservation"],
 					"endpoint":                     m1["Endpoint"],
-					"probe_port":                   m1["ProbePort"],
-					"probe_protocol":               m1["ProbeProtocol"],
 					"type":                         m1["Type"],
 					"weight":                       m1["Weight"],
 				}
@@ -397,7 +387,7 @@ func resourceAlicloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 			request["ClientToken"] = buildClientToken("UpdateEndpointGroup")
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"StateError.EndPointGroup"}) {
+				if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -437,7 +427,7 @@ func resourceAlicloudGaEndpointGroupDelete(d *schema.ResourceData, meta interfac
 		request["ClientToken"] = buildClientToken("DeleteEndpointGroup")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.EndPointGroup"}) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
