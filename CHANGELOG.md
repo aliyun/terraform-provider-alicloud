@@ -1,24 +1,34 @@
 ## 1.114.0 (Unreleased)
 
 - **New Resource:** `alicloud_ram_saml_provider` [GH-3235]
+- **Data Source:** `alicloud_fnf_service` [GH-3258]
 - **Data Source:** `alicloud_pvtz_service` [GH-3237]
 - **Data Source:** `alicloud_ram_saml_providers` [GH-3235]
 
 IMPROVEMENTS:
 
+- resource/alicloud_ga_xxx: adding retry error code [GH-3260]
+- Update SDK to v1.61.877 [GH-3251]
+- generate ram policy from amp [GH-3249]
+- update changelog [GH-3248]
+- Change ResourceManager to common SDK [GH-3247]
 - resource/alicloud_polardb_cluster: support enable audit log collector [GH-3246]
+- add type attribute for ack_service [GH-3244]
 - improve datasource alicloud_db_instance_classes and engines [GH-3236]
 - improve docs subcategory [GH-3233]
 - support emr importer feature and optimized test case [GH-3232]
 - resource/alicloud_kvstore_instance: Modify code of private_connection_prefix [GH-3231]
+- update: add support for nat from normal to enhanced [GH-3230]
 - change oos to common [GH-3227]
 - datasource/alicloud_oss_service: supporting more opened error codes [GH-3226]
 - update changelog [GH-3225]
 - Modify Ons product to common type [GH-3218]
 - Remove duplicate `tags` [GH-3200]
+- Remove Japan site [GH-2999]
 
 BUG FIXES:
 
+- fix ga doc resource create error [GH-3257]
 - fix err when delete adb cluster [GH-3234]
 
 ## 1.113.0 (January 15, 2021)
