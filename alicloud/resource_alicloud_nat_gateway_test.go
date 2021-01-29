@@ -273,7 +273,7 @@ func TestAccAlicloudNatGatewayTransform(t *testing.T) {
 				Config: testAccNatGatewayConfig_transform_to_enhanced(rand, "Normal", ""),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":               CHECKSET,
+						"name": CHECKSET,
 					}),
 				),
 			},
@@ -287,8 +287,8 @@ func TestAccAlicloudNatGatewayTransform(t *testing.T) {
 				Config: testAccNatGatewayConfig_transform_to_enhanced(rand, "Enhanced", "${alicloud_vswitch.foo1.id}"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"nat_type":           "Enhanced",
-						"vswitch_id":         CHECKSET,
+						"nat_type":   "Enhanced",
+						"vswitch_id": CHECKSET,
 					}),
 				),
 			},

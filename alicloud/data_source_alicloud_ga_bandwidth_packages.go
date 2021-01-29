@@ -199,7 +199,7 @@ func dataSourceAlicloudGaBandwidthPackagesRead(d *schema.ResourceData, meta inte
 			"cbn_geographic_region_idb": object["CbnGeographicRegionIdB"],
 			"description":               object["Description"],
 			"expired_time":              object["ExpiredTime"],
-			"payment_type":              convertGaBandwidthPakcagePaymentTypeResponse(formatGaBandwidthPakcagePaymentTypeString(object["ChargeType"])),
+			"payment_type":              convertGaBandwidthPackagePaymentTypeResponse(object["ChargeType"].(string)),
 			"type":                      object["Type"],
 		}
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {

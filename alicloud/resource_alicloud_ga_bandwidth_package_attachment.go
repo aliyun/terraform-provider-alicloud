@@ -62,7 +62,7 @@ func resourceAlicloudGaBandwidthPackageAttachmentCreate(d *schema.ResourceData, 
 	request["AcceleratorId"] = d.Get("accelerator_id")
 	request["BandwidthPackageId"] = d.Get("bandwidth_package_id")
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 20*time.Second)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
@@ -120,7 +120,7 @@ func resourceAlicloudGaBandwidthPackageAttachmentDelete(d *schema.ResourceData, 
 
 	request["AcceleratorId"] = d.Get("accelerator_id")
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 20*time.Second)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
