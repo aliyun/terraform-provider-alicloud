@@ -1,4 +1,15 @@
 ## 1.115.0 (Unreleased)
+
+## 1.114.1 (February 01, 2021)
+
+IMPROVEMENTS:
+
+- Update doc for datasource ack_service and regions ([#3269](https://github.com/aliyun/terraform-provider-alicloud/issues/3269))
+
+BUG FIXES::
+
+- Fix the client bug for central resource  ([#3264](https://github.com/aliyun/terraform-provider-alicloud/issues/3264))
+
 ## 1.114.0 (January 29, 2021)
 
 - **New Resource:** `alicloud_ram_saml_provider` ([#3235](https://github.com/aliyun/terraform-provider-alicloud/issues/3235))
