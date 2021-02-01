@@ -376,6 +376,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_brain_industrial_pid_projects":              dataSourceAlicloudBrainIndustrialPidProjects(),
 			"alicloud_cms_monitor_groups":                         dataSourceAlicloudCmsMonitorGroups(),
 			"alicloud_ram_saml_providers":                         dataSourceAlicloudRamSamlProviders(),
+			"alicloud_quotas_quotas":                              dataSourceAlicloudQuotasQuotas(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -823,6 +824,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.BrainIndustrialEndpoint = strings.TrimSpace(endpoints["brain_industrial"].(string))
 		config.EipanycastEndpoint = strings.TrimSpace(endpoints["eipanycast"].(string))
 		config.ImsEndpoint = strings.TrimSpace(endpoints["ims"].(string))
+		config.QuotasEndpoint = strings.TrimSpace(endpoints["quotas"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1033,6 +1035,8 @@ func init() {
 		"eipanycast_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eipanycast endpoints.",
 
 		"ims_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ims endpoints.",
+
+		"quotas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom quotas endpoints.",
 	}
 }
 
@@ -1077,6 +1081,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"quotas": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["quotas_endpoint"],
+				},
+
 				"ims": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1546,6 +1557,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["brain_industrial"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["eipanycast"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ims"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["quotas"].(string)))
 	return hashcode.String(buf.String())
 }
 

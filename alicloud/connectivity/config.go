@@ -109,6 +109,7 @@ type Config struct {
 	BrainIndustrialEndpoint string
 	EipanycastEndpoint      string
 	ImsEndpoint             string
+	QuotasEndpoint          string
 }
 
 func (c *Config) loadAndValidate() error {
