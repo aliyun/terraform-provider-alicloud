@@ -2418,12 +2418,9 @@ func (client *AliyunClient) NewRamClient() (*rpc.Client, error) {
 	endpoint := ""
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
-			if strings.Contains(err.Error(), "InvalidRegionId") {
-				client.config.Endpoints[productCode] = endpoint
-			} else {
-				endpoint = "ram.aliyuncs.com"
-				log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
-			}
+			endpoint = "ram.aliyuncs.com"
+			client.config.Endpoints[productCode] = endpoint
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
 	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
