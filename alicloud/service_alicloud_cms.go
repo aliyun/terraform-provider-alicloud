@@ -421,3 +421,42 @@ func (s *CmsService) DescribeCmsMonitorGroup(id string) (object map[string]inter
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
+
+func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCmsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeMonitorGroupInstances"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"GroupId":  id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound", "ResourceNotFoundError"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("CmsMonitorGroupInstances", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	if IsExpectedErrorCodes(fmt.Sprintf("%v", response["Code"]), []string{"ResourceNotFound", "ResourceNotFoundError"}) {
+		err = WrapErrorf(Error(GetNotFoundMessage("CmsMonitorGroupInstances", id)), NotFoundMsg, ProviderERROR)
+		return object, err
+	}
+	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
+		err = Error("DescribeMonitorGroupInstances failed for " + response["Message"].(string))
+		return object, err
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
