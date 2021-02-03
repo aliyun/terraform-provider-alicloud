@@ -62,7 +62,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      Average,
-							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum}, false),
+							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
 						},
 						"comparison_operator": {
 							Type:     schema.TypeString,
@@ -95,7 +95,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      Average,
-							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum}, false),
+							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
 						},
 						"comparison_operator": {
 							Type:     schema.TypeString,
@@ -128,7 +128,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      Average,
-							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum}, false),
+							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
 						},
 						"comparison_operator": {
 							Type:     schema.TypeString,
@@ -156,7 +156,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum}, false),
+				ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
 				Deprecated:   "Field 'statistics' has been deprecated from provider version 1.94.0. New field 'escalations_critical.statistics' instead.",
 			},
 			"operator": {
