@@ -34,7 +34,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
@@ -108,7 +107,6 @@ type AliyunClient struct {
 	fcconn                       *fc.Client
 	cenconn                      *cbn.Client
 	logpopconn                   *slsPop.Client
-	pvtzconn                     *pvtz.Client
 	ddsconn                      *dds.Client
 	gpdbconn                     *gpdb.Client
 	stsconn                      *sts.Client
@@ -801,33 +799,6 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 	}
 
 	return do(client.cmsconn)
-}
-
-func (client *AliyunClient) WithPvtzClient(do func(*pvtz.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the PVTZ client if necessary
-	if client.pvtzconn == nil {
-		endpoint := client.config.PvtzEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, PVTZCode)
-			if endpoint == "" {
-				endpoint = "pvtz.aliyuncs.com"
-			}
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(PVTZCode), endpoint)
-		}
-		pvtzconn, err := pvtz.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the PVTZ client: %#v", err)
-		}
-
-		pvtzconn.AppendUserAgent(Terraform, terraformVersion)
-		pvtzconn.AppendUserAgent(Provider, providerVersion)
-		pvtzconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.pvtzconn = pvtzconn
-	}
-
-	return do(client.pvtzconn)
 }
 
 func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, error)) (interface{}, error) {
