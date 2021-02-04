@@ -2,16 +2,100 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
-	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+func init() {
+	resource.AddTestSweepers("alicloud_dms_enterprise_user", &resource.Sweeper{
+		Name: "alicloud_dms_enterprise_user",
+		F:    testSweepDMSEnterpriseUsers,
+	})
+}
+
+func testSweepDMSEnterpriseUsers(region string) error {
+
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "Error getting Alicloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	request := make(map[string]interface{})
+	var response map[string]interface{}
+	action := "ListUsers"
+	conn, err := client.NewDmsenterpriseClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dms_enterprise_users", action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+
+		resp, err := jsonpath.Get("$.UserList.User", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.UserList.User", response)
+		}
+
+		sweeped := false
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(item["NickName"].(string)), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping DMS Enterprise User: %s", item["NickName"].(string))
+				continue
+			}
+			sweeped = true
+			action = "DeleteUser"
+			request := map[string]interface{}{
+				"Uid": item["Uid"],
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete DMS Enterprise User (%s): %s", item["NickName"].(string), err)
+			}
+			if sweeped {
+				// Waiting 30 seconds to ensure these DMS Enterprise User have been deleted.
+				time.Sleep(30 * time.Second)
+			}
+			log.Printf("[INFO] Delete DMS Enterprise User Success: %s ", item["NickName"].(string))
+		}
+		if len(resp.([]interface{})) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return nil
+}
+
 func TestAccAlicloudDMSEnterpriseUser_basic(t *testing.T) {
-	var v dms_enterprise.User
+	var v map[string]interface{}
 	resourceId := "alicloud_dms_enterprise_user.default"
 	ra := resourceAttrInit(resourceId, DmsEnterpriseUserMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

@@ -3,11 +3,11 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"strconv"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -75,38 +75,50 @@ func resourceAlicloudDmsEnterpriseUser() *schema.Resource {
 
 func resourceAlicloudDmsEnterpriseUserCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := dms_enterprise.CreateRegisterUserRequest()
+	var response map[string]interface{}
+	action := "RegisterUser"
+	request := make(map[string]interface{})
+	conn, err := client.NewDmsenterpriseClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	if v, ok := d.GetOk("mobile"); ok {
-		request.Mobile = v.(string)
+		request["Mobile"] = v
 	}
 
 	if v, ok := d.GetOk("role_names"); ok {
-		request.RoleNames = convertListToCommaSeparate(v.(*schema.Set).List())
+		request["RoleNames"] = convertListToCommaSeparate(v.(*schema.Set).List())
 	}
 
 	if v, ok := d.GetOk("tid"); ok {
-		request.Tid = requests.NewInteger(v.(int))
+		request["Tid"] = v
 	}
 
-	request.Uid = d.Get("uid").(string)
-
+	request["Uid"] = d.Get("uid")
 	if v, ok := d.GetOk("user_name"); ok {
-		request.UserNick = v.(string)
+		request["UserNick"] = v
 	} else if v, ok := d.GetOk("nick_name"); ok {
-		request.UserNick = v.(string)
-	} else {
-		return WrapError(Error(`[ERROR] Argument "nick_name" or "user_name" must be set one!`))
+		request["UserNick"] = v
 	}
 
-	raw, err := client.WithDmsEnterpriseClient(func(dms_enterpriseClient *dms_enterprise.Client) (interface{}, error) {
-		return dms_enterpriseClient.RegisterUser(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dms_enterprise_user", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dms_enterprise_user", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
-	d.SetId(fmt.Sprintf("%v", request.Uid))
+
+	d.SetId(fmt.Sprint(request["Uid"]))
 
 	return resourceAlicloudDmsEnterpriseUserUpdate(d, meta)
 }
@@ -124,57 +136,69 @@ func resourceAlicloudDmsEnterpriseUserRead(d *schema.ResourceData, meta interfac
 	}
 
 	d.Set("uid", d.Id())
-	d.Set("mobile", object.Mobile)
-	d.Set("role_names", object.RoleNameList.RoleNames)
-	d.Set("status", object.State)
-	d.Set("user_name", object.NickName)
-	d.Set("nick_name", object.NickName)
+	d.Set("mobile", object["Mobile"])
+	d.Set("role_names", object["RoleNameList"].(map[string]interface{})["RoleNames"])
+	d.Set("status", object["State"])
+	d.Set("user_name", object["NickName"])
+	d.Set("nick_name", object["NickName"])
 	return nil
 }
 func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dms_enterpriseService := Dms_enterpriseService{client}
+	var response map[string]interface{}
 	d.Partial(true)
 
 	update := false
-	request := dms_enterprise.CreateUpdateUserRequest()
-	if v, err := strconv.Atoi(d.Id()); err == nil {
-		request.Uid = requests.NewInteger(v)
-	} else {
-		return WrapError(err)
+	request := map[string]interface{}{
+		"Uid": d.Id(),
 	}
 	if !d.IsNewResource() && d.HasChange("mobile") {
 		update = true
-		request.Mobile = d.Get("mobile").(string)
+		request["Mobile"] = d.Get("mobile")
 	}
 	if !d.IsNewResource() && d.HasChange("role_names") {
 		update = true
-		request.RoleNames = convertListToCommaSeparate(d.Get("role_names").(*schema.Set).List())
+		request["RoleNames"] = convertListToCommaSeparate(d.Get("role_names").(*schema.Set).List())
 	}
 	if !d.IsNewResource() && d.HasChange("user_name") {
 		update = true
-		request.UserNick = d.Get("user_name").(string)
+		request["UserNick"] = d.Get("user_name")
 	}
 	if !d.IsNewResource() && d.HasChange("nick_name") {
 		update = true
-		request.UserNick = d.Get("nick_name").(string)
+		request["UserNick"] = d.Get("nick_name")
 	}
 	if update {
 		if _, ok := d.GetOk("max_execute_count"); ok {
-			request.MaxExecuteCount = requests.NewInteger(d.Get("max_execute_count").(int))
+			request["MaxExecuteCount"] = d.Get("max_execute_count")
 		}
 		if _, ok := d.GetOk("max_result_count"); ok {
-			request.MaxResultCount = requests.NewInteger(d.Get("max_result_count").(int))
+			request["MaxResultCount"] = d.Get("max_result_count")
 		}
 		if _, ok := d.GetOk("tid"); ok {
-			request.Tid = requests.NewInteger(d.Get("tid").(int))
+			request["Tid"] = d.Get("tid")
 		}
-		raw, err := client.WithDmsEnterpriseClient(func(dms_enterpriseClient *dms_enterprise.Client) (interface{}, error) {
-			return dms_enterpriseClient.UpdateUser(request)
-		})
-		addDebug(request.GetActionName(), raw)
+		action := "UpdateUser"
+		conn, err := client.NewDmsenterpriseClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("mobile")
 		d.SetPartial("role_names")
@@ -187,33 +211,63 @@ func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interf
 			return WrapError(err)
 		}
 		target := d.Get("status").(string)
-		if object.State != target {
+		if object["State"].(string) != target {
 			if target == "DISABLE" {
-				request := dms_enterprise.CreateDisableUserRequest()
-				request.Uid = d.Id()
-				if v, ok := d.GetOk("tid"); ok {
-					request.Tid = requests.NewInteger(v.(int))
+				request := map[string]interface{}{
+					"Uid": d.Id(),
 				}
-				raw, err := client.WithDmsEnterpriseClient(func(dms_enterpriseClient *dms_enterprise.Client) (interface{}, error) {
-					return dms_enterpriseClient.DisableUser(request)
-				})
-				addDebug(request.GetActionName(), raw)
+				if v, ok := d.GetOk("tid"); ok {
+					request["Tid"] = v
+				}
+				action := "DisableUser"
+				conn, err := client.NewDmsenterpriseClient()
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+					return WrapError(err)
+				}
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(action, response, request)
+					return nil
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 			}
 			if target == "NORMAL" {
-				request := dms_enterprise.CreateEnableUserRequest()
-				request.Uid = d.Id()
-				if v, ok := d.GetOk("tid"); ok {
-					request.Tid = requests.NewInteger(v.(int))
+				request := map[string]interface{}{
+					"Uid": d.Id(),
 				}
-				raw, err := client.WithDmsEnterpriseClient(func(dms_enterpriseClient *dms_enterprise.Client) (interface{}, error) {
-					return dms_enterpriseClient.EnableUser(request)
-				})
-				addDebug(request.GetActionName(), raw)
+				if v, ok := d.GetOk("tid"); ok {
+					request["Tid"] = v
+				}
+				action := "EnableUser"
+				conn, err := client.NewDmsenterpriseClient()
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+					return WrapError(err)
+				}
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(action, response, request)
+					return nil
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 			}
 			d.SetPartial("status")
@@ -224,17 +278,34 @@ func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interf
 }
 func resourceAlicloudDmsEnterpriseUserDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := dms_enterprise.CreateDeleteUserRequest()
-	request.Uid = d.Id()
-	if v, ok := d.GetOk("tid"); ok {
-		request.Tid = requests.NewInteger(v.(int))
-	}
-	raw, err := client.WithDmsEnterpriseClient(func(dms_enterpriseClient *dms_enterprise.Client) (interface{}, error) {
-		return dms_enterpriseClient.DeleteUser(request)
-	})
-	addDebug(request.GetActionName(), raw)
+	action := "DeleteUser"
+	var response map[string]interface{}
+	conn, err := client.NewDmsenterpriseClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"Uid": d.Id(),
+	}
+
+	if v, ok := d.GetOk("tid"); ok {
+		request["Tid"] = v
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

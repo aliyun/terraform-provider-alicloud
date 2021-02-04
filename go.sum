@@ -45,6 +45,8 @@ github.com/alibabacloud-go/tea-rpc v1.1.6 h1:Vrv3gH23UQ2lZ0e6TdwLvK+HOWbKq9ZpiZd
 github.com/alibabacloud-go/tea-rpc v1.1.6/go.mod h1:FU//dNbNYv1jSz1BGj6Sc3Co0IrbWsCnPiB/e1YnvgQ=
 github.com/alibabacloud-go/tea-rpc-utils v1.1.1 h1:pthm/FnXIqXMNXXJhocvfEkbzUhHD8oWa10BlCHVKMw=
 github.com/alibabacloud-go/tea-rpc-utils v1.1.1/go.mod h1:V5HdNi6Xdn0JMpgVhQ19vsFAS51tydr7BqcJtuXH1Yw=
+github.com/alibabacloud-go/tea-rpc-utils v1.1.2 h1:ZTfFREnP2q9D49T2J/1jYYOndepGdrUOgm/JR8/bIQ0=
+github.com/alibabacloud-go/tea-rpc-utils v1.1.2/go.mod h1:V5HdNi6Xdn0JMpgVhQ19vsFAS51tydr7BqcJtuXH1Yw=
 github.com/alibabacloud-go/tea-utils v1.3.0/go.mod h1:EI/o33aBfj3hETm4RLiAxF/ThQdSngxrpF8rKUDJjPE=
 github.com/alibabacloud-go/tea-utils v1.3.4 h1:FDYnO9WVeslG5dcIXJdMNguT/ugLq/YaybzBJaPxvmQ=
 github.com/alibabacloud-go/tea-utils v1.3.4/go.mod h1:EI/o33aBfj3hETm4RLiAxF/ThQdSngxrpF8rKUDJjPE=

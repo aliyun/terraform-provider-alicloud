@@ -1,17 +1,17 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
-	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -25,9 +25,10 @@ func init() {
 }
 
 func testSweepDMSEnterpriseInstances(region string) error {
+
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return WrapErrorf(err, "Error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -35,55 +36,75 @@ func testSweepDMSEnterpriseInstances(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
-
-	request := dms_enterprise.CreateListInstancesRequest()
-	request.PageSize = requests.NewInteger(PageSizeXLarge)
-	raw, err := client.WithDmsEnterpriseClient(func(dms_enterprise *dms_enterprise.Client) (interface{}, error) {
-		return dms_enterprise.ListInstances(request)
-	})
+	request := make(map[string]interface{})
+	var response map[string]interface{}
+	action := "ListInstances"
+	conn, err := client.NewDmsenterpriseClient()
 	if err != nil {
-		log.Printf("[ERROR] Error retrieving DMS Enterprise Instances: %s", WrapError(err))
+		return WrapError(err)
 	}
-	response, _ := raw.(*dms_enterprise.ListInstancesResponse)
-
-	sweeped := false
-	for _, v := range response.InstanceList.Instance {
-		name := v.InstanceAlias
-		id := v.Host + ":" + strconv.Itoa(v.Port)
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping DMS Enterprise Instances: %s (%s)", name, id)
-			continue
-		}
-
-		sweeped = true
-		log.Printf("[INFO] Deleting DMS Enterprise Instances: %s (%s)", name, id)
-		req := dms_enterprise.CreateDeleteInstanceRequest()
-		req.Host = v.Host
-		req.Port = requests.NewInteger(v.Port)
-		_, err := client.WithDmsEnterpriseClient(func(dms_enterprise *dms_enterprise.Client) (interface{}, error) {
-			return dms_enterprise.DeleteInstance(req)
-		})
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete DMS Enterprise Instances (%s (%s)): %s", name, id, err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dms_enterprise_instances", action, AlibabaCloudSdkGoERROR)
 		}
-	}
-	if sweeped {
-		// Waiting 30 seconds to ensure these DMS Enterprise Instances have been deleted.
-		time.Sleep(30 * time.Second)
+		addDebug(action, response, request)
+
+		resp, err := jsonpath.Get("$.InstanceList.Instance", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceList.Instance", response)
+		}
+
+		sweeped := false
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
+			id := item["Host"].(string) + ":" + item["Port"].(json.Number).String()
+
+			skip := true
+
+			for _, prefix := range prefixes {
+				if item["InstanceAlias"] != nil {
+					if strings.HasPrefix(strings.ToLower(item["InstanceAlias"].(string)), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+			}
+			if skip || item["InstanceAlias"] == nil {
+				log.Printf("[INFO] Skipping DMS Enterprise Instances: %s", id)
+				continue
+			}
+			sweeped = true
+			action = "DeleteInstance"
+			request := map[string]interface{}{
+				"Host": item["Host"],
+				"Port": item["Port"],
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete DMS Enterprise Instance (%s (%s)): %s", item["InstanceAlias"].(string), id, err)
+			}
+			if sweeped {
+				// Waiting 30 seconds to ensure these DMS Enterprise Instance have been deleted.
+				time.Sleep(30 * time.Second)
+			}
+			log.Printf("[INFO] Delete DMS Enterprise Instance Success: %s ", item["InstanceAlias"].(string))
+		}
+		if len(resp.([]interface{})) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	return nil
 }
 
 func TestAccAlicloudDmsEnterprise(t *testing.T) {
 	resourceId := "alicloud_dms_enterprise_instance.default"
-	var v dms_enterprise.Instance
+	var v map[string]interface{}
 	ra := resourceAttrInit(resourceId, testAccCheckKeyValueInMapsForDMS)
 
 	serviceFunc := func() interface{} {
@@ -127,24 +148,23 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"dba_uid":           CHECKSET,
-						"host":              CHECKSET,
-						"port":              "3306",
-						"network_type":      "VPC",
-						"safe_rule":         "自由操作",
-						"tid":               "13429",
-						"instance_type":     "mysql",
-						"instance_source":   "RDS",
-						"env_type":          "test",
-						"database_user":     CHECKSET,
-						"database_password": CHECKSET,
-						"instance_alias":    name,
-						"query_timeout":     "70",
-						"export_timeout":    "2000",
-						"ecs_region":        os.Getenv("ALICLOUD_REGION"),
-						"ddl_online":        "0",
-						"use_dsql":          "0",
-						"data_link_name":    "",
+						"dba_uid":         CHECKSET,
+						"host":            CHECKSET,
+						"port":            "3306",
+						"network_type":    "VPC",
+						"safe_rule":       "自由操作",
+						"tid":             "13429",
+						"instance_type":   "mysql",
+						"instance_source": "RDS",
+						"env_type":        "test",
+						"database_user":   CHECKSET,
+						"instance_alias":  name,
+						"query_timeout":   "70",
+						"export_timeout":  "2000",
+						"ecs_region":      os.Getenv("ALICLOUD_REGION"),
+						"ddl_online":      "0",
+						"use_dsql":        "0",
+						"data_link_name":  "",
 					}),
 				),
 			},
@@ -208,24 +228,23 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"dba_uid":           CHECKSET,
-						"host":              CHECKSET,
-						"port":              "3306",
-						"network_type":      "VPC",
-						"safe_rule":         "自由操作",
-						"tid":               "13429",
-						"instance_type":     "mysql",
-						"instance_source":   "RDS",
-						"env_type":          "test",
-						"database_user":     CHECKSET,
-						"database_password": CHECKSET,
-						"instance_alias":    name,
-						"query_timeout":     "70",
-						"export_timeout":    "2000",
-						"ecs_region":        os.Getenv("ALICLOUD_REGION"),
-						"ddl_online":        "0",
-						"use_dsql":          "0",
-						"data_link_name":    "",
+						"dba_uid":         CHECKSET,
+						"host":            CHECKSET,
+						"port":            "3306",
+						"network_type":    "VPC",
+						"safe_rule":       "自由操作",
+						"tid":             "13429",
+						"instance_type":   "mysql",
+						"instance_source": "RDS",
+						"env_type":        "test",
+						"database_user":   CHECKSET,
+						"instance_alias":  name,
+						"query_timeout":   "70",
+						"export_timeout":  "2000",
+						"ecs_region":      os.Getenv("ALICLOUD_REGION"),
+						"ddl_online":      "0",
+						"use_dsql":        "0",
+						"data_link_name":  "",
 					}),
 				),
 			},
