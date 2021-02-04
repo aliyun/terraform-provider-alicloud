@@ -67,7 +67,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
-	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
 )
 
@@ -136,7 +135,6 @@ type AliyunClient struct {
 	maxcomputeconn               *maxcompute.Client
 	dnsConn                      *alidns.Client
 	edasconn                     *edas.Client
-	dms_enterpriseConn           *dms_enterprise.Client
 	bssopenapiConn               *bssopenapi.Client
 	alidnsConn                   *alidns.Client
 	ddoscooConn                  *ddoscoo.Client
@@ -1715,31 +1713,6 @@ func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, e
 	return do(client.edasconn)
 }
 
-func (client *AliyunClient) WithDmsEnterpriseClient(do func(*dms_enterprise.Client) (interface{}, error)) (interface{}, error) {
-	if client.dms_enterpriseConn == nil {
-		endpoint := client.config.DmsEnterpriseEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, DmsEnterpriseCode)
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(DmsEnterpriseCode), endpoint)
-		}
-
-		dms_enterpriseConn, err := dms_enterprise.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DmsEnterpriseclient: %#v", err)
-		}
-		dms_enterpriseConn.AppendUserAgent(Terraform, terraformVersion)
-		dms_enterpriseConn.AppendUserAgent(Provider, providerVersion)
-		dms_enterpriseConn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.dms_enterpriseConn = dms_enterpriseConn
-	}
-	return do(client.dms_enterpriseConn)
-}
-
 func (client *AliyunClient) WithAlidnsClient(do func(*alidns.Client) (interface{}, error)) (interface{}, error) {
 	if client.alidnsConn == nil {
 		endpoint := client.config.AlidnsEndpoint
@@ -2432,6 +2405,31 @@ func (client *AliyunClient) NewNasClient() (*rpc.Client, error) {
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewDmsenterpriseClient() (*rpc.Client, error) {
+	productCode := "dmsenterprise"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = "dms-enterprise.aliyuncs.com"
+			client.config.Endpoints[productCode] = endpoint
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
 	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {

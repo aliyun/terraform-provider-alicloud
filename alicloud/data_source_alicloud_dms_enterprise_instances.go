@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -190,31 +190,32 @@ func dataSourceAlicloudDmsEnterpriseInstances() *schema.Resource {
 func dataSourceAlicloudDmsEnterpriseInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := dms_enterprise.CreateListInstancesRequest()
+	action := "ListInstances"
+	request := make(map[string]interface{})
 	if v, ok := d.GetOk("env_type"); ok {
-		request.EnvType = v.(string)
+		request["EnvType"] = v
 	}
 	if v, ok := d.GetOk("instance_source"); ok {
-		request.InstanceSource = v.(string)
+		request["InstanceSource"] = v
 	}
 	if v, ok := d.GetOk("instance_type"); ok {
-		request.DbType = v.(string)
+		request["DbType"] = v
 	}
 	if v, ok := d.GetOk("net_type"); ok {
-		request.NetType = v.(string)
+		request["NetType"] = v
 	}
 	if v, ok := d.GetOk("search_key"); ok {
-		request.SearchKey = v.(string)
+		request["SearchKey"] = v
 	}
 	if v, ok := d.GetOk("status"); ok {
-		request.InstanceState = v.(string)
+		request["InstanceState"] = v
 	}
 	if v, ok := d.GetOk("tid"); ok {
-		request.Tid = requests.NewInteger(v.(int))
+		request["Tid"] = v
 	}
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	var objects []dms_enterprise.Instance
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
 	var instanceNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -230,67 +231,71 @@ func dataSourceAlicloudDmsEnterpriseInstancesRead(d *schema.ResourceData, meta i
 		}
 		instanceNameRegex = r
 	}
-	var response *dms_enterprise.ListInstancesResponse
+	var response map[string]interface{}
+	conn, err := client.NewDmsenterpriseClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		raw, err := client.WithDmsEnterpriseClient(func(dms_enterpriseClient *dms_enterprise.Client) (interface{}, error) {
-			return dms_enterpriseClient.ListInstances(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dms_enterprise_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dms_enterprise_instances", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
-		response, _ = raw.(*dms_enterprise.ListInstancesResponse)
+		addDebug(action, response, request)
 
-		for _, item := range response.InstanceList.Instance {
+		resp, err := jsonpath.Get("$.InstanceList.Instance", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceList.Instance", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
 			if instanceNameRegex != nil {
-				if !instanceNameRegex.MatchString(item.InstanceAlias) {
+				if !instanceNameRegex.MatchString(fmt.Sprint(item["InstanceAlias"])) {
 					continue
 				}
 			}
 			objects = append(objects, item)
 		}
-		if len(response.InstanceList.Instance) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
-
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	ids := make([]string, 0)
-	names := make([]string, 0)
+	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":                fmt.Sprintf("%v:%v", object.Host, object.Port),
-			"data_link_name":    object.DataLinkName,
-			"database_password": object.DatabasePassword,
-			"database_user":     object.DatabaseUser,
-			"dba_id":            object.DbaId,
-			"dba_nick_name":     object.DbaNickName,
-			"ddl_online":        object.DdlOnline,
-			"ecs_instance_id":   object.EcsInstanceId,
-			"ecs_region":        object.EcsRegion,
-			"env_type":          object.EnvType,
-			"export_timeout":    object.ExportTimeout,
-			"host":              object.Host,
-			"instance_id":       object.InstanceId,
-			"instance_name":     object.InstanceAlias,
-			"instance_alias":    object.InstanceAlias,
-			"instance_source":   object.InstanceSource,
-			"instance_type":     object.InstanceType,
-			"port":              object.Port,
-			"query_timeout":     object.QueryTimeout,
-			"safe_rule_id":      object.SafeRuleId,
-			"sid":               object.Sid,
-			"status":            object.State,
-			"use_dsql":          object.UseDsql,
-			"vpc_id":            object.VpcId,
+			"id":                fmt.Sprint(object["Host"], ":", formatInt(object["Port"])),
+			"data_link_name":    object["DataLinkName"],
+			"database_password": object["DatabasePassword"],
+			"database_user":     object["DatabaseUser"],
+			"dba_id":            object["DbaId"],
+			"dba_nick_name":     object["DbaNickName"],
+			"ddl_online":        formatInt(object["DdlOnline"]),
+			"ecs_instance_id":   object["EcsInstanceId"],
+			"ecs_region":        object["EcsRegion"],
+			"env_type":          object["EnvType"],
+			"export_timeout":    formatInt(object["ExportTimeout"]),
+			"host":              object["Host"],
+			"instance_id":       object["InstanceId"],
+			"instance_name":     object["InstanceAlias"],
+			"instance_alias":    object["InstanceAlias"],
+			"instance_source":   object["InstanceSource"],
+			"instance_type":     object["InstanceType"],
+			"port":              formatInt(object["Port"]),
+			"query_timeout":     formatInt(object["QueryTimeout"]),
+			"safe_rule_id":      object["SafeRuleId"],
+			"sid":               object["Sid"],
+			"status":            object["State"],
+			"use_dsql":          formatInt(object["UseDsql"]),
+			"vpc_id":            object["VpcId"],
 		}
-		ids = append(ids, fmt.Sprintf("%v:%v", object.Host, object.Port))
-		names = append(names, object.InstanceAlias)
+		ids = append(ids, fmt.Sprint(object["Host"], ":", formatInt(object["Port"])))
+		names = append(names, object["InstanceAlias"])
 		s = append(s, mapping)
 	}
 
