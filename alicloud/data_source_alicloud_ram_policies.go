@@ -306,12 +306,25 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 			continue
 		}
 
-		ramService := RamService{client}
 		id := fmt.Sprint(object["PolicyName"])
-		getResp, err := ramService.DescribeRamPolicy(id)
+		action := "GetPolicy"
+		request := map[string]interface{}{
+			"PolicyName": id,
+			"PolicyType": object["PolicyType"],
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			return WrapError(err)
 		}
+		addDebug(action, response, request)
+		v, err := jsonpath.Get("$", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		}
+		getResp := v.(map[string]interface{})
+
 		mapping["policy_document"] = getResp["DefaultPolicyVersion"].(map[string]interface{})["PolicyDocument"]
 		mapping["document"] = getResp["DefaultPolicyVersion"].(map[string]interface{})["PolicyDocument"]
 		mapping["version_id"] = getResp["DefaultPolicyVersion"].(map[string]interface{})["VersionId"]
