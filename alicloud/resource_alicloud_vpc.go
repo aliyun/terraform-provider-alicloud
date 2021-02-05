@@ -254,6 +254,26 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 		d.Partial(false)
 		return resourceAliyunVpcRead(d, meta)
 	}
+	d.Partial(true)
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		action := "MoveResourceGroup"
+		request := map[string]interface{}{
+			"NewResourceGroupId": d.Get("resource_group_id"),
+			"RegionId":           client.RegionId,
+			"ResourceId":         d.Id(),
+			"ResourceType":       "vpc",
+		}
+		conn, err := client.NewVpcClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		d.SetPartial("resource_group_id")
+	}
 	attributeUpdate := false
 	action := "ModifyVpcAttribute"
 	request := map[string]interface{}{
@@ -277,8 +297,10 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
+		d.SetPartial("name")
+		d.SetPartial("description")
 	}
-
+	d.Partial(false)
 	return resourceAliyunVpcRead(d, meta)
 }
 

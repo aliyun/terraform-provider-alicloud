@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"os"
@@ -45,7 +47,6 @@ func resourceAlicloudKeyPair() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"public_key": {
 				Type:     schema.TypeString,
@@ -129,6 +130,25 @@ func resourceAlicloudKeyPairCreate(d *schema.ResourceData, meta interface{}) err
 }
 func resourceAlicloudKeyPairUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		action := "JoinResourceGroup"
+		request := map[string]interface{}{
+			"ResourceType":    "keypair",
+			"ResourceId":      d.Id(),
+			"RegionId":        client.RegionId,
+			"ResourceGroupId": d.Get("resource_group_id"),
+		}
+		conn, err := client.NewEcsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		d.SetPartial("resource_group_id")
+	}
 	err := setTags(client, TagResourceKeypair, d)
 	if err != nil {
 		return WrapError(err)
