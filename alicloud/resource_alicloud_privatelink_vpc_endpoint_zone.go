@@ -103,7 +103,7 @@ func resourceAlicloudPrivatelinkVpcEndpointZoneCreate(d *schema.ResourceData, me
 	}
 
 	d.SetId(fmt.Sprint(request["EndpointId"], ":", request["ZoneId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Wait"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, privatelinkService.PrivatelinkVpcEndpointZoneStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Wait", "Connected"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, privatelinkService.PrivatelinkVpcEndpointZoneStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
