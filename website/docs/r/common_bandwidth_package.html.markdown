@@ -38,7 +38,7 @@ The following arguments are supported:
 * `ratio` - (Optional, ForceNew Available in 1.55.3+) Ratio of the common bandwidth package. It is valid when `internet_charge_type` is `PayBy95`. Default to 100. Valid values: [10-100].
 * `name` - (Optional) The name of the common bandwidth package.
 * `description` - (Optional) The description of the common bandwidth package instance.
-* `resource_group_id` - (ForceNew, Available in 1.58.0+) The Id of resource group which the common bandwidth package belongs.
+* `resource_group_id` - (Optional, Available in 1.58.0+, Modifiable in 1.115.0+) The Id of resource group which the common bandwidth package belongs.
 * `isp` - (Optional, Available in 1.90.1+) The type of the Internet Service Provider. Default to `BGP`.
 
 ## Attributes Reference

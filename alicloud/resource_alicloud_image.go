@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -91,7 +93,6 @@ func resourceAliCloudImage() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"disk_device_mapping": {
 				Type:          schema.TypeList,
@@ -245,6 +246,25 @@ func resourceAliCloudImageUpdate(d *schema.ResourceData, meta interface{}) error
 	err := ecsService.updateImage(d)
 	if err != nil {
 		return WrapError(err)
+	}
+	if d.HasChange("resource_group_id") {
+		action := "JoinResourceGroup"
+		request := map[string]interface{}{
+			"ResourceType":    "image",
+			"ResourceId":      d.Id(),
+			"RegionId":        client.RegionId,
+			"ResourceGroupId": d.Get("resource_group_id"),
+		}
+		conn, err := client.NewEcsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		d.SetPartial("resource_group_id")
 	}
 	return resourceAliCloudImageRead(d, meta)
 }

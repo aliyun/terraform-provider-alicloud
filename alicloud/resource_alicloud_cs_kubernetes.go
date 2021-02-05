@@ -742,7 +742,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 		},
 	}
@@ -801,6 +800,19 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 	csService := CsService{client}
 	d.Partial(true)
 	invoker := NewInvoker()
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		var requestInfo cs.ModifyClusterArgs
+		requestInfo.ResourceGroupId = d.Get("resource_group_id").(string)
+
+		response, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.ModifyCluster(d.Id(), &requestInfo)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
+		}
+		addDebug("ModifyCluster", response, requestInfo)
+		d.SetPartial("resource_group_id")
+	}
 	if d.HasChange("worker_number") && !d.IsNewResource() {
 		oldV, newV := d.GetChange("worker_number")
 

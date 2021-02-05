@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -55,7 +57,6 @@ func resourceAliyunCommonBandwidthPackage() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"isp": {
@@ -188,7 +189,25 @@ func resourceAliyunCommonBandwidthPackageUpdate(d *schema.ResourceData, meta int
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("bandwidth")
 	}
-
+	if d.HasChange("resource_group_id") {
+		action := "MoveResourceGroup"
+		request := map[string]interface{}{
+			"NewResourceGroupId": d.Get("resource_group_id"),
+			"RegionId":           client.RegionId,
+			"ResourceId":         d.Id(),
+			"ResourceType":       "bandwidthpackage",
+		}
+		conn, err := client.NewVpcClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		d.SetPartial("resource_group_id")
+	}
 	d.Partial(false)
 	return resourceAliyunCommonBandwidthPackageRead(d, meta)
 }
