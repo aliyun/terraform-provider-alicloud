@@ -73,7 +73,6 @@ type UpgradeDBClusterMinorVersionRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	PlannedEndTime       string           `position:"Query" name:"PlannedEndTime"`
-	SwitchTimeMode       string           `position:"Query" name:"SwitchTimeMode"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	DBClusterId          string           `position:"Query" name:"DBClusterId"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
