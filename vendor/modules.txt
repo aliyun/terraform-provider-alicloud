@@ -29,7 +29,7 @@ github.com/alibabacloud-go/tea-rpc/client
 github.com/alibabacloud-go/tea-rpc-utils/service
 # github.com/alibabacloud-go/tea-utils v1.3.6
 github.com/alibabacloud-go/tea-utils/service
-# github.com/aliyun/alibaba-cloud-sdk-go v1.61.877
+# github.com/aliyun/alibaba-cloud-sdk-go v1.61.890
 github.com/aliyun/alibaba-cloud-sdk-go/sdk
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials
@@ -71,7 +71,6 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/kms
 github.com/aliyun/alibaba-cloud-sdk-go/services/location
 github.com/aliyun/alibaba-cloud-sdk-go/services/market
 github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute
-github.com/aliyun/alibaba-cloud-sdk-go/services/nas
 github.com/aliyun/alibaba-cloud-sdk-go/services/ots
 github.com/aliyun/alibaba-cloud-sdk-go/services/polardb
 github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore
@@ -157,6 +156,8 @@ github.com/bgentry/speakeasy
 github.com/cenkalti/backoff
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/deckarep/golang-set v1.7.1
+github.com/deckarep/golang-set
 # github.com/denverdino/aliyungo v0.0.0-20201218084154-7630293abb83
 github.com/denverdino/aliyungo/cdn
 github.com/denverdino/aliyungo/common

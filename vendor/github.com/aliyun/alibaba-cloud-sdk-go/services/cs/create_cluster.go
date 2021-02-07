@@ -71,51 +71,6 @@ func (client *Client) CreateClusterWithCallback(request *CreateClusterRequest, c
 // CreateClusterRequest is the request struct for api CreateCluster
 type CreateClusterRequest struct {
 	*requests.RoaRequest
-	PrivateZone               requests.Boolean `position:"Body" name:"private_zone"`
-	ProxyMode                 string           `position:"Body" name:"proxy_mode"`
-	MasterSystemDiskCategory  string           `position:"Body" name:"master_system_disk_category"`
-	MasterPeriod              requests.Integer `position:"Body" name:"master_period"`
-	CloudMonitorFlags         requests.Boolean `position:"Body" name:"cloud_monitor_flags"`
-	SshFlags                  requests.Boolean `position:"Body" name:"ssh_flags"`
-	SecurityGroupId           string           `position:"Body" name:"security_group_id"`
-	ContainerCidr             string           `position:"Body" name:"container_cidr"`
-	ClusterType               string           `position:"Body" name:"cluster_type"`
-	EndpointPublicAccess      requests.Boolean `position:"Body" name:"endpoint_public_access"`
-	WorkerAutoRenew           requests.Boolean `position:"Body" name:"worker_auto_renew"`
-	Platform                  string           `position:"Body" name:"platform"`
-	ServiceCidr               string           `position:"Body" name:"service_cidr"`
-	NodePortRange             string           `position:"Body" name:"node_port_range"`
-	ZoneId                    string           `position:"Body" name:"zone_id"`
-	LoginPassword             string           `position:"Body" name:"login_password"`
-	KubernetesVersion         string           `position:"Body" name:"kubernetes_version"`
-	IsEnterpriseSecurityGroup requests.Boolean `position:"Body" name:"is_enterprise_security_group"`
-	MasterPeriodUnit          string           `position:"Body" name:"master_period_unit"`
-	MasterSystemDiskSize      requests.Integer `position:"Body" name:"master_system_disk_size"`
-	MasterCount               requests.Integer `position:"Body" name:"master_count"`
-	NumOfNodes                requests.Integer `position:"Body" name:"num_of_nodes"`
-	DeletionProtection        string           `position:"Body" name:"deletion_protection"`
-	KeyPair                   string           `position:"Body" name:"key_pair"`
-	MasterAutoRenew           requests.Boolean `position:"Body" name:"master_auto_renew"`
-	Profile                   string           `position:"Body" name:"profile"`
-	RegionId                  string           `position:"Body" name:"region_id"`
-	SnatEntry                 requests.Boolean `position:"Body" name:"snat_entry"`
-	WorkerSystemDiskCategory  string           `position:"Body" name:"worker_system_disk_category"`
-	UserData                  string           `position:"Body" name:"user_data"`
-	WorkerPeriodUnit          string           `position:"Body" name:"worker_period_unit"`
-	MasterInstanceChargeType  string           `position:"Body" name:"master_instance_charge_type"`
-	NodeCidrMask              string           `position:"Body" name:"node_cidr_mask"`
-	WorkerAutoRenewPeriod     requests.Integer `position:"Body" name:"worker_auto_renew_period"`
-	MasterAutoRenewPeriod     requests.Integer `position:"Body" name:"master_auto_renew_period"`
-	WorkerPeriod              requests.Integer `position:"Body" name:"worker_period"`
-	TimeoutMins               requests.Integer `position:"Body" name:"timeout_mins"`
-	ImagesId                  string           `position:"Body" name:"images_id"`
-	WorkerSystemDiskSize      requests.Integer `position:"Body" name:"worker_system_disk_size"`
-	Vpcid                     string           `position:"Body" name:"vpcid"`
-	OsType                    string           `position:"Body" name:"os_type"`
-	CpuPolicy                 string           `position:"Body" name:"cpu_policy"`
-	Name                      string           `position:"Body" name:"name"`
-	DisableRollback           requests.Boolean `position:"Body" name:"disable_rollback"`
-	WorkerInstanceChargeType  string           `position:"Body" name:"worker_instance_charge_type"`
 }
 
 // CreateClusterResponse is the response struct for api CreateCluster
