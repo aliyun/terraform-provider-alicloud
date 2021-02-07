@@ -3,6 +3,7 @@
 
 IMPROVEMENTS:
 
+- update go vendors ([#3281](https://github.com/aliyun/terraform-provider-alicloud/issues/3281))
 - datasource/ram_policies: support system policy type to filter policies ([#3276](https://github.com/aliyun/terraform-provider-alicloud/issues/3276))
 - fix the error of parameters description in alicloud_polardb_cluster's doc ([#3272](https://github.com/aliyun/terraform-provider-alicloud/issues/3272))
 - resource/alicloud_hbase_cluster: add some value check; remove classic ([#3174](https://github.com/aliyun/terraform-provider-alicloud/issues/3174))
