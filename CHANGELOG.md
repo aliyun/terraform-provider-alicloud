@@ -1,11 +1,28 @@
 ## 1.115.0 (Unreleased)
+
+- **New Resource:** `alicloud_cms_monitor_group_instances` [GH-3267]
+- **New Resource:** `alicloud_quotas_application_info` [GH-3261]
+- **Data Source:** `alicloud_iot_service` [GH-3270]
+- **Data Source:** `alicloud_cms_monitor_group_instanceses` [GH-3267]
+- **Data Source:** `alicloud_brain_industrial_service` [GH-3266]
+- **Data Source:** `alicloud_quotas_quotas` [GH-3265]
+- **Data Source:** `alicloud_quotas_application_infos` [GH-3261]
+
+IMPROVEMENTS:
+
+- resource/privatelink_vpc_endpoint_zone: Add wait state for create [GH-3278]
+- resource support update resource_group_id [GH-3277]
+- change pvtz to common sdk [GH-3275]
+- Change NAS to common SDK [GH-3273]
+- changelog [GH-3268]
+
 ## 1.114.1 (February 01, 2021)
 
 IMPROVEMENTS:
 
-- Update doc for datasource ack_service and regions ([#3269](https://github.com/aliyun/terraform-provider-alicloud/issues/3269))
+- remove useless docs ([#3269](https://github.com/aliyun/terraform-provider-alicloud/issues/3269))
 
-BUG FIXES::
+BUG FIXES:
 
 - Fix the client bug for central resource  ([#3264](https://github.com/aliyun/terraform-provider-alicloud/issues/3264))
 
