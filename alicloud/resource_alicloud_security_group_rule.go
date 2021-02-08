@@ -182,7 +182,7 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	// wait the rule exist
 	var object ecs.Permission
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 		obj, err := ecsService.DescribeSecurityGroupRule(d.Id())
 		if err != nil && d.IsNewResource() {
 			wait()
