@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -211,14 +212,16 @@ func resourceAlicloudOosExecutionRead(d *schema.ResourceData, meta interface{}) 
 		}
 		return WrapError(err)
 	}
-	d.Set("counters", object["Counters"])
+	counters, _ := json.Marshal(object["Counters"])
+	d.Set("counters", string(counters))
 	d.Set("create_date", object["CreateDate"])
 	d.Set("end_date", object["EndDate"])
 	d.Set("executed_by", object["ExecutedBy"])
 	d.Set("is_parent", object["IsParent"])
 	d.Set("mode", object["Mode"])
 	d.Set("outputs", object["Outputs"])
-	d.Set("parameters", object["Parameters"])
+	parameters, _ := json.Marshal(object["Parameters"])
+	d.Set("parameters", string(parameters))
 	d.Set("parent_execution_id", object["ParentExecutionId"])
 	d.Set("ram_role", object["RamRole"])
 	d.Set("start_date", object["StartDate"])
