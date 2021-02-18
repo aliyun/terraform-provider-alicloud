@@ -339,6 +339,8 @@ func convertGeographicRegionAIdResponse(source string) string {
 		return "Middle-East"
 	case "north-america":
 		return "North-America"
+	case "australia":
+		return "Australia"
 	}
 	return source
 }
@@ -354,6 +356,8 @@ func convertGeographicRegionBIdResponse(source string) string {
 		return "Middle-East"
 	case "north-america":
 		return "North-America"
+	case "australia":
+		return "Australia"
 	}
 	return source
 }
