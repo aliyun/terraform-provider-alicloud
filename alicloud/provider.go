@@ -689,6 +689,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_command":                               resourceAlicloudEcsCommand(),
 			"alicloud_cloud_storage_gateway_storage_bundle":      resourceAlicloudCloudStorageGatewayStorageBundle(),
 			"alicloud_ecs_hpc_cluster":                           resourceAlicloudEcsHpcCluster(),
+			"alicloud_vpc_flow_log":                              resourceAlicloudVpcFlowLog(),
 		},
 
 		ConfigureFunc: providerConfigure,
