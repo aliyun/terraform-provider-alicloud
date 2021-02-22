@@ -35,6 +35,7 @@ func resourceAlicloudPrivatelinkVpcEndpointService() *schema.Resource {
 			"connect_bandwidth": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 			},
 			"dry_run": {
 				Type:     schema.TypeBool,
