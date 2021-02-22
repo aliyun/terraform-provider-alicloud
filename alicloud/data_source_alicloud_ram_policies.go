@@ -246,7 +246,8 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Policies.Policy", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if policyNameRegex != nil {
 				if !policyNameRegex.MatchString(fmt.Sprint(item["PolicyName"])) {

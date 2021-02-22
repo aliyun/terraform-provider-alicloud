@@ -53,7 +53,8 @@ func testSweepOnsGroup(region string) error {
 	}
 
 	var instanceIds []string
-	for _, v := range resp.([]interface{}) {
+	result, _ := resp.([]interface{})
+	for _, v := range result {
 		item := v.(map[string]interface{})
 		instanceIds = append(instanceIds, item["InstanceId"].(string))
 	}
@@ -76,7 +77,8 @@ func testSweepOnsGroup(region string) error {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.SubscribeInfoDo", response)
 		}
 
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			name := item["GroupId"].(string)
 			skip := true

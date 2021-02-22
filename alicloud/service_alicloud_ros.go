@@ -180,7 +180,9 @@ func (s *RosService) ListTagResources(id string, resourceType string) (object in
 			if err != nil {
 				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
 			}
-			tags = append(tags, v.([]interface{})...)
+			if v != nil {
+				tags = append(tags, v.([]interface{})...)
+			}
 			return nil
 		})
 		if err != nil {

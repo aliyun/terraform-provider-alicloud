@@ -121,7 +121,8 @@ func dataSourceAlicloudRamSamlProvidersRead(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.SAMLProviders.SAMLProvider", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if sAMLProviderNameRegex != nil {
 				if !sAMLProviderNameRegex.MatchString(fmt.Sprint(item["SAMLProviderName"])) {

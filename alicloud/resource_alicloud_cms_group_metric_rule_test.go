@@ -50,7 +50,8 @@ func testSweepCmsGroupMetricRule(region string) error {
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Alarms.Alarm", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			name := item["RuleName"].(string)
 			skip := true
@@ -80,7 +81,7 @@ func testSweepCmsGroupMetricRule(region string) error {
 				log.Printf("[ERROR] Failed to delete Cms Metric Rule (%s): %s", name, err)
 			}
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["Page"] = request["Page"].(int) + 1
@@ -123,7 +124,7 @@ func TestAccAlicloudCmsGroupMetricRule_basic(t *testing.T) {
 							},
 						},
 					},
-					"group_id":               "5390371",
+					"group_id":               "${alicloud_cms_monitor_group.default.id}",
 					"group_metric_rule_name": "${var.name}",
 					"category":               "ecs",
 					"metric_name":            "cpu_total",
@@ -133,7 +134,7 @@ func TestAccAlicloudCmsGroupMetricRule_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"escalations.#":          "1",
-						"group_id":               "5390371",
+						"group_id":               CHECKSET,
 						"group_metric_rule_name": name,
 						"category":               "ecs",
 						"metric_name":            "cpu_total",
@@ -232,7 +233,7 @@ func TestAccAlicloudCmsGroupMetricRule_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"effective_interval":     "00:00-23:59",
 					"email_subject":          "tf-testacc-rule-name-warning",
-					"group_id":               "5390371",
+					"group_id":               "${alicloud_cms_monitor_group.default.id}",
 					"group_metric_rule_name": "${var.name}",
 					"category":               "ecs",
 					"metric_name":            "cpu_total",
@@ -246,7 +247,7 @@ func TestAccAlicloudCmsGroupMetricRule_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"effective_interval":     "00:00-23:59",
 						"email_subject":          "tf-testacc-rule-name-warning",
-						"group_id":               "5390371",
+						"group_id":               CHECKSET,
 						"group_metric_rule_name": name,
 						"category":               "ecs",
 						"metric_name":            "cpu_total",
@@ -276,10 +277,15 @@ func resourceAlicloudCmsGroupMetricRuleBasicDependence(name string) string {
 variable "name" {
 	default = "%s"
 }
-resource "alicloud_cms_alarm_contact_group" "this" {
-  alarm_contact_group_name = "tf-testAccCms"    
+resource "alicloud_cms_alarm_contact_group" "default" {
+  alarm_contact_group_name = var.name
   describe = "tf-testacc"   
   contacts = ["zhangsan","lisi","lll"] 
 }
+resource "alicloud_cms_monitor_group" "default" {
+  monitor_group_name = var.name
+  contact_groups = [alicloud_cms_alarm_contact_group.default.id]
+}
+
 `, name)
 }

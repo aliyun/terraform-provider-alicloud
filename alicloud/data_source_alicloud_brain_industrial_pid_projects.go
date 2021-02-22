@@ -129,7 +129,8 @@ func dataSourceAlicloudBrainIndustrialPidProjectsRead(d *schema.ResourceData, me
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PidProjectList", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if pidProjectNameRegex != nil {
 				if !pidProjectNameRegex.MatchString(fmt.Sprint(item["PidProjectName"])) {
@@ -143,7 +144,7 @@ func dataSourceAlicloudBrainIndustrialPidProjectsRead(d *schema.ResourceData, me
 			}
 			objects = append(objects, item)
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1

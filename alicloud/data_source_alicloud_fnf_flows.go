@@ -131,7 +131,8 @@ func dataSourceAlicloudFnfFlowsRead(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Flows", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if nameRegex != nil {
 				if !nameRegex.MatchString(fmt.Sprint(item["Name"])) {

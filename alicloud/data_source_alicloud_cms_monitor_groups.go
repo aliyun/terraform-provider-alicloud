@@ -203,7 +203,8 @@ func dataSourceAlicloudCmsMonitorGroupsRead(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Resources.Resource", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if monitorGroupNameRegex != nil {
 				if !monitorGroupNameRegex.MatchString(fmt.Sprint(item["GroupName"])) {
@@ -217,7 +218,7 @@ func dataSourceAlicloudCmsMonitorGroupsRead(d *schema.ResourceData, meta interfa
 			}
 			objects = append(objects, item)
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -249,12 +250,13 @@ func dataSourceAlicloudCmsMonitorGroupsRead(d *schema.ResourceData, meta interfa
 
 		tags := make(map[string]interface{})
 		t, _ := jsonpath.Get("$.Tags.Tag", object)
-		for _, t := range t.([]interface{}) {
-			key := t.(map[string]interface{})["Key"].(string)
-			value := t.(map[string]interface{})["Value"].(string)
-
-			if !ignoredTags(key, value) {
-				tags[key] = value
+		if t != nil {
+			for _, t := range t.([]interface{}) {
+				key := t.(map[string]interface{})["Key"].(string)
+				value := t.(map[string]interface{})["Value"].(string)
+				if !ignoredTags(key, value) {
+					tags[key] = value
+				}
 			}
 		}
 		mapping["tags"] = tags

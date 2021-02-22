@@ -52,7 +52,8 @@ func testSweepCmsMonitorgroup(region string) error {
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Resources.Resource", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			name := item["GroupName"].(string)
 			skip := true
@@ -81,7 +82,7 @@ func testSweepCmsMonitorgroup(region string) error {
 				log.Printf("[ERROR] Failed to delete Cms Monitor Group (%s): %s", name, err)
 			}
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1

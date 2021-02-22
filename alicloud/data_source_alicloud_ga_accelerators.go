@@ -185,7 +185,8 @@ func dataSourceAlicloudGaAcceleratorsRead(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Accelerators", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if acceleratorNameRegex != nil {
 				if !acceleratorNameRegex.MatchString(fmt.Sprint(item["Name"])) {
@@ -202,7 +203,7 @@ func dataSourceAlicloudGaAcceleratorsRead(d *schema.ResourceData, meta interface
 			}
 			objects = append(objects, item)
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1

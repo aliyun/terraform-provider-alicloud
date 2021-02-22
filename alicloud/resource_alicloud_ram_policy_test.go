@@ -66,7 +66,8 @@ func testSweepRamPolicies(region string) error {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Policies.Policy", response)
 		}
 
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			name := item["PolicyName"]
 			skip := true

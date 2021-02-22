@@ -50,7 +50,8 @@ func testSweepOnsTopic(region string) error {
 	}
 
 	var instanceIds []string
-	for _, v := range resp.([]interface{}) {
+	result, _ := resp.([]interface{})
+	for _, v := range result {
 		item := v.(map[string]interface{})
 		instanceIds = append(instanceIds, item["InstanceId"].(string))
 	}
@@ -72,7 +73,8 @@ func testSweepOnsTopic(region string) error {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.PublishInfoDo", response)
 		}
 
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			name := item["Topic"].(string)
 			skip := true

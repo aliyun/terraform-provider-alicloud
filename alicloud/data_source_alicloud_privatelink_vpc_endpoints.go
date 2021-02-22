@@ -193,7 +193,8 @@ func dataSourceAlicloudPrivatelinkVpcEndpointsRead(d *schema.ResourceData, meta 
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Endpoints", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if vpcEndpointNameRegex != nil {
 				if !vpcEndpointNameRegex.MatchString(fmt.Sprint(item["EndpointName"])) {

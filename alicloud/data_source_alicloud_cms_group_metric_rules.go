@@ -300,7 +300,8 @@ func dataSourceAlicloudCmsGroupMetricRulesRead(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Alarms.Alarm", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if groupMetricRuleNameRegex != nil {
 				if !groupMetricRuleNameRegex.MatchString(item["RuleName"].(string)) {
@@ -314,7 +315,7 @@ func dataSourceAlicloudCmsGroupMetricRulesRead(d *schema.ResourceData, meta inte
 			}
 			objects = append(objects, item)
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["Page"] = request["Page"].(int) + 1

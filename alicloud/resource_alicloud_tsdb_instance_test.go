@@ -56,14 +56,15 @@ func testSweepTsdbInstance(region string) error {
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceList", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if v, ok := item["InstanceAlias"]; !ok || v.(string) == "" {
 				continue
 			}
 			instances = append(instances, fmt.Sprint(item["InstanceId"], ":", item["InstanceAlias"]))
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1

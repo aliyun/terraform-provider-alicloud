@@ -246,7 +246,8 @@ func dataSourceAlicloudMseClustersRead(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if clusterNameRegex != nil {
 				if !clusterNameRegex.MatchString(fmt.Sprint(item["ClusterAliasName"])) {
@@ -263,7 +264,7 @@ func dataSourceAlicloudMseClustersRead(d *schema.ResourceData, meta interface{})
 			}
 			objects = append(objects, item)
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNum"] = request["PageNum"].(int) + 1

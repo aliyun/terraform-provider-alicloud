@@ -167,7 +167,8 @@ func dataSourceAlicloudGaListenersRead(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Listeners", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if nameRegex != nil {
 				if !nameRegex.MatchString(fmt.Sprint(item["Name"])) {
@@ -184,7 +185,7 @@ func dataSourceAlicloudGaListenersRead(d *schema.ResourceData, meta interface{})
 			}
 			objects = append(objects, item)
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1

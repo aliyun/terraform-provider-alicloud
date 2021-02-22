@@ -130,7 +130,8 @@ func dataSourceAlicloudResourceManagerRolesRead(d *schema.ResourceData, meta int
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Roles.Role", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if roleNameRegex != nil {
 				if !roleNameRegex.MatchString(fmt.Sprint(item["RoleName"])) {
@@ -144,7 +145,7 @@ func dataSourceAlicloudResourceManagerRolesRead(d *schema.ResourceData, meta int
 			}
 			objects = append(objects, item)
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
