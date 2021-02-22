@@ -147,7 +147,8 @@ func dataSourceAlicloudResourceManagerResourceGroupsRead(d *schema.ResourceData,
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ResourceGroups.ResourceGroup", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if resourceGroupNameRegex != nil {
 				if !resourceGroupNameRegex.MatchString(fmt.Sprint(item["Name"])) {
@@ -161,7 +162,7 @@ func dataSourceAlicloudResourceManagerResourceGroupsRead(d *schema.ResourceData,
 			}
 			objects = append(objects, item)
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1

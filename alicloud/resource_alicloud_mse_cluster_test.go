@@ -53,7 +53,8 @@ func testSweepMSECluster(region string) error {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
 		}
 		sweeped := false
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			skip := true
 			for _, prefix := range prefixes {
@@ -80,7 +81,7 @@ func testSweepMSECluster(region string) error {
 			}
 			log.Printf("[INFO] Delete mse cluster success: %s ", item["InstanceId"].(string))
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNum"] = request["PageNum"].(int) + 1

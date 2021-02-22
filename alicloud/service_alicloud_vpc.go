@@ -181,7 +181,9 @@ func (s *VpcService) ListTagResources(resourceId, resourceType string) (object i
 			if err != nil {
 				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, resourceId, "$.TagResources.TagResource", response))
 			}
-			tags = append(tags, v.([]interface{})...)
+			if v != nil {
+				tags = append(tags, v.([]interface{})...)
+			}
 			nextToken, _ := jsonpath.Get("$.NextToken", response)
 			request["NextToken"] = nextToken
 			return nil

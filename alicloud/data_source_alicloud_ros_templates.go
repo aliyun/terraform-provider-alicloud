@@ -171,7 +171,8 @@ func dataSourceAlicloudRosTemplatesRead(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Templates", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if templateNameRegex != nil {
 				if !templateNameRegex.MatchString(item["TemplateName"].(string)) {
@@ -185,7 +186,7 @@ func dataSourceAlicloudRosTemplatesRead(d *schema.ResourceData, meta interface{}
 			}
 			objects = append(objects, item)
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1

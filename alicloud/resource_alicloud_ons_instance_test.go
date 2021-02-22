@@ -58,7 +58,8 @@ func testSweepOnsInstance(region string) error {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.InstanceVO", response)
 	}
 
-	for _, v := range resp.([]interface{}) {
+	result, _ := resp.([]interface{})
+	for _, v := range result {
 		item := v.(map[string]interface{})
 		name := item["InstanceName"].(string)
 		skip := true

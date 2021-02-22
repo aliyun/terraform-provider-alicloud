@@ -78,7 +78,8 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServiceResourcesRead(d *schema.Reso
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Resources", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			objects = append(objects, item)
 		}

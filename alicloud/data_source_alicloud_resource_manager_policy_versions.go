@@ -103,7 +103,8 @@ func dataSourceAlicloudResourceManagerPolicyVersionsRead(d *schema.ResourceData,
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PolicyVersions.PolicyVersion", response)
 	}
-	for _, v := range resp.([]interface{}) {
+	result, _ := resp.([]interface{})
+	for _, v := range result {
 		item := v.(map[string]interface{})
 		if len(idsMap) > 0 {
 			if _, ok := idsMap[fmt.Sprint(request["PolicyName"], ":", item["VersionId"])]; !ok {

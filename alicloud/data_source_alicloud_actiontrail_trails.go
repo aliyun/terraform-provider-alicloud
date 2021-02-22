@@ -212,7 +212,8 @@ func dataSourceAlicloudActiontrailTrailsRead(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TrailList", response)
 	}
-	for _, v := range resp.([]interface{}) {
+	result, _ := resp.([]interface{})
+	for _, v := range result {
 		item := v.(map[string]interface{})
 		if trailNameRegex != nil {
 			if !trailNameRegex.MatchString(fmt.Sprint(item["Name"])) {

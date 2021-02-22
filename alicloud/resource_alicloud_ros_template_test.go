@@ -57,7 +57,8 @@ func testSweepRosTemplate(region string) error {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Templates", response)
 		}
 		sweeped := false
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			skip := true
 			for _, prefix := range prefixes {
@@ -84,7 +85,7 @@ func testSweepRosTemplate(region string) error {
 			}
 			log.Printf("[INFO] Delete Ros Template success: %s ", item["TemplateName"].(string))
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1

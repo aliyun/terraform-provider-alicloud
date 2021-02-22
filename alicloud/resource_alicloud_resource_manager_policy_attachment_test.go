@@ -57,7 +57,8 @@ func testSweepResourceManagerPolicyAttachment(region string) error {
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PolicyAttachments.PolicyAttachment", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			skip := true
 			for _, prefix := range prefixes {
@@ -71,7 +72,7 @@ func testSweepResourceManagerPolicyAttachment(region string) error {
 				attachmentIds = append(attachmentIds, fmt.Sprintf("%v:%v:%v:%v:%v", item["PolicyName"], item["PolicyType"], item["PrincipalName"], item["PrincipalType"], item["ResourceGroupId"]))
 			}
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1

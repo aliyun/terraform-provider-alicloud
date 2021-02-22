@@ -237,7 +237,8 @@ func dataSourceAlicloudEipanycastAnycastEipAddressesRead(d *schema.ResourceData,
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AnycastList", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if anycastEipAddressNameRegex != nil {
 				if !anycastEipAddressNameRegex.MatchString(fmt.Sprint(item["Name"])) {

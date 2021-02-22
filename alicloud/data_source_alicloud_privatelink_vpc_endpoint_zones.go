@@ -102,7 +102,8 @@ func dataSourceAlicloudPrivatelinkVpcEndpointZonesRead(d *schema.ResourceData, m
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Zones", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if statusOk && status.(string) != "" && status.(string) != item["ZoneStatus"].(string) {
 				continue

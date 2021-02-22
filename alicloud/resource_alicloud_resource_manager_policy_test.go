@@ -58,11 +58,12 @@ func testSweepResourceManagerPolicy(region string) error {
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Policies.Policy", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			policyIds = append(policyIds, item["PolicyName"].(string))
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1

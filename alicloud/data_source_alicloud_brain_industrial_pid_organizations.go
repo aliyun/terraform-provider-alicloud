@@ -118,7 +118,8 @@ func dataSourceAlicloudBrainIndustrialPidOrganizationsRead(d *schema.ResourceDat
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.OrganizationList", response)
 	}
-	for _, v := range resp.([]interface{}) {
+	result, _ := resp.([]interface{})
+	for _, v := range result {
 		item := v.(map[string]interface{})
 		if pidOrganizationNameRegex != nil {
 			if !pidOrganizationNameRegex.MatchString(fmt.Sprint(item["OrganizationName"])) {

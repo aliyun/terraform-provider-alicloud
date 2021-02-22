@@ -58,7 +58,8 @@ func testSweepRosStack(region string) error {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Stacks", response)
 		}
 		sweeped := false
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			skip := true
 			for _, prefix := range prefixes {
@@ -86,7 +87,7 @@ func testSweepRosStack(region string) error {
 			}
 			log.Printf("[INFO] Delete Ros Stack success: %s ", item["StackName"].(string))
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1

@@ -60,7 +60,8 @@ func testSweepDMSEnterpriseInstances(region string) error {
 		}
 
 		sweeped := false
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			id := item["Host"].(string) + ":" + item["Port"].(json.Number).String()
 
@@ -94,7 +95,7 @@ func testSweepDMSEnterpriseInstances(region string) error {
 			}
 			log.Printf("[INFO] Delete DMS Enterprise Instance Success: %s ", item["InstanceAlias"].(string))
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1

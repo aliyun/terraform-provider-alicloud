@@ -169,7 +169,8 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.InstanceVO", response)
 	}
-	for _, v := range resp.([]interface{}) {
+	result, _ := resp.([]interface{})
+	for _, v := range result {
 		item := v.(map[string]interface{})
 		if instanceNameRegex != nil {
 			if !instanceNameRegex.MatchString(fmt.Sprint(item["InstanceName"])) {
@@ -203,12 +204,13 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 
 		tags := make(map[string]interface{})
 		t, _ := jsonpath.Get("$.Tags.Tag", object)
-		for _, t := range t.([]interface{}) {
-			key := t.(map[string]interface{})["Key"].(string)
-			value := t.(map[string]interface{})["Value"].(string)
-
-			if !ignoredTags(key, value) {
-				tags[key] = value
+		if t != nil {
+			for _, t := range t.([]interface{}) {
+				key := t.(map[string]interface{})["Key"].(string)
+				value := t.(map[string]interface{})["Value"].(string)
+				if !ignoredTags(key, value) {
+					tags[key] = value
+				}
 			}
 		}
 		mapping["tags"] = tags

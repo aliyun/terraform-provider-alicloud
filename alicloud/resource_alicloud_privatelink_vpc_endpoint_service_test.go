@@ -60,7 +60,8 @@ func testSweepPrivatelinkVpcEndpointService(region string) error {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Services", response)
 		}
 		sweeped := false
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			skip := true
 			for _, prefix := range prefixes {

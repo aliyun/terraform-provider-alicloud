@@ -52,14 +52,15 @@ func testSweepResourceManagerHandshake(region string) error {
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Handshakes.Handshake", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			// Skip Invalid handshake.
 			if v, ok := item["Status"].(string); ok && v == "Pending" {
 				handshakeIds = append(handshakeIds, item["HandshakeId"].(string))
 			}
 		}
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
