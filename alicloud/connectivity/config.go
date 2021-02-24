@@ -110,6 +110,7 @@ type Config struct {
 	EipanycastEndpoint      string
 	ImsEndpoint             string
 	QuotasEndpoint          string
+	SgwEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {
