@@ -385,6 +385,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_monitor_group_instanceses":              dataSourceAlicloudCmsMonitorGroupInstanceses(),
 			"alicloud_quotas_quota_alarms":                        dataSourceAlicloudQuotasQuotaAlarms(),
 			"alicloud_ecs_commands":                               dataSourceAlicloudEcsCommands(),
+			"alicloud_cloud_storage_gateway_storage_bundles":      dataSourceAlicloudCloudStorageGatewayStorageBundles(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -685,6 +686,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_monitor_group_instances":               resourceAlicloudCmsMonitorGroupInstances(),
 			"alicloud_quotas_quota_alarm":                        resourceAlicloudQuotasQuotaAlarm(),
 			"alicloud_ecs_command":                               resourceAlicloudEcsCommand(),
+			"alicloud_cloud_storage_gateway_storage_bundle":      resourceAlicloudCloudStorageGatewayStorageBundle(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -837,6 +839,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EipanycastEndpoint = strings.TrimSpace(endpoints["eipanycast"].(string))
 		config.ImsEndpoint = strings.TrimSpace(endpoints["ims"].(string))
 		config.QuotasEndpoint = strings.TrimSpace(endpoints["quotas"].(string))
+		config.SgwEndpoint = strings.TrimSpace(endpoints["sgw"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1049,6 +1052,8 @@ func init() {
 		"ims_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ims endpoints.",
 
 		"quotas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom quotas endpoints.",
+
+		"sgw_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom sgw endpoints.",
 	}
 }
 
@@ -1093,6 +1098,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"sgw": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["sgw_endpoint"],
+				},
+
 				"quotas": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1570,6 +1582,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["eipanycast"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ims"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["quotas"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["sgw"].(string)))
 	return hashcode.String(buf.String())
 }
 
