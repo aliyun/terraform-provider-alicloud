@@ -295,6 +295,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_brain_industrial_service":                   dataSourceAlicloudBrainIndustrialService(),
 			"alicloud_iot_service":                                dataSourceAlicloudIotService(),
 			"alicloud_ack_service":                                dataSourceAlicloudAckService(),
+			"alicloud_cr_service":                                 dataSourceAlicloudCrService(),
 			"alicloud_dcdn_service":                               dataSourceAlicloudDcdnService(),
 			"alicloud_datahub_service":                            dataSourceAlicloudDatahubService(),
 			"alicloud_ons_service":                                dataSourceAlicloudOnsService(),
