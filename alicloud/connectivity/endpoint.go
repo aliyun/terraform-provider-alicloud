@@ -265,4 +265,5 @@ const (
 	OpenBrainIndustrialService = "brain-industrial-share.cn-hangzhou.aliyuncs.com"
 	OpenIotService             = "iot.aliyuncs.com"
 	OpenVsService              = "vs.cn-shanghai.aliyuncs.com"
+	OpenCrService              = "cr.cn-hangzhou.aliyuncs.com"
 )
