@@ -59,6 +59,7 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
   vswitch_id                     = alicloud_vswitch.default.id
   new_nat_gateway                = true
   endpoint_public_access_enabled = true
+  load_balancer_spec             = "slb.s2.small"
   private_zone                   = false
   deletion_protection            = false
   tags = {
@@ -91,6 +92,7 @@ The following arguments are supported:
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
 * `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
+* `load_balancer_spec` - (ForceNew, Available in 1.116.0+) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
 
 
 #### Addons 

@@ -213,6 +213,12 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Default:          false,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
+			"load_balancer_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
+			},
 			"new_nat_gateway": {
 				Type:     schema.TypeBool,
 				Optional: true,
