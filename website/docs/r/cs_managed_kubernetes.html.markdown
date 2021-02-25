@@ -120,6 +120,7 @@ The following arguments are supported:
   * ack.pro.small : Professional managed clusters.
 * `encryption_provider_key` - (Optional, ForceNew, Available in 1.103.2+) The disk encryption key.
 * `maintenance_window` - (Optional, Available in 1.109.1+) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. Detailed below.
+* `load_balancer_spec` - (ForceNew, Available in 1.116.0+) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
 
 ##### maintenance_window
 
