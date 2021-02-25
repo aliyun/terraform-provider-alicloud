@@ -177,6 +177,31 @@ var loadSdkEndpointMutex = sync.Mutex{}
 var providerVersion = "1.115.1"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
+// Temporarily maintain map for old ecs client methods and store special endpoint information
+var EndpointMap = map[string]string{
+	"cn-shenzhen-su18-b01":        "ecs.aliyuncs.com",
+	"cn-beijing":                  "ecs.aliyuncs.com",
+	"cn-shenzhen-st4-d01":         "ecs.aliyuncs.com",
+	"cn-haidian-cm12-c01":         "ecs.aliyuncs.com",
+	"cn-hangzhou-internal-prod-1": "ecs.aliyuncs.com",
+	"cn-qingdao":                  "ecs.aliyuncs.com",
+	"cn-shanghai":                 "ecs.aliyuncs.com",
+	"cn-shanghai-finance-1":       "ecs.aliyuncs.com",
+	"cn-hongkong":                 "ecs.aliyuncs.com",
+	"us-west-1":                   "ecs.aliyuncs.com",
+	"cn-shenzhen":                 "ecs.aliyuncs.com",
+	"cn-shanghai-et15-b01":        "ecs.aliyuncs.com",
+	"cn-hangzhou-bj-b01":          "ecs.aliyuncs.com",
+	"cn-zhangbei-na61-b01":        "ecs.aliyuncs.com",
+	"cn-shenzhen-finance-1":       "ecs.aliyuncs.com",
+	"cn-shanghai-et2-b01":         "ecs.aliyuncs.com",
+	"ap-southeast-1":              "ecs.aliyuncs.com",
+	"cn-beijing-nu16-b01":         "ecs.aliyuncs.com",
+	"us-east-1":                   "ecs.aliyuncs.com",
+	"cn-fujian":                   "ecs.aliyuncs.com",
+	"cn-hangzhou":                 "ecs.aliyuncs.com",
+}
+
 // Client for AliyunClient
 func (c *Config) Client() (*AliyunClient, error) {
 	// Get the auth and region. This can fail if keys/regions were not
@@ -224,6 +249,9 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		endpoint := client.config.EcsEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, ECSCode)
+			if endpoint == "" {
+				endpont = EndpointMap[client.config.RegionId]
+			}
 		}
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(ECSCode), endpoint)
@@ -380,6 +408,9 @@ func (client *AliyunClient) NewEcsClient() (*rpc.Client, error) {
 	}
 	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
 		endpoint = v.(string)
+		if endpoint == "ecs-cn-hangzhou.aliyuncs.com" {
+			endpoint = "ecs.aliyuncs.com"
+		}
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
