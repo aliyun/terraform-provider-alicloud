@@ -48,6 +48,7 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 					"new_nat_gateway":                "true",
 					"deletion_protection":            "false",
 					"endpoint_public_access_enabled": "true",
+					"load_balancer_spec":             "slb.s2.small",
 					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -59,6 +60,12 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 						"resource_group_id":              CHECKSET,
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"load_balancer_spec"},
 			},
 		},
 	})

@@ -304,6 +304,13 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Default:          true,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
+			"load_balancer_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
+				Default:      "slb.s1.small",
+			},
 			"deletion_protection": {
 				Type:     schema.TypeBool,
 				Optional: true,

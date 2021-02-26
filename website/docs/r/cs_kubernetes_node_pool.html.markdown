@@ -17,7 +17,7 @@ This resource will help you to manager node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.109.1, support remove node pool nodes.
 
--> **NOTE:** From version 1.111.0, support auto scaling node pool. 
+-> **NOTE:** From version 1.111.0, support auto scaling node pool. For more information on how to use auto scaling node pools, see [Use Terraform to create an elastic node pool](https://help.aliyun.com/document_detail/197717.htm).
 
 ## Example Usage
 
@@ -129,6 +129,33 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 }
 ```
 
+Enables auto-scaling of the managed node pool in kubernetes cluster.
+
+```terraform
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  name                         = var.name
+  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids                  = [alicloud_vswitch.default.id]
+  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category         = "cloud_efficiency"
+  system_disk_size             = 40
+  key_name                     = alicloud_key_pair.default.key_name
+  # management node pool configuration.
+  management {
+    auto_repair      = true
+    auto_upgrade     = true
+    surge            = 1
+    max_unavailable  = 1
+  }
+  # enable auto-scaling
+  scaling_config {
+    min_size         = 1
+    max_size         = 10
+    type             = "cpu"
+  }
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -173,9 +200,9 @@ The following arguments are supported in the `management` configuration block:
 
 The following arguments are supported in the `scaling_config` configuration block:
 
-* `min_size` - (Required, Available in 1.111.0+) Max number of instances in a auto scaling group, its valid value range [0~1000].
-* `max_size` - (Required, Available in 1.111.0+) Min number of instances in a auto scaling group, its valid value range [0~1000]. `max_size` has to be greater than `min_size`.
-* `type` - (Optional, Available in 1.111.0+) Auto scaling of instance types within a group. Vaild value: `cpu`, `gpu`, `gpushare` and `spot`. Default: `cpu`.
+* `min_size` - (Required, Available in 1.111.0+) Min number of instances in a auto scaling group, its valid value range [0~1000].
+* `max_size` - (Required, Available in 1.111.0+) Max number of instances in a auto scaling group, its valid value range [0~1000]. `max_size` has to be greater than `min_size`.
+* `type` - (Optional, Available in 1.111.0+) Instance classification, not required. Vaild value: `cpu`, `gpu`, `gpushare` and `spot`. Default: `cpu`. The actual instance type is determined by `instance_types`.
 * `is_bond_eip` - (Optional, Available in 1.111.0+) Whether to bind EIP for an instance. Default: `false`.
 * `eip_internet_charge_type` - (Optional, Available in 1.111.0+) EIP billing type. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`.
 * `eip_bandwidth` - (Optional, Available in 1.111.0+) Peak EIP bandwidth. Its valid value range [1~500] in Mbps. Default to `5`.

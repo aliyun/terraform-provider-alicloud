@@ -159,6 +159,13 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"load_balancer_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
+				Default:      "slb.s1.small",
+			},
 		},
 	}
 }
@@ -231,6 +238,10 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		args.VswitchIds = expandStringList(v.([]interface{}))
 	}
 
+	if lbSpec, ok := d.GetOk("load_balancer_spec"); ok {
+		args.LoadBalancerSpec = lbSpec.(string)
+	}
+
 	//set tags
 	if len(tags) > 0 {
 		args.Tags = tags
@@ -288,6 +299,10 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	_ = d.Set("version", object.CurrentVersion)
 	_ = d.Set("resource_group_id", object.ResourceGroupId)
 	_ = d.Set("cluster_spec", object.ClusterSpec)
+
+	if d.Get("load_balancer_spec") == "" {
+		_ = d.Set("load_balancer_spec", "slb.s1.small")
+	}
 
 	var requestInfo *cs.Client
 	var response interface{}

@@ -136,6 +136,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"pod_cidr":              "192.168.1.0/24",
 					"service_cidr":          "192.168.2.0/24",
 					"enable_ssh":            "true",
+					"load_balancer_spec":    "slb.s2.small",
 					"install_cloud_monitor": "true",
 					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"deletion_protection":   "true",
@@ -187,7 +188,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types",
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
 					"worker_instance_charge_type", "worker_instance_types", "log_config",
-					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes", "cpu_policy", "proxy_mode", "cluster_domain", "custom_san", "node_port_range", "os_type", "platform", "timezone", "runtime", "taints", "rds_instances"},
+					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes", "cpu_policy", "proxy_mode", "cluster_domain", "custom_san", "node_port_range", "os_type", "platform", "timezone", "runtime", "taints", "rds_instances", "load_balancer_spec"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
