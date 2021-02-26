@@ -386,6 +386,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quotas_quota_alarms":                        dataSourceAlicloudQuotasQuotaAlarms(),
 			"alicloud_ecs_commands":                               dataSourceAlicloudEcsCommands(),
 			"alicloud_cloud_storage_gateway_storage_bundles":      dataSourceAlicloudCloudStorageGatewayStorageBundles(),
+			"alicloud_ecs_hpc_clusters":                           dataSourceAlicloudEcsHpcClusters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -687,6 +688,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quotas_quota_alarm":                        resourceAlicloudQuotasQuotaAlarm(),
 			"alicloud_ecs_command":                               resourceAlicloudEcsCommand(),
 			"alicloud_cloud_storage_gateway_storage_bundle":      resourceAlicloudCloudStorageGatewayStorageBundle(),
+			"alicloud_ecs_hpc_cluster":                           resourceAlicloudEcsHpcCluster(),
 		},
 
 		ConfigureFunc: providerConfigure,
