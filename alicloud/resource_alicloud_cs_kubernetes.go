@@ -1070,6 +1070,10 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("cluster_domain", "cluster.local")
 	}
 
+	if d.Get("load_balancer_spec") == "" {
+		d.Set("load_balancer_spec", "slb.s1.small")
+	}
+
 	//d.Set("os_type", object.OSType)
 	// d.Set("platform", object.Platform)
 	// d.Set("timezone", object.TimeZone)
