@@ -1,4 +1,26 @@
 ## 1.116.0 (Unreleased)
+
+- **New Resource:** `alicloud_ecs_hpc_cluster` [GH-3303]
+- **New Resource:** `alicloud_cloud_storage_gateway_storage_bundle` [GH-3297]
+- **New Resource:** `alicloud_ecs_command` [GH-3296]
+- **New Resource:** `alicloud_quotas_quota_alarm` [GH-3293]
+- **Data Source:** `alicloud_ecs_hpc_clusters` [GH-3303]
+- **Data Source:** `alicloud_cloud_storage_gateway_storage_bundles` [GH-3297]
+- **Data Source:** `alicloud_ecs_commands` [GH-3296]
+- **Data Source:** `alicloud_cr_service` [GH-3294]
+- **Data Source:** `alicloud_quotas_quota_alarms` [GH-3293]
+- **Data Source:** `alicloud_vs_service` [GH-3292]
+
+IMPROVEMENTS:
+
+- change ecs endpoint [GH-3299]
+- resource/alicloud_privatelink: Add compute for bandwidth [GH-3291]
+- Add auto retry for cms_group_metric_rule, fix ons_instance datasource crash error and modify jsonpath get response deal [GH-3288]
+- add support 'Australia' of 'alicloud_cen_bandwidth_package' [GH-3287]
+- Modify security_group_rule describe method retry timeout [GH-3282]
+- change dms to common [GH-3280]
+- update changelog [GH-3279]
+
 ## 1.115.1 (February 07, 2021)
 
 IMPROVEMENTS:
