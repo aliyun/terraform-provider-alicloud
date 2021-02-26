@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -1600,6 +1601,48 @@ func (s *EcsService) DescribeEcsCommand(id string) (object map[string]interface{
 		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["CommandId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+func (s *EcsService) DescribeEcsHpcCluster(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeHpcClusters"
+	ids, err := json.Marshal([]string{id})
+	if err != nil {
+		return object, err
+	}
+	request := map[string]interface{}{
+		"RegionId":      s.client.RegionId,
+		"HpcClusterIds": string(ids),
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	request["ClientToken"] = buildClientToken("DescribeHpcClusters")
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NotExists.HpcCluster"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("EcsHpcCluster", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.HpcClusters.HpcCluster", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HpcClusters.HpcCluster", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["HpcClusterId"].(string) != id {
 			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
 		}
 	}
