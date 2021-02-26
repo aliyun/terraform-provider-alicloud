@@ -266,4 +266,5 @@ const (
 	OpenIotService             = "iot.aliyuncs.com"
 	OpenVsService              = "vs.cn-shanghai.aliyuncs.com"
 	OpenCrService              = "cr.cn-hangzhou.aliyuncs.com"
+	OpenMaxcomputeService      = "maxcompute.aliyuncs.com"
 )
