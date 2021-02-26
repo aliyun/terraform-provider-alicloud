@@ -300,6 +300,10 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	_ = d.Set("resource_group_id", object.ResourceGroupId)
 	_ = d.Set("cluster_spec", object.ClusterSpec)
 
+	if d.Get("load_balancer_spec") == "" {
+		_ = d.Set("load_balancer_spec", "slb.s1.small")
+	}
+
 	var requestInfo *cs.Client
 	var response interface{}
 
