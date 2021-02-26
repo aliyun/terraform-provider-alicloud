@@ -29,7 +29,7 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 -> **NOTE:** From version 1.72.0, Some parameters have been removed from resource,You can check them below and re-import the cluster if necessary.
 
--> **NOTE:** From version 1.109.1, Professional managed cluster supports zero worker node。
+-> **NOTE:** From version 1.109.1, Professional managed cluster supports zero worker node. For more information, see [Create an ACK cluster with no worker node by using Terraform](https://help.aliyun.com/document_detail/205101.html).
 
 ## Example Usage
 

@@ -202,9 +202,9 @@ The following arguments are supported in the `management` configuration block:
 
 The following arguments are supported in the `scaling_config` configuration block:
 
-* `min_size` - (Required, Available in 1.111.0+) Max number of instances in a auto scaling group, its valid value range [0~1000].
-* `max_size` - (Required, Available in 1.111.0+) Min number of instances in a auto scaling group, its valid value range [0~1000]. `max_size` has to be greater than `min_size`.
-* `type` - (Optional, Available in 1.111.0+) Auto scaling of instance types within a group. Vaild value: `cpu`, `gpu`, `gpushare` and `spot`. Default: `cpu`.
+* `min_size` - (Required, Available in 1.111.0+) Min number of instances in a auto scaling group, its valid value range [0~1000].
+* `max_size` - (Required, Available in 1.111.0+) Max number of instances in a auto scaling group, its valid value range [0~1000]. `max_size` has to be greater than `min_size`.
+* `type` - (Optional, Available in 1.111.0+) Instance classification, not required. Vaild value: `cpu`, `gpu`, `gpushare` and `spot`. Default: `cpu`. The actual instance type is determined by `instance_types`.
 * `is_bond_eip` - (Optional, Available in 1.111.0+) Whether to bind EIP for an instance. Default: `false`.
 * `eip_internet_charge_type` - (Optional, Available in 1.111.0+) EIP billing type. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`.
 * `eip_bandwidth` - (Optional, Available in 1.111.0+) Peak EIP bandwidth. Its valid value range [1~500] in Mbps. Default to `5`.
