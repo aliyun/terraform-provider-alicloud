@@ -218,6 +218,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
+				Default:      "slb.s1.small",
 			},
 			"new_nat_gateway": {
 				Type:     schema.TypeBool,

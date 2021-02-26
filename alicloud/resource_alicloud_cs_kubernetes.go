@@ -350,6 +350,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
+				Default:      "slb.s1.small",
 			},
 			"image_id": {
 				Type:     schema.TypeString,
@@ -1068,9 +1069,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if d.Get("cluster_domain") == "" {
 		d.Set("cluster_domain", "cluster.local")
 	}
-	if d.Get("load_balancer_spec") == "" {
-		d.Set("load_balancer_spec", "slb.s1.small")
-	}
+
 	//d.Set("os_type", object.OSType)
 	// d.Set("platform", object.Platform)
 	// d.Set("timezone", object.TimeZone)
