@@ -345,6 +345,13 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Default:          false,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
+			"load_balancer_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
+				Default:      "slb.s1.small",
+			},
 			"image_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -1062,6 +1069,10 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if d.Get("cluster_domain") == "" {
 		d.Set("cluster_domain", "cluster.local")
 	}
+
+	if d.Get("load_balancer_spec") == "" {
+		d.Set("load_balancer_spec", "slb.s1.small")
+	}
 	//d.Set("os_type", object.OSType)
 	// d.Set("platform", object.Platform)
 	// d.Set("timezone", object.TimeZone)
@@ -1097,6 +1108,9 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	pageNumber := 1
 	for {
+		if defaultNodePoolId == "" {
+			break
+		}
 		var result []cs.KubernetesNodeType
 		var pagination *cs.PaginationResult
 		var requestInfo *cs.Client
@@ -1402,6 +1416,10 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			Addons:                    addons,
 			ApiAudiences:              apiAudiences,
 		},
+	}
+
+	if lbSpec, ok := d.GetOk("load_balancer_spec"); ok {
+		creationArgs.LoadBalancerSpec = lbSpec.(string)
 	}
 
 	if osType, ok := d.GetOk("os_type"); ok {
@@ -1739,7 +1757,7 @@ func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, 
 	}
 
 	// remove nodes
-	removeNodesName := allNodeName[len(allNodeName)-count:]
+	removeNodesName := allNodeName[:count]
 	removeNodesArgs := &cs.DeleteKubernetesClusterNodesRequest{
 		Nodes:       removeNodesName,
 		ReleaseNode: true,
