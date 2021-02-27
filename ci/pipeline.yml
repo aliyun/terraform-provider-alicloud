@@ -550,8 +550,8 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: false
-        resource: 10
+        trigger: true
+        resource: 10Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1245,8 +1245,8 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: false
-        resource: 0130
+        trigger: true
+        resource: 0130Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1871,6 +1871,14 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
+  - name: 0130Thu
+    type: time
+    source:
+      start: 01:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
   - name: 02Thu
     type: time
     source:
@@ -1956,7 +1964,13 @@ resources:
       stop: 10:50 PM
       days: [Thursday]
       location: {{time_location}}
-
+  - name: 10Thu
+    type: time
+    source:
+      start: 10:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
   - name: 1030Thu
     type: time
     source:
