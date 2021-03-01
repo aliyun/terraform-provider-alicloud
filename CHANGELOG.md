@@ -1,4 +1,27 @@
-## 1.116.0 (Unreleased)
+## 1.117.0 (Unreleased)
+## 1.116.0 (February 27, 2021)
+
+- **New Resource:** `alicloud_ecs_hpc_cluster` ([#3303](https://github.com/aliyun/terraform-provider-alicloud/issues/3303))
+- **New Resource:** `alicloud_cloud_storage_gateway_storage_bundle` ([#3297](https://github.com/aliyun/terraform-provider-alicloud/issues/3297))
+- **New Resource:** `alicloud_ecs_command` ([#3296](https://github.com/aliyun/terraform-provider-alicloud/issues/3296))
+- **New Resource:** `alicloud_quotas_quota_alarm` ([#3293](https://github.com/aliyun/terraform-provider-alicloud/issues/3293))
+- **Data Source:** `alicloud_ecs_hpc_clusters` ([#3303](https://github.com/aliyun/terraform-provider-alicloud/issues/3303))
+- **Data Source:** `alicloud_cloud_storage_gateway_storage_bundles` ([#3297](https://github.com/aliyun/terraform-provider-alicloud/issues/3297))
+- **Data Source:** `alicloud_ecs_commands` ([#3296](https://github.com/aliyun/terraform-provider-alicloud/issues/3296))
+- **Data Source:** `alicloud_cr_service` ([#3294](https://github.com/aliyun/terraform-provider-alicloud/issues/3294))
+- **Data Source:** `alicloud_quotas_quota_alarms` ([#3293](https://github.com/aliyun/terraform-provider-alicloud/issues/3293))
+- **Data Source:** `alicloud_vs_service` ([#3292](https://github.com/aliyun/terraform-provider-alicloud/issues/3292))
+
+IMPROVEMENTS:
+
+- change ecs endpoint ([#3299](https://github.com/aliyun/terraform-provider-alicloud/issues/3299))
+- resource/alicloud_privatelink: Add compute for bandwidth ([#3291](https://github.com/aliyun/terraform-provider-alicloud/issues/3291))
+- Add auto retry for cms_group_metric_rule, fix ons_instance datasource crash error and modify jsonpath get response deal ([#3288](https://github.com/aliyun/terraform-provider-alicloud/issues/3288))
+- add support 'Australia' of 'alicloud_cen_bandwidth_package' ([#3287](https://github.com/aliyun/terraform-provider-alicloud/issues/3287))
+- Modify security_group_rule describe method retry timeout ([#3282](https://github.com/aliyun/terraform-provider-alicloud/issues/3282))
+- change dms to common ([#3280](https://github.com/aliyun/terraform-provider-alicloud/issues/3280))
+- update changelog ([#3279](https://github.com/aliyun/terraform-provider-alicloud/issues/3279))
+
 ## 1.115.1 (February 07, 2021)
 
 IMPROVEMENTS:

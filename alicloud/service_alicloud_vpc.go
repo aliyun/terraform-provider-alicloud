@@ -1427,3 +1427,62 @@ func (s *VpcService) WaitForNatGatewayTransform(id string, timeout int64) error 
 	}
 	return nil
 }
+
+func (s *VpcService) DescribeFlowLogs(id string) (map[string]interface{}, error) {
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	action := "DescribeFlowLogs"
+	request := map[string]interface{}{
+		"RegionId":  s.client.RegionId,
+		"FlowLogId": id,
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+
+	response, err1 := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+	if err1 != nil {
+		return nil, WrapErrorf(err1, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+
+	ob, err2 := jsonpath.Get("$.FlowLogs.FlowLog", response)
+	if err2 != nil {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("vpc flow log", id)), NotFoundWithResponse, response)
+	}
+	object := ob.([]interface{})
+	for _, v := range object {
+		val := v.(map[string]interface{})
+		if val["FlowLogId"] == id {
+			return val, nil
+		}
+	}
+	return nil, WrapErrorf(Error(GetNotFoundMessage("vpc flow log", id)), NotFoundWithResponse, response)
+}
+
+func (s *VpcService) WaitForVpcFlowLog(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		object, err := s.DescribeFlowLogs(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		}
+
+		if object["Status"].(string) == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, fmt.Sprintf("%v", object["Status"].(string)), string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
