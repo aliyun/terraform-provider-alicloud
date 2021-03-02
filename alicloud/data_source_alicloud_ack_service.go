@@ -41,15 +41,15 @@ func dataSourceAlicloudAckServiceRead(d *schema.ResourceData, meta interface{}) 
 		return nil
 	}
 	action := "OpenAckService"
-	request := map[string]interface{}{
-		"type": d.Get("type"),
+	query := map[string]*string{
+		"type": StringPointer(d.Get("type").(string)),
 	}
 	conn, err := meta.(*connectivity.AliyunClient).NewTeaRoaCommonClient(connectivity.OpenAckService)
 	if err != nil {
 		return WrapError(err)
 	}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2015-12-15"), nil, StringPointer("POST"), StringPointer("AK"), String("/service/open"), nil, nil, request, &util.RuntimeOptions{})
+		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2015-12-15"), nil, StringPointer("POST"), StringPointer("AK"), String("/service/open"), query, nil, nil, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
