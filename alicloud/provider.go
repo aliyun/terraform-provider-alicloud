@@ -391,6 +391,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_hpc_clusters":                           dataSourceAlicloudEcsHpcClusters(),
 			"alicloud_brain_industrial_pid_loops":                 dataSourceAlicloudBrainIndustrialPidLoops(),
 			"alicloud_quotas_quota_applications":                  dataSourceAlicloudQuotasQuotaApplications(),
+			"alicloud_ecs_auto_snapshot_policies":                 dataSourceAlicloudEcsAutoSnapshotPolicies(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -407,7 +408,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_network_interface":                  resourceAliyunNetworkInterface(),
 			"alicloud_network_interface_attachment":       resourceAliyunNetworkInterfaceAttachment(),
 			"alicloud_snapshot":                           resourceAliyunSnapshot(),
-			"alicloud_snapshot_policy":                    resourceAliyunSnapshotPolicy(),
+			"alicloud_snapshot_policy":                    resourceAlicloudEcsAutoSnapshotPolicy(),
 			"alicloud_launch_template":                    resourceAliyunLaunchTemplate(),
 			"alicloud_security_group":                     resourceAliyunSecurityGroup(),
 			"alicloud_security_group_rule":                resourceAliyunSecurityGroupRule(),
@@ -696,6 +697,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_flow_log":                              resourceAlicloudVpcFlowLog(),
 			"alicloud_brain_industrial_pid_loop":                 resourceAlicloudBrainIndustrialPidLoop(),
 			"alicloud_quotas_quota_application":                  resourceAlicloudQuotasQuotaApplication(),
+			"alicloud_ecs_auto_snapshot_policy":                  resourceAlicloudEcsAutoSnapshotPolicy(),
 		},
 
 		ConfigureFunc: providerConfigure,
