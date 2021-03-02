@@ -13,7 +13,7 @@ Using this data source can open Maxcompute service automatically. If the service
 
 For information about Maxcompute and how to use it, see [What is Maxcompute](https://www.alibabacloud.com/help/en/product/27797.htm).
 
--> **NOTE:** Available in v1.116.0+
+-> **NOTE:** Available in v1.117.0+
 
 ## Example Usage
 
