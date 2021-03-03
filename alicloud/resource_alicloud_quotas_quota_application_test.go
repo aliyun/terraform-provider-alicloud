@@ -8,16 +8,16 @@ import (
 )
 
 // The quota product does not support deletion, so skip the test.
-func SkipTestAccAlicloudQuotasApplicationInfo_basic(t *testing.T) {
+func SkipTestAccAlicloudQuotasQuotaApplication_basic(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_quotas_application_info.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasApplicationInfoMap)
+	resourceId := "alicloud_quotas_quota_application.default"
+	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &QuotasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeQuotasApplicationInfo")
+	}, "DescribeQuotasQuotaApplication")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, "", AlicloudQuotasApplicationInfoBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, "", AlicloudQuotasQuotaApplicationBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -60,11 +60,11 @@ func SkipTestAccAlicloudQuotasApplicationInfo_basic(t *testing.T) {
 	})
 }
 
-var AlicloudQuotasApplicationInfoMap = map[string]string{
+var AlicloudQuotasQuotaApplicationMap = map[string]string{
 	"notice_type": "0",
 	"status":      CHECKSET,
 }
 
-func AlicloudQuotasApplicationInfoBasicDependence(name string) string {
+func AlicloudQuotasQuotaApplicationBasicDependence(name string) string {
 	return ""
 }

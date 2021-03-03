@@ -10,9 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudQuotasApplicationInfos() *schema.Resource {
+func dataSourceAlicloudQuotasQuotaApplications() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudQuotasApplicationInfosRead,
+		Read: dataSourceAlicloudQuotasQuotaApplicationsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -40,6 +40,11 @@ func dataSourceAlicloudQuotasApplicationInfos() *schema.Resource {
 					},
 				},
 			},
+			"key_word": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"product_code": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -66,7 +71,7 @@ func dataSourceAlicloudQuotasApplicationInfos() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"infos": {
+			"applications": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -159,7 +164,7 @@ func dataSourceAlicloudQuotasApplicationInfos() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudQuotasApplicationInfosRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudQuotasQuotaApplicationsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListQuotaApplications"
@@ -174,6 +179,7 @@ func dataSourceAlicloudQuotasApplicationInfosRead(d *schema.ResourceData, meta i
 			dimensionsMaps = append(dimensionsMaps, dimensionsMap)
 		}
 		request["Dimensions"] = dimensionsMaps
+
 	}
 	if v, ok := d.GetOk("key_word"); ok {
 		request["KeyWord"] = v
@@ -211,7 +217,7 @@ func dataSourceAlicloudQuotasApplicationInfosRead(d *schema.ResourceData, meta i
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_quotas_application_infos", action, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_quotas_quota_applications", action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
 
@@ -262,7 +268,7 @@ func dataSourceAlicloudQuotasApplicationInfosRead(d *schema.ResourceData, meta i
 
 		quotasService := QuotasService{client}
 		id := fmt.Sprint(object["ApplicationId"])
-		getResp, err := quotasService.DescribeQuotasApplicationInfo(id)
+		getResp, err := quotasService.DescribeQuotasQuotaApplication(id)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -291,7 +297,7 @@ func dataSourceAlicloudQuotasApplicationInfosRead(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 
-	if err := d.Set("infos", s); err != nil {
+	if err := d.Set("applications", s); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

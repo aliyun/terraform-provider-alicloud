@@ -9,10 +9,10 @@ import (
 
 // The quota product does not support deletion, so skip the test.
 func SkipTestAccAlicloudQuotasApplicationInfosDataSource(t *testing.T) {
-	resourceId := "data.alicloud_quotas_application_infos.default"
+	resourceId := "data.alicloud_quotas_quota_applications.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceQuotasApplicationInfosDependence)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceQuotasQuotaApplicationsDependence)
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -103,9 +103,9 @@ func SkipTestAccAlicloudQuotasApplicationInfosDataSource(t *testing.T) {
 	QuotasApplicationInfosInfo.dataSourceTestCheck(t, 0, idsConf, dimenstionsConf, statusConf)
 }
 
-func dataSourceQuotasApplicationInfosDependence(name string) string {
+func dataSourceQuotasQuotaApplicationsDependence(name string) string {
 	return fmt.Sprintf(`
-	resource "alicloud_quotas_application_info" "default" {
+	resource "alicloud_quotas_quota_application" "default" {
 		notice_type  =  "0"
 		desire_value =  "100"
 		product_code =  "ess"
