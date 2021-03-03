@@ -103,7 +103,7 @@ func resourceAliCloudImageCopyCreate(d *schema.ResourceData, meta interface{}) e
 
 	response, _ := raw.(*ecs.CopyImageResponse)
 	d.SetId(response.ImageId)
-	stateConf := BuildStateConf([]string{"Creating"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, ecsService.ImageStateRefreshFunc(d.Id(), []string{"CreateFailed", "UnAvailable"}))
+	stateConf := BuildStateConf([]string{"Creating", "Waiting"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, ecsService.ImageStateRefreshFunc(d.Id(), []string{"CreateFailed", "UnAvailable"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
