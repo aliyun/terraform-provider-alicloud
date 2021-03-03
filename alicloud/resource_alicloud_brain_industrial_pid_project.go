@@ -21,7 +21,7 @@ func resourceAlicloudBrainIndustrialPidProject() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"pid_organisation_id": {
+			"pid_organization_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -46,7 +46,7 @@ func resourceAlicloudBrainIndustrialPidProjectCreate(d *schema.ResourceData, met
 	if err != nil {
 		return WrapError(err)
 	}
-	request["PidOrganisationId"] = d.Get("pid_organisation_id")
+	request["PidOrganisationId"] = d.Get("pid_organization_id")
 	if v, ok := d.GetOk("pid_project_desc"); ok {
 		request["PidProjectDesc"] = v
 	}
@@ -80,7 +80,7 @@ func resourceAlicloudBrainIndustrialPidProjectRead(d *schema.ResourceData, meta 
 		}
 		return WrapError(err)
 	}
-	d.Set("pid_organisation_id", object["PidOrganisationId"])
+	d.Set("pid_organization_id", object["PidOrganisationId"])
 	d.Set("pid_project_desc", object["PidProjectDesc"])
 	d.Set("pid_project_name", object["PidProjectName"])
 	return nil
@@ -92,10 +92,10 @@ func resourceAlicloudBrainIndustrialPidProjectUpdate(d *schema.ResourceData, met
 	request := map[string]interface{}{
 		"PidProjectId": d.Id(),
 	}
-	if d.HasChange("pid_organisation_id") {
+	if d.HasChange("pid_organization_id") {
 		update = true
 	}
-	request["PidOrganisationId"] = d.Get("pid_organisation_id")
+	request["PidOrganisationId"] = d.Get("pid_organization_id")
 	if d.HasChange("pid_project_desc") {
 		update = true
 		request["PidProjectDesc"] = d.Get("pid_project_desc")

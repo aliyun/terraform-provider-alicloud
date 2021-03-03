@@ -35,7 +35,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Pid Project IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Pid Project name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `pid_organisation_id` - (Optional, ForceNew) The ID of Pid Organisation.
+* `pid_organization_id` - (Optional, ForceNew) The ID of Pid Organization.
 * `pid_project_name` - (Optional, ForceNew) The name of Pid Project.
 
 ## Argument Reference
@@ -45,7 +45,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `names` - A list of Pid Project names.
 * `projects` - A list of Brain Industrial Pid Projects. Each element contains the following attributes:
 	* `id` - The ID of the Pid Project.
-	* `pid_organisation_id` - The ID of Pid Organisation.
+	* `pid_organization_id` - The ID of Pid Organization.
 	* `pid_project_desc` - The description of Pid Project.
 	* `pid_project_id` - The ID of Pid Project.
 	* `pid_project_name` - The name of Pid Project.

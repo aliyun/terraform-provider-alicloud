@@ -38,7 +38,7 @@ func TestAccAlicloudBrainIndustrialPidProjectsDataSource(t *testing.T) {
 			"names.#":                        "1",
 			"names.0":                        name,
 			"projects.#":                     "1",
-			"projects.0.pid_organisation_id": CHECKSET,
+			"projects.0.pid_organization_id": CHECKSET,
 			"projects.0.pid_project_desc":    "",
 			"projects.0.pid_project_id":      CHECKSET,
 			"projects.0.id":                  CHECKSET,
@@ -73,7 +73,7 @@ func dataSourceBrainIndustrialPidProjectsDependence(name string) string {
 		pid_organization_name = "%[1]s"
 	}
 	resource "alicloud_brain_industrial_pid_project" "default" {
-		pid_organisation_id = alicloud_brain_industrial_pid_organization.default.id
+		pid_organization_id = alicloud_brain_industrial_pid_organization.default.id
 		pid_project_name = "%[1]s"
 	}`, name)
 }

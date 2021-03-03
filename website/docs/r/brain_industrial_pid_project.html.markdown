@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_brain_industrial_pid_project" "example" {
-  pid_organisation_id = "3e74e684-cbb5-xxxx"
+  pid_organization_id = "3e74e684-cbb5-xxxx"
   pid_project_name    = "tf-testAcc"
 }
 
@@ -29,7 +29,7 @@ resource "alicloud_brain_industrial_pid_project" "example" {
 
 The following arguments are supported:
 
-* `pid_organisation_id` - (Required) The ID of Pid Organisation.
+* `pid_organization_id` - (Required) The ID of Pid Organization.
 * `pid_project_desc` - (Optional) The description of Pid Project.
 * `pid_project_name` - (Required) The name of Pid Project.
 
