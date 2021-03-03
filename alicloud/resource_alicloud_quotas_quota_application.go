@@ -12,11 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudQuotasApplicationInfo() *schema.Resource {
+func resourceAlicloudQuotasQuotaApplication() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudQuotasApplicationInfoCreate,
-		Read:   resourceAlicloudQuotasApplicationInfoRead,
-		Delete: resourceAlicloudQuotasApplicationInfoDelete,
+		Create: resourceAlicloudQuotasQuotaApplicationCreate,
+		Read:   resourceAlicloudQuotasQuotaApplicationRead,
+		Delete: resourceAlicloudQuotasQuotaApplicationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -116,7 +116,7 @@ func resourceAlicloudQuotasApplicationInfo() *schema.Resource {
 	}
 }
 
-func resourceAlicloudQuotasApplicationInfoCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudQuotasQuotaApplicationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateQuotaApplication"
@@ -140,6 +140,7 @@ func resourceAlicloudQuotasApplicationInfoCreate(d *schema.ResourceData, meta in
 			dimensionsMaps = append(dimensionsMaps, dimensionsMap)
 		}
 		request["Dimensions"] = dimensionsMaps
+
 	}
 
 	if v, ok := d.GetOk("notice_type"); ok {
@@ -167,20 +168,20 @@ func resourceAlicloudQuotasApplicationInfoCreate(d *schema.ResourceData, meta in
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_application_info", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_quota_application", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ApplicationId"]))
 
-	return resourceAlicloudQuotasApplicationInfoRead(d, meta)
+	return resourceAlicloudQuotasQuotaApplicationRead(d, meta)
 }
-func resourceAlicloudQuotasApplicationInfoRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudQuotasQuotaApplicationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	quotasService := QuotasService{client}
-	object, err := quotasService.DescribeQuotasApplicationInfo(d.Id())
+	object, err := quotasService.DescribeQuotasQuotaApplication(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_quotas_application_info quotasService.DescribeQuotasApplicationInfo Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_quotas_quota_application quotasService.DescribeQuotasQuotaApplication Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -215,7 +216,7 @@ func resourceAlicloudQuotasApplicationInfoRead(d *schema.ResourceData, meta inte
 	d.Set("status", object["Status"])
 	return nil
 }
-func resourceAlicloudQuotasApplicationInfoDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudQuotasApplicationInfo. Terraform will remove this resource from the state file, however resources may remain.")
+func resourceAlicloudQuotasQuotaApplicationDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resourceAlicloudQuotasQuotaApplication. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

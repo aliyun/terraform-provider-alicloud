@@ -1,26 +1,26 @@
 ---
 subcategory: "Quotas"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_quotas_application_info"
-sidebar_current: "docs-alicloud-resource-quotas-application-info"
+page_title: "Alicloud: alicloud_quotas_quota_application"
+sidebar_current: "docs-alicloud-resource-quotas-quota-application"
 description: |-
-  Provides a Alicloud Quotas Application Info resource.
+  Provides a Alicloud Quotas Quota Application resource.
 ---
 
-# alicloud\_quotas\_application\_info
+# alicloud\_quotas\_quota\_application
 
-Provides a Quotas Application Info resource.
+Provides a Quotas Quota Application resource.
 
-For information about Quotas Application Info and how to use it, see [What is Application Info](https://help.aliyun.com/document_detail/171289.html).
+For information about Quotas Quota Application and how to use it, see [What is Quota Application](https://help.aliyun.com/document_detail/171289.html).
 
--> **NOTE:** Available in v1.115.0+.
+-> **NOTE:** Available in v1.117.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_quotas_application_info" "example" {
+resource "alicloud_quotas_quota_application" "example" {
     notice_type        = "0"
     desire_value       = "100"
     product_code       = "ess"
@@ -58,7 +58,7 @@ The dimensions supports the following:
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of Application Info.
+* `id` - The resource ID in terraform of Quota Application.
 * `status` - The status of the quota application.
 * `approve_value` - The approve value of the quota application.
 * `audit_reason` - The audit reason.
@@ -73,5 +73,5 @@ The following attributes are exported:
 Quotas Application Info can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_quotas_application_info.example <id>
+$ terraform import alicloud_quotas_quota_application.example <id>
 ```

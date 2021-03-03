@@ -1,30 +1,30 @@
 ---
 subcategory: "Quotas"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_quotas_application_infos"
-sidebar_current: "docs-alicloud-datasource-quotas-application-infos"
+page_title: "Alicloud: alicloud_quotas_quota_applications"
+sidebar_current: "docs-alicloud-datasource-quotas-quota-applications"
 description: |-
-  Provides a list of Quotas Application Infos to the user.
+  Provides a list of Quotas Quota Applications to the user.
 ---
 
-# alicloud\_quotas\_application\_infos
+# alicloud\_quotas\_quota\_applications
 
-This data source provides the Quotas Application Infos of the current Alibaba Cloud user.
+This data source provides the Quotas Quota Applications of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.115.0+.
+-> **NOTE:** Available in v1.117.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_quotas_application_infos" "example" {
+data "alicloud_quotas_quota_applications" "example" {
   product_code = "ess"
   ids          = ["4621F886-81E9-xxxx-xxxx"]
 }
 
-output "first_quotas_application_info_id" {
-  value = data.alicloud_quotas_application_infos.example.infos.0.id
+output "first_quotas_quota_application_id" {
+  value = data.alicloud_quotas_quota_applications.example.applications.0.id
 }
 ```
 
@@ -52,7 +52,7 @@ The dimensions supports the following:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `infos` - A list of Quotas Application Infos. Each element contains the following attributes:
+* `applications` - A list of Quotas Quota Applications. Each element contains the following attributes:
 	* `application_id` - The first ID of the resource.
 	* `approve_value` - The approve value.
 	* `audit_reason` - The audit reason.
