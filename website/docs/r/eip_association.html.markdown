@@ -94,5 +94,14 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `allocation_id` - As above.
-* `instance_id` - As above.
+* `id` - The EIP Association ID and it formats as `<allocation_id>:<instance_id>`.
+
+## Import
+
+-> **NOTE:** Available in 1.117.0+.
+
+Elastic IP address can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_eip_association.example eip-abc12345678:i-abc12355
+```

@@ -19,6 +19,9 @@ func resourceAliyunEipAssociation() *schema.Resource {
 		Read:   resourceAliyunEipAssociationRead,
 		Update: resourceAliyunEipAssociationUpdate,
 		Delete: resourceAliyunEipAssociationDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"allocation_id": {
