@@ -153,13 +153,13 @@ func TestAccAlicloudBrainIndustrialPidProject_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"pid_organisation_id": "${alicloud_brain_industrial_pid_organization.default.id}",
+					"pid_organization_id": "${alicloud_brain_industrial_pid_organization.default.id}",
 					"pid_project_desc":    "tf test",
 					"pid_project_name":    name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"pid_organisation_id": CHECKSET,
+						"pid_organization_id": CHECKSET,
 						"pid_project_desc":    "tf test",
 						"pid_project_name":    name,
 					}),
@@ -172,11 +172,11 @@ func TestAccAlicloudBrainIndustrialPidProject_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"pid_organisation_id": "${alicloud_brain_industrial_pid_organization.update.id}",
+					"pid_organization_id": "${alicloud_brain_industrial_pid_organization.update.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"pid_organisation_id": CHECKSET,
+						"pid_organization_id": CHECKSET,
 					}),
 				),
 			},
@@ -202,13 +202,13 @@ func TestAccAlicloudBrainIndustrialPidProject_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"pid_organisation_id": "${alicloud_brain_industrial_pid_organization.default.id}",
+					"pid_organization_id": "${alicloud_brain_industrial_pid_organization.default.id}",
 					"pid_project_desc":    "tf test",
 					"pid_project_name":    name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"pid_organisation_id": CHECKSET,
+						"pid_organization_id": CHECKSET,
 						"pid_project_desc":    "tf test",
 						"pid_project_name":    name,
 					}),

@@ -15,7 +15,7 @@ func dataSourceAlicloudBrainIndustrialPidProjects() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudBrainIndustrialPidProjectsRead,
 		Schema: map[string]*schema.Schema{
-			"pid_organisation_id": {
+			"pid_organization_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -52,7 +52,7 @@ func dataSourceAlicloudBrainIndustrialPidProjects() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"pid_organisation_id": {
+						"pid_organization_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -84,7 +84,7 @@ func dataSourceAlicloudBrainIndustrialPidProjectsRead(d *schema.ResourceData, me
 
 	action := "ListPidProjects"
 	request := make(map[string]interface{})
-	if v, ok := d.GetOk("pid_organisation_id"); ok {
+	if v, ok := d.GetOk("pid_organization_id"); ok {
 		request["PidOrganisationId"] = v
 	}
 	if v, ok := d.GetOk("pid_project_name"); ok {
@@ -154,7 +154,7 @@ func dataSourceAlicloudBrainIndustrialPidProjectsRead(d *schema.ResourceData, me
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"pid_organisation_id": object["PidOrganisationId"],
+			"pid_organization_id": object["PidOrganisationId"],
 			"pid_project_desc":    object["PidProjectDesc"],
 			"id":                  fmt.Sprint(object["PidProjectId"]),
 			"pid_project_id":      fmt.Sprint(object["PidProjectId"]),
