@@ -11,12 +11,15 @@
 IMPROVEMENTS:
 
 - support load balancer spec ([#3305](https://github.com/aliyun/terraform-provider-alicloud/issues/3305))
-- fix ack_service type parameter ([#3307](https://github.com/aliyun/terraform-provider-alicloud/issues/3307))
 - resource/alicloud_brain_industrial_pid_project: fix name spelling mistake ([#3310](https://github.com/aliyun/terraform-provider-alicloud/issues/3310))
 - resource/alicloud_eip_association: supports importing feature ([#3312](https://github.com/aliyun/terraform-provider-alicloud/issues/3312))
 - product/quotas: rename ApplicationInfo to QuotaApplication. ([#3311](https://github.com/aliyun/terraform-provider-alicloud/issues/3311))
 - resource/image_copy: adding missing status when waiting for available ([#3314](https://github.com/aliyun/terraform-provider-alicloud/issues/3314))
 - resource alicloud_snapshot_policy renamed to alicloud_ecs_auto_snapshot_policy ([#3309](https://github.com/aliyun/terraform-provider-alicloud/issues/3309))
+
+BUG FIXES:
+
+- fix ack_service type parameter ([#3307](https://github.com/aliyun/terraform-provider-alicloud/issues/3307))
 
 ## 1.116.0 (February 27, 2021)
 
