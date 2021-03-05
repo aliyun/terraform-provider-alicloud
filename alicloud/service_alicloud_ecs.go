@@ -448,40 +448,40 @@ func (s *EcsService) InstanceTypeValidation(targetType, zoneId string, validZone
 	return WrapError(Error("The instance type %s is solded out or is not supported in the region %s. Expected instance types: %s", targetType, s.client.RegionId, strings.Join(expectedInstanceTypes, ", ")))
 }
 
-func (s *EcsService) QueryInstancesWithKeyPair(instanceIdsStr, keyPair string) (instanceIds []string, instances []ecs.Instance, err error) {
-
-	request := ecs.CreateDescribeInstancesRequest()
-	request.RegionId = s.client.RegionId
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	request.InstanceIds = instanceIdsStr
-	request.KeyPairName = keyPair
+func (s *EcsService) QueryInstancesWithKeyPair(instanceIdsStr, keyPair string) (instanceIds []string, err error) {
+	action := "DescribeInstances"
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	request := make(map[string]interface{})
+	request["RegionId"] = s.client.RegionId
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	request["InstanceIds"] = instanceIdsStr
+	request["KeyPairName"] = keyPair
 	for {
-		raw, e := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeInstances(request)
-		})
-		if e != nil {
-			err = WrapErrorf(e, DefaultErrorMsg, keyPair, request.GetActionName(), AlibabaCloudSdkGoERROR)
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			err = WrapErrorf(err, DefaultErrorMsg, keyPair, action, AlibabaCloudSdkGoERROR)
 			return
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		object, _ := raw.(*ecs.DescribeInstancesResponse)
-		if len(object.Instances.Instance) < 0 {
-			return
+		addDebug(action, response, request)
+
+		v, err := jsonpath.Get("$.Instances.Instance", response)
+		if err != nil {
+			return instanceIds, WrapErrorf(err, FailedGetAttributeMsg, keyPair, "$.Instances.Instance", response)
 		}
-		for _, inst := range object.Instances.Instance {
-			instanceIds = append(instanceIds, inst.InstanceId)
-			instances = append(instances, inst)
+		if len(v.([]interface{})) > 0 {
+			for _, inst := range v.([]interface{}) {
+				instanceIds = append(instanceIds, inst.(map[string]interface{})["InstanceId"].(string))
+			}
 		}
-		if len(instances) < PageSizeLarge {
+		if len(v.([]interface{})) < request["PageNumber"].(int) {
 			break
 		}
-		if page, e := getNextpageNumber(request.PageNumber); e != nil {
-			err = WrapErrorf(e, DefaultErrorMsg, keyPair, request.GetActionName(), AlibabaCloudSdkGoERROR)
-			return
-		} else {
-			request.PageNumber = page
-		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	return
 }
@@ -505,24 +505,17 @@ func (s *EcsService) DescribeKeyPair(id string) (keyPair ecs.KeyPair, err error)
 
 }
 
-func (s *EcsService) DescribeKeyPairAttachment(id string) (keyPair ecs.KeyPair, err error) {
+func (s *EcsService) DescribeEcsKeyPairAttachment(id string) (keyPair ecs.KeyPair, err error) {
 	index := strings.LastIndexByte(id, ':')
-	if index < 0 {
-		return keyPair, WrapError(fmt.Errorf("Invalid Resource Id %s.", id))
-	}
-	keyPairName := string(id[:index])
+	keyPairName := id[:index]
 	keyPair, err = s.DescribeKeyPair(keyPairName)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidKeyPair.NotFound"}) {
-			return keyPair, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
 		return keyPair, WrapError(err)
 	}
 	if keyPair.KeyPairName != keyPairName {
 		err = WrapErrorf(Error(GetNotFoundMessage("KeyPairAttachment", id)), NotFoundMsg, ProviderERROR)
 	}
-	return
-
+	return keyPair, nil
 }
 
 func (s *EcsService) DescribeDisk(id string) (disk ecs.Disk, err error) {
@@ -1925,4 +1918,42 @@ func (s *EcsService) EcsSnapshotStateRefreshFunc(id string, failStates []string)
 		}
 		return object, object["Status"].(string), nil
 	}
+}
+
+func (s *EcsService) DescribeEcsKeyPair(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeKeyPairs"
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"KeyPairName": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidKeyPair.NotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("EcsKeyPair", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.KeyPairs.KeyPair", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.KeyPairs.KeyPair", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["KeyPairName"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
