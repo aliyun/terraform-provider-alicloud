@@ -605,9 +605,9 @@ func (s *VpcService) needSweepVpc(vpcId, vswitchId string) (bool, error) {
 			}
 			return false, WrapError(err)
 		}
-		name := strings.ToLower(object.VpcName)
+		name := strings.ToLower(object["VpcName"].(string))
 		if strings.HasPrefix(name, "tf-testacc") || strings.HasPrefix(name, "tf_testacc") {
-			log.Printf("[DEBUG] Need to sweep the VPC (%s (%s)).", object.VpcId, object.VpcName)
+			log.Printf("[DEBUG] Need to sweep the VPC (%v (%v)).", object["VpcId"], object["VpcName"])
 			return true, nil
 		}
 	}
