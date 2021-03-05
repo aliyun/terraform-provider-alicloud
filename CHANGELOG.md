@@ -1,4 +1,23 @@
-## 1.117.0 (Unreleased)
+## 1.118.0 (Unreleased)
+## 1.117.0 (March 05, 2021)
+
+- **New Resource:** `alicloud_vpc_flow_log` ([#3290](https://github.com/aliyun/terraform-provider-alicloud/issues/3290))
+- **New Resource:** `alicloud_brain_industrial_pid_loop` ([#3252](https://github.com/aliyun/terraform-provider-alicloud/issues/3252))
+- **Data Source:** `alicloud_brain_industrial_pid_loops` ([#3252](https://github.com/aliyun/terraform-provider-alicloud/issues/3252))
+- **Data Source:** `alicloud_maxcompute_service` ([#3304](https://github.com/aliyun/terraform-provider-alicloud/issues/3304))
+- **Data Source:** `alicloud_cloud_storage_gateway_service` ([#3308](https://github.com/aliyun/terraform-provider-alicloud/issues/3308))
+- **Data Source:** `alicloud_ecs_auoto_snapshot_policies` ([#3309](https://github.com/aliyun/terraform-provider-alicloud/issues/3309))
+
+IMPROVEMENTS:
+
+- support load balancer spec ([#3305](https://github.com/aliyun/terraform-provider-alicloud/issues/3305))
+- fix ack_service type parameter ([#3307](https://github.com/aliyun/terraform-provider-alicloud/issues/3307))
+- resource/alicloud_brain_industrial_pid_project: fix name spelling mistake ([#3310](https://github.com/aliyun/terraform-provider-alicloud/issues/3310))
+- resource/alicloud_eip_association: supports importing feature ([#3312](https://github.com/aliyun/terraform-provider-alicloud/issues/3312))
+- product/quotas: rename ApplicationInfo to QuotaApplication. ([#3311](https://github.com/aliyun/terraform-provider-alicloud/issues/3311))
+- resource/image_copy: adding missing status when waiting for available ([#3314](https://github.com/aliyun/terraform-provider-alicloud/issues/3314))
+- resource alicloud_snapshot_policy renamed to alicloud_ecs_auto_snapshot_policy ([#3309](https://github.com/aliyun/terraform-provider-alicloud/issues/3309))
+
 ## 1.116.0 (February 27, 2021)
 
 - **New Resource:** `alicloud_ecs_hpc_cluster` ([#3303](https://github.com/aliyun/terraform-provider-alicloud/issues/3303))
