@@ -285,7 +285,7 @@ func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]in
 		addDebug(action, response, request)
 		return nil
 	})
-	if IsExpectedErrors(err, []string{"GroupMetricRuleNotExists", "ResourceNotFound"}) {
+	if IsExpectedErrors(err, []string{"GroupMetricRuleNotExists", "ResourceNotFound", "ResourceNotFoundError"}) {
 		err = WrapErrorf(Error(GetNotFoundMessage("CmsGroupMetricRule", id)), NotFoundMsg, ProviderERROR)
 		return object, err
 	}
