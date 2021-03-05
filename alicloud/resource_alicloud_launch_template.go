@@ -401,7 +401,7 @@ func resourceAliyunLaunchTemplateRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("internet_charge_type", latestVersion.LaunchTemplateData.InternetChargeType)
 	d.Set("internet_max_bandwidth_in", latestVersion.LaunchTemplateData.InternetMaxBandwidthIn)
 	d.Set("internet_max_bandwidth_out", latestVersion.LaunchTemplateData.InternetMaxBandwidthOut)
-	d.Set("io_optimized", latestVersion.LaunchTemplateData.IoOptimized)
+	d.Set("io_optimized", optimizedMap(latestVersion.LaunchTemplateData.IoOptimized))
 	d.Set("key_pair_name", latestVersion.LaunchTemplateData.KeyPairName)
 	d.Set("network_type", latestVersion.LaunchTemplateData.NetworkType)
 	d.Set("ram_role_name", latestVersion.LaunchTemplateData.RamRoleName)
@@ -627,4 +627,16 @@ func createLaunchTemplateVersion(d *schema.ResourceData, meta interface{}) error
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 
+}
+
+func optimizedMap(s string) string {
+	switch s {
+	case "true":
+		s = "optimized"
+	case "false":
+		s = "none"
+	case "":
+		s = "none"
+	}
+	return s
 }
