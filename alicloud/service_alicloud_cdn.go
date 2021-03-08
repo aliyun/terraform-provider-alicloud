@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -10,6 +11,25 @@ import (
 
 type CdnService struct {
 	client *connectivity.AliyunClient
+}
+
+func (c *CdnService) convertCdnSourcesToString(v []interface{}) (string, error) {
+	arrayMaps := make([]interface{}, len(v))
+	for i, vv := range v {
+		item := vv.(map[string]interface{})
+		arrayMaps[i] = map[string]interface{}{
+			"content":  item["content"],
+			"port":     item["port"],
+			"priority": formatInt(item["priority"]),
+			"type":     item["type"],
+			"weight":   formatInt(item["weight"]),
+		}
+	}
+	maps, err := json.Marshal(arrayMaps)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return string(maps), nil
 }
 
 func (c *CdnService) DescribeCdnDomainNew(id string) (*cdn.GetDomainDetailModel, error) {

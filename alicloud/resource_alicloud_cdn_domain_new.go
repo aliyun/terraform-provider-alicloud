@@ -42,7 +42,7 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 				ValidateFunc: validation.StringInSlice(cdn2.CdnTypes, false),
 			},
 			"sources": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -72,12 +72,14 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 							Optional: true,
 							Default:  10,
 							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-								if v, ok := d.GetOk("sources"); ok && len(v.([]interface{})) > 0 {
-									sources := make([]map[string]interface{}, 1)
-									byteSources, _ := json.Marshal(v)
+								if v, ok := d.GetOk("sources"); ok && len(v.(*schema.Set).List()) > 0 {
+									sources := make([]map[string]interface{}, len(v.(*schema.Set).List()))
+									byteSources, _ := json.Marshal(v.(*schema.Set).List())
 									json.Unmarshal(byteSources, &sources)
-									if sources[0]["type"].(string) == "ipaddr" && int(sources[0]["weight"].(float64)) != 10 {
-										return true
+									for _, source := range sources {
+										if source["type"].(string) == "ipaddr" && formatInt(source["weight"]) != 10 {
+											return true
+										}
 									}
 								}
 								return false
@@ -86,7 +88,6 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 						},
 					},
 				},
-				MaxItems: 1,
 			},
 			"certificate_config": {
 				Type:     schema.TypeList,
@@ -159,20 +160,11 @@ func resourceAlicloudCdnDomainCreateNew(d *schema.ResourceData, meta interface{}
 		request.Scope = v.(string)
 	}
 
-	if v, ok := d.GetOk("sources"); ok && len(v.([]interface{})) > 0 {
-		sources := make([]map[string]interface{}, 1)
-		byteSources, _ := json.Marshal(v)
-		err := json.Unmarshal(byteSources, &sources)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		sources[0]["weight"] = strconv.Itoa(int(sources[0]["weight"].(float64)))
-		sources[0]["priority"] = strconv.Itoa(int(sources[0]["priority"].(float64)))
-
-		byteSources, _ = json.Marshal(sources)
-		request.Sources = string(byteSources)
+	sources, err := cdnService.convertCdnSourcesToString(d.Get("sources").(*schema.Set).List())
+	if err != nil {
+		return WrapError(err)
 	}
+	request.Sources = sources
 
 	raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
 		return cdnClient.AddCdnDomain(request)
@@ -207,20 +199,11 @@ func resourceAlicloudCdnDomainUpdateNew(d *schema.ResourceData, meta interface{}
 		request.DomainName = d.Id()
 
 		if d.HasChange("sources") {
-			sources := make([]map[string]interface{}, 1)
-			v, _ := d.GetOk("sources")
-			byteSources, _ := json.Marshal(v)
-			err := json.Unmarshal(byteSources, &sources)
+			sources, err := cdnService.convertCdnSourcesToString(d.Get("sources").(*schema.Set).List())
 			if err != nil {
 				return WrapError(err)
 			}
-			priority := strconv.Itoa(int(sources[0]["priority"].(float64)))
-			weight := strconv.Itoa(int(sources[0]["weight"].(float64)))
-
-			sources[0]["priority"] = priority
-			sources[0]["weight"] = weight
-			byteSources, _ = json.Marshal(sources)
-			request.Sources = string(byteSources)
+			request.Sources = sources
 
 			raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
 				return cdnClient.ModifyCdnDomain(request)
@@ -267,17 +250,19 @@ func resourceAlicloudCdnDomainReadNew(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	if len(object.SourceModels.SourceModel) > 0 {
-		model := object.SourceModels.SourceModel[0]
-		priority, _ := strconv.Atoi(model.Priority)
-		weight, _ := strconv.Atoi(model.Weight)
-		sources := make([]map[string]interface{}, 1)
-		sources[0] = map[string]interface{}{
-			"content":  model.Content,
-			"type":     model.Type,
-			"port":     model.Port,
-			"priority": priority,
-			"weight":   weight,
+		sources := make([]map[string]interface{}, 0)
+		for _, model := range object.SourceModels.SourceModel {
+			priority, _ := strconv.Atoi(model.Priority)
+			weight, _ := strconv.Atoi(model.Weight)
+			sources = append(sources, map[string]interface{}{
+				"content":  model.Content,
+				"port":     model.Port,
+				"priority": priority,
+				"type":     model.Type,
+				"weight":   weight,
+			})
 		}
+
 		err := d.Set("sources", sources)
 		if err != nil {
 			return WrapError(err)

@@ -943,6 +943,8 @@ func formatInt(src interface{}) int {
 		return int(src.(int64))
 	case "int32":
 		return int(src.(int32))
+	case "int":
+		return src.(int)
 	case "string":
 		v, err := strconv.Atoi(src.(string))
 		if err != nil {
