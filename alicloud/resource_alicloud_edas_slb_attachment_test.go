@@ -131,6 +131,7 @@ func resourceEdasSLBAttachmentDependence(name string) string {
 
 		resource "alicloud_slb" "default" {
 		  name = "${var.name}"
+          specification = "slb.s1.small"
 		}
 		`, name)
 }

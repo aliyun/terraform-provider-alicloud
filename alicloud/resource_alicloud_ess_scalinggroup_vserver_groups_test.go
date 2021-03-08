@@ -126,6 +126,7 @@ func testAccEssScalingGroupVserverGroup(common string, rand int) string {
 	  count=2
 	  name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
+      specification = "slb.s1.small"
 	}
 
 	resource "alicloud_slb_server_group" "vserver0" {
@@ -187,6 +188,7 @@ func testAccEssScalingGroupVserverGroupUpdate(common string, rand int) string {
 	  count=2
 	  name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
+      specification = "slb.s1.small"
 	}
 
 	resource "alicloud_slb_server_group" "vserver0" {
