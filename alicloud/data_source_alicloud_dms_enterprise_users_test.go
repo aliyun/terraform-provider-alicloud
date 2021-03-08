@@ -23,10 +23,10 @@ func TestAccAlicloudDmsEnterpriseUsersDataSource(t *testing.T) {
 	}
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": []string{"${alicloud_dms_enterprise_user.default.user_name}"},
+			"name_regex": "${alicloud_dms_enterprise_user.default.user_name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"name_regex": []string{"${alicloud_dms_enterprise_user.default.user_name}-fake"},
+			"name_regex": "${alicloud_dms_enterprise_user.default.user_name}-fake",
 		}),
 	}
 	statusConf := dataSourceTestAccConfig{
@@ -94,7 +94,7 @@ func dataSourceDmsEnterpriseUsersConfigDependence(name string) string {
 		}
 		resource "alicloud_dms_enterprise_user" "default" {
 		  uid = alicloud_ram_user.user.id
-		  nick_name = "%[1]s"
+		  user_name = "%[1]s"
 		  mobile = "15910799999"
 		  role_names = ["DBA"]
 	}`, name)
