@@ -2,6 +2,7 @@ package ali_mns
 
 import (
 	"bytes"
+	"strconv"
 
 	"github.com/gogap/errors"
 	"github.com/valyala/fasthttp"
@@ -28,7 +29,7 @@ func send(client MNSClient, decoder MNSDecoder, method Method, headers map[strin
 			err, e2 = decoder.DecodeError(bodyBytes, resource)
 
 			if e2 != nil {
-				err = ERR_UNMARSHAL_ERROR_RESPONSE_FAILED.New(errors.Params{"err": e2, "resp":string(bodyBytes)})
+				err = ERR_UNMARSHAL_ERROR_RESPONSE_FAILED.New(errors.Params{"err": e2, "resp": string(bodyBytes)})
 				return
 			}
 			return
@@ -39,6 +40,14 @@ func send(client MNSClient, decoder MNSDecoder, method Method, headers map[strin
 			if e := decoder.Decode(buf, v); e != nil {
 				err = ERR_UNMARSHAL_RESPONSE_FAILED.New(errors.Params{"err": e})
 				return
+			}
+
+			if baseResponder, ok := v.(BaseResponder); ok {
+				baseResponder.SetBaseResponse(BaseResponse{
+					RequestId: string(resp.Header.Peek("x-mns-request-id")),
+					Code:      strconv.Itoa(resp.StatusCode()),
+					HostId:    resp.RemoteAddr().String(),
+				})
 			}
 		}
 	}

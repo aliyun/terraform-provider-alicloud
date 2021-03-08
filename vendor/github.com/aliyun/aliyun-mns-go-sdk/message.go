@@ -19,12 +19,26 @@ const (
 	SIMPLIFIED NotifyContentFormatType = "SIMPLIFIED"
 )
 
+type BaseResponder interface {
+	SetBaseResponse(baseData BaseResponse)
+}
+
+type BaseResponse struct {
+	Code      string `xml:"Code,omitempty" json:"code,omitempty"`
+	RequestId string `xml:"RequestId,omitempty" json:"request_id,omitempty"`
+	HostId    string `xml:"HostId,omitempty" json:"host_id,omitempty"`
+}
+
+func (this *BaseResponse) SetBaseResponse(data BaseResponse) {
+	this.RequestId = data.RequestId
+	this.Code = data.Code
+	this.HostId = data.HostId
+}
+
 type MessageResponse struct {
-	XMLName   xml.Name `xml:"Message" json:"-"`
-	Code      string   `xml:"Code,omitempty" json:"code,omitempty"`
-	Message   string   `xml:"Message,omitempty" json:"message,omitempty"`
-	RequestId string   `xml:"RequestId,omitempty" json:"request_id,omitempty"`
-	HostId    string   `xml:"HostId,omitempty" json:"host_id,omitempty"`
+	BaseResponse
+	XMLName xml.Name `xml:"Message" json:"-"`
+	Message string   `xml:"Message,omitempty" json:"message,omitempty"`
 }
 
 type ErrorResponse struct {
@@ -132,6 +146,7 @@ type BatchMessageSendEntry struct {
 }
 
 type BatchMessageSendResponse struct {
+	BaseResponse
 	XMLName  xml.Name                `xml:"Messages" json:"-"`
 	Messages []BatchMessageSendEntry `xml:"Message" json:"messages"`
 }
@@ -177,11 +192,13 @@ type MessageReceiveResponse struct {
 }
 
 type BatchMessageReceiveResponse struct {
+	BaseResponse
 	XMLName  xml.Name                 `xml:"Messages" json:"-"`
 	Messages []MessageReceiveResponse `xml:"Message" json:"messages"`
 }
 
 type MessageVisibilityChangeResponse struct {
+	BaseResponse
 	XMLName         xml.Name `xml:"ChangeVisibility" json:"-"`
 	ReceiptHandle   string   `xml:"ReceiptHandle" json:"receipt_handle"`
 	NextVisibleTime int64    `xml:"NextVisibleTime" json:"next_visible_time"`
@@ -190,7 +207,7 @@ type MessageVisibilityChangeResponse struct {
 type QueueAttribute struct {
 	XMLName                xml.Name `xml:"Queue" json:"-"`
 	QueueName              string   `xml:"QueueName,omitempty" json:"queue_name,omitempty"`
-	DelaySeconds           int32    `xml:"DelaySenconds,omitempty" json:"delay_senconds,omitempty"`
+	DelaySeconds           int32    `xml:"DelaySeconds,omitempty" json:"delay_seconds,omitempty"`
 	MaxMessageSize         int32    `xml:"MaximumMessageSize,omitempty" json:"maximum_message_size,omitempty"`
 	MessageRetentionPeriod int32    `xml:"MessageRetentionPeriod,omitempty" json:"message_retention_period,omitempty"`
 	VisibilityTimeout      int32    `xml:"VisibilityTimeout,omitempty" json:"visibility_timeout,omitempty"`
