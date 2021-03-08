@@ -32,6 +32,7 @@ const (
 )
 
 const (
+	ClientName           = "mns-go-sdk/1.0.2(fasthttp)"
 	DefaultTimeout int64 = 35
 )
 
@@ -74,28 +75,53 @@ type aliMNSClient struct {
 	clientLocker sync.Mutex
 }
 
+type AliMNSClientConfig struct {
+	EndPoint        string
+	AccessKeyId     string
+	AccessKeySecret string
+	Token           string
+	TimeoutSecond   int64
+}
+
 func NewAliMNSClient(inputUrl, accessKeyId, accessKeySecret string) MNSClient {
-	return NewAliMNSClientWithToken(inputUrl, accessKeyId, accessKeySecret, "")
+	return NewAliMNSClientWithConfig(AliMNSClientConfig{
+		EndPoint:        inputUrl,
+		AccessKeyId:     accessKeyId,
+		AccessKeySecret: accessKeySecret,
+		Token:           "",
+		TimeoutSecond:   DefaultTimeout,
+	})
 }
 
 func NewAliMNSClientWithToken(inputUrl, accessKeyId, accessKeySecret, token string) MNSClient {
-	if inputUrl == "" {
+	return NewAliMNSClientWithConfig(AliMNSClientConfig{
+		EndPoint:        inputUrl,
+		AccessKeyId:     accessKeyId,
+		AccessKeySecret: accessKeySecret,
+		Token:           token,
+		TimeoutSecond:   DefaultTimeout,
+	})
+}
+
+func NewAliMNSClientWithConfig(clientConfig AliMNSClientConfig) MNSClient {
+	if clientConfig.EndPoint == "" {
 		panic("ali-mns: message queue url is empty")
 	}
 
-	credential := NewAliMNSCredential(accessKeySecret, token)
+	credential := NewAliMNSCredential(clientConfig.AccessKeySecret, clientConfig.Token)
 
 	cli := new(aliMNSClient)
 	cli.credential = credential
-	cli.accessKeyId = accessKeyId
+	cli.accessKeyId = clientConfig.AccessKeyId
+	cli.Timeout = clientConfig.TimeoutSecond
 
 	var err error
-	if cli.url, err = neturl.Parse(inputUrl); err != nil {
+	if cli.url, err = neturl.Parse(clientConfig.EndPoint); err != nil {
 		panic("err parse url")
 	}
 
 	// 1. parse region and accountid
-	pieces := strings.Split(inputUrl, ".")
+	pieces := strings.Split(clientConfig.EndPoint, ".")
 	if len(pieces) != 5 {
 		panic("ali-mns: message queue url is invalid")
 	}
@@ -112,6 +138,8 @@ func NewAliMNSClientWithToken(inputUrl, accessKeyId, accessKeySecret, token stri
 
 	// 2. now init http client
 	cli.initFastHttpClient()
+	//change to dial dual stack to support both ipv4 and ipv6
+	cli.client.DialDualStack = true
 
 	return cli
 }
@@ -144,7 +172,7 @@ func (p *aliMNSClient) initFastHttpClient() {
 
 	timeout := time.Second * time.Duration(timeoutInt)
 
-	p.client = &fasthttp.Client{ReadTimeout: timeout, WriteTimeout: timeout}
+	p.client = &fasthttp.Client{ReadTimeout: timeout, WriteTimeout: timeout, Name: ClientName}
 }
 
 func (p *aliMNSClient) proxy(req *http.Request) (*neturl.URL, error) {

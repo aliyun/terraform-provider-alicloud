@@ -57,7 +57,7 @@ func dataSourceAlicloudDcdnServiceRead(d *schema.ResourceData, meta interface{})
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ORDER.OPEND"}) {
+		if IsExpectedErrors(err, []string{"DcdnService.HasOpened", "ORDER.OPEND"}) {
 			d.SetId("DcdnServiceHasBeenOpened")
 			d.Set("status", "Opened")
 			return nil
