@@ -894,6 +894,7 @@ func testAccEssScalingGroupSlb(common string, rand int) string {
 	  count=2
 	  name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
+      specification = "slb.s1.small"
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -929,6 +930,7 @@ func testAccEssScalingGroupSlbDetach(common string, rand int) string {
 	  count=2
 	  name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
+      specification = "slb.s1.small"
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -981,6 +983,7 @@ func testAccEssScalingGroupSlbUpdateMaxSize(common string, rand int) string {
 	  count=2
 	  name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
+      specification = "slb.s1.small"
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -1016,6 +1019,7 @@ func testAccEssScalingGroupSlbUpdateScalingGroupName(common string, rand int) st
 	  count=2
 	  name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
+      specification = "slb.s1.small"
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -1051,6 +1055,7 @@ func testAccEssScalingGroupSlbUpdateRemovalPolicies(common string, rand int) str
 	  count=2
 	  name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
+      specification = "slb.s1.small"
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -1087,6 +1092,7 @@ func testAccEssScalingGroupSlbUpdateDefaultCooldown(common string, rand int) str
 	  count=2
 	  name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
+      specification = "slb.s1.small"
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -1123,6 +1129,7 @@ func testAccEssScalingGroupSlbUpdateMinSize(common string, rand int) string {
 	  count=2
 	  name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
+      specification = "slb.s1.small"
 	}
 
 	resource "alicloud_slb_listener" "default" {
