@@ -43,6 +43,7 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 	}
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
+	request["RegionId"] = client.RegionId
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -72,6 +73,7 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 			action = "DeleteAutoSnapshotPolicy"
 			request := map[string]interface{}{
 				"autoSnapshotPolicyId": item["AutoSnapshotPolicyId"],
+				"regionId":             client.RegionId,
 			}
 			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
