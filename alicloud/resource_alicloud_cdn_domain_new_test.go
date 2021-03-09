@@ -132,7 +132,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"scope":             "domestic",
 						"resource_group_id": CHECKSET,
-						"sources.0.content": CHECKSET,
+						"sources.#":         "1",
 					}),
 				),
 			},
@@ -157,8 +157,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sources.0.weight":  "30",
-						"sources.0.content": CHECKSET,
+						"sources.#": "1",
 					}),
 				),
 			},
@@ -177,7 +176,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sources.0.type": "domain",
+						"sources.#": "1",
 					}),
 				),
 			},
@@ -194,9 +193,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sources.0.weight":  "10",
-						"sources.0.content": "1.1.1.1",
-						"sources.0.type":    "ipaddr",
+						"sources.#": "1",
 					}),
 				),
 			},
@@ -205,18 +202,24 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"sources": []map[string]interface{}{
 						{
+							"content":  "www.aliyuntest.com",
+							"type":     "domain",
+							"priority": "20",
+							"port":     "80",
+							"weight":   "30",
+						},
+						{
 							"content":  "1.1.1.1",
 							"type":     "ipaddr",
 							"priority": "40",
 							"port":     "80",
-							"weight":   "20",
+							"weight":   "10",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sources.0.priority": "40",
-						"sources.0.weight":   "10",
+						"sources.#": "2",
 					}),
 				),
 			},
@@ -353,16 +356,27 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 							"content": "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
 							"type":    "oss",
 						},
+						{
+							"content":  "www.aliyuntest.com",
+							"type":     "domain",
+							"priority": "20",
+							"port":     "80",
+							"weight":   "30",
+						},
+						{
+							"content":  "1.1.1.1",
+							"type":     "ipaddr",
+							"priority": "40",
+							"port":     "80",
+							"weight":   "10",
+						},
 					},
 					"tags": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"scope":              REMOVEKEY,
-						"sources.0.content":  CHECKSET,
-						"sources.0.type":     "oss",
-						"sources.0.priority": "20",
-						"sources.0.weight":   "10",
+						"scope":     REMOVEKEY,
+						"sources.#": "3",
 
 						"certificate_config.0.server_certificate_status": REMOVEKEY,
 						"certificate_config.0.force_set":                 REMOVEKEY,
@@ -421,8 +435,8 @@ func TestAccAlicloudCdnDomainNew_scope(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"scope":             "overseas",
-						"sources.0.content": CHECKSET,
+						"scope":     "overseas",
+						"sources.#": "1",
 					}),
 				),
 			},
@@ -445,8 +459,7 @@ func TestAccAlicloudCdnDomainNew_scope(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sources.0.weight":  "30",
-						"sources.0.content": CHECKSET,
+						"sources.#": "1",
 					}),
 				),
 			},
@@ -462,14 +475,9 @@ func resourceCdnDomainDependence(name string) string {
 }
 
 var cdnDomainBasicMap = map[string]string{
-	"domain_name":        CHECKSET,
-	"scope":              CHECKSET,
-	"cdn_type":           "web",
-	"sources.0.content":  "www.aliyuntest.com",
-	"sources.0.type":     "oss",
-	"sources.0.priority": "20",
-	"sources.0.weight":   "10",
-	"sources.0.port":     "80",
+	"domain_name": CHECKSET,
+	"scope":       CHECKSET,
+	"cdn_type":    "web",
 }
 
 const testServerCertificate = `-----BEGIN CERTIFICATE-----\nMIICQTCCAaoCCQCFfdyqahygLzANBgkqhkiG9w0BAQUFADBlMQswCQYDVQQGEwJj\nbjEQMA4GA1UECAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzERMA8GA1UECgwI\nYWxpY2xvdWQxEDAOBgNVBAsMB2FsaWJhYmExDTALBgNVBAMMBHRlc3QwHhcNMjAw\nODA2MTAwMDAyWhcNMzAwODA0MTAwMDAyWjBlMQswCQYDVQQGEwJjbjEQMA4GA1UE\nCAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzERMA8GA1UECgwIYWxpY2xvdWQx\nEDAOBgNVBAsMB2FsaWJhYmExDTALBgNVBAMMBHRlc3QwgZ8wDQYJKoZIhvcNAQEB\nBQADgY0AMIGJAoGBAL7t2CmRCJ8irM5Too2QVGNm0xk6g3v+KE1/8Gthw+EtBKRw\n859SxM/+q8fS73rkadgWICgre5YZCj1oIG6hrBEUo0Fr1mklXJVtqYFZMFD8XGx+\niur2Mk1Hs5YDd/G8PGDDISS/SqyeHXNo6SPJSXEVjAOIXFnX9EcCP9IAEK5tAgMB\nAAEwDQYJKoZIhvcNAQEFBQADgYEAavYdM9s5jLFP9/ZPCrsRuRsjSJpe5y9VZL+1\n+Ebbw16V0xMYaqODyFH1meLRW/A4xUs15Ny2vLYOW15Mriif7Sixty3HUedBFa4l\ny6/gQ+mBEeZYzMaTTFgyzEZDMsfZxwV9GKfhOzAmK3jZ2LDpHIhnlJN4WwVf0lME\npCPDN7g=\n-----END CERTIFICATE-----\n`
