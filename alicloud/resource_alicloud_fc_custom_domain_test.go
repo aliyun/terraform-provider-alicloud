@@ -17,9 +17,6 @@ func init() {
 	resource.AddTestSweepers("alicloud_fc_custom_domain", &resource.Sweeper{
 		Name: "alicloud_fc_custom_domain",
 		F:    testSweepFCCustomDomain,
-		Dependencies: []string{
-			"alicloud_fc_custom_domain",
-		},
 	})
 }
 

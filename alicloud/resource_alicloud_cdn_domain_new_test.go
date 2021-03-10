@@ -470,7 +470,7 @@ func TestAccAlicloudCdnDomainNew_scope(t *testing.T) {
 func resourceCdnDomainDependence(name string) string {
 	return fmt.Sprintf(`
 	resource "alicloud_oss_bucket" "default" {
-	  bucket = "test-cdn-%s"
+	  bucket = "tf-testacc-cdn-%s"
 	}`, name)
 }
 

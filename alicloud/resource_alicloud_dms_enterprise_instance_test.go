@@ -88,6 +88,7 @@ func testSweepDMSEnterpriseInstances(region string) error {
 			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete DMS Enterprise Instance (%s (%s)): %s", item["InstanceAlias"].(string), id, err)
+				continue
 			}
 			if sweeped {
 				// Waiting 30 seconds to ensure these DMS Enterprise Instance have been deleted.

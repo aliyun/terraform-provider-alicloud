@@ -2228,7 +2228,7 @@ func resourceCdnDomainConfigDependence_oss(name string) string {
 	}
 
 	resource "alicloud_oss_bucket" "default" {
-	  bucket = "tf-test-domain-config-%s"
+	  bucket = "tf-testacc-domain-config-%s"
 	}
 `, name, name)
 }

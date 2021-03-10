@@ -42,7 +42,7 @@ func init() {
 			"alicloud_yundun_bastionhost_instance",
 			"alicloud_yundun_dbaudit_instance",
 			"alicloud_emr_cluster",
-			"polardb_cluster",
+			"alicloud_polardb_cluster",
 			"alicloud_hbase_instance",
 			"alicloud_cassandra_cluster",
 		},
