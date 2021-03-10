@@ -39,6 +39,7 @@ func testSweepResourceManagerPolicyAttachment(region string) error {
 
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
+	request["PolicyType"] = "Custom"
 	var response map[string]interface{}
 	conn, err := client.NewResourcemanagerClient()
 	if err != nil {

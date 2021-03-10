@@ -36,7 +36,7 @@ func testSweepKeyPairs(region string) error {
 		"tf_test_",
 		"tf-test-",
 		"testAcc",
-		"terraform-test-",
+		"terraform-",
 	}
 
 	var pairs []ecs.KeyPair

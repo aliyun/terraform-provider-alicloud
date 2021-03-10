@@ -33,6 +33,7 @@ func testSweepSnapshots(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		"SnapshotForImage-stemcell-bosh-alicloud-kvm-ubuntu",
 	}
 
 	var snapshots []ecs.Snapshot
