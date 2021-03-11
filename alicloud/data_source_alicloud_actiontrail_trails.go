@@ -64,8 +64,8 @@ func dataSourceAlicloudActiontrailTrails() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"mns_topic_arn": {
-							Type:     schema.TypeString,
+						"is_organization_trail": {
+							Type:     schema.TypeBool,
 							Computed: true,
 						},
 						"oss_bucket_name": {
@@ -76,7 +76,7 @@ func dataSourceAlicloudActiontrailTrails() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"role_name": {
+						"oss_write_role_arn": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -116,8 +116,8 @@ func dataSourceAlicloudActiontrailTrails() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"mns_topic_arn": {
-							Type:     schema.TypeString,
+						"is_organization_trail": {
+							Type:     schema.TypeBool,
 							Computed: true,
 						},
 						"oss_bucket_name": {
@@ -128,7 +128,7 @@ func dataSourceAlicloudActiontrailTrails() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"role_name": {
+						"oss_write_role_arn": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -202,7 +202,7 @@ func dataSourceAlicloudActiontrailTrailsRead(d *schema.ResourceData, meta interf
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-04"), StringPointer("AK"), nil, request, &runtime)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_actiontrail_trails", action, AlibabaCloudSdkGoERROR)
 	}
@@ -235,17 +235,17 @@ func dataSourceAlicloudActiontrailTrailsRead(d *schema.ResourceData, meta interf
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"event_rw":           object["EventRW"],
-			"mns_topic_arn":      object["MnsTopicArn"],
-			"oss_bucket_name":    object["OssBucketName"],
-			"oss_key_prefix":     object["OssKeyPrefix"],
-			"role_name":          object["RoleName"],
-			"sls_project_arn":    object["SlsProjectArn"],
-			"sls_write_role_arn": object["SlsWriteRoleArn"],
-			"status":             object["Status"],
-			"id":                 fmt.Sprint(object["Name"]),
-			"trail_name":         fmt.Sprint(object["Name"]),
-			"trail_region":       object["TrailRegion"],
+			"event_rw":              object["EventRW"],
+			"is_organization_trail": object["IsOrganizationTrail"],
+			"oss_bucket_name":       object["OssBucketName"],
+			"oss_key_prefix":        object["OssKeyPrefix"],
+			"oss_write_role_arn":    object["OssWriteRoleArn"],
+			"sls_project_arn":       object["SlsProjectArn"],
+			"sls_write_role_arn":    object["SlsWriteRoleArn"],
+			"status":                object["Status"],
+			"id":                    fmt.Sprint(object["Name"]),
+			"trail_name":            fmt.Sprint(object["Name"]),
+			"trail_region":          object["TrailRegion"],
 		}
 		ids = append(ids, fmt.Sprint(object["Name"]))
 		names = append(names, object["Name"])
