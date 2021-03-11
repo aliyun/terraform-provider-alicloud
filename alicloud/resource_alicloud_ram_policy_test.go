@@ -314,7 +314,7 @@ func testAccRamPolicyStatementConfig(rand int) string {
 				"oss:ListObjects",
 				"oss:ListObjects"
 			  ],
-			  "Effect": "Deny",
+			  "Effect": "Allow",
 			  "Resource": [
 				"acs:oss:*:*:mybucket",
 				"acs:oss:*:*:mybucket/*"

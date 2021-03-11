@@ -387,6 +387,40 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 				}
 			}
 		}
+
+		listVersionsRequest := map[string]interface{}{
+			"PolicyName": d.Id(),
+			"PolicyType": "Custom",
+		}
+		listVersionsAction := "ListPolicyVersions"
+		response, err = conn.DoRequest(StringPointer(listVersionsAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, listVersionsRequest, &util.RuntimeOptions{})
+		versionsResp, err := jsonpath.Get("$.PolicyVersions.PolicyVersion", response)
+
+		// More than one means there are other versions besides the default version
+		if len(versionsResp.([]interface{})) > 1 {
+			for _, v := range versionsResp.([]interface{}) {
+				if !v.(map[string]interface{})["IsDefaultVersion"].(bool) {
+					versionAction := "DeletePolicyVersion"
+					versionRequest := map[string]interface{}{
+						"PolicyName": d.Id(),
+						"VersionId":  v.(map[string]interface{})["VersionId"],
+					}
+					wait := incrementalWait(3*time.Second, 3*time.Second)
+					err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+						response, err = conn.DoRequest(StringPointer(versionAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, versionRequest, &util.RuntimeOptions{})
+						if err != nil {
+							if NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						addDebug(versionAction, response, versionRequest)
+						return nil
+					})
+				}
+			}
+		}
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)

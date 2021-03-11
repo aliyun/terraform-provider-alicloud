@@ -15,6 +15,8 @@ Provides a RAM Policy resource.
 
 -> **NOTE:** Each policy can own at most 5 versions and the oldest version will be removed after its version achieves 5.
 
+-> **NOTE:** If the policy has multiple versions, all non-default versions will be deleted first when deleting policy.
+
 ## Example Usage
 
 ```terraform
