@@ -18,11 +18,11 @@ Provides a ActionTrail Trail resource. For information about alicloud actiontrai
 ```terraform
 # Create a new actiontrail trail.
 resource "alicloud_actiontrail_trail" "default" {
-  trail_name      = "action-trail"
-  role_name       = "aliyunserviceroleforactiontrail"
-  oss_bucket_name = "bucket_name"
-  event_rw        = "All"
-  trail_region    = "cn-hangzhou"
+  trail_name               = "action-trail"
+  oss_write_role_arn       = "acs:ram::1182725xxxxxxxxxxx"
+  oss_bucket_name          = "bucket_name"
+  event_rw                 = "All"
+  trail_region             = "cn-hangzhou"
 }
 ```
 
@@ -34,13 +34,14 @@ The following arguments are supported:
 * `name` - (Optional, ForceNew) Field `name` has been deprecated from version 1.95.0. Use `trail_name` instead. 
 * `event_rw` - (Optional) Indicates whether the event is a read or a write event. Valid values: `Read`, `Write`, and `All`. Default to `Write`.
 * `oss_bucket_name` - (Optional) The OSS bucket to which the trail delivers logs. Ensure that this is an existing OSS bucket.
-* `role_name` - (Optional) The RAM role in ActionTrail permitted by the user.
+* `role_name` - (Optional) Field `name` has been deprecated from version 1.118.0.
 * `oss_key_prefix` - (Optional) The prefix of the specified OSS bucket name. This parameter can be left empty.
 * `sls_project_arn` - (Optional) The unique ARN of the Log Service project.
 * `sls_write_role_arn` - (Optional) The unique ARN of the Log Service role.
 * `trail_region` - (Optional) The regions to which the trail is applied. Valid values: `cn-beijing`, `cn-hangzhou`, and `All`. Default to `All`.
-* `mns_topic_arn` - (Optional) The ARN of the Message Service (MNS) topic to which ActionTrail sends messages. If the ARN is specified, a message is generated and delivered to the MNS topic whenever an event is delivered to OSS.
+* `mns_topic_arn` - (Optional) Field `mns_topic_arn` has been deprecated from version 1.118.0.
 * `status` - (Optional) The status of ActionTrail Trail. After creation, tracking is turned on by default, and you can set the status value to `Disable` to turn off tracking. Valid values: `Enable`, `Disable`. Default to `Enable`.
+* `oss_write_role_arn` - (Optional) The unique ARN of the Oss role.
 
 -> **NOTE:** `sls_project_arn` and `sls_write_role_arn` should be set or not set at the same time when actiontrail delivers logs.
 

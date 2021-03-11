@@ -48,7 +48,7 @@ func testSweepActiontrailTrail(region string) error {
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-04"), StringPointer("AK"), nil, request, &runtime)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_actiontrail_trails", action, AlibabaCloudSdkGoERROR)
 	}
@@ -75,7 +75,7 @@ func testSweepActiontrailTrail(region string) error {
 		request := map[string]interface{}{
 			"Name": item["Name"],
 		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-04"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete ActionTrail Trail (%s): %s", item["Name"].(string), err)
 		}
@@ -111,17 +111,17 @@ func TestAccAlicloudActiontrailTrail_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"trail_name":      name,
-					"role_name":       "aliyunactiontraildefaultrole",
-					"oss_bucket_name": "${alicloud_oss_bucket.default.id}",
-					"status":          "Disable",
+					"trail_name":         name,
+					"oss_write_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"oss_bucket_name":    "${alicloud_oss_bucket.default.id}",
+					"status":             "Disable",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"trail_name":      name,
-						"role_name":       "aliyunactiontraildefaultrole",
-						"oss_bucket_name": name,
-						"status":          "Disable",
+						"trail_name":         name,
+						"oss_write_role_arn": CHECKSET,
+						"oss_bucket_name":    name,
+						"status":             "Disable",
 					}),
 				),
 			},
@@ -132,11 +132,11 @@ func TestAccAlicloudActiontrailTrail_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"role_name": "aliyunserviceroleforactiontrail",
+					"oss_write_role_arn": "${data.alicloud_ram_roles.update.roles.0.arn}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"role_name": "aliyunserviceroleforactiontrail",
+						"oss_write_role_arn": CHECKSET,
 					}),
 				),
 			},
@@ -172,17 +172,17 @@ func TestAccAlicloudActiontrailTrail_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"oss_bucket_name": "${alicloud_oss_bucket.default.id}",
-					"role_name":       "aliyunactiontraildefaultrole",
-					"trail_region":    "All",
-					"event_rw":        "Write",
+					"oss_bucket_name":    "${alicloud_oss_bucket.default.id}",
+					"oss_write_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"trail_region":       "All",
+					"event_rw":           "Write",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"oss_bucket_name": name,
-						"role_name":       "aliyunactiontraildefaultrole",
-						"trail_region":    "All",
-						"event_rw":        "Write",
+						"oss_bucket_name":    name,
+						"oss_write_role_arn": CHECKSET,
+						"trail_region":       "All",
+						"event_rw":           "Write",
 					}),
 				),
 			},
@@ -206,5 +206,12 @@ func ActiontrailTrailBasicdependence(name string) string {
 		bucket  = "${var.name}-update"
 	}
 
+	data "alicloud_ram_roles" "default" {
+		name_regex = "AliyunActionTrailDefaultRole"
+	}
+
+	data "alicloud_ram_roles" "update" {
+		name_regex = "AliyunServiceRoleForActionTrail"
+	}
 `, name)
 }

@@ -38,8 +38,9 @@ func resourceAlicloudActiontrailTrail() *schema.Resource {
 				ForceNew: true,
 			},
 			"mns_topic_arn": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'mns_topic_arn' has been deprecated from version 1.118.0",
 			},
 			"oss_bucket_name": {
 				Type:     schema.TypeString,
@@ -50,9 +51,14 @@ func resourceAlicloudActiontrailTrail() *schema.Resource {
 				Optional: true,
 			},
 			"role_name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'role_name' has been deprecated from version 1.118.0",
+			},
+			"oss_write_role_arn": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 			"sls_project_arn": {
 				Type:     schema.TypeString,
@@ -111,10 +117,6 @@ func resourceAlicloudActiontrailTrailCreate(d *schema.ResourceData, meta interfa
 		request["IsOrganizationTrail"] = v
 	}
 
-	if v, ok := d.GetOk("mns_topic_arn"); ok {
-		request["MnsTopicArn"] = v
-	}
-
 	if v, ok := d.GetOk("oss_bucket_name"); ok {
 		request["OssBucketName"] = v
 	}
@@ -123,8 +125,8 @@ func resourceAlicloudActiontrailTrailCreate(d *schema.ResourceData, meta interfa
 		request["OssKeyPrefix"] = v
 	}
 
-	if v, ok := d.GetOk("role_name"); ok {
-		request["RoleName"] = v
+	if v, ok := d.GetOk("oss_write_role_arn"); ok {
+		request["OssWriteRoleArn"] = v
 	}
 
 	if v, ok := d.GetOk("sls_project_arn"); ok {
@@ -149,7 +151,7 @@ func resourceAlicloudActiontrailTrailCreate(d *schema.ResourceData, meta interfa
 
 	wait := incrementalWait(3*time.Second, 10*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-04"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 				wait()
@@ -188,10 +190,10 @@ func resourceAlicloudActiontrailTrailRead(d *schema.ResourceData, meta interface
 	d.Set("trail_name", d.Id())
 	d.Set("name", d.Id())
 	d.Set("event_rw", object["EventRW"])
-	d.Set("mns_topic_arn", object["MnsTopicArn"])
+	d.Set("is_organization_trail", object["IsOrganizationTrail"])
 	d.Set("oss_bucket_name", object["OssBucketName"])
 	d.Set("oss_key_prefix", object["OssKeyPrefix"])
-	d.Set("role_name", object["RoleName"])
+	d.Set("oss_write_role_arn", object["OssWriteRoleArn"])
 	d.Set("sls_project_arn", object["SlsProjectArn"])
 	d.Set("sls_write_role_arn", object["SlsWriteRoleArn"])
 	d.Set("status", object["Status"])
@@ -212,10 +214,6 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 		update = true
 		request["EventRW"] = d.Get("event_rw")
 	}
-	if !d.IsNewResource() && d.HasChange("mns_topic_arn") {
-		update = true
-		request["MnsTopicArn"] = d.Get("mns_topic_arn")
-	}
 	if !d.IsNewResource() && d.HasChange("oss_bucket_name") {
 		update = true
 		request["OssBucketName"] = d.Get("oss_bucket_name")
@@ -224,11 +222,11 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 		update = true
 		request["OssKeyPrefix"] = d.Get("oss_key_prefix")
 	}
-	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("role_name") {
+	if !d.IsNewResource() && d.HasChange("oss_write_role_arn") {
 		update = true
-		request["RoleName"] = d.Get("role_name")
+		request["OssWriteRoleArn"] = d.Get("oss_write_role_arn")
 	}
+	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("sls_project_arn") {
 		update = true
 		request["SlsProjectArn"] = d.Get("sls_project_arn")
@@ -260,7 +258,7 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-04"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 					wait()
@@ -275,10 +273,9 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("event_rw")
-		d.SetPartial("mns_topic_arn")
 		d.SetPartial("oss_bucket_name")
 		d.SetPartial("oss_key_prefix")
-		d.SetPartial("role_name")
+		d.SetPartial("oss_write_role_arn")
 		d.SetPartial("sls_project_arn")
 		d.SetPartial("sls_write_role_arn")
 		d.SetPartial("trail_region")
@@ -301,7 +298,7 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2017-12-04"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-07-06"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 							wait()
@@ -331,7 +328,7 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2017-12-04"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 					if err != nil {
 						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 							wait()
@@ -370,7 +367,7 @@ func resourceAlicloudActiontrailTrailDelete(d *schema.ResourceData, meta interfa
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-04"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
