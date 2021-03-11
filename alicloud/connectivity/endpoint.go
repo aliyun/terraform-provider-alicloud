@@ -268,4 +268,5 @@ const (
 	OpenCrService                  = "cr.cn-hangzhou.aliyuncs.com"
 	OpenMaxcomputeService          = "maxcompute.aliyuncs.com"
 	OpenCloudStorageGatewayService = "sgw.cn-shanghai.aliyuncs.com"
+	DataWorksService               = "dataworks.aliyuncs.com"
 )
