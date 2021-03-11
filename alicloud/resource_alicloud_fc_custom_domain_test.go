@@ -165,6 +165,9 @@ func testSweepFCCustomDomain(region string) error {
 			return fmt.Errorf("Error retrieving FC custom domains: %s", err)
 		}
 		response := raw.(*fc.ListCustomDomainsOutput)
+		if response == nil {
+			return nil
+		}
 		nextToken = *response.NextToken
 		for _, domain := range response.CustomDomains {
 			log.Printf("[INFO] Deleting FC custom domain: %s", *domain.DomainName)

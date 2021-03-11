@@ -538,7 +538,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 09
+        resource: 09Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1156,7 +1156,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 13
+        resource: 13Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1273,7 +1273,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 0330
+        resource: 0330Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1338,7 +1338,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 0830
+        resource: 0830Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1364,7 +1364,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 1030
+        resource: 1030Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1622,21 +1622,21 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 0830
-    type: time
-    source:
-      start: 08:30 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 0830
+#    type: time
+#    source:
+#      start: 08:30 AM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
-  - name: 09
-    type: time
-    source:
-      start: 09:00 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 09
+#    type: time
+#    source:
+#      start: 09:00 AM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
   - name: 0930
     type: time
@@ -1654,13 +1654,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 1030
-    type: time
-    source:
-      start: 10:30 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 1030
+#    type: time
+#    source:
+#      start: 10:30 AM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
   - name: 11
     type: time
@@ -1903,6 +1903,14 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
+  - name: 0330Thu
+    type: time
+    source:
+      start: 03:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
   - name: 0430Thu
     type: time
     source:
@@ -2003,10 +2011,18 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
+  - name: 13Thu
+    type: time
+    source:
+      start: 01:00 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
   - name: 1330Thu
     type: time
     source:
-      start: 12:30 AM
+      start: 101:30 PM
       stop: 10:50 PM
       days: [Thursday]
       location: {{time_location}}
