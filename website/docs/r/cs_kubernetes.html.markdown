@@ -362,6 +362,23 @@ variable "cluster_addons" {
     }
   ]
 }
+
+# Prometheus, Optional. Default is install.
+variable "cluster_addons" {
+  type = list(object({
+      name      = string
+      config    = string
+      disabled  = bool
+  }))
+
+  default = [
+    {
+      "name"     = "arms-prometheus",
+      "config"   = "",
+      "disabled": true,
+    }
+  ]
+}
 ```
 
 ### Computed params (No need to configure)
