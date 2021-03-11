@@ -1604,8 +1604,8 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	}
 
 	// Cluster maintenance window. Effective only in the professional managed cluster
-	if v := d.Get("maintenance_window").([]interface{}); len(v) > 0 {
-		creationArgs.MaintenanceWindow = expandMaintenanceWindowConfig(v)
+	if v, ok := d.GetOk("maintenance_window"); ok {
+		creationArgs.MaintenanceWindow = expandMaintenanceWindowConfig(v.([]interface{}))
 	}
 
 	return creationArgs, nil

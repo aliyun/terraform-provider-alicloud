@@ -182,6 +182,8 @@ The following arguments are supported:
   * key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot be a null string.
   * value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be a null string.
 * `labels` - (Optional) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument.
+  * key: The label key.
+  * value: The label value.
 * `taints` - (Optional) A List of Kubernetes taints to assign to the nodes.
 * `management` - (Optional, Available in 1.109.1+) Managed node pool configuration. When using a managed node pool, the node key must use `key_name`. Detailed below.
 * `scaling_config` - (Optional, Available in 1.111.0+) Auto scaling node pool configuration. For more details, see `scaling_config`.
@@ -231,3 +233,11 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 * `create` - (Defaults to 90 mins) Used when creating node-pool in the kubernetes cluster (until it reaches the initial `active` status). 
 * `update` - (Defaults to 60 mins) Used when activating the node-pool in the kubernetes cluster when necessary during update.
 * `delete` - (Defaults to 60 mins) Used when deleting node-pool in kubernetes cluster. 
+
+## Import
+
+Cluster nodepool can be imported using the id, e.g. Then complete the nodepool.tf accords to the result of `terraform plan`.
+
+```
+  $ terraform import alicloud_cs_node_pool.custom_nodepool cluster_id:nodepool_id
+```

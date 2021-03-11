@@ -180,9 +180,9 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 
 ### Worker params
 
-* `worker_number` - (**Required**) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us. From ersion 1.109.1, It is not necessary in the professional managed cluster.
+* `worker_number` - (Optional) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us. From version 1.109.1, It is not necessary in the professional managed cluster, but it is necessary in other types of clusters.
+* `worker_instance_types` - (Optional) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster. From version 1.109.1, It is not necessary in the professional managed cluster, but it is necessary in other types of clusters.
 * `worker_vswtich_ids` - (**Required**) The vswitches used by workers.
-* `worker_instance_types` - (**Required**) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster. From ersion 1.109.1, It is not necessary in the professional managed cluster.
 * `password` - (**Required**, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
 * `key_name` - (**Required**) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
 * `kms_encrypted_password` - (**Required**, Available in 1.57.1+) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
@@ -377,6 +377,22 @@ variable "cluster_addons" {
       "disabled": true,
     }
   ]
+
+# Prometheus, Optional. Default is install.
+variable "cluster_addons" {
+  type = list(object({
+      name      = string
+      config    = string
+      disabled  = bool
+  }))
+
+  default = [
+    {
+      "name"     = "arms-prometheus",
+      "config"   = "",
+      "disabled": true,
+    }
+  ]
 }
 ```
 
@@ -444,5 +460,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 Kubernetes cluster can be imported using the id, e.g. Then complete the main.tf accords to the result of `terraform plan`.
 
 ```
-  $ terraform import alicloud_cs_managed_kubernetes.main cluster-id
+  $ terraform import alicloud_cs_managed_kubernetes.main cluster_id
 ```
