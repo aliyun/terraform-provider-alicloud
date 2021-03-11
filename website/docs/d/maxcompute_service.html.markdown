@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_maxcompute\_service
 
+-> **NOTE:** When you open MaxCompute service, you'd better open [DataWorks service](https://www.alibabacloud.com/help/en/product/72772.htm) as well.
+
 Using this data source can open Maxcompute service automatically. If the service has been opened, it will return opened.
 
 For information about Maxcompute and how to use it, see [What is Maxcompute](https://www.alibabacloud.com/help/en/product/27797.htm).
