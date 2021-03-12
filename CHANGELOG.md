@@ -1,24 +1,29 @@
 ## 1.118.0 (Unreleased)
 
-- **Data Source:** `alicloud_mns_service` [GH-3325]
-- **Data Source:** `alicloud_dataworks_service` [GH-3333]
+FEATURES:
 
-IMPROVEMENTS:
+- **Data Source:** `alicloud_mns_service` ([#3325](https://github.com/aliyun/terraform-provider-alicloud/issues/3325))
+- **Data Source:** `alicloud_dataworks_service` ([#3333](https://github.com/aliyun/terraform-provider-alicloud/issues/3333))
 
-- Add NotFount error code for cms_group_metric_rule. [GH-3317]
-- fix sweep for ResourceManager [GH-3320]
-- improve ess test case [GH-3321]
-- Dms: fix dms user datasource test bug. [GH-3324]
-- Remove the maxitems limit of sources attribute in resource_alicloud_cdn_domain_new and fix resource_alicloud_cdn_domain_config test. [GH-3323]
-- ecs/alicloud_ecs_auto_snapshot_policy_test: Add regionId for ecs auto snap policy sweeper. [GH-3326]
-- Fix alicloud_resource_cdn_domain_new test case. [GH-3327]
-- website: Fix sidebar names [GH-3329]
-- fix sweeper test case [GH-3330]
-- improve ci test case [GH-3331]
-- actiontrail/trail: change api version for actiontrail. [GH-3334]
-- ram/policy: When deleting, if multiple versions exist, delete the version first. [GH-3332]
-- Bugfix: CSK create dedicated cluster crash in v1.117.0 [GH-3335]
-- update changelog [GH-3336]
+ENHANCEMENTS:
+
+- resource/alicloud_cms_group_metric_rule: Adds NotFount error code to avoid needless error after deleting the resource ([#3317](https://github.com/aliyun/terraform-provider-alicloud/issues/3317))
+- testcase: Improves the ResourceManager sweep testcase ([#3320](https://github.com/aliyun/terraform-provider-alicloud/issues/3320))
+- testcase: Improves ess test case ([#3321](https://github.com/aliyun/terraform-provider-alicloud/issues/3321))
+- resource/alicloud_cdn_domain_new: Removes the maxitems limit for it attributes `sources` and can support setting multiple values ([#3323](https://github.com/aliyun/terraform-provider-alicloud/issues/3323))
+- testcase: Adds regionId for ecs auto snap policy sweeper testcase. ([#3326](https://github.com/aliyun/terraform-provider-alicloud/issues/3326))
+- docs: Corrects the resource alicloud_alidns_instance website sidebar names ([#3329](https://github.com/aliyun/terraform-provider-alicloud/issues/3329))
+- testcase: Improve the resource fc_domain ci test case ([#3331](https://github.com/aliyun/terraform-provider-alicloud/issues/3331))
+- resource/alicloud_actiontrail_trail: Upgrades the api version of actiontrail to deprecate the attribute `mns_topic_arn` and `role_name` and add new attribute `oss_write_role_arn` ([#3334](https://github.com/aliyun/terraform-provider-alicloud/issues/3334))
+- resource/alicloud_ram_policy: Deletes all of policy versions when deleting one ram policy ([#3332](https://github.com/aliyun/terraform-provider-alicloud/issues/3332))
+
+BUG FIXES:
+
+- testcase: Fix dms user datasource test bug. ([#3324](https://github.com/aliyun/terraform-provider-alicloud/issues/3324))
+- testcase: Fix resource alicloud_resource_cdn_domain_new test case. ([#3327](https://github.com/aliyun/terraform-provider-alicloud/issues/3327))
+- testcase: Fix resource manager sweeper test case ([#3330](https://github.com/aliyun/terraform-provider-alicloud/issues/3330))
+- resource/alicloud_cs_kubernetes: Fix the resource crash error when creating dedicated cluster in v1.117.0 ([#3335](https://github.com/aliyun/terraform-provider-alicloud/issues/3335))
+
 
 ## 1.117.0 (March 05, 2021)
 
