@@ -221,7 +221,7 @@ func dataSourceAlicloudTsdbInstancesRead(d *schema.ResourceData, meta interface{
 			"instance_id":      fmt.Sprint(object["InstanceId"]),
 			"instance_storage": object["InstanceStorage"],
 			"network_type":     object["NetworkType"],
-			"payment_type":     convertTSDBInstancePaymentTypeResponse(object["PaymentType"].(string)),
+			"payment_type":     convertTsdbInstancePaymentTypeResponse(object["PaymentType"].(string)),
 			"status":           object["Status"],
 			"vswitch_id":       object["VswitchId"],
 			"vpc_id":           object["VpcId"],

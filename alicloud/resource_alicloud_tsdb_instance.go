@@ -120,7 +120,7 @@ func resourceAlicloudTsdbInstanceCreate(d *schema.ResourceData, meta interface{}
 
 	request["InstanceClass"] = d.Get("instance_class")
 	request["InstanceStorage"] = d.Get("instance_storage")
-	request["PayType"] = convertTSDBInstancePaymentTypeRequest(d.Get("payment_type").(string))
+	request["PayType"] = convertTsdbInstancePaymentTypeRequest(d.Get("payment_type").(string))
 	if request["PayType"].(string) == "PREPAY" {
 		request["PricingCycle"] = "Month"
 	}
@@ -176,7 +176,7 @@ func resourceAlicloudTsdbInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("instance_alias", object["InstanceAlias"])
 	d.Set("instance_class", object["InstanceClass"])
 	d.Set("instance_storage", object["InstanceStorage"])
-	d.Set("payment_type", convertTSDBInstancePaymentTypeResponse(object["PaymentType"].(string)))
+	d.Set("payment_type", convertTsdbInstancePaymentTypeResponse(object["PaymentType"].(string)))
 	d.Set("status", object["Status"])
 	d.Set("vswitch_id", object["VswitchId"])
 	d.Set("zone_id", object["ZoneId"])
@@ -306,7 +306,7 @@ func resourceAlicloudTsdbInstanceDelete(d *schema.ResourceData, meta interface{}
 	}
 	return nil
 }
-func convertTSDBInstancePaymentTypeRequest(source string) string {
+func convertTsdbInstancePaymentTypeRequest(source string) string {
 	switch source {
 	case "PayAsYouGo":
 		return "POSTPAY"
@@ -315,7 +315,7 @@ func convertTSDBInstancePaymentTypeRequest(source string) string {
 	}
 	return source
 }
-func convertTSDBInstancePaymentTypeResponse(source string) string {
+func convertTsdbInstancePaymentTypeResponse(source string) string {
 	switch source {
 	case "POSTPAY":
 		return "PayAsYouGo"
