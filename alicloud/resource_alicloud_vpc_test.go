@@ -66,7 +66,7 @@ func testSweepVpcs(region string) error {
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			log.Printf("[ERROR] Failed to retrieve resoure manager handshake in service list: %s", err)
+			log.Printf("[ERROR] Failed to retrieve VPC in service list: %s", err)
 			return nil
 		}
 		resp, err := jsonpath.Get("$.Vpcs.Vpc", response)
