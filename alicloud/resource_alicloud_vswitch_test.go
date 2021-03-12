@@ -5,16 +5,14 @@ import (
 	"log"
 	"strings"
 	"testing"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -60,47 +58,46 @@ func testSweepVSwitches(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
-
-	var vswitches []vpc.VSwitch
-	req := vpc.CreateDescribeVSwitchesRequest()
-	req.RegionId = client.RegionId
-	// API DescribeVSwitches has some limitations
-	// If there is no vpc_id, setting PageSizeSmall can avoid ServiceUnavailable Error
-	req.PageSize = requests.NewInteger(PageSizeSmall)
-	req.PageNumber = requests.NewInteger(1)
-	invoker := NewInvoker()
-	for {
-		var raw interface{}
-		if err := invoker.Run(func() error {
-			rsp, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.DescribeVSwitches(req)
-			})
-			raw = rsp
-			return err
-		}); err != nil {
-			log.Printf("[ERROR] Error retrieving VSwitches: %s", WrapError(err))
-		}
-		resp, _ := raw.(*vpc.DescribeVSwitchesResponse)
-		if resp == nil || len(resp.VSwitches.VSwitch) < 1 {
-			break
-		}
-		vswitches = append(vswitches, resp.VSwitches.VSwitch...)
-
-		if len(resp.VSwitches.VSwitch) < PageSizeSmall {
-			break
-		}
-
-		page, err := getNextpageNumber(req.PageNumber)
-		if err != nil {
-			log.Printf("[ERROR] %s", err)
-		}
-		req.PageNumber = page
+	action := "DescribeVSwitches"
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
 	}
+	var response map[string]interface{}
+	request := make(map[string]interface{})
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	request["RegionId"] = client.RegionId
+	vswitches := make([]map[string]interface{}, 0)
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve VSwitch in service list: %s", err)
+			return nil
+		}
+
+		resp, err := jsonpath.Get("$.VSwitches.VSwitch", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.VSwitches.VSwitch", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			vswitches = append(vswitches, item)
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
 	sweeped := false
 	service := VpcService{client}
 	for _, vsw := range vswitches {
-		name := vsw.VSwitchName
-		id := vsw.VSwitchId
+		name := fmt.Sprint(vsw["VSwitchName"])
+		id := fmt.Sprint(vsw["VSwitchId"])
 		skip := true
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
@@ -110,7 +107,7 @@ func testSweepVSwitches(region string) error {
 		}
 		// If a vswitch name is set by other service, it should be fetched by vpc name and deleted.
 		if skip {
-			if need, err := service.needSweepVpc(vsw.VpcId, ""); err == nil {
+			if need, err := service.needSweepVpc(fmt.Sprint(vsw["VpcId"]), ""); err == nil {
 				skip = !need
 			}
 		}
@@ -131,81 +128,38 @@ func testSweepVSwitches(region string) error {
 	return nil
 }
 
-func testAccCheckVSwitchExists(n string, vsw *vpc.DescribeVSwitchAttributesResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Vswitch ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		vpcService := VpcService{client}
-		instance, err := vpcService.DescribeVSwitch(rs.Primary.ID)
-
-		if err != nil {
-			return err
-		}
-
-		*vsw = instance
-		return nil
-	}
-}
-
-func testAccCheckVSwitchDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_vswitch" {
-			continue
-		}
-
-		// Try to find the Vswitch
-		if _, err := vpcService.DescribeVSwitch(rs.Primary.ID); err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return WrapError(err)
-		}
-
-		return WrapError(Error("Vswitch still exist"))
-	}
-
-	return nil
-}
-
-func TestAccAlicloudVSwitchBasic(t *testing.T) {
-	var v vpc.DescribeVSwitchAttributesResponse
+func TestAccAlicloudVswitch_basic(t *testing.T) {
+	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
-	ra := resourceAttrInit(resourceId, testAccCheckVSwitchCheckMap)
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeVSwitch")
+	}, "DescribeVswitch")
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svswitch%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVswitchBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckVSwitchDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVSwitchConfigBasic(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":    "${data.alicloud_zones.default.zones.0.id}",
+					"vpc_id":     "${data.alicloud_vpcs.default.ids.0}",
+					"cidr_block": "172.19.0.0/21",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf-testAccVswitchConfig%d", rand),
+						"zone_id":    CHECKSET,
+						"vpc_id":     CHECKSET,
+						"cidr_block": "172.19.0.0/21",
 					}),
 				),
 			},
@@ -215,40 +169,56 @@ func TestAccAlicloudVSwitchBasic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccVSwitchConfig_name(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf-testAccVswitchConfig%d_change", rand),
+						"description": name + "1",
 					}),
 				),
 			},
 			{
-				Config: testAccVSwitchConfig_description(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": fmt.Sprintf("tf-testAccVswitchConfig%d_description", rand),
-					}),
-				),
-			},
-			{
-				Config: testAccVSwitchConfig_tags(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
 						"tags.Created": "TF",
-						"tags.For":     "acceptance test",
+						"tags.For":     "Test",
 					}),
 				),
 			},
 			{
-				Config: testAccVSwitchConfig_all(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_name": name + "1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":         fmt.Sprintf("tf-testAccVswitchConfig%d_all", rand),
-						"description":  fmt.Sprintf("tf-testAccVswitchConfig%d_description_all", rand),
-						"tags.%":       REMOVEKEY,
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"vswitch_name": name + "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+					"vswitch_name": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":  name,
+						"vswitch_name": name,
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
 					}),
 				),
 			},
@@ -256,195 +226,19 @@ func TestAccAlicloudVSwitchBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVSwitchMulti(t *testing.T) {
-	var v vpc.DescribeVSwitchAttributesResponse
-	resourceId := "alicloud_vswitch.default.2"
-	ra := resourceAttrInit(resourceId, testAccCheckVSwitchCheckMap)
-	serviceFunc := func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeVSwitch")
-	rac := resourceAttrCheckInit(rc, ra)
+var AlicloudVswitchMap0 = map[string]string{}
 
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+func AlicloudVswitchBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+			default = "%s"
+		}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckVSwitchDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccVSwitchConfigMulti(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"cidr_block": "172.16.2.0/24",
-						"name":       fmt.Sprintf("tf-testAccVswitchConfig%d", rand),
-					}),
-				),
-			},
-		},
-	})
+data "alicloud_vpcs" "default"{
+	is_default = true
 }
-
-func testAccVSwitchConfigBasic(rand int) string {
-	return fmt.Sprintf(
-		`
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
-variable "name" {
-  default = "tf-testAccVswitchConfig%d"
-}
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
-`, rand)
-}
-
-func testAccVSwitchConfig_name(rand int) string {
-	return fmt.Sprintf(
-		`
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-variable "name" {
-  default = "tf-testAccVswitchConfig%d"
-}
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}_change"
-}
-`, rand)
-}
-
-func testAccVSwitchConfig_description(rand int) string {
-	return fmt.Sprintf(
-		`
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-variable "name" {
-  default = "tf-testAccVswitchConfig%d"
-}
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}_change"
-  description = "${var.name}_description"
-}
-`, rand)
-}
-
-func testAccVSwitchConfig_tags(rand int) string {
-	return fmt.Sprintf(
-		`
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-variable "name" {
-  default = "tf-testAccVswitchConfig%d"
-}
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}_change"
-  description = "${var.name}_description"
-  tags 		= {
-		Created = "TF"
-		For 	= "acceptance test"
-  }
-}
-`, rand)
-}
-
-func testAccVSwitchConfig_all(rand int) string {
-	return fmt.Sprintf(
-		`
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-variable "name" {
-  default = "tf-testAccVswitchConfig%d"
-}
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}_all"
-  description = "${var.name}_description_all"
-}
-`, rand)
-}
-
-func testAccVSwitchConfigMulti(rand int) string {
-	return fmt.Sprintf(
-		`
-variable "number" {
-	default = "3"
-}
-
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-variable "name" {
-  default = "tf-testAccVswitchConfig%d"
-}
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  count = "${var.number}"
-  vpc_id = "${ alicloud_vpc.default.id }"
-  cidr_block = "172.16.${count.index}.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
-`, rand)
-}
-
-var testAccCheckVSwitchCheckMap = map[string]string{
-	"vpc_id":            CHECKSET,
-	"cidr_block":        "172.16.0.0/24",
-	"availability_zone": CHECKSET,
-	"description":       "",
+`, name)
 }

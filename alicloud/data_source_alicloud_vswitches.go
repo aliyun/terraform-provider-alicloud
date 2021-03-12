@@ -1,25 +1,58 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudVSwitches() *schema.Resource {
+func dataSourceAlicloudVswitches() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudVSwitchesRead,
-
+		Read: dataSourceAlicloudVswitchesRead,
 		Schema: map[string]*schema.Schema{
 			"cidr_block": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+			},
+			"dry_run": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"is_default": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"route_table_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Available", "Pending"}, false),
+			},
+			"tags": tagsSchema(),
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -27,8 +60,18 @@ func dataSourceAlicloudVSwitches() *schema.Resource {
 				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
 			},
-			"is_default": {
-				Type:     schema.TypeBool,
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"vswitch_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vswitch_owner_id": {
+				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
 			},
@@ -42,53 +85,22 @@ func dataSourceAlicloudVSwitches() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
-			},
-			"names": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-			"resource_group_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			// Computed values
 			"vswitches": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"id": {
+						"creation_time": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"vpc_id": {
-							Type:     schema.TypeString,
+						"available_ip_address_count": {
+							Type:     schema.TypeInt,
 							Computed: true,
-						},
-						"zone_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"instance_ids": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"cidr_block": {
 							Type:     schema.TypeString,
@@ -102,7 +114,43 @@ func dataSourceAlicloudVSwitches() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
-						"creation_time": {
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"route_table_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vswitch_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"zone_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -112,165 +160,166 @@ func dataSourceAlicloudVSwitches() *schema.Resource {
 		},
 	}
 }
-func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
 
-	request := vpc.CreateDescribeVSwitchesRequest()
-	request.RegionId = string(client.Region)
-	request.ResourceGroupId = d.Get("resource_group_id").(string)
-	// API DescribeVSwitches has some limitations
-	// If there is no vpc_id, setting PageSizeSmall can avoid ServiceUnavailable Error
-	request.PageSize = requests.NewInteger(PageSizeSmall)
-	request.PageNumber = requests.NewInteger(1)
-	if v, ok := d.GetOk("zone_id"); ok {
-		request.ZoneId = Trim(v.(string))
+func dataSourceAlicloudVswitchesRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribeVSwitches"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
+	}
+	if v, ok := d.GetOkExists("is_default"); ok {
+		request["IsDefault"] = v
+	}
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOk("route_table_id"); ok {
+		request["RouteTableId"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tags := make([]map[string]interface{}, 0)
+		for key, value := range v.(map[string]interface{}) {
+			tags = append(tags, map[string]interface{}{
+				"Key":   key,
+				"Value": value.(string),
+			})
+		}
+		request["Tag"] = tags
+	}
+	if v, ok := d.GetOk("vswitch_name"); ok {
+		request["VSwitchName"] = v
+	}
+	if v, ok := d.GetOk("vswitch_owner_id"); ok {
+		request["VSwitchOwnerId"] = v
 	}
 	if v, ok := d.GetOk("vpc_id"); ok {
-		request.VpcId = Trim(v.(string))
+		request["VpcId"] = v
 	}
-
-	var allVSwitches []vpc.VSwitch
-	var nameRegex *regexp.Regexp
+	if v, ok := d.GetOk("zone_id"); ok {
+		request["ZoneId"] = v
+	}
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
+	var vSwitchNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
-		if r, err := regexp.Compile(Trim(v.(string))); err == nil {
-			nameRegex = r
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
 		}
+		vSwitchNameRegex = r
 	}
 
-	// ids
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			if vv == nil {
 				continue
 			}
-			idsMap[Trim(vv.(string))] = Trim(vv.(string))
+			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-
-	invoker := NewInvoker()
+	status, statusOk := d.GetOk("status")
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		var raw interface{}
-		var err error
-		if err = invoker.Run(func() error {
-			raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.DescribeVSwitches(request)
-			})
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vswitches", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vswitches", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*vpc.DescribeVSwitchesResponse)
-		if len(response.VSwitches.VSwitch) < 1 {
-			break
+		addDebug(action, response, request)
+
+		resp, err := jsonpath.Get("$.VSwitches.VSwitch", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.VSwitches.VSwitch", response)
 		}
-
-		for _, vsw := range response.VSwitches.VSwitch {
-			if v, ok := d.GetOk("cidr_block"); ok && vsw.CidrBlock != Trim(v.(string)) {
-				continue
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if vSwitchNameRegex != nil {
+				if !vSwitchNameRegex.MatchString(fmt.Sprint(item["VSwitchName"])) {
+					continue
+				}
 			}
-
-			if v, ok := d.GetOk("is_default"); ok && vsw.IsDefault != v.(bool) {
-				continue
-			}
-
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[vsw.VSwitchId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["VSwitchId"])]; !ok {
 					continue
 				}
 			}
-
-			if nameRegex != nil {
-				if !nameRegex.MatchString(vsw.VSwitchName) {
-					continue
-				}
+			if v, ok := d.GetOk("cidr_block"); ok && fmt.Sprint(item["CidrBlock"]) != Trim(v.(string)) {
+				continue
 			}
-			if value, ok := d.GetOk("tags"); ok && len(value.(map[string]interface{})) > 0 {
-				tags, err := vpcService.DescribeTags(vsw.VSwitchId, value.(map[string]interface{}), TagResourceVSwitch)
-				if err != nil {
-					return WrapError(err)
-				}
-				if len(tags) < 1 {
-					continue
-				}
+			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+				continue
 			}
-			allVSwitches = append(allVSwitches, vsw)
+			objects = append(objects, item)
 		}
-
-		if len(response.VSwitches.VSwitch) < PageSizeSmall {
+		if len(result) < PageSizeLarge {
 			break
 		}
-
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-
-	return VSwitchesDecriptionAttributes(d, allVSwitches, meta)
-}
-
-func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	var ids []string
-	var names []string
-	var s []map[string]interface{}
-	request := ecs.CreateDescribeInstancesRequest()
-
-	for _, vsw := range vsws {
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":            vsw.VSwitchId,
-			"vpc_id":        vsw.VpcId,
-			"zone_id":       vsw.ZoneId,
-			"name":          vsw.VSwitchName,
-			"cidr_block":    vsw.CidrBlock,
-			"description":   vsw.Description,
-			"is_default":    vsw.IsDefault,
-			"creation_time": vsw.CreationTime,
-		}
-		request.VpcId = vsw.VpcId
-		request.VSwitchId = vsw.VSwitchId
-		request.ZoneId = vsw.ZoneId
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeInstances(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vswitches", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			"creation_time":              object["CreationTime"],
+			"available_ip_address_count": object["AvailableIpAddressCount"],
+			"cidr_block":                 object["CidrBlock"],
+			"description":                object["Description"],
+			"is_default":                 object["IsDefault"],
+			"resource_group_id":          object["ResourceGroupId"],
+			"route_table_id":             object["RouteTable"].(map[string]interface{})["RouteTableId"],
+			"status":                     object["Status"],
+			"id":                         fmt.Sprint(object["VSwitchId"]),
+			"vswitch_id":                 fmt.Sprint(object["VSwitchId"]),
+			"vswitch_name":               object["VSwitchName"],
+			"name":                       object["VSwitchName"],
+			"vpc_id":                     object["VpcId"],
+			"zone_id":                    object["ZoneId"],
 		}
 
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-		response, _ := raw.(*ecs.DescribeInstancesResponse)
-		if len(response.Instances.Instance) > 0 {
-			instanceIds := make([]string, 0, len(response.Instances.Instance))
-
-			for _, inst := range response.Instances.Instance {
-				instanceIds = append(instanceIds, inst.InstanceId)
+		tags := make(map[string]interface{})
+		t, _ := jsonpath.Get("$.Tags.Tag", object)
+		if t != nil {
+			for _, t := range t.([]interface{}) {
+				key := t.(map[string]interface{})["Key"].(string)
+				value := t.(map[string]interface{})["Value"].(string)
+				if !ignoredTags(key, value) {
+					tags[key] = value
+				}
 			}
-			mapping["instance_ids"] = instanceIds
 		}
-
-		ids = append(ids, vsw.VSwitchId)
-		names = append(names, vsw.VSwitchName)
+		mapping["tags"] = tags
+		ids = append(ids, fmt.Sprint(object["VSwitchId"]))
+		names = append(names, object["VSwitchName"])
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("vswitches", s); err != nil {
-		return WrapError(err)
-	}
-	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
-	}
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
-	// create a json file in current directory and write data source to it.
+
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("vswitches", s); err != nil {
+		return WrapError(err)
+	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
+
 	return nil
 }

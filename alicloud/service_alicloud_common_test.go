@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"log"
 	"time"
 
@@ -586,16 +588,16 @@ func (conf *dataSourceTestAccConfig) buildDataSourceSteps(t *testing.T, info *da
 
 func (s *VpcService) needSweepVpc(vpcId, vswitchId string) (bool, error) {
 	if vpcId == "" && vswitchId != "" {
-		object, err := s.DescribeVSwitch(vswitchId)
+		object, err := s.DescribeVswitch(vswitchId)
 		if err != nil && !NotFoundError(err) {
 			return false, WrapError(err)
 		}
-		name := strings.ToLower(object.VSwitchName)
+		name := strings.ToLower(object["VSwitchName"].(string))
 		if strings.HasPrefix(name, "tf-testacc") || strings.HasPrefix(name, "tf_testacc") {
-			log.Printf("[DEBUG] Need to sweep the vswitch (%s (%s)).", object.VSwitchId, object.VSwitchName)
+			log.Printf("[DEBUG] Need to sweep the vswitch (%v (%v)).", object["VSwitchId"], object["VSwitchName"])
 			return true, nil
 		}
-		vpcId = object.VpcId
+		vpcId = fmt.Sprint(object["VpcId"])
 	}
 	if vpcId != "" {
 		object, err := s.DescribeVpc(vpcId)
@@ -633,10 +635,26 @@ func (s *VpcService) sweepVSwitch(id string) error {
 		return nil
 	}
 	log.Printf("[DEBUG] Deleting Vswitch %s ...", id)
-	request := vpc.CreateDeleteVSwitchRequest()
-	request.VSwitchId = id
-	_, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DeleteVSwitch(request)
+	action := "DeleteVSwitch"
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"VSwitchId": id,
+	}
+	request["RegionId"] = s.client.RegionId
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(10*time.Second, func() *resource.RetryError {
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err == nil {
 		time.Sleep(1 * time.Second)
