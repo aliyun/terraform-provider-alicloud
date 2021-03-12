@@ -1,4 +1,25 @@
 ## 1.118.0 (Unreleased)
+
+- **Data Source:** `alicloud_mns_service` [GH-3325]
+- **Data Source:** `alicloud_dataworks_service` [GH-3333]
+
+IMPROVEMENTS:
+
+- Add NotFount error code for cms_group_metric_rule. [GH-3317]
+- fix sweep for ResourceManager [GH-3320]
+- improve ess test case [GH-3321]
+- Dms: fix dms user datasource test bug. [GH-3324]
+- Remove the maxitems limit of sources attribute in resource_alicloud_cdn_domain_new and fix resource_alicloud_cdn_domain_config test. [GH-3323]
+- ecs/alicloud_ecs_auto_snapshot_policy_test: Add regionId for ecs auto snap policy sweeper. [GH-3326]
+- Fix alicloud_resource_cdn_domain_new test case. [GH-3327]
+- website: Fix sidebar names [GH-3329]
+- fix sweeper test case [GH-3330]
+- improve ci test case [GH-3331]
+- actiontrail/trail: change api version for actiontrail. [GH-3334]
+- ram/policy: When deleting, if multiple versions exist, delete the version first. [GH-3332]
+- Bugfix: CSK create dedicated cluster crash in v1.117.0 [GH-3335]
+- update changelog [GH-3336]
+
 ## 1.117.0 (March 05, 2021)
 
 - **New Resource:** `alicloud_vpc_flow_log` ([#3290](https://github.com/aliyun/terraform-provider-alicloud/issues/3290))
