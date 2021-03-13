@@ -50,9 +50,10 @@ func TestAccAlicloudNasMountTarget_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_group_id"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
