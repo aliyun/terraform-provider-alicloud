@@ -733,7 +733,7 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  vpc_name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
@@ -772,7 +772,7 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  vpc_name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
@@ -802,7 +802,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "${var.creation}"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  vpc_name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
@@ -865,7 +865,7 @@ data "alicloud_zones" "default" {
   multi = true
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  vpc_name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
@@ -893,7 +893,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -935,7 +935,7 @@ data "alicloud_emr_disk_types" "system_disk" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -1029,7 +1029,7 @@ data "alicloud_emr_disk_types" "gateway_system_disk" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -1148,7 +1148,7 @@ data "alicloud_emr_disk_types" "system_disk" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -1228,7 +1228,7 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 

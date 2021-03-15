@@ -118,7 +118,7 @@ data "alicloud_tsdb_zones" "default" {}
 
 resource "alicloud_vpc" "default" {
   cidr_block = "192.168.0.0/16"
-  name = var.name
+  vpc_name = var.name
 }
 
 resource "alicloud_vswitch" "default" {

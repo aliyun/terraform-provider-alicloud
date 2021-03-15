@@ -111,7 +111,7 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
   cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+  vpc_name = "${var.name}"
 }
 
 resource "alicloud_security_group" "default" {

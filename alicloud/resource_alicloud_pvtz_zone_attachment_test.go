@@ -180,7 +180,7 @@ func resourcePvtzZoneAttachmentConfigDependence(name string) string {
 		  default = "2"
 	}
 	resource "alicloud_vpc" "default" {
-		name = "tf-testaccPvtzZoneAttachmentConfig"
+		vpc_name = "tf-testaccPvtzZoneAttachmentConfig"
 		cidr_block = "172.16.0.0/12"
 	}
 

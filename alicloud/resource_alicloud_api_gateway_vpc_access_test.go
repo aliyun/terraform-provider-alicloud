@@ -159,7 +159,7 @@ const ApigatewayVpcAccessConfigDependence = `
 	}
 
 	resource "alicloud_vpc" "default" {
-	  name = "${var.name}"
+	  vpc_name = "${var.name}"
 	  cidr_block = "172.16.0.0/12"
 	}
 
@@ -167,7 +167,7 @@ const ApigatewayVpcAccessConfigDependence = `
 	  vpc_id = "${alicloud_vpc.default.id}"
 	  cidr_block = "172.16.0.0/21"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	  name = "${var.name}"
+	  vswitch_name = "${var.name}"
 	}
 
 	resource "alicloud_security_group" "default" {

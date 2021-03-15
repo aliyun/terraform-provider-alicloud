@@ -47,7 +47,7 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  name              = var.name
+  vswitch_name      = var.name
   vpc_id            = alicloud_vpc.default.id
   cidr_block        = "10.1.1.0/24"
   availability_zone = data.alicloud_zones.default.zones[0].id

@@ -241,7 +241,7 @@ func testAccCenInstanceAttachmentBasic(rand int, region string) string {
 	}
 
 	resource "alicloud_vpc" "default" {
-	    name = "${var.name}"
+	    vpc_name = "${var.name}"
 	    cidr_block = "192.168.0.0/16"
 	}
 
@@ -265,7 +265,7 @@ func testAccCenInstanceAttachmentMultiSameRegion(rand int, region string) string
 	}
 
 	resource "alicloud_vpc" "default" {
-	    name = "${var.name}"
+	    vpc_name = "${var.name}"
 	    cidr_block = "192.168.0.0/16"
 	}
 
@@ -309,7 +309,7 @@ provider "alicloud" {
 
 resource "alicloud_vpc" "default" {
     provider = "alicloud.fra"
-    name = "${var.name}"
+    vpc_name = "${var.name}"
     cidr_block = "192.168.0.0/16"
 }
 

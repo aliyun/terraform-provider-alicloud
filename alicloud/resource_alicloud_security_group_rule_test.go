@@ -164,7 +164,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/24"
 }
 
@@ -193,7 +193,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/24"
 }
 
@@ -223,7 +223,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/24"
 }
 
@@ -253,7 +253,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/24"
 }
 
@@ -287,7 +287,7 @@ variable "cidr_ip_list" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 
@@ -347,7 +347,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/24"
 }
 
@@ -375,7 +375,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/24"
 }
 

@@ -237,7 +237,7 @@ variable "name" {
 data "alicloud_tsdb_zones" "default" {}
 
 resource "alicloud_vpc" "default" {
-  name = var.name
+  vpc_name = var.name
   cidr_block = "192.168.0.0/16"
 }
 
