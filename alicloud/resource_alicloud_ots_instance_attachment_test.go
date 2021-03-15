@@ -148,7 +148,7 @@ func resourceOtsInstanceAttachmentConfigDependenceHighperformance(name string) s
 	}
 	resource "alicloud_vpc" "default" {
 	  cidr_block = "172.16.0.0/16"
-	  name = "${var.name}"
+	  vpc_name = "${var.name}"
 	}
 
 	resource "alicloud_vswitch" "default" {

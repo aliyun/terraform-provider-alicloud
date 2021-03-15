@@ -76,7 +76,7 @@ provider "alicloud" {
 
 resource "alicloud_vpc" "default" {
   provider = "alicloud.bj"
-  name = "${var.name}-01"
+  vpc_name = "${var.name}-01"
   cidr_block = "192.168.0.0/16"
 }
 

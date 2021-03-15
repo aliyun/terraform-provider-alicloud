@@ -23,7 +23,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "vpc" {
-  name       = var.name
+  vpc_name       = var.name
   cidr_block = "192.168.0.0/24"
 }
 

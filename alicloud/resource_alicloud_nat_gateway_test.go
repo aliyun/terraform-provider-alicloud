@@ -308,7 +308,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	vpc_name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -338,7 +338,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	vpc_name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -369,7 +369,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	vpc_name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -399,7 +399,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	vpc_name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -430,7 +430,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	vpc_name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -458,7 +458,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
- name       = var.name
+ vpc_name       = var.name
  cidr_block = "10.0.0.0/8"
 }
 
@@ -496,7 +496,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	vpc_name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -531,7 +531,7 @@ data "alicloud_enhanced_nat_available_zones" "enhanced" {
 }
 
 resource "alicloud_vpc" "foo" {
-  name       = var.name
+  vpc_name       = var.name
   cidr_block = "10.0.0.0/8"
 }
 

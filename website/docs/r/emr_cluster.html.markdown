@@ -63,7 +63,7 @@ resource "alicloud_vswitch" "vswitch" {
   count = var.vswitch_id == "" ? 1 : 0
 
   availability_zone = var.availability_zone == "" ? data.alicloud_emr_instance_types.default.types.0.zone_id : var.availability_zone
-  name              = var.vswitch_name
+  vswitch_name      = var.vswitch_name
   cidr_block        = var.vswitch_cidr
   vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
 }
@@ -203,7 +203,7 @@ resource "alicloud_vswitch" "vswitch" {
   count = var.vswitch_id == "" ? 1 : 0
 
   availability_zone = var.availability_zone == "" ? data.alicloud_emr_instance_types.default.types.0.zone_id : var.availability_zone
-  name              = var.vswitch_name
+  vswitch_name      = var.vswitch_name
   cidr_block        = var.vswitch_cidr
   vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
 }
@@ -339,7 +339,7 @@ resource "alicloud_vswitch" "vswitch" {
   count = var.vswitch_id == "" ? 1 : 0
 
   availability_zone = var.availability_zone == "" ? data.alicloud_emr_instance_types.default.types.0.zone_id : var.availability_zone
-  name              = var.vswitch_name
+  vswitch_name      = var.vswitch_name
   cidr_block        = var.vswitch_cidr
   vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
 }
@@ -471,7 +471,7 @@ resource "alicloud_vswitch" "vswitch" {
   count = var.vswitch_id == "" ? 1 : 0
 
   availability_zone = var.availability_zone == "" ? data.alicloud_emr_instance_types.default.types.0.zone_id : var.availability_zone
-  name              = var.vswitch_name
+  vswitch_name      = var.vswitch_name
   cidr_block        = var.vswitch_cidr
   vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
 }

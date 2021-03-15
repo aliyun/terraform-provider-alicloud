@@ -326,7 +326,7 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 
@@ -371,7 +371,7 @@ func testAccCSSwarm_basic_zero_node(rand int) string {
 	}
 
 	resource "alicloud_vpc" "foo" {
-	  name = "${var.name}"
+	  vpc_name = "${var.name}"
 	  cidr_block = "10.1.0.0/21"
 	}
 
@@ -415,7 +415,7 @@ func testAccCSSwarm_basic_zero_node_update(rand int) string {
 	}
 
 	resource "alicloud_vpc" "foo" {
-	  name = "${var.name}"
+	  vpc_name = "${var.name}"
 	  cidr_block = "10.1.0.0/21"
 	}
 
@@ -459,7 +459,7 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "10.1.0.0/21"
 }
 
@@ -505,7 +505,7 @@ func testAccCSSwarm_update(rand int) string {
 	}
 
 	resource "alicloud_vpc" "foo" {
-	  name = "${var.name}"
+	  vpc_name = "${var.name}"
 	  cidr_block = "10.1.0.0/21"
 	}
 
@@ -550,7 +550,7 @@ func testAccCSSwarm_updateAfter(rand int) string {
 	}
 
 	resource "alicloud_vpc" "foo" {
-	  name = "${var.name}"
+	  vpc_name = "${var.name}"
 	  cidr_block = "10.1.0.0/21"
 	}
 

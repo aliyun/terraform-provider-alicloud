@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_vpc" "default" {
-  name       = "tf-testacc-vpcname"
+  vpc_name       = "tf-testacc-vpcname"
   cidr_block = "192.168.0.0/16"
 }
 
