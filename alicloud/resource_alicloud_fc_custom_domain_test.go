@@ -168,7 +168,6 @@ func testSweepFCCustomDomain(region string) error {
 		if response == nil {
 			return nil
 		}
-		nextToken = *response.NextToken
 		for _, domain := range response.CustomDomains {
 			log.Printf("[INFO] Deleting FC custom domain: %s", *domain.DomainName)
 			_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
@@ -178,9 +177,10 @@ func testSweepFCCustomDomain(region string) error {
 				log.Printf("[ERROR] Failed to delete FC custom domains(%s): %s", *domain.DomainName, err)
 			}
 		}
-		if nextToken == "" {
+		if response.NextToken == nil || *response.NextToken == "" {
 			break
 		}
+		nextToken = *response.NextToken
 	}
 
 	return nil

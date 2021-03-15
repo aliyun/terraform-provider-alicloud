@@ -1240,6 +1240,10 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	// get cluster conn certs
+	// If the cluster is failed, there is no need to get cluster certs
+	if object.State == "failed" {
+		return nil
+	}
 	var requestInfo *cs.Client
 	var response interface{}
 	if err := invoker.Run(func() error {

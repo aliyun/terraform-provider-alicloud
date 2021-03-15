@@ -33,7 +33,7 @@ func testSweepRosStackGroup(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf-testacc",
+		"tf_testAcc",
 	}
 	request := map[string]interface{}{
 		"PageSize":   PageSizeLarge,
@@ -63,7 +63,7 @@ func testSweepRosStackGroup(region string) error {
 			item := v.(map[string]interface{})
 			skip := true
 			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["StackGroupName"].(string)), strings.ToLower(prefix)) && item["Status"].(string) != "DELETED" {
+				if strings.HasPrefix(strings.ToLower(item["StackGroupName"].(string)), strings.ToLower(prefix)) {
 					skip = false
 				}
 			}
