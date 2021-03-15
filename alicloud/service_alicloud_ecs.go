@@ -503,22 +503,22 @@ func (s *EcsService) DescribeKeyPair(id string) (keyPair ecs.KeyPair, err error)
 }
 
 func (s *EcsService) DescribeKeyPairAttachment(id string) (keyPair ecs.KeyPair, err error) {
-	parts, err := ParseResourceId(id, 2)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidKeyPair.NotFound"}) {
-			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
-		return
+	index := strings.LastIndexByte(id, ':')
+	if index < 0 {
+		return keyPair, WrapError(fmt.Errorf("Invalid Resource Id %s.", id))
 	}
-	keyPairName := parts[0]
+	keyPairName := string(id[:index])
 	keyPair, err = s.DescribeKeyPair(keyPairName)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidKeyPair.NotFound"}) {
+			return keyPair, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return keyPair, WrapError(err)
 	}
 	if keyPair.KeyPairName != keyPairName {
 		err = WrapErrorf(Error(GetNotFoundMessage("KeyPairAttachment", id)), NotFoundMsg, ProviderERROR)
 	}
-	return keyPair, nil
+	return
 
 }
 
