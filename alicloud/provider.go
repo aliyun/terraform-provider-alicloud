@@ -394,6 +394,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_brain_industrial_pid_loops":                 dataSourceAlicloudBrainIndustrialPidLoops(),
 			"alicloud_quotas_quota_applications":                  dataSourceAlicloudQuotasQuotaApplications(),
 			"alicloud_ecs_auto_snapshot_policies":                 dataSourceAlicloudEcsAutoSnapshotPolicies(),
+			"alicloud_rds_parameter_groups":                       dataSourceAlicloudRdsParameterGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -700,6 +701,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_brain_industrial_pid_loop":                 resourceAlicloudBrainIndustrialPidLoop(),
 			"alicloud_quotas_quota_application":                  resourceAlicloudQuotasQuotaApplication(),
 			"alicloud_ecs_auto_snapshot_policy":                  resourceAlicloudEcsAutoSnapshotPolicy(),
+			"alicloud_rds_parameter_group":                       resourceAlicloudRdsParameterGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
