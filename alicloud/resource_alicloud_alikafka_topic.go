@@ -95,7 +95,7 @@ func resourceAlicloudAlikafkaTopicCreate(d *schema.ResourceData, meta interface{
 			return alikafkaClient.CreateTopic(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -110,6 +110,9 @@ func resourceAlicloudAlikafkaTopicCreate(d *schema.ResourceData, meta interface{
 	}
 
 	d.SetId(instanceId + ":" + topic)
+
+	alikafkaService.WaitForAlikafkaTopicStatus(d.Id(), DefaultTimeoutMedium)
+
 	return resourceAlicloudAlikafkaTopicUpdate(d, meta)
 }
 
@@ -176,7 +179,7 @@ func resourceAlicloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{
 					return alikafkaClient.ModifyPartitionNum(modifyPartitionReq)
 				})
 				if err != nil {
-					if IsExpectedErrors(err, []string{ThrottlingUser}) {
+					if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 						time.Sleep(10 * time.Second)
 						return resource.RetryableError(err)
 					}
@@ -249,7 +252,7 @@ func resourceAlicloudAlikafkaTopicDelete(d *schema.ResourceData, meta interface{
 			return alikafkaClient.DeleteTopic(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
