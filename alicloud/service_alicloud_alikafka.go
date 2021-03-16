@@ -224,7 +224,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaTopicStatus(id string) (
 		return &topicStatusResp.TopicStatus, nil
 	}
 
-	return alikafkaTopicStatus, WrapErrorf(Error(GetNotFoundMessage("AlikafkaTopicStatus " + ResourceNotfound, id)), ResourceNotfound)
+	return alikafkaTopicStatus, WrapErrorf(Error(GetNotFoundMessage("AlikafkaTopicStatus "+ResourceNotfound, id)), ResourceNotfound)
 }
 
 func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (*alikafka.TopicVO, error) {
