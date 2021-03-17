@@ -69,6 +69,16 @@ func TestAccAlicloudGaBandwidthPackage_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"bandwidth": "20",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth": "20",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"bandwidth_type": "Enhanced",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -91,11 +101,13 @@ func TestAccAlicloudGaBandwidthPackage_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"bandwidth_package_name": "${var.name}",
 					"description":            "bandwidthpackage",
+					"bandwidth":              "50",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"bandwidth_package_name": name,
 						"description":            "bandwidthpackage",
+						"bandwidth":              "50",
 					}),
 				),
 			},

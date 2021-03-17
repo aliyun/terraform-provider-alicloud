@@ -37,7 +37,6 @@ func resourceAlicloudGaBandwidthPackage() *schema.Resource {
 			"bandwidth": {
 				Type:     schema.TypeInt,
 				Required: true,
-				ForceNew: true,
 			},
 			"bandwidth_package_name": {
 				Type:     schema.TypeString,
@@ -211,7 +210,10 @@ func resourceAlicloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta inter
 		"BandwidthPackageId": d.Id(),
 	}
 	request["RegionId"] = client.RegionId
-	request["Bandwidth"] = d.Get("bandwidth")
+	if !d.IsNewResource() && d.HasChange("bandwidth") {
+		update = true
+		request["Bandwidth"] = d.Get("bandwidth")
+	}
 	if d.HasChange("bandwidth_package_name") {
 		update = true
 		request["Name"] = d.Get("bandwidth_package_name")
