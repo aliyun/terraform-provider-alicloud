@@ -39,7 +39,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_auto_provisioning_group" "default" {
-  launch_template_id            = alicloud_launch_template.template.id
+  launch_template_id            = alicloud_ecs_launch_template.template.id
   total_target_capacity         = "4"
   pay_as_you_go_target_capacity = "1"
   spot_target_capacity          = "2"
@@ -51,7 +51,7 @@ resource "alicloud_auto_provisioning_group" "default" {
   }
 }
 
-resource "alicloud_launch_template" "template" {
+resource "alicloud_ecs_launch_template" "template" {
   name              = var.name
   image_id          = data.alicloud_images.default.images[0].id
   instance_type     = "ecs.n1.tiny"
