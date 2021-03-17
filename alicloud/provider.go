@@ -396,6 +396,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quotas_quota_applications":                  dataSourceAlicloudQuotasQuotaApplications(),
 			"alicloud_ecs_auto_snapshot_policies":                 dataSourceAlicloudEcsAutoSnapshotPolicies(),
 			"alicloud_rds_parameter_groups":                       dataSourceAlicloudRdsParameterGroups(),
+			"alicloud_ecs_launch_templates":                       dataSourceAlicloudEcsLaunchTemplates(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -413,7 +414,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_network_interface_attachment":       resourceAliyunNetworkInterfaceAttachment(),
 			"alicloud_snapshot":                           resourceAliyunSnapshot(),
 			"alicloud_snapshot_policy":                    resourceAlicloudEcsAutoSnapshotPolicy(),
-			"alicloud_launch_template":                    resourceAliyunLaunchTemplate(),
+			"alicloud_launch_template":                    resourceAlicloudEcsLaunchTemplate(),
 			"alicloud_security_group":                     resourceAliyunSecurityGroup(),
 			"alicloud_security_group_rule":                resourceAliyunSecurityGroupRule(),
 			"alicloud_db_database":                        resourceAlicloudDBDatabase(),
@@ -703,6 +704,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quotas_quota_application":                  resourceAlicloudQuotasQuotaApplication(),
 			"alicloud_ecs_auto_snapshot_policy":                  resourceAlicloudEcsAutoSnapshotPolicy(),
 			"alicloud_rds_parameter_group":                       resourceAlicloudRdsParameterGroup(),
+			"alicloud_ecs_launch_template":                       resourceAlicloudEcsLaunchTemplate(),
 		},
 
 		ConfigureFunc: providerConfigure,
