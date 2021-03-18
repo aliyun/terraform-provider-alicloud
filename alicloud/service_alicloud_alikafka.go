@@ -511,28 +511,6 @@ func (s *AlikafkaService) KafkaTopicStatusRefreshFunc(id string) resource.StateR
 	}
 }
 
-func (s *AlikafkaService) WaitForAlikafkaTopicStatus(id string, timeout int) error {
-
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeAlikafkaTopicStatus(id)
-		if err != nil {
-			if !IsExpectedErrors(err, []string{ResourceNotfound}) {
-				return WrapError(err)
-			}
-		}
-
-		if object.OffsetTable.OffsetTableItem != nil && len(object.OffsetTable.OffsetTableItem) > 0 {
-			return nil
-		}
-
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object, id, ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-	}
-}
-
 func (s *AlikafkaService) WaitForAlikafkaTopic(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
