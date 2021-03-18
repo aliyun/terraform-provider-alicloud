@@ -9,9 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func dataSourceAlicloudCmsMonitorGroupInstanceses() *schema.Resource {
+func dataSourceAlicloudCmsMonitorGroupInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCmsMonitorGroupInstancesesRead,
+		Read: dataSourceAlicloudCmsMonitorGroupInstancesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -30,7 +30,7 @@ func dataSourceAlicloudCmsMonitorGroupInstanceses() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"instanceses": {
+			"instances": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -66,7 +66,7 @@ func dataSourceAlicloudCmsMonitorGroupInstanceses() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudCmsMonitorGroupInstancesesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudCmsMonitorGroupInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeMonitorGroupInstances"
@@ -92,7 +92,7 @@ func dataSourceAlicloudCmsMonitorGroupInstancesesRead(d *schema.ResourceData, me
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cms_monitor_group_instanceses", action, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cms_monitor_group_instances", action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
 
@@ -135,7 +135,7 @@ func dataSourceAlicloudCmsMonitorGroupInstancesesRead(d *schema.ResourceData, me
 		return WrapError(err)
 	}
 
-	if err := d.Set("instanceses", s); err != nil {
+	if err := d.Set("instances", s); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
