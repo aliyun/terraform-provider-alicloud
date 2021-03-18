@@ -106,7 +106,7 @@ func resourceAlicloudAlikafkaSaslAclCreate(d *schema.ResourceData, meta interfac
 	}
 
 	// Server may have cache, sleep a while.
-	time.Sleep(2 * time.Second)
+	time.Sleep(60 * time.Second)
 	d.SetId(fmt.Sprintf("%s:%s:%s:%s:%s:%s", instanceId, username, aclResourceType, aclResourceName, aclResourcePatternType, aclOperationType))
 	return resourceAlicloudAlikafkaSaslAclRead(d, meta)
 }
@@ -185,5 +185,7 @@ func resourceAlicloudAlikafkaSaslAclDelete(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
+	// Server may have cache, sleep a while.
+	time.Sleep(60 * time.Second)
 	return WrapError(alikafkaService.WaitForAlikafkaSaslAcl(d.Id(), Deleted, DefaultTimeoutMedium))
 }
