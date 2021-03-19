@@ -12,6 +12,8 @@ ENHANCEMENTS:
 - resource/alicloud_alicloud_tsdb_instance: Improves codes by modifying its conversion function name [GH-3337]
 - resource/alicloud_vpc: Adds new features including renaming name to vpc_name, enabling ipv6, setting user_cidrs and upgrading sdk [GH-3328]
 - datasource/alicloud_cms_monitor_group_instances: Rename instanceses to instances [GH-3349]
+- testcase: Improves the fc sweeper test with adding deleting fc-eni [GH-3354]
+- testcase: Adds supported regions for vpc testcase [GH-3353]
 - testcase: Upgrades alicloud_vpc and alicloud_vswitch testcases including change field name to vpc_name and vswitch_name [GH-3344]
 - testcase: Improves the mns and nas filesystem testcase by skipping needless cases [GH-3339]
 
