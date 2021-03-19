@@ -19,6 +19,8 @@ This resource will help you to manager node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.111.0, support auto scaling node pool. For more information on how to use auto scaling node pools, see [Use Terraform to create an elastic node pool](https://help.aliyun.com/document_detail/197717.htm).
 
+-> **NOTE:** ACK adds a new RamRole (AliyunCSManagedAutoScalerRole) for the permission control of the auto-scaling node pool. If you use the auto-scaling node pool, please click [AliyunCSManagedAutoScalerRole](https://ram.console.aliyun.com/role/authorization?request=%7B%22Services%22%3A%5B%7B%22Service%22%3A%22CS%22%2C%22Roles%22%3A%5B%7B%22RoleName%22%3A%22AliyunCSManagedAutoScalerRole%22%2C%22TemplateId%22%3A%22AliyunCSManagedAutoScalerRole%22%7D%5D%7D%5D%2C%22ReturnUrl%22%3A%22https%3A%2F%2Fcs.console.aliyun.com%2F%22%7D) to complete the authorization. 
+
 ## Example Usage
 
 The managed cluster configuration,
@@ -155,6 +157,35 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   }
 }
 ```
+Create a `PrePaid` node pool.
+```terraform
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  name                         = var.name
+  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids                  = [alicloud_vswitch.default.id]
+  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category         = "cloud_efficiency"
+  system_disk_size             = 40
+  key_name                     = alicloud_key_pair.default.key_name
+  # use PrePaid
+  instance_charge_type = "PrePaid"
+  period               = 1
+  period_unit          = "Month"
+  auto_renew           = true
+  auto_renew_period    = 1
+
+  # open cloud monitor
+  install_cloud_monitor        = true
+  
+  # enable auto-scaling
+  scaling_config {
+    min_size         = 1
+    max_size         = 10
+    type             = "cpu"
+  }
+}
+```
+
 
 ## Argument Reference
 
@@ -187,6 +218,13 @@ The following arguments are supported:
 * `taints` - (Optional) A List of Kubernetes taints to assign to the nodes.
 * `management` - (Optional, Available in 1.109.1+) Managed node pool configuration. When using a managed node pool, the node key must use `key_name`. Detailed below.
 * `scaling_config` - (Optional, Available in 1.111.0+) Auto scaling node pool configuration. For more details, see `scaling_config`.
+* `instance_charge_type`- (Optional, Available in 1.119.0+) Node payment type. Valid values: `PostPaid`, `PrePaid`, default is `PostPaid`. If value is `PrePaid`, the arguments `period`, `period_unit`, `auto_renew` and `auto_renew_period` are required.
+* `period`- (Optional, Available in 1.119.0+) Node payment period. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
+* `period_unit`- (Optional, Available in 1.119.0+) Node payment period unit, valid value: `Month`. Default is `Month`.
+* `auto_renew`- (Optional, Available in 1.119.0+) Enable Node payment auto-renew, default is `false`.
+* `auto_renew_period`- (Optional, Available in 1.119.0+) Node payment auto-renew period, one of `1`, `2`, `3`,`6`, `12`.
+* `install_cloud_monitor`- (Optional, Available in 1.119.0+) Install the cloud monitoring plug-in on the node, and you can view the monitoring information of the instance through the cloud monitoring console. Default is `false`.
+* `unschedulable`- (Optional, Available in 1.119.0+) Set the newly added node as unschedulable. If you want to open the scheduling option, you can open it in the node list of the console. If you are using an auto-scaling node pool, the setting will not take effect. Default is `false`.
 
 #### management
 

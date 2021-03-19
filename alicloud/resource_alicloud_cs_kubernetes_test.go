@@ -312,7 +312,7 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 					"enable_ssh":            "true",
 					"install_cloud_monitor": "true",
 					"user_ca":               tmpFile.Name(),
-					"resource_group_id":     "${alicloud_resource_manager_resource_group.default.id}",
+					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"deletion_protection":   "false",
 					"timezone":              "Asia/Shanghai",
 					"os_type":               "Linux",
