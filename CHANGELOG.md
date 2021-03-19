@@ -1,27 +1,28 @@
-## 1.119.0 (Unreleased)
+## 1.120.0 (Unreleased)
+## 1.119.0 (March 19, 2021)
 
-- **New Resource:** `alicloud_rds_parameter_group` [GH-3343]
-- **Data Source:** `alicloud_rds_parameter_groups` [GH-3343] 
+- **New Resource:** `alicloud_rds_parameter_group` ([#3343](https://github.com/aliyun/terraform-provider-alicloud/issues/3343))
+- **Data Source:** `alicloud_rds_parameter_groups` [[#3343](https://github.com/aliyun/terraform-provider-alicloud/issues/3343)] 
 
 ENHANCEMENTS:
 
-- resource/alicloud_cs_kubernetes_node_pool: Supports new feature including subscription charge type, installing cloud momitor, setting node unschedulable [GH-3351]
-- resource/alicloud_ga_bandwidth_package: Supports updating attributebandwidth [GH-3346]
-- resource/alicloud_alikafka_topic: Supports setting self-define create timeout [GH-3345]
-- resource/alicloud_vswitch: Upgrades vswitch including deprecating name and availability_zone, adding vswitch_name and zone_id, using new sdk [GH-3342]
-- resource/alicloud_alicloud_tsdb_instance: Improves codes by modifying its conversion function name [GH-3337]
-- resource/alicloud_vpc: Adds new features including renaming name to vpc_name, enabling ipv6, setting user_cidrs and upgrading sdk [GH-3328]
-- datasource/alicloud_cms_monitor_group_instances: Rename instanceses to instances [GH-3349]
-- testcase: Improves the fc sweeper test with adding deleting fc-eni [GH-3354]
-- testcase: Adds supported regions for vpc testcase [GH-3353]
-- testcase: Upgrades alicloud_vpc and alicloud_vswitch testcases including change field name to vpc_name and vswitch_name [GH-3344]
-- testcase: Improves the mns and nas filesystem testcase by skipping needless cases [GH-3339]
+- resource/alicloud_cs_kubernetes_node_pool: Supports new feature including subscription charge type, installing cloud momitor, setting node unschedulable ([#3351](https://github.com/aliyun/terraform-provider-alicloud/issues/3351))
+- resource/alicloud_ga_bandwidth_package: Supports updating attributebandwidth ([#3346](https://github.com/aliyun/terraform-provider-alicloud/issues/3346))
+- resource/alicloud_alikafka_topic: Supports setting self-define create timeout ([#3345](https://github.com/aliyun/terraform-provider-alicloud/issues/3345))
+- resource/alicloud_vswitch: Upgrades vswitch including deprecating name and availability_zone, adding vswitch_name and zone_id, using new sdk ([#3342](https://github.com/aliyun/terraform-provider-alicloud/issues/3342))
+- resource/alicloud_alicloud_tsdb_instance: Improves codes by modifying its conversion function name ([#3337](https://github.com/aliyun/terraform-provider-alicloud/issues/3337))
+- resource/alicloud_vpc: Adds new features including renaming name to vpc_name, enabling ipv6, setting user_cidrs and upgrading sdk ([#3328](https://github.com/aliyun/terraform-provider-alicloud/issues/3328))
+- datasource/alicloud_cms_monitor_group_instances: Rename instanceses to instances ([#3349](https://github.com/aliyun/terraform-provider-alicloud/issues/3349))
+- testcase: Improves the fc sweeper test with adding deleting fc-eni ([#3354](https://github.com/aliyun/terraform-provider-alicloud/issues/3354))
+- testcase: Adds supported regions for vpc testcase ([#3353](https://github.com/aliyun/terraform-provider-alicloud/issues/3353))
+- testcase: Upgrades alicloud_vpc and alicloud_vswitch testcases including change field name to vpc_name and vswitch_name ([#3344](https://github.com/aliyun/terraform-provider-alicloud/issues/3344))
+- testcase: Improves the mns and nas filesystem testcase by skipping needless cases ([#3339](https://github.com/aliyun/terraform-provider-alicloud/issues/3339))
 
 BUG FIXES:
 
-- resource/alicloud_keypair_attachment: Fix DescribeKeyPairAttachment bug(#3338) when the key pair name contains colon [GH-3341]
-- resource/alicloud_cs_kubernetes: Fixes GetClusterConfig failed error when the cluster state is failed [GH-3340]
-- datasource/alicloud_fc_service: Fixes enable fc service twice error and supports idempotent [GH-3348]
+- resource/alicloud_keypair_attachment: Fix DescribeKeyPairAttachment bug(#3338) when the key pair name contains colon ([#3341](https://github.com/aliyun/terraform-provider-alicloud/issues/3341))
+- resource/alicloud_cs_kubernetes: Fixes GetClusterConfig failed error when the cluster state is failed ([#3340](https://github.com/aliyun/terraform-provider-alicloud/issues/3340))
+- datasource/alicloud_fc_service: Fixes enable fc service twice error and supports idempotent ([#3348](https://github.com/aliyun/terraform-provider-alicloud/issues/3348))
 
 ## 1.118.0 (March 12, 2021)
 
