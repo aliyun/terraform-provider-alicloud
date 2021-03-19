@@ -30,6 +30,7 @@ func init() {
 			"alicloud_cen_instance",
 			"alicloud_edas_cluster",
 			"alicloud_edas_k8s_cluster",
+			"alicloud_network_acl",
 		},
 	})
 }
@@ -101,6 +102,11 @@ func testSweepVpcs(region string) error {
 
 	for _, id := range vpcIds {
 		log.Printf("[INFO] Deleting VPC: (%s)", id)
+		action := "DeleteVpc"
+		request := map[string]interface{}{
+			"VpcId":    id,
+			"RegionId": client.RegionId,
+		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(time.Minute*10, func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
