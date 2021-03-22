@@ -13,7 +13,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -305,59 +304,48 @@ func (s *VpcService) VSwitchStateRefreshFunc(id string, failStates []string) res
 	}
 }
 
-func (s *VpcService) DescribeSnatEntry(id string) (snat vpc.SnatTableEntry, err error) {
+func (s *VpcService) DescribeSnatEntry(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeSnatTableEntries"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return snat, WrapError(err)
+		err = WrapError(err)
+		return
 	}
-	request := vpc.CreateDescribeSnatTableEntriesRequest()
-	request.RegionId = string(s.client.Region)
-	request.SnatTableId = parts[0]
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-
-	for {
-		invoker := NewInvoker()
-		var response *vpc.DescribeSnatTableEntriesResponse
-		var raw interface{}
-		err = invoker.Run(func() error {
-			raw, err = s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.DescribeSnatTableEntries(request)
-			})
-			response, _ = raw.(*vpc.DescribeSnatTableEntriesResponse)
-			return err
-		})
-
-		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
-		//so judge the snatEntries length priority
-		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidSnatTableId.NotFound", "InvalidSnatEntryId.NotFound"}) {
-				return snat, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-			}
-			return snat, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-		if len(response.SnatTableEntries.SnatTableEntry) < 1 {
-			break
-		}
-
-		for _, snat := range response.SnatTableEntries.SnatTableEntry {
-			if snat.SnatEntryId == parts[1] {
-				return snat, nil
-			}
-		}
-
-		if len(response.SnatTableEntries.SnatTableEntry) < PageSizeLarge {
-			break
-		}
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return snat, WrapError(err)
-		}
-		request.PageNumber = page
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"SnatEntryId": parts[1],
+		"SnatTableId": parts[0],
 	}
-
-	return snat, WrapErrorf(Error(GetNotFoundMessage("SnatEntry", id)), NotFoundMsg, ProviderERROR)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidRegionId.NotFound", "InvalidSnatEntryId.NotFound", "InvalidSnatTableId.NotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("SnatEntry", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.SnatTableEntries.SnatTableEntry", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SnatTableEntries.SnatTableEntry", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["SnatEntryId"].(string) != parts[1] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
 func (s *VpcService) DescribeForwardEntry(id string) (entry vpc.ForwardTableEntry, err error) {
@@ -924,30 +912,6 @@ func (s *VpcService) WaitForForwardEntry(id string, status Status, timeout int) 
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
-	}
-}
-
-func (s *VpcService) WaitForSnatEntry(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-
-	for {
-		object, err := s.DescribeSnatEntry(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-		if object.Status == string(status) {
-			return nil
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
-		}
-
 	}
 }
 
@@ -1650,6 +1614,26 @@ func (s *VpcService) DescribeVswitch(id string) (object map[string]interface{}, 
 func (s *VpcService) VswitchStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVswitch(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["Status"].(string) == failState {
+				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+			}
+		}
+		return object, object["Status"].(string), nil
+	}
+}
+
+func (s *VpcService) SnatEntryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeSnatEntry(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.

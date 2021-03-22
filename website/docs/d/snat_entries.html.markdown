@@ -15,7 +15,7 @@ This data source provides a list of Snat Entries owned by an Alibaba Cloud accou
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "snat-entry-example-name"
 }
@@ -69,6 +69,10 @@ The following arguments are supported:
 * `snat_ip` - (Optional) The public IP of the Snat Entry.
 * `source_cidr` - (Optional) The source CIDR block of the Snat Entry.
 * `snat_table_id` - (Required) The ID of the Snat table.
+* `name_regex` - (Optional, ForceNew, Available in 1.120.0+) A regex string to filter results by the resource name. 
+* `snat_entry_name` - (Optional, ForceNew, Available in 1.120.0+) The name of snat entry.
+* `source_vswitch_id` - (Optional, ForceNew, Available in 1.120.0+) The source vswitch ID.
+* `status` - (Optional, ForceNew, Available in 1.120.0+) The status of the Snat Entry. Valid values: `Available`, `Deleting` and `Pending`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -81,4 +85,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `snat_ip` - The public IP of the Snat Entry.
   * `source_cidr` - The source CIDR block of the Snat Entry.
   * `status` - The status of the Snat Entry.
+  * `snat_entry_id` - The ID of snat entry.
+  * `snat_entry_name` - The name of snat entry.
+  * `source_vswitch_id` - The source vswitch ID.
 
