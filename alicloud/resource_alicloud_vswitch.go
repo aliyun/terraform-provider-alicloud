@@ -109,12 +109,23 @@ func resourceAlicloudVswitchCreate(d *schema.ResourceData, meta interface{}) err
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	request["ClientToken"] = buildClientToken("CreateVSwitch")
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		request["ClientToken"] = buildClientToken("CreateVSwitch")
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidCidrBlock.Overlapped", "InvalidStatus.RouteEntry", "OperationFailed.IdempotentTokenProcessing", "TaskConflict", "Throttling", "UnknownError"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vswitch", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 
 	d.SetId(fmt.Sprint(response["VSwitchId"]))
 	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VswitchStateRefreshFunc(d.Id(), []string{}))
@@ -204,7 +215,6 @@ func resourceAlicloudVswitchUpdate(d *schema.ResourceData, meta interface{}) err
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("description")
-		d.SetPartial("ipv6_cidr_block")
 		d.SetPartial("name")
 		d.SetPartial("vswitch_name")
 	}
@@ -225,11 +235,11 @@ func resourceAlicloudVswitchDelete(d *schema.ResourceData, meta interface{}) err
 	}
 
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"TaskConflictError"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
