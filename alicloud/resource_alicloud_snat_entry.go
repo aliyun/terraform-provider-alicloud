@@ -2,40 +2,45 @@ package alicloud
 
 import (
 	"fmt"
-
+	"log"
+	"strings"
 	"time"
 
-	"strings"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliyunSnatEntry() *schema.Resource {
+func resourceAlicloudSnatEntry() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunSnatEntryCreate,
-		Read:   resourceAliyunSnatEntryRead,
-		Update: resourceAliyunSnatEntryUpdate,
-		Delete: resourceAliyunSnatEntryDelete,
+		Create: resourceAlicloudSnatEntryCreate,
+		Read:   resourceAlicloudSnatEntryRead,
+		Update: resourceAlicloudSnatEntryUpdate,
+		Delete: resourceAlicloudSnatEntryDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(2 * time.Minute),
+			Delete: schema.DefaultTimeout(2 * time.Minute),
+			Update: schema.DefaultTimeout(2 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"snat_table_id": {
+			"snat_entry_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"snat_entry_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"snat_ip": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"source_vswitch_id": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				ForceNew:      true,
-				ConflictsWith: strings.Fields("source_cidr"),
-			},
-			"snat_ip": {
+			"snat_table_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -46,11 +51,13 @@ func resourceAliyunSnatEntry() *schema.Resource {
 				ForceNew:      true,
 				ConflictsWith: strings.Fields("source_vswitch_id"),
 			},
-			"snat_entry_name": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"source_vswitch_id": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: strings.Fields("source_cidr"),
 			},
-			"snat_entry_id": {
+			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -58,121 +65,141 @@ func resourceAliyunSnatEntry() *schema.Resource {
 	}
 }
 
-func resourceAliyunSnatEntryCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudSnatEntryCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-
-	request := vpc.CreateCreateSnatEntryRequest()
-	request.RegionId = string(client.Region)
-	request.SnatTableId = d.Get("snat_table_id").(string)
-	request.SourceVSwitchId = d.Get("source_vswitch_id").(string)
-	request.SnatIp = d.Get("snat_ip").(string)
-	if v, ok := d.GetOk("source_cidr"); ok {
-		request.SourceCIDR = v.(string)
+	var response map[string]interface{}
+	action := "CreateSnatEntry"
+	request := make(map[string]interface{})
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
 	}
-
+	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("snat_entry_name"); ok {
-		request.SnatEntryName = v.(string)
+		request["SnatEntryName"] = v
 	}
-	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		ar := request
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateSnatEntry(ar)
-		})
+
+	request["SnatIp"] = d.Get("snat_ip")
+	request["SnatTableId"] = d.Get("snat_table_id")
+	if v, ok := d.GetOk("source_cidr"); ok {
+		request["SourceCIDR"] = v
+	}
+
+	if v, ok := d.GetOk("source_vswitch_id"); ok {
+		request["SourceVSwitchId"] = v
+	}
+
+	wait := incrementalWait(3*time.Second, 10*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EIP_NOT_IN_GATEWAY", "OperationUnsupported.EipNatBWPCheck", "OperationUnsupported.EipInBinding"}) {
+			if IsExpectedErrors(err, []string{"EIP_NOT_IN_GATEWAY", "OperationUnsupported.EipInBinding", "OperationUnsupported.EipNatBWPCheck"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*vpc.CreateSnatEntryResponse)
-		d.SetId(fmt.Sprintf("%s%s%s", request.SnatTableId, COLON_SEPARATED, response.SnatEntryId))
+		addDebug(action, response, request)
 		return nil
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_snat_entry", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_snat_entry", action, AlibabaCloudSdkGoERROR)
 	}
 
-	if err := vpcService.WaitForSnatEntry(d.Id(), Available, DefaultTimeout); err != nil {
-		return WrapError(err)
+	d.SetId(fmt.Sprint(request["SnatTableId"], ":", response["SnatEntryId"]))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.SnatEntryStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliyunSnatEntryRead(d, meta)
+	return resourceAlicloudSnatEntryRead(d, meta)
 }
-
-func resourceAliyunSnatEntryRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudSnatEntryRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	// compatible with previous id which in under 1.37.0
 	if strings.HasPrefix(d.Id(), "snat-") {
 		d.SetId(fmt.Sprintf("%s%s%s", d.Get("snat_table_id").(string), COLON_SEPARATED, d.Id()))
 	}
-
 	object, err := vpcService.DescribeSnatEntry(d.Id())
-
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_snat_entry vpcService.DescribeSnatEntry Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-
-	d.Set("snat_table_id", object.SnatTableId)
-	if _, ok := d.GetOk("source_cidr"); ok {
-		d.Set("source_cidr", object.SourceCIDR)
-	} else {
-		d.Set("source_vswitch_id", object.SourceVSwitchId)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
 	}
-	d.Set("snat_ip", object.SnatIp)
-	d.Set("snat_entry_id", object.SnatEntryId)
-	d.Set("snat_entry_name", object.SnatEntryName)
-
+	d.Set("snat_entry_id", parts[1])
+	d.Set("snat_table_id", parts[0])
+	d.Set("snat_entry_name", object["SnatEntryName"])
+	d.Set("snat_ip", object["SnatIp"])
+	if _, ok := d.GetOk("source_cidr"); ok {
+		d.Set("source_cidr", object["SourceCIDR"])
+	} else {
+		d.Set("source_vswitch_id", object["SourceVSwitchId"])
+	}
+	d.Set("status", object["Status"])
 	return nil
 }
-
-func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudSnatEntryUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
+	var response map[string]interface{}
 	// compatible with previous id which in under 1.37.0
 	if strings.HasPrefix(d.Id(), "snat-") {
 		d.SetId(fmt.Sprintf("%s%s%s", d.Get("snat_table_id").(string), COLON_SEPARATED, d.Id()))
 	}
-	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
-
-	request := vpc.CreateModifySnatEntryRequest()
-	request.RegionId = string(client.Region)
-	request.SnatTableId = parts[0]
-	request.SnatEntryId = parts[1]
 	update := false
-
+	request := map[string]interface{}{
+		"SnatEntryId": parts[1],
+		"SnatTableId": parts[0],
+	}
+	request["RegionId"] = client.RegionId
 	if d.HasChange("snat_entry_name") {
 		update = true
-		request.SnatEntryName = d.Get("snat_entry_name").(string)
+		request["SnatEntryName"] = d.Get("snat_entry_name")
 	}
-
 	if update {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifySnatEntry(request)
-		})
+		action := "ModifySnatEntry"
+		conn, err := client.NewVpcClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		if err := vpcService.WaitForSnatEntry(d.Id(), Available, DefaultTimeout); err != nil {
 			return WrapError(err)
 		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.SnatEntryStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
-	return resourceAliyunSnatEntryRead(d, meta)
+	return resourceAlicloudSnatEntryRead(d, meta)
 }
-
-func resourceAliyunSnatEntryDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudSnatEntryDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
 	// compatible with previous id which in under 1.37.0
 	if strings.HasPrefix(d.Id(), "snat-") {
 		d.SetId(fmt.Sprintf("%s%s%s", d.Get("snat_table_id").(string), COLON_SEPARATED, d.Id()))
@@ -181,28 +208,41 @@ func resourceAliyunSnatEntryDelete(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapError(err)
 	}
-	request := vpc.CreateDeleteSnatEntryRequest()
-	request.RegionId = string(client.Region)
-	request.SnatTableId = parts[0]
-	request.SnatEntryId = parts[1]
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteSnatEntry(request)
-		})
+	vpcService := VpcService{client}
+	action := "DeleteSnatEntry"
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"SnatEntryId": parts[1],
+		"SnatTableId": parts[0],
+	}
+
+	request["RegionId"] = client.RegionId
+	wait := incrementalWait(3*time.Second, 10*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorretSnatEntryStatus"}) {
+			if IsExpectedErrors(err, []string{"IncorretSnatEntryStatus"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidSnatTableId.NotFound", "InvalidSnatEntryId.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidRegionId.NotFound", "InvalidSnatEntryId.NotFound", "InvalidSnatTableId.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(vpcService.WaitForSnatEntry(d.Id(), Deleted, DefaultTimeout))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.SnatEntryStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }
