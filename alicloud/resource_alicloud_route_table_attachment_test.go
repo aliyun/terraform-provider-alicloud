@@ -210,7 +210,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_route_table" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
-    name = "${var.name}"
+    route_table_name = "${var.name}"
     description = "${var.name}_description"
 }
 
@@ -251,7 +251,7 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_route_table" "default" {
 	count = "${var.number}"
 	vpc_id = "${alicloud_vpc.default.id}"
-    name = "${var.name}"
+    route_table_name = "${var.name}"
     description = "${var.name}_description"
 }
 
