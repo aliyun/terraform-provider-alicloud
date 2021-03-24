@@ -641,34 +641,45 @@ func (s *VpcService) DescribeCommonBandwidthPackageAttachment(id string) (v vpc.
 	return v, WrapErrorf(Error(GetNotFoundMessage("CommonBandWidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
 }
 
-func (s *VpcService) DescribeRouteTable(id string) (v vpc.RouterTableListType, err error) {
-	request := vpc.CreateDescribeRouteTableListRequest()
-	request.RegionId = s.client.RegionId
-	request.RouteTableId = id
-
-	invoker := NewInvoker()
-	err = invoker.Run(func() error {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeRouteTableList(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+func (s *VpcService) DescribeRouteTable(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeRouteTableList"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"RouteTableId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(action, response, request)
+	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
+		err = WrapErrorf(err, ResponseCodeMsg, id, action, response)
+		return object, err
+	}
+	v, err := jsonpath.Get("$.RouterTableList.RouterTableListType", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RouterTableList.RouterTableListType", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["RouteTableId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*vpc.DescribeRouteTableListResponse)
-		//Finding the routeTableId
-		for _, routerTableType := range response.RouterTableList.RouterTableListType {
-			if routerTableType.RouteTableId == id {
-				v = routerTableType
-				return nil
-			}
-		}
-		return WrapErrorf(Error(GetNotFoundMessage("RouteTable", id)), NotFoundMsg, ProviderERROR)
-	})
-	return v, WrapError(err)
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
-func (s *VpcService) DescribeRouteTableAttachment(id string) (v vpc.RouterTableListType, err error) {
+func (s *VpcService) DescribeRouteTableAttachment(id string) (v map[string]interface{}, err error) {
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return v, WrapError(err)
@@ -683,12 +694,17 @@ func (s *VpcService) DescribeRouteTableAttachment(id string) (v vpc.RouterTableL
 			return WrapError(err)
 		}
 
-		for _, id := range object.VSwitchIds.VSwitchId {
-			if id == vSwitchId {
-				v = object
-				return nil
+		if val, ok := object["VSwitchIds"].(map[string]interface{}); ok {
+			if vs, ok := val["VSwitchId"]; ok {
+				for _, id := range vs.([]interface{}) {
+					if fmt.Sprint(id) == vSwitchId {
+						v = object
+						return nil
+					}
+				}
 			}
 		}
+
 		return WrapErrorf(Error(GetNotFoundMessage("RouteTableAttachment", id)), NotFoundMsg, ProviderERROR)
 	})
 	return v, WrapError(err)
@@ -969,31 +985,6 @@ func (s *VpcService) FlattenPublicIpAddressesMappings(list []vpc.PublicIpAddress
 	return result
 }
 
-func (s *VpcService) WaitForRouteTable(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeRouteTable(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-
-		if object.Status == string(status) {
-			return nil
-		}
-
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
-		}
-		time.Sleep(3 * time.Second)
-	}
-}
-
 func (s *VpcService) WaitForRouteTableAttachment(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
@@ -1008,12 +999,12 @@ func (s *VpcService) WaitForRouteTableAttachment(id string, status Status, timeo
 			}
 		}
 
-		if object.Status == string(status) {
+		if fmt.Sprint(object["Status"]) == string(status) {
 			return nil
 		}
 
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, fmt.Sprint(object["Status"]), string(status), ProviderERROR)
 		}
 		time.Sleep(3 * time.Second)
 	}
@@ -1647,6 +1638,26 @@ func (s *VpcService) SnatEntryStateRefreshFunc(id string, failStates []string) r
 func (s *VpcService) ForwardEntryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeForwardEntry(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["Status"].(string) == failState {
+				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+			}
+		}
+		return object, object["Status"].(string), nil
+	}
+}
+
+func (s *VpcService) RouteTableStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeRouteTable(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.

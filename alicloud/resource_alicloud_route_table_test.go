@@ -5,15 +5,14 @@ import (
 	"log"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -43,112 +42,111 @@ func testSweepRouteTable(region string) error {
 		"tf_testAcc",
 	}
 
-	var routeTables []vpc.RouterTableListType
-	req := vpc.CreateDescribeRouteTableListRequest()
-	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
-	req.PageNumber = requests.NewInteger(1)
+	action := "DescribeRouteTableList"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	routeTableIds := make([]string, 0)
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeRouteTableList(req)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			return fmt.Errorf("Error retrieving RouteTables: %s", err)
 		}
-		resp, _ := raw.(*vpc.DescribeRouteTableListResponse)
-		if resp == nil || len(resp.RouterTableList.RouterTableListType) < 1 {
-			break
-		}
-		routeTables = append(routeTables, resp.RouterTableList.RouterTableListType...)
-
-		if len(resp.RouterTableList.RouterTableListType) < PageSizeLarge {
-			break
-		}
-
-		page, err := getNextpageNumber(req.PageNumber)
+		resp, err := jsonpath.Get("$.RouterTableList.RouterTableListType", response)
 		if err != nil {
-			return err
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.RouterTableList.RouterTableListType", response)
 		}
-		req.PageNumber = page
-	}
-
-	for _, vtb := range routeTables {
-		name := vtb.RouteTableName
-		id := vtb.RouteTableId
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			name := fmt.Sprint(item["RouteTableName"])
+			id := fmt.Sprint(item["RouteTableId"])
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Route Table: %s (%s)", name, id)
-			continue
-		}
-		log.Printf("[INFO] Deleting Route Table: %s (%s)", name, id)
-		req := vpc.CreateDeleteRouteTableRequest()
-		req.RouteTableId = id
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteRouteTable(req)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete Route Table (%s (%s)): %s", name, id, err)
-		}
-	}
-	return nil
-}
-
-func testAccCheckRouteTableDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	routeTableService := VpcService{client}
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_route_table" {
-			continue
-		}
-		instance, err := routeTableService.DescribeRouteTable(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
+			if skip {
+				log.Printf("[INFO] Skipping Route Table: %s (%s)", name, id)
 				continue
 			}
-			return WrapError(err)
+			routeTableIds = append(routeTableIds, id)
 		}
-		if instance.RouteTableId != "" {
-			return WrapError(Error("Route Table %s still exist", instance.RouteTableId))
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	for _, id := range routeTableIds {
+		log.Printf("[INFO] Deleting Route Table: (%s)", id)
+		request := map[string]interface{}{
+			"RouteTableId": id,
+		}
+		request["RegionId"] = client.RegionId
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"DependencyViolation.RouteEntry", "IncorrectRouteTableStatus", "InvalidParameter.Action", "InvalidRegionId.NotFound"}) {
+				return nil
+			}
+			log.Printf("[ERROR] Failed to delete Route Table (%s): %s", id, err)
 		}
 	}
 	return nil
 }
 
-func TestAccAlicloudRouteTableBasic(t *testing.T) {
-	var v vpc.RouterTableListType
-	rand := acctest.RandIntRange(1000, 9999)
+func TestAccAlicloudRouteTable_basic(t *testing.T) {
+	var v map[string]interface{}
 	resourceId := "alicloud_route_table.default"
-	ra := resourceAttrInit(resourceId, map[string]string{
-		"vpc_id":      CHECKSET,
-		"name":        fmt.Sprintf("tf-testAccRouteTable%d", rand),
-		"description": "",
-	})
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, AlicloudRouteTableMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	}, "DescribeRouteTable")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sroutetable%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRouteTableBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
-		// module name
+
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRouteTableDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRouteTableConfigBasic(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id": "${alicloud_vpc.default.id}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"vpc_id": CHECKSET,
+					}),
 				),
 			},
 			{
@@ -157,40 +155,56 @@ func TestAccAlicloudRouteTableBasic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccRouteTableConfig_name(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf-testAccRouteTable%d_change", rand),
+						"description": name + "1",
 					}),
 				),
 			},
 			{
-				Config: testAccRouteTableConfig_description(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"route_table_name": name + "1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": fmt.Sprintf("tf-testAccRouteTable%d_description", rand),
+						"route_table_name": name + "1",
 					}),
 				),
 			},
 			{
-				Config: testAccRouteTableConfig_tags(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
 						"tags.Created": "TF",
-						"tags.For":     "acceptance test",
+						"tags.For":     "Test",
 					}),
 				),
 			},
 			{
-				Config: testAccRouteTableConfig_all(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"description":      name,
+					"route_table_name": "${var.name}",
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":         fmt.Sprintf("tf-testAccRouteTable%d_all", rand),
-						"description":  fmt.Sprintf("tf-testAccRouteTable%d_description_all", rand),
-						"tags.%":       REMOVEKEY,
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"description":      name,
+						"route_table_name": name,
+						"tags.%":           "2",
+						"tags.Created":     "TF-update",
+						"tags.For":         "Test-update",
 					}),
 				),
 			},
@@ -198,153 +212,17 @@ func TestAccAlicloudRouteTableBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRouteTableMulti(t *testing.T) {
-	var v vpc.RouterTableListType
-	rand := acctest.RandIntRange(1000, 9999)
-	resourceId := "alicloud_route_table.default.4"
-	ra := resourceAttrInit(resourceId, map[string]string{
-		"vpc_id":      CHECKSET,
-		"name":        fmt.Sprintf("tf-testAccRouteTable%d", rand),
-		"description": "",
-	})
-	serviceFunc := func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+var AlicloudRouteTableMap0 = map[string]string{}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRouteTableDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccRouteTableConfigMulti(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
-				),
-			},
-		},
-	})
-}
-
-func testAccRouteTableConfigBasic(rand int) string {
-	return fmt.Sprintf(
-		`
+func AlicloudRouteTableBasicDependence0(name string) string {
+	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAccRouteTable%d"
-}
+			default = "%s"
+		}
+
 resource "alicloud_vpc" "default" {
-	cidr_block = "172.16.0.0/12"
-	vpc_name = "${var.name}"
-}	
-
-resource "alicloud_route_table" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
-}
-`, rand)
+  vpc_name = "${var.name}"
 }
 
-func testAccRouteTableConfig_name(rand int) string {
-	return fmt.Sprintf(
-		`
-variable "name" {
-	default = "tf-testAccRouteTable%d"
-}
-resource "alicloud_vpc" "default" {
-	cidr_block = "172.16.0.0/12"
-	vpc_name = "${var.name}"
-}	
-
-resource "alicloud_route_table" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}_change"
-}
-`, rand)
-}
-
-func testAccRouteTableConfig_description(rand int) string {
-	return fmt.Sprintf(
-		`
-variable "name" {
-	default = "tf-testAccRouteTable%d"
-}
-resource "alicloud_vpc" "default" {
-	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
-}	
-
-resource "alicloud_route_table" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}_change"
-  description = "${var.name}_description"
-}
-`, rand)
-}
-
-func testAccRouteTableConfig_tags(rand int) string {
-	return fmt.Sprintf(
-		`
-variable "name" {
-	default = "tf-testAccRouteTable%d"
-}
-resource "alicloud_vpc" "default" {
-	cidr_block = "172.16.0.0/12"
-	vpc_name = "${var.name}"
-}	
-
-resource "alicloud_route_table" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}_change"
-  description = "${var.name}_description"
-  tags 		= {
-		Created = "TF"
-		For 	= "acceptance test"
-  }
-}
-`, rand)
-}
-
-func testAccRouteTableConfig_all(rand int) string {
-	return fmt.Sprintf(
-		`
-variable "name" {
-	default = "tf-testAccRouteTable%d"
-}
-resource "alicloud_vpc" "default" {
-	cidr_block = "172.16.0.0/12"
-	vpc_name = "${var.name}"
-}	
-
-resource "alicloud_route_table" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}_all"
-  description = "${var.name}_description_all"
-}
-`, rand)
-}
-
-func testAccRouteTableConfigMulti(rand int) string {
-	return fmt.Sprintf(
-		`
-variable "name" {
-	default = "tf-testAccRouteTable%d"
-}
-resource "alicloud_vpc" "default" {
-	cidr_block = "172.16.0.0/12"
-	vpc_name = "${var.name}"
-}	
-
-resource "alicloud_route_table" "default" {
-  count = 5
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
-}
-`, rand)
+`, name)
 }
