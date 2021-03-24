@@ -35,11 +35,16 @@ resource "alicloud_ga_bandwidth_package" "example" {
 
 The following arguments are supported:
 
-* `auto_pay` - (Optional) The auto pay. Valid values: `false`, `true`.
-* `auto_use_coupon` - (Optional) The auto use coupon. Valid values: `false`, `true`.
+* `auto_pay` - (Optional) Whether to pay automatically. Valid values:
+    `false`: If automatic payment is not enabled, you need to go to the order center to complete the payment after the order is generated.
+    `true`: Enable automatic payment, automatic payment order.
+* `auto_use_coupon` - (Optional) Whether use vouchers. Default value is `false`. Valid values: `false`: Not used, `true`: Use.
 * `bandwidth` - (Required) The bandwidth value of bandwidth packet.
 * `bandwidth_package_name` - (Optional) The name of the bandwidth packet.
 * `bandwidth_type` - (Optional) The bandwidth type of the bandwidth. Valid values: `Advanced`, `Basic`, `Enhanced`.
+
+-> **NOTE:** At present, only basic can be configured to enhanced, but not enhanced and advanced to other types of accelerated bandwidth.
+
 * `billing_type` - (Optional, ForceNew) The billing type. Valid values: `PayBy95`, `PayByTraffic`.
 * `cbn_geographic_region_ida` - (Optional, ForceNew) Interworking area A of cross domain acceleration package. Only international stations support returning this parameter. Default value is `China-mainland`.
 * `cbn_geographic_region_idb` - (Optional, ForceNew) Interworking area B of cross domain acceleration package. Only international stations support returning this parameter. Default value is `Global`.

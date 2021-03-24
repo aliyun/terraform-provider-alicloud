@@ -55,7 +55,7 @@ func TestAccAlicloudGaBandwidthPackage_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"billing_type", "payment_type", "ratio"},
+				ImportStateVerifyIgnore: []string{"billing_type", "payment_type", "ratio", "auto_use_coupon"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
