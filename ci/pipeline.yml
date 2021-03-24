@@ -1012,7 +1012,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: false
+        trigger: true
         resource: 02
       - aggregate:
           - *get-aliyun-cli
