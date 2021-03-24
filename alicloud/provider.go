@@ -531,6 +531,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_log_dashboard":                             resourceAlicloudLogDashboard(),
 			"alicloud_log_alert":                                 resourceAlicloudLogAlert(),
 			"alicloud_log_audit":                                 resourceAlicloudLogAudit(),
+			"alicloud_log_etl":                                   resourceAlicloudLogETL(),
 			"alicloud_fc_service":                                resourceAlicloudFCService(),
 			"alicloud_fc_function":                               resourceAlicloudFCFunction(),
 			"alicloud_fc_trigger":                                resourceAlicloudFCTrigger(),
