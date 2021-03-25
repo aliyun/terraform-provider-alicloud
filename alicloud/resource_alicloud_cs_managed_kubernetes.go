@@ -72,17 +72,27 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"worker_disk_size": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          40,
-				ValidateFunc:     validation.IntBetween(20, 32768),
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      40,
+				ValidateFunc: validation.IntBetween(20, 32768),
 			},
 			"worker_disk_category": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  DiskCloudEfficiency,
+			},
+			"worker_disk_performance_level": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				Default:          DiskCloudEfficiency,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Default:          "PL1",
+				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+				DiffSuppressFunc: workerDiskPerformanceLevelDiffSuppressFunc,
+			},
+			"worker_disk_snapshot_policy_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				//DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_data_disk_size": {
 				Type:             schema.TypeInt,
@@ -138,6 +148,10 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 							Optional: true,
 						},
 						"auto_snapshot_policy_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"performance_level": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},

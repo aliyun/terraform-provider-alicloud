@@ -178,6 +178,27 @@ func csKubernetesWorkerPostPaidDiffSuppressFunc(k, old, new string, d *schema.Re
 	return d.Get("worker_instance_charge_type").(string) == "PostPaid" || !(d.Id() == "") && !d.Get("force_update").(bool)
 }
 
+func masterDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("master_disk_category"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
+}
+
+func workerDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("worker_disk_category"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
+}
+
+func csNodepoolDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("system_disk_category"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
+}
+
 func csNodepoolInstancePostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) == "PostPaid" {
 		return true

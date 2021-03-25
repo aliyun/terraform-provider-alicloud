@@ -43,6 +43,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                        name,
+					"version":                     "1.18.8-aliyun.1",
 					"worker_vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
 					"worker_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"worker_number":               "2",
@@ -74,6 +75,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                                  name,
+						"version":                               "1.18.8-aliyun.1",
 						"worker_number":                         "2",
 						"password":                              "Test12345",
 						"pod_cidr":                              "172.20.0.0/16",
@@ -186,6 +188,91 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
+	var v *cs.KubernetesClusterDetail
+
+	resourceId := "alicloud_cs_managed_kubernetes.default"
+	ra := resourceAttrInit(resourceId, csManagedKubernetesBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testaccmanagedkubernetes-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSManagedKubernetesConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EssdSupportRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                           name,
+					"password":                       "Test12345",
+					"pod_cidr":                       "172.20.0.0/16",
+					"version":                        "1.18.8-aliyun.1",
+					"service_cidr":                   "172.21.0.0/20",
+					"deletion_protection":            "false",
+					"worker_number":                  "1",
+					"worker_data_disk_category":      "cloud_ssd",
+					"worker_data_disk_size":          "20",
+					"worker_instance_charge_type":    "PostPaid",
+					"cluster_spec":                   "ack.pro.small",
+					"worker_vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"worker_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"worker_disk_category":           "cloud_essd",
+					"worker_disk_size":               "120",
+					"worker_disk_performance_level":  "PL0",
+					"worker_disk_snapshot_policy_id": "${alicloud_snapshot_policy.default.id}",
+					"worker_data_disks":              []map[string]string{{"category": "cloud_essd", "size": "120", "auto_snapshot_policy_id": "${alicloud_snapshot_policy.default.id}", "performance_level": "PL0"}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                          name,
+						"version":                       "1.18.8-aliyun.1",
+						"password":                      "Test12345",
+						"pod_cidr":                      "172.20.0.0/16",
+						"service_cidr":                  "172.21.0.0/20",
+						"deletion_protection":           "false",
+						"worker_number":                 "1",
+						"worker_data_disk_category":     "cloud_ssd",
+						"worker_data_disk_size":         "20",
+						"worker_instance_charge_type":   "PostPaid",
+						"cluster_spec":                  "ack.pro.small",
+						"worker_disk_size":              "120",
+						"worker_disk_category":          "cloud_essd",
+						"worker_disk_performance_level": "PL0",
+						"worker_data_disks.#":           "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"name", "new_nat_gateway", "pod_cidr", "service_cidr", "enable_ssh",
+					"password", "install_cloud_monitor", "user_ca", "force_update", "node_cidr_mask", "slb_internet_enabled",
+					"vswitch_ids", "worker_disk_category", "worker_disk_size", "worker_number", "version", "worker_instance_charge_type", "worker_instance_types",
+					"log_config", "worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids",
+					"exclude_autoscaler_nodes", "cpu_policy", "proxy_mode", "cluster_domain", "custom_san", "node_port_range",
+					"os_type", "platform", "timezone", "runtime", "taints", "encryption_provider_key", "rds_instances",
+					"worker_disk_snapshot_policy_id", "worker_disk_performance_level", "load_balancer_spec", "worker_data_disks"},
+			},
+		},
+	})
+}
+
 func resourceCSManagedKubernetesConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -198,6 +285,7 @@ data "alicloud_zones" default {
 
 data "alicloud_instance_types" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	instance_type_family = "ecs.c6"
 	cpu_core_count = 2
 	memory_size = 4
 	kubernetes_node_role = "Worker"
@@ -234,6 +322,13 @@ resource "alicloud_db_instance" "default" {
   vswitch_id           = "${alicloud_vswitch.default.id}"
   monitoring_period    = "60"
 }
+
+resource "alicloud_snapshot_policy" "default" {
+	name            = "${var.name}"
+	repeat_weekdays = ["1", "2", "3"]
+	retention_days  = -1
+	time_points     = ["1", "22", "23"]
+  }
 
 `, name)
 }
@@ -325,7 +420,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 
 var csManagedKubernetesBasicMap = map[string]string{
 	"new_nat_gateway":             "true",
-	"worker_number":               "3",
+	"worker_number":               CHECKSET,
 	"worker_instance_types.0":     CHECKSET,
 	"worker_disk_size":            "40",
 	"worker_disk_category":        "cloud_efficiency",
