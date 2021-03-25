@@ -41,7 +41,7 @@ func resourceAlicloudRouteTable() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				Deprecated:    "Field 'name' has been deprecated from provider version 1.120.0. New field 'route_table_name' instead.",
+				Deprecated:    "Field 'name' has been deprecated from provider version 1.119.1. New field 'route_table_name' instead.",
 				ConflictsWith: []string{"route_table_name"},
 				ValidateFunc:  validation.StringLenBetween(2, 128),
 			},
