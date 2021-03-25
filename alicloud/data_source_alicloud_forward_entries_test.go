@@ -63,6 +63,17 @@ func TestAccAlicloudForwardEntriesDataSourceBasic(t *testing.T) {
 		}),
 	}
 
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+			"status":           `"Available"`,
+		}),
+		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
+			"status":           `"Deleting"`,
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
@@ -70,6 +81,7 @@ func TestAccAlicloudForwardEntriesDataSourceBasic(t *testing.T) {
 			"internal_ip":      `"${alicloud_forward_entry.default.internal_ip}"`,
 			"ids":              `[ "${alicloud_forward_entry.default.forward_entry_id}" ]`,
 			"name_regex":       `"${alicloud_forward_entry.default.name}"`,
+			"status":           `"Available"`,
 		}),
 		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
@@ -77,9 +89,10 @@ func TestAccAlicloudForwardEntriesDataSourceBasic(t *testing.T) {
 			"internal_ip":      `"${alicloud_forward_entry.default.internal_ip}"`,
 			"ids":              `[ "${alicloud_forward_entry.default.forward_entry_id}_fake" ]`,
 			"name_regex":       `"${alicloud_forward_entry.default.name}"`,
+			"status":           `"Deleting"`,
 		}),
 	}
-	forwardEntriesCheckInfo.dataSourceTestCheck(t, rand, forwardTableIdConf, externalIpConf, internalIpConf, idsConf, nameRegexConf, allConf)
+	forwardEntriesCheckInfo.dataSourceTestCheck(t, rand, forwardTableIdConf, externalIpConf, internalIpConf, idsConf, nameRegexConf, statusConf, allConf)
 
 }
 
@@ -106,7 +119,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	zone_id = "${data.alicloud_zones.default.zones.0.id}"
 	vswitch_name = "${var.name}"
 }
 
