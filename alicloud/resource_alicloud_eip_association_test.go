@@ -193,6 +193,11 @@ resource "alicloud_instance" "default" {
   tags = {
     Name = "TerraformTest-instance"
   }
+  lifecycle {
+    ignore_changes = [
+      instance_type,
+    ]
+  }
 }
 
 resource "alicloud_eip" "default" {
@@ -259,6 +264,11 @@ resource "alicloud_instance" "default" {
   instance_name = "${var.name}"
   tags = {
     Name = "TerraformTest-instance"
+  }
+  lifecycle {
+    ignore_changes = [
+      instance_type,
+    ]
   }
 }
 

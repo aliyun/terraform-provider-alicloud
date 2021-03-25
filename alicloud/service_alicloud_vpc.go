@@ -26,18 +26,27 @@ func (s *VpcService) DescribeEip(id string) (eip vpc.EipAddress, err error) {
 	request := vpc.CreateDescribeEipAddressesRequest()
 	request.RegionId = string(s.client.Region)
 	request.AllocationId = id
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeEipAddresses(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeEipAddresses(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*vpc.DescribeEipAddressesResponse)
+		if len(response.EipAddresses.EipAddress) <= 0 || response.EipAddresses.EipAddress[0].AllocationId != id {
+			return resource.NonRetryableError(WrapErrorf(Error(GetNotFoundMessage("Eip", id)), NotFoundMsg, ProviderERROR))
+		}
+		eip = response.EipAddresses.EipAddress[0]
+		return nil
 	})
-	if err != nil {
-		return eip, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*vpc.DescribeEipAddressesResponse)
-	if len(response.EipAddresses.EipAddress) <= 0 || response.EipAddresses.EipAddress[0].AllocationId != id {
-		return eip, WrapErrorf(Error(GetNotFoundMessage("Eip", id)), NotFoundMsg, ProviderERROR)
-	}
-	eip = response.EipAddresses.EipAddress[0]
+
 	return
 }
 
