@@ -126,7 +126,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
+  name_regex  = "^ubuntu"
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
