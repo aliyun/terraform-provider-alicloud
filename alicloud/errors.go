@@ -195,9 +195,9 @@ func NeedRetry(err error) bool {
 	if err == nil {
 		return false
 	}
-	if e, ok := err.(*common.Error); ok {
-		re := regexp.MustCompile("^Post https://.*EOF$")
-		return re.MatchString(e.Message)
+	if err.Error() != "" {
+		re := regexp.MustCompile("^Post \"https://.*EOF$")
+		return re.MatchString(err.Error())
 	}
 	if e, ok := err.(*tea.SDKError); ok {
 		if strings.Contains(*e.Message, "code: 500, 您已开通过") {
