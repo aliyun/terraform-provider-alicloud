@@ -38,8 +38,8 @@ resource "alicloud_route_table" "foo" {
 The following arguments are supported:
 
 * `vpc_id` - (Required, ForceNew) The vpc_id of the route table, the field can't be changed.
-* `name` - (Optional) Field `name` has been deprecated from provider version 1.120.0. New field `route_table_name` instead.
-* `route_table_name` - (Optional, Available in v1.120.0+) The name of the route table.
+* `name` - (Optional) Field `name` has been deprecated from provider version 1.119.1. New field `route_table_name` instead.
+* `route_table_name` - (Optional, Available in v1.119.1+) The name of the route table.
 * `description` - (Optional) The description of the route table instance.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 
@@ -48,11 +48,11 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the route table instance id.
-* `status` - (Available in v1.120.0+) The status of the route table.
+* `status` - (Available in v1.119.1+) The status of the route table.
 
 ### Timeouts
 
--> **NOTE:** Available in 1.120.0+.
+-> **NOTE:** Available in 1.119.1+.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

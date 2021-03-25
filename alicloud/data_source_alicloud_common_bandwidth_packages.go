@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -13,51 +14,73 @@ import (
 func dataSourceAlicloudCommonBandwidthPackages() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudCommonBandwidthPackagesRead,
-
 		Schema: map[string]*schema.Schema{
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
 			},
-			"output_file": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
-				ForceNew: true,
-			},
 			"names": {
 				Type:     schema.TypeList,
-				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"bandwidth_package_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"dry_run": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"include_reservation_data": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-
-			// Computed values
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Available", "Pending"}, false),
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"packages": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"bandwidth": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"status": {
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"bandwidth_package_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"bandwidth_package_name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -65,19 +88,35 @@ func dataSourceAlicloudCommonBandwidthPackages() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"business_status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"deletion_protection": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 						"description": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"business_status": {
+						"expired_time": {
 							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"has_reservation_data": {
+							Type:     schema.TypeBool,
 							Computed: true,
 						},
 						"isp": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"creation_time": {
+						"internet_charge_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"payment_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -86,22 +125,52 @@ func dataSourceAlicloudCommonBandwidthPackages() *schema.Resource {
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"ip_address": {
+									"allocation_id": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
-									"allocation_id": {
+									"bandwidth_package_ip_relation_status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"ip_address": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
 								},
 							},
-							MinItems: 0,
+						},
+						"ratio": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"reservation_active_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"reservation_bandwidth": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"reservation_internet_charge_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"reservation_order_type": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"resource_group_id": {
 							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
+							Computed: true,
+						},
+						"service_managed": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 					},
 				},
@@ -109,117 +178,150 @@ func dataSourceAlicloudCommonBandwidthPackages() *schema.Resource {
 		},
 	}
 }
+
 func dataSourceAlicloudCommonBandwidthPackagesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := vpc.CreateDescribeCommonBandwidthPackagesRequest()
-	request.RegionId = string(client.Region)
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	request.ResourceGroupId = d.Get("resource_group_id").(string)
+	action := "DescribeCommonBandwidthPackages"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("bandwidth_package_name"); ok {
+		request["Name"] = v
+	}
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
+	}
+	if v, ok := d.GetOkExists("include_reservation_data"); ok {
+		request["IncludeReservationData"] = v
+	}
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
+	var bandwidthPackageNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		bandwidthPackageNameRegex = r
+	}
+
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			if vv == nil {
 				continue
 			}
-			idsMap[Trim(vv.(string))] = Trim(vv.(string))
+			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-
-	var allCommonBandwidthPackages []vpc.CommonBandwidthPackage
-	var nameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok {
-		if r, err := regexp.Compile(Trim(v.(string))); err == nil {
-			nameRegex = r
-		} else {
-			WrapError(err)
-		}
+	status, statusOk := d.GetOk("status")
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	invoker := NewInvoker()
 	for {
-		var raw interface{}
-		if err := invoker.Run(func() error {
-			response, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.DescribeCommonBandwidthPackages(request)
-			})
-			raw = response
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_common_bandwidth_packages", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_common_bandwidth_packages", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*vpc.DescribeCommonBandwidthPackagesResponse)
-		if len(response.CommonBandwidthPackages.CommonBandwidthPackage) < 1 {
-			break
-		}
+		addDebug(action, response, request)
 
-		for _, cbwp := range response.CommonBandwidthPackages.CommonBandwidthPackage {
-			if nameRegex != nil {
-				if !nameRegex.MatchString(cbwp.Name) {
+		resp, err := jsonpath.Get("$.CommonBandwidthPackages.CommonBandwidthPackage", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.CommonBandwidthPackages.CommonBandwidthPackage", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if bandwidthPackageNameRegex != nil {
+				if !bandwidthPackageNameRegex.MatchString(fmt.Sprint(item["Name"])) {
 					continue
 				}
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[cbwp.BandwidthPackageId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["BandwidthPackageId"])]; !ok {
 					continue
 				}
 			}
-			allCommonBandwidthPackages = append(allCommonBandwidthPackages, cbwp)
+			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+				continue
+			}
+			objects = append(objects, item)
 		}
-
-		if len(response.CommonBandwidthPackages.CommonBandwidthPackage) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
-
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
-		} else {
-			request.PageNumber = page
-		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-
-	return CommonBandwidthPackagesDecriptionAttributes(d, allCommonBandwidthPackages, meta)
-}
-
-func CommonBandwidthPackagesDecriptionAttributes(d *schema.ResourceData, cbwps []vpc.CommonBandwidthPackage, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	var ids []string
-	var names []string
-	var s []map[string]interface{}
-	for _, cbwp := range cbwps {
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":                  cbwp.BandwidthPackageId,
-			"bandwidth":           cbwp.Bandwidth,
-			"description":         cbwp.Description,
-			"status":              cbwp.Status,
-			"business_status":     cbwp.BusinessStatus,
-			"isp":                 cbwp.ISP,
-			"name":                cbwp.Name,
-			"creation_time":       cbwp.CreationTime,
-			"resource_group_id":   cbwp.ResourceGroupId,
-			"public_ip_addresses": vpcService.FlattenPublicIpAddressesMappings(cbwp.PublicIpAddresses.PublicIpAddresse),
+			"bandwidth":                        object["Bandwidth"],
+			"id":                               fmt.Sprint(object["BandwidthPackageId"]),
+			"bandwidth_package_id":             fmt.Sprint(object["BandwidthPackageId"]),
+			"bandwidth_package_name":           object["Name"],
+			"name":                             object["Name"],
+			"business_status":                  object["BusinessStatus"],
+			"deletion_protection":              object["DeletionProtection"],
+			"description":                      object["Description"],
+			"expired_time":                     object["ExpiredTime"],
+			"has_reservation_data":             object["HasReservationData"],
+			"isp":                              object["ISP"],
+			"internet_charge_type":             object["InternetChargeType"],
+			"payment_type":                     object["InstanceChargeType"],
+			"ratio":                            formatInt(object["Ratio"]),
+			"reservation_active_time":          object["ReservationActiveTime"],
+			"reservation_bandwidth":            object["ReservationBandwidth"],
+			"reservation_internet_charge_type": object["ReservationInternetChargeType"],
+			"reservation_order_type":           object["ReservationOrderType"],
+			"resource_group_id":                object["ResourceGroupId"],
+			"service_managed":                  formatInt(object["ServiceManaged"]),
+			"status":                           object["Status"],
 		}
-		names = append(names, cbwp.Name)
-		ids = append(ids, cbwp.BandwidthPackageId)
+
+		publicIpAddresse := make([]map[string]interface{}, 0)
+		if publicIpAddresseList, ok := object["PublicIpAddresses"].(map[string]interface{})["PublicIpAddresse"].([]interface{}); ok {
+			for _, v := range publicIpAddresseList {
+				if m1, ok := v.(map[string]interface{}); ok {
+					temp1 := map[string]interface{}{
+						"allocation_id":                        m1["AllocationId"],
+						"bandwidth_package_ip_relation_status": m1["BandwidthPackageIpRelationStatus"],
+						"ip_address":                           m1["IpAddress"],
+					}
+					publicIpAddresse = append(publicIpAddresse, temp1)
+				}
+			}
+		}
+		mapping["public_ip_addresses"] = publicIpAddresse
+		ids = append(ids, fmt.Sprint(object["BandwidthPackageId"]))
+		names = append(names, object["Name"])
 		s = append(s, mapping)
 	}
+
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("packages", s); err != nil {
-		return WrapError(err)
-	}
-	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
-	}
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
 
-	// create a json file in current directory and write data source to it.
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("packages", s); err != nil {
+		return WrapError(err)
+	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
-	return nil
 
+	return nil
 }

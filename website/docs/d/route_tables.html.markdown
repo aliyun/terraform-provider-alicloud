@@ -50,10 +50,10 @@ The following arguments are supported:
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `resource_group_id` - (Optional, ForceNew, Available in 1.60.0+) The Id of resource group which route tables belongs.
-* `route_table_name` - (Optional, ForceNew, Available in 1.120.0+) The route table name.
-* `router_id` - (Optional, ForceNew, Available in 1.120.0+) The router ID.
-* `router_type` - (Optional, ForceNew, Available in 1.120.0+) The route type of route table. Valid values: `VRouter` and `VBR`.
-* `status` - (Optional, ForceNew, Available in 1.120.0+) The status of resource. Valid values: `Available` and `Pending`.
+* `route_table_name` - (Optional, ForceNew, Available in 1.119.1+) The route table name.
+* `router_id` - (Optional, ForceNew, Available in 1.119.1+) The router ID.
+* `router_type` - (Optional, ForceNew, Available in 1.119.1+) The route type of route table. Valid values: `VRouter` and `VBR`.
+* `status` - (Optional, ForceNew, Available in 1.119.1+) The status of resource. Valid values: `Available` and `Pending`.
 
 ## Attributes Reference
 
@@ -67,7 +67,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `route_table_type` - The type of route table.
   * `name` - Name of the route table.
   * `description` - The description of the route table instance.
-  * `creation_time` - (Deprecated form v1.120.0+) Time of creation.
+  * `creation_time` - (Deprecated form v1.119.1+) Time of creation.
   * `resource_group_id` - The Id of resource group which route tables belongs.
   * `route_table_id` - The route table id.
   * `route_table_name` - The route table name.
