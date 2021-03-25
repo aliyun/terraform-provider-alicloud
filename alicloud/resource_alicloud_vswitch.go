@@ -239,19 +239,19 @@ func resourceAlicloudVswitchDelete(d *schema.ResourceData, meta interface{}) err
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflictError"}) || NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+			if IsExpectedErrors(err, []string{"InvalidVSwitchId.NotFound", "InvalidVswitchID.NotFound"}) {
+				return nil
 			}
-			return resource.NonRetryableError(err)
+			if IsExpectedErrors(err, []string{"InvalidRegionId.NotFound"}) {
+				return resource.NonRetryableError(err)
+			}
+			wait()
+			return resource.RetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Forbidden.RegionNotFound", "IncorrectStatus", "IncorrectVSwitchId", "InvalidVSwitchId.NotFound", "InvalidVswitchID.NotFound"}) {
-			return nil
-		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.VswitchStateRefreshFunc(d.Id(), []string{}))
