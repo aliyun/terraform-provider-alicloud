@@ -196,7 +196,7 @@ func NeedRetry(err error) bool {
 		return false
 	}
 	if err.Error() != "" {
-		re := regexp.MustCompile("^Post \"https://.*EOF$")
+		re := regexp.MustCompile("^Post [\"]*https://.*EOF$")
 		return re.MatchString(err.Error())
 	}
 	if e, ok := err.(*tea.SDKError); ok {
