@@ -75,10 +75,10 @@ The following arguments are supported:
 * `internal_ip` - (Optional) The private IP address.
 * `forward_table_id` - (Required) The ID of the Forward table.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `forward_entry_name` - (Optional, ForceNew, Available in 1.120.0+) The name of forward entry.
-* `internal_port` - (Optional, ForceNew, Available in 1.120.0+) The internal port.
-* `ip_protocol` - (Optional, ForceNew, Available in 1.120.0+) The ip protocol. Valid values: `any`,`tcp` and `udp`. 
-* `status` - (Optional, ForceNew, Available in 1.120.0+) The status of farward entry. Valid value `Available`, `Deleting` and `Pending`.
+* `forward_entry_name` - (Optional, ForceNew, Available in 1.119.1+) The name of forward entry.
+* `internal_port` - (Optional, ForceNew, Available in 1.119.1+) The internal port.
+* `ip_protocol` - (Optional, ForceNew, Available in 1.119.1+) The ip protocol. Valid values: `any`,`tcp` and `udp`. 
+* `status` - (Optional, ForceNew, Available in 1.119.1+) The status of farward entry. Valid value `Available`, `Deleting` and `Pending`.
 
 ## Attributes Reference
 

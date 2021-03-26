@@ -69,10 +69,10 @@ The following arguments are supported:
 * `snat_ip` - (Optional) The public IP of the Snat Entry.
 * `source_cidr` - (Optional) The source CIDR block of the Snat Entry.
 * `snat_table_id` - (Required) The ID of the Snat table.
-* `name_regex` - (Optional, ForceNew, Available in 1.120.0+) A regex string to filter results by the resource name. 
-* `snat_entry_name` - (Optional, ForceNew, Available in 1.120.0+) The name of snat entry.
-* `source_vswitch_id` - (Optional, ForceNew, Available in 1.120.0+) The source vswitch ID.
-* `status` - (Optional, ForceNew, Available in 1.120.0+) The status of the Snat Entry. Valid values: `Available`, `Deleting` and `Pending`.
+* `name_regex` - (Optional, ForceNew, Available in 1.119.1+) A regex string to filter results by the resource name. 
+* `snat_entry_name` - (Optional, ForceNew, Available in 1.119.1+) The name of snat entry.
+* `source_vswitch_id` - (Optional, ForceNew, Available in 1.119.1+) The source vswitch ID.
+* `status` - (Optional, ForceNew, Available in 1.119.1+) The status of the Snat Entry. Valid values: `Available`, `Deleting` and `Pending`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

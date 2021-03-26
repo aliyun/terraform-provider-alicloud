@@ -90,11 +90,11 @@ The following attributes are exported:
 
 * `id` - The ID of the snat entry. The value formats as `<snat_table_id>:<snat_entry_id>`
 * `snat_entry_id` - The id of the snat entry on the server.
-* `status` - (Available in 1.120.0+) The status of snat entry.
+* `status` - (Available in 1.119.1+) The status of snat entry.
 
 ### Timeouts
 
--> **NOTE:** Available in 1.120.0+.
+-> **NOTE:** Available in 1.119.1+.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
