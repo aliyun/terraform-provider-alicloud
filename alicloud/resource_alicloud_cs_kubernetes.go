@@ -904,22 +904,18 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 
 			if d.HasChange("worker_disk_category") {
 				args.WorkerSystemDiskCategory = aliyungoecs.DiskCategory(d.Get("worker_disk_category").(string))
-				d.SetPartial("worker_disk_category")
 			}
 
 			if d.HasChange("worker_disk_size") {
 				args.WorkerSystemDiskSize = int64(d.Get("worker_disk_size").(int))
-				d.SetPartial("worker_disk_size")
 			}
 
 			if d.HasChange("worker_disk_snapshot_policy_id") {
 				args.WorkerSnapshotPolicyId = d.Get("worker_disk_snapshot_policy_id").(string)
-				d.SetPartial("worker_disk_snapshot_policy_id")
 			}
 
 			if d.HasChange("worker_disk_performance_level") {
 				args.WorkerSystemDiskPerformanceLevel = d.Get("worker_disk_performance_level").(string)
-				d.SetPartial("worker_disk_performance_level")
 			}
 
 			if d.HasChange("worker_data_disks") {
@@ -999,6 +995,10 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 			d.SetPartial("worker_number")
+			d.SetPartial("worker_disk_size")
+			d.SetPartial("worker_disk_category")
+			d.SetPartial("worker_disk_snapshot_policy_id")
+			d.SetPartial("worker_disk_performance_level")
 		}
 
 		// remove cluster nodes.

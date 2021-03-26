@@ -440,7 +440,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 					"pod_cidr":            "192.168.1.0/24",
 					"service_cidr":        "192.168.2.0/24",
 					"enable_ssh":          "true",
-					"deletion_protection": "false",
+					"deletion_protection": "true",
 					// master args
 					"master_vswitch_ids":             []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default.id}", "${alicloud_vswitch.default.id}"},
 					"master_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
@@ -466,7 +466,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 						"pod_cidr":            "192.168.1.0/24",
 						"service_cidr":        "192.168.2.0/24",
 						"enable_ssh":          "true",
-						"deletion_protection": "false",
+						"deletion_protection": "true",
 						// master args
 						"master_disk_category":          "cloud_essd",
 						"master_disk_size":              "100",
@@ -492,6 +492,46 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 					"exclude_autoscaler_nodes", "cpu_policy", "proxy_mode", "cluster_domain", "custom_san", "node_port_range",
 					"os_type", "platform", "timezone", "runtime", "taints", "rds_instances", "worker_disk_performance_level",
 					"worker_disk_snapshot_policy_id", "master_disk_performance_level", "master_disk_snapshot_policy_id", "load_balancer_spec"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					// worker args
+					"worker_number":                  "2",
+					"worker_vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"worker_instance_types":          []string{"${data.alicloud_instance_types.default1.instance_types.0.id}"},
+					"worker_disk_category":           "cloud_essd",
+					"worker_disk_size":               "120",
+					"worker_disk_performance_level":  "PL1",
+					"worker_disk_snapshot_policy_id": "${alicloud_snapshot_policy.default.id}",
+					// global args
+					"deletion_protection": "false",
+					"name":                "tf-managed-k8s",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						// worker args
+						"worker_number":                  "1",
+						"worker_vswitch_ids.#":           "1",
+						"worker_instance_types.#":        "1",
+						"worker_disk_category":           "cloud_essd",
+						"worker_disk_size":               "120",
+						"worker_disk_performance_level":  "PL1",
+						"worker_disk_snapshot_policy_id": CHECKSET,
+						// global args
+						"deletion_protection": "false",
+						"name":                "tf-managed-k8s",
+					}),
+				),
 			},
 		},
 	})
