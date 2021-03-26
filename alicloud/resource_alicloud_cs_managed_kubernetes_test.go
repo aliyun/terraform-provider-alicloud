@@ -283,7 +283,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 					"worker_data_disks":              []map[string]string{{"category": "cloud_essd", "size": "100", "auto_snapshot_policy_id": "${alicloud_snapshot_policy.default.id}", "performance_level": "PL1"}},
 					// global args
 					"new_nat_gateway":     "true",
-					"name":                "tf-managed-k8s",
+					"name":                "tf-testAcc-managedK8s",
 					"deletion_protection": "false",
 					"maintenance_window":  []map[string]string{{"enable": "true", "maintenance_time": "03:00:00Z", "duration": "3h", "weekly_period": "Thursday"}},
 				}),
@@ -298,7 +298,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 						"worker_data_disks.#":            "1",
 						// global args
 						"new_nat_gateway":      "true",
-						"name":                 "tf-managed-k8s",
+						"name":                 "tf-testAcc-managedK8s",
 						"deletion_protection":  "false",
 						"maintenance_window.#": "1",
 					}),

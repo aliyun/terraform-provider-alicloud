@@ -515,7 +515,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 					"worker_disk_snapshot_policy_id": "${alicloud_snapshot_policy.default.id}",
 					// global args
 					"deletion_protection": "false",
-					"name":                "tf-managed-k8s",
+					"name":                "tf-testAcc-dedicatedK8s",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -529,7 +529,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 						"worker_disk_snapshot_policy_id": CHECKSET,
 						// global args
 						"deletion_protection": "false",
-						"name":                "tf-managed-k8s",
+						"name":                "tf-testAcc-dedicatedK8s",
 					}),
 				),
 			},
