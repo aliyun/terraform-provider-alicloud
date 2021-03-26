@@ -1,4 +1,22 @@
-## 1.120.0 (Unreleased)
+## 1.119.1 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_forward_entry: Renames the name to forward_entry_name; Supports new attribute protocol; Upgrades the resource SDK [GH-3368]
+- resource/alicloud_eip_association: Enlarges the deletion timeout to avoid deleting it failed [GH-3366]
+- resource/alicloud_eip_assocition: Enlarges the client connection timeout to avoid connecting failed [GH-3365]
+- resource/alicloud_mongodb_instance: Removes the field tde_status forceNew and supports modifying it online [GH-3360]
+- resource/alicloud_ga_listener: Supports protocol HTTP and HTTPS [GH-3358]
+- resource/alicloud_snat_entry: Adds new attribute status and supports self-define timeout; Upgrades the resource dependent sdk [GH-3357]
+- resource/alicloud_vswitch: Leverages the specified error code to add retry strategy when creating or deleting vswitch [GH-3356]
+- testcase: Modify the image name_regex to ^ubuntu to avoid the needless test failed [GH-3367]
+- Cleanup after release v1.119.0 [GH-3355]
+
+BUG FIXES:
+
+- resource/alicloud_vpc,alicloud_vswitch: Fixes DependencyViolation error when deleting vpc and vswitch [GH-3370]
+- resource/alicloud_eip_association: Fixes the connection timeout when getting Eip resource [GH-3369]
+
 ## 1.119.0 (March 19, 2021)
 
 - **New Resource:** `alicloud_rds_parameter_group` ([#3343](https://github.com/aliyun/terraform-provider-alicloud/issues/3343))
