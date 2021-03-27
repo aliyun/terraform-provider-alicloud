@@ -852,7 +852,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 1130
+        resource: 1130Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1999,6 +1999,14 @@ resources:
     type: time
     source:
       start: 11:00 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: 1130Thu
+    type: time
+    source:
+      start: 11:30 AM
       stop: 10:50 PM
       days: [Thursday]
       location: {{time_location}}

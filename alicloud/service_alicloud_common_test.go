@@ -816,12 +816,24 @@ resource "alicloud_vswitch" "default" {
 }
 `
 const PolarDBCommonTestCase = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+data "alicloud_polardb_zones" "default"{}
+data "alicloud_vpcs" "default" {
+	is_default = true
 }
 data "alicloud_vswitches" "default" {
-  zone_id = data.alicloud_zones.default.ids[0]
-  is_default = "true"
+	zone_id = local.zone_id
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+resource "alicloud_vswitch" "this" {
+ count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+ name = "tf_testAccPolarDB"
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ availability_zone = data.alicloud_polardb_zones.default.ids.0
+ cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
 }
 `
 const AdbCommonTestCase = `
