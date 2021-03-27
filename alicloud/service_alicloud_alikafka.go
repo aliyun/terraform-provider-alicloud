@@ -439,7 +439,7 @@ func (s *AlikafkaService) WaitForAlikafkaInstance(id string, status Status, time
 	}
 }
 
-func (s *AlikafkaService) WaitForAllAlikafkaNodeRelease(id string, timeout int) error {
+func (s *AlikafkaService) WaitForAllAlikafkaNodeRelease(id string, status string, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
 		object, err := s.DescribeAlikafkaNodeStatus(id)
@@ -454,7 +454,7 @@ func (s *AlikafkaService) WaitForAllAlikafkaNodeRelease(id string, timeout int) 
 		// Process wait for all node become released.
 		allReleased := true
 		for _, v := range object.Status {
-			if !strings.EqualFold("released", v) {
+			if v != status && !strings.HasSuffix(v, status) {
 				allReleased = false
 			}
 		}
