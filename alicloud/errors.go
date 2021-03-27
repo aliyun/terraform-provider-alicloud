@@ -116,7 +116,13 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 	if e, ok := err.(*ComplexError); ok {
 		return IsExpectedErrors(e.Cause, expectCodes)
 	}
-	if err == nil {
+
+	if e, ok := err.(*tea.SDKError); ok {
+		for _, code := range expectCodes {
+			if *e.Code == code || strings.Contains(*e.Data, code) {
+				return true
+			}
+		}
 		return false
 	}
 
