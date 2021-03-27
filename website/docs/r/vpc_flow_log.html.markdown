@@ -1,4 +1,3 @@
-
 ---
 subcategory: "VPC"
 layout: "alicloud"

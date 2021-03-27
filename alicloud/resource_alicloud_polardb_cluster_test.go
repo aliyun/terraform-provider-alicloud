@@ -208,7 +208,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_node_count": "2",
-						"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.1.db_node_class}",
+						"db_node_class": CHECKSET,
 					}),
 				),
 			},
@@ -262,7 +262,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 					testAccCheck(map[string]string{
 						"description":   "tf-testaccPolarDBClusterUpdate1",
 						"maintain_time": "02:00Z-03:00Z",
-						"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.2.db_node_class}",
+						"db_node_class": CHECKSET,
 					}),
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.13,100.69.7.113"),
 				),

@@ -154,7 +154,7 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 			return alikafkaClient.CreatePostPayOrder(createOrderReq)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL", "ONS_SYSTEM_ERROR"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -557,5 +557,5 @@ func resourceAlicloudAlikafkaInstanceDelete(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	return WrapError(alikafkaService.WaitForAllAlikafkaNodeRelease(d.Id(), DefaultTimeoutMedium))
+	return WrapError(alikafkaService.WaitForAllAlikafkaNodeRelease(d.Id(), "released", DefaultTimeoutMedium))
 }
