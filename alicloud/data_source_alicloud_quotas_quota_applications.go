@@ -169,6 +169,7 @@ func dataSourceAlicloudQuotasQuotaApplicationsRead(d *schema.ResourceData, meta 
 
 	action := "ListQuotaApplications"
 	request := make(map[string]interface{})
+	request["SourceIp"] = client.SourceIp
 	if v, ok := d.GetOk("dimensions"); ok {
 		dimensionsMaps := make([]map[string]interface{}, 0)
 		for _, dimensions := range v.([]interface{}) {

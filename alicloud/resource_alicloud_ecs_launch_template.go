@@ -248,6 +248,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				MaxItems: 1,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"category": {
