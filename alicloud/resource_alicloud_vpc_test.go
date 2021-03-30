@@ -31,6 +31,7 @@ func init() {
 			"alicloud_edas_cluster",
 			"alicloud_edas_k8s_cluster",
 			"alicloud_network_acl",
+			"alicloud_cs_kubernetes",
 		},
 	})
 }

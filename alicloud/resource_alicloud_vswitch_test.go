@@ -26,7 +26,7 @@ func init() {
 			"alicloud_slb",
 			"alicloud_ess_scalinggroup",
 			"alicloud_fc_service",
-			"alicloud_cs_cluster",
+			"alicloud_cs_kubernetes",
 			"alicloud_kvstore_instance",
 			"alicloud_route_table_attachment",
 			//"alicloud_havip",

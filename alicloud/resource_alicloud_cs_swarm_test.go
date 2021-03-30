@@ -5,122 +5,12 @@ import (
 	"log"
 	"testing"
 
-	"strings"
-	"time"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
-
-func init() {
-	resource.AddTestSweepers("alicloud_cs_cluster", &resource.Sweeper{
-		Name: "alicloud_cs_cluster",
-		F:    testSweepCSSwarms,
-	})
-}
-
-func testSweepCSSwarms(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
-
-	raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-		return csClient.DescribeClusters("")
-	})
-	if err != nil {
-		return fmt.Errorf("Error retrieving CS Clusters: %s", err)
-	}
-	clusters, _ := raw.([]cs.ClusterType)
-	sweeped := false
-
-	var vpcIds, vswIds, groupIds, slbIds []string
-	for _, v := range clusters {
-		name := v.Name
-		id := v.ClusterID
-		if string(v.RegionID) != region {
-			log.Printf("The current cluster is in the region %s. Skipped.", string(v.RegionID))
-			continue
-		}
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping CS Clusters: %s (%s)", name, id)
-			continue
-		}
-		log.Printf("[INFO] Deleting CS Clusters: %s (%s)", name, id)
-		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return nil, csClient.DeleteCluster(id)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete CS Clusters (%s (%s)): %s", name, id, err)
-		} else {
-			sweeped = true
-		}
-		vpcIds = append(vpcIds, v.VPCID)
-		vswIds = append(vswIds, v.VSwitchID)
-		groupIds = append(groupIds, v.SecurityGroupID)
-		slbIds = append(slbIds, v.ExternalLoadbalancerID)
-	}
-	if sweeped {
-		// Waiting 2 minutes to eusure these swarms have been deleted.
-		time.Sleep(1 * time.Minute)
-	}
-	// Currently, the CS will retain some resources after the cluster is deleted.
-	slbS := SlbService{client}
-	for _, id := range slbIds {
-		if err := slbS.sweepSlb(id); err != nil {
-			log.Printf("[ERROR] Failed to deleting slb %s: %s", id, WrapError(err))
-		}
-	}
-	ecsS := EcsService{client}
-	for _, id := range groupIds {
-		if err := ecsS.sweepSecurityGroup(id); err != nil {
-			log.Printf("[ERROR] Failed to deleting SG %s: %s", id, WrapError(err))
-		}
-	}
-	vpcS := VpcService{client}
-	for _, id := range vswIds {
-		if err := vpcS.sweepVSwitch(id); err != nil {
-			log.Printf("[ERROR] Failed to deleting VSW %s: %s", id, WrapError(err))
-		}
-	}
-	for _, id := range vpcIds {
-		request := vpc.CreateDescribeNatGatewaysRequest()
-		request.VpcId = id
-		if raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeNatGateways(request)
-		}); err != nil {
-			log.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
-		} else {
-			response, _ := raw.(vpc.DescribeNatGatewaysResponse)
-			for _, nat := range response.NatGateways.NatGateway {
-				if err := vpcS.sweepNatGateway(nat.NatGatewayId); err != nil {
-					log.Printf("[ERROR] Failed to delete nat gateway %s: %s", nat.Name, err)
-				}
-			}
-		}
-		if err := vpcS.sweepVpc(id); err != nil {
-			log.Printf("[ERROR] Failed to deleting VPC %s: %s", id, WrapError(err))
-		}
-	}
-	return nil
-}
 
 func SkipTestAccAlicloudCSSwarm_vpc(t *testing.T) {
 	var container cs.ClusterType
