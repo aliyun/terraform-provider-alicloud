@@ -125,6 +125,7 @@ func resourceAlicloudQuotasQuotaApplicationCreate(d *schema.ResourceData, meta i
 	if err != nil {
 		return WrapError(err)
 	}
+	request["SourceIp"] = client.SourceIp
 	if v, ok := d.GetOk("audit_mode"); ok {
 		request["AuditMode"] = v
 	}
