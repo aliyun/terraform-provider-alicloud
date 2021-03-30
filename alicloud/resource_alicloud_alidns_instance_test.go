@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+// Prepaid instance skip test and domestic accounts don't support calling international region to create instances.
 func SkipTestAccAlicloudAlidnsInstance_basic(t *testing.T) {
 	var v alidns.DescribeDnsProductInstanceResponse
 
