@@ -24,6 +24,7 @@ func init() {
 			"alicloud_instance",
 			"alicloud_network_interface",
 			"alicloud_yundun_bastionhost_instance",
+			"alicloud_cs_kubernetes",
 		},
 	})
 }
