@@ -449,3 +449,23 @@ func (s *ResourcemanagerService) DescribeResourceManagerControlPolicyAttachment(
 	}
 	return object, nil
 }
+
+func (s *ResourcemanagerService) ResourceManagerResourceDirectoryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeResourceManagerResourceDirectory(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["ScpStatus"].(string) == failState {
+				return object, object["ScpStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["ScpStatus"].(string)))
+			}
+		}
+		return object, object["ScpStatus"].(string), nil
+	}
+}
