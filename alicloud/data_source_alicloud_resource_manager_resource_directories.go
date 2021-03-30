@@ -41,6 +41,10 @@ func dataSourceAlicloudResourceManagerResourceDirectories() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -72,6 +76,7 @@ func dataSourceAlicloudResourceManagerResourceDirectoriesRead(d *schema.Resource
 		"id":                    fmt.Sprint(response["ResourceDirectory"].(map[string]interface{})["ResourceDirectoryId"]),
 		"resource_directory_id": fmt.Sprint(response["ResourceDirectory"].(map[string]interface{})["ResourceDirectoryId"]),
 		"root_folder_id":        response["ResourceDirectory"].(map[string]interface{})["RootFolderId"],
+		"status":                response["ResourceDirectory"].(map[string]interface{})["ScpStatus"],
 	}
 	s = append(s, mapping)
 
