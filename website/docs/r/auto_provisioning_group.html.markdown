@@ -27,7 +27,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
+  vpc_name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 
@@ -35,11 +35,11 @@ resource "alicloud_vswitch" "default" {
   vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = data.alicloud_zones.default.zones[0].id
-  name              = var.name
+  vswitch_name      = var.name
 }
 
 resource "alicloud_auto_provisioning_group" "default" {
-  launch_template_id            = alicloud_launch_template.template.id
+  launch_template_id            = alicloud_ecs_launch_template.template.id
   total_target_capacity         = "4"
   pay_as_you_go_target_capacity = "1"
   spot_target_capacity          = "2"
@@ -51,7 +51,7 @@ resource "alicloud_auto_provisioning_group" "default" {
   }
 }
 
-resource "alicloud_launch_template" "template" {
+resource "alicloud_ecs_launch_template" "template" {
   name              = var.name
   image_id          = data.alicloud_images.default.images[0].id
   instance_type     = "ecs.n1.tiny"

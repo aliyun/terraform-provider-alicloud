@@ -55,8 +55,9 @@ func resourceAlicloudGaEndpointGroup() *schema.Resource {
 							ValidateFunc: validation.StringInSlice([]string{"Domain", "Ip", "PublicIp", "ECS", "SLB"}, false),
 						},
 						"weight": {
-							Type:     schema.TypeInt,
-							Required: true,
+							Type:         schema.TypeInt,
+							Required:     true,
+							ValidateFunc: validation.IntBetween(0, 255),
 						},
 					},
 				},
@@ -74,8 +75,9 @@ func resourceAlicloudGaEndpointGroup() *schema.Resource {
 				Default:      "default",
 			},
 			"endpoint_request_protocol": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS"}, false),
 			},
 			"health_check_interval_seconds": {
 				Type:     schema.TypeInt,

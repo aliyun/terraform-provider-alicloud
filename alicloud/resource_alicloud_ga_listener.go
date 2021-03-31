@@ -82,12 +82,13 @@ func resourceAlicloudGaListener() *schema.Resource {
 			"protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"TCP", "UDP"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"TCP", "UDP", "HTTP", "HTTPS"}, false),
 				Default:      "TCP",
 			},
 			"proxy_protocol": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Default:  false,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -208,6 +209,9 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("client_affinity", object["ClientAffinity"])
 	d.Set("description", object["Description"])
 	d.Set("name", object["Name"])
+	if val, ok := d.GetOk("proxy_protocol"); ok {
+		d.Set("proxy_protocol", val)
+	}
 
 	portRanges := make([]map[string]interface{}, 0)
 	if portRangesList, ok := object["PortRanges"].([]interface{}); ok {

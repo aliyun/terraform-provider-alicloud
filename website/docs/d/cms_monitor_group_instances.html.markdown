@@ -1,15 +1,15 @@
 ---
 subcategory: "Cloud Monitor"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_cms_monitor_group_instanceses"
-sidebar_current: "docs-alicloud-datasource-cms-monitor-group-instanceses"
+page_title: "Alicloud: alicloud_cms_monitor_group_instances"
+sidebar_current: "docs-alicloud-datasource-cms-monitor-group-instances"
 description: |-
-  Provides a list of Cms Monitor Group Instanceses to the user.
+  Provides a list of Cms Monitor Group Instances to the user.
 ---
 
-# alicloud\_cms\_monitor\_group\_instanceses
+# alicloud\_cms\_monitor\_group\_instances
 
-This data source provides the Cms Monitor Group Instanceses of the current Alibaba Cloud user.
+This data source provides the Cms Monitor Group Instances of the current Alibaba Cloud user.
 
 -> **NOTE:** Available in v1.115.0+.
 
@@ -39,7 +39,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `instanceses` - A list of Cms Monitor Group Instanceses. Each element contains the following attributes:
+* `instances` - A list of Cms Monitor Group Instances. Each element contains the following attributes:
     * `instances` - Instance information added to the Cms Group.
         * `category` - The category of instance.
         * `instance_id` - The id of instance.

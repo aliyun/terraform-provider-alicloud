@@ -178,6 +178,13 @@ func csKubernetesWorkerPostPaidDiffSuppressFunc(k, old, new string, d *schema.Re
 	return d.Get("worker_instance_charge_type").(string) == "PostPaid" || !(d.Id() == "") && !d.Get("force_update").(bool)
 }
 
+func csNodepoolInstancePostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) == "PostPaid" {
+		return true
+	}
+	return false
+}
+
 func csForceUpdate(k, old, new string, d *schema.ResourceData) bool {
 	if d.Id() == "" {
 		return false

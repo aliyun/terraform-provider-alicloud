@@ -21,7 +21,7 @@ For information about common bandwidth package billing methods, see [Common Band
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_common_bandwidth_package" "foo" {
   bandwidth            = "200"
   internet_charge_type = "PayByBandwidth"
@@ -34,18 +34,30 @@ resource "alicloud_common_bandwidth_package" "foo" {
 The following arguments are supported:
 
 * `bandwidth` - (Required) The bandwidth of the common bandwidth package, in Mbps.
-* `internet_charge_type` - (Optional, ForceNew) The billing method of the common bandwidth package. Valid values are "PayByBandwidth" and "PayBy95" and "PayByTraffic". "PayBy95" is pay by classic 95th percentile pricing. International Account doesn't supports "PayByBandwidth" and "PayBy95". Default to "PayByTraffic".
-* `ratio` - (Optional, ForceNew Available in 1.55.3+) Ratio of the common bandwidth package. It is valid when `internet_charge_type` is `PayBy95`. Default to 100. Valid values: [10-100].
-* `name` - (Optional) The name of the common bandwidth package.
+* `internet_charge_type` - (Optional, ForceNew) The billing method of the common bandwidth package. Valid values are `PayByBandwidth` and `PayBy95` and `PayByTraffic`. `PayBy95` is pay by classic 95th percentile pricing. International Account doesn't supports `PayByBandwidth` and `PayBy95`. Default to `PayByTraffic`.
+* `ratio` - (Optional, ForceNew Available in 1.55.3+) Ratio of the common bandwidth package. It is valid when `internet_charge_type` is `PayBy95`. Default to `100`. Valid values: [10-100].
+* `name` - (Optional, Deprecated form v1.120.0) Field `name` has been deprecated from provider version 1.120.0. New field `bandwidth_package_name` instead.
+* `bandwidth_package_name` - (Optional, Available in 1.120.0+) The name of the common bandwidth package.
 * `description` - (Optional) The description of the common bandwidth package instance.
 * `resource_group_id` - (Optional, Available in 1.58.0+, Modifiable in 1.115.0+) The Id of resource group which the common bandwidth package belongs.
-* `isp` - (Optional, Available in 1.90.1+) The type of the Internet Service Provider. Default to `BGP`.
+* `isp` - (Optional, Available in 1.90.1+) The type of the Internet Service Provider. Valid values: `BGP` and `BGP_PRO`. Default to `BGP`.
+* `zone` - (Optional, ForceNew, Available in 1.120.0+) The zone of bandwidth package.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The ID of the common bandwidth package instance id.
+* `status` - (Available in 1.120.0+) The status of bandwidth package.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.120.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when create the bandwidth package.
+* `delete` - (Defaults to 10 mins) Used when delete the bandwidth package.
 
 ## Import
 

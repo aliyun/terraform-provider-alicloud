@@ -255,6 +255,7 @@ const (
 	OpenCdnService                 = "cdn.aliyuncs.com"
 	OpenBssService                 = "business.aliyuncs.com"
 	OpenKmsService                 = "kms.cn-hangzhou.aliyuncs.com"
+	OpenSaeService                 = "sae.cn-hangzhou.aliyuncs.com"
 	OpenCmsService                 = "metrics.cn-hangzhou.aliyuncs.com"
 	OpenDatahubService             = "datahub.aliyuncs.com"
 	OpenOnsService                 = "ons.cn-hangzhou.aliyuncs.com"

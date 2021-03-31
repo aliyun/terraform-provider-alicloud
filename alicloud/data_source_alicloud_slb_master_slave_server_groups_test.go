@@ -95,7 +95,7 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_images" "default" {
-  name_regex = "^ubuntu_18.*64"
+  name_regex = "^ubuntu"
   most_recent = true
   owners = "system"
 }
@@ -106,7 +106,7 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 

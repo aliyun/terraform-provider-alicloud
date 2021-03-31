@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"time"
+
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -199,6 +201,53 @@ func (s *GaService) DescribeGaEndpointGroup(id string) (object map[string]interf
 	return object, nil
 }
 
+func (s *GaService) DescribeGaForwardingRule(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewGaplusClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	action := "ListForwardingRules"
+	request := map[string]interface{}{
+		"RegionId":         s.client.RegionId,
+		"ListenerId":       parts[1],
+		"AcceleratorId":    parts[0],
+		"ForwardingRuleId": parts[2],
+		"MaxResults":       PageSizeLarge,
+	}
+	request["ClientToken"] = buildClientToken(action)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	err = resource.Retry(5*time.Second, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
+				return resource.RetryableError(WrapErrorf(Error(GetNotFoundMessage("ForwardingRule", id)), NotFoundMsg, ProviderERROR))
+			}
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR))
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return
+	}
+	v, err := jsonpath.Get("$.ForwardingRules", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ForwardingRules", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ForwardingRule", id)), NotFoundWithResponse, response)
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
 func (s *GaService) DescribeGaIpSet(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewGaplusClient()
@@ -236,20 +285,24 @@ func (s *GaService) DescribeGaIpSet(id string) (object map[string]interface{}, e
 
 func (s *GaService) DescribeGaBandwidthPackageAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
 	conn, err := s.client.NewGaplusClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeBandwidthPackage"
+	action := "DescribeAccelerator"
 	request := map[string]interface{}{
-		"RegionId":           s.client.RegionId,
-		"BandwidthPackageId": id,
+		"RegionId":      s.client.RegionId,
+		"AcceleratorId": parts[0],
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"NotExist.BandwidthPackage"}) {
+		if IsExpectedErrors(err, []string{"UnknownError"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("GaBandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
@@ -262,7 +315,7 @@ func (s *GaService) DescribeGaBandwidthPackageAttachment(id string) (object map[
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
 	object = v.(map[string]interface{})
-	if len(object["Accelerators"].([]interface{})) == 0 {
+	if object["BasicBandwidthPackage"] == nil || object["BasicBandwidthPackage"].(map[string]interface{})["InstanceId"] != parts[1] {
 		return object, WrapErrorf(Error(GetNotFoundMessage("GaBandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
 	}
 	return object, nil
@@ -285,6 +338,26 @@ func (s *GaService) GaEndpointGroupStateRefreshFunc(id string, failStates []stri
 			}
 		}
 		return object, object["State"].(string), nil
+	}
+}
+
+func (s *GaService) GaForwardingRuleStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeGaForwardingRule(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["ForwardingRuleStatus"].(string) == failState {
+				return object, object["ForwardingRuleStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["ForwardingRuleStatus"].(string)))
+			}
+		}
+		return object, object["ForwardingRuleStatus"].(string), nil
 	}
 }
 

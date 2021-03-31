@@ -33,11 +33,11 @@ func resourceAlicloudGaBandwidthPackage() *schema.Resource {
 			"auto_use_coupon": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Default:  false,
 			},
 			"bandwidth": {
 				Type:     schema.TypeInt,
 				Required: true,
-				ForceNew: true,
 			},
 			"bandwidth_package_name": {
 				Type:     schema.TypeString,
@@ -200,6 +200,9 @@ func resourceAlicloudGaBandwidthPackageRead(d *schema.ResourceData, meta interfa
 	d.Set("payment_type", convertGaBandwidthPackagePaymentTypeResponse(object["ChargeType"].(string)))
 	d.Set("status", object["State"])
 	d.Set("type", object["Type"])
+	if val, ok := d.GetOk("auto_use_coupon"); ok {
+		d.Set("auto_use_coupon", val)
+	}
 	return nil
 }
 func resourceAlicloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -211,7 +214,10 @@ func resourceAlicloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta inter
 		"BandwidthPackageId": d.Id(),
 	}
 	request["RegionId"] = client.RegionId
-	request["Bandwidth"] = d.Get("bandwidth")
+	if !d.IsNewResource() && d.HasChange("bandwidth") {
+		update = true
+		request["Bandwidth"] = d.Get("bandwidth")
+	}
 	if d.HasChange("bandwidth_package_name") {
 		update = true
 		request["Name"] = d.Get("bandwidth_package_name")
@@ -252,7 +258,7 @@ func resourceAlicloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gaService.GaBandwidthPackageStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"active", "binded"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gaService.GaBandwidthPackageStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}

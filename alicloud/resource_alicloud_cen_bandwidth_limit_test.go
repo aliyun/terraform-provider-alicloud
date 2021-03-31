@@ -225,13 +225,13 @@ provider "alicloud" {
 
 resource "alicloud_vpc" "default" {
   provider = "alicloud.fra"
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_vpc" "default1" {
   provider = "alicloud.sh"
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -299,13 +299,13 @@ provider "alicloud" {
 
 resource "alicloud_vpc" "default" {
   provider = "alicloud.fra"
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_vpc" "default1" {
   provider = "alicloud.sh"
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -378,19 +378,19 @@ provider "alicloud" {
 
 resource "alicloud_vpc" "default" {
   provider = "alicloud.fra"
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_vpc" "default1" {
   provider = "alicloud.sh"
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vpc" "default2" {
   provider = "alicloud.hz"
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "192.168.0.0/16"
 }
 

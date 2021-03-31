@@ -293,7 +293,7 @@ func (s *CenService) CreateCenRouteEntryParas(vtbId string) (childInstanceId str
 	if err != nil {
 		return childInstanceId, instanceType, WrapError(err)
 	}
-	return vtb2.VpcId, ChildInstanceTypeVpc, nil
+	return fmt.Sprint(vtb2["VpcId"]), ChildInstanceTypeVpc, nil
 }
 
 func (s *CenService) DescribeCenRouteEntry(id string) (c cbn.PublishedRouteEntry, err error) {

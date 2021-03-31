@@ -141,8 +141,8 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 					"db_type":           "MySQL",
 					"db_version":        "8.0",
 					"pay_type":          "PostPaid",
-					"db_node_class":     "polar.mysql.x4.medium",
-					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
@@ -202,13 +202,13 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_node_count": "2",
-					"db_node_class": "polar.mysql.x4.large",
+					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.1.db_node_class}",
 					"modify_type":   "Upgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_node_count": "2",
-						"db_node_class": "polar.mysql.x4.large",
+						"db_node_class": CHECKSET,
 					}),
 				),
 			},
@@ -254,7 +254,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":   "tf-testaccPolarDBClusterUpdate1",
 					"maintain_time": "02:00Z-03:00Z",
-					"db_node_class": "polar.mysql.x8.xlarge",
+					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.2.db_node_class}",
 					"modify_type":   "Upgrade",
 					"security_ips":  []string{"10.168.1.13", "100.69.7.113"},
 				}),
@@ -262,7 +262,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 					testAccCheck(map[string]string{
 						"description":   "tf-testaccPolarDBClusterUpdate1",
 						"maintain_time": "02:00Z-03:00Z",
-						"db_node_class": "polar.mysql.x8.xlarge",
+						"db_node_class": CHECKSET,
 					}),
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.13,100.69.7.113"),
 				),
@@ -311,8 +311,8 @@ func TestAccAlicloudPolarDBClusterMulti(t *testing.T) {
 					"db_type":       "MySQL",
 					"db_version":    "8.0",
 					"pay_type":      "PostPaid",
-					"db_node_class": "polar.mysql.x4.large",
-					"vswitch_id":    "${data.alicloud_vswitches.default.ids.0}",
+					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"vswitch_id":    "${local.vswitch_id}",
 					"description":   "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -338,12 +338,14 @@ func testAccCheckKeyValueInMapsForPolarDB(ps []map[string]interface{}, propName,
 func resourcePolarDBClusterConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	%s
-	variable "creation" {
-		default = "PolarDB"
-	}
-
 	variable "name" {
 		default = "%s"
+	}
+	data "alicloud_polardb_node_classes" "this" {
+	  db_type    = "MySQL"
+	  db_version = "8.0"
+      pay_type   = "PostPaid"
+	  zone_id    = local.zone_id
 	}
 
 	data "alicloud_resource_manager_resource_groups" "default" {

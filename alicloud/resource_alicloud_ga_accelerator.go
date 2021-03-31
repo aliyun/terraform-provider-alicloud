@@ -32,6 +32,7 @@ func resourceAlicloudGaAccelerator() *schema.Resource {
 			"auto_use_coupon": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Default:  false,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -108,6 +109,9 @@ func resourceAlicloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 	d.Set("description", object["Description"])
 	d.Set("spec", object["Spec"])
 	d.Set("status", object["State"])
+	if val, ok := d.GetOk("auto_use_coupon"); ok {
+		d.Set("auto_use_coupon", val)
+	}
 	return nil
 }
 func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{}) error {

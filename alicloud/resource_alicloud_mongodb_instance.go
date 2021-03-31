@@ -150,7 +150,6 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				},
 				ValidateFunc: validation.StringInSlice([]string{"enabled"}, false),
 				Optional:     true,
-				ForceNew:     true,
 			},
 			"maintain_start_time": {
 				Type:     schema.TypeString,

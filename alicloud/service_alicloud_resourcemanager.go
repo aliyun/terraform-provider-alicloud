@@ -370,3 +370,102 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicyAttachment(id stri
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
+
+func (s *ResourcemanagerService) DescribeResourceManagerControlPolicy(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewResourcemanagerClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetControlPolicy"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"PolicyId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.ControlPolicy"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerControlPolicy", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.ControlPolicy", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ControlPolicy", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *ResourcemanagerService) DescribeResourceManagerControlPolicyAttachment(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewResourcemanagerClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListControlPolicyAttachmentsForTarget"
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"TargetId": parts[1],
+	}
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.Target"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerControlPolicyAttachment", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.ControlPolicyAttachments.ControlPolicyAttachment", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ControlPolicyAttachments.ControlPolicyAttachment", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager", id)), NotFoundWithResponse, response)
+	}
+	for _, v := range v.([]interface{}) {
+		if v.(map[string]interface{})["PolicyId"].(string) == parts[0] {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager", id)), NotFoundWithResponse, response)
+	}
+	return object, nil
+}
+
+func (s *ResourcemanagerService) ResourceManagerResourceDirectoryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeResourceManagerResourceDirectory(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["ScpStatus"].(string) == failState {
+				return object, object["ScpStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["ScpStatus"].(string)))
+			}
+		}
+		return object, object["ScpStatus"].(string), nil
+	}
+}

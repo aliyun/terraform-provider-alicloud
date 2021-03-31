@@ -81,7 +81,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `security_group_id` - (Optional, Available in 1.73.0+) The Security Group ID of ECS.
 * `backup_period` - (Optional, Available in 1.42.0+) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
 * `backup_time` - (Optional, Available in 1.42.0+) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
-* `tde_status` - (Optional, ForceNew, Available in 1.73.0+) The TDE(Transparent Data Encryption) status.
+* `tde_status` - (Optional, Available in 1.73.0+) The TDE(Transparent Data Encryption) status.
 * `maintain_start_time` - (Optional, Available in v1.56.0+) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available in v1.56.0+) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `ssl_action` - (Optional, Available in v1.78.0+) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate.

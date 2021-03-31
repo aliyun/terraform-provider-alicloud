@@ -18,6 +18,7 @@ func (s *QuotasService) DescribeQuotasQuotaAlarm(id string) (object map[string]i
 	}
 	action := "GetQuotaAlarm"
 	request := map[string]interface{}{
+		"SourceIp": s.client.SourceIp,
 		"RegionId": s.client.RegionId,
 		"AlarmId":  id,
 	}
@@ -45,6 +46,7 @@ func (s *QuotasService) DescribeQuotasQuotaApplication(id string) (object map[st
 	}
 	action := "GetQuotaApplication"
 	request := map[string]interface{}{
+		"SourceIp":      s.client.SourceIp,
 		"RegionId":      s.client.RegionId,
 		"ApplicationId": id,
 	}

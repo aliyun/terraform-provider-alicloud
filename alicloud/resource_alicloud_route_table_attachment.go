@@ -84,7 +84,7 @@ func resourceAliyunRouteTableAttachmentRead(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("route_table_id", object.RouteTableId)
+	d.Set("route_table_id", object["RouteTableId"])
 	d.Set("vswitch_id", parts[1])
 	return nil
 }

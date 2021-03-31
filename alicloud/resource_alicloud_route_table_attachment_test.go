@@ -196,7 +196,7 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	vpc_name = "${var.name}"
 }
  data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
@@ -205,12 +205,12 @@ resource "alicloud_vpc" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
 	cidr_block = "172.16.0.0/21"
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	vswitch_name = "${var.name}"
 }
 
 resource "alicloud_route_table" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
-    name = "${var.name}"
+    route_table_name = "${var.name}"
     description = "${var.name}_description"
 }
 
@@ -234,7 +234,7 @@ variable "number" {
 
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	vpc_name = "${var.name}"
 }
  data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
@@ -245,13 +245,13 @@ resource "alicloud_vswitch" "default" {
   vpc_id = "${ alicloud_vpc.default.id }"
   cidr_block = "172.16.${count.index}.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+  vswitch_name = "${var.name}"
 }
 
 resource "alicloud_route_table" "default" {
 	count = "${var.number}"
 	vpc_id = "${alicloud_vpc.default.id}"
-    name = "${var.name}"
+    route_table_name = "${var.name}"
     description = "${var.name}_description"
 }
 

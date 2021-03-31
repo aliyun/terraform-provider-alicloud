@@ -26,18 +26,29 @@ For information about Resource Manager Resource Directory and how to use it, see
 Basic Usage
 
 ```terraform
-resource "alicloud_resource_manager_resource_directory" "example" {}
+resource "alicloud_resource_manager_resource_directory" "example" {
+   // Enable the control policy
+    status = "Enabled"
+}
 ```
 ## Argument Reference
 
-The resource does not support any argument.
-    
+The following arguments are supported:
+
+* `status` - (Optional, Available in v1.120.0+) The status of control policy. Valid values:`Enabled` and `Disabled`. Default value is `Disabled`.
+
 ## Attributes Reference
 
 * `id` - The ID of the resource directory.
 * `master_account_id` - The ID of the master account.
 * `master_account_name` - The name of the master account.
 * `root_folder_id` - The ID of the root folder.
+
+-> **NOTE:** Available in 1.120.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `update` - (Defaults to 6 mins) Used when update the control policy status.
 
 ## Import
 

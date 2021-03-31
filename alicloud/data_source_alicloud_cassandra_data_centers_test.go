@@ -96,7 +96,7 @@ func testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand i
 		
 		resource "alicloud_vswitch" "this" {
 		  count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
-		  name = "${var.name}"
+		  vswitch_name = "${var.name}"
 		  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
 		  availability_zone = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)-1].id
 		  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)}"
@@ -109,7 +109,7 @@ func testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand i
 		
 		resource "alicloud_vswitch" "this_2" {
 		  count = "${length(data.alicloud_vswitches.default_2.ids) > 0 ? 0 : 1}"
-		  name = "${var.name}_2"
+		  vswitch_name = "${var.name}_2"
 		  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
 		  availability_zone = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)-2].id
 		  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 10)}"

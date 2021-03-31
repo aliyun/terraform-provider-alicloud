@@ -62,10 +62,14 @@ func testSweepDMSEnterpriseUsers(region string) error {
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["NickName"].(string)), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if _, ok := item["NickName"]; !ok {
+				skip = false
+			} else {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["NickName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
 			}
 			if skip {

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"log"
 	"time"
 
@@ -586,16 +588,16 @@ func (conf *dataSourceTestAccConfig) buildDataSourceSteps(t *testing.T, info *da
 
 func (s *VpcService) needSweepVpc(vpcId, vswitchId string) (bool, error) {
 	if vpcId == "" && vswitchId != "" {
-		object, err := s.DescribeVSwitch(vswitchId)
+		object, err := s.DescribeVswitch(vswitchId)
 		if err != nil && !NotFoundError(err) {
 			return false, WrapError(err)
 		}
-		name := strings.ToLower(object.VSwitchName)
+		name := strings.ToLower(object["VSwitchName"].(string))
 		if strings.HasPrefix(name, "tf-testacc") || strings.HasPrefix(name, "tf_testacc") {
-			log.Printf("[DEBUG] Need to sweep the vswitch (%s (%s)).", object.VSwitchId, object.VSwitchName)
+			log.Printf("[DEBUG] Need to sweep the vswitch (%v (%v)).", object["VSwitchId"], object["VSwitchName"])
 			return true, nil
 		}
-		vpcId = object.VpcId
+		vpcId = fmt.Sprint(object["VpcId"])
 	}
 	if vpcId != "" {
 		object, err := s.DescribeVpc(vpcId)
@@ -633,10 +635,26 @@ func (s *VpcService) sweepVSwitch(id string) error {
 		return nil
 	}
 	log.Printf("[DEBUG] Deleting Vswitch %s ...", id)
-	request := vpc.CreateDeleteVSwitchRequest()
-	request.VSwitchId = id
-	_, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DeleteVSwitch(request)
+	action := "DeleteVSwitch"
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"VSwitchId": id,
+	}
+	request["RegionId"] = s.client.RegionId
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(10*time.Second, func() *resource.RetryError {
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err == nil {
 		time.Sleep(1 * time.Second)
@@ -710,12 +728,12 @@ data "alicloud_instance_types" "default" {
   memory_size       = 2
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
+  name_regex  = "^ubuntu"
   most_recent = true
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  vpc_name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
@@ -749,12 +767,12 @@ data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
+  name_regex  = "^ubuntu"
   most_recent = true
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  vpc_name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
@@ -784,7 +802,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "${var.creation}"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  vpc_name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
@@ -798,12 +816,24 @@ resource "alicloud_vswitch" "default" {
 }
 `
 const PolarDBCommonTestCase = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+data "alicloud_polardb_zones" "default"{}
+data "alicloud_vpcs" "default" {
+	is_default = true
 }
 data "alicloud_vswitches" "default" {
-  zone_id = data.alicloud_zones.default.ids[0]
-  is_default = "true"
+	zone_id = local.zone_id
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+resource "alicloud_vswitch" "this" {
+ count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+ name = "tf_testAccPolarDB"
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ availability_zone = data.alicloud_polardb_zones.default.ids.0
+ cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
 }
 `
 const AdbCommonTestCase = `
@@ -847,7 +877,7 @@ data "alicloud_zones" "default" {
   multi = true
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  vpc_name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
@@ -875,7 +905,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -917,7 +947,7 @@ data "alicloud_emr_disk_types" "system_disk" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -1011,7 +1041,7 @@ data "alicloud_emr_disk_types" "gateway_system_disk" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -1130,7 +1160,7 @@ data "alicloud_emr_disk_types" "system_disk" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -1204,13 +1234,13 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_images" "default" {
-  name_regex = "^ubuntu_18.*64"
+  name_regex = "^ubuntu"
   most_recent = true
   owners = "system"
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 

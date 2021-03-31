@@ -40,10 +40,9 @@ func TestAccAlicloudGaBandwidthPackageAttachment_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"accelerator_id"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -51,7 +50,7 @@ func TestAccAlicloudGaBandwidthPackageAttachment_basic(t *testing.T) {
 
 var AlicloudGaBandwidthPackageAttachmentMap = map[string]string{
 	"accelerators.#": CHECKSET,
-	"status":         "binded",
+	"status":         "active",
 }
 
 func AlicloudGaBandwidthPackageAttachmentBasicDependence(name string) string {
