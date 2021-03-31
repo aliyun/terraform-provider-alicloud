@@ -285,20 +285,24 @@ func (s *GaService) DescribeGaIpSet(id string) (object map[string]interface{}, e
 
 func (s *GaService) DescribeGaBandwidthPackageAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
 	conn, err := s.client.NewGaplusClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeBandwidthPackage"
+	action := "DescribeAccelerator"
 	request := map[string]interface{}{
-		"RegionId":           s.client.RegionId,
-		"BandwidthPackageId": id,
+		"RegionId":      s.client.RegionId,
+		"AcceleratorId": parts[0],
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"NotExist.BandwidthPackage"}) {
+		if IsExpectedErrors(err, []string{"UnknownError"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("GaBandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
@@ -311,7 +315,7 @@ func (s *GaService) DescribeGaBandwidthPackageAttachment(id string) (object map[
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
 	object = v.(map[string]interface{})
-	if len(object["Accelerators"].([]interface{})) == 0 {
+	if object["BasicBandwidthPackage"] == nil || object["BasicBandwidthPackage"].(map[string]interface{})["InstanceId"] != parts[1] {
 		return object, WrapErrorf(Error(GetNotFoundMessage("GaBandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
 	}
 	return object, nil
