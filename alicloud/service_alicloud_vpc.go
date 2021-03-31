@@ -1687,3 +1687,69 @@ func (s *VpcService) CommonBandwidthPackageStateRefreshFunc(id string, failState
 		return object, object["Status"].(string), nil
 	}
 }
+
+func (s *VpcService) DescribeHavip(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeHaVips"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"PageNumber": 1,
+		"PageSize":   20,
+	}
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidFilterKey.ValueNotSupported", "InvalidHaVipId.NotFound", "InvalidRegionId.NotFound"}) {
+				err = WrapErrorf(Error(GetNotFoundMessage("Havip", id)), NotFoundMsg, ProviderERROR)
+				return object, err
+			}
+			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return object, err
+		}
+		addDebug(action, response, request)
+		v, err := jsonpath.Get("$.HaVips.HaVip", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HaVips.HaVip", response)
+		}
+		result, _ := v.([]interface{})
+		if len(result) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+		}
+		for _, v := range result {
+			if v.(map[string]interface{})["HaVipId"].(string) == id {
+				return v.(map[string]interface{}), nil
+			}
+		}
+		if len(result) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+}
+
+func (s *VpcService) HavipStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeHavip(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["Status"].(string) == failState {
+				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+			}
+		}
+		return object, object["Status"].(string), nil
+	}
+}

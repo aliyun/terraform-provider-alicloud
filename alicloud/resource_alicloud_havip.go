@@ -2,39 +2,49 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliyunHaVip() *schema.Resource {
+func resourceAlicloudHavip() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunHaVipCreate,
-		Read:   resourceAliyunHaVipRead,
-		Update: resourceAliyunHaVipUpdate,
-		Delete: resourceAliyunHaVipDelete,
+		Create: resourceAlicloudHavipCreate,
+		Read:   resourceAlicloudHavipRead,
+		Update: resourceAlicloudHavipUpdate,
+		Delete: resourceAlicloudHavipDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
+			"havip_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"ip_address": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
-
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -44,100 +54,146 @@ func resourceAliyunHaVip() *schema.Resource {
 	}
 }
 
-func resourceAliyunHaVipCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudHavipCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	haVipService := HaVipService{client}
-
-	request := vpc.CreateCreateHaVipRequest()
-	request.RegionId = client.RegionId
-
-	request.VSwitchId = d.Get("vswitch_id").(string)
-	request.IpAddress = d.Get("ip_address").(string)
-	request.Description = d.Get("description").(string)
-	request.ClientToken = buildClientToken(request.GetActionName())
-
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.CreateHaVip(request)
-	})
+	vpcService := VpcService{client}
+	var response map[string]interface{}
+	action := "CreateHaVip"
+	request := make(map[string]interface{})
+	conn, err := client.NewVpcClient()
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	havip, _ := raw.(*vpc.CreateHaVipResponse)
-	d.SetId(havip.HaVipId)
-	if err := haVipService.WaitForHaVip(havip.HaVipId, Available, 2*DefaultTimeout); err != nil {
-		return fmt.Errorf("WaitHaVip %s got error: %#v, %s", Available, err, havip.HaVipId)
-	}
-	return resourceAliyunHaVipRead(d, meta)
-}
-
-func resourceAliyunHaVipRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	haVipService := HaVipService{client}
-
-	resp, err := haVipService.DescribeHaVip(d.Id())
-	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
-		return fmt.Errorf("Error Describe HaVip Attribute: %#v", err)
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
 	}
 
-	d.Set("vswitch_id", resp.VSwitchId)
-	d.Set("ip_address", resp.IpAddress)
-	d.Set("description", resp.Description)
+	if v, ok := d.GetOk("havip_name"); ok {
+		request["Name"] = v
+	}
 
-	return nil
-}
+	if v, ok := d.GetOk("ip_address"); ok {
+		request["IpAddress"] = v
+	}
 
-func resourceAliyunHaVipUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	if d.HasChange("description") {
-		request := vpc.CreateModifyHaVipAttributeRequest()
-		request.RegionId = client.RegionId
-		request.HaVipId = d.Id()
-		request.Description = d.Get("description").(string)
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifyHaVipAttribute(request)
-		})
+	request["RegionId"] = client.RegionId
+	request["VSwitchId"] = d.Get("vswitch_id")
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			return err
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	}
-
-	return resourceAliyunHaVipRead(d, meta)
-}
-
-func resourceAliyunHaVipDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	haVipService := HaVipService{client}
-
-	if err := haVipService.WaitForHaVip(d.Id(), Available, 2*DefaultTimeout); err != nil {
-		return fmt.Errorf("WaitHaVip %s got error: %#v, %s", Available, err, d.Id())
-	}
-	request := vpc.CreateDeleteHaVipRequest()
-	request.RegionId = client.RegionId
-	request.HaVipId = d.Id()
-
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteHaVip(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidHaVipId.NotFound"}) {
-				return nil
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		if _, err := haVipService.DescribeHaVip(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.RetryableError(fmt.Errorf("Error describing havip failed when deleting HaVip: %#v", err))
-		}
+		addDebug(action, response, request)
 		return nil
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_havip", action, AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["HaVipId"]))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.HavipStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return resourceAlicloudHavipRead(d, meta)
+}
+func resourceAlicloudHavipRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
+	object, err := vpcService.DescribeHavip(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_havip vpcService.DescribeHavip Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+	d.Set("description", object["Description"])
+	d.Set("havip_name", object["Name"])
+	d.Set("ip_address", object["IpAddress"])
+	d.Set("status", object["Status"])
+	d.Set("vswitch_id", object["VSwitchId"])
+	return nil
+}
+func resourceAlicloudHavipUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	update := false
+	request := map[string]interface{}{
+		"HaVipId": d.Id(),
+	}
+	request["RegionId"] = client.RegionId
+	if d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
+	}
+	if d.HasChange("havip_name") {
+		update = true
+		request["Name"] = d.Get("havip_name")
+	}
+	if update {
+		action := "ModifyHaVipAttribute"
+		conn, err := client.NewVpcClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	return resourceAlicloudHavipRead(d, meta)
+}
+func resourceAlicloudHavipDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteHaVip"
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"HaVipId": d.Id(),
+	}
+
+	request["RegionId"] = client.RegionId
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidHaVipId.NotFound", "InvalidRegionId.NotFound"}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
 }
