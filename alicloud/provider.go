@@ -139,7 +139,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_instances":              dataSourceAlicloudInstances(),
 			"alicloud_disks":                  dataSourceAlicloudDisks(),
 			"alicloud_network_interfaces":     dataSourceAlicloudNetworkInterfaces(),
-			"alicloud_snapshots":              dataSourceAlicloudSnapshots(),
+			"alicloud_snapshots":              dataSourceAlicloudEcsSnapshots(),
 			"alicloud_vpcs":                   dataSourceAlicloudVpcs(),
 			"alicloud_vswitches":              dataSourceAlicloudVswitches(),
 			"alicloud_eips":                   dataSourceAlicloudEips(),
@@ -403,6 +403,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_control_policy_attachments": dataSourceAlicloudResourceManagerControlPolicyAttachments(),
 			"alicloud_rds_accounts":                                dataSourceAlicloudRdsAccounts(),
 			"alicloud_havips":                                      dataSourceAlicloudHavips(),
+			"alicloud_ecs_snapshots":                               dataSourceAlicloudEcsSnapshots(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -418,7 +419,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_disk_attachment":                    resourceAliyunDiskAttachment(),
 			"alicloud_network_interface":                  resourceAliyunNetworkInterface(),
 			"alicloud_network_interface_attachment":       resourceAliyunNetworkInterfaceAttachment(),
-			"alicloud_snapshot":                           resourceAliyunSnapshot(),
+			"alicloud_snapshot":                           resourceAlicloudEcsSnapshot(),
 			"alicloud_snapshot_policy":                    resourceAlicloudEcsAutoSnapshotPolicy(),
 			"alicloud_launch_template":                    resourceAlicloudEcsLaunchTemplate(),
 			"alicloud_security_group":                     resourceAliyunSecurityGroup(),
@@ -716,6 +717,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_control_policy":            resourceAlicloudResourceManagerControlPolicy(),
 			"alicloud_resource_manager_control_policy_attachment": resourceAlicloudResourceManagerControlPolicyAttachment(),
 			"alicloud_rds_account":                                resourceAlicloudRdsAccount(),
+			"alicloud_ecs_snapshot":                               resourceAlicloudEcsSnapshot(),
 		},
 
 		ConfigureFunc: providerConfigure,
