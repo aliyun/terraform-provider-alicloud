@@ -1864,3 +1864,65 @@ func (s *EcsService) DescribeEcsLaunchTemplate(id string) (object map[string]int
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
+
+func (s *EcsService) DescribeEcsSnapshot(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeSnapshots"
+	ids, err := json.Marshal([]string{id})
+	if err != nil {
+		return object, err
+	}
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"SnapshotIds": string(ids),
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidFilterKey.NotFound", "InvalidFilterValue", "InvalidSnapshotIds.Malformed,InvalidStatus.NotFound,InvalidSnapshotType.NotFound", "InvalidSnapshotLinkId.NotFound", "InvalidSnapshotType.NotFound", "InvalidSourceDiskType", "InvalidStatus.NotFound", "InvalidUsage"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("EcsSnapshot", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.Snapshots.Snapshot", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Snapshots.Snapshot", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["SnapshotId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *EcsService) EcsSnapshotStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEcsSnapshot(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["Status"].(string) == failState {
+				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+			}
+		}
+		return object, object["Status"].(string), nil
+	}
+}

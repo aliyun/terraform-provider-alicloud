@@ -40,7 +40,7 @@ func testAlicloudEcsLaunchTemplate(region string) error {
 	action := "DescribeLaunchTemplates"
 
 	var response map[string]interface{}
-	conn, err := client.NewRosClient()
+	conn, err := client.NewEcsClient()
 	if err != nil {
 		return WrapError(err)
 	}
