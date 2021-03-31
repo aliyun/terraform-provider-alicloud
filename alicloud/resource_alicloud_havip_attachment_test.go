@@ -2,8 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"testing"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -11,77 +15,83 @@ import (
 )
 
 // At present, only white list users can operate HaVip Resource. So close havip sweeper.
-//func init() {
-//	resource.AddTestSweepers("alicloud_havip_attachment", &resource.Sweeper{
-//		Name: "alicloud_havip_attachment",
-//		F:    testSweepHaVipAttachment,
-//	})
-//}
-//
-//func testSweepHaVipAttachment(region string) error {
-//	client, err := sharedClientForRegion(region)
-//	if err != nil {
-//		return fmt.Errorf("error getting Alicloud client: %s", err)
-//	}
-//	conn := client.(*AliyunClient)
-//
-//	prefixes := []string{
-//		"tf-testAcc",
-//		"tf_testAcc",
-//	}
-//
-//	var haVips []vpc.HaVip
-//	req := vpc.CreateDescribeHaVipsRequest()
-//	req.RegionId = conn.RegionId
-//	req.PageSize = requests.NewInteger(PageSizeLarge)
-//	req.PageNumber = requests.NewInteger(1)
-//	for {
-//		resp, err := conn.vpcconn.DescribeHaVips(req)
-//		if err != nil {
-//			return fmt.Errorf("Error retrieving HaVips: %s", err)
-//		}
-//		if resp == nil || len(resp.HaVips.HaVip) < 1 {
-//			break
-//		}
-//		haVips = append(haVips, resp.HaVips.HaVip...)
-//
-//		if len(resp.HaVips.HaVip) < PageSizeLarge {
-//			break
-//		}
-//
-//		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-//			return err
-//		} else {
-//			req.PageNumber = page
-//		}
-//	}
-//
-//	for _, haVip := range haVips {
-//		id := haVip.HaVipId
-//		desc := haVip.Description
-//		skip := true
-//		for _, prefix := range prefixes {
-//			if strings.HasPrefix(strings.ToLower(desc), strings.ToLower(prefix)) {
-//				skip = false
-//				break
-//			}
-//		}
-//		if skip {
-//			log.Printf("[INFO] Skipping HaVip: (%s)", id)
-//			continue
-//		}
-//		for _, instance := range haVip.AssociatedInstances.AssociatedInstance {
-//			log.Printf("[INFO] Unassociating HaVip: (%s)", id)
-//			req := vpc.CreateUnassociateHaVipRequest()
-//			req.HaVipId = id
-//			req.InstanceId = instance
-//			if _, err := conn.vpcconn.UnassociateHaVip(req); err != nil {
-//				log.Printf("[ERROR] Failed to unassociate HaVip %s): %s", id, err)
-//			}
-//		}
-//	}
-//	return nil
-//}
+func init() {
+	resource.AddTestSweepers("alicloud_havip_attachment", &resource.Sweeper{
+		Name: "alicloud_havip_attachment",
+		F:    testSweepHaVipAttachment,
+	})
+}
+
+func testSweepHaVipAttachment(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	conn := client.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	var haVips []vpc.HaVip
+	req := vpc.CreateDescribeHaVipsRequest()
+	req.RegionId = conn.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := conn.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeHaVips(req)
+		})
+		if err != nil {
+			return fmt.Errorf("Error retrieving HaVips: %s", err)
+		}
+		resp, _ := raw.(*vpc.DescribeHaVipsResponse)
+		if resp == nil || len(resp.HaVips.HaVip) < 1 {
+			break
+		}
+		haVips = append(haVips, resp.HaVips.HaVip...)
+
+		if len(resp.HaVips.HaVip) < PageSizeLarge {
+			break
+		}
+
+		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+			return err
+		} else {
+			req.PageNumber = page
+		}
+	}
+
+	for _, haVip := range haVips {
+		id := haVip.HaVipId
+		desc := haVip.Description
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(desc), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping HaVip: (%s)", id)
+			continue
+		}
+		for _, instance := range haVip.AssociatedInstances.AssociatedInstance {
+			log.Printf("[INFO] Unassociating HaVip: (%s)", id)
+			req := vpc.CreateUnassociateHaVipRequest()
+			req.HaVipId = id
+			req.InstanceId = instance
+			_, err := conn.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.UnassociateHaVip(req)
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to unassociate HaVip %s): %s", id, err)
+			}
+		}
+	}
+	return nil
+}
 
 // At present, only white list users can operate HaVip Resource.
 func SkipTestAccAlicloudHaVipAttachmentBasic(t *testing.T) {

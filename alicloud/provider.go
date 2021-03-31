@@ -401,6 +401,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_launch_templates":                        dataSourceAlicloudEcsLaunchTemplates(),
 			"alicloud_resource_manager_control_policies":           dataSourceAlicloudResourceManagerControlPolicies(),
 			"alicloud_resource_manager_control_policy_attachments": dataSourceAlicloudResourceManagerControlPolicyAttachments(),
+			"alicloud_havips":                                      dataSourceAlicloudHavips(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -566,7 +567,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_datahub_topic":                              resourceAlicloudDatahubTopic(),
 			"alicloud_mns_queue":                                  resourceAlicloudMNSQueue(),
 			"alicloud_mns_topic":                                  resourceAlicloudMNSTopic(),
-			"alicloud_havip":                                      resourceAliyunHaVip(),
+			"alicloud_havip":                                      resourceAlicloudHavip(),
 			"alicloud_mns_topic_subscription":                     resourceAlicloudMNSSubscription(),
 			"alicloud_havip_attachment":                           resourceAliyunHaVipAttachment(),
 			"alicloud_api_gateway_api":                            resourceAliyunApigatewayApi(),
