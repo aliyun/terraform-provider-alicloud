@@ -84,7 +84,7 @@ The following arguments are supported:
     - true: Enable deletion protection.
     - false: Disable deletion protection.
 * `force_update` - (Optional) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
-* `tags` - (Optional) Default nil, A map of tags assigned to the kubernetes cluster .
+* `tags` - (Optional) Default nil, A map of tags assigned to the kubernetes cluster and work nodes.
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.

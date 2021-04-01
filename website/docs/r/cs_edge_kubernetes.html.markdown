@@ -86,6 +86,7 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, ForceNew, Available in 1.103.2+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `deletion_protection` - (Optional, Available in 1.103.2+)  Whether to enable cluster deletion protection.
 * `force_update` - (Optional, ForceNew, Available in 1.113.0+) Default false, when you want to change `vpc_id`, you have to set this field to true, then the cluster will be recreated.
+* `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster and work node.
 
 ### Network params
 
@@ -107,16 +108,16 @@ The following arguments are supported:
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_efficiency`, `cloud_ssd` and `cloud_essd` and . Default to `cloud_efficiency`.
 * `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
 * `worker_data_disks` - (Optional) The data disk configurations of worker nodes, such as the disk type and disk size.
-  * `category`: the type of the data disks. Valid values:
-      * cloud : basic disks.
-      * cloud_efficiency : ultra disks.
-      * cloud_ssd : SSDs.
-      * cloud_essd : ESSDs.
-  * `size`: the size of a data disk, at least 40. Unit: GiB.
-  * `encrypted`: specifies whether to encrypt data disks. Valid values: true and false.
+  * `category` - The type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
+  * `size` - The size of a data disk, at least 40. Unit: GiB.
+  * `encrypted` - Specifies whether to encrypt data disks. Valid values: true and false. Default is `false`.
+  * `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+  * `auto_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node data disk auto snapshot policy.
 * `install_cloud_monitor` - (Optional) Install cloud monitor agent on ECS. default: `true`.
 * `proxy_mode` - Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
 * `user_data` - (Optional) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
+* `worker_disk_performance_level` - (Optional, Available in 1.120.0+) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+* `worker_disk_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node system disk auto snapshot policy.
 
 ### Addons
 

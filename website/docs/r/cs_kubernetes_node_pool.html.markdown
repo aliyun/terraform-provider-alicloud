@@ -21,6 +21,8 @@ This resource will help you to manager node pool in Kubernetes Cluster.
 
 -> **NOTE:** ACK adds a new RamRole (AliyunCSManagedAutoScalerRole) for the permission control of the auto-scaling node pool. If you use the auto-scaling node pool, please click [AliyunCSManagedAutoScalerRole](https://ram.console.aliyun.com/role/authorization?request=%7B%22Services%22%3A%5B%7B%22Service%22%3A%22CS%22%2C%22Roles%22%3A%5B%7B%22RoleName%22%3A%22AliyunCSManagedAutoScalerRole%22%2C%22TemplateId%22%3A%22AliyunCSManagedAutoScalerRole%22%7D%5D%7D%5D%2C%22ReturnUrl%22%3A%22https%3A%2F%2Fcs.console.aliyun.com%2F%22%7D) to complete the authorization. 
 
+-> **NOTE:** ACK adds a new RamRole（AliyunCSManagedNlcRole） for the permission control of the management node pool. If you use the management node pool, please click [AliyunCSManagedNlcRole](https://ram.console.aliyun.com/role/authorization?spm=5176.2020520152.0.0.387f16ddEOZxMv&request=%7B%22Services%22%3A%5B%7B%22Service%22%3A%22CS%22%2C%22Roles%22%3A%5B%7B%22RoleName%22%3A%22AliyunCSManagedNlcRole%22%2C%22TemplateId%22%3A%22AliyunCSManagedNlcRole%22%7D%5D%7D%5D%2C%22ReturnUrl%22%3A%22https%3A%2F%2Fcs.console.aliyun.com%2F%22%7D) to complete the authorization.
+
 ## Example Usage
 
 The managed cluster configuration,
@@ -73,6 +75,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
   vswitch_ids                  = [alicloud_vswitch.default.id]
   instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
+  
   system_disk_category         = "cloud_efficiency"
   system_disk_size             = 40
   key_name                     = alicloud_key_pair.default.key_name
@@ -201,20 +204,19 @@ The following arguments are supported:
 * `kms_encrypted_password` - (Required) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `system_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `system_disk_size` - (Optional) The system disk category of worker node. Its valid value range [40~500] in GB. Default to `120`.
-* `worker_data_disks` - (Optional) The data disk configurations of worker nodes, such as the disk type and disk size. 
-  * category: the type of the data disks. Valid values:`cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`.
-  * size: the size of a data disk, Its valid value range [40~32768] in GB. Default to `40`.
-  * encrypted: specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
+* `data_disks` - (Optional) The data disk configurations of worker nodes, such as the disk type and disk size. 
+  * `category` - The type of the data disks. Valid values:`cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`.
+  * `size` - The size of a data disk, Its valid value range [40~32768] in GB. Default to `40`.
+  * `encrypted` - Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
+  * `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
 * `security_group_id` - (Optional) The system disk size of worker node. 
 * `image_id` - (Optional) Custom Image support. Must based on CentOS7 or AliyunLinux2.
 * `node_name_mode` - (Optional) Each node name consists of a prefix, an IP substring, and a suffix. For example "customized,aliyun.com,5,test", if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test.
 * `user_data` - (Optional) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
-* `tags` - (Optional) A List of tags to assign to the resource. It will be applied for ECS instances finally.
-  * key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot be a null string.
-  * value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be a null string.
+* `tags` - (Optional) A Map of tags to assign to the resource. It will be applied for ECS instances finally.
 * `labels` - (Optional) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument.
-  * key: The label key.
-  * value: The label value.
+  * `key` - The label key.
+  * `value` - The label value.
 * `taints` - (Optional) A List of Kubernetes taints to assign to the nodes.
 * `management` - (Optional, Available in 1.109.1+) Managed node pool configuration. When using a managed node pool, the node key must use `key_name`. Detailed below.
 * `scaling_config` - (Optional, Available in 1.111.0+) Auto scaling node pool configuration. For more details, see `scaling_config`.
@@ -223,8 +225,19 @@ The following arguments are supported:
 * `period_unit`- (Optional, Available in 1.119.0+) Node payment period unit, valid value: `Month`. Default is `Month`.
 * `auto_renew`- (Optional, Available in 1.119.0+) Enable Node payment auto-renew, default is `false`.
 * `auto_renew_period`- (Optional, Available in 1.119.0+) Node payment auto-renew period, one of `1`, `2`, `3`,`6`, `12`.
-* `install_cloud_monitor`- (Optional, Available in 1.119.0+) Install the cloud monitoring plug-in on the node, and you can view the monitoring information of the instance through the cloud monitoring console. Default is `false`.
+* `install_cloud_monitor`- (Optional, Available in 1.119.0+) Install the cloud monitoring plug-in on the node, and you can view the monitoring information of the instance through the cloud monitoring console. Default is `true`.
 * `unschedulable`- (Optional, Available in 1.119.0+) Set the newly added node as unschedulable. If you want to open the scheduling option, you can open it in the node list of the console. If you are using an auto-scaling node pool, the setting will not take effect. Default is `false`.
+
+#### tags
+
+The tags example：
+```
+tags {
+  "key-a" = "value-a"
+  "key-b" = "value-b"
+  "env"   = "prod"
+}
+```
 
 #### management
 
@@ -251,17 +264,12 @@ The following arguments are supported in the `scaling_config` configuration bloc
 
 The following attributes are exported:
 
-* `id` - The ID of the container cluster.
-* `name` - The name of the container cluster.
-* `availability_zone` - The ID of availability zone.
-* `vpc_id` - The ID of VPC where the current cluster is located.
-* `slb_intranet` - The ID of private load balancer where the current cluster master node is located.
+* `id` - The ID of the node pool, format cluster_id:nodepool_id.
+* `cluster_id` - The cluster id.
+* `name` - The name of the nodepool.
+* `vswitch_ids` - The vswitches used by node pool workers.
+* `image_id` - The image used by node pool workers.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
-* `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
-* `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
-* `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
-* `version` - The Kubernetes server version for the cluster.
-* `worker_ram_role_name` - The RamRole Name attached to worker node.
 * `scaling_group_id` - (Available in 1.105.0+) Id of the Scaling Group.
 
 ## Timeouts

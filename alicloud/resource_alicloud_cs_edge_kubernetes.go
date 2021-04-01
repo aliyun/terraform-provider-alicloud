@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"time"
 
+	aliyungoecs "github.com/denverdino/aliyungo/ecs"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -85,19 +87,27 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"worker_disk_size": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          40,
-				ValidateFunc:     validation.IntBetween(20, 32768),
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      40,
+				ValidateFunc: validation.IntBetween(20, 32768),
 			},
 			"worker_disk_category": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  DiskCloudEfficiency,
 				ValidateFunc: validation.StringInSlice([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+					string(DiskCloudEfficiency), string(DiskCloudSSD), string(DiskCloudESSD)}, false),
+			},
+			"worker_disk_performance_level": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+				DiffSuppressFunc: workerDiskPerformanceLevelDiffSuppressFunc,
+			},
+			"worker_disk_snapshot_policy_id": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"proxy_mode": {
 				Type:         schema.TypeString,
@@ -147,6 +157,10 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 							Optional: true,
 						},
 						"auto_snapshot_policy_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"performance_level": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -384,6 +398,10 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				},
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -423,7 +441,7 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 	cluster, _ := response.(*cs.ClusterCommonResponse)
 	d.SetId(cluster.ClusterID)
 
-	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -481,22 +499,50 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 
 			}
 
-			if d.HasChange("worker_data_disks") {
-				if dds, ok := d.GetOk("worker_data_disks"); ok {
-					disks := dds.([]interface{})
-					createDataDisks := make([]cs.DataDisk, 0, len(disks))
-					for _, e := range disks {
-						pack := e.(map[string]interface{})
-						dataDisk := cs.DataDisk{
-							Size:      pack["size"].(string),
-							Category:  pack["category"].(string),
-							Encrypted: pack["encrypted"].(string),
-						}
-						createDataDisks = append(createDataDisks, dataDisk)
-					}
-					args.WorkerDataDisks = createDataDisks
-				}
+			if v, ok := d.GetOk("worker_disk_category"); ok {
+				args.WorkerSystemDiskCategory = aliyungoecs.DiskCategory(v.(string))
 			}
+
+			if v, ok := d.GetOk("worker_disk_size"); ok {
+				args.WorkerSystemDiskSize = int64(v.(int))
+			}
+
+			if v, ok := d.GetOk("worker_disk_snapshot_policy_id"); ok {
+				args.WorkerSnapshotPolicyId = v.(string)
+			}
+
+			if v, ok := d.GetOk("worker_disk_performance_level"); ok {
+				args.WorkerSystemDiskPerformanceLevel = v.(string)
+			}
+
+			if dds, ok := d.GetOk("worker_data_disks"); ok {
+				disks := dds.([]interface{})
+				createDataDisks := make([]cs.DataDisk, 0, len(disks))
+				for _, e := range disks {
+					pack := e.(map[string]interface{})
+					dataDisk := cs.DataDisk{
+						Size:                 pack["size"].(string),
+						DiskName:             pack["name"].(string),
+						Category:             pack["category"].(string),
+						Device:               pack["device"].(string),
+						AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
+						KMSKeyId:             pack["kms_key_id"].(string),
+						Encrypted:            pack["encrypted"].(string),
+						PerformanceLevel:     pack["performance_level"].(string),
+					}
+					createDataDisks = append(createDataDisks, dataDisk)
+				}
+				args.WorkerDataDisks = createDataDisks
+
+			}
+
+			if d.HasChange("tags") && !d.IsNewResource() {
+				if tags, err := ConvertCsTags(d); err == nil {
+					args.Tags = tags
+				}
+				d.SetPartial("tags")
+			}
+
 			if err := invoker.Run(func() error {
 				var err error
 				resp, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
@@ -520,6 +566,10 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			}
 			d.SetPartial("worker_data_disks")
 			d.SetPartial("worker_number")
+			d.SetPartial("worker_disk_category")
+			d.SetPartial("worker_disk_size")
+			d.SetPartial("worker_disk_snapshot_policy_id")
+			d.SetPartial("worker_disk_performance_level")
 		}
 
 	}
@@ -578,6 +628,15 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 		}
 		d.SetPartial("deletion_protection")
 	}
+
+	// modify cluster tag
+	if d.HasChange("tags") {
+		err := updateKubernetesClusterTag(d, meta)
+		if err != nil {
+			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
+		}
+	}
+	d.SetPartial("tags")
 
 	// upgrade cluster version
 	err := UpgradeAlicloudKubernetesCluster(d, meta)
