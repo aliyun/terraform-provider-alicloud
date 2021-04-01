@@ -165,7 +165,7 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 	if instanceType, ok := d.GetOk("instance_type"); ok {
 		request.InstanceType = instanceType.(string)
 	}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.UnassociateEipAddress(request)
 		})

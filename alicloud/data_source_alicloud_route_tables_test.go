@@ -26,6 +26,16 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 			"name_regex": `"${alicloud_route_table.default.name}_fake"`,
 		}),
 	}
+	statusConfig := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"ids":    `["${alicloud_route_table.default.id}"]`,
+			"status": `"Available"`,
+		}),
+		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"ids":    `["${alicloud_route_table.default.id}"]`,
+			"status": `"Pending"`,
+		}),
+	}
 
 	vpcIdConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
@@ -82,16 +92,18 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"ids":               `[ "${alicloud_route_table.default.id}" ]`,
 			"resource_group_id": `""`,
+			"status":            `"Available"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
 			"name_regex":        `"${alicloud_route_table.default.name}_fake"`,
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"ids":               `[ "${alicloud_route_table.default.id}" ]`,
 			"resource_group_id": `""`,
+			"status":            `"Pending"`,
 		}),
 	}
 
-	routeTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConfig, vpcIdConfig, idsConfig, tagsConfig, resourceGroupIdConfig, allConfig)
+	routeTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConfig, statusConfig, vpcIdConfig, idsConfig, tagsConfig, resourceGroupIdConfig, allConfig)
 }
 
 func testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand int, attrMap map[string]string) string {
@@ -107,12 +119,12 @@ variable "name" {
 
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	vpc_name = "${var.name}"
 }
 
 resource "alicloud_route_table" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
+  route_table_name = "${var.name}"
   description = "${var.name}_description"
   tags 		= {
 		Created = "TF"
@@ -129,15 +141,24 @@ data "alicloud_route_tables" "default" {
 
 var existRouteTablesMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"ids.#":                     "1",
-		"names.#":                   "1",
-		"tables.#":                  "1",
-		"tables.0.id":               CHECKSET,
-		"tables.0.route_table_type": CHECKSET,
-		"tables.0.creation_time":    CHECKSET,
-		"tables.0.router_id":        CHECKSET,
-		"tables.0.name":             fmt.Sprintf("tf-testAccRouteTablesDatasource%d", rand),
-		"tables.0.description":      fmt.Sprintf("tf-testAccRouteTablesDatasource%d_description", rand),
+		"ids.#":                      "1",
+		"names.#":                    "1",
+		"tables.#":                   "1",
+		"tables.0.id":                CHECKSET,
+		"tables.0.route_table_type":  CHECKSET,
+		"tables.0.router_id":         CHECKSET,
+		"tables.0.name":              fmt.Sprintf("tf-testAccRouteTablesDatasource%d", rand),
+		"tables.0.description":       fmt.Sprintf("tf-testAccRouteTablesDatasource%d_description", rand),
+		"tables.0.status":            "Available",
+		"tables.0.vswitch_ids.#":     CHECKSET,
+		"tables.0.vpc_id":            CHECKSET,
+		"tables.0.tags.%":            "2",
+		"tables.0.tags.Created":      "TF",
+		"tables.0.tags.For":          "acceptance test",
+		"tables.0.router_type":       CHECKSET,
+		"tables.0.route_table_name":  fmt.Sprintf("tf-testAccRouteTablesDatasource%d", rand),
+		"tables.0.route_table_id":    CHECKSET,
+		"tables.0.resource_group_id": CHECKSET,
 	}
 }
 

@@ -23,7 +23,7 @@ github.com/alibabacloud-go/tea/utils
 github.com/alibabacloud-go/tea-roa/client
 # github.com/alibabacloud-go/tea-roa-utils v1.1.5
 github.com/alibabacloud-go/tea-roa-utils/service
-# github.com/alibabacloud-go/tea-rpc v1.1.6
+# github.com/alibabacloud-go/tea-rpc v1.1.8
 github.com/alibabacloud-go/tea-rpc/client
 # github.com/alibabacloud-go/tea-rpc-utils v1.1.2
 github.com/alibabacloud-go/tea-rpc-utils/service
@@ -159,7 +159,7 @@ github.com/cenkalti/backoff
 github.com/davecgh/go-spew/spew
 # github.com/deckarep/golang-set v1.7.1
 github.com/deckarep/golang-set
-# github.com/denverdino/aliyungo v0.0.0-20210222084345-ddfe3452f5e8
+# github.com/denverdino/aliyungo v0.0.0-20210318042315-546d0768f5c7
 github.com/denverdino/aliyungo/cdn
 github.com/denverdino/aliyungo/common
 github.com/denverdino/aliyungo/cs

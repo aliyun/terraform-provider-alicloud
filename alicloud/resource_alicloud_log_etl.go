@@ -157,8 +157,8 @@ func resourceAlicloudLogETL() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"access_key_id": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:      schema.TypeString,
+							Optional:  true,
 							Sensitive: true,
 						},
 						"kms_encrypted_access_key_id": {
@@ -167,8 +167,8 @@ func resourceAlicloudLogETL() *schema.Resource {
 							DiffSuppressFunc: kmsDiffSuppressFunc,
 						},
 						"access_key_secret": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:      schema.TypeString,
+							Optional:  true,
 							Sensitive: true,
 						},
 						"kms_encrypted_access_key_secret": {

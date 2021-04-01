@@ -181,6 +181,52 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string)
 	return alikafkaConsumerGroup, WrapErrorf(Error(GetNotFoundMessage("AlikafkaConsumerGroup", id)), NotFoundMsg, ProviderERROR)
 }
 
+func (alikafkaService *AlikafkaService) DescribeAlikafkaTopicStatus(id string) (*alikafka.TopicStatus, error) {
+	alikafkaTopicStatus := &alikafka.TopicStatus{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return alikafkaTopicStatus, WrapError(err)
+	}
+	instanceId := parts[0]
+	topic := parts[1]
+
+	request := alikafka.CreateGetTopicStatusRequest()
+	request.InstanceId = instanceId
+	request.RegionId = alikafkaService.client.RegionId
+	request.Topic = topic
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var raw interface{}
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			return alikafkaClient.GetTopicStatus(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		return nil
+	})
+
+	if err != nil {
+		return alikafkaTopicStatus, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	topicStatusResp, _ := raw.(*alikafka.GetTopicStatusResponse)
+
+	if topicStatusResp.TopicStatus.OffsetTable.OffsetTableItem != nil {
+		return &topicStatusResp.TopicStatus, nil
+	}
+
+	return alikafkaTopicStatus, WrapErrorf(Error(GetNotFoundMessage("AlikafkaTopicStatus "+ResourceNotfound, id)), ResourceNotfound)
+}
+
 func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (*alikafka.TopicVO, error) {
 
 	alikafkaTopic := &alikafka.TopicVO{}
@@ -393,7 +439,7 @@ func (s *AlikafkaService) WaitForAlikafkaInstance(id string, status Status, time
 	}
 }
 
-func (s *AlikafkaService) WaitForAllAlikafkaNodeRelease(id string, timeout int) error {
+func (s *AlikafkaService) WaitForAllAlikafkaNodeRelease(id string, status string, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
 		object, err := s.DescribeAlikafkaNodeStatus(id)
@@ -408,7 +454,7 @@ func (s *AlikafkaService) WaitForAllAlikafkaNodeRelease(id string, timeout int) 
 		// Process wait for all node become released.
 		allReleased := true
 		for _, v := range object.Status {
-			if !strings.EqualFold("released", v) {
+			if v != status && !strings.HasSuffix(v, status) {
 				allReleased = false
 			}
 		}
@@ -445,6 +491,23 @@ func (s *AlikafkaService) WaitForAlikafkaConsumerGroup(id string, status Status,
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.InstanceId+":"+object.ConsumerId, id, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *AlikafkaService) KafkaTopicStatusRefreshFunc(id string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAlikafkaTopicStatus(id)
+		if err != nil {
+			if !IsExpectedErrors(err, []string{ResourceNotfound}) {
+				return nil, "", WrapError(err)
+			}
+		}
+
+		if object.OffsetTable.OffsetTableItem != nil && len(object.OffsetTable.OffsetTableItem) > 0 {
+			return object, "Running", WrapError(err)
+		}
+
+		return object, "Creating", nil
 	}
 }
 

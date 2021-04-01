@@ -116,7 +116,13 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 	if e, ok := err.(*ComplexError); ok {
 		return IsExpectedErrors(e.Cause, expectCodes)
 	}
-	if err == nil {
+
+	if e, ok := err.(*tea.SDKError); ok {
+		for _, code := range expectCodes {
+			if *e.Code == code || strings.Contains(*e.Data, code) {
+				return true
+			}
+		}
 		return false
 	}
 
@@ -195,9 +201,9 @@ func NeedRetry(err error) bool {
 	if err == nil {
 		return false
 	}
-	if e, ok := err.(*common.Error); ok {
-		re := regexp.MustCompile("^Post https://.*EOF$")
-		return re.MatchString(e.Message)
+	if err.Error() != "" {
+		re := regexp.MustCompile("^Post [\"]*https://.*EOF$")
+		return re.MatchString(err.Error())
 	}
 	if e, ok := err.(*tea.SDKError); ok {
 		if strings.Contains(*e.Message, "code: 500, 您已开通过") {
@@ -347,6 +353,7 @@ func WrapComplexError(cause, err error, filepath string, fileline int) error {
 
 // A default message of ComplexError's Err. It is format to Resource <resource-id> <operation> Failed!!! <error source>
 const DefaultErrorMsg = "Resource %s %s Failed!!! %s"
+const ResponseCodeMsg = "Resource %s %s Failed!!! %v"
 const RequestIdMsg = "RequestId: %s"
 const NotFoundMsg = ResourceNotfound + "!!! %s"
 const NotFoundWithResponse = ResourceNotfound + "!!! Response: %v"

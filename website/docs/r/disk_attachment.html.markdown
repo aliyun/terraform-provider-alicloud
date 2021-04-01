@@ -61,6 +61,12 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `instance_id` - ID of the Instance.
-* `disk_id` - ID of the Disk.
-* `device_name` - The device name exposed to the instance.
+* `id` - The Disk Attachment ID and it formats as `<disk_id>:<instance_id>`.
+
+## Import
+
+The disk attachment can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_disk_attachment.example d-abc12345678:i-abc12355
+```

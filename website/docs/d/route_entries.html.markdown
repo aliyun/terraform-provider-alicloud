@@ -42,7 +42,7 @@ resource "alicloud_vswitch" "foo" {
   vpc_id            = "${alicloud_vpc.foo.id}"
   cidr_block        = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  vswitch_name      = "${var.name}"
 }
 
 resource "alicloud_route_entry" "foo" {

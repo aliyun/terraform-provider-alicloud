@@ -222,6 +222,100 @@ func TestAccAlicloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCSKubernetesNodePool_PrePaid(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.pre_paid_nodepool"
+	ra := resourceAttrInit(resourceId, csdKubernetesNodePoolBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSNodePoolConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                  name,
+					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
+					"vswitch_ids":           []string{"${alicloud_vswitch.default.id}"},
+					"password":              "Terraform1234",
+					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"system_disk_category":  "cloud_efficiency",
+					"system_disk_size":      "120",
+					"install_cloud_monitor": "false",
+					"instance_charge_type":  "PrePaid",
+					"period":                "1",
+					"period_unit":           "Month",
+					"auto_renew":            "true",
+					"auto_renew_period":     "1",
+					"scaling_config":        []map[string]string{{"min_size": "1", "max_size": "10"}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                      name,
+						"cluster_id":                CHECKSET,
+						"password":                  CHECKSET,
+						"vswitch_ids.#":             "1",
+						"instance_types.#":          "1",
+						"system_disk_category":      "cloud_efficiency",
+						"system_disk_size":          "120",
+						"instance_charge_type":      "PrePaid",
+						"install_cloud_monitor":     "false",
+						"period":                    "1",
+						"period_unit":               "Month",
+						"auto_renew":                "true",
+						"auto_renew_period":         "1",
+						"scaling_config.#":          "1",
+						"scaling_config.0.min_size": "1",
+						"scaling_config.0.max_size": "10",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type":  "PrePaid",
+					"auto_renew_period":     "2",
+					"install_cloud_monitor": "true",
+					"scaling_config":        []map[string]string{{"min_size": "2", "max_size": "10"}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type":      "PrePaid",
+						"auto_renew_period":         "2",
+						"install_cloud_monitor":     "true",
+						"scaling_config.#":          "1",
+						"scaling_config.0.min_size": "2",
+						"scaling_config.0.max_size": "10",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var csdKubernetesNodePoolBasicMap = map[string]string{
 	"system_disk_size":     "40",
 	"system_disk_category": "cloud_efficiency",
@@ -245,12 +339,12 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name                         = "${var.name}"
+  vpc_name                         = "${var.name}"
   cidr_block                   = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  name                         = "${var.name}"
+  vswitch_name                         = "${var.name}"
   vpc_id                       = "${alicloud_vpc.default.id}"
   cidr_block                   = "10.1.1.0/24"
   availability_zone            = "${data.alicloud_zones.default.zones.0.id}"

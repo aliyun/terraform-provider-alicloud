@@ -15,9 +15,38 @@ func TestAccAlicloudSnatEntriesDataSourceBasic(t *testing.T) {
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}"`,
 		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
+			"name_regex":    `"${alicloud_snat_entry.default.snat_entry_name}"`,
+		}),
 		fakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
-			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}_fake"`,
+			"name_regex":    `"${alicloud_snat_entry.default.snat_entry_name}_fakeii"`,
+		}),
+	}
+
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
+			"status":        `"Available"`,
+		}),
+		fakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
+			"status":        `"Deleting"`,
+		}),
+	}
+
+	idsConfig := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
+			"ids":           `["${alicloud_snat_entry.default.snat_entry_id}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
+			"ids":           `["${alicloud_snat_entry.default.snat_entry_id}_fake"]`,
 		}),
 	}
 
@@ -39,15 +68,20 @@ func TestAccAlicloudSnatEntriesDataSourceBasic(t *testing.T) {
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}"`,
 			"source_cidr":   `"172.16.0.0/21"`,
+			"name_regex":    `"${alicloud_snat_entry.default.snat_entry_name}"`,
+			"status":        `"Available"`,
+			"ids":           `["${alicloud_snat_entry.default.snat_entry_id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
-			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}_fake"`,
 			"source_cidr":   `"172.16.0.0/21"`,
+			"name_regex":    `"${alicloud_snat_entry.default.snat_entry_name}_fake"`,
+			"status":        `"Deleting"`,
+			"ids":           `["${alicloud_snat_entry.default.snat_entry_id}_fake"]`,
 		}),
 	}
 
-	snatEntriesCheckInfo.dataSourceTestCheck(t, rand, snatIpConf, sourceCidrConf, allConf)
+	snatEntriesCheckInfo.dataSourceTestCheck(t, rand, snatIpConf, nameRegexConf, statusConf, idsConfig, sourceCidrConf, allConf)
 
 }
 
@@ -67,15 +101,15 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	vpc_name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	zone_id = "${data.alicloud_zones.default.zones.0.id}"
+	vswitch_name = "${var.name}"
 }
 
 resource "alicloud_nat_gateway" "default" {
@@ -97,6 +131,7 @@ resource "alicloud_snat_entry" "default" {
 	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
 	source_vswitch_id = "${alicloud_vswitch.default.id}"
 	snat_ip = "${alicloud_eip.default.ip_address}"
+   snat_entry_name = "${var.name}"
 }
 
 data "alicloud_snat_entries" "default" {
@@ -107,12 +142,16 @@ data "alicloud_snat_entries" "default" {
 
 var existSnatEntriesMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"ids.#":                 "1",
-		"entries.#":             "1",
-		"entries.0.id":          CHECKSET,
-		"entries.0.snat_ip":     CHECKSET,
-		"entries.0.status":      "Available",
-		"entries.0.source_cidr": "172.16.0.0/21",
+		"ids.#":                       "1",
+		"names.#":                     "1",
+		"entries.#":                   "1",
+		"entries.0.id":                CHECKSET,
+		"entries.0.snat_ip":           CHECKSET,
+		"entries.0.status":            "Available",
+		"entries.0.source_cidr":       "172.16.0.0/21",
+		"entries.0.snat_entry_id":     CHECKSET,
+		"entries.0.snat_entry_name":   fmt.Sprintf("tf-testAccForSnatEntriesDatasource%d", rand),
+		"entries.0.source_vswitch_id": CHECKSET,
 	}
 }
 
@@ -120,6 +159,7 @@ var fakeSnatEntriesMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"ids.#":     "0",
 		"entries.#": "0",
+		"names.#":   "0",
 	}
 }
 

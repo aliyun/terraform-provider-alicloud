@@ -30,6 +30,8 @@ func init() {
 			"alicloud_cen_instance",
 			"alicloud_edas_cluster",
 			"alicloud_edas_k8s_cluster",
+			"alicloud_network_acl",
+			"alicloud_cs_kubernetes",
 		},
 	})
 }
@@ -66,7 +68,7 @@ func testSweepVpcs(region string) error {
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			log.Printf("[ERROR] Failed to retrieve resoure manager handshake in service list: %s", err)
+			log.Printf("[ERROR] Failed to retrieve VPC in service list: %s", err)
 			return nil
 		}
 		resp, err := jsonpath.Get("$.Vpcs.Vpc", response)
@@ -101,6 +103,11 @@ func testSweepVpcs(region string) error {
 
 	for _, id := range vpcIds {
 		log.Printf("[INFO] Deleting VPC: (%s)", id)
+		action := "DeleteVpc"
+		request := map[string]interface{}{
+			"VpcId":    id,
+			"RegionId": client.RegionId,
+		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(time.Minute*10, func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -136,6 +143,7 @@ func TestAccAlicloudVpc_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.VpcIpv6SupportRegions)
 		},
 
 		IDRefreshName: resourceId,

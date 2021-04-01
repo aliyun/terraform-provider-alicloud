@@ -21,7 +21,7 @@ func init() {
 		F:    testSweepSLBs,
 		// When implemented, these should be removed firstly
 		Dependencies: []string{
-			"alicloud_cs_cluster",
+			"alicloud_cs_kubernetes",
 		},
 	})
 }

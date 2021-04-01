@@ -39,4 +39,5 @@ The following attributes are exported in addition to the arguments listed above:
     * `master_account_name`- The name of the master account.
     * `resource_directory_id` - The ID of the resource directory.
     * `root_folder_id` - The ID of the root folder.
+    * `status` - (Available in 1.120.0+.) The status of the control policy.
     

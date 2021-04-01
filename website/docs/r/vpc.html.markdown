@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_vpc" "vpc" {
-  name       = "tf_test_foo"
+  vpc_name   = "tf_test_foo"
   cidr_block = "172.16.0.0/12"
 }
 ```

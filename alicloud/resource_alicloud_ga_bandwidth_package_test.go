@@ -55,7 +55,7 @@ func TestAccAlicloudGaBandwidthPackage_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"billing_type", "payment_type", "ratio"},
+				ImportStateVerifyIgnore: []string{"billing_type", "payment_type", "ratio", "auto_use_coupon"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -64,6 +64,16 @@ func TestAccAlicloudGaBandwidthPackage_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"bandwidth_package_name": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth": "20",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth": "20",
 					}),
 				),
 			},
@@ -91,11 +101,13 @@ func TestAccAlicloudGaBandwidthPackage_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"bandwidth_package_name": "${var.name}",
 					"description":            "bandwidthpackage",
+					"bandwidth":              "50",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"bandwidth_package_name": name,
 						"description":            "bandwidthpackage",
+						"bandwidth":              "50",
 					}),
 				),
 			},

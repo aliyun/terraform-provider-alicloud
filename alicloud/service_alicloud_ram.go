@@ -583,8 +583,20 @@ func (s *RamService) DescribeRamRole(id string) (*ram.GetRoleResponse, error) {
 	request := ram.CreateGetRoleRequest()
 	request.RegionId = s.client.RegionId
 	request.RoleName = id
-	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.GetRole(request)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.GetRole(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+				time.Sleep(2 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*ram.GetRoleResponse)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
@@ -592,8 +604,6 @@ func (s *RamService) DescribeRamRole(id string) (*ram.GetRoleResponse, error) {
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ = raw.(*ram.GetRoleResponse)
 	return response, nil
 }
 

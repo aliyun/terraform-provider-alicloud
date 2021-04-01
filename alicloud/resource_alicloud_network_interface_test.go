@@ -311,7 +311,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    vswitch_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
     vpc_id = "${alicloud_vpc.default.id}"
@@ -338,7 +338,7 @@ variable "name" {
 	default = "tf-testAccNetworkInterface"
 }
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    vpc_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -347,7 +347,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    vswitch_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
     vpc_id = "${alicloud_vpc.default.id}"
@@ -375,7 +375,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    vpc_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -384,7 +384,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    vswitch_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
     vpc_id = "${alicloud_vpc.default.id}"
@@ -413,7 +413,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    vpc_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -422,7 +422,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    vswitch_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
     vpc_id = "${alicloud_vpc.default.id}"
@@ -460,7 +460,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    vswitch_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
     vpc_id = "${alicloud_vpc.default.id}"
@@ -490,7 +490,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    vpc_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -499,7 +499,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    vswitch_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
     vpc_id = "${alicloud_vpc.default.id}"
@@ -529,7 +529,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    vpc_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -538,7 +538,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    vswitch_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
     vpc_id = "${alicloud_vpc.default.id}"
@@ -571,7 +571,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    vpc_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -580,7 +580,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "tf-testAcc-vswitch"
+    vswitch_name = "tf-testAcc-vswitch"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
     vpc_id = "${alicloud_vpc.default.id}"
@@ -610,7 +610,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    vpc_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -619,7 +619,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    vswitch_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
     vpc_id = "${alicloud_vpc.default.id}"

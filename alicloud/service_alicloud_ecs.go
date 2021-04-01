@@ -503,22 +503,22 @@ func (s *EcsService) DescribeKeyPair(id string) (keyPair ecs.KeyPair, err error)
 }
 
 func (s *EcsService) DescribeKeyPairAttachment(id string) (keyPair ecs.KeyPair, err error) {
-	parts, err := ParseResourceId(id, 2)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidKeyPair.NotFound"}) {
-			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
-		return
+	index := strings.LastIndexByte(id, ':')
+	if index < 0 {
+		return keyPair, WrapError(fmt.Errorf("Invalid Resource Id %s.", id))
 	}
-	keyPairName := parts[0]
+	keyPairName := string(id[:index])
 	keyPair, err = s.DescribeKeyPair(keyPairName)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidKeyPair.NotFound"}) {
+			return keyPair, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return keyPair, WrapError(err)
 	}
 	if keyPair.KeyPairName != keyPairName {
 		err = WrapErrorf(Error(GetNotFoundMessage("KeyPairAttachment", id)), NotFoundMsg, ProviderERROR)
 	}
-	return keyPair, nil
+	return
 
 }
 
@@ -1708,4 +1708,156 @@ func (s *EcsService) EcsAutoSnapshotPolicyStateRefreshFunc(id string, failStates
 		}
 		return object, object["Status"].(string), nil
 	}
+}
+
+func (s *EcsService) DescribeLaunchTemplateVersions(id string) (object []interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeLaunchTemplateVersions"
+	request := map[string]interface{}{
+		"RegionId":         s.client.RegionId,
+		"LaunchTemplateId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidLaunchTemplate.NotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("EcsLaunchTemplate", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.LaunchTemplateVersionSets.LaunchTemplateVersionSet", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.LaunchTemplateVersionSets.LaunchTemplateVersionSet", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["LaunchTemplateId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})
+	return object, nil
+}
+
+func (s *EcsService) SetResourceTemplateTags(d *schema.ResourceData, resourceType string) error {
+
+	if d.HasChange("template_tags") {
+		added, removed := parsingTags(d)
+		conn, err := s.client.NewEcsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+		if len(removedTagKeys) > 0 {
+			action := "UntagResources"
+			request := map[string]interface{}{
+				"RegionId":     s.client.RegionId,
+				"ResourceType": resourceType,
+				"ResourceId.1": d.Id(),
+			}
+			for i, key := range removedTagKeys {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if IsThrottling(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		if len(added) > 0 {
+			action := "TagResources"
+			request := map[string]interface{}{
+				"RegionId":     s.client.RegionId,
+				"ResourceType": resourceType,
+				"ResourceId.1": d.Id(),
+			}
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = value
+				count++
+			}
+
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if IsThrottling(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		d.SetPartial("template_tags")
+	}
+	return nil
+}
+
+func (s *EcsService) DescribeEcsLaunchTemplate(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeLaunchTemplates"
+	request := map[string]interface{}{
+		"RegionId":         s.client.RegionId,
+		"LaunchTemplateId": []string{id},
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.LaunchTemplateSets.LaunchTemplateSet", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.LaunchTemplateSets.LaunchTemplateSet", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["LaunchTemplateId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }

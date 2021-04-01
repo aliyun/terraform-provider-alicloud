@@ -6,6 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"time"
 
 	"github.com/aliyun/fc-go-sdk"
@@ -146,8 +149,77 @@ func testSweepFCServices(region string) error {
 			}
 		}
 
+		// Remove eni
+		log.Printf("[INFO] Prepare to delete eni which FC created...")
+		if *v.VPCConfig.VPCID != "" || len(v.VPCConfig.VSwitchIDs) > 0 {
+			action := "DescribeNetworkInterfaces"
+			request := make(map[string]interface{})
+			request["VpcId"] = *v.VPCConfig.VPCID
+			request["VSwitchId"] = v.VPCConfig.VSwitchIDs[0]
+			request["RegionId"] = client.RegionId
+			request["PageSize"] = PageSizeLarge
+			request["PageNumber"] = 1
+			conn, err := client.NewEcsClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				return WrapError(err)
+			}
+			addDebug(action, response, request)
+			resp, err := jsonpath.Get("$.NetworkInterfaceSets.NetworkInterfaceSet", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NetworkInterfaceSets.NetworkInterfaceSet", response)
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				if fmt.Sprint(item["NetworkInterfaceName"]) != "fc-eni" {
+					continue
+				}
+				log.Printf("[INFO] Deleting FC eni: %s (%s)", item["NetworkInterfaceName"], item["NetworkInterfaceId"])
+				action := "DeleteNetworkInterface"
+				request := make(map[string]interface{})
+				request["RegionId"] = client.RegionId
+				request["NetworkInterfaceId"] = fmt.Sprint(item["NetworkInterfaceId"])
+				_, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					return WrapError(err)
+				}
+			}
+		}
+		// Delete the service versions.
+		log.Printf("[INFO] Prepare to delete FC versions...")
+		input := &fc.ListServiceVersionsInput{
+			ServiceName: v.ServiceName,
+			Limit:       Int32Pointer(100),
+		}
+		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.ListServiceVersions(input)
+		})
+		if err != nil {
+			return WrapError(err)
+		}
+
+		output := raw.(*fc.ListServiceVersionsOutput)
+		for _, v := range output.Versions {
+			log.Printf("[INFO] Deleting FC service %s version: %s", *input.ServiceName, *v.VersionID)
+			input := &fc.DeleteServiceVersionInput{
+				ServiceName: input.ServiceName,
+				VersionID:   v.VersionID,
+			}
+			_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+				return fcClient.DeleteServiceVersion(input)
+			})
+			if err != nil {
+				return WrapError(err)
+			}
+		}
 		log.Printf("[INFO] Deleting FC services: %s (%s)", name, id)
-		_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+		_, err = client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			return fcClient.DeleteService(&fc.DeleteServiceInput{
 				ServiceName: StringPointer(name),
 			})

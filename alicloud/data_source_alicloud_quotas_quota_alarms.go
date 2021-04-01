@@ -141,6 +141,7 @@ func dataSourceAlicloudQuotasQuotaAlarmsRead(d *schema.ResourceData, meta interf
 
 	action := "ListQuotaAlarms"
 	request := make(map[string]interface{})
+	request["SourceIp"] = client.SourceIp
 	if v, ok := d.GetOk("product_code"); ok {
 		request["ProductCode"] = v
 	}

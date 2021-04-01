@@ -79,6 +79,7 @@ func resourceAlicloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return WrapError(err)
 	}
+	request["SourceIp"] = client.SourceIp
 	request["ProductCode"] = d.Get("product_code")
 	request["QuotaActionCode"] = d.Get("quota_action_code")
 	request["AlarmName"] = d.Get("quota_alarm_name")
@@ -166,7 +167,8 @@ func resourceAlicloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
-		"AlarmId": d.Id(),
+		"AlarmId":  d.Id(),
+		"SourceIp": client.SourceIp,
 	}
 	if d.HasChange("quota_alarm_name") {
 		update = true
@@ -218,7 +220,8 @@ func resourceAlicloudQuotasQuotaAlarmDelete(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 	request := map[string]interface{}{
-		"AlarmId": d.Id(),
+		"AlarmId":  d.Id(),
+		"SourceIp": client.SourceIp,
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)

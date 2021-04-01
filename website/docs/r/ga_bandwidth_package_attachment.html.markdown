@@ -51,7 +51,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of Bandwidth Package Attachment. Value as `bandwidth_package_id`.
+* `id` - The resource ID in terraform of Bandwidth Package Attachment. Value as `<accelerator_id>:<bandwidth_package_id>`. Before version 1.120.0, the value is `<bandwidth_package_id>`.
 * `accelerators` - Accelerators bound with current Bandwidth Package.
 * `status` - State of Bandwidth Package.
 
@@ -67,5 +67,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 Ga Bandwidth Package Attachment can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_ga_bandwidth_package_attachment.example <bandwidth_package_id>
+$ terraform import alicloud_ga_bandwidth_package_attachment.example <accelerator_id>:<bandwidth_package_id>
 ```

@@ -53,6 +53,9 @@ The following arguments are supported:
 * `accelerate_region_id` - (Required, ForceNew)  The ID of an acceleration region.
 * `accelerator_id` - (Required) The ID of the Global Accelerator (GA) instance.
 * `bandwidth` - (Optional) The bandwidth allocated to the acceleration region.
+
+-> **NOTE:** The minimum bandwidth of each accelerated region is 2Mbps. The total bandwidth of the acceleration region should be less than or equal to the bandwidth of the basic bandwidth package you purchased.
+                                                                        
 * `ip_version` - (Optional, ForceNew) The IP protocol used by the GA instance. Valid values: `IPv4`, `IPv6`. Default value is `IPv4`.
 
 ## Attributes Reference

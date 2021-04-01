@@ -99,7 +99,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "tf-testaccCenInstanceAttachment"
+  vpc_name       = "tf-testaccCenInstanceAttachment"
   cidr_block = "172.16.0.0/12"
 }
 

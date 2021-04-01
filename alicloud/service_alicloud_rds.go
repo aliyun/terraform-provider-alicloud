@@ -1614,3 +1614,42 @@ func (s *RdsService) DescribeDBProxyEndpoint(id string, endpointName string) (ma
 	addDebug(action, response, request)
 	return response, nil
 }
+
+func (s *RdsService) DescribeRdsParameterGroup(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeParameterGroup"
+	request := map[string]interface{}{
+		"RegionId":         s.client.RegionId,
+		"ParameterGroupId": id,
+		"SourceIp":         s.client.SourceIp,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ParamGroupsNotExistError"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("RdsParameterGroup", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.ParamGroup.ParameterGroup", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ParamGroup.ParameterGroup", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["ParameterGroupId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}

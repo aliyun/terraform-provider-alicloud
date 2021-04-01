@@ -299,7 +299,7 @@ data "alicloud_instance_types" "default" {
   memory_size       = 2
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
+  name_regex  = "^ubuntu"
   most_recent = true
   owners      = "system"
 }
@@ -311,7 +311,7 @@ resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/16"
   availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name              = "${var.name}"
+  vswitch_name              = "${var.name}"
 }
 resource "alicloud_security_group" "group" {
   name   = "${var.name}"
@@ -382,7 +382,7 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 data "alicloud_images" "default" {
-    name_regex = "^ubuntu_18.*64"
+    name_regex = "^ubuntu"
 	most_recent = true
 	owners = "system"
 }
@@ -394,7 +394,7 @@ resource "alicloud_vswitch" "default" {
     vpc_id = "${alicloud_vpc.default.id}"
     cidr_block = "172.16.0.0/16"
     availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-    name = "${var.name}"
+    vswitch_name = "${var.name}"
 }
 resource "alicloud_security_group" "default" {
   	name = "${var.name}"

@@ -174,7 +174,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.118.0"
+var providerVersion = "1.119.1"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Temporarily maintain map for old ecs client methods and store special endpoint information
@@ -384,7 +384,7 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(VPCCode), endpoint)
 		}
-		vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig().WithTimeout(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
 		}

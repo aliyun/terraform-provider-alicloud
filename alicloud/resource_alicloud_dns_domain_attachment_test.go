@@ -12,7 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudAlidnsDomainAttachment_basic(t *testing.T) {
+// The dependent resource alidns_instance is prepaid so skip current test case.
+func SkipTestAccAlicloudAlidnsDomainAttachment_basic(t *testing.T) {
 	var v alidns.DescribeInstanceDomainsResponse
 
 	resourceId := "alicloud_alidns_domain_attachment.default"

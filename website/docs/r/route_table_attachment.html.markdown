@@ -41,9 +41,9 @@ resource "alicloud_vswitch" "foo" {
 }
 
 resource "alicloud_route_table" "foo" {
-  vpc_id      = alicloud_vpc.foo.id
-  name        = var.name
-  description = "route_table_attachment"
+  vpc_id           = alicloud_vpc.foo.id
+  route_table_name = var.name
+  description      = "route_table_attachment"
 }
 
 resource "alicloud_route_table_attachment" "foo" {

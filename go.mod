@@ -5,8 +5,7 @@ require (
 	github.com/Sirupsen/logrus v0.0.0-20181010200618-458213699411 // indirect
 	github.com/alibabacloud-go/tea v1.1.10
 	github.com/alibabacloud-go/tea-roa v1.2.8
-	github.com/alibabacloud-go/tea-rpc v1.1.6
-	github.com/alibabacloud-go/tea-rpc-utils v1.1.2 // indirect
+	github.com/alibabacloud-go/tea-rpc v1.1.8
 	github.com/alibabacloud-go/tea-utils v1.3.6
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.890
 	github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
@@ -18,7 +17,7 @@ require (
 	github.com/aliyun/fc-go-sdk v0.0.0-20200925033337-c013428cbe21
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/deckarep/golang-set v1.7.1
-	github.com/denverdino/aliyungo v0.0.0-20210222084345-ddfe3452f5e8
+	github.com/denverdino/aliyungo v0.0.0-20210318042315-546d0768f5c7
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/gogap/errors v0.0.0-20160523102334-149c546090d0 // indirect
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect

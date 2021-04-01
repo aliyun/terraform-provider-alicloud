@@ -334,19 +334,16 @@ func resourceAlicloudVpcDelete(d *schema.ResourceData, meta interface{}) error {
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+			if IsExpectedErrors(err, []string{"Forbidden.VpcNotFound", "InvalidVpcID.NotFound", "InvalidVpcId.NotFound"}) {
+				return nil
 			}
-			return resource.NonRetryableError(err)
+			wait()
+			return resource.RetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Forbidden.VpcNotFound", "InvalidVpcID.NotFound", "InvalidVpcId.NotFound"}) {
-			return nil
-		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	stateConf := BuildStateConf([]string{"Pending"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.VpcStateRefreshFunc(d.Id(), []string{}))
