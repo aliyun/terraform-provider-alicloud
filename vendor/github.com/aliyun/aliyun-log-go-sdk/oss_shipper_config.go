@@ -34,6 +34,16 @@ type OSSShipperConfig struct {
 	CompressType   string `json:"compressType"`
 	PathFormat     string `json:"pathFormat"`
 	Format         string `json:"format"`
+	Storage	       ShipperStorage `json:"storage"`
+}
+
+type ShipperStorage struct {
+	Format string `json:"format"`
+	Detail interface{}    `json:"detail"`
+}
+
+type OssStorageJsonDetail struct{
+	EnableTag bool `json:"enableTag"`
 }
 
 func (s *Shipper) UnmarshalJSON(data []byte) error {

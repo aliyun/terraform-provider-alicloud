@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -79,8 +80,8 @@ func resourceAlicloudGaBandwidthPackageAttachmentCreate(d *schema.ResourceData, 
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ga_bandwidth_package_attachment", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["BandwidthPackageId"]))
-	stateConf := BuildStateConf([]string{}, []string{"binded"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gaService.GaBandwidthPackageAttachmentStateRefreshFunc(d.Id(), []string{}))
+	d.SetId(fmt.Sprint(request["AcceleratorId"], ":", response["BandwidthPackageId"]))
+	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gaService.GaBandwidthPackageAttachmentStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -90,6 +91,9 @@ func resourceAlicloudGaBandwidthPackageAttachmentCreate(d *schema.ResourceData, 
 func resourceAlicloudGaBandwidthPackageAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
+	if !strings.Contains(d.Id(), ":") {
+		d.SetId(fmt.Sprint(d.Get("accelerator_id"), ":", d.Id()))
+	}
 	object, err := gaService.DescribeGaBandwidthPackageAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -99,15 +103,26 @@ func resourceAlicloudGaBandwidthPackageAttachmentRead(d *schema.ResourceData, me
 		}
 		return WrapError(err)
 	}
-
-	d.Set("bandwidth_package_id", d.Id())
-	d.Set("accelerators", object["Accelerators"])
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("bandwidth_package_id", parts[1])
+	d.Set("accelerator_id", parts[0])
+	d.Set("accelerators", []string{parts[0]})
 	d.Set("status", object["State"])
 	return nil
 }
 func resourceAlicloudGaBandwidthPackageAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
+	if !strings.Contains(d.Id(), ":") {
+		d.SetId(fmt.Sprint(d.Get("accelerator_id"), ":", d.Id()))
+	}
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 	action := "BandwidthPackageRemoveAccelerator"
 	var response map[string]interface{}
 	conn, err := client.NewGaplusClient()
@@ -115,10 +130,10 @@ func resourceAlicloudGaBandwidthPackageAttachmentDelete(d *schema.ResourceData, 
 		return WrapError(err)
 	}
 	request := map[string]interface{}{
-		"BandwidthPackageId": d.Id(),
+		"BandwidthPackageId": parts[1],
 	}
 
-	request["AcceleratorId"] = d.Get("accelerator_id")
+	request["AcceleratorId"] = parts[0]
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {

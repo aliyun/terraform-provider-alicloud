@@ -653,3 +653,88 @@ func (s *LogService) DescribeLogProjectTags(project_name string) ([]*sls.Resourc
 	}
 	return respTags, nil
 }
+
+func (s *LogService) DescribeLogEtl(id string) (*sls.ETL, error) {
+	etl := &sls.ETL{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return etl, WrapError(err)
+	}
+	projectName, etlName := parts[0], parts[1]
+	var requestInfo *sls.Client
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			return slsClient.GetETL(projectName, etlName)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetLogETL", raw, requestInfo, map[string]string{
+				"project":  projectName,
+				"etl_name": etlName,
+			})
+		}
+		etl, _ = raw.(*sls.ETL)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "JobNotExist"}) {
+			return etl, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return etl, WrapErrorf(err, DefaultErrorMsg, id, "GetETL", AliyunLogGoSdkERROR)
+	}
+	return etl, nil
+}
+
+func (s *LogService) WaitForLogETL(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		object, err := s.DescribeLogEtl(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Name == parts[1] && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Name, id, ProviderERROR)
+		}
+	}
+}
+
+func (s *LogService) LogOssShipperStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeLogEtl(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+
+		return object, object.Status, nil
+	}
+}
