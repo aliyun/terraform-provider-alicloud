@@ -190,6 +190,13 @@ func (c *Client) GetLogs(project, logstore string, topic string, from int64, to 
 	return ls.GetLogs(topic, from, to, queryExp, maxLineNum, offset, reverse)
 }
 
+// GetLogLines ...
+func (c *Client) GetLogLines(project, logstore string, topic string, from int64, to int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error) {
+	ls := convertLogstore(c, project, logstore)
+	return ls.GetLogLines(topic, from, to, queryExp, maxLineNum, offset, reverse)
+}
+
 // CreateIndex ...
 func (c *Client) CreateIndex(project, logstore string, index Index) error {
 	ls := convertLogstore(c, project, logstore)

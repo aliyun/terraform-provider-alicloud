@@ -17,6 +17,11 @@ type SavedSearch struct {
 	DisplayName     string `json:"displayName"`
 }
 
+type ResponseSavedSearchItem struct {
+	SavedSearchName string `json:"savedsearchName"`
+	DisplayName     string `json:"displayName"`
+}
+
 const (
 	NotificationTypeSMS           = "SMS"
 	NotificationTypeWebhook       = "Webhook"
@@ -81,12 +86,13 @@ type AlertQuery struct {
 }
 
 type Notification struct {
-	Type       string   `json:"type"`
-	Content    string   `json:"content"`
-	EmailList  []string `json:"emailList,omitempty"`
-	Method     string   `json:"method,omitempty"`
-	MobileList []string `json:"mobileList,omitempty"`
-	ServiceUri string   `json:"serviceUri,omitempty"`
+	Type       string            `json:"type"`
+	Content    string            `json:"content"`
+	EmailList  []string          `json:"emailList,omitempty"`
+	Method     string            `json:"method,omitempty"`
+	MobileList []string          `json:"mobileList,omitempty"`
+	ServiceUri string            `json:"serviceUri,omitempty"`
+	Headers    map[string]string `json:"headers,omitempty"`
 }
 
 type Schedule struct {
@@ -203,11 +209,58 @@ func (c *Client) ListSavedSearch(project string, savedSearchName string, offset,
 	return listSavedSearch.Savedsearches, listSavedSearch.Total, listSavedSearch.Count, err
 }
 
+func (c *Client) ListSavedSearchV2(project string, savedSearchName string, offset, size int) (savedSearches []string, savedsearchItems []ResponseSavedSearchItem, total int, count int, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Content-Type":      "application/json",
+		"savedsearchName":   savedSearchName,
+		"offset":            strconv.Itoa(offset),
+		"size":              strconv.Itoa(size),
+	}
+
+	uri := "/savedsearches"
+	r, err := c.request(project, "GET", uri, h, nil)
+	if err != nil {
+		return nil, nil, 0, 0, err
+	}
+	defer r.Body.Close()
+
+	type ListSavedSearch struct {
+		Total            int                       `json:"total"`
+		Count            int                       `json:"count"`
+		Savedsearches    []string                  `json:"savedsearches"`
+		SavedsearchItems []ResponseSavedSearchItem `json:"savedsearchItems"`
+	}
+
+	buf, _ := ioutil.ReadAll(r.Body)
+	listSavedSearch := &ListSavedSearch{}
+	if err = json.Unmarshal(buf, listSavedSearch); err != nil {
+		err = NewClientError(err)
+	}
+	return listSavedSearch.Savedsearches, listSavedSearch.SavedsearchItems, listSavedSearch.Total, listSavedSearch.Count, err
+}
+
 func (c *Client) CreateAlert(project string, alert *Alert) error {
 	body, err := json.Marshal(alert)
 	if err != nil {
 		return NewClientError(err)
 	}
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+	}
+
+	uri := "/jobs"
+	r, err := c.request(project, "POST", uri, h, body)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
+func (c *Client) CreateAlertString(project string, alert string) error {
+	body := []byte(alert)
 	h := map[string]string{
 		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
 		"Content-Type":      "application/json",
@@ -234,6 +287,23 @@ func (c *Client) UpdateAlert(project string, alert *Alert) error {
 	}
 
 	uri := "/jobs/" + alert.Name
+	r, err := c.request(project, "PUT", uri, h, body)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
+func (c *Client) UpdateAlertString(project string, alertName, alert string) error {
+	body := []byte(alert)
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+	}
+
+	uri := "/jobs/" + alertName
 	r, err := c.request(project, "PUT", uri, h, body)
 	if err != nil {
 		return err
@@ -302,6 +372,21 @@ func (c *Client) GetAlert(project string, alertName string) (*Alert, error) {
 		err = NewClientError(err)
 	}
 	return alert, err
+}
+
+func (c *Client) GetAlertString(project string, alertName string) (string, error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Content-Type":      "application/json",
+	}
+	uri := "/jobs/" + alertName
+	r, err := c.request(project, "GET", uri, h, nil)
+	if err != nil {
+		return "", err
+	}
+	defer r.Body.Close()
+	buf, _ := ioutil.ReadAll(r.Body)
+	return string(buf), err
 }
 
 func (c *Client) ListAlert(project, alertName, dashboard string, offset, size int) (alerts []*Alert, total int, count int, err error) {

@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
@@ -652,4 +653,77 @@ func (s *LogService) DescribeLogProjectTags(project_name string) ([]*sls.Resourc
 		return respTags, WrapErrorf(err, DefaultErrorMsg, project_name, "GetProejctTags", AliyunLogGoSdkERROR)
 	}
 	return respTags, nil
+}
+
+func (s *LogService) DescribeLogOssShipper(id string) (*sls.Shipper, error) {
+	var shipper *sls.Shipper
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return shipper, WrapError(err)
+	}
+	projectName, logstoreName, shipperName := parts[0], parts[1], parts[2]
+	var requestInfo *sls.Client
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			project, _ := sls.NewLogProject(projectName, slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
+			logstore, _ := sls.NewLogStore(logstoreName, project)
+			return logstore.GetShipper(shipperName)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetLogOssShipper", raw, requestInfo, map[string]string{
+				"project_name":  projectName,
+				"logstore_name": logstoreName,
+				"shipper_name":  shipperName,
+			})
+		}
+		shipper, _ = raw.(*sls.Shipper)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
+			return shipper, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		// SLS server problem, temporarily by returning nil value to solve.
+		if d, ok := err.(*sls.Error); ok {
+			if d.Message == fmt.Sprintf("shipperName %s does not exist", parts[2]) {
+				return shipper, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+			}
+
+		}
+		return shipper, WrapErrorf(err, DefaultErrorMsg, id, "GetLogOssShipper", AliyunLogGoSdkERROR)
+	}
+	return shipper, nil
+}
+
+func (s *LogService) WaitForLogOssShipper(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		object, err := s.DescribeLogOssShipper(id)
+		if err != nil {
+			if object == nil {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.ShipperName == parts[2] && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ShipperName, id, ProviderERROR)
+		}
+	}
 }
