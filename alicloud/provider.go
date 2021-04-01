@@ -401,6 +401,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_launch_templates":                        dataSourceAlicloudEcsLaunchTemplates(),
 			"alicloud_resource_manager_control_policies":           dataSourceAlicloudResourceManagerControlPolicies(),
 			"alicloud_resource_manager_control_policy_attachments": dataSourceAlicloudResourceManagerControlPolicyAttachments(),
+			"alicloud_rds_accounts":                                dataSourceAlicloudRdsAccounts(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -422,7 +423,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_security_group":                     resourceAliyunSecurityGroup(),
 			"alicloud_security_group_rule":                resourceAliyunSecurityGroupRule(),
 			"alicloud_db_database":                        resourceAlicloudDBDatabase(),
-			"alicloud_db_account":                         resourceAlicloudDBAccount(),
+			"alicloud_db_account":                         resourceAlicloudRdsAccount(),
 			"alicloud_db_account_privilege":               resourceAlicloudDBAccountPrivilege(),
 			"alicloud_db_backup_policy":                   resourceAlicloudDBBackupPolicy(),
 			"alicloud_db_connection":                      resourceAlicloudDBConnection(),
@@ -712,6 +713,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_launch_template":                        resourceAlicloudEcsLaunchTemplate(),
 			"alicloud_resource_manager_control_policy":            resourceAlicloudResourceManagerControlPolicy(),
 			"alicloud_resource_manager_control_policy_attachment": resourceAlicloudResourceManagerControlPolicyAttachment(),
+			"alicloud_rds_account":                                resourceAlicloudRdsAccount(),
 		},
 
 		ConfigureFunc: providerConfigure,
