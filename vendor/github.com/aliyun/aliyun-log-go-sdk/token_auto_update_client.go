@@ -627,6 +627,16 @@ func (c *TokenAutoUpdateClient) GetCursor(project, logstore string, shardID int,
 	return
 }
 
+func (c *TokenAutoUpdateClient) GetCursorTime(project, logstore string, shardID int, cursor string) (cursorTime time.Time, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		cursorTime, err = c.logClient.GetCursorTime(project, logstore, shardID, cursor)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) GetLogsBytes(project, logstore string, shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
@@ -663,6 +673,17 @@ func (c *TokenAutoUpdateClient) GetLogs(project, logstore string, topic string, 
 	maxLineNum int64, offset int64, reverse bool) (r *GetLogsResponse, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		r, err = c.logClient.GetLogs(project, logstore, topic, from, to, queryExp, maxLineNum, offset, reverse)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetLogLines(project, logstore string, topic string, from int64, to int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool) (r *GetLogLinesResponse, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		r, err = c.logClient.GetLogLines(project, logstore, topic, from, to, queryExp, maxLineNum, offset, reverse)
 		if !c.processError(err) {
 			return
 		}
@@ -719,6 +740,17 @@ func (c *TokenAutoUpdateClient) ListDashboard(project string, dashboardName stri
 	}
 	return
 }
+
+func (c *TokenAutoUpdateClient) ListDashboardV2(project string, dashboardName string, offset, size int) (dashboardList []string, dashboardItems []ResponseDashboardItem, count, total int, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		dashboardList, dashboardItems, count, total, err = c.logClient.ListDashboardV2(project, dashboardName, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) GetDashboard(project, name string) (dashboard *Dashboard, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		dashboard, err = c.logClient.GetDashboard(project, name)
@@ -842,6 +874,16 @@ func (c *TokenAutoUpdateClient) ListSavedSearch(project string, savedSearchName 
 	return
 }
 
+func (c *TokenAutoUpdateClient) ListSavedSearchV2(project string, savedSearchName string, offset, size int) (savedSearches []string, savedsearchItems []ResponseSavedSearchItem, total int, count int, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		savedSearches, savedsearchItems, total, count, err = c.logClient.ListSavedSearchV2(project, savedSearchName, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) CreateAlert(project string, alert *Alert) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		err = c.logClient.CreateAlert(project, alert)
@@ -905,6 +947,34 @@ func (c *TokenAutoUpdateClient) EnableAlert(project string, alertName string) (e
 func (c *TokenAutoUpdateClient) ListAlert(project string, alertName string, dashboard string, offset, size int) (alerts []*Alert, total int, count int, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		alerts, total, count, err = c.logClient.ListAlert(project, alertName, dashboard, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) CreateAlertString(project string, alert string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateAlertString(project, alert)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) UpdateAlertString(project string, alertName, alert string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateAlertString(project, alertName, alert)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) GetAlertString(project string, alertName string) (alert string, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		alert, err = c.logClient.GetAlertString(project, alertName)
 		if !c.processError(err) {
 			return
 		}
