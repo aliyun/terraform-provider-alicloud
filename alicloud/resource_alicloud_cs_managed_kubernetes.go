@@ -1,8 +1,12 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -72,17 +76,25 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"worker_disk_size": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          40,
-				ValidateFunc:     validation.IntBetween(20, 32768),
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      40,
+				ValidateFunc: validation.IntBetween(20, 32768),
 			},
 			"worker_disk_category": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  DiskCloudEfficiency,
+			},
+			"worker_disk_performance_level": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				Default:          DiskCloudEfficiency,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+				DiffSuppressFunc: workerDiskPerformanceLevelDiffSuppressFunc,
+			},
+			"worker_disk_snapshot_policy_id": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"worker_data_disk_size": {
 				Type:             schema.TypeInt,
@@ -138,6 +150,10 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 							Optional: true,
 						},
 						"auto_snapshot_policy_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"performance_level": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -720,5 +736,81 @@ func UpgradeAlicloudKubernetesCluster(d *schema.ResourceData, meta interface{}) 
 
 		d.SetPartial("version")
 	}
+	return nil
+}
+
+func migrateAlicloudManagedKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
+	action := "MigrateCluster"
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
+
+	migrateClusterRequest := map[string]string{
+		"type": "ManagedKubernetes",
+		"spec": d.Get("cluster_spec").(string),
+	}
+	conn, err := meta.(*connectivity.AliyunClient).NewTeaRoaCommonClient(connectivity.OpenAckService)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2015-12-15"), nil, StringPointer("POST"), StringPointer("AK"), String(fmt.Sprintf("/clusters/%s/migrate", d.Id())), nil, nil, migrateClusterRequest, &util.RuntimeOptions{})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
+				return resource.RetryableError(err)
+			}
+			addDebug(action, response, nil)
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, nil)
+		return nil
+	})
+
+	stateConf := BuildStateConf([]string{"migrating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return err
+	}
+
+	d.SetPartial("cluster_spec")
+
+	return nil
+}
+
+func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error {
+	action := "ModifyClusterTags"
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
+
+	var modifyClusterTagsRequest []cs.Tag
+	if tags, err := ConvertCsTags(d); err == nil {
+		modifyClusterTagsRequest = tags
+	}
+	d.SetPartial("tags")
+	conn, err := meta.(*connectivity.AliyunClient).NewTeaRoaCommonClient(connectivity.OpenAckService)
+	if err != nil {
+		return WrapError(err)
+	}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2015-12-15"), nil, StringPointer("POST"), StringPointer("AK"), String(fmt.Sprintf("/clusters/%s/tags", d.Id())), nil, nil, modifyClusterTagsRequest, &util.RuntimeOptions{})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
+				return resource.RetryableError(err)
+			}
+			addDebug(action, response, nil)
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, nil)
+		return nil
+	})
+
+	stateConf := BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return err
+	}
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -31,6 +31,8 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 -> **NOTE:** From version 1.109.1, Professional managed cluster supports zero worker node. For more information, see [Create an ACK cluster with no worker node by using Terraform](https://help.aliyun.com/document_detail/205101.html).
 
+-> **NOTE:** From version 1.120.0, Support for cluster migration from Standard cluster to professional.
+
 ## Example Usage
 
 ```
@@ -114,7 +116,7 @@ The following arguments are supported:
 * `exclude_autoscaler_nodes` - (Optional, Available in 1.88.0+) Exclude autoscaler nodes from `worker_nodes`. Default to `false`.
 * `service_account_issuer` - (Optional, ForceNew, Available in 1.92.0+) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well).
 * `api_audiences` - (Optional, ForceNew, Available in 1.92.0+) A list of API audiences for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm). Set this to `["kubernetes.default.svc"]` if you want to enable the Token Volume Projection feature (requires specifying `service_account_issuer` as well.
-* `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster . Detailed below.
+* `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster and work nodes . Detailed below.
 * `cluster_spec` - (Optional, ForceNew, Available in 1.101.0+) The cluster specifications of kubernetes cluster,which can be empty.Valid values:
   * ack.standard : Standard managed clusters.
   * ack.pro.small : Professional managed clusters.
@@ -196,9 +198,11 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [40~500] in GB. Default to 40.
 * `worker_data_disks` - (Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size.
-  * `category`: the type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
-  * `size`: the size of a data disk, at least 40. Unit: GiB.
-  * `encrypted`: specifies whether to encrypt data disks. Valid values: true and false. Default to false.
+  * `category` - The type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
+  * `size` - The size of a data disk, at least 40. Unit: GiB.
+  * `encrypted` - Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
+  * `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+  * `auto_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node data disk auto snapshot policy.
 * `node_name_mode` - (Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be `aliyun.com00055test`.
 * `node_port_range`- (Optional, ForceNew, Available in 1.103.2+) The service port range of nodes, valid values: `30000` to `65535`. Default to `30000-32767`.
 * `os_type` - (Optional, ForceNew, Available in 1.103.2+) The operating system of the nodes that run pods, its valid value is either `Linux` or `Windows`. Default to `Linux`.
@@ -206,6 +210,8 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `cpu_policy` - (Optional) Kubelet cpu policy. For Kubernetes 1.12.6 and later, its valid value is either `static` or `none`. Default to `none`.
 * `user_data` - (Optional, Available in 1.81.0+) Custom data that can execute on nodes. For more information, see [Prepare user data](https://www.alibabacloud.com/help/doc-detail/49121.htm).
 * `taints` - (Optional, Available in 1.103.2+) Taints ensure pods are not scheduled onto inappropriate nodes. One or more taints are applied to a node; this marks that the node should not accept any pods that do not tolerate the taints. For more information, see [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Detailed below.
+* `worker_disk_performance_level` - (Optional, Available in 1.120.0+) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+* `worker_disk_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node system disk auto snapshot policy.
 
 ##### worker_vswtich_ids
 

@@ -27,6 +27,7 @@ const (
 	COMPONENT_DEFAULT_VRESION  = "v1.0.0"
 	SCALING_CONFIGURATION_NAME = "kubernetes_autoscaler_autogen"
 	DefaultECSTag              = "k8s.aliyun.com"
+	DefaultClusterTag          = "ack.aliyun.com"
 	RECYCLE_MODE_LABEL         = "k8s.io/cluster-autoscaler/node-template/label/policy"
 	DefaultAutoscalerTag       = "k8s.io/cluster-autoscaler"
 	SCALING_GROUP_NAME         = "sg-%s-%s"
