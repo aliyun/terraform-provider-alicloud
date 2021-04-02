@@ -90,7 +90,7 @@ func testSweepDMSEnterpriseUsers(region string) error {
 				// Waiting 30 seconds to ensure these DMS Enterprise User have been deleted.
 				time.Sleep(30 * time.Second)
 			}
-			log.Printf("[INFO] Delete DMS Enterprise User Success: %s ", item["NickName"].(string))
+			log.Printf("[INFO] Delete DMS Enterprise User Success: %v ", item["NickName"])
 		}
 		if len(result) < PageSizeLarge {
 			break

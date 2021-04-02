@@ -358,6 +358,9 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("is_outdated"); ok && v.(bool) == true {
 		request.IoOptimized = string(NoneOptimized)
 	}
+	if v, ok := d.GetOk("system_disk_category"); ok && strings.TrimSpace(v.(string)) != "" {
+		request.SystemDiskCategory = strings.TrimSpace(v.(string))
+	}
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.DescribeAvailableResource(request)
