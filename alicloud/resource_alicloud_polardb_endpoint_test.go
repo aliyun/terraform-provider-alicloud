@@ -17,6 +17,7 @@ func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 	name := fmt.Sprintf("tf-testAccPolarDBendpoint-%s", rand)
 	var basicMap = map[string]string{
 		"db_cluster_id": CHECKSET,
+		"endpoint_type": "Custom",
 	}
 	resourceId := "alicloud_polardb_endpoint.default"
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -41,11 +42,10 @@ func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_id": "${alicloud_polardb_cluster.cluster.id}",
+					"endpoint_type": "Custom",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"endpoint_type": "Custom",
-					}),
+					testAccCheck(nil),
 				),
 			},
 			{
@@ -86,19 +86,6 @@ func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 				),
 			},
 			//todo: After resource polardb_node is supported, it is necessary to add a modification check on the “nodes” parameter
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ssl_action":                     "Enable",
-					"ssl_connection_string_net_type": "Private",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ssl_action":                     "Enable",
-						"ssl_connection_string_net_type": "Private",
-						"ssl_status":                     "Enabled",
-					}),
-				),
-			},
 		},
 	})
 }
