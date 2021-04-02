@@ -186,8 +186,9 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"MASTER_SLAVE", "STAND_ALONE", "double", "single"}, false),
-				Default:      "double",
+				Deprecated:   "Field 'node_type' has been deprecated from version 1.120.1",
 			},
 			"order_type": {
 				Type:         schema.TypeString,

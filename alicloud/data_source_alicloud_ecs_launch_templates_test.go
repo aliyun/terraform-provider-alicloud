@@ -90,7 +90,7 @@ func TestAccAlicloudEcsLaunchTemplatesDataSource(t *testing.T) {
 			"templates.0.period":                                 CHECKSET,
 			"templates.0.private_ip_address":                     "",
 			"templates.0.ram_role_name":                          name,
-			"templates.0.spot_duration":                          "",
+			"templates.0.spot_duration":                          "1",
 			"templates.0.spot_price_limit":                       "5",
 			"templates.0.spot_strategy":                          "SpotWithPriceLimit",
 			"templates.0.system_disk.#":                          "1",
