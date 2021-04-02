@@ -275,7 +275,7 @@ func archiveBackupPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceD
 }
 
 func PostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.ToLower(d.Get("instance_charge_type").(string)) == "postpaid"
+	return strings.ToLower(d.Get("instance_charge_type").(string)) == "postpaid" || d.Get("payment_type").(string) == "PayAsYouGo"
 }
 
 func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
