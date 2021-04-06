@@ -406,7 +406,15 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 		// Gateway emr cluster do not need to check
 		if request.ClusterType != "GATEWAY" {
 			if nodeChecker["MASTER"] < 1 || nodeChecker["CORE"] < 2 {
-				return WrapError(Error("%s emr cluster must contains 1 MASTER node and 2 CORE node.",
+				return WrapError(Error("%s emr cluster must contains 1 MASTER node and 2 CORE nodes.",
+					request.ClusterType))
+			}
+			if taskNodeCount, exist := nodeChecker["TASK"]; exist && taskNodeCount < 1 {
+				return WrapError(Error("%s emr cluster can not create with 0 Task node, must greater than 0.",
+					request.ClusterType))
+			}
+			if ha, ok := d.GetOkExists("high_availability_enable"); ok && ha.(bool) && nodeChecker["MASTER"] < 2 {
+				return WrapError(Error("High available %s emr cluster must contains 2 MASTER nodes",
 					request.ClusterType))
 			}
 		}
@@ -486,7 +494,7 @@ func resourceAlicloudEmrClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("net_type", object.ClusterInfo.NetType)
 	d.Set("vpc_id", object.ClusterInfo.VpcId)
 	d.Set("vswitch_id", object.ClusterInfo.VSwitchId)
-	d.Set("use_local_metadb", object.ClusterInfo.UseLocalMetaDb)
+	d.Set("use_local_metadb", object.ClusterInfo.LocalMetaDb)
 	d.Set("deposit_type", object.ClusterInfo.DepositType)
 	d.Set("eas_enable", object.ClusterInfo.EasEnable)
 	d.Set("user_defined_emr_ecs_role", object.ClusterInfo.UserDefinedEmrEcsRole)

@@ -102,7 +102,8 @@ func resourceAlicloudKeyPairAttachmentCreate(d *schema.ResourceData, meta interf
 func resourceAlicloudKeyPairAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	keyName := strings.Split(d.Id(), ":")[0]
+	separatorIndex := strings.LastIndexByte(d.Id(), ':')
+	keyName := string(d.Id()[:separatorIndex])
 	object, err := ecsService.DescribeKeyPairAttachment(d.Id())
 
 	if err != nil {
@@ -129,8 +130,9 @@ func resourceAlicloudKeyPairAttachmentRead(d *schema.ResourceData, meta interfac
 func resourceAlicloudKeyPairAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	keyName := strings.Split(d.Id(), ":")[0]
-	instanceIds := strings.Split(d.Id(), ":")[1]
+	separatorIndex := strings.LastIndexByte(d.Id(), ':')
+	keyName := string(d.Id()[:separatorIndex])
+	instanceIds := string(d.Id()[separatorIndex+1:])
 
 	request := ecs.CreateDetachKeyPairRequest()
 	request.RegionId = client.RegionId

@@ -96,7 +96,6 @@ The following arguments are supported:
 * `rds_instances` - (Optional, Available in 1.103.2+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `is_enterprise_security_group` - (Optional, Available in 1.91.0+) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
-* `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster .
 * `proxy_mode` - (Optional) Proxy mode is option of kube-proxy. options: iptables | ipvs. default: ipvs.
 * `image_id` - (Optional) Custom Image support. Must based on CentOS7 or AliyunLinux2.
 * `cluster_domain` - (Optional, ForceNew, Available in 1.103.2+) Cluster local domain name, Default to `cluster.local`. A domain name consists of one or more sections separated by a decimal point (.), each of which is up to 63 characters long, and can be lowercase, numerals, and underscores (-), and must be lowercase or numerals at the beginning and end.
@@ -107,7 +106,7 @@ The following arguments are supported:
 * `exclude_autoscaler_nodes` - (Optional, Available in 1.88.0+) Exclude autoscaler nodes from `worker_nodes`. Default to `false`.
 * `service_account_issuer` - (Optional, ForceNew, Available in 1.92.0+) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well).
 * `api_audiences` - (Optional, ForceNew, Available in 1.92.0+) A list of API audiences for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm). Set this to `["kubernetes.default.svc"]` if you want to enable the Token Volume Projection feature (requires specifying `service_account_issuer` as well.
-* `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster . Detailed below.
+* `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster and work nodes. Detailed below.
 * `load_balancer_spec` - (ForceNew, Available in 1.117.0+) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
 
 ##### runtime
@@ -158,6 +157,8 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `master_auto_renew_period` - (Optional) Master payment auto-renew period, it can be one of {1, 2, 3, 6, 12}.
 * `master_disk_category` - (Optional) The system disk category of master node. Its valid value are `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `master_disk_size` - (Optional) The system disk size of master node. Its valid value range [20~500] in GB. Default to 20.
+* `master_disk_performance_level` - (Optional, ForceNew, Available in 1.120.0+) Master node system disk performance level. When `master_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+* `master_disk_snapshot_policy_id` - (Optional, ForceNew, Available in 1.120.0+) Master node system disk auto snapshot policy.
 
 ##### master_vswtich_ids
 
@@ -181,7 +182,6 @@ The following example is the definition of `master_vswtich_ids` block, the `work
 * `key_name` - (**Required**) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `kms_encrypted_password` - (**Required**, Available in 1.57.1+) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
-
 * `worker_instance_charge_type` - (Optional, Force new resource) Worker payment type, its valid value is either or `PostPaid` or `PrePaid`. Defaults to `PostPaid`. If value is `PrePaid`, the files `worker_period`, `worker_period_unit`, `worker_auto_renew` and `worker_auto_renew_period` are required.
 * `worker_period` - (Optional) Worker payment period. The unit is `Month`. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
 * `worker_period_unit` - (Optional) Worker payment period unit, the valid value is `Month`.
@@ -190,9 +190,11 @@ The following example is the definition of `master_vswtich_ids` block, the `work
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [40~500] in GB. Default to 40.
 * `worker_data_disks` - (Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size.
-  * `category`: the type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
-  * `size`: the size of a data disk, Its valid value range [40~32768] in GB. Unit: GiB.
-  * `encrypted`: specifies whether to encrypt data disks. Valid values: true and false.
+  * `category` - The type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
+  * `size` - The size of a data disk, Its valid value range [40~32768] in GB. Unit: GiB.
+  * `encrypted` - Specifies whether to encrypt data disks. Valid values: true and false.
+  * `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+  * `auto_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node data disk auto snapshot policy.
 * `node_name_mode` - (Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be `aliyun.com00055test`.
 * `node_port_range`- (Optional, ForceNew, Available in 1.103.2+) The service port range of nodes, valid values: `30000` to `65535`. Default to `30000-32767`.
 * `os_type` - (Optional, ForceNew, Available in 1.103.2+) The operating system of the nodes that run pods, its valid value is either `Linux` or `Windows`. Default to `Linux`.
@@ -200,6 +202,8 @@ The following example is the definition of `master_vswtich_ids` block, the `work
 * `cpu_policy` - (Optional) Kubelet cpu policy. For Kubernetes 1.12.6 and later, its valid value is either `static` or `none`. Default to `none`.
 * `user_data` - (Optional, Available in 1.81.0+) Custom data that can execute on nodes. For more information, see [Prepare user data](https://www.alibabacloud.com/help/doc-detail/49121.htm).
 * `taints` - (Optional, Available in 1.103.2+) Taints ensure pods are not scheduled onto inappropriate nodes. One or more taints are applied to a node; this marks that the node should not accept any pods that do not tolerate the taints. For more information, see [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Detailed below.
+* `worker_disk_performance_level` - (Optional, Available in 1.120.0+) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+* `worker_disk_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node system disk auto snapshot policy.
 
 ##### taints
 

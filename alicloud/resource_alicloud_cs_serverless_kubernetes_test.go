@@ -50,6 +50,9 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 					"endpoint_public_access_enabled": "true",
 					"load_balancer_spec":             "slb.s2.small",
 					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"tags": map[string]string{
+						"Platform": "TF",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -58,14 +61,32 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 						"deletion_protection":            "false",
 						"endpoint_public_access_enabled": "true",
 						"resource_group_id":              CHECKSET,
+						"tags.%":                         "1",
+						"tags.Platform":                  "TF",
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"load_balancer_spec"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"load_balancer_spec", "endpoint_public_access_enabled", "force_update",
+					"new_nat_gateway", "private_zone"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Platform": "TF",
+						"Env":      "Pre",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":        "2",
+						"tags.Platform": "TF",
+						"tags.Env":      "Pre",
+					}),
+				),
 			},
 		},
 	})

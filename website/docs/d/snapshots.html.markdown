@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_snapshots
 
+-> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_snapshots](https://www.terraform.io/docs/providers/alicloud/d/ecs_snapshots.html) from version 1.120.0.
+
 Use this data source to get a list of snapshot according to the specified filters in an Alibaba Cloud account.
 
 For information about snapshot and how to use it, see [Snapshot](https://www.alibabacloud.com/help/doc-detail/25460.html).
