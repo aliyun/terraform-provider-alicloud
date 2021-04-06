@@ -44,8 +44,8 @@ func resourceAliyunNatGateway() *schema.Resource {
 			"specification": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Small", "Middle", "Large"}, false),
-				Default:      "Small",
+				ValidateFunc: validation.StringInSlice([]string{"Small", "Middle", "Large", "", "XLarge.1"}, false),
+				Default:      "",
 			},
 			"name": {
 				Type:     schema.TypeString,
@@ -136,8 +136,8 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	request := vpc.CreateCreateNatGatewayRequest()
 	request.RegionId = string(client.Region)
 	request.VpcId = string(d.Get("vpc_id").(string))
-	request.Spec = string(d.Get("specification").(string))
 	request.NatType = d.Get("nat_type").(string)
+	request.Spec = d.Get("specification").(string)
 	request.InstanceChargeType = d.Get("instance_charge_type").(string)
 	if request.InstanceChargeType == string(PrePaid) {
 		period := d.Get("period").(int)

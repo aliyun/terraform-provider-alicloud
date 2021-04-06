@@ -95,7 +95,7 @@ The following arguments are supported:
 
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 * `spec` - (Deprecated) It has been deprecated from provider version 1.7.1, and new field 'specification' can replace it.
-* `specification` - (Optional) The specification of the nat gateway. Valid values are `Small`, `Middle` and `Large`. Default to `Small`. Details refer to [Nat Gateway Specification](https://www.alibabacloud.com/help/doc-detail/42757.htm).
+* `specification` - (Optional) The specification of the nat gateway. Valid values are `Small`, `Middle`, `Large`, `XLarge.1` and ``. Details refer to [Nat Gateway Specification](https://www.alibabacloud.com/help/doc-detail/42757.htm).
 * `name` - (Optional) Name of the nat gateway. The value can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Defaults to null.
 * `description` - (Optional) Description of the nat gateway, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Defaults to null.
 * `bandwidth_packages` - (Optional) A list of bandwidth packages for the nat gatway. Only support nat gateway created before 00:00 on November 4, 2017. Available in v1.13.0+ and v1.7.1-.

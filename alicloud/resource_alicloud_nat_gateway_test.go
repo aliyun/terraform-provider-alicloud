@@ -322,6 +322,7 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_nat_gateway" "default" {
 	vpc_id = "${alicloud_vswitch.default.vpc_id}"
 	name = "${var.name}"
+	specification = "Small"
 }
 `, rand)
 }
@@ -353,6 +354,7 @@ resource "alicloud_nat_gateway" "default" {
 	vpc_id = "${alicloud_vswitch.default.vpc_id}"
 	name = "${var.name}"
 	instance_charge_type = "PostPaid"
+	specification = "Small"
 }
 `, rand)
 }
@@ -383,6 +385,7 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_nat_gateway" "default" {
 	vpc_id = "${alicloud_vswitch.default.vpc_id}"
 	name = "${var.name}_change"
+	specification = "Small"
 }
 `, rand)
 }
@@ -414,6 +417,7 @@ resource "alicloud_nat_gateway" "default" {
 	vpc_id = "${alicloud_vswitch.default.vpc_id}"
 	name = "${var.name}_change"
 	description = "${var.name}_description"
+	specification = "Small"
 }
 `, rand)
 }
