@@ -9,7 +9,7 @@ require (
 	github.com/alibabacloud-go/tea-utils v1.3.6
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.890
 	github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
-	github.com/aliyun/aliyun-log-go-sdk v0.1.19
+	github.com/aliyun/aliyun-log-go-sdk v0.1.20
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.2+incompatible
 	github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible
@@ -36,6 +36,7 @@ require (
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/valyala/fasthttp v1.22.0 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
+	golang.org/x/tools v0.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.3.0
