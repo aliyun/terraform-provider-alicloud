@@ -83,9 +83,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 2 mins) Used when Creating LogOssShipper instance. 
-* `update` - (Defaults to 3 mins) Used when Creating LogOssShipper instance. 
-* `delete` - (Defaults to 5 mins) Used when terminating the LogOssShipper instance.
+* `create` - (Defaults to 1 mins) Used when Creating LogOssShipper instance. 
+* `update` - (Defaults to 1 mins) Used when Updating LogOssShipper instance. 
+* `delete` - (Defaults to 1 mins) Used when terminating the LogOssShipper instance.
 
 ## Import
 
