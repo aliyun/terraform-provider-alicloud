@@ -7,10 +7,9 @@ description: |-
   Provides a Alicloud log oss shipper resource.
 ---
 
-# alicloud\_log\_oss_shipper
+# alicloud\_log\_oss\_shipper
 Log service data delivery management, this service provides the function of delivering data in logstore to oss product storage.
-[Refer to details](https://www.alibabacloud.com/help/zh/doc-detail/43724.htm).
-
+[Refer to details](https://www.alibabacloud.com/help/en/doc-detail/43724.htm).
 
 ## Example Usage
 
@@ -46,7 +45,6 @@ resource "alicloud_log_oss_shipper" "example" {
 }
 ```
 
-
 ## Argument Reference
 
 The following arguments are supported:
@@ -67,19 +65,17 @@ The following arguments are supported:
 * `csv_config_columns` - (Optional) Field configuration in csv configuration format.
 * `csv_config_nullidentifier` - (Optional) Invalid field content.
 * `csv_config_quote` - (Optional) Escape character under csv configuration.
-* `csv_config_header` - (Optional) Indicates whether to write the field name to the CSV file,The default value is false.
+* `csv_config_header` - (Optional) Indicates whether to write the field name to the CSV file, the default value is `false`.
 * `csv_config_linefeed` - (Optional) Separator in csv configuration.
 * `parquet_config` - (Optional) Configure to use parquet storage format.
     * `name` - (Required) The name of the key.
     * `type` - (Required) Type of configuration name.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the log oss shipper. It sames as its name.
-
+* `id` - The ID of the log oss shipper.
 
 ## Import
 
