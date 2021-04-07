@@ -2,7 +2,6 @@ package sls
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 const (
@@ -62,4 +61,3 @@ type ShipperStorage struct {
 type OssStorageJsonDetail struct {
 	EnableTag bool `json:"enableTag"`
 }
-
