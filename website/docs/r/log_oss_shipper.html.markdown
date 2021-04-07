@@ -58,9 +58,9 @@ The following arguments are supported:
 * `oss_bucket` - (Required) The name of the oss bucket.
 * `buffer_interval` - (Required) How often is it delivered every interval.
 * `buffer_size` - (Required) Automatically control the creation interval of delivery tasks and set the upper limit of an OSS object size (calculated in uncompressed), unit: `MB`.
-* `role_arn` - (Optional) Used for access control, the OSS Bucket owner creates the role mark, such as "acs:ram::13234:role/logrole"
+* `role_arn` - (Optional) Used for access control, the OSS Bucket owner creates the role mark, such as `acs:ram::13234:role/logrole`
 * `compress_type` - (Optional) OSS data storage compression method, support: none, snappy. Among them, none means that the original data is not compressed, and snappy means that the data is compressed using the snappy algorithm, which can reduce the storage space usage of the `OSS Bucket`.
-* `path_format` - (Required) The storage format only supports three types: json, parquet, csv.
+* `path_format` - (Required) The storage format only supports three types: `json`, `parquet`, `csv`.
 * `format` - (Required) Storage format.
 * `json_enable_tag` - (Optional) Whether to deliver the label.
 * `csv_config_delimiter` - (Optional) Separator configuration in csv configuration format.
@@ -78,6 +78,14 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the log oss shipper.
+
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 2 mins) Used when Creating LogOssShipper instance. 
+* `update` - (Defaults to 3 mins) Used when Creating LogOssShipper instance. 
+* `delete` - (Defaults to 5 mins) Used when terminating the LogOssShipper instance.
 
 ## Import
 
