@@ -11,6 +11,8 @@ description: |-
 Log service data delivery management, this service provides the function of delivering data in logstore to oss product storage.
 [Refer to details](https://www.alibabacloud.com/help/en/doc-detail/43724.htm).
 
+-> **NOTE:** Available in 1.121.0+
+
 ## Example Usage
 
 Basic Usage
