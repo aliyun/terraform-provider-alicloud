@@ -2,6 +2,7 @@ package sls
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 const (
@@ -60,4 +61,30 @@ type ShipperStorage struct {
 
 type OssStorageJsonDetail struct {
 	EnableTag bool `json:"enableTag"`
+}
+
+func (s *Shipper) UnmarshalJSON(data []byte) error {
+	tmp := shipperAlias{}
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	if tmp.TargetType == OSSShipperType {
+		oc := &OSSShipperConfig{}
+		if err := json.Unmarshal(tmp.RawTargetConfiguration, oc); err != nil {
+			return err
+		}
+		tmp.TargetConfiguration = oc
+	} else {
+		return fmt.Errorf("unknown target type %s", tmp.TargetType)
+	}
+	*s = Shipper(tmp)
+	return nil
+}
+
+func (s *Shipper) MarshalJSON() ([]byte, error) {
+	return json.Marshal(shipperDisplay{
+		ShipperName:         s.ShipperName,
+		TargetType:          s.TargetType,
+		TargetConfiguration: s.TargetConfiguration,
+	})
 }
