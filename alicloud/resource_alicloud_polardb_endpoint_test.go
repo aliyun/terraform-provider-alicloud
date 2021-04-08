@@ -107,25 +107,25 @@ func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 
 func resourcePolarDBEndpointConfigDependence(name string) string {
 	return fmt.Sprintf(`
-	variable "creation" {
-		default = "PolarDB"
-	}
+        variable "creation" {
+                default = "PolarDB"
+        }
 
-	variable "name" {
-		default = "%s"
-	}
+        variable "name" {
+                default = "%s"
+        }
 
-	data "alicloud_vpcs" "vpcs_ds"{
-		is_default = "true"
-	}
+        data "alicloud_vpcs" "vpcs_ds"{
+                is_default = "true"
+        }
 
-	resource "alicloud_polardb_cluster" "cluster" {
-		db_type = "MySQL"
-		db_version = "8.0"
-		pay_type = "PostPaid"
-		db_node_class = "polar.mysql.x4.medium"
-		vswitch_id = "${data.alicloud_vpcs.vpcs_ds.vpcs.0.vswitch_ids.0}"
-		description = "${var.name}"
-	}
-	`, name)
+        resource "alicloud_polardb_cluster" "cluster" {
+                db_type = "MySQL"
+                db_version = "8.0"
+                pay_type = "PostPaid"
+                db_node_class = "polar.mysql.x4.medium"
+                vswitch_id = "${data.alicloud_vpcs.vpcs_ds.vpcs.0.vswitch_ids.0}"
+                description = "${var.name}"
+        }
+        `, name)
 }
