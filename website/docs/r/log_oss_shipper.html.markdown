@@ -52,7 +52,7 @@ resource "alicloud_log_oss_shipper" "example" {
 The following arguments are supported:
 
 * `project_name` - (Required, ForceNew) The name of the log project. It is the only in one Alicloud account.
-* `logstore_name` - (Required，ForceNew) The name of the log logstore.
+* `logstore_name` - (Required，ForceNew) The name of the log logstore, it can only contain lowercase letters, numbers, dashes `-` and underscores `_`. It must start and end with lowercase letters or numbers, and the name must be 2 to 128 characters long.
 * `shipper_name` - (Required，ForceNew) Delivery configuration name.
 * `oss_prefix` - (Optional) The data synchronized from Log Service to OSS will be stored in this directory of Bucket.
 * `oss_bucket` - (Required) The name of the oss bucket.
@@ -60,7 +60,7 @@ The following arguments are supported:
 * `buffer_size` - (Required) Automatically control the creation interval of delivery tasks and set the upper limit of an OSS object size (calculated in uncompressed), unit: `MB`.
 * `role_arn` - (Optional) Used for access control, the OSS Bucket owner creates the role mark, such as `acs:ram::13234:role/logrole`
 * `compress_type` - (Optional) OSS data storage compression method, support: none, snappy. Among them, none means that the original data is not compressed, and snappy means that the data is compressed using the snappy algorithm, which can reduce the storage space usage of the `OSS Bucket`.
-* `path_format` - (Required) The OSS Bucket directory is dynamically generated according to the creation time of the shipper task, it cannot start with a forward slash (/), the default value is %Y/%m/%d/%H/%M.
+* `path_format` - (Required) The OSS Bucket directory is dynamically generated according to the creation time of the shipper task, it cannot start with a forward slash `/`, the default value is `%Y/%m/%d/%H/%M`.
 * `format` - (Required) Storage format, only supports three types: `json`, `parquet`, `csv`.
   **According to the different format, please select the following parameters**
   - format = `json`
