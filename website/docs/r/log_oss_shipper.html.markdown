@@ -60,18 +60,23 @@ The following arguments are supported:
 * `buffer_size` - (Required) Automatically control the creation interval of delivery tasks and set the upper limit of an OSS object size (calculated in uncompressed), unit: `MB`.
 * `role_arn` - (Optional) Used for access control, the OSS Bucket owner creates the role mark, such as `acs:ram::13234:role/logrole`
 * `compress_type` - (Optional) OSS data storage compression method, support: none, snappy. Among them, none means that the original data is not compressed, and snappy means that the data is compressed using the snappy algorithm, which can reduce the storage space usage of the `OSS Bucket`.
-* `path_format` - (Required) The storage format only supports three types: `json`, `parquet`, `csv`.
-* `format` - (Required) Storage format.
-* `json_enable_tag` - (Optional) Whether to deliver the label.
-* `csv_config_delimiter` - (Optional) Separator configuration in csv configuration format.
-* `csv_config_columns` - (Optional) Field configuration in csv configuration format.
-* `csv_config_nullidentifier` - (Optional) Invalid field content.
-* `csv_config_quote` - (Optional) Escape character under csv configuration.
-* `csv_config_header` - (Optional) Indicates whether to write the field name to the CSV file, the default value is `false`.
-* `csv_config_linefeed` - (Optional) Separator in csv configuration.
-* `parquet_config` - (Optional) Configure to use parquet storage format.
-    * `name` - (Required) The name of the key.
-    * `type` - (Required) Type of configuration name.
+* `path_format` - (Required) Directory structure when data is delivered to OSS.
+* `format` - (Required) Storage format, only supports three types: `json`, `parquet`, `csv`.
+  **According to the different format, please select the following parameters**
+  - format = `json`
+    `json_enable_tag` - (Optional) Whether to deliver the label.
+  - format = `csv`
+    `csv_config_delimiter` - (Optional) Separator configuration in csv configuration format.
+    `csv_config_columns` - (Optional) Field configuration in csv configuration format.
+    `csv_config_nullidentifier` - (Optional) Invalid field content.
+    `csv_config_quote` - (Optional) Escape character under csv configuration.
+    `csv_config_header` - (Optional) Indicates whether to write the field name to the CSV file, the default value is `false`.
+    `csv_config_linefeed` - (Optional) Separator in csv configuration.
+  - format = `parquet`
+    `parquet_config` - (Optional) Configure to use parquet storage format.
+       `name` - (Required) The name of the key.
+       `type` - (Required) Type of configuration name.
+
 
 ## Attributes Reference
 
