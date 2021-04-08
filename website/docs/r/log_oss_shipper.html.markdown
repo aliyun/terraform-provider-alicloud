@@ -52,8 +52,8 @@ resource "alicloud_log_oss_shipper" "example" {
 The following arguments are supported:
 
 * `project_name` - (Required, ForceNew) The name of the log project. It is the only in one Alicloud account.
-* `logstore_name` - (Required，ForceNew) The name of the log logstore, it can only contain lowercase letters, numbers, dashes `-` and underscores `_`. It must start and end with lowercase letters or numbers, and the name must be 2 to 128 characters long.
-* `shipper_name` - (Required，ForceNew) Delivery configuration name.
+* `logstore_name` - (Required，ForceNew) The name of the log logstore.
+* `shipper_name` - (Required，ForceNew) Delivery configuration name, it can only contain lowercase letters, numbers, dashes `-` and underscores `_`. It must start and end with lowercase letters or numbers, and the name must be 2 to 128 characters long.
 * `oss_prefix` - (Optional) The data synchronized from Log Service to OSS will be stored in this directory of Bucket.
 * `oss_bucket` - (Required) The name of the oss bucket.
 * `buffer_interval` - (Required) How often is it delivered every interval.
