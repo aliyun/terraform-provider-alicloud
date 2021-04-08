@@ -21,7 +21,7 @@ func TestAccAlicloudLogOssShipper_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc-log-shipper-%d", rand)
+	name := fmt.Sprintf("test-log-oss-shipper-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogOssShipperConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -69,17 +69,51 @@ func TestAccAlicloudLogOssShipper_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"oss_bucket":      "test_bucket_1",
-					"buffer_interval": "350",
-					"buffer_size":     "300",
-					"path_format":     "%Y/%m/%d/%H",
+					"oss_bucket": "test_bucket_1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"oss_bucket":      "test_bucket_1",
+						"oss_bucket": "test_bucket_1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"buffer_interval": "350",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
 						"buffer_interval": "350",
-						"buffer_size":     "300",
-						"path_format":     "%Y/%m/%d/%H",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"buffer_size": "128",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"buffer_size": "128",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"path_format": "%Y/%m/%d/%H",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"path_format": "%Y/%m/%d/%H",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compress_type": "snappy",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compress_type": "snappy",
 					}),
 				),
 			},
