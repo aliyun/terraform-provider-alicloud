@@ -93,7 +93,6 @@ func resourceAlicloudLogOssShipper() *schema.Resource {
 			"csv_config_header": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
 			},
 			"csv_config_linefeed": {
 				Type:     schema.TypeString,

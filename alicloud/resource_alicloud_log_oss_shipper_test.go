@@ -48,10 +48,17 @@ func TestAccAlicloudLogOssShipper_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"project_name":  name,
-						"logstore_name": name,
-						"format":        "json",
-						"compress_type": "none",
+						"project_name":    name,
+						"logstore_name":   name,
+						"shipper_name":    "test_shipper",
+						"oss_bucket":      "test_bucket",
+						"oss_prefix":      "",
+						"buffer_interval": "300",
+						"buffer_size":     "250",
+						"compress_type":   "none",
+						"path_format":     "%Y/%m/%d/%H/%M",
+						"format":          "json",
+						"json_enable_tag": "true",
 					}),
 				),
 			},
@@ -59,6 +66,22 @@ func TestAccAlicloudLogOssShipper_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oss_bucket":      "test_bucket_1",
+					"buffer_interval": "350",
+					"buffer_size":     "300",
+					"path_format":     "%Y/%m/%d/%H",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oss_bucket":      "test_bucket_1",
+						"buffer_interval": "350",
+						"buffer_size":     "300",
+						"path_format":     "%Y/%m/%d/%H",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -93,11 +116,37 @@ func TestAccAlicloudLogOssShipper_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"format":               "csv",
-						"csv_config_delimiter": ",",
-						"csv_config_header":    "false",
-						"csv_config_linefeed":  "",
-						"csv_config_quote":     ",",
+						"format":                    "csv",
+						"csv_config_delimiter":      ",",
+						"csv_config_header":         "false",
+						"csv_config_linefeed":       "",
+						"csv_config_quote":          ",",
+						"csv_config_columns.#":      "2",
+						"csv_config_nullidentifier": "",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oss_bucket":      "test_bucket",
+					"oss_prefix":      "",
+					"buffer_interval": "300",
+					"buffer_size":     "250",
+					"compress_type":   "none",
+					"path_format":     "%Y/%m/%d/%H/%M",
+					"format":          "json",
+					"json_enable_tag": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oss_bucket":      "test_bucket",
+						"oss_prefix":      "",
+						"buffer_interval": "300",
+						"buffer_size":     "250",
+						"compress_type":   "none",
+						"path_format":     "%Y/%m/%d/%H/%M",
+						"format":          "json",
+						"json_enable_tag": "true",
 					}),
 				),
 			},
