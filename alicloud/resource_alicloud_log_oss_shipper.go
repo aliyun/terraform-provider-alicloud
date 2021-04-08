@@ -339,7 +339,7 @@ func buildConfig(d *schema.ResourceData) *sls.Shipper {
 		BufferInterval: d.Get("buffer_interval").(int),
 		BufferSize:     d.Get("buffer_size").(int),
 		CompressType:   d.Get("compress_type").(string),
-		PathFormat:     "%Y/%m/%d/%H/%M",
+		PathFormat:     d.Get("path_format").(string),
 		Storage:        storage,
 	}
 	ossShipper := &sls.Shipper{
