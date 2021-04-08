@@ -17,6 +17,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCSServerlessKubernetesCreate,
 		Read:   resourceAlicloudCSServerlessKubernetesRead,
+		Update: resourceAlicloudCSServerlessKubernetesUpdate,
 		Delete: resourceAlicloudCSServerlessKubernetesDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -112,8 +113,6 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
-				ForceNew: true,
-				//ValidateFunc: validateCSClusterTags,
 			},
 			"force_update": {
 				Type:     schema.TypeBool,
@@ -295,11 +294,13 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	_ = d.Set("vswitch_id", object.VSwitchId)
 	_ = d.Set("security_group_id", object.SecurityGroupId)
 	_ = d.Set("deletion_protection", object.DeletionProtection)
-	_ = d.Set("tags", object.Tags)
 	_ = d.Set("version", object.CurrentVersion)
 	_ = d.Set("resource_group_id", object.ResourceGroupId)
 	_ = d.Set("cluster_spec", object.ClusterSpec)
 
+	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
+		return WrapError(err)
+	}
 	if d.Get("load_balancer_spec") == "" {
 		_ = d.Set("load_balancer_spec", "slb.s1.small")
 	}
@@ -365,6 +366,27 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		}
 	}
 	return nil
+}
+
+func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
+	d.Partial(true)
+	// modify cluster tag
+	if d.HasChange("tags") {
+		err := updateKubernetesClusterTag(d, meta)
+		if err != nil {
+			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("tags")
+	}
+
+	// upgrade cluster version
+	err := UpgradeAlicloudKubernetesCluster(d, meta)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeClusterVersion", DenverdinoAliyungo)
+	}
+
+	d.Partial(false)
+	return resourceAlicloudCSServerlessKubernetesRead(d, meta)
 }
 
 func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta interface{}) error {

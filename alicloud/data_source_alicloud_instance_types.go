@@ -106,6 +106,13 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 					"Price",
 				}, false),
 			},
+			"system_disk_category": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:      "cloud_efficiency",
+				ValidateFunc: validation.StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd"}, false),
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,

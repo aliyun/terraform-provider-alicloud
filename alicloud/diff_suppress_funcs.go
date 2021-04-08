@@ -185,6 +185,27 @@ func csNodepoolInstancePostPaidDiffSuppressFunc(k, old, new string, d *schema.Re
 	return false
 }
 
+func masterDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("master_disk_category"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
+}
+
+func workerDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("worker_disk_category"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
+}
+
+func csNodepoolDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("system_disk_category"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
+}
+
 func csForceUpdate(k, old, new string, d *schema.ResourceData) bool {
 	if d.Id() == "" {
 		return false
