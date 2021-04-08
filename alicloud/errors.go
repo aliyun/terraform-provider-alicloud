@@ -119,7 +119,8 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 
 	if e, ok := err.(*tea.SDKError); ok {
 		for _, code := range expectCodes {
-			if *e.Code == code || strings.Contains(*e.Data, code) {
+			// The second statement aims to match the tea sdk history bug
+			if *e.Code == code || strings.HasPrefix(code, *e.Code) || strings.Contains(*e.Data, code) {
 				return true
 			}
 		}

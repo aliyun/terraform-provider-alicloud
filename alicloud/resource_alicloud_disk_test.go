@@ -152,7 +152,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				Config: testAccDiskConfig_size(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"size": "70",
+						"size": "500",
 					}),
 				),
 			},
@@ -161,6 +161,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"performance_level": "PL2",
+						"category":          "cloud_essd",
 					}),
 				),
 			},
@@ -168,7 +169,10 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				Config: testAccDiskConfig_kms_key_id(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"kms_key_id": CHECKSET,
+						"kms_key_id":        CHECKSET,
+						"category":          "cloud_efficiency",
+						"encrypted":         "true",
+						"performance_level": REMOVEKEY,
 					}),
 				),
 			},
@@ -176,7 +180,9 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				Config: testAccDiskConfig_name(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-testAccDiskConfig",
+						"name":       "tf-testAccDiskConfig",
+						"kms_key_id": REMOVEKEY,
+						"encrypted":  "false",
 					}),
 				),
 			},
@@ -302,7 +308,7 @@ data "alicloud_zones" "default" {
 
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	size = "70"
+  	size = "500"
 	resource_group_id = "%s"
 }
 `, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
@@ -312,12 +318,13 @@ func testAccDiskConfig_performance_level() string {
 	return fmt.Sprintf(`
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
+	available_disk_category = "cloud_essd"
 }
 
 
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	size = "70"
+  	size = "500"
     category = "cloud_essd"
     performance_level = "PL2"
 	resource_group_id = "%s"
@@ -339,7 +346,7 @@ resource "alicloud_kms_key" "key" {
 
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	size = "70"
+  	size = "500"
 	encrypted = true
 	kms_key_id = "${alicloud_kms_key.key.id}"
 	resource_group_id = "%s"
@@ -360,7 +367,7 @@ variable "name" {
 
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	size = "70"
+  	size = "500"
 	name = "${var.name}"
 	resource_group_id = "%s"
 }
@@ -380,7 +387,7 @@ variable "name" {
 
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	size = "70"
+  	size = "500"
 	name = "${var.name}"
 	description = "${var.name}_description"
 	resource_group_id = "%s"
@@ -401,7 +408,7 @@ variable "name" {
 
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	size = "70"
+  	size = "500"
 	name = "${var.name}"
 	description = "${var.name}_description"
 	category = "cloud_efficiency"
@@ -429,7 +436,7 @@ variable "name" {
 
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	size = "70"
+  	size = "500"
 	name = "${var.name}"
 	description = "${var.name}_description"
 	category = "cloud_efficiency"
@@ -458,7 +465,7 @@ variable "name" {
 
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	size = "70"
+  	size = "500"
 	name = "${var.name}"
 	description = "${var.name}_description"
 	category = "cloud_efficiency"
@@ -488,7 +495,7 @@ variable "name" {
 
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	size = "70"
+  	size = "500"
 	name = "${var.name}"
 	description = "${var.name}_description"
 	category = "cloud_efficiency"
@@ -518,7 +525,7 @@ variable "name" {
 
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  	size = "70"
+  	size = "500"
 	name = "${var.name}_all"
 	description = "nothing"
 	category = "cloud_efficiency"
