@@ -1,4 +1,16 @@
 ## 1.121.0 (Unreleased)
+
+- **New Resource:** `alicloud_log_oss_shipper` [GH-3414]
+
+ENHANCEMENTS:
+
+- resource/alicloud_polardb_endpoint: Supports new attributes ssl_enabled and net_type [GH-3408]
+- resource/alicloud_disk: Sets the attribute kms_key_id to forceNew results from there is no API can update it in local place [GH-3409]
+- resource/alicloud_kvstore_instance: Deprecates attributes node_type and it is useless for this resource [GH-3411]
+- resource/alicloud_ecs_key_pair: Deprecates the key_name and use key_pair_name instead; Upgrades the its dependence sdk [GH-3413]
+- resource/alicloud_nat_gateway: Deprecates name, instance_charge_type and using standard nat_gateway_name and payment_type instead; Supports new attributes 'tags' and 'internet_charge_type'; Upgrade its depend sdk [GH-3415]
+- resource/alicloud_fc_function: Attribute code_checksum supports undating in place [GH-3416]
+
 ## 1.120.0 (April 02, 2021)
 
 - **New Resource:** `alicloud_resource_manager_control_policy` ([#3383](https://github.com/aliyun/terraform-provider-alicloud/issues/3383))
