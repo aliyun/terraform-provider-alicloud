@@ -281,7 +281,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbase_instances":                             dataSourceAlicloudHBaseInstances(),
 			"alicloud_hbase_zones":                                 dataSourceAlicloudHBaseZones(),
 			"alicloud_hbase_instance_types":                        dataSourceAlicloudHBaseInstanceTypes(),
-			"alicloud_adb_clusters":                                dataSourceAlicloudAdbClusters(),
+			"alicloud_adb_clusters":                                dataSourceAlicloudAdbDbClusters(),
 			"alicloud_adb_zones":                                   dataSourceAlicloudAdbZones(),
 			"alicloud_cen_flowlogs":                                dataSourceAlicloudCenFlowlogs(),
 			"alicloud_kms_aliases":                                 dataSourceAlicloudKmsAliases(),
@@ -405,6 +405,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_havips":                                      dataSourceAlicloudHavips(),
 			"alicloud_ecs_snapshots":                               dataSourceAlicloudEcsSnapshots(),
 			"alicloud_ecs_key_pairs":                               dataSourceAlicloudEcsKeyPairs(),
+			"alicloud_adb_db_clusters":                             dataSourceAlicloudAdbDbClusters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -612,7 +613,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_endpoint_address":                   resourceAlicloudPolarDBEndpointAddress(),
 			"alicloud_hbase_instance":                             resourceAlicloudHBaseInstance(),
 			"alicloud_market_order":                               resourceAlicloudMarketOrder(),
-			"alicloud_adb_cluster":                                resourceAlicloudAdbCluster(),
+			"alicloud_adb_cluster":                                resourceAlicloudAdbDbCluster(),
 			"alicloud_adb_backup_policy":                          resourceAlicloudAdbBackupPolicy(),
 			"alicloud_adb_account":                                resourceAlicloudAdbAccount(),
 			"alicloud_adb_connection":                             resourceAlicloudAdbConnection(),
@@ -722,6 +723,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_snapshot":                               resourceAlicloudEcsSnapshot(),
 			"alicloud_ecs_key_pair":                               resourceAlicloudEcsKeyPair(),
 			"alicloud_ecs_key_pair_attachment":                    resourceAlicloudEcsKeyPairAttachment(),
+			"alicloud_adb_db_cluster":                             resourceAlicloudAdbDbCluster(),
 		},
 
 		ConfigureFunc: providerConfigure,

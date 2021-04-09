@@ -13,6 +13,8 @@ Provides a ADB cluster resource. A ADB cluster is an isolated database
 environment in the cloud. A ADB cluster can contain multiple user-created
 databases.
 
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.121.0`. Please use new resource [alicloud_adb_db_cluster](https://www.terraform.io/docs/providers/alicloud/r/adb_db_cluster.html).
+
 -> **NOTE:** Available in v1.71.0+.
 
 ## Example Usage
