@@ -71,6 +71,7 @@ The following arguments are supported:
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
 * `resource_group_id` (Optional, Computed, resource_group_id, Modifiable in 1.115.0+) The ID of resource group which the DB read-only instance belongs.
 * `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm).
+* `force_restart` - (Optional, Available in 1.121.0+) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance.
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
 * `tags` - (Optional, Available in 1.68.0+) A mapping of tags to assign to the resource.

@@ -110,6 +110,11 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"force_restart": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
