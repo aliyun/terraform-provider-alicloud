@@ -17,6 +17,8 @@ Provides a network acl entries resource to create ingress and egress entries.
 
 -> **NOTE:** Using this resource need to open a whitelist.
 
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.122.0`. Replace by `ingress_acl_entries` and `egress_acl_entries` with the resource [alicloud_network_acl](https://www.terraform.io/docs/providers/alicloud/r/network_acl.html).
+
 ## Example Usage
 
 Basic Usage

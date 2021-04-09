@@ -991,38 +991,44 @@ func (s *VpcService) WaitForRouteTableAttachment(id string, status Status, timeo
 	}
 }
 
-func (s *VpcService) DescribeNetworkAcl(id string) (networkAcl vpc.NetworkAcl, err error) {
-
-	request := vpc.CreateDescribeNetworkAclsRequest()
-	request.RegionId = s.client.RegionId
-	request.NetworkAclId = id
-
+func (s *VpcService) DescribeNetworkAcl(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeNetworkAclAttributes"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"NetworkAclId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	var response *vpc.DescribeNetworkAclsResponse
-	if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeNetworkAcls(request)
-		})
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"InvalidNetworkAcl.NotFound"}) {
-				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
-			}
 			return resource.NonRetryableError(err)
 		}
-		response, _ = raw.(*vpc.DescribeNetworkAclsResponse)
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
-	}); err != nil {
-		return networkAcl, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidNetworkAcl.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("VPC:NetworkAcl", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if len(response.NetworkAcls.NetworkAcl) <= 0 || response.NetworkAcls.NetworkAcl[0].NetworkAclId != id {
-		return networkAcl, WrapErrorf(Error(GetNotFoundMessage("NetworkAcl", id)), NotFoundMsg, ProviderERROR)
+	v, err := jsonpath.Get("$.NetworkAclAttribute", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.NetworkAclAttribute", response)
 	}
-	return response.NetworkAcls.NetworkAcl[0], nil
+	object = v.(map[string]interface{})
+	return object, nil
 }
 
 func (s *VpcService) DescribeNetworkAclAttachment(id string, resource []vpc.Resource) (err error) {
@@ -1033,14 +1039,16 @@ func (s *VpcService) DescribeNetworkAclAttachment(id string, resource []vpc.Reso
 		if err != nil {
 			return WrapError(err)
 		}
-		if len(object.Resources.Resource) < 1 {
+		resources, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
+		if len(resources) < 1 {
 			return WrapErrorf(Error(GetNotFoundMessage("Network Acl Attachment", id)), NotFoundMsg, ProviderERROR)
 		}
 		success := true
-		for _, source := range object.Resources.Resource {
+		for _, source := range resources {
 			success = false
 			for _, res := range resource {
-				if source.ResourceId == res.ResourceId {
+				item := source.(map[string]interface{})
+				if fmt.Sprint(item["ResourceId"]) == res.ResourceId {
 					success = true
 				}
 			}
@@ -1066,17 +1074,19 @@ func (s *VpcService) WaitForNetworkAcl(networkAclId string, status Status, timeo
 			}
 		}
 		success := true
+		resources, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
 		// Check Acl's binding resources
-		for _, resource := range object.Resources.Resource {
-			if resource.Status != string(BINDED) {
+		for _, res := range resources {
+			item := res.(map[string]interface{})
+			if fmt.Sprint(item["Status"]) != string(BINDED) {
 				success = false
 			}
 		}
-		if object.Status == string(status) && success == true {
+		if fmt.Sprint(object["Status"]) == string(status) && success == true {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, networkAclId, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, networkAclId, GetFunc(1), timeout, fmt.Sprint(object["Status"]), string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
@@ -1097,17 +1107,19 @@ func (s *VpcService) WaitForNetworkAclAttachment(id string, resource []vpc.Resou
 		}
 		object, err := s.DescribeNetworkAcl(id)
 		success := true
+		resources, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
 		// Check Acl's binding resources
-		for _, resource := range object.Resources.Resource {
-			if resource.Status != string(BINDED) {
+		for _, res := range resources {
+			item := res.(map[string]interface{})
+			if fmt.Sprint(item["Status"]) != string(BINDED) {
 				success = false
 			}
 		}
-		if object.Status == string(status) && success == true {
+		if fmt.Sprint(object["Status"]) == string(status) && success == true {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, fmt.Sprint(object["Status"]), string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
@@ -1779,6 +1791,26 @@ func (s *VpcService) DescribeVpcFlowLog(id string) (object map[string]interface{
 func (s *VpcService) VpcFlowLogStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeVpcFlowLog(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["Status"].(string) == failState {
+				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+			}
+		}
+		return object, object["Status"].(string), nil
+	}
+}
+
+func (s *VpcService) NetworkAclStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeNetworkAcl(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.

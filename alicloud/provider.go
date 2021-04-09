@@ -407,6 +407,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_key_pairs":                               dataSourceAlicloudEcsKeyPairs(),
 			"alicloud_adb_db_clusters":                             dataSourceAlicloudAdbDbClusters(),
 			"alicloud_vpc_flow_logs":                               dataSourceAlicloudVpcFlowLogs(),
+			"alicloud_network_acls":                                dataSourceAlicloudNetworkAcls(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -588,7 +589,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cas_certificate":                            resourceAlicloudCasCertificate(),
 			"alicloud_ddoscoo_instance":                           resourceAlicloudDdoscooInstance(),
 			"alicloud_ddosbgp_instance":                           resourceAlicloudDdosbgpInstance(),
-			"alicloud_network_acl":                                resourceAliyunNetworkAcl(),
+			"alicloud_network_acl":                                resourceAlicloudNetworkAcl(),
 			"alicloud_network_acl_attachment":                     resourceAliyunNetworkAclAttachment(),
 			"alicloud_network_acl_entries":                        resourceAliyunNetworkAclEntries(),
 			"alicloud_emr_cluster":                                resourceAlicloudEmrCluster(),
