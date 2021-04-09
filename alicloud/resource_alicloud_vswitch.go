@@ -97,7 +97,7 @@ func resourceAlicloudVswitchCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	request["CidrBlock"] = d.Get("cidr_block")
 	if v, ok := d.GetOk("ipv6_cidr_block"); ok && v.(int) >= 0 {
-		request["Ipv6CidrBlock"] = v
+		request["Ipv6CidrBlock"] = v.(int)
 	}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
