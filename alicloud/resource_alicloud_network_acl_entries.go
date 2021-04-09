@@ -143,34 +143,42 @@ func resourceAliyunNetworkAclEntriesRead(d *schema.ResourceData, meta interface{
 	}
 
 	var ingress []map[string]interface{}
-	for _, ob := range object.IngressAclEntries.IngressAclEntry {
-		mapping := map[string]interface{}{
-			"description":    ob.Description,
-			"source_cidr_ip": ob.SourceCidrIp,
-			"entry_type":     "custom",
-			"name":           ob.NetworkAclEntryName,
-			"policy":         ob.Policy,
-			"port":           ob.Port,
-			"protocol":       ob.Protocol,
+	if ingressAclEntryList, ok := object["IngressAclEntries"].(map[string]interface{})["IngressAclEntry"].([]interface{}); ok {
+		for _, ob := range ingressAclEntryList {
+			if v, ok := ob.(map[string]interface{}); ok {
+				mapping := map[string]interface{}{
+					"description":    v["Description"],
+					"source_cidr_ip": v["SourceCidrIp"],
+					"entry_type":     "custom",
+					"name":           v["NetworkAclEntryName"],
+					"policy":         v["Policy"],
+					"port":           v["Port"],
+					"protocol":       v["Protocol"],
+				}
+				ingress = append(ingress, mapping)
+			}
 		}
-		ingress = append(ingress, mapping)
 	}
 
 	var egress []map[string]interface{}
-	for _, ob := range object.EgressAclEntries.EgressAclEntry {
-		mapping := map[string]interface{}{
-			"description":         ob.Description,
-			"destination_cidr_ip": ob.DestinationCidrIp,
-			"entry_type":          "custom",
-			"name":                ob.NetworkAclEntryName,
-			"policy":              ob.Policy,
-			"port":                ob.Port,
-			"protocol":            ob.Protocol,
+	if egressAclEntryList, ok := object["EgressAclEntries"].(map[string]interface{})["EgressAclEntry"].([]interface{}); ok {
+		for _, ob := range egressAclEntryList {
+			if v, ok := ob.(map[string]interface{}); ok {
+				mapping := map[string]interface{}{
+					"description":         v["Description"],
+					"destination_cidr_ip": v["DestinationCidrIp"],
+					"entry_type":          "custom",
+					"name":                v["NetworkAclEntryName"],
+					"policy":              v["Policy"],
+					"port":                v["Port"],
+					"protocol":            v["Protocol"],
+				}
+				egress = append(egress, mapping)
+			}
 		}
-		egress = append(egress, mapping)
 	}
 
-	d.Set("network_acl_id", object.NetworkAclId)
+	d.Set("network_acl_id", object["NetworkAclId"])
 	d.Set("egress", egress)
 	d.Set("ingress", ingress)
 

@@ -2,13 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -16,95 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func init() {
-	resource.AddTestSweepers("alicloud_network_acl_entries", &resource.Sweeper{
-		Name: "alicloud_network_acl_entries",
-		F:    testSweepNetworkAclEntries,
-	})
-}
-
-func testSweepNetworkAclEntries(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.NetworkAclSupportedRegions) {
-		log.Printf("[INFO] Skipping Network Acl unsupported region: %s", region)
-		return nil
-	}
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
-
-	var networkAcls []vpc.NetworkAcl
-	request := vpc.CreateDescribeNetworkAclsRequest()
-	request.RegionId = client.RegionId
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	for {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeNetworkAcls(request)
-		})
-		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", request.GetActionName(), err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*vpc.DescribeNetworkAclsResponse)
-		if len(response.NetworkAcls.NetworkAcl) < 1 {
-			break
-		}
-		networkAcls = append(networkAcls, response.NetworkAcls.NetworkAcl...)
-
-		if len(response.NetworkAcls.NetworkAcl) < PageSizeLarge {
-			break
-		}
-
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
-		} else {
-			request.PageNumber = page
-		}
-	}
-
-	for _, nacl := range networkAcls {
-		name := nacl.NetworkAclName
-		id := nacl.NetworkAclId
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Network Acl: %s (%s)", name, id)
-			continue
-		}
-		log.Printf("[INFO] Unassociating Network Acl: %s (%s)", name, id)
-		request := vpc.CreateUpdateNetworkAclEntriesRequest()
-		request.NetworkAclId = id
-		ingress := []vpc.UpdateNetworkAclEntriesIngressAclEntries{}
-		egress := []vpc.UpdateNetworkAclEntriesEgressAclEntries{}
-		request.IngressAclEntries = &ingress
-		request.EgressAclEntries = &egress
-		request.UpdateIngressAclEntries = requests.NewBoolean(true)
-		request.UpdateEgressAclEntries = requests.NewBoolean(true)
-
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.UpdateNetworkAclEntries(request)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Failed to update Network Acl entries (%s (%s)): %s", name, id, err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	}
-	return nil
-}
-
-func TestAccAlicloudNetworkAclEntries_basic(t *testing.T) {
+func SkipTestAccAlicloudNetworkAclEntries_basic(t *testing.T) {
 	resourceId := "alicloud_network_acl_entries.default"
 	ra := resourceAttrInit(resourceId, testAccNaclEntriesCheckMap)
 	rand := acctest.RandInt()
@@ -238,11 +146,12 @@ func testAccCheckNetworkAclEntriesDestroy(s *terraform.State) error {
 
 		object, err := vpcService.DescribeNetworkAcl(networkAclId)
 		vpcResource := []vpc.Resource{}
-		for _, e := range object.Resources.Resource {
-
+		resources, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
+		for _, e := range resources {
+			item := e.(map[string]interface{})
 			vpcResource = append(vpcResource, vpc.Resource{
-				ResourceId:   e.ResourceId,
-				ResourceType: e.ResourceType,
+				ResourceId:   item["ResourceId"].(string),
+				ResourceType: item["ResourceType"].(string),
 			})
 		}
 		if err != nil {

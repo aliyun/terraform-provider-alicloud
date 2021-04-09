@@ -174,7 +174,17 @@ func testAccCheckNetworkAclAttachmentExists(n string) resource.TestCheckFunc {
 		networkAclId := parts[0]
 
 		object, err := vpcService.DescribeNetworkAcl(networkAclId)
-		err = vpcService.DescribeNetworkAclAttachment(networkAclId, object.Resources.Resource)
+		res, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
+		resources := make([]vpc.Resource, 0)
+		for _, v := range res {
+			item := v.(map[string]interface{})
+			resources = append(resources, vpc.Resource{
+				Status:       fmt.Sprint(item["Status"]),
+				ResourceId:   fmt.Sprint(item["ResourceId"]),
+				ResourceType: fmt.Sprint(item["ResourceType"]),
+			})
+		}
+		err = vpcService.DescribeNetworkAclAttachment(networkAclId, resources)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -199,11 +209,13 @@ func testAccCheckNetworkAclAttachmentDestroy(s *terraform.State) error {
 
 		object, err := vpcService.DescribeNetworkAcl(networkAclId)
 		vpcResource := []vpc.Resource{}
-		for _, e := range object.Resources.Resource {
+		resources, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
+		for _, e := range resources {
+			item := e.(map[string]interface{})
 
 			vpcResource = append(vpcResource, vpc.Resource{
-				ResourceId:   e.ResourceId,
-				ResourceType: e.ResourceType,
+				ResourceId:   item["ResourceId"].(string),
+				ResourceType: item["ResourceType"].(string),
 			})
 		}
 		err = vpcService.WaitForNetworkAclAttachment(networkAclId, vpcResource, Deleted, DefaultTimeout)

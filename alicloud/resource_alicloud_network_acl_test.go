@@ -5,15 +5,14 @@ import (
 	"log"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -23,7 +22,6 @@ func init() {
 		// When implemented, these should be removed firstly
 		Dependencies: []string{
 			"alicloud_network_acl_attachment",
-			"alicloud_network_acl_entries",
 		},
 	})
 }
@@ -43,94 +41,108 @@ func testSweepNetworkAcl(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
-
-	var networkAcls []vpc.NetworkAcl
-	request := vpc.CreateDescribeNetworkAclsRequest()
-	request.RegionId = client.RegionId
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
+	action := "DescribeNetworkAcls"
+	request := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	networkAclIds := make([]string, 0)
 	for {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeNetworkAcls(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			log.Printf("[ERROR] %s got an error: %#v", request.GetActionName(), err)
+			log.Printf("Error retrieving network acl: %s", err)
 			return nil
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*vpc.DescribeNetworkAclsResponse)
-		if len(response.NetworkAcls.NetworkAcl) < 1 {
+		resp, err := jsonpath.Get("$.NetworkAcls.NetworkAcl", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NetworkAcls.NetworkAcl", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			name := fmt.Sprint(item["NetworkAclName"])
+			id := fmt.Sprint(item["NetworkAclId"])
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Network Acl: %s (%s)", name, id)
+				continue
+			}
+			networkAclIds = append(networkAclIds, id)
+		}
+		if len(result) < PageSizeLarge {
 			break
 		}
-		networkAcls = append(networkAcls, response.NetworkAcls.NetworkAcl...)
-
-		if len(response.NetworkAcls.NetworkAcl) < PageSizeLarge {
-			break
-		}
-
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
-		} else {
-			request.PageNumber = page
-		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
-	for _, nacl := range networkAcls {
-		name := nacl.NetworkAclName
-		id := nacl.NetworkAclId
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+	for _, id := range networkAclIds {
+		log.Printf("[INFO] Deleting Network Acl: (%s)", id)
+		request := map[string]interface{}{
+			"NetworkAclId": id,
+		}
+		action := "DeleteNetworkAcl"
+		request["RegionId"] = client.RegionId
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Network Acl: %s (%s)", name, id)
-			continue
-		}
-		log.Printf("[INFO] Deleting Network Acl: %s (%s)", name, id)
-		request := vpc.CreateDeleteNetworkAclRequest()
-		request.NetworkAclId = id
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteNetworkAcl(request)
+			return nil
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Network Acl (%s (%s)): %s", name, id, err)
+			log.Printf("[ERROR] Failed to delete Network Acl (%s): %s", id, err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return nil
 }
 
 func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
-	var v *vpc.DescribeNetworkAclsResponse
+	var v map[string]interface{}
 	resourceId := "alicloud_network_acl.default"
-	ra := resourceAttrInit(resourceId, testAccNaclCheckMap)
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, AlicloudNetworkAclMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	}, "DescribeNetworkAcl")
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snetworkacl%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNetworkAclBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.NetworkAclSupportedRegions)
+			testAccPreCheck(t)
 		},
-		// module name
-		IDRefreshName: "alicloud_network_acl.default",
+
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckNetworkAclDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNetworkAcl_create(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id": "${alicloud_vpc.default.id}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":      CHECKSET,
-						"name":        fmt.Sprintf("tf-testAcc_network_acl%v.abc", rand),
-						"description": "tf-testAcc_network_acl",
+						"vpc_id": CHECKSET,
 					}),
 				),
 			},
@@ -140,29 +152,94 @@ func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccNetworkAcl_name(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc_network_acl_modify%v.abc", rand),
-						"description": "tf-testAcc_network_acl",
+						"description": name + "1",
 					}),
 				),
 			},
 			{
-				Config: testAccNetworkAcl_description(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"egress_acl_entries": []map[string]interface{}{
+						{
+							"description":            "engress test",
+							"destination_cidr_ip":    "10.0.0.0/24",
+							"network_acl_entry_name": "tf-testacc78924",
+							"policy":                 "accept",
+							"port":                   "20/80",
+							"protocol":               "tcp",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc_network_acl_modify%v.abc", rand),
-						"description": "tf-testAcc_network_acl_modify",
+						"egress_acl_entries.#": "1",
 					}),
 				),
 			},
 			{
-				Config: testAccNetworkAcl_modify(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"ingress_acl_entries": []map[string]interface{}{
+						{
+							"description":            "ingress test",
+							"network_acl_entry_name": "tf-testacc78999",
+							"policy":                 "accept",
+							"port":                   "20/80",
+							"protocol":               "tcp",
+							"source_cidr_ip":         "10.0.0.0/24",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc_network_acl%v.abc", rand),
-						"description": "tf-testAcc_network_acl",
+						"ingress_acl_entries.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_acl_name": name + "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_acl_name": name + "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":      name,
+					"network_acl_name": name,
+					"ingress_acl_entries": []map[string]interface{}{
+						{
+							"description":            "ingress test change",
+							"network_acl_entry_name": "tf-testacc78999",
+							"policy":                 "accept",
+							"port":                   "20/80",
+							"protocol":               "tcp",
+							"source_cidr_ip":         "10.0.0.0/24",
+						},
+					},
+					"egress_acl_entries": []map[string]interface{}{
+						{
+							"description":            "engress test change",
+							"destination_cidr_ip":    "10.0.0.0/24",
+							"network_acl_entry_name": "tf-testacc78924",
+							"policy":                 "accept",
+							"port":                   "20/80",
+							"protocol":               "tcp",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":           name,
+						"network_acl_name":      name,
+						"ingress_acl_entries.#": "1",
+						"egress_acl_entries.#":  "1",
 					}),
 				),
 			},
@@ -170,130 +247,16 @@ func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudNetworkAcl_multi(t *testing.T) {
-	var v *vpc.DescribeNetworkAclsResponse
+var AlicloudNetworkAclMap0 = map[string]string{}
 
-	ra := resourceAttrInit("alicloud_network_acl.default.2", testAccNaclCheckMap)
-	serviceFunc := func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit("alicloud_network_acl.default.2", &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.NetworkAclSupportedRegions)
-		},
-		IDRefreshName: "alicloud_network_acl.default.2",
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckNetworkAclDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccNetworkAcl_multi(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vpc_id":      CHECKSET,
-						"name":        "tf-testAcc_network_acl",
-						"description": "tf-testAcc_network_acl2",
-					}),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckNetworkAclDestroy(s *terraform.State) error {
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_network_acl" {
-			continue
+func AlicloudNetworkAclBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+			default = "%s"
 		}
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		vpcService := &VpcService{client: client}
-		_, err := vpcService.DescribeNetworkAcl(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return WrapError(err)
-		}
-	}
-	return nil
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name = "${var.name}"
 }
-
-func testAccNetworkAcl_create(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_vpc" "default" {	
-  cidr_block = "172.16.0.0/12"	
-  name = "tf-testAccVpcConfig"
-}	
-resource "alicloud_network_acl" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "tf-testAcc_network_acl%v.abc"
-  description = "tf-testAcc_network_acl"
-}
-`, randInt)
-}
-
-func testAccNetworkAcl_name(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_vpc" "default" {	
-  cidr_block = "172.16.0.0/12"	
-  name = "tf-testAccVpcConfig"
-}	
-resource "alicloud_network_acl" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "tf-testAcc_network_acl_modify%v.abc"
-  description = "tf-testAcc_network_acl"
-}
-`, randInt)
-}
-
-func testAccNetworkAcl_description(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_vpc" "default" {	
-  cidr_block = "172.16.0.0/12"	
-  name = "tf-testAccVpcConfig"
-}	
-resource "alicloud_network_acl" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "tf-testAcc_network_acl_modify%v.abc"
-  description = "tf-testAcc_network_acl_modify"
-}
-`, randInt)
-}
-
-func testAccNetworkAcl_modify(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_vpc" "default" {	
-  cidr_block = "172.16.0.0/12"	
-  name = "tf-testAccVpcConfig"
-}	
-resource "alicloud_network_acl" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "tf-testAcc_network_acl%v.abc"
-  description = "tf-testAcc_network_acl"
-}
-`, randInt)
-}
-
-func testAccNetworkAcl_multi(randInt int) string {
-	return fmt.Sprintf(`
-resource "alicloud_vpc" "default" {	
-  cidr_block = "172.16.0.0/12"	
-  name = "tf-testAccVpcConfig%v.abc"
-}	
-resource "alicloud_network_acl" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "tf-testAcc_network_acl"
-  description = "tf-testAcc_network_acl${count.index}"
-  count = 3
-}
-`, randInt)
-}
-
-var testAccNaclCheckMap = map[string]string{
-	"description": "tf-testAcc_network_acl",
+`, name)
 }
