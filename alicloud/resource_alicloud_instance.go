@@ -1501,9 +1501,6 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 				return update, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 		}
-		//if err != nil {
-		//	return update, err
-		//}
 
 		// Ensure instance's type has been replaced successfully.
 		timeout := DefaultTimeoutMedium
