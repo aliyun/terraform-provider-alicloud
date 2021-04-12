@@ -7,7 +7,7 @@ description: |-
     Provides a list of availability zones for mongoDB that can be used by an Alibaba Cloud account.
 ---
 
-# alicloud\_kvstore\_zones
+# alicloud\_mongodb\_zones
 
 This data source provides availability zones for mongoDB that can be accessed by an Alibaba Cloud account within the region configured in the provider.
 
