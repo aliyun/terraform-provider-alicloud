@@ -24,6 +24,9 @@ func resourceAlicloudEcsKeyPair() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Delete: schema.DefaultTimeout(1 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"finger_print": {
 				Type:     schema.TypeString,
@@ -230,7 +233,7 @@ func resourceAlicloudEcsKeyPairDelete(d *schema.ResourceData, meta interface{}) 
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"InvalidParameter.KeypairAlreadyAttachedInstance", "ServiceUnavailable"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
