@@ -20,6 +20,11 @@ func dataSourceAlicloudVswitches() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"ipv6_cidr_block": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -104,6 +109,10 @@ func dataSourceAlicloudVswitches() *schema.Resource {
 						},
 						"cidr_block": {
 							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ipv6_cidr_block": {
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"description": {
@@ -275,6 +284,7 @@ func dataSourceAlicloudVswitchesRead(d *schema.ResourceData, meta interface{}) e
 			"creation_time":              object["CreationTime"],
 			"available_ip_address_count": object["AvailableIpAddressCount"],
 			"cidr_block":                 object["CidrBlock"],
+			"ipv6_cidr_block":            object["Ipv6CidrBlock"],
 			"description":                object["Description"],
 			"is_default":                 object["IsDefault"],
 			"resource_group_id":          object["ResourceGroupId"],
