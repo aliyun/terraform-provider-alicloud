@@ -68,7 +68,7 @@ resource "alicloud_common_bandwidth_package_attachment" "default" {
 
 resource "alicloud_snat_entry" "default" {
   depends_on        = [alicloud_eip_association.default]
-  snat_table_id     = alicloud_nat_gateway.default.snat_table_ids
+  snat_table_id     = alicloud_nat_gateway.default.snat_table_ids.0
   source_vswitch_id = alicloud_vswitch.vswitch.id
   snat_ip           = join(",", alicloud_eip.default.*.ip_address)
 }
