@@ -51,7 +51,7 @@ resource "alicloud_eip_association" "foo" {
 }
 
 resource "alicloud_snat_entry" "foo" {
-  snat_table_id     = "${alicloud_nat_gateway.foo.snat_table_ids}"
+  snat_table_id     = "${alicloud_nat_gateway.foo.snat_table_ids.0}"
   source_vswitch_id = "${alicloud_vswitch.foo.id}"
   snat_ip           = "${alicloud_eip.foo.ip_address}"
 }

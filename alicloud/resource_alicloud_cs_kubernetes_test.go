@@ -830,19 +830,19 @@ func resourceCSKubernetesConfigDependence_multiAZ(name string) string {
 	}
 
 	resource "alicloud_snat_entry" "default1" {
-	  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids}"
+	  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids.0}"
 	  source_vswitch_id = "${alicloud_vswitch.default1.id}"
 	  snat_ip           = "${alicloud_eip.default.ip_address}"
 	}
 
 	resource "alicloud_snat_entry" "default2" {
-	  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids}"
+	  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids.0}"
 	  source_vswitch_id = "${alicloud_vswitch.default2.id}"
 	  snat_ip           = "${alicloud_eip.default.ip_address}"
 	}
 
 	resource "alicloud_snat_entry" "default3" {
-	  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids}"
+	  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids.0}"
 	  source_vswitch_id = "${alicloud_vswitch.default3.id}"
 	  snat_ip           = "${alicloud_eip.default.ip_address}"
 	}
