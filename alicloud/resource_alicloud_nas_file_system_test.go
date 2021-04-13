@@ -185,7 +185,7 @@ variable "name" {
 	default = "%s"
 }
 data "alicloud_nas_protocols" "example" {
-        type = "Performance"
+        type = "Capacity"
 }
 resource "alicloud_kms_key" "key" {
  description             = "Hello KMS"
