@@ -85,6 +85,14 @@ func dataSourceAlicloudFileSystems() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"encrypt_type": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"kms_key_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -174,6 +182,8 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 			"protocol_type": object["ProtocolType"],
 			"storage_type":  object["StorageType"],
 			"metered_size":  formatInt(object["MeteredSize"]),
+			"encrypt_type":  object["EncryptType"],
+			"kms_key_id":    object["KMSKeyId"],
 		}
 		ids = append(ids, fmt.Sprint(object["FileSystemId"]))
 		descriptions = append(descriptions, object["Description"])

@@ -18,7 +18,7 @@ This data source provides FileSystems available to the user.
 ```terraform
 data "alicloud_nas_file_systems" "fs" {
   protocol_type = "NFS"
-  description   = "${alicloud_nas_file_system.foo.description}"
+  description_regex   = "${alicloud_nas_file_system.foo.description}"
 }
 
 output "alicloud_nas_file_systems_id" {
@@ -49,3 +49,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `storage_type` - StorageType block of the FileSystem.
   * `metered_size` - MeteredSize of the FileSystem.
   * `create_time` - Time of creation.
+  * `encrypt_type` - (Optional) Whether the file system is encrypted.Valid values: `0` and `1` and `2`.
+  * `kms_key_id` - (Optional) The File System Kms key ID.
