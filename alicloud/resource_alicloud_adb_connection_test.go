@@ -35,6 +35,7 @@ func TestAccAlicloudAdbConnectionConfig(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithNoDefaultVpc(t)
 			testAccPreCheckWithNoDefaultVswitch(t)
+			testAccPreCheckWithRegions(t, false, connectivity.AdbDBClusterUnSupportRegions)
 		},
 
 		// module name
@@ -75,7 +76,7 @@ func resourceAdbConnectionConfigDependence(name string) string {
 	resource "alicloud_adb_cluster" "cluster" {
         db_cluster_version      = "3.0"
         db_cluster_category     = "Cluster"
-        db_node_class           = "C8"
+        db_node_class           = data.alicloud_adb_db_cluster_classes.default.available_zone_list[0].classes[0]
         db_node_count           = 2
         db_node_storage         = 200
 		pay_type                = "PostPaid"

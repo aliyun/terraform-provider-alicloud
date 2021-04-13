@@ -21,6 +21,7 @@ func TestAccAlicloudAdbDbCluster_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.AdbDBClusterUnSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -30,7 +31,7 @@ func TestAccAlicloudAdbDbCluster_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_category": "Cluster",
-					"db_cluster_class":    "C8",
+					"db_cluster_class":    "${data.alicloud_adb_db_cluster_classes.default.available_zone_list[0].classes[0]}",
 					"db_node_count":       "2",
 					"db_node_storage":     "200",
 					"mode":                "reserver",
@@ -41,7 +42,7 @@ func TestAccAlicloudAdbDbCluster_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_cluster_category": "Cluster",
-						"db_cluster_class":    "C8",
+						"db_cluster_class":    CHECKSET,
 						"db_node_count":       "2",
 						"db_node_storage":     "200",
 						"mode":                "reserver",
@@ -59,13 +60,13 @@ func TestAccAlicloudAdbDbCluster_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_node_class":   "C32",
+					"db_node_class":   "${data.alicloud_adb_db_cluster_classes.this.default[0].classes[1]}",
 					"db_node_count":   "4",
 					"db_node_storage": "200",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_node_class":   "C32",
+						"db_node_class":   CHECKSET,
 						"db_node_count":   "4",
 						"db_node_storage": "200",
 					}),
