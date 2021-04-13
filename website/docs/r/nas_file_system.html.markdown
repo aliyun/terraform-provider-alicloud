@@ -22,11 +22,17 @@ For information about NAS file system and how to use it, see [Manage file system
 Basic Usage
 
 ```terraform
+resource "alicloud_kms_key" "key" {
+  description             = "Hello KMS"
+  pending_window_in_days  = "7"
+  key_state               = "Enabled"
+}
 resource "alicloud_nas_file_system" "foo" {
   protocol_type = "NFS"
   storage_type  = "Performance"
   description   = "tf-testAccNasConfig"
-
+  encrypt_type = "2"
+  kms_key_id = "${alicloud_kms_key.key.id}"
 }
 ```
 ## Argument Reference
@@ -36,6 +42,8 @@ The following arguments are supported:
 * `protocol_type` - (Required, ForceNew) The Protocol Type of a File System. Valid values: `NFS` and `SMB`.
 * `storage_type` - (Required, ForceNew) The Storage Type of a File System. Valid values: `Capacity` and `Performance`.
 * `description` - (Optional) The File System description.
+* `encrypt_type` - (Optional) Whether the file system is encrypted.Valid values: `0` and `1` and `2`.
+* `kms_key_id` - (Optional) The File System Kms key ID.
 
 ## Attributes Reference
 

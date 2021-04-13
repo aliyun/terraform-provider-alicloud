@@ -128,7 +128,6 @@ func TestAccAlicloudNasFileSystem_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -136,12 +135,16 @@ func TestAccAlicloudNasFileSystem_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"protocol_type": "${data.alicloud_nas_protocols.example.protocols.0}",
-					"storage_type":  "Capacity",
+					"storage_type":  "Performance",
+					"encrypt_type":  "2",
+					"kms_key_id":    "${alicloud_kms_key.key.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocol_type": CHECKSET,
-						"storage_type":  "Capacity",
+						"storage_type":  "Performance",
+						"encrypt_type":  "2",
+						"kms_key_id":    CHECKSET,
 					}),
 				),
 			},
@@ -181,9 +184,13 @@ func AlicloudNasFileSystemBasicDependence0(name string) string {
 variable "name" {
 	default = "%s"
 }
-
 data "alicloud_nas_protocols" "example" {
-        type = "Capacity"
+        type = "Performance"
+}
+resource "alicloud_kms_key" "key" {
+ description             = "Hello KMS"
+ pending_window_in_days  = "7"
+ key_state               = "Enabled"
 }
 `, name)
 }
