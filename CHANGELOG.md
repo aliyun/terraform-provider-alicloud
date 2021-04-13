@@ -8,6 +8,7 @@ ENHANCEMENTS:
 
 BUG FIXES:
 
+- docs/alicloud_alidns_domain: Corrects the dns_servers spelling error [GH-3433]
 - resource/nat_gateway: Recovers the snat_table_ids and forward_table_ids data type to fix the format error [GH-3432]
 - resource/alicloud_adb_db_cluster: Fixes the crash error [GH-3429]
 - testcase: Fixes the mongodb and ess testcases [GH-3421]
