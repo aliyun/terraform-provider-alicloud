@@ -135,14 +135,14 @@ func TestAccAlicloudNasFileSystem_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"protocol_type": "${data.alicloud_nas_protocols.example.protocols.0}",
-					"storage_type":  "Performance",
+					"storage_type":  "Capacity",
 					"encrypt_type":  "2",
 					"kms_key_id":    "${alicloud_kms_key.key.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocol_type": CHECKSET,
-						"storage_type":  "Performance",
+						"storage_type":  "Capacity",
 						"encrypt_type":  "2",
 						"kms_key_id":    CHECKSET,
 					}),
@@ -185,7 +185,7 @@ variable "name" {
 	default = "%s"
 }
 data "alicloud_nas_protocols" "example" {
-        type = "Performance"
+        type = "Capacity"
 }
 resource "alicloud_kms_key" "key" {
  description             = "Hello KMS"
