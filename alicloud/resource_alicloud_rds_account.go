@@ -99,7 +99,7 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ForceNew:      true,
-				Deprecated:    "Field 'instance_id' has been deprecated from provider version 1.20.0. New field 'db_instance_id' instead.",
+				Deprecated:    "Field 'instance_id' has been deprecated from provider version 1.120.0. New field 'db_instance_id' instead.",
 				ConflictsWith: []string{"db_instance_id"},
 			},
 			"status": {
