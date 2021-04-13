@@ -61,7 +61,7 @@ func TestAccAlicloudMongoDBInstancesDataSource(t *testing.T) {
 	availabilityZoneConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
-			"availability_zone": `"${data.alicloud_mongodb_zones.default.zones.1.id}"`,
+			"availability_zone": `"${data.alicloud_mongodb_zones.default.zones.0.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
@@ -72,14 +72,14 @@ func TestAccAlicloudMongoDBInstancesDataSource(t *testing.T) {
 		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
 			"ids":               `["${alicloud_mongodb_instance.default.id}"]`,
-			"availability_zone": `"${data.alicloud_mongodb_zones.default.zones.1.id}"`,
+			"availability_zone": `"${data.alicloud_mongodb_zones.default.zones.0.id}"`,
 			"instance_type":     `"replicate"`,
 			"instance_class":    `"dds.mongo.mid"`,
 		}),
 		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${alicloud_mongodb_instance.default.name}_fake"`,
 			"ids":               `["${alicloud_mongodb_instance.default.id}"]`,
-			"availability_zone": `"${data.alicloud_mongodb_zones.default.zones.1.id}"`,
+			"availability_zone": `"${data.alicloud_mongodb_zones.default.zones.0.id}"`,
 			"instance_type":     `"replicate"`,
 			"instance_class":    `"dds.mongo.mid"`,
 		}),
