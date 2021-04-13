@@ -1,18 +1,19 @@
 ## 1.122.0 (Unreleased)
+## 1.121.1 (April 13, 2021)
 
 ENHANCEMENTS:
 
-- resource/alicloud_ecs_key_pair: Supports retry strategy when deleting to fix the error InvalidParameter.KeypairAlreadyAttachedInstance [GH-3423]
-- testcase: Improves the mongodb and ess scaling configuration testcase [GH-3422]
-- testcase: Improves the snat entry testcase results from using the new data type [GH-3424]
+- resource/alicloud_ecs_key_pair: Supports retry strategy when deleting to fix the error InvalidParameter.KeypairAlreadyAttachedInstance ([#3423](https://github.com/aliyun/terraform-provider-alicloud/issues/3423))
+- testcase: Improves the mongodb and ess scaling configuration testcase ([#3422](https://github.com/aliyun/terraform-provider-alicloud/issues/3422))
+- testcase: Improves the snat entry testcase results from using the new data type ([#3424](https://github.com/aliyun/terraform-provider-alicloud/issues/3424))
 
 BUG FIXES:
 
-- docs/alicloud_alidns_domain: Corrects the dns_servers spelling error [GH-3434]
-- resource/nat_gateway: Recovers the snat_table_ids and forward_table_ids data type to fix the format error [GH-3432]
-- resource/alicloud_adb_db_cluster: Fixes the crash error [GH-3429]
-- testcase: Fixes the mongodb and ess testcases [GH-3421]
-- docs/zones: Fixes the docs spelling error in the datasource alicloud_xxx_zones [GH-3425]
+- docs/alicloud_alidns_domain: Corrects the dns_servers spelling error ([#3434](https://github.com/aliyun/terraform-provider-alicloud/issues/3434))
+- resource/nat_gateway: Recovers the snat_table_ids and forward_table_ids data type to fix the format error ([#3432](https://github.com/aliyun/terraform-provider-alicloud/issues/3432))
+- resource/alicloud_adb_db_cluster: Fixes the crash error ([#3429](https://github.com/aliyun/terraform-provider-alicloud/issues/3429))
+- testcase: Fixes the mongodb and ess testcases ([#3421](https://github.com/aliyun/terraform-provider-alicloud/issues/3421))
+- docs/zones: Fixes the docs spelling error in the datasource alicloud_xxx_zones ([#3425](https://github.com/aliyun/terraform-provider-alicloud/issues/3425))
 
 ## 1.121.0 (April 10, 2021)
 
