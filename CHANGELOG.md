@@ -1,4 +1,16 @@
-## 1.122.0 (Unreleased)
+## 1.121.1 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_ecs_key_pair: Supports retry strategy when deleting to fix the error InvalidParameter.KeypairAlreadyAttachedInstance [GH-3423]
+- testcase: Improves the mongodb and ess scaling configuration testcase [GH-3422]
+- testcase: Improves the snat entry testcase results from using the new data type [GH-3424]
+
+BUG FIXES:
+- resource/alicloud_adb_db_cluster: Fixes the crash error [GH-3429]
+- testcase: Fixes the mongodb and ess testcases [GH-3421]
+- docs/zones: Fixes the docs spelling error in the datasource alicloud_xxx_zones [GH-3425]
+
 ## 1.121.0 (April 10, 2021)
 
 - **New Resource:** `alicloud_log_oss_shipper` ([#3414](https://github.com/aliyun/terraform-provider-alicloud/issues/3414))
