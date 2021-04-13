@@ -128,7 +128,7 @@ resource "alicloud_eip_association" "default" {
 }
 
 resource "alicloud_snat_entry" "default" {
-	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids.0}"
+	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
 	source_vswitch_id = "${alicloud_vswitch.default.id}"
 	snat_ip = "${alicloud_eip.default.ip_address}"
    snat_entry_name = "${var.name}"

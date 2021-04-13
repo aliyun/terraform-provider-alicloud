@@ -129,8 +129,8 @@ The following attributes are exported:
 * `specification` - The specification of the nat gateway.
 * `vpc_id` - The VPC ID for the nat gateway.
 * `bandwidth_package_ids` - (Remove from v1.121.0) A list ID of the bandwidth packages, and split them with commas.
-* `snat_table_ids` - The nat gateway will auto create a snap and forward item, the `snat_table_ids` is the created one. It is format a list after v1.121.0+.
-* `forward_table_ids` - The nat gateway will auto create a snap and forward item, the `forward_table_ids` is the created one. It is format a list after v1.121.0+.
+* `snat_table_ids` - The nat gateway will auto create a snap and forward item, the `snat_table_ids` is the created one.
+* `forward_table_ids` - The nat gateway will auto create a snap and forward item, the `forward_table_ids` is the created one.
 * `nat_type` - The type of the nat gateway.
 * `vswitch_id` - The ID of the VSwitch, if the `nat_type` is `Enhanced`, it will not be none. 
 * `status` - (Available in 1.121.0+) The status of NAT gateway.

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -41,11 +42,8 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Optional: true,
 			},
 			"forward_table_ids": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeString,
 				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
 			},
 			"internet_charge_type": {
 				Type:         schema.TypeString,
@@ -136,11 +134,8 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Removed:  "Field 'spec' has been removed from provider version 1.121.0, replace by 'specification'.",
 			},
 			"snat_table_ids": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeString,
 				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
 			},
 			"specification": {
 				Type:         schema.TypeString,
@@ -264,7 +259,13 @@ func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 	d.Set("description", object["Description"])
-	d.Set("forward_table_ids", object["ForwardTableIds"].(map[string]interface{})["ForwardTableId"])
+	if v, ok := object["ForwardTableIds"].(map[string]interface{})["ForwardTableId"].([]interface{}); ok {
+		ids := []string{}
+		for _, id := range v {
+			ids = append(ids, id.(string))
+		}
+		d.Set("forward_table_ids", strings.Join(ids, ","))
+	}
 	d.Set("internet_charge_type", object["InternetChargeType"])
 	d.Set("nat_gateway_name", object["Name"])
 	d.Set("name", object["Name"])
@@ -278,7 +279,13 @@ func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 		}
 		d.Set("period", period)
 	}
-	d.Set("snat_table_ids", object["SnatTableIds"].(map[string]interface{})["SnatTableId"])
+	if v, ok := object["SnatTableIds"].(map[string]interface{})["SnatTableId"].([]interface{}); ok {
+		ids := []string{}
+		for _, id := range v {
+			ids = append(ids, id.(string))
+		}
+		d.Set("snat_table_ids", strings.Join(ids, ","))
+	}
 	d.Set("specification", object["Spec"])
 	d.Set("status", object["Status"])
 	d.Set("vswitch_id", object["NatGatewayPrivateInfo"].(map[string]interface{})["VswitchId"])
