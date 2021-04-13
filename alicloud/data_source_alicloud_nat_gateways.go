@@ -114,10 +114,6 @@ func dataSourceAlicloudNatGateways() *schema.Resource {
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
-						"forward_table_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"internet_charge_type": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -170,10 +166,6 @@ func dataSourceAlicloudNatGateways() *schema.Resource {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
-						"snat_table_id": {
-							Type:     schema.TypeString,
-							Computed: true,
 						},
 						"specification": {
 							Type:     schema.TypeString,
@@ -321,7 +313,6 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 			"ecs_metric_enabled":   object["EcsMetricEnabled"],
 			"expired_time":         object["ExpiredTime"],
 			"forward_table_ids":    object["ForwardTableIds"].(map[string]interface{})["ForwardTableId"],
-			"forward_table_id":     object["ForwardTableIds"].(map[string]interface{})["ForwardTableId"].([]interface{})[0],
 			"internet_charge_type": object["InternetChargeType"],
 			"id":                   fmt.Sprint(object["NatGatewayId"]),
 			"nat_gateway_id":       fmt.Sprint(object["NatGatewayId"]),
@@ -331,7 +322,6 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 			"payment_type":         convertNatGatewayPaymentTypeResponse(object["InstanceChargeType"].(string)),
 			"resource_group_id":    object["ResourceGroupId"],
 			"snat_table_ids":       object["SnatTableIds"].(map[string]interface{})["SnatTableId"],
-			"snat_table_id":        object["SnatTableIds"].(map[string]interface{})["SnatTableId"].([]interface{})[0],
 			"specification":        object["Spec"],
 			"spec":                 object["Spec"],
 			"status":               object["Status"],
