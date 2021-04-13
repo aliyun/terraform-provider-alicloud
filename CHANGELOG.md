@@ -1,4 +1,4 @@
-## 1.121.1 (Unreleased)
+## 1.122.0 (Unreleased)
 
 ENHANCEMENTS:
 
@@ -7,6 +7,8 @@ ENHANCEMENTS:
 - testcase: Improves the snat entry testcase results from using the new data type [GH-3424]
 
 BUG FIXES:
+
+- resource/nat_gateway: Recovers the snat_table_ids and forward_table_ids data type to fix the format error [GH-3432]
 - resource/alicloud_adb_db_cluster: Fixes the crash error [GH-3429]
 - testcase: Fixes the mongodb and ess testcases [GH-3421]
 - docs/zones: Fixes the docs spelling error in the datasource alicloud_xxx_zones [GH-3425]
