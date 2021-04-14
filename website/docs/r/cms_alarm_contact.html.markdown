@@ -42,7 +42,7 @@ resource "alicloud_cms_alarm_contact" "example" {
 
 The following arguments are supported:
 
-* `alarm_contact_name` - (Required, ForceNew) The name of the alarm contact.
+* `alarm_contact_name` - (Required, ForceNew) The name of the alarm contact. The length should between 2 and 40 characters.
 * `channels_aliim` - (Optional) The TradeManager ID of the alarm contact.
 * `channels_ding_web_hook` - (Optional) The webhook URL of the DingTalk chatbot.
 * `channels_mail` - (Optional) The email address of the alarm contact. After you add or modify an email address, the recipient receives an email that contains an activation link. The system adds the recipient to the list of alarm contacts only after the recipient activates the email address.

@@ -74,7 +74,7 @@ func testAccCheckAlicloudCmsAlarmContactsDataSourceConfig(rand int, attrMap map[
 
 	config := fmt.Sprintf(`
 		variable "name" {
-			default = "tf-testAccCmsAlarmContactBisic-%d"
+			default = "tf-testAccCms-%d"
 		}
 		resource "alicloud_cms_alarm_contact" "default" {
 			alarm_contact_name = var.name
