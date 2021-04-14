@@ -604,7 +604,8 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 
 const testMongoDBShardingInstance_classic_security_group_id = `
 data "alicloud_mongodb_zones" "default" {}
-data "alicloud_security_groups" "default" {
+resource "alicloud_security_group" "default" {
+	name = "tf-testaccformongodbsharding"
 }
 resource "alicloud_mongodb_sharding_instance" "default" {
   zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
@@ -624,7 +625,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }
   tde_status    = "enabled"
-  security_group_id    = "${data.alicloud_security_groups.default.groups.0.id}"
+  security_group_id    = alicloud_security_group.default.id
 }`
 
 const testMongoDBShardingInstance_classic_name = `

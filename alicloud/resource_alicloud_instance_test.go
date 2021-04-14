@@ -281,16 +281,6 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"internet_max_bandwidth_in": "50",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"internet_max_bandwidth_in": "50",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"host_name": "hostNameExample",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -420,7 +410,6 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 					"instance_name":              fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d", rand),
 					"description":                fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d", rand),
 					"internet_max_bandwidth_out": REMOVEKEY,
-					"internet_max_bandwidth_in":  REMOVEKEY,
 					"host_name":                  REMOVEKEY,
 					"password":                   REMOVEKEY,
 					// "credit_specification":       "Standard",
@@ -468,7 +457,6 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 						"status":     "Running",
 
 						"internet_charge_type":       string(PayByBandwidth),
-						"internet_max_bandwidth_in":  "50",
 						"internet_max_bandwidth_out": "0",
 
 						"deletion_protection": "false",
@@ -505,10 +493,9 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_id":        "${data.alicloud_images.default.images.0.id}",
-					"security_groups": []string{"${alicloud_security_group.default.0.id}"},
-					"instance_type":   "${data.alicloud_instance_types.default.instance_types.0.id}",
-
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
 					"system_disk_category":          "cloud_efficiency",
 					"instance_name":                 "${var.name}",
@@ -517,9 +504,8 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 					"spot_price_limit":              "0",
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "I_am_user_data",
-
-					"vswitch_id": "${alicloud_vswitch.default.id}",
-					"role_name":  "${alicloud_ram_role.default.name}",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"role_name":                     "${alicloud_ram_role.default.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -628,16 +614,6 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"internet_max_bandwidth_in": "50",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"internet_max_bandwidth_in": "50",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"host_name": "hostNameExample",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -734,15 +710,16 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 					"instance_name":              name,
 					"description":                name,
 					"internet_max_bandwidth_out": REMOVEKEY,
-					"internet_max_bandwidth_in":  REMOVEKEY,
 					"host_name":                  REMOVEKEY,
 					"password":                   REMOVEKEY,
 					// "credit_specification":       "Standard",
 
 					"system_disk_size": "70",
 					"private_ip":       REMOVEKEY,
-					"volume_tags":      REMOVEKEY,
-					"tags":             REMOVEKEY,
+					"volume_tags": map[string]string{
+						"tag1": "test",
+					},
+					"tags": REMOVEKEY,
 
 					"deletion_protection": "false",
 				}),
@@ -755,8 +732,7 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 
 						"instance_name": name,
 
-						"volume_tags.%":    "0",
-						"volume_tags.tag1": REMOVEKEY,
+						"volume_tags.%":    "1",
 						"volume_tags.Tag2": REMOVEKEY,
 
 						"image_id":          CHECKSET,
@@ -783,7 +759,6 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 						"status":     "Running",
 
 						"internet_charge_type":       string(PayByBandwidth),
-						"internet_max_bandwidth_in":  "50",
 						"internet_max_bandwidth_out": "0",
 
 						"deletion_protection": "false",
@@ -936,16 +911,6 @@ func TestAccAlicloudInstancePrepaid(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"internet_max_bandwidth_in": "50",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"internet_max_bandwidth_in": "50",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"host_name": "hostNameExample",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1090,7 +1055,6 @@ func TestAccAlicloudInstancePrepaid(t *testing.T) {
 					"instance_name":              name,
 					"description":                name,
 					"internet_max_bandwidth_out": REMOVEKEY,
-					"internet_max_bandwidth_in":  REMOVEKEY,
 					"host_name":                  REMOVEKEY,
 					"password":                   REMOVEKEY,
 
@@ -1148,7 +1112,6 @@ func TestAccAlicloudInstancePrepaid(t *testing.T) {
 						"status":     "Running",
 
 						"internet_charge_type":       string(PayByBandwidth),
-						"internet_max_bandwidth_in":  "50",
 						"internet_max_bandwidth_out": "0",
 
 						"deletion_protection": "false",
@@ -1462,14 +1425,14 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  vpc_name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name              = "${var.name}"
+  zone_id = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+  vswitch_name              = "${var.name}"
 }
 resource "alicloud_security_group" "default" {
   count = "2"
@@ -1494,12 +1457,27 @@ variable "name" {
 
 resource "alicloud_ram_role" "default" {
 		  name = "${var.name}"
-		  services = ["ecs.aliyuncs.com"]
+		  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
 		  force = "true"
 }
 
 resource "alicloud_key_pair" "default" {
-	key_name = "${var.name}"
+	key_pair_name = "${var.name}"
 }
 
 `, name)
@@ -1722,15 +1700,12 @@ var testAccInstanceCheckMap = map[string]string{
 	"volume_tags.%": "0",
 	"tags.%":        NOSET,
 
-	"private_ip": CHECKSET,
-	"public_ip":  "",
-	"status":     "Running",
-
+	"private_ip":                 CHECKSET,
+	"public_ip":                  "",
+	"status":                     "Running",
 	"internet_charge_type":       "PayByTraffic",
-	"internet_max_bandwidth_in":  "-1",
 	"internet_max_bandwidth_out": "0",
-
-	"instance_charge_type": "PostPaid",
+	"instance_charge_type":       "PostPaid",
 	// the attributes of below are suppressed  when the value of instance_charge_type is `PostPaid`
 	"period":             NOSET,
 	"period_unit":        NOSET,
