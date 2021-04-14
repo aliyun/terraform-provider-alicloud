@@ -2,6 +2,9 @@ package alicloud
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -97,15 +100,26 @@ func resourceAlicloudSagQosPolicyCreate(d *schema.ResourceData, meta interface{}
 		request.EndTime = v.(string)
 	}
 
-	raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
-		return sagClient.CreateQosPolicy(request)
+	var response *smartag.CreateQosPolicyResponse
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
+			return sagClient.CreateQosPolicy(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ResourceInOperating"}) {
+				time.Sleep(2 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*smartag.CreateQosPolicyResponse)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sag_qos_policy", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*smartag.CreateQosPolicyResponse)
 	d.SetId(fmt.Sprintf("%s%s%s", response.QosId, COLON_SEPARATED, response.QosPolicyId))
 
 	return resourceAlicloudSagQosPolicyRead(d, meta)
@@ -213,16 +227,24 @@ func resourceAlicloudSagQosPolicyDelete(d *schema.ResourceData, meta interface{}
 	request.QosId = parts[0]
 	request.QosPolicyId = parts[1]
 
-	raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
-		return sagClient.DeleteQosPolicy(request)
-	})
-
-	if err != nil {
+	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
+			return sagClient.DeleteQosPolicy(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ResourceInOperating"}) {
+				time.Sleep(2 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	}); err != nil {
 		if IsExpectedErrors(err, []string{"ParameterSagQosPolicyId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(sagService.WaitForSagQosPolicy(d.Id(), Deleted, DefaultTimeoutMedium))
 }

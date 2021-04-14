@@ -2,6 +2,9 @@ package alicloud
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -93,16 +96,26 @@ func resourceAlicloudSagQosCarCreate(d *schema.ResourceData, meta interface{}) e
 		request.MaxBandwidthPercent = requests.NewInteger(d.Get("max_bandwidth_percent").(int))
 		request.PercentSourceType = d.Get("percent_source_type").(string)
 	}
-
-	raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
-		return sagClient.CreateQosCar(request)
+	var response *smartag.CreateQosCarResponse
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
+			return sagClient.CreateQosCar(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ResourceInOperating"}) {
+				time.Sleep(2 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*smartag.CreateQosCarResponse)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sag_qos_car", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*smartag.CreateQosCarResponse)
 	d.SetId(fmt.Sprintf("%s%s%s", response.QosId, COLON_SEPARATED, response.QosCarId))
 
 	return resourceAlicloudSagQosCarRead(d, meta)
@@ -205,16 +218,24 @@ func resourceAlicloudSagQosCarDelete(d *schema.ResourceData, meta interface{}) e
 	request.QosId = parts[0]
 	request.QosCarId = parts[1]
 
-	raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
-		return sagClient.DeleteQosCar(request)
-	})
-
-	if err != nil {
+	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
+			return sagClient.DeleteQosCar(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ResourceInOperating"}) {
+				time.Sleep(2 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	}); err != nil {
 		if IsExpectedErrors(err, []string{"ParameterSagQosCarId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(sagService.WaitForSagQosCar(d.Id(), Deleted, DefaultTimeoutMedium))
 }
