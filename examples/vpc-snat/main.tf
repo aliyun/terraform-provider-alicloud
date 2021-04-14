@@ -14,7 +14,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "tf_vpc"
+  vpc_name       = "tf_vpc"
   cidr_block = var.vpc_cidr
 }
 

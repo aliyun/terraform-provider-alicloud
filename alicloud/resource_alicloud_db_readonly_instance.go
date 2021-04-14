@@ -108,8 +108,12 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
+			},
+			"force_restart": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -197,7 +201,21 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		}
 
 	}
-
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		action := "ModifyResourceGroup"
+		request := map[string]interface{}{
+			"DBInstanceId":    d.Id(),
+			"ResourceGroupId": d.Get("resource_group_id"),
+			"ClientToken":     buildClientToken(action),
+			"SourceIp":        client.SourceIp,
+		}
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		d.SetPartial("resource_group_id")
+	}
 	update := false
 	action := "ModifyDBInstanceSpec"
 	request := map[string]interface{}{

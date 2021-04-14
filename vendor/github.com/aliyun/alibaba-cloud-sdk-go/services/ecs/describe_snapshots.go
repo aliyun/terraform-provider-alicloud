@@ -76,26 +76,28 @@ type DescribeSnapshotsRequest struct {
 	SnapshotIds          string                  `position:"Query" name:"SnapshotIds"`
 	Usage                string                  `position:"Query" name:"Usage"`
 	SnapshotLinkId       string                  `position:"Query" name:"SnapshotLinkId"`
-	SnapshotName         string                  `position:"Query" name:"SnapshotName"`
-	PageNumber           requests.Integer        `position:"Query" name:"PageNumber"`
 	ResourceGroupId      string                  `position:"Query" name:"ResourceGroupId"`
 	Filter1Key           string                  `position:"Query" name:"Filter.1.Key"`
-	PageSize             requests.Integer        `position:"Query" name:"PageSize"`
-	DiskId               string                  `position:"Query" name:"DiskId"`
 	Tag                  *[]DescribeSnapshotsTag `position:"Query" name:"Tag"  type:"Repeated"`
 	DryRun               requests.Boolean        `position:"Query" name:"DryRun"`
+	Filter1Value         string                  `position:"Query" name:"Filter.1.Value"`
+	OwnerId              requests.Integer        `position:"Query" name:"OwnerId"`
+	InstanceId           string                  `position:"Query" name:"InstanceId"`
+	MaxResults           requests.Integer        `position:"Query" name:"MaxResults"`
+	Status               string                  `position:"Query" name:"Status"`
+	SnapshotName         string                  `position:"Query" name:"SnapshotName"`
+	PageNumber           requests.Integer        `position:"Query" name:"PageNumber"`
+	NextToken            string                  `position:"Query" name:"NextToken"`
+	PageSize             requests.Integer        `position:"Query" name:"PageSize"`
+	DiskId               string                  `position:"Query" name:"DiskId"`
 	ResourceOwnerAccount string                  `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string                  `position:"Query" name:"OwnerAccount"`
 	SourceDiskType       string                  `position:"Query" name:"SourceDiskType"`
-	Filter1Value         string                  `position:"Query" name:"Filter.1.Value"`
 	Filter2Key           string                  `position:"Query" name:"Filter.2.Key"`
-	OwnerId              requests.Integer        `position:"Query" name:"OwnerId"`
-	InstanceId           string                  `position:"Query" name:"InstanceId"`
 	Encrypted            requests.Boolean        `position:"Query" name:"Encrypted"`
 	SnapshotType         string                  `position:"Query" name:"SnapshotType"`
 	KMSKeyId             string                  `position:"Query" name:"KMSKeyId"`
 	Category             string                  `position:"Query" name:"Category"`
-	Status               string                  `position:"Query" name:"Status"`
 }
 
 // DescribeSnapshotsTag is a repeated param struct in DescribeSnapshotsRequest
@@ -107,11 +109,12 @@ type DescribeSnapshotsTag struct {
 // DescribeSnapshotsResponse is the response struct for api DescribeSnapshots
 type DescribeSnapshotsResponse struct {
 	*responses.BaseResponse
-	RequestId  string    `json:"RequestId" xml:"RequestId"`
-	TotalCount int       `json:"TotalCount" xml:"TotalCount"`
-	PageNumber int       `json:"PageNumber" xml:"PageNumber"`
-	PageSize   int       `json:"PageSize" xml:"PageSize"`
-	Snapshots  Snapshots `json:"Snapshots" xml:"Snapshots"`
+	RequestId  string                       `json:"RequestId" xml:"RequestId"`
+	TotalCount int                          `json:"TotalCount" xml:"TotalCount"`
+	PageNumber int                          `json:"PageNumber" xml:"PageNumber"`
+	PageSize   int                          `json:"PageSize" xml:"PageSize"`
+	NextToken  string                       `json:"NextToken" xml:"NextToken"`
+	Snapshots  SnapshotsInDescribeSnapshots `json:"Snapshots" xml:"Snapshots"`
 }
 
 // CreateDescribeSnapshotsRequest creates a request to invoke DescribeSnapshots API
@@ -119,7 +122,7 @@ func CreateDescribeSnapshotsRequest() (request *DescribeSnapshotsRequest) {
 	request = &DescribeSnapshotsRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "DescribeSnapshots", "", "")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "DescribeSnapshots", "ecs", "openAPI")
 	request.Method = requests.POST
 	return
 }

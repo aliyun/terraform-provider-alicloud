@@ -16,7 +16,7 @@ Filters support regular expression for the instance name, ids or availability_zo
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_hbase_instances" "hbase" {
   name_regex        = "tf_testAccHBase"
   availability_zone = "cn-shenzhen-b"

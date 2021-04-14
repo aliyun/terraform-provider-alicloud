@@ -236,7 +236,7 @@ data "alicloud_instance_types" "new" {
 	eni_amount = 2
 }
 data "alicloud_images" "default" {
-    name_regex = "^ubuntu_18.*64"
+    name_regex = "^ubuntu"
   most_recent = true
   owners = "system"
 }
@@ -312,7 +312,7 @@ data "alicloud_instance_types" "default" {
   memory_size       = 2
 }
 data "alicloud_images" "default" {
-    name_regex = "^ubuntu_18.*64"
+    name_regex = "^ubuntu"
   most_recent = true
   owners = "system"
 }
@@ -349,6 +349,7 @@ resource "alicloud_instance" "default" {
 resource "alicloud_slb" "default" {
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
+  specification = "slb.s1.small"
 }
 `, name)
 }
@@ -366,7 +367,7 @@ data "alicloud_instance_types" "new" {
 	eni_amount = 2
 }
 data "alicloud_images" "default" {
-    name_regex = "^ubuntu_18.*64"
+    name_regex = "^ubuntu"
   most_recent = true
   owners = "system"
 }

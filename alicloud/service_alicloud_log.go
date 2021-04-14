@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
@@ -617,6 +618,197 @@ func (s *LogService) WaitForLogDashboard(id string, status Status, timeout int) 
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.DashboardName, name, ProviderERROR)
+		}
+	}
+}
+
+func (s *LogService) DescribeLogProjectTags(project_name string) ([]*sls.ResourceTagResponse, error) {
+	var requestInfo *sls.Client
+	var respTags []*sls.ResourceTagResponse
+
+	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			raw, _, err := slsClient.ListTagResources(project_name, "project", []string{project_name}, []sls.ResourceFilterTag{}, "")
+			return raw, err
+		})
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{LogClientTimeout}) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetProjectTags", raw, requestInfo, map[string]string{"project_name": project_name})
+		}
+		respTags = raw.([]*sls.ResourceTagResponse)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
+			return respTags, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return respTags, WrapErrorf(err, DefaultErrorMsg, project_name, "GetProejctTags", AliyunLogGoSdkERROR)
+	}
+	return respTags, nil
+}
+
+func (s *LogService) DescribeLogEtl(id string) (*sls.ETL, error) {
+	etl := &sls.ETL{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return etl, WrapError(err)
+	}
+	projectName, etlName := parts[0], parts[1]
+	var requestInfo *sls.Client
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			return slsClient.GetETL(projectName, etlName)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetLogETL", raw, requestInfo, map[string]string{
+				"project":  projectName,
+				"etl_name": etlName,
+			})
+		}
+		etl, _ = raw.(*sls.ETL)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "JobNotExist"}) {
+			return etl, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return etl, WrapErrorf(err, DefaultErrorMsg, id, "GetETL", AliyunLogGoSdkERROR)
+	}
+	return etl, nil
+}
+
+func (s *LogService) WaitForLogETL(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		object, err := s.DescribeLogEtl(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Name == parts[1] && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Name, id, ProviderERROR)
+		}
+	}
+}
+
+func (s *LogService) LogOssShipperStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeLogEtl(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+
+		return object, object.Status, nil
+	}
+}
+
+func (s *LogService) DescribeLogOssShipper(id string) (*sls.Shipper, error) {
+	var shipper *sls.Shipper
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return shipper, WrapError(err)
+	}
+	projectName, logstoreName, shipperName := parts[0], parts[1], parts[2]
+	var requestInfo *sls.Client
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			project, _ := sls.NewLogProject(projectName, slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
+			logstore, _ := sls.NewLogStore(logstoreName, project)
+			return logstore.GetShipper(shipperName)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetLogOssShipper", raw, requestInfo, map[string]string{
+				"project_name":  projectName,
+				"logstore_name": logstoreName,
+				"shipper_name":  shipperName,
+			})
+		}
+		shipper, _ = raw.(*sls.Shipper)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
+			return shipper, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		// SLS server problem, temporarily by returning nil value to solve.
+		if d, ok := err.(*sls.Error); ok {
+			if d.Message == fmt.Sprintf("shipperName %s does not exist", parts[2]) {
+				return shipper, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+			}
+
+		}
+		return shipper, WrapErrorf(err, DefaultErrorMsg, id, "GetLogOssShipper", AliyunLogGoSdkERROR)
+	}
+	return shipper, nil
+}
+
+func (s *LogService) WaitForLogOssShipper(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		object, err := s.DescribeLogOssShipper(id)
+		if err != nil {
+			if object == nil {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.ShipperName == parts[2] && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ShipperName, id, ProviderERROR)
 		}
 	}
 }

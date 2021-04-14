@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudResourceManagerRole_basic(t *testing.T) {
-	var v resourcemanager.Role
+	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_role.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerRoleMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

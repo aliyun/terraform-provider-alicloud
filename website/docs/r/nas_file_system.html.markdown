@@ -21,7 +21,7 @@ For information about NAS file system and how to use it, see [Manage file system
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_nas_file_system" "foo" {
   protocol_type = "NFS"
   storage_type  = "Performance"

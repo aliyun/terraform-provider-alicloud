@@ -1,5 +1,5 @@
 ---
-subcategory: "VPC"
+subcategory: "Elastic IP Address (EIP)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_eips"
 sidebar_current: "docs-alicloud-datasource-eips"

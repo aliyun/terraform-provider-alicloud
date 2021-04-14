@@ -11,6 +11,8 @@ description: |-
 
 Provides an RDS account resource and used to manage databases.
 
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.120.0`. Please use new resource [alicloud_rds_account](https://www.terraform.io/docs/providers/alicloud/r/rds_account.html).
+
 ## Example Usage
 
 ```
@@ -27,7 +29,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
+  vpc_name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 
@@ -35,7 +37,7 @@ resource "alicloud_vswitch" "default" {
   vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = data.alicloud_zones.default.zones[0].id
-  name              = var.name
+  vswitch_name      = var.name
 }
 
 resource "alicloud_db_instance" "instance" {

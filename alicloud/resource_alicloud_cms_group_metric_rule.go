@@ -3,10 +3,12 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -18,6 +20,10 @@ func resourceAlicloudCmsGroupMetricRule() *schema.Resource {
 		Delete: resourceAlicloudCmsGroupMetricRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(3 * time.Minute),
+			Update: schema.DefaultTimeout(3 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"category": {
@@ -274,12 +280,23 @@ func resourceAlicloudCmsGroupMetricRuleCreate(d *schema.ResourceData, meta inter
 		request["Webhook"] = v
 	}
 
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ExceedingQuota", "Throttling.User"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_group_metric_rule", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
-	if !response["Success"].(bool) {
+	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
 		return WrapError(Error("PutGroupMetricRule failed for " + response["Message"].(string)))
 	}
 
@@ -465,13 +482,24 @@ func resourceAlicloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapError(err)
 		}
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-		addDebug(action, response, request)
-		if !response["Success"].(bool) {
-			return WrapError(Error("PutGroupMetricRule failed for " + response["Message"].(string)))
-		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ExceedingQuota", "Throttling.User"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
+			return WrapError(Error("PutGroupMetricRule failed for " + response["Message"].(string)))
 		}
 	}
 	return resourceAlicloudCmsGroupMetricRuleRead(d, meta)
@@ -488,16 +516,27 @@ func resourceAlicloudCmsGroupMetricRuleDelete(d *schema.ResourceData, meta inter
 		"Id": []string{d.Id()},
 	}
 
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-	addDebug(action, response, request)
-	if !response["Success"].(bool) {
-		return WrapError(Error("DeleteMetricRules failed for " + response["Message"].(string)))
-	}
-	if err != nil {
-		if IsExpectedErrors(err, []string{"400", "403", "404", "ResourceNotFound"}) {
-			return nil
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ExceedingQuota", "Throttling.User"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	if IsExpectedErrorCodes(fmt.Sprintf("%v", response["Code"]), []string{"400", "403", "404", "ResourceNotFound"}) {
+		return nil
+	}
+	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
+		return WrapError(Error("DeleteMetricRules failed for " + response["Message"].(string)))
 	}
 	return nil
 }

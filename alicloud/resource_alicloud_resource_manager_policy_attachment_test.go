@@ -5,10 +5,11 @@ import (
 	"log"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -27,64 +28,85 @@ func testSweepResourceManagerPolicyAttachment(region string) error {
 		return WrapErrorf(err, "Error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	resourceManagerService := ResourcemanagerService{client}
 
 	prefixes := []string{
 		"tf-testAcc",
 		"tf-test",
 	}
 
-	request := resourcemanager.CreateListPolicyAttachmentsRequest()
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	request.PolicyType = "Custom"
+	action := "ListPolicyAttachments"
+	request := make(map[string]interface{})
+
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	request["PolicyType"] = "Custom"
+	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var attachmentIds []string
+
 	for {
-		raw, err := resourceManagerService.client.WithResourcemanagerClient(func(resourceManagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourceManagerClient.ListPolicyAttachments(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"EntityNotExists.ResourceDirectory", "EntityNotExist.Policy"}) {
+				return nil
+			}
 			log.Printf("[ERROR] Failed to retrieve resoure manager policy attachment in service list: %s", err)
+			return nil
 		}
-
-		response, _ := raw.(*resourcemanager.ListPolicyAttachmentsResponse)
-
-		for _, v := range response.PolicyAttachments.PolicyAttachment {
+		resp, err := jsonpath.Get("$.PolicyAttachments.PolicyAttachment", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PolicyAttachments.PolicyAttachment", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
 			skip := true
 			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(v.PolicyName), strings.ToLower(prefix)) {
+				if strings.HasPrefix(strings.ToLower(item["PolicyName"].(string)), strings.ToLower(prefix)) {
 					skip = false
 				}
 			}
 			if skip {
-				log.Printf("[INFO] Skipping resource manager policy attachment with policy: %s ", v.PolicyName)
+				log.Printf("[INFO] Skipping resource manager policy attachment with policy: %s ", item["PolicyName"].(string))
 			} else {
-				attachmentIds = append(attachmentIds, fmt.Sprintf("%v:%v:%v:%v:%v", v.PolicyName, v.PolicyType, v.PrincipalName, v.PrincipalType, v.ResourceGroupId))
+				attachmentIds = append(attachmentIds, fmt.Sprintf("%v:%v:%v:%v:%v", item["PolicyName"], item["PolicyType"], item["PrincipalName"], item["PrincipalType"], item["ResourceGroupId"]))
 			}
 		}
-		if len(response.PolicyAttachments.PolicyAttachment) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
 	for _, attachmentId := range attachmentIds {
 		log.Printf("[INFO] Delete resource manager policy attachment: %s ", attachmentId)
 
+		action := "DetachPolicy"
 		ids := strings.Split(attachmentId, ":")
-		request := resourcemanager.CreateDetachPolicyRequest()
-		request.PolicyName = ids[0]
-		request.PolicyType = ids[1]
-		request.PrincipalName = ids[2]
-		request.PrincipalType = ids[3]
-		request.ResourceGroupId = ids[4]
+		request := map[string]interface{}{
+			"PolicyName":      ids[0],
+			"PolicyType":      ids[1],
+			"PrincipalName":   ids[2],
+			"PrincipalType":   ids[3],
+			"ResourceGroupId": ids[4],
+		}
 
-		_, err = resourceManagerService.client.WithResourcemanagerClient(func(resourceManagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourceManagerClient.DetachPolicy(request)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete resource manager policy attachment (%s): %s", attachmentId, err)
@@ -94,7 +116,7 @@ func testSweepResourceManagerPolicyAttachment(region string) error {
 }
 
 func TestAccAlicloudResourceManagerPolicyAttachment_basic(t *testing.T) {
-	var v resourcemanager.PolicyAttachment
+	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_policy_attachment.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerPolicyAttachmentMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

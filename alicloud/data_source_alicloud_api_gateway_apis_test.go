@@ -106,7 +106,7 @@ func dataSourceApigatewayApisConfigDependence(name string) string {
 	    }
 	  service_type = "HTTP"
 	  http_service_config {
-	      address = "http://apigateway-backend.default.com:8080"
+	      address = "http://apigateway-backend.alicloudapi.com:8080"
 	      method = "GET"
 	      path = "/web/cloudapi"
 	      timeout = 20

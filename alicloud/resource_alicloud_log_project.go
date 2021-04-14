@@ -30,6 +30,7 @@ func resourceAlicloudLogProject() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -61,7 +62,7 @@ func resourceAlicloudLogProjectCreate(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_project", "CreateProject", AliyunLogGoSdkERROR)
 	}
 
-	return resourceAlicloudLogProjectRead(d, meta)
+	return resourceAlicloudLogProjectUpdate(d, meta)
 }
 
 func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) error {
@@ -77,15 +78,56 @@ func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("name", object.Name)
 	d.Set("description", object.Description)
+	projectTags, err := logService.DescribeLogProjectTags(object.Name)
+	if projectTags != nil {
+		tags := map[string]interface{}{}
+		for _, tag := range projectTags {
+			tags[tag.TagKey] = tag.TagValue
+		}
+		if err := d.Set("tags", tags); err != nil {
+			return WrapError(err)
+		}
+	}
 
+	return nil
+}
+
+func buildTags(projectName string, tags map[string]interface{}) *sls.ResourceTags {
+	slsTags := []sls.ResourceTag{}
+
+	for key, value := range tags {
+		tag := sls.ResourceTag{key, value.(string)}
+		slsTags = append(slsTags, tag)
+	}
+	projectTags := sls.NewProjectTags(projectName, slsTags)
+	return projectTags
+}
+
+func deleteProjectTags(client *connectivity.AliyunClient, slsTags []string, projectName string) error {
+	var requestInfo *sls.Client
+	projectUnTags := sls.NewProjectUnTags(projectName, slsTags)
+	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+		requestInfo = slsClient
+		return nil, slsClient.UnTagResources(projectName, projectUnTags)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, projectName, "DeletaTags", AliyunLogGoSdkERROR)
+	}
+	addDebug("DeletaTags", raw, requestInfo, map[string]string{
+		"name": projectName,
+	})
 	return nil
 }
 
 func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	d.Partial(true)
+
 	var requestInfo *sls.Client
+	logService := LogService{client}
+	projectName := d.Get("name").(string)
 	request := map[string]string{
-		"name":        d.Get("name").(string),
+		"name":        projectName,
 		"description": d.Get("description").(string),
 	}
 	if d.HasChange("description") {
@@ -98,6 +140,38 @@ func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		addDebug("UpdateProject", raw, requestInfo, request)
 	}
+
+	if d.HasChange("tags") {
+		projectTags, err := logService.DescribeLogProjectTags(projectName)
+		if err != nil {
+			return err
+		}
+		slsTags := []string{}
+		for _, value := range projectTags {
+			slsTags = append(slsTags, value.TagKey)
+		}
+		tags := d.Get("tags").(map[string]interface{})
+		if tags == nil || len(tags) == 0 {
+			if err := deleteProjectTags(client, slsTags, projectName); err != nil {
+				return WrapError(err)
+			}
+		} else {
+			if err := deleteProjectTags(client, slsTags, projectName); err != nil {
+				return WrapError(err)
+			}
+			projectNewTags := buildTags(projectName, tags)
+			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+				requestInfo = slsClient
+				return nil, slsClient.TagResources(projectName, projectNewTags)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateTags", AliyunLogGoSdkERROR)
+			}
+			addDebug("UpdateTags", raw, requestInfo, request)
+		}
+		d.SetPartial("tags")
+	}
+	d.Partial(false)
 
 	return resourceAlicloudLogProjectRead(d, meta)
 }

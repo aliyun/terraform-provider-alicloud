@@ -18,6 +18,16 @@ func TestAccAlicloudNatGatewaysDataSourceBasic(t *testing.T) {
 			"name_regex": `"${alicloud_nat_gateway.default.name}_fake"`,
 		}),
 	}
+	statusRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
+			"ids":    `[ "${alicloud_nat_gateway.default.id}" ]`,
+			"status": `"Available"`,
+		}),
+		fakeConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
+			"ids":    `[ "${alicloud_nat_gateway.default.id}" ]`,
+			"status": `"Creating"`,
+		}),
+	}
 	IdsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
 			"ids": `[ "${alicloud_nat_gateway.default.id}" ]`,
@@ -41,15 +51,17 @@ func TestAccAlicloudNatGatewaysDataSourceBasic(t *testing.T) {
 			"name_regex": `"${alicloud_nat_gateway.default.name}"`,
 			"vpc_id":     `"${alicloud_vpc.default.id}"`,
 			"ids":        `[ "${alicloud_nat_gateway.default.id}" ]`,
+			"status":     `"Available"`,
 		}),
 		fakeConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_nat_gateway.default.name}"`,
 			"ids":        `[ "${alicloud_nat_gateway.default.id}" ]`,
 			"vpc_id":     `"${alicloud_vpc.default.id}_fake"`,
+			"status":     `"Creating"`,
 		}),
 	}
 
-	natGatewaysCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, IdsConf, vpcIdConf, allConf)
+	natGatewaysCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, statusRegexConf, IdsConf, vpcIdConf, allConf)
 }
 
 func testAccCheckAlicloudNatGatewaysDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -68,14 +80,14 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	vpc_name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_nat_gateway" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
 	specification = "Small"
-	name = "${var.name}"
+	nat_gateway_name = "${var.name}"
     description = "${var.name}_decription"
 }
 
@@ -87,19 +99,28 @@ data "alicloud_nat_gateways" "default" {
 
 var existNatGatewaysMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"gateways.#":                  "1",
-		"ids.#":                       "1",
-		"names.#":                     "1",
-		"gateways.0.id":               CHECKSET,
-		"gateways.0.spec":             "Small",
-		"gateways.0.status":           "Available",
-		"gateways.0.creation_time":    CHECKSET,
-		"gateways.0.forward_table_id": CHECKSET,
-		"gateways.0.snat_table_id":    CHECKSET,
-		"gateways.0.vpc_id":           CHECKSET,
-		"gateways.0.ip_lists":         CHECKSET,
-		"gateways.0.name":             fmt.Sprintf("tf-testAccNatGatewaysDatasource%d", rand),
-		"gateways.0.description":      fmt.Sprintf("tf-testAccNatGatewaysDatasource%d_decription", rand),
+		"gateways.#":                      "1",
+		"ids.#":                           "1",
+		"names.#":                         "1",
+		"gateways.0.id":                   CHECKSET,
+		"gateways.0.business_status":      CHECKSET,
+		"gateways.0.deletion_protection":  CHECKSET,
+		"gateways.0.ecs_metric_enabled":   CHECKSET,
+		"gateways.0.expired_time":         "",
+		"gateways.0.internet_charge_type": CHECKSET,
+		"gateways.0.nat_gateway_id":       CHECKSET,
+		"gateways.0.nat_type":             CHECKSET,
+		"gateways.0.payment_type":         CHECKSET,
+		"gateways.0.resource_group_id":    CHECKSET,
+		"gateways.0.vswitch_id":           "",
+		"gateways.0.specification":        "Small",
+		"gateways.0.status":               "Available",
+		"gateways.0.forward_table_ids.#":  CHECKSET,
+		"gateways.0.snat_table_ids.#":     CHECKSET,
+		"gateways.0.vpc_id":               CHECKSET,
+		"gateways.0.ip_lists":             NOSET,
+		"gateways.0.nat_gateway_name":     fmt.Sprintf("tf-testAccNatGatewaysDatasource%d", rand),
+		"gateways.0.description":          fmt.Sprintf("tf-testAccNatGatewaysDatasource%d_decription", rand),
 	}
 }
 

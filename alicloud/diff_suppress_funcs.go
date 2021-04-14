@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"log"
 	"sort"
 	"strconv"
@@ -124,10 +125,10 @@ func dnsPriorityDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 }
 
 func slbInternetDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if internet, ok := d.GetOkExists("internet"); ok && internet.(bool) {
+	if internet, ok := d.GetOk("address_type"); ok && internet.(string) == "internet" {
 		return true
 	}
-	if internet, ok := d.GetOkExists("address_type"); ok && internet.(string) == "internet" {
+	if internet, ok := d.GetOkExists("internet"); ok && internet.(bool) {
 		return true
 	}
 	return false
@@ -175,6 +176,34 @@ func csKubernetesMasterPostPaidDiffSuppressFunc(k, old, new string, d *schema.Re
 
 func csKubernetesWorkerPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return d.Get("worker_instance_charge_type").(string) == "PostPaid" || !(d.Id() == "") && !d.Get("force_update").(bool)
+}
+
+func csNodepoolInstancePostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) == "PostPaid" {
+		return true
+	}
+	return false
+}
+
+func masterDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("master_disk_category"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
+}
+
+func workerDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("worker_disk_category"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
+}
+
+func csNodepoolDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("system_disk_category"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
 }
 
 func csForceUpdate(k, old, new string, d *schema.ResourceData) bool {
@@ -246,7 +275,13 @@ func archiveBackupPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceD
 }
 
 func PostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.ToLower(d.Get("instance_charge_type").(string)) == "postpaid"
+	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) == "postpaid" {
+		return true
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "PayAsYouGo" {
+		return true
+	}
+	return false
 }
 
 func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -262,6 +297,13 @@ func redisPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) b
 
 func redisPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if strings.ToLower(d.Get("payment_type").(string)) == "prepaid" && d.Get("auto_renew").(bool) {
+		return false
+	}
+	return true
+}
+
+func ramSAMLProviderDiffSuppressFunc(old, new string) bool {
+	if strings.Replace(old, "\n", "", -1) != strings.Replace(new, "\n", "", -1) {
 		return false
 	}
 	return true
@@ -320,13 +362,19 @@ func polardbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.Resou
 }
 
 func adbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.Get("pay_type").(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
+	if v, ok := d.GetOk("pay_type"); ok && v.(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
+		return false
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
 		return false
 	}
 	return true
 }
 func adbPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.Get("pay_type").(string) == "PrePaid" {
+	if v, ok := d.GetOk("pay_type"); ok && v.(string) == "PrePaid" {
+		return false
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
 		return false
 	}
 	return true
@@ -424,25 +472,11 @@ func vpnSslConnectionsDiffSuppressFunc(k, old, new string, d *schema.ResourceDat
 	return false
 }
 
-func actiontrailRoleNmaeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if !d.IsNewResource() && strings.ToLower(old) != strings.ToLower(new) {
-		return false
-	}
-	return true
-}
-
 func slbDeleteProtectionSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if PayType(d.Get("instance_charge_type").(string)) == PrePaid {
 		return true
 	}
 	return false
-}
-
-func slbAddressIpVersionSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if v, ok := d.GetOk("internet"); ok && v.(bool) {
-		return false
-	}
-	return true
 }
 
 func slbRuleStickySessionTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -543,4 +577,59 @@ func cmsClientCriticalSuppressFunc(k, old, new string, d *schema.ResourceData) b
 		}
 	}
 	return false
+}
+
+func alikafkaInstanceConfigDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if new == "" {
+		return true
+	}
+	if old == "" {
+		return false
+	}
+
+	oldMap := make(map[string]string)
+	err := json.Unmarshal([]byte(old), &oldMap)
+	if err != nil {
+		return false
+	}
+
+	newMap := make(map[string]string)
+	err = json.Unmarshal([]byte(new), &newMap)
+	if err != nil {
+		return false
+	}
+
+	// key exist in oldMap && found new value item different with old item
+	for k, newValueItem := range newMap {
+		oldValueItem, ok := oldMap[k]
+		if ok && newValueItem != oldValueItem {
+			return false
+		}
+	}
+
+	return true
+}
+
+func payTypePostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return strings.ToLower(d.Get("pay_type").(string)) == "postpaid"
+}
+
+func engineDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return strings.ToLower(d.Get("engine").(string)) == "bds"
+}
+
+func whiteIpListDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	oldArray := strings.Split(old, ",")
+	newArray := strings.Split(new, ",")
+	if len(oldArray) != len(newArray) {
+		return false
+	}
+	sort.Strings(oldArray)
+	sort.Strings(newArray)
+	for i := range newArray {
+		if newArray[i] != oldArray[i] {
+			return false
+		}
+	}
+	return true
 }

@@ -21,7 +21,7 @@ func init() {
 		F:    testSweepSLBs,
 		// When implemented, these should be removed firstly
 		Dependencies: []string{
-			"alicloud_cs_cluster",
+			"alicloud_cs_kubernetes",
 		},
 	})
 }
@@ -140,8 +140,9 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":     name,
-					"internet": "true",
+					"name":          name,
+					"internet":      "true",
+					"specification": "slb.s1.small",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -149,7 +150,7 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 						"address_type":         "internet",
 						"internet_charge_type": "PayByTraffic",
 						"bandwidth":            CHECKSET,
-						"specification":        "",
+						"specification":        "slb.s1.small",
 						"address":              CHECKSET,
 						"master_zone_id":       CHECKSET,
 						"slave_zone_id":        CHECKSET,
@@ -169,7 +170,7 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 						"address_type":         "intranet",
 						"internet_charge_type": "PayByTraffic",
 						"bandwidth":            CHECKSET,
-						"specification":        "",
+						"specification":        "slb.s1.small",
 						"address":              CHECKSET,
 						"master_zone_id":       CHECKSET,
 						"slave_zone_id":        CHECKSET,
@@ -190,16 +191,6 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"specification": "slb.s2.small",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"specification": "slb.s2.medium",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"specification": "slb.s2.medium",
 					}),
 				),
 			},
@@ -238,7 +229,7 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":          name,
-					"specification": "slb.s2.small",
+					"specification": "slb.s1.small",
 					"address_type":  REMOVEKEY,
 					"internet":      "true",
 				}),
@@ -248,7 +239,7 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 						"address_type":         "internet",
 						"internet_charge_type": "PayByTraffic",
 						"bandwidth":            CHECKSET,
-						"specification":        "slb.s2.small",
+						"specification":        "slb.s1.small",
 						"address":              CHECKSET,
 						"master_zone_id":       CHECKSET,
 						"slave_zone_id":        CHECKSET,
@@ -304,13 +295,14 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 					"name":              name,
 					"vswitch_id":        "${alicloud_vswitch.default.id}",
 					"delete_protection": "on",
+					"specification":     "slb.s1.small",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                 name,
 						"internet_charge_type": "PayByTraffic",
 						"bandwidth":            CHECKSET,
-						"specification":        "",
+						"specification":        "slb.s1.small",
 						"address":              CHECKSET,
 						"master_zone_id":       CHECKSET,
 						"slave_zone_id":        CHECKSET,
@@ -341,16 +333,6 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"specification": "slb.s2.small",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"specification": "slb.s2.medium",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"specification": "slb.s2.medium",
 					}),
 				),
 			},
@@ -388,7 +370,7 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":              name,
-					"specification":     "slb.s2.small",
+					"specification":     "slb.s1.small",
 					"delete_protection": "off",
 					"address":           "172.16.0.1",
 				}),
@@ -397,7 +379,7 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 						"name":                 name,
 						"internet_charge_type": "PayByTraffic",
 						"bandwidth":            CHECKSET,
-						"specification":        "slb.s2.small",
+						"specification":        "slb.s1.small",
 						"tags.%":               REMOVEKEY,
 						"address":              "172.16.0.1",
 						"master_zone_id":       CHECKSET,

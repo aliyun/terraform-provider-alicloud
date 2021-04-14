@@ -79,6 +79,7 @@ type DescribeDedicatedHostsRequest struct {
 	PageSize             requests.Integer             `position:"Query" name:"PageSize"`
 	DedicatedHostType    string                       `position:"Query" name:"DedicatedHostType"`
 	Tag                  *[]DescribeDedicatedHostsTag `position:"Query" name:"Tag"  type:"Repeated"`
+	NeedHostDetail       string                       `position:"Query" name:"NeedHostDetail"`
 	DedicatedHostName    string                       `position:"Query" name:"DedicatedHostName"`
 	ResourceOwnerAccount string                       `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string                       `position:"Query" name:"OwnerAccount"`
@@ -108,7 +109,7 @@ func CreateDescribeDedicatedHostsRequest() (request *DescribeDedicatedHostsReque
 	request = &DescribeDedicatedHostsRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "DescribeDedicatedHosts", "", "")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "DescribeDedicatedHosts", "ecs", "openAPI")
 	request.Method = requests.POST
 	return
 }

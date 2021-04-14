@@ -399,9 +399,10 @@ func convertMaptoJsonString(m map[string]interface{}) (string, error) {
 }
 
 func convertMapFloat64ToJsonString(m map[string]interface{}) (string, error) {
-	sm := make(map[string]float64, len(m))
+	sm := make(map[string]json.Number, len(m))
+
 	for k, v := range m {
-		sm[k] = v.(float64)
+		sm[k] = v.(json.Number)
 	}
 
 	if result, err := json.Marshal(sm); err != nil {
@@ -632,7 +633,7 @@ func terraformToAPI(field string) string {
 }
 
 func compareJsonTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
-	var obj1 interface{}
+	obj1 := make(map[string]interface{})
 	err := json.Unmarshal([]byte(tem1), &obj1)
 	if err != nil {
 		return false, err
@@ -640,7 +641,7 @@ func compareJsonTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
 
 	canonicalJson1, _ := json.Marshal(obj1)
 
-	var obj2 interface{}
+	obj2 := make(map[string]interface{})
 	err = json.Unmarshal([]byte(tem2), &obj2)
 	if err != nil {
 		return false, err
@@ -942,8 +943,16 @@ func formatInt(src interface{}) int {
 		return int(src.(int64))
 	case "int32":
 		return int(src.(int32))
+	case "int":
+		return src.(int)
 	case "string":
 		v, err := strconv.Atoi(src.(string))
+		if err != nil {
+			panic(err)
+		}
+		return v
+	case "json.Number":
+		v, err := strconv.Atoi(src.(json.Number).String())
 		if err != nil {
 			panic(err)
 		}

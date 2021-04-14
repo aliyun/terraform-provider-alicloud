@@ -24,6 +24,7 @@ func TestAccAlicloudResourceManagerResourceDirectoriesDataSource(t *testing.T) {
 			"directories.0.master_account_id":     CHECKSET,
 			"directories.0.master_account_name":   CHECKSET,
 			"directories.0.root_folder_id":        CHECKSET,
+			"directories.0.status":                CHECKSET,
 		}
 	}
 

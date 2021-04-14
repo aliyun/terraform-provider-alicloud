@@ -1,14 +1,16 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
+	"fmt"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func dataSourceAlicloudResourceManagerResourceDirectories() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudResourceManagerResourceDirectorysRead,
+		Read: dataSourceAlicloudResourceManagerResourceDirectoriesRead,
 		Schema: map[string]*schema.Schema{
 			"output_file": {
 				Type:     schema.TypeString,
@@ -39,6 +41,10 @@ func dataSourceAlicloudResourceManagerResourceDirectories() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -46,29 +52,35 @@ func dataSourceAlicloudResourceManagerResourceDirectories() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudResourceManagerResourceDirectorysRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudResourceManagerResourceDirectoriesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := resourcemanager.CreateGetResourceDirectoryRequest()
-	raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-		return resourcemanagerClient.GetResourceDirectory(request)
-	})
+	action := "GetResourceDirectory"
+	request := make(map[string]interface{})
+	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_resource_directories", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*resourcemanager.GetResourceDirectoryResponse)
-
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_resource_directories", action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
 	s := make([]map[string]interface{}, 0)
 	mapping := map[string]interface{}{
-		"master_account_id":     response.ResourceDirectory.MasterAccountId,
-		"master_account_name":   response.ResourceDirectory.MasterAccountName,
-		"id":                    response.ResourceDirectory.ResourceDirectoryId,
-		"resource_directory_id": response.ResourceDirectory.ResourceDirectoryId,
-		"root_folder_id":        response.ResourceDirectory.RootFolderId,
+		"master_account_id":     response["ResourceDirectory"].(map[string]interface{})["MasterAccountId"],
+		"master_account_name":   response["ResourceDirectory"].(map[string]interface{})["MasterAccountName"],
+		"id":                    fmt.Sprint(response["ResourceDirectory"].(map[string]interface{})["ResourceDirectoryId"]),
+		"resource_directory_id": fmt.Sprint(response["ResourceDirectory"].(map[string]interface{})["ResourceDirectoryId"]),
+		"root_folder_id":        response["ResourceDirectory"].(map[string]interface{})["RootFolderId"],
+		"status":                response["ResourceDirectory"].(map[string]interface{})["ScpStatus"],
 	}
 	s = append(s, mapping)
-	d.SetId(response.ResourceDirectory.ResourceDirectoryId)
+
+	d.SetId(fmt.Sprint(response["ResourceDirectory"].(map[string]interface{})["ResourceDirectoryId"]))
 
 	if err := d.Set("directories", s); err != nil {
 		return WrapError(err)

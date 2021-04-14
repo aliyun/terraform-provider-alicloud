@@ -21,7 +21,6 @@ import (
 )
 
 // ModifyDBInstanceSpec invokes the rds.ModifyDBInstanceSpec API synchronously
-// api document: https://help.aliyun.com/api/rds/modifydbinstancespec.html
 func (client *Client) ModifyDBInstanceSpec(request *ModifyDBInstanceSpecRequest) (response *ModifyDBInstanceSpecResponse, err error) {
 	response = CreateModifyDBInstanceSpecResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ModifyDBInstanceSpec(request *ModifyDBInstanceSpecRequest)
 }
 
 // ModifyDBInstanceSpecWithChan invokes the rds.ModifyDBInstanceSpec API asynchronously
-// api document: https://help.aliyun.com/api/rds/modifydbinstancespec.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyDBInstanceSpecWithChan(request *ModifyDBInstanceSpecRequest) (<-chan *ModifyDBInstanceSpecResponse, <-chan error) {
 	responseChan := make(chan *ModifyDBInstanceSpecResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ModifyDBInstanceSpecWithChan(request *ModifyDBInstanceSpec
 }
 
 // ModifyDBInstanceSpecWithCallback invokes the rds.ModifyDBInstanceSpec API asynchronously
-// api document: https://help.aliyun.com/api/rds/modifydbinstancespec.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyDBInstanceSpecWithCallback(request *ModifyDBInstanceSpecRequest, callback func(response *ModifyDBInstanceSpecResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -97,7 +92,9 @@ type ModifyDBInstanceSpecRequest struct {
 // ModifyDBInstanceSpecResponse is the response struct for api ModifyDBInstanceSpec
 type ModifyDBInstanceSpecResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
+	RequestId    string `json:"RequestId" xml:"RequestId"`
+	DBInstanceId string `json:"DBInstanceId" xml:"DBInstanceId"`
+	OrderId      int64  `json:"OrderId" xml:"OrderId"`
 }
 
 // CreateModifyDBInstanceSpecRequest creates a request to invoke ModifyDBInstanceSpec API

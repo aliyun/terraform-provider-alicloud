@@ -29,7 +29,7 @@ go get github.com/aliyun/aliyun-log-go-sdk
 
 ### Create Config for Logtail
 
-[log_config_sample.go](example/config/log_config_sample.go)
+[log_config_sample.go](example/config/log_config_plugin.go)
 
 ### Create Machine Group for Logtail
 

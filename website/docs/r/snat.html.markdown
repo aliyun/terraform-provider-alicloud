@@ -15,7 +15,7 @@ Provides a snat resource.
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "snat-entry-example-name"
 }
@@ -25,15 +25,15 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "vpc" {
-  name       = var.name
+  vpc_name       = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  vpc_id            = alicloud_vpc.vpc.id
-  cidr_block        = "172.16.0.0/21"
-  availability_zone = data.alicloud_zones.default.zones[0].id
-  name              = var.name
+  vpc_id      = alicloud_vpc.vpc.id
+  cidr_block  = "172.16.0.0/21"
+  zone_id     = data.alicloud_zones.default.zones[0].id
+  name        = var.name
 }
 
 resource "alicloud_nat_gateway" "default" {
@@ -82,7 +82,7 @@ The following arguments are supported:
 * `source_vswitch_id` - (Optional, ForceNew) The vswitch ID.
 * `source_cidr` - (Optional, ForceNew, Available in 1.71.1+) The private network segment of Ecs. This parameter and the `source_vswitch_id` parameter are mutually exclusive and cannot appear at the same time.
 * `snat_entry_name` - (Optional, Available in 1.71.2+) The name of snat entry.
-* `snat_ip` - (Required) The SNAT ip address, the ip must along bandwidth package public ip which `alicloud_nat_gateway` argument `bandwidth_packages`.
+* `snat_ip` - (Required, ForceNew) The SNAT ip address, the ip must along bandwidth package public ip which `alicloud_nat_gateway` argument `bandwidth_packages`.
 
 ## Attributes Reference
 
@@ -90,6 +90,17 @@ The following attributes are exported:
 
 * `id` - The ID of the snat entry. The value formats as `<snat_table_id>:<snat_entry_id>`
 * `snat_entry_id` - The id of the snat entry on the server.
+* `status` - (Available in 1.119.1+) The status of snat entry.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.119.1+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 2 mins) Used when create the snat.
+* `update` - (Defaults to 2 mins) Used when update the snat.
+* `delete` - (Defaults to 2 mins) Used when delete the snat.
 
 ## Import
 

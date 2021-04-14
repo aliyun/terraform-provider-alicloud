@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -94,6 +95,10 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return WrapError(err)
 	}
+	if !d.IsNewResource() && len(d.Get("db_names").(*schema.Set).List()) < 0 {
+		log.Println("[WARN] Resource alicloud_db_account_privilege has no any databaces in this state.")
+		return nil
+	}
 	object, err := rsdService.DescribeDBAccountPrivilege(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -111,7 +116,16 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 	for _, pri := range databasePrivilege {
 		pri := pri.(map[string]interface{})
 		if pri["AccountPrivilege"] == parts[2] {
-			names = append(names, pri["DBName"].(string))
+			if len(d.Get("db_names").(*schema.Set).List()) > 0 {
+				for _, name := range d.Get("db_names").(*schema.Set).List() {
+					if pri["DBName"].(string) == name.(string) {
+						names = append(names, pri["DBName"].(string))
+						break
+					}
+				}
+			} else {
+				names = append(names, pri["DBName"].(string))
+			}
 		}
 	}
 
@@ -224,19 +238,30 @@ func resourceAlicloudDBAccountPrivilegeDelete(d *schema.ResourceData, meta inter
 	if strings.HasPrefix(d.Id(), "pgm-") {
 		return nil
 	}
-	var dbName string
+	dbNames := make([]string, 0)
 	databasePrivileges := object["DatabasePrivileges"].(map[string]interface{})["DatabasePrivilege"].([]interface{})
-	if len(databasePrivileges) > 0 {
+	if len(databasePrivileges) > 0 && len(d.Get("db_names").(*schema.Set).List()) > 0 {
 		for _, pri := range databasePrivileges {
 			pri := pri.(map[string]interface{})
 			if pri["AccountPrivilege"] == parts[2] {
-				dbName = pri["DBName"].(string)
-				if err := rdsService.RevokeAccountPrivilege(d.Id(), dbName); err != nil {
-					return WrapError(err)
+				dbName := pri["DBName"].(string)
+				for _, name := range d.Get("db_names").(*schema.Set).List() {
+					if dbName == name.(string) {
+						if err := rdsService.RevokeAccountPrivilege(d.Id(), dbName); err != nil {
+							return WrapError(err)
+						}
+						dbNames = append(dbNames, dbName)
+						break
+					}
 				}
 			}
 		}
 	}
 
-	return rdsService.WaitForAccountPrivilege(d.Id(), dbName, Deleted, DefaultTimeoutMedium)
+	for _, dbName := range dbNames {
+		if err := rdsService.WaitForAccountPrivilege(d.Id(), dbName, Deleted, DefaultTimeoutMedium); err != nil {
+			return WrapError(err)
+		}
+	}
+	return nil
 }

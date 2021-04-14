@@ -320,35 +320,6 @@ func TestAccAlicloudAlikafkaTopic_multi(t *testing.T) {
 
 }
 
-type skipLocalAndCompactFunc func() (bool, error)
-
-func shouldSkipLocalAndCompact(instanceId string) skipLocalAndCompactFunc {
-
-	return func() (bool, error) {
-
-		rawClient, err := sharedClientForRegion(defaultRegionToTest)
-		if err != nil {
-			return false, err
-		}
-		client := rawClient.(*connectivity.AliyunClient)
-		alikafkaService := AlikafkaService{client}
-
-		instance, err := alikafkaService.DescribeAlikafkaInstance(instanceId)
-		if err != nil {
-			return false, err
-		}
-
-		supportLocalAndCompactTopic := false
-		for _, v := range instance.UpgradeServiceDetailInfo.UpgradeServiceDetailInfoVO {
-			if v.Current2OpenSourceVersion >= "2." {
-				supportLocalAndCompactTopic = true
-				break
-			}
-		}
-		return !supportLocalAndCompactTopic, nil
-	}
-}
-
 func resourceAlikafkaTopicConfigDependence(name string) string {
 	return fmt.Sprintf(`
 		variable "name" {

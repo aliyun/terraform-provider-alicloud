@@ -36,7 +36,7 @@ resource "alicloud_vpc" "foo" {
 
 resource "alicloud_vswitch" "foo" {
   vpc_id            = alicloud_vpc.foo.id
-  name              = "for-ots-instance"
+  vswitch_name      = "for-ots-instance"
   cidr_block        = "172.16.1.0/24"
   availability_zone = data.alicloud_zones.foo.zones[0].id
 }

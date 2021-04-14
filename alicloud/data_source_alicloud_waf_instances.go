@@ -125,7 +125,8 @@ func dataSourceAlicloudWafInstancesRead(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceInfos", response)
 	}
-	for _, v := range resp.([]interface{}) {
+	result, _ := resp.([]interface{})
+	for _, v := range result {
 		item := v.(map[string]interface{})
 		if len(idsMap) > 0 {
 			if _, ok := idsMap[fmt.Sprint(item["InstanceId"])]; !ok {

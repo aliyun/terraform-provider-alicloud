@@ -15,7 +15,7 @@ This data source provides a list of Forward Entries owned by an Alibaba Cloud ac
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "forward-entry-config-example-name"
 }
@@ -25,15 +25,15 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  vpc_name   = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  zone_id           = "${data.alicloud_zones.default.zones.0.id}"
+  vswitch_name      = "${var.name}"
 }
 
 resource "alicloud_nat_gateway" "default" {
@@ -75,6 +75,10 @@ The following arguments are supported:
 * `internal_ip` - (Optional) The private IP address.
 * `forward_table_id` - (Required) The ID of the Forward table.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `forward_entry_name` - (Optional, ForceNew, Available in 1.119.1+) The name of forward entry.
+* `internal_port` - (Optional, ForceNew, Available in 1.119.1+) The internal port.
+* `ip_protocol` - (Optional, ForceNew, Available in 1.119.1+) The ip protocol. Valid values: `any`,`tcp` and `udp`. 
+* `status` - (Optional, ForceNew, Available in 1.119.1+) The status of farward entry. Valid value `Available`, `Deleting` and `Pending`.
 
 ## Attributes Reference
 
@@ -91,4 +95,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `internal_port` - The private port.
   * `name` - The forward entry name.
   * `status` - The status of the Forward Entry.
+  * `forward_entry_id` - The forward entry ID.
+  * `forward_entry_name` - The name of forward entry.
+  * `status` - The status of forward entry.
 

@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -37,6 +38,11 @@ func dataSourceAlicloudResourceManagerFolders() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"query_keyword": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -58,8 +64,17 @@ func dataSourceAlicloudResourceManagerFolders() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"parent_folder_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
+			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -68,21 +83,26 @@ func dataSourceAlicloudResourceManagerFolders() *schema.Resource {
 func dataSourceAlicloudResourceManagerFoldersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := resourcemanager.CreateListFoldersForParentRequest()
+	action := "ListFoldersForParent"
+	request := make(map[string]interface{})
 	if v, ok := d.GetOk("parent_folder_id"); ok {
-		request.ParentFolderId = v.(string)
+		request["ParentFolderId"] = v
 	}
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	var objects []resourcemanager.Folder
-	var nameRegex *regexp.Regexp
+	if v, ok := d.GetOk("query_keyword"); ok {
+		request["QueryKeyword"] = v
+	}
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
+	var folderNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
 			return WrapError(err)
 		}
-		nameRegex = r
+		folderNameRegex = r
 	}
+
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -92,52 +112,70 @@ func dataSourceAlicloudResourceManagerFoldersRead(d *schema.ResourceData, meta i
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourcemanagerClient.ListFoldersForParent(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_folders", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_folders", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*resourcemanager.ListFoldersForParentResponse)
+		addDebug(action, response, request)
 
-		for _, item := range response.Folders.Folder {
-			if nameRegex != nil {
-				if !nameRegex.MatchString(item.FolderName) {
+		resp, err := jsonpath.Get("$.Folders.Folder", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Folders.Folder", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if folderNameRegex != nil {
+				if !folderNameRegex.MatchString(fmt.Sprint(item["FolderName"])) {
 					continue
 				}
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.FolderId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["FolderId"])]; !ok {
 					continue
 				}
 			}
 			objects = append(objects, item)
 		}
-		if len(response.Folders.Folder) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"id":          fmt.Sprint(object["FolderId"]),
+			"folder_id":   fmt.Sprint(object["FolderId"]),
+			"folder_name": object["FolderName"],
+		}
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			ids = append(ids, fmt.Sprint(object["FolderId"]))
+			names = append(names, object["FolderName"])
+			s = append(s, mapping)
+			continue
+		}
 
-		page, err := getNextpageNumber(request.PageNumber)
+		resourcemanagerService := ResourcemanagerService{client}
+		id := fmt.Sprint(object["FolderId"])
+		getResp, err := resourcemanagerService.DescribeResourceManagerFolder(id)
 		if err != nil {
 			return WrapError(err)
 		}
-		request.PageNumber = page
-	}
-	ids := make([]string, len(objects))
-	names := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-
-	for i, object := range objects {
-		mapping := map[string]interface{}{
-			"id":          object.FolderId,
-			"folder_id":   object.FolderId,
-			"folder_name": object.FolderName,
-		}
-		ids[i] = object.FolderId
-		names[i] = object.FolderName
-		s[i] = mapping
+		mapping["parent_folder_id"] = getResp["ParentFolderId"]
+		ids = append(ids, fmt.Sprint(object["FolderId"]))
+		names = append(names, object["FolderName"])
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))

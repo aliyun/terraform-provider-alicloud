@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
-	var v pvtz.DescribeZoneInfoResponse
+	var v map[string]interface{}
 
 	resourceId := "alicloud_pvtz_zone_attachment.default"
 	ra := resourceAttrInit(resourceId, pvtzZoneAttachmentBasicMap)
@@ -135,7 +134,7 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 	})
 }
 func TestAccAlicloudPvtzZoneAttachment_multi(t *testing.T) {
-	var v pvtz.DescribeZoneInfoResponse
+	var v map[string]interface{}
 
 	resourceId := "alicloud_pvtz_zone_attachment.default.4"
 	ra := resourceAttrInit(resourceId, pvtzZoneAttachmentBasicMap)
@@ -181,7 +180,7 @@ func resourcePvtzZoneAttachmentConfigDependence(name string) string {
 		  default = "2"
 	}
 	resource "alicloud_vpc" "default" {
-		name = "tf-testaccPvtzZoneAttachmentConfig"
+		vpc_name = "tf-testaccPvtzZoneAttachmentConfig"
 		cidr_block = "172.16.0.0/12"
 	}
 

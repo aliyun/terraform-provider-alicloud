@@ -1,7 +1,8 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -10,27 +11,38 @@ type ActiontrailService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *ActiontrailService) DescribeActiontrailTrail(id string) (object actiontrail.TrailListItem, err error) {
-	request := actiontrail.CreateDescribeTrailsRequest()
-	request.RegionId = s.client.RegionId
-
-	request.NameList = id
-
-	raw, err := s.client.WithActiontrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
-		return actiontrailClient.DescribeTrails(request)
-	})
+func (s *ActiontrailService) DescribeActiontrailTrail(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewActiontrailClient()
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapError(err)
+	}
+	action := "DescribeTrails"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"NameList": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*actiontrail.DescribeTrailsResponse)
-
-	if len(response.TrailList) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("ActiontrailTrail", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-		return
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.TrailList", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TrailList", response)
 	}
-	return response.TrailList[0], nil
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ActionTrail", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["Name"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ActionTrail", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
 func (s *ActiontrailService) ActiontrailTrailStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
@@ -45,10 +57,10 @@ func (s *ActiontrailService) ActiontrailTrailStateRefreshFunc(id string, failSta
 		}
 
 		for _, failState := range failStates {
-			if object.Status == failState {
-				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			if object["Status"].(string) == failState {
+				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
 			}
 		}
-		return object, object.Status, nil
+		return object, object["Status"].(string), nil
 	}
 }

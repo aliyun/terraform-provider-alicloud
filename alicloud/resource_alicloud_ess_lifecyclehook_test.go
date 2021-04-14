@@ -130,7 +130,7 @@ func testAccEssLifecycleHook(common string, rand int) string {
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.1.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name = "${var.name}"
+		  vswitch_name = "${var.name}"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
@@ -161,7 +161,7 @@ func testAccEssLifecycleHookUpdateLifecycleTransition(common string, rand int) s
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.1.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name = "${var.name}"
+		  vswitch_name = "${var.name}"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
@@ -192,7 +192,7 @@ func testAccEssLifecycleHookUpdateHeartbeatTimeout(common string, rand int) stri
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.1.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name = "${var.name}"
+		  vswitch_name = "${var.name}"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
@@ -224,7 +224,7 @@ func testAccEssLifecycleHookUpdateNotificationMetadata(common string, rand int) 
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.1.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name = "${var.name}"
+		  vswitch_name = "${var.name}"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
@@ -256,7 +256,7 @@ func testAccEssLifecycleHookUpdateDefaultResult(common string, rand int) string 
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.1.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name = "${var.name}"
+		  vswitch_name = "${var.name}"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
@@ -300,7 +300,7 @@ func testAccEssLifecycleHookUpdateNotificationArn(common string, rand int) strin
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.1.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name = "${var.name}"
+		  vswitch_name = "${var.name}"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
@@ -318,7 +318,7 @@ func testAccEssLifecycleHookUpdateNotificationArn(common string, rand int) strin
 		heartbeat_timeout = 400
 		notification_metadata = "helloterraform"
 		default_result = "ABANDON"
-		notification_arn = "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}"
+		notification_arn = "acs:mns:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}"
 	}
 	`, common, rand)
 }

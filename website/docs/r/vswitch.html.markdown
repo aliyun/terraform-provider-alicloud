@@ -15,9 +15,9 @@ Provides a VPC switch resource.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_vpc" "vpc" {
-  name       = "tf_test_foo"
+  vpc_name   = "tf_test_foo"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -37,10 +37,12 @@ to create a VPC and several VSwitches one-click.
 
 The following arguments are supported:
 
-* `availability_zone` - (Required, ForceNew) The AZ for the switch.
+* `availability_zone` - (Required, ForceNew, Deprecated in v1.119.0+) Field `availability_zone` has been deprecated from provider version 1.119.0. New field `zone_id` instead.
+* `zone_id` - (Required, ForceNew, Available in 1.119.0+) The AZ for the switch.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 * `cidr_block` - (Required, ForceNew) The CIDR block for the switch.
-* `name` - (Optional) The name of the switch. Defaults to null.
+* `name` - (Optional, Deprecated in v1.119.0+) Field `name` has been deprecated from provider version 1.119.0. New field `vswitch_name` instead.
+* `vswitch_name` - (Optional, Available in 1.119.0+) The name of the switch. Defaults to null.
 * `description` - (Optional) The switch description. Defaults to null.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 
@@ -63,6 +65,7 @@ The following attributes are exported:
 * `vpc_id` - The VPC ID.
 * `name` - The name of the switch.
 * `description` - The description of the switch.
+* `status` - (Available in 1.119.0+) The status of the switch.
 
 ## Import
 

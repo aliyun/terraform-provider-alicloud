@@ -7,7 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/oos"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -23,60 +25,75 @@ func init() {
 func testSweepOosExecution(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return WrapErrorf(err, "Error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc",
+		"tf-testacc",
 	}
-
-	request := oos.CreateListExecutionsRequest()
-	raw, err := client.WithOosClient(func(OosClient *oos.Client) (interface{}, error) {
-		return OosClient.ListExecutions(request)
-	})
+	request := map[string]interface{}{
+		"MaxResults": PageSizeLarge,
+	}
+	var response map[string]interface{}
+	action := "ListExecutions"
+	conn, err := client.NewOosClient()
 	if err != nil {
-		log.Printf("[ERROR] Error retrieving Oos Executions: %s", WrapError(err))
+		return WrapError(err)
 	}
-	response, _ := raw.(*oos.ListExecutionsResponse)
-
-	sweeped := false
-	for _, v := range response.Executions {
-		id := v.ExecutionId
-		name := v.TemplateName
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Oos Executions: %s (%s)", name, id)
-			continue
-		}
-
-		sweeped = true
-		log.Printf("[INFO] Deleting Oos Executions: %s (%s)", name, id)
-		req := oos.CreateDeleteExecutionsRequest()
-		req.ExecutionIds = convertListToJsonString(convertListStringToListInterface([]string{id}))
-		_, err := client.WithOosClient(func(OosClient *oos.Client) (interface{}, error) {
-			return OosClient.DeleteExecutions(req)
-		})
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Oos Executions (%s (%s)): %s", name, id, err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "testSweepOosExecution", action, AlibabaCloudSdkGoERROR)
 		}
-	}
-	if sweeped {
-		// Waiting 30 seconds to ensure these Oos Executions have been deleted.
-		time.Sleep(10 * time.Second)
+		resp, err := jsonpath.Get("$.Executions", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Executions", response)
+		}
+		sweeped := false
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			skip := true
+			name := item["TemplateName"]
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name.(string)), strings.ToLower(prefix)) {
+					skip = false
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping OOS Execution: %s", item["ExecutionId"].(string))
+				continue
+			}
+			sweeped = true
+			action = "DeleteExecutions"
+			request := map[string]interface{}{
+				"ExecutionIds": convertListToJsonString(convertListStringToListInterface([]string{item["ExecutionId"].(string)})),
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete OOS Execution (%s): %s", item["ExecutionId"].(string), err)
+			}
+			if sweeped {
+				// Waiting 5 seconds to ensure OOS Execution have been deleted.
+				time.Sleep(5 * time.Second)
+			}
+			log.Printf("[INFO] Delete OOS Execution success: %s ", item["ExecutionId"].(string))
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
 	}
 	return nil
 }
 
 func TestAccAlicloudOOSExecution_basic(t *testing.T) {
-	var v oos.Execution
+	var v map[string]interface{}
 	resourceId := "alicloud_oos_execution.default"
 	ra := resourceAttrInit(resourceId, OosExecutionMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

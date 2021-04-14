@@ -103,7 +103,6 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_vswitches" "default" {
-  name_regex = "default-tf--testAcc-00"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
 }
 

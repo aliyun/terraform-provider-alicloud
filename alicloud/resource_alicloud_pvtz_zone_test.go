@@ -7,8 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -35,40 +36,39 @@ func testSweepPvtzZones(region string) error {
 		"tf-test-",
 		"tftest",
 	}
-
-	var zones []pvtz.Zone
-	req := pvtz.CreateDescribeZonesRequest()
-	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
-	req.PageNumber = requests.NewInteger(1)
+	action := "DescribeZones"
+	request := make(map[string]interface{})
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	conn, err := client.NewPvtzClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	var zones []interface{}
 	for {
-		raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-			return pvtzClient.DescribeZones(req)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return fmt.Errorf("Error retrieving Private Zones: %s", err)
+			log.Printf("[ERROR] retrieving Private Zones: %s", err)
 		}
-		resp, _ := raw.(*pvtz.DescribeZonesResponse)
-		if resp == nil || len(resp.Zones.Zone) < 1 {
+		resp, err := jsonpath.Get("$.Zones.Zone", response)
+		if err != nil {
+			log.Printf("[ERROR] Parsing return parameter error: %s", err)
+		}
+		result, _ := resp.([]interface{})
+		zones = append(zones, result...)
+		if len(result) < PageSizeLarge {
 			break
 		}
-		zones = append(zones, resp.Zones.Zone...)
-
-		if len(resp.Zones.Zone) < PageSizeLarge {
-			break
-		}
-
-		page, err := getNextpageNumber(req.PageNumber)
-		if err != nil {
-			return err
-		}
-		req.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	sweeped := false
 
 	for _, v := range zones {
-		name := v.ZoneName
-		id := v.ZoneId
+		v := v.(map[string]interface{})
+		name := v["ZoneName"].(string)
+		id := v["ZoneId"].(string)
 		skip := true
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
@@ -82,24 +82,22 @@ func testSweepPvtzZones(region string) error {
 		}
 		sweeped = true
 		log.Printf("[INFO] Unbinding VPC from Private Zone: %s (%s)", name, id)
-		request := pvtz.CreateBindZoneVpcRequest()
-		request.ZoneId = id
-		vpcs := make([]pvtz.BindZoneVpcVpcs, 0)
-		request.Vpcs = &vpcs
-
-		_, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-			return pvtzClient.BindZoneVpc(request)
-		})
+		action := "BindZoneVpc"
+		request := make(map[string]interface{})
+		request["ZoneId"] = id
+		vpcs := make([]map[string]interface{}, 0)
+		request["Vpcs"] = vpcs
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			log.Printf("[ERROR] Failed to unbind VPC from Private Zone (%s (%s)): %s ", name, id, err)
 		}
 
 		log.Printf("[INFO] Deleting Private Zone: %s (%s)", name, id)
-		req := pvtz.CreateDeleteZoneRequest()
-		req.ZoneId = id
-		_, err = client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-			return pvtzClient.DeleteZone(req)
-		})
+		action = "DeleteZone"
+		request = map[string]interface{}{
+			"ZoneId": id,
+		}
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Private Zone (%s (%s)): %s", name, id, err)
 		}
@@ -111,7 +109,7 @@ func testSweepPvtzZones(region string) error {
 }
 
 func TestAccAlicloudPvtzZone_basic(t *testing.T) {
-	var v pvtz.DescribeZoneInfoResponse
+	var v map[string]interface{}
 
 	resourceId := "alicloud_pvtz_zone.default"
 	ra := resourceAttrInit(resourceId, pvtzZoneBasicMap)
@@ -242,7 +240,7 @@ func TestAccAlicloudPvtzZone_basic(t *testing.T) {
 	})
 }
 func TestAccAlicloudPvtzZone_multi(t *testing.T) {
-	var v pvtz.DescribeZoneInfoResponse
+	var v map[string]interface{}
 
 	resourceId := "alicloud_pvtz_zone.default.4"
 	ra := resourceAttrInit(resourceId, pvtzZoneBasicMap)

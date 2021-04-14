@@ -3,7 +3,9 @@ package alicloud
 import (
 	"strings"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -42,55 +44,58 @@ func dataSourceAlicloudNasProtocols() *schema.Resource {
 
 func dataSourceAlicloudNasProtocolsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := nas.CreateDescribeZonesRequest()
-	request.RegionId = client.RegionId
-	var nasProtocol [][]string
-	for {
-		raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-			return nasClient.DescribeZones(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_protocols", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*nas.DescribeZonesResponse)
-		if len(response.Zones.Zone) < 1 {
-			break
-		}
-		for _, val := range response.Zones.Zone {
-			if v, ok := d.GetOk("zone_id"); ok && val.ZoneId != Trim(v.(string)) {
-				continue
-			}
-			if v, ok := d.GetOk("type"); ok {
-				if Trim(v.(string)) == "Performance" {
-					if len(val.Performance.Protocol) == 0 {
-						continue
-					} else {
-						nasProtocol = append(nasProtocol, val.Performance.Protocol)
-					}
-				}
-				if Trim(v.(string)) == "Capacity" {
-					if len(val.Capacity.Protocol) == 0 {
-						continue
-					} else {
-						nasProtocol = append(nasProtocol, val.Capacity.Protocol)
-					}
-				}
-			}
-		}
-		break
+	action := "DescribeZones"
+	var response map[string]interface{}
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	conn, err := client.NewNasClient()
+	if err != nil {
+		return WrapError(err)
 	}
 
-	return nasProtocolsDescriptionAttributes(d, nasProtocol)
-}
-
-func nasProtocolsDescriptionAttributes(d *schema.ResourceData, nasProtocol [][]string) error {
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_protocols", action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	resp, err := jsonpath.Get("$.Zones.Zone", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Zones.Zone", response)
+	}
+	var nasProtocol [][]interface{}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if v, ok := d.GetOk("zone_id"); ok && v.(string) != "" && item["ZoneId"].(string) != v.(string) {
+			continue
+		}
+		if v, ok := d.GetOk("type"); ok {
+			if Trim(v.(string)) == "Performance" {
+				protocol, _ := item["Performance"].(map[string]interface{})["Protocol"].([]interface{})
+				if len(protocol) == 0 {
+					continue
+				} else {
+					nasProtocol = append(nasProtocol, protocol)
+				}
+			}
+			if Trim(v.(string)) == "Capacity" {
+				protocol, _ := item["Capacity"].(map[string]interface{})["Protocol"].([]interface{})
+				if len(protocol) == 0 {
+					continue
+				} else {
+					nasProtocol = append(nasProtocol, protocol)
+				}
+			}
+		}
+	}
 	var s []string
 	var ids []string
 	for _, val := range nasProtocol {
 		for _, protocol := range val {
-			s = append(s, strings.ToUpper(protocol))
-			ids = append(ids, protocol)
+			s = append(s, strings.ToUpper(protocol.(string)))
+			ids = append(ids, protocol.(string))
 		}
 	}
 	d.SetId(dataResourceIdHash(ids))

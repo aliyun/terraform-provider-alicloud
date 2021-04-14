@@ -7,7 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/oos"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -23,60 +25,74 @@ func init() {
 func testSweepOosTemplate(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return WrapErrorf(err, "Error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc",
+		"tf-testacc",
 	}
-
-	request := oos.CreateListTemplatesRequest()
-	raw, err := client.WithOosClient(func(OosClient *oos.Client) (interface{}, error) {
-		return OosClient.ListTemplates(request)
-	})
+	request := map[string]interface{}{
+		"MaxResults": PageSizeLarge,
+	}
+	var response map[string]interface{}
+	action := "ListTemplates"
+	conn, err := client.NewOosClient()
 	if err != nil {
-		log.Printf("[ERROR] Error retrieving Oos Templates: %s", WrapError(err))
+		return WrapError(err)
 	}
-	response, _ := raw.(*oos.ListTemplatesResponse)
-
-	sweeped := false
-	for _, v := range response.Templates {
-		id := v.TemplateId
-		name := v.TemplateName
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Oos Templates: %s (%s)", name, id)
-			continue
-		}
-
-		sweeped = true
-		log.Printf("[INFO] Deleting Oos Templates: %s (%s)", name, id)
-		req := oos.CreateDeleteTemplateRequest()
-		req.TemplateName = name
-		_, err := client.WithOosClient(func(OosClient *oos.Client) (interface{}, error) {
-			return OosClient.DeleteTemplate(req)
-		})
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Oos Templates (%s (%s)): %s", name, id, err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_oos_template", action, AlibabaCloudSdkGoERROR)
 		}
-	}
-	if sweeped {
-		// Waiting 30 seconds to ensure these Oos Templates have been deleted.
-		time.Sleep(10 * time.Second)
+		resp, err := jsonpath.Get("$.Templates", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Templates", response)
+		}
+		sweeped := false
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(item["TemplateName"].(string)), strings.ToLower(prefix)) {
+					skip = false
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping OOS Template: %s", item["TemplateName"].(string))
+				continue
+			}
+			sweeped = true
+			action = "DeleteTemplate"
+			request := map[string]interface{}{
+				"TemplateName": item["TemplateName"],
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete OOS Template (%s): %s", item["TemplateName"].(string), err)
+			}
+			if sweeped {
+				// Waiting 5 seconds to ensure OOS Template have been deleted.
+				time.Sleep(5 * time.Second)
+			}
+			log.Printf("[INFO] Delete OOS Template success: %s ", item["TemplateName"].(string))
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
 	}
 	return nil
 }
 
 func TestAccAlicloudOOSTemplate_basic(t *testing.T) {
-	var v oos.Template
+	var v map[string]interface{}
 	resourceId := "alicloud_oos_template.default"
 	ra := resourceAttrInit(resourceId, OosTemplateMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

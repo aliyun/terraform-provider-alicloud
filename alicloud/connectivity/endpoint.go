@@ -14,6 +14,7 @@ import (
 type ServiceCode string
 
 const (
+	MaxcomputeCode      = ServiceCode("MAXCOMPUTE")
 	CmsCode             = ServiceCode("CMS")
 	RKvstoreCode        = ServiceCode("RKVSTORE")
 	OnsCode             = ServiceCode("ONS")
@@ -246,12 +247,27 @@ var serviceCodeMapping = map[string]string{
 }
 
 const (
-	OpenApiGatewayService = "apigateway.cn-hangzhou.aliyuncs.com"
-	OpenSlsService        = "sls.aliyuncs.com"
-	OpenOtsService        = "ots.cn-hangzhou.aliyuncs.com"
-	OpenOssService        = "oss-admin.aliyuncs.com"
-	OpenNasService        = "nas.cn-hangzhou.aliyuncs.com"
-	OpenCdnService        = "cdn.aliyuncs.com"
-	OpenBssService        = "business.aliyuncs.com"
-	OpenKmsService        = "kms.cn-hangzhou.aliyuncs.com"
+	OpenApiGatewayService          = "apigateway.cn-hangzhou.aliyuncs.com"
+	OpenSlsService                 = "sls.aliyuncs.com"
+	OpenOtsService                 = "ots.cn-hangzhou.aliyuncs.com"
+	OpenOssService                 = "oss-admin.aliyuncs.com"
+	OpenNasService                 = "nas.cn-hangzhou.aliyuncs.com"
+	OpenCdnService                 = "cdn.aliyuncs.com"
+	OpenBssService                 = "business.aliyuncs.com"
+	OpenKmsService                 = "kms.cn-hangzhou.aliyuncs.com"
+	OpenSaeService                 = "sae.cn-hangzhou.aliyuncs.com"
+	OpenCmsService                 = "metrics.cn-hangzhou.aliyuncs.com"
+	OpenDatahubService             = "datahub.aliyuncs.com"
+	OpenOnsService                 = "ons.cn-hangzhou.aliyuncs.com"
+	OpenDcdnService                = "dcdn.aliyuncs.com"
+	OpenFcService                  = "fc-open.cn-hangzhou.aliyuncs.com"
+	OpenAckService                 = "cs.aliyuncs.com"
+	OpenPrivateLinkService         = "privatelink.cn-hangzhou.aliyuncs.com"
+	OpenBrainIndustrialService     = "brain-industrial-share.cn-hangzhou.aliyuncs.com"
+	OpenIotService                 = "iot.aliyuncs.com"
+	OpenVsService                  = "vs.cn-shanghai.aliyuncs.com"
+	OpenCrService                  = "cr.cn-hangzhou.aliyuncs.com"
+	OpenMaxcomputeService          = "maxcompute.aliyuncs.com"
+	OpenCloudStorageGatewayService = "sgw.cn-shanghai.aliyuncs.com"
+	DataWorksService               = "dataworks.aliyuncs.com"
 )

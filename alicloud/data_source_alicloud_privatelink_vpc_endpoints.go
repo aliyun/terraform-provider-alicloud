@@ -97,7 +97,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpoints() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"security_group_id": {
+						"security_group_ids": {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
@@ -121,22 +121,6 @@ func dataSourceAlicloudPrivatelinkVpcEndpoints() *schema.Resource {
 						"vpc_id": {
 							Type:     schema.TypeString,
 							Computed: true,
-						},
-						"zone": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"vswitch_id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"zone_id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
 						},
 					},
 				},
@@ -209,7 +193,8 @@ func dataSourceAlicloudPrivatelinkVpcEndpointsRead(d *schema.ResourceData, meta 
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Endpoints", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if vpcEndpointNameRegex != nil {
 				if !vpcEndpointNameRegex.MatchString(fmt.Sprint(item["EndpointName"])) {
@@ -261,27 +246,8 @@ func dataSourceAlicloudPrivatelinkVpcEndpointsRead(d *schema.ResourceData, meta 
 			return WrapError(err)
 		}
 		if v := getResp["SecurityGroups"].([]interface{}); len(v) > 0 {
-			mapping["security_group_id"] = convertSecurityGroupIdToStringList(v)
+			mapping["security_group_ids"] = convertSecurityGroupIdToStringList(v)
 		}
-		getResp1, err := privatelinkService.ListVpcEndpointZones(id)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		zones := make([]map[string]interface{}, 0)
-		if zonesList, ok := getResp1["Zones"].([]interface{}); ok {
-			for _, v := range zonesList {
-				if m1, ok := v.(map[string]interface{}); ok {
-					temp1 := map[string]interface{}{
-						"vswitch_id": m1["VSwitchId"],
-						"zone_id":    m1["ZoneId"],
-					}
-					zones = append(zones, temp1)
-				}
-			}
-		}
-		mapping["zone"] = zones
-
 		ids = append(ids, fmt.Sprint(object["EndpointId"]))
 		names = append(names, object["EndpointName"])
 		s = append(s, mapping)

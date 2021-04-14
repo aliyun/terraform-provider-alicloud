@@ -86,6 +86,7 @@ type ModifyDiskSpecResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
 	TaskId    string `json:"TaskId" xml:"TaskId"`
+	OrderId   string `json:"OrderId" xml:"OrderId"`
 }
 
 // CreateModifyDiskSpecRequest creates a request to invoke ModifyDiskSpec API
@@ -93,7 +94,7 @@ func CreateModifyDiskSpecRequest() (request *ModifyDiskSpecRequest) {
 	request = &ModifyDiskSpecRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "ModifyDiskSpec", "", "")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "ModifyDiskSpec", "ecs", "openAPI")
 	request.Method = requests.POST
 	return
 }

@@ -15,7 +15,7 @@ This data source provides the Resource Manager Accounts of the current Alibaba C
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_resource_manager_accounts" "default" {}
 
 output "first_account_id" {
@@ -28,6 +28,7 @@ output "first_account_id" {
 The following arguments are supported:
 
 * `ids` - (Optional) A list of account IDs.
+* `status` - (Optional, ForceNew, Available in v1.114.0+) The status of account, valid values: `CreateCancelled`, `CreateExpired`, `CreateFailed`, `CreateSuccess`, `CreateVerifying`, `InviteSuccess`, `PromoteCancelled`, `PromoteExpired`, `PromoteFailed`, `PromoteSuccess`, and `PromoteVerifying`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

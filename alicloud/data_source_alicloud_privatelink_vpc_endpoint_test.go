@@ -90,7 +90,7 @@ func TestAccAlicloudPrivatelinkVpcEndpointsDataSource(t *testing.T) {
 			"endpoints.0.endpoint_description":     "",
 			"endpoints.0.endpoint_domain":          CHECKSET,
 			"endpoints.0.endpoint_id":              CHECKSET,
-			"endpoints.0.security_group_id.#":      "1",
+			"endpoints.0.security_group_ids.#":     "1",
 			"endpoints.0.service_id":               CHECKSET,
 			"endpoints.0.service_name":             CHECKSET,
 			"endpoints.0.status":                   "Active",
@@ -139,7 +139,7 @@ func dataSourcePrivatelinkVpcEndpointsDependence(name string) string {
     resource "alicloud_privatelink_vpc_endpoint" "default" {
 	 service_id = alicloud_privatelink_vpc_endpoint_service.default.id
 	 vpc_id = data.alicloud_vpcs.default.ids.0
-     security_group_id = [alicloud_security_group.default.id]
+     security_group_ids = [alicloud_security_group.default.id]
 	 vpc_endpoint_name = "%[1]s"
 	 depends_on = [alicloud_privatelink_vpc_endpoint_service.default]
 	}

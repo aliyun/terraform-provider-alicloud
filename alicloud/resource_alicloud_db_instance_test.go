@@ -336,6 +336,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 							"value": "70",
 						},
 					},
+					"encryption_key": "${alicloud_kms_key.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -403,6 +404,12 @@ resource "alicloud_security_group" "default" {
 	name   = "${var.name}"
 	vpc_id = "${alicloud_vpc.default.id}"
 }
+
+resource "alicloud_kms_key" "default" {
+  pending_window_in_days  = "7"
+  key_state               = "Enabled"
+}
+
 `, RdsCommonTestCase, name)
 }
 
@@ -1132,7 +1139,7 @@ data "alicloud_db_instance_classes" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  vpc_name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {

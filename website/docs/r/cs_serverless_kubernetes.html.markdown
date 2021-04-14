@@ -1,5 +1,5 @@
 ---
-subcategory: "Container Service (CS)"
+subcategory: "Container Service for Kubernetes (CSK)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cs_serverless_kubernetes"
 sidebar_current: "docs-alicloud-resource-cs-serverless-kubernetes"
@@ -47,7 +47,7 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  name              = var.name
+  vswitch_name      = var.name
   vpc_id            = alicloud_vpc.default.id
   cidr_block        = "10.1.1.0/24"
   availability_zone = data.alicloud_zones.default.zones[0].id
@@ -56,7 +56,7 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_cs_serverless_kubernetes" "serverless" {
   name_prefix                    = var.name
   vpc_id                         = alicloud_vpc.default.id
-  vswitch_id                     = alicloud_vswitch.default.id
+  vswitch_ids                    = [alicloud_vswitch.default.id]
   new_nat_gateway                = true
   endpoint_public_access_enabled = true
   private_zone                   = false
@@ -84,14 +84,14 @@ The following arguments are supported:
     - true: Enable deletion protection.
     - false: Disable deletion protection.
 * `force_update` - (Optional) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
-* `tags` - (Optional) Default nil, A map of tags assigned to the kubernetes cluster .
+* `tags` - (Optional) Default nil, A map of tags assigned to the kubernetes cluster and work nodes.
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
 * `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-
+* `load_balancer_spec` - (ForceNew, Available in 1.117.0+) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
 
 #### Addons 
 It is a new field since 1.91.0. You can specific network plugin,log component,ingress component and so on.     

@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_key\_pair\_attachment
 
+-> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_key_pair_attachment](https://www.terraform.io/docs/providers/alicloud/r/ecs_key_pair_attachment.html) from version 1.121.0.
+
 Provides a key pair attachment resource to bind key pair for several ECS instances.
 
 -> **NOTE:** After the key pair is attached with sone instances, there instances must be rebooted to make the key pair affect.
@@ -40,7 +42,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "vpc" {
-  name       = var.name
+  vpc_name       = var.name
   cidr_block = "10.1.0.0/21"
 }
 
@@ -48,7 +50,7 @@ resource "alicloud_vswitch" "vswitch" {
   vpc_id            = alicloud_vpc.vpc.id
   cidr_block        = "10.1.1.0/24"
   availability_zone = data.alicloud_zones.default.zones[0].id
-  name              = var.name
+  vswitch_name      = var.name
 }
 
 resource "alicloud_security_group" "group" {

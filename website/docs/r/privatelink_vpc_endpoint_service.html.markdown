@@ -21,10 +21,6 @@ Basic Usage
 
 ```terraform
 resource "alicloud_privatelink_vpc_endpoint_service" "example" {
-   resources {
-      resource_id = "lb-gw8nxxxxxxx"
-      resource_type="slb"
-    }
    service_description = "tftest"
    connect_bandwidth = 103
    auto_accept_connection = false
@@ -40,17 +36,9 @@ The following arguments are supported:
 * `connect_bandwidth` - (Optional) The connection bandwidth.
 * `dry_run` - (Optional) Whether to pre-check this request only. Default to: `false`
 * `payer` - (Optional, ForceNew) The payer type. Valid Value: `EndpointService`, `Endpoint`. Default to: `Endpoint`.
-* `resources` - (Optional, ForceNew) Service resources added to the endpoint service.
 * `service_description` - (Optional) The description of the terminal node service.
 
 -> **NOTE:** The `resources` only support load balancing instance with private network type and PrivateLink function.
-
-#### Block resources
-
-The resources supports the following: 
-
-* `resource_id` - (Optional) The id of service resources added to the endpoint service.
-* `resource_type` - (Optional) The type of service resource added to the endpoint service.
 
 ## Attributes Reference
 

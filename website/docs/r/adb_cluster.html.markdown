@@ -13,6 +13,8 @@ Provides a ADB cluster resource. A ADB cluster is an isolated database
 environment in the cloud. A ADB cluster can contain multiple user-created
 databases.
 
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.121.0`. Please use new resource [alicloud_adb_db_cluster](https://www.terraform.io/docs/providers/alicloud/r/adb_db_cluster.html).
+
 -> **NOTE:** Available in v1.71.0+.
 
 ## Example Usage
@@ -33,7 +35,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
+  vpc_name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 
@@ -41,7 +43,7 @@ resource "alicloud_vswitch" "default" {
   vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = data.alicloud_zones.default.zones[0].id
-  name              = var.name
+  vswitch_name      = var.name
 }
 
 resource "alicloud_adb_cluster" "default" {
@@ -97,7 +99,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 50 mins) Used when creating the adb cluster (until it reaches the initial `Running` status). 
 * `update` - (Defaults to 72 hours) Used when updating the adb cluster (until it reaches the initial `Running` status). 
-* `delete` - (Defaults to 10 mins) Used when terminating the adb cluster. 
+* `delete` - (Defaults to 50 mins) Used when terminating the adb cluster. 
 
 ## Import
 

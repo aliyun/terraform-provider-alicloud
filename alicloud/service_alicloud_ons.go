@@ -9,7 +9,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -29,7 +28,9 @@ func (s *OnsService) DescribeOnsInstance(id string) (object map[string]interface
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"INSTANCE_NOT_FOUNDError", "InvalidDomainName.NoExist"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("OnsInstance", id)), NotFoundMsg, ProviderERROR)
@@ -47,129 +48,104 @@ func (s *OnsService) DescribeOnsInstance(id string) (object map[string]interface
 	return object, nil
 }
 
-func (s *OnsService) DescribeOnsTopic(id string) (object ons.PublishInfoDo, err error) {
+func (s *OnsService) DescribeOnsTopic(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewOnsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "OnsTopicList"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-	request := ons.CreateOnsTopicListRequest()
-	request.RegionId = s.client.RegionId
-	request.InstanceId = parts[0]
-	request.Topic = parts[1]
-
-	raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsTopicList(request)
-	})
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"InstanceId": parts[0],
+		"Topic":      parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR", "INSTANCE_NOT_FOUND"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("OnsTopic", id)), NotFoundMsg, ProviderERROR)
-			return
+			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ons.OnsTopicListResponse)
-
-	if len(response.Data.PublishInfoDo) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("OnsTopic", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-		return
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.Data.PublishInfoDo", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.PublishInfoDo", response)
 	}
-	return response.Data.PublishInfoDo[0], nil
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Ons", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["Topic"].(string) != parts[1] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ons", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
-func (s *OnsService) DescribeOnsGroup(id string) (object ons.SubscribeInfoDo, err error) {
+func (s *OnsService) DescribeOnsGroup(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewOnsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "OnsGroupList"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-	request := ons.CreateOnsGroupListRequest()
-	request.RegionId = s.client.RegionId
-	request.GroupId = parts[1]
-	request.InstanceId = parts[0]
-
-	raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsGroupList(request)
-	})
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"GroupId":    parts[1],
+		"InstanceId": parts[0],
+		"GroupType":  "all",
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR", "INSTANCE_NOT_FOUND"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("OnsGroup", id)), NotFoundMsg, ProviderERROR)
-			return
+			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ons.OnsGroupListResponse)
-
-	if len(response.Data.SubscribeInfoDo) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("OnsGroup", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-		return
-	}
-	return response.Data.SubscribeInfoDo[0], nil
-}
-
-func (s *OnsService) WaitForOnsTopic(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	parts, err := ParseResourceId(id, 2)
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.Data.SubscribeInfoDo", response)
 	if err != nil {
-		return WrapError(err)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.SubscribeInfoDo", response)
 	}
-	instanceId := parts[0]
-	topic := parts[1]
-	for {
-		response, err := s.DescribeOnsTopic(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Ons", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["GroupId"].(string) != parts[1] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ons", id)), NotFoundWithResponse, response)
 		}
-
-		if response.InstanceId+":"+response.Topic == id && status != Deleted {
-			return nil
-		}
-
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, instanceId+":"+topic, id, ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
 	}
-}
-
-func (s *OnsService) WaitForOnsGroup(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-
-	for {
-		response, err := s.DescribeOnsGroup(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-
-		if response.InstanceId+":"+response.GroupId == id && status != Deleted {
-			return nil
-		}
-
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, response.InstanceId+":"+response.GroupId, id, ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
 func (s *OnsService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
-
+	var parts []string
+	var err error
+	if resourceType == "GROUP" || resourceType == "TOPIC" {
+		parts, err = ParseResourceId(d.Id(), 2)
+		if err != nil {
+			return WrapError(err)
+		}
+	}
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
 		conn, err := s.client.NewOnsClient()
@@ -184,13 +160,19 @@ func (s *OnsService) SetResourceTags(d *schema.ResourceData, resourceType string
 			}
 		}
 		if len(removedTagKeys) > 0 {
-			action := "UnTagResources"
+			action := "UntagResources"
 			request := map[string]interface{}{
 				"RegionId":     s.client.RegionId,
 				"ResourceType": resourceType,
-				"ResourceId.1": d.Id(),
 			}
-			for i, key := range removed {
+			if resourceType == "INSTANCE" {
+				request["ResourceId.1"] = d.Id()
+			}
+			if resourceType == "GROUP" || resourceType == "TOPIC" {
+				request["InstanceId"] = parts[0]
+				request["ResourceId.1"] = parts[1]
+			}
+			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)
@@ -215,8 +197,14 @@ func (s *OnsService) SetResourceTags(d *schema.ResourceData, resourceType string
 			action := "TagResources"
 			request := map[string]interface{}{
 				"RegionId":     s.client.RegionId,
-				"ResourceType": string(resourceType),
-				"ResourceId.1": d.Id(),
+				"ResourceType": resourceType,
+			}
+			if resourceType == "INSTANCE" {
+				request["ResourceId.1"] = d.Id()
+			}
+			if resourceType == "GROUP" || resourceType == "TOPIC" {
+				request["InstanceId"] = parts[0]
+				request["ResourceId.1"] = parts[1]
 			}
 			count := 1
 			for key, value := range added {
@@ -248,22 +236,28 @@ func (s *OnsService) SetResourceTags(d *schema.ResourceData, resourceType string
 	return nil
 }
 
-func (s *OnsService) OnsTopicStatus(id string) (object ons.Data, err error) {
+func (s *OnsService) OnsTopicStatus(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewOnsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "OnsTopicStatus"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-	request := ons.CreateOnsTopicStatusRequest()
-	request.RegionId = s.client.RegionId
-	request.InstanceId = parts[0]
-	request.Topic = parts[1]
-
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"InstanceId": parts[0],
+		"Topic":      parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(11*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.OnsTopicStatus(request)
-		})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Throttling.User"}) {
 				wait()
@@ -273,115 +267,18 @@ func (s *OnsService) OnsTopicStatus(id string) (object ons.Data, err error) {
 				err = WrapErrorf(Error(GetNotFoundMessage("OnsTopic", id)), NotFoundMsg, ProviderERROR)
 				return resource.NonRetryableError(err)
 			}
-			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*ons.OnsTopicStatusResponse)
-		object = response.Data
+		addDebug(action, response, request)
+		v, err := jsonpath.Get("$.Data", response)
+		if err != nil {
+			return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response))
+		}
+		object = v.(map[string]interface{})
 		return nil
 	})
-	return object, WrapError(err)
-}
-
-func (s *OnsService) SetResourceTagsForTopic(d *schema.ResourceData, resourceType string) error {
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	oldItems, newItems := d.GetChange("tags")
-	added := make([]ons.TagResourcesTag, 0)
-	for key, value := range newItems.(map[string]interface{}) {
-		added = append(added, ons.TagResourcesTag{
-			Key:   key,
-			Value: value.(string),
-		})
-	}
-	removed := make([]string, 0)
-	for key, _ := range oldItems.(map[string]interface{}) {
-		removed = append(removed, key)
-	}
-	if len(removed) > 0 {
-		request := ons.CreateUntagResourcesRequest()
-		request.RegionId = s.client.RegionId
-		request.InstanceId = parts[0]
-		request.ResourceId = &[]string{parts[1]}
-		request.ResourceType = resourceType
-		request.TagKey = &removed
-		raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.UntagResources(request)
-		})
-		addDebug(request.GetActionName(), raw)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-	}
-	if len(added) > 0 {
-		request := ons.CreateTagResourcesRequest()
-		request.RegionId = s.client.RegionId
-		request.InstanceId = parts[0]
-		request.ResourceId = &[]string{parts[1]}
-		request.ResourceType = resourceType
-		request.Tag = &added
-		raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.TagResources(request)
-		})
-		addDebug(request.GetActionName(), raw)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-	}
-	return nil
-}
-
-func (s *OnsService) SetResourceTagsForGroup(d *schema.ResourceData, resourceType string) error {
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	oldItems, newItems := d.GetChange("tags")
-	added := make([]ons.TagResourcesTag, 0)
-	for key, value := range newItems.(map[string]interface{}) {
-		added = append(added, ons.TagResourcesTag{
-			Key:   key,
-			Value: value.(string),
-		})
-	}
-	removed := make([]string, 0)
-	for key, _ := range oldItems.(map[string]interface{}) {
-		removed = append(removed, key)
-	}
-	if len(removed) > 0 {
-		request := ons.CreateUntagResourcesRequest()
-		request.RegionId = s.client.RegionId
-		request.InstanceId = parts[0]
-		request.ResourceId = &[]string{parts[1]}
-		request.ResourceType = resourceType
-		request.TagKey = &removed
-		raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.UntagResources(request)
-		})
-		addDebug(request.GetActionName(), raw)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-	}
-	if len(added) > 0 {
-		request := ons.CreateTagResourcesRequest()
-		request.RegionId = s.client.RegionId
-		request.InstanceId = parts[0]
-		request.ResourceId = &[]string{parts[1]}
-		request.ResourceType = resourceType
-		request.Tag = &added
-		raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.TagResources(request)
-		})
-		addDebug(request.GetActionName(), raw)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-	}
-	return nil
+	return
 }
 
 func (s *OnsService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
@@ -414,7 +311,11 @@ func (s *OnsService) ListTagResources(id string, resourceType string) (object in
 			if err != nil {
 				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
 			}
-			tags = append(tags, v.([]interface{})...)
+			if v != nil {
+				if v != nil {
+					tags = append(tags, v.([]interface{})...)
+				}
+			}
 			return nil
 		})
 		if err != nil {

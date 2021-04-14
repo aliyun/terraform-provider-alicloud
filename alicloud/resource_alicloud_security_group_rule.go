@@ -155,22 +155,6 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	}
 	d.SetId(sgId + ":" + direction + ":" + ptl + ":" + port + ":" + nicType + ":" + cidr_ip + ":" + policy + ":" + strconv.Itoa(priority))
 
-	// wait the rule exist
-	ecsService := EcsService{client}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(60*time.Second, func() *resource.RetryError {
-		_, err := ecsService.DescribeSecurityGroupRule(d.Id())
-		if err == nil {
-			return resource.NonRetryableError(err)
-		} else {
-			wait()
-			return resource.RetryableError(err)
-		}
-	})
-	if err != nil {
-		return WrapError(err)
-	}
-
 	return resourceAliyunSecurityGroupRuleRead(d, meta)
 }
 
@@ -195,9 +179,21 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	sgId := parts[0]
 	direction := parts[1]
 
-	object, err := ecsService.DescribeSecurityGroupRule(d.Id())
+	// wait the rule exist
+	var object ecs.Permission
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+		obj, err := ecsService.DescribeSecurityGroupRule(d.Id())
+		if err != nil && d.IsNewResource() {
+			wait()
+			return resource.RetryableError(err)
+		} else {
+			object = obj
+			return resource.NonRetryableError(err)
+		}
+	})
 	if err != nil {
-		if NotFoundError(err) {
+		if NotFoundError(err) && !d.IsNewResource() {
 			log.Printf("[DEBUG] Resource alicloud_security_group_rule ecsService.DescribeSecurityGroupRule Failed!!! %s", err)
 			d.SetId("")
 			return nil

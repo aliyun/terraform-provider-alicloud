@@ -19,6 +19,7 @@ func dataSourceAlicloudOssService() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"On", "Off"}, false),
 				Optional:     true,
+				Default:      "Off",
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -42,7 +43,7 @@ func dataSourceAlicloudOssServiceRead(d *schema.ResourceData, meta interface{}) 
 
 	addDebug("OpenOssService", response, nil)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"SYSTEM.SALE_VALIDATE_NO_SPECIFIC_CODE_FAILEDError"}) {
+		if IsExpectedErrors(err, []string{"SYSTEM.SALE_VALIDATE_NO_SPECIFIC_CODE_FAILEDError", "ORDER.OPEND"}) {
 			d.SetId("OssServicHasBeenOpened")
 			d.Set("status", "Opened")
 			return nil

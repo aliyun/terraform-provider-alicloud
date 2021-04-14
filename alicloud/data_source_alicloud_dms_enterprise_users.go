@@ -1,11 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
-	"strconv"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -35,7 +35,7 @@ func dataSourceAlicloudDmsEnterpriseUsers() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"DISABLE", "NORMAL", "DELETE"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"DELETE", "DISABLE", "NORMAL"}, false),
 			},
 			"tid": {
 				Type:     schema.TypeInt,
@@ -115,22 +115,23 @@ func dataSourceAlicloudDmsEnterpriseUsers() *schema.Resource {
 func dataSourceAlicloudDmsEnterpriseUsersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := dms_enterprise.CreateListUsersRequest()
+	action := "ListUsers"
+	request := make(map[string]interface{})
 	if v, ok := d.GetOk("role"); ok {
-		request.Role = v.(string)
+		request["Role"] = v
 	}
 	if v, ok := d.GetOk("search_key"); ok {
-		request.SearchKey = v.(string)
+		request["SearchKey"] = v
 	}
 	if v, ok := d.GetOk("status"); ok {
-		request.UserState = v.(string)
+		request["UserState"] = v
 	}
 	if v, ok := d.GetOk("tid"); ok {
-		request.Tid = requests.NewInteger(v.(int))
+		request["Tid"] = v
 	}
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	var objects []dms_enterprise.User
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
 	var userNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -149,57 +150,62 @@ func dataSourceAlicloudDmsEnterpriseUsersRead(d *schema.ResourceData, meta inter
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	var response *dms_enterprise.ListUsersResponse
+	var response map[string]interface{}
+	conn, err := client.NewDmsenterpriseClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		raw, err := client.WithDmsEnterpriseClient(func(dms_enterpriseClient *dms_enterprise.Client) (interface{}, error) {
-			return dms_enterpriseClient.ListUsers(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dms_enterprise_users", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dms_enterprise_users", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
-		response, _ = raw.(*dms_enterprise.ListUsersResponse)
+		addDebug(action, response, request)
 
-		for _, item := range response.UserList.User {
+		resp, err := jsonpath.Get("$.UserList.User", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.UserList.User", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
 			if userNameRegex != nil {
-				if !userNameRegex.MatchString(item.NickName) {
+				if !userNameRegex.MatchString(fmt.Sprint(item["NickName"])) {
 					continue
 				}
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[strconv.FormatInt(item.Uid, 10)]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["Uid"])]; !ok {
 					continue
 				}
 			}
 			objects = append(objects, item)
 		}
-		if len(response.UserList.User) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
-
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	ids := make([]string, 0)
-	names := make([]string, 0)
+	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"mobile":     object.Mobile,
-			"parent_uid": object.ParentUid,
-			"role_ids":   object.RoleIdList.RoleIds,
-			"role_names": object.RoleNameList.RoleNames,
-			"status":     object.State,
-			"id":         strconv.FormatInt(object.Uid, 10),
-			"user_id":    object.UserId,
-			"user_name":  object.NickName,
-			"nick_name":  object.NickName,
+			"mobile":     object["Mobile"],
+			"parent_uid": formatInt(object["ParentUid"]),
+			"role_ids":   object["RoleIdList"].(map[string]interface{})["RoleIds"],
+			"role_names": object["RoleNameList"].(map[string]interface{})["RoleNames"],
+			"status":     object["State"],
+			"id":         fmt.Sprint(object["Uid"]),
+			"uid":        fmt.Sprint(object["Uid"]),
+			"user_id":    object["UserId"],
+			"user_name":  object["NickName"],
+			"nick_name":  object["NickName"],
 		}
-		ids = append(ids, strconv.FormatInt(object.Uid, 10))
-		names = append(names, object.NickName)
+		ids = append(ids, fmt.Sprint(object["Uid"]))
+		names = append(names, object["NickName"])
 		s = append(s, mapping)
 	}
 

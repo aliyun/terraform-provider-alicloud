@@ -27,7 +27,9 @@ data "alicloud_log_service" "open" {
 
 The following arguments are supported:
 
-* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: "On" or "Off".
+* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: "On" or "Off". Default to "Off".
+
+-> **NOTE:** Setting `enable = "On"` to open the Log service that means you have read and agreed the [Log Terms of Service](https://help.aliyun.com/document_detail/53476.html). The service can not closed once it is opened.
 
 ## Attributes Reference
 

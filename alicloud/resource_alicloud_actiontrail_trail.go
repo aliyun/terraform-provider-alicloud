@@ -5,8 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -39,8 +38,9 @@ func resourceAlicloudActiontrailTrail() *schema.Resource {
 				ForceNew: true,
 			},
 			"mns_topic_arn": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'mns_topic_arn' has been deprecated from version 1.118.0",
 			},
 			"oss_bucket_name": {
 				Type:     schema.TypeString,
@@ -51,9 +51,14 @@ func resourceAlicloudActiontrailTrail() *schema.Resource {
 				Optional: true,
 			},
 			"role_name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'role_name' has been deprecated from version 1.118.0",
+			},
+			"oss_write_role_arn": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 			"sls_project_arn": {
 				Type:     schema.TypeString,
@@ -97,72 +102,71 @@ func resourceAlicloudActiontrailTrail() *schema.Resource {
 func resourceAlicloudActiontrailTrailCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	actiontrailService := ActiontrailService{client}
-
-	request := actiontrail.CreateCreateTrailRequest()
+	var response map[string]interface{}
+	action := "CreateTrail"
+	request := make(map[string]interface{})
+	conn, err := client.NewActiontrailClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	if v, ok := d.GetOk("event_rw"); ok {
-		request.EventRW = v.(string)
+		request["EventRW"] = v
 	}
 
 	if v, ok := d.GetOkExists("is_organization_trail"); ok {
-		request.IsOrganizationTrail = requests.NewBoolean(v.(bool))
-	}
-
-	if v, ok := d.GetOk("mns_topic_arn"); ok {
-		request.MnsTopicArn = v.(string)
+		request["IsOrganizationTrail"] = v
 	}
 
 	if v, ok := d.GetOk("oss_bucket_name"); ok {
-		request.OssBucketName = v.(string)
+		request["OssBucketName"] = v
 	}
 
 	if v, ok := d.GetOk("oss_key_prefix"); ok {
-		request.OssKeyPrefix = v.(string)
+		request["OssKeyPrefix"] = v
 	}
 
-	if v, ok := d.GetOk("role_name"); ok {
-		request.RoleName = v.(string)
+	if v, ok := d.GetOk("oss_write_role_arn"); ok {
+		request["OssWriteRoleArn"] = v
 	}
 
 	if v, ok := d.GetOk("sls_project_arn"); ok {
-		request.SlsProjectArn = v.(string)
+		request["SlsProjectArn"] = v
 	}
 
 	if v, ok := d.GetOk("sls_write_role_arn"); ok {
-		request.SlsWriteRoleArn = v.(string)
+		request["SlsWriteRoleArn"] = v
 	}
 
 	if v, ok := d.GetOk("trail_name"); ok {
-		request.Name = v.(string)
+		request["Name"] = v
 	} else if v, ok := d.GetOk("name"); ok {
-		request.Name = v.(string)
+		request["Name"] = v
 	} else {
 		return WrapError(Error(`[ERROR] Argument "name" or "trail_name" must be set one!`))
 	}
 
 	if v, ok := d.GetOk("trail_region"); ok {
-		request.TrailRegion = v.(string)
+		request["TrailRegion"] = v
 	}
 
 	wait := incrementalWait(3*time.Second, 10*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		raw, err := client.WithActiontrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
-			return actiontrailClient.CreateTrail(request)
-		})
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) {
+			if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*actiontrail.CreateTrailResponse)
-		d.SetId(fmt.Sprintf("%v", response.Name))
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_actiontrail_trail", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_actiontrail_trail", action, AlibabaCloudSdkGoERROR)
 	}
+
+	d.SetId(fmt.Sprint(response["Name"]))
 	stateConf := BuildStateConf([]string{}, []string{"Fresh"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, actiontrailService.ActiontrailTrailStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -185,92 +189,93 @@ func resourceAlicloudActiontrailTrailRead(d *schema.ResourceData, meta interface
 
 	d.Set("trail_name", d.Id())
 	d.Set("name", d.Id())
-	d.Set("event_rw", object.EventRW)
-	d.Set("oss_bucket_name", object.OssBucketName)
-	d.Set("oss_key_prefix", object.OssKeyPrefix)
-	d.Set("role_name", object.RoleName)
-	d.Set("sls_project_arn", object.SlsProjectArn)
-	d.Set("sls_write_role_arn", object.SlsWriteRoleArn)
-	d.Set("status", object.Status)
-	d.Set("trail_region", object.TrailRegion)
+	d.Set("event_rw", object["EventRW"])
+	d.Set("is_organization_trail", object["IsOrganizationTrail"])
+	d.Set("oss_bucket_name", object["OssBucketName"])
+	d.Set("oss_key_prefix", object["OssKeyPrefix"])
+	d.Set("oss_write_role_arn", object["OssWriteRoleArn"])
+	d.Set("sls_project_arn", object["SlsProjectArn"])
+	d.Set("sls_write_role_arn", object["SlsWriteRoleArn"])
+	d.Set("status", object["Status"])
+	d.Set("trail_region", object["TrailRegion"])
 	return nil
 }
 func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	actiontrailService := ActiontrailService{client}
+	var response map[string]interface{}
 	d.Partial(true)
 
 	update := false
-	request := actiontrail.CreateUpdateTrailRequest()
-	request.Name = d.Id()
+	request := map[string]interface{}{
+		"Name": d.Id(),
+	}
 	if !d.IsNewResource() && d.HasChange("event_rw") {
 		update = true
-		request.EventRW = d.Get("event_rw").(string)
-	}
-	if !d.IsNewResource() && d.HasChange("mns_topic_arn") {
-		update = true
-		request.MnsTopicArn = d.Get("mns_topic_arn").(string)
+		request["EventRW"] = d.Get("event_rw")
 	}
 	if !d.IsNewResource() && d.HasChange("oss_bucket_name") {
 		update = true
-		request.OssBucketName = d.Get("oss_bucket_name").(string)
+		request["OssBucketName"] = d.Get("oss_bucket_name")
 	}
 	if !d.IsNewResource() && d.HasChange("oss_key_prefix") {
 		update = true
-		request.OssKeyPrefix = d.Get("oss_key_prefix").(string)
+		request["OssKeyPrefix"] = d.Get("oss_key_prefix")
 	}
-	request.RegionId = client.RegionId
-	if !d.IsNewResource() && d.HasChange("role_name") {
+	if !d.IsNewResource() && d.HasChange("oss_write_role_arn") {
 		update = true
-		request.RoleName = d.Get("role_name").(string)
+		request["OssWriteRoleArn"] = d.Get("oss_write_role_arn")
 	}
+	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("sls_project_arn") {
 		update = true
-		request.SlsProjectArn = d.Get("sls_project_arn").(string)
+		request["SlsProjectArn"] = d.Get("sls_project_arn")
 	}
 	if !d.IsNewResource() && d.HasChange("sls_write_role_arn") {
 		update = true
-		request.SlsWriteRoleArn = d.Get("sls_write_role_arn").(string)
+		request["SlsWriteRoleArn"] = d.Get("sls_write_role_arn")
 	}
 	if !d.IsNewResource() && d.HasChange("trail_region") {
 		update = true
-		request.TrailRegion = d.Get("trail_region").(string)
+		request["TrailRegion"] = d.Get("trail_region")
 	}
 	if update {
 
 		if v, ok := d.GetOk("sls_project_arn"); ok {
-			request.SlsProjectArn = v.(string)
+			request["SlsProjectArn"] = v
 		}
 		if v, ok := d.GetOk("sls_write_role_arn"); ok {
-			request.SlsWriteRoleArn = v.(string)
+			request["SlsWriteRoleArn"] = v
 		}
 		if v, ok := d.GetOk("oss_bucket_name"); ok {
-			request.OssBucketName = v.(string)
+			request["OssBucketName"] = v
 		}
 
+		action := "UpdateTrail"
+		conn, err := client.NewActiontrailClient()
+		if err != nil {
+			return WrapError(err)
+		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			raw, err := client.WithActiontrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
-				return actiontrailClient.UpdateTrail(request)
-			})
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) {
+				if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("event_rw")
-		d.SetPartial("mns_topic_arn")
 		d.SetPartial("oss_bucket_name")
 		d.SetPartial("oss_key_prefix")
-		d.SetPartial("role_name")
+		d.SetPartial("oss_write_role_arn")
 		d.SetPartial("sls_project_arn")
 		d.SetPartial("sls_write_role_arn")
 		d.SetPartial("trail_region")
@@ -281,27 +286,31 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 			return WrapError(err)
 		}
 		target := d.Get("status").(string)
-		if object.Status != target {
+		if object["Status"].(string) != target {
 			if target == "Disable" {
-				request := actiontrail.CreateStopLoggingRequest()
-				request.Name = d.Id()
+				request := map[string]interface{}{
+					"Name": d.Id(),
+				}
+				action := "StopLogging"
+				conn, err := client.NewActiontrailClient()
+				if err != nil {
+					return WrapError(err)
+				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					raw, err := client.WithActiontrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
-						return actiontrailClient.StopLogging(request)
-					})
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-07-06"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
 					if err != nil {
-						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) {
+						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(request.GetActionName(), raw)
+					addDebug(action, response, request)
 					return nil
 				})
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 				stateConf := BuildStateConf([]string{}, []string{"Disable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actiontrailService.ActiontrailTrailStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
@@ -309,25 +318,29 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 				}
 			}
 			if target == "Enable" {
-				request := actiontrail.CreateStartLoggingRequest()
-				request.Name = d.Id()
+				request := map[string]interface{}{
+					"Name": d.Id(),
+				}
+				action := "StartLogging"
+				conn, err := client.NewActiontrailClient()
+				if err != nil {
+					return WrapError(err)
+				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					raw, err := client.WithActiontrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
-						return actiontrailClient.StartLogging(request)
-					})
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 					if err != nil {
-						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) {
+						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(request.GetActionName(), raw)
+					addDebug(action, response, request)
 					return nil
 				})
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 				stateConf := BuildStateConf([]string{}, []string{"Enable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actiontrailService.ActiontrailTrailStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
@@ -342,17 +355,34 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 }
 func resourceAlicloudActiontrailTrailDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := actiontrail.CreateDeleteTrailRequest()
-	request.Name = d.Id()
-	raw, err := client.WithActiontrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
-		return actiontrailClient.DeleteTrail(request)
+	action := "DeleteTrail"
+	var response map[string]interface{}
+	conn, err := client.NewActiontrailClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"Name": d.Id(),
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
-	addDebug(request.GetActionName(), raw)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"TrailNotFoundException"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

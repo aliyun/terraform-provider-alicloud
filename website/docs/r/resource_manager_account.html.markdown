@@ -16,7 +16,7 @@ For information about Resource Manager Account and how to use it, see [What is R
 
 ## Example Usage
 
-```
+```terraform
 # Add a Resource Manager Account.
 resource "alicloud_resource_manager_folder" "f1" {
   folder_name = "test1"
@@ -31,6 +31,7 @@ resource "alicloud_resource_manager_account" "example" {
 
 The following arguments are supported:
 
+* `account_name_prefix` - (Optional, ForceNew, Available in v1.114.0) The name prefix of account.
 * `display_name` - (Required) Member name. The length is 2 ~ 50 characters or Chinese characters, which can include Chinese characters, English letters, numbers, underscores (_), dots (.) And dashes (-).
 * `folder_id` - (Optional) The ID of the parent folder.
 * `payer_account_id` - (Optional, ForceNew) Settlement account ID. If the value is empty, the current account will be used for settlement.

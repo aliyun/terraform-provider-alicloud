@@ -1,5 +1,5 @@
 ---
-subcategory: "DdosCoo"
+subcategory: "Anti-DDoS Pro"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ddoscoo_scheduler_rule"
 sidebar_current: "docs-alicloud-resource-ddoscoo-scheduler-rule"

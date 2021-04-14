@@ -3,12 +3,10 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
-	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -53,8 +51,8 @@ func dataSourceAlicloudNasAccessGroups() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"standard", "extreme"}, false),
 				Default:      "standard",
+				ValidateFunc: validation.StringInSlice([]string{"extreme", "standard"}, false),
 			},
 			"useutc_date_time": {
 				Type:     schema.TypeBool,
@@ -113,20 +111,20 @@ func dataSourceAlicloudNasAccessGroups() *schema.Resource {
 func dataSourceAlicloudNasAccessGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := nas.CreateDescribeAccessGroupsRequest()
+	action := "DescribeAccessGroups"
+	request := make(map[string]interface{})
 	if v, ok := d.GetOk("access_group_name"); ok {
-		request.AccessGroupName = v.(string)
+		request["AccessGroupName"] = v
 	}
 	if v, ok := d.GetOk("file_system_type"); ok {
-		request.FileSystemType = v.(string)
+		request["FileSystemType"] = v
 	}
 	if v, ok := d.GetOkExists("useutc_date_time"); ok {
-		request.UseUTCDateTime = requests.NewBoolean(v.(bool))
+		request["UseUTCDateTime"] = v
 	}
-	request.RegionId = client.RegionId
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	var objects []nas.AccessGroup
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
 	var accessGroupNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -135,70 +133,63 @@ func dataSourceAlicloudNasAccessGroupsRead(d *schema.ResourceData, meta interfac
 		}
 		accessGroupNameRegex = r
 	}
-	var response *nas.DescribeAccessGroupsResponse
+	var response map[string]interface{}
+	conn, err := client.NewNasClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-			raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-				return nasClient.DescribeAccessGroups(request)
-			})
-			if err != nil {
-				if IsExpectedErrors(err, []string{"ServiceUnavailable", "Throttling"}) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(request.GetActionName(), raw)
-			response, _ = raw.(*nas.DescribeAccessGroupsResponse)
-			return nil
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_access_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_access_groups", action, AlibabaCloudSdkGoERROR)
 		}
+		addDebug(action, response, request)
 
-		for _, item := range response.AccessGroups.AccessGroup {
+		resp, err := jsonpath.Get("$.AccessGroups.AccessGroup", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AccessGroups.AccessGroup", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
 			if accessGroupNameRegex != nil {
-				if !accessGroupNameRegex.MatchString(item.AccessGroupName) {
+				if !accessGroupNameRegex.MatchString(fmt.Sprint(item["AccessGroupName"])) {
 					continue
 				}
 			}
-			if v, ok := d.GetOk("type"); ok && v.(string) != "" && item.AccessGroupType != v.(string) {
+			if v, ok := d.GetOk("type"); ok && v.(string) != "" && item["AccessGroupType"].(string) != v.(string) {
 				continue
 			}
-			if v, ok := d.GetOk("access_group_type"); ok && v.(string) != "" && item.AccessGroupType != v.(string) {
+			if v, ok := d.GetOk("access_group_type"); ok && v.(string) != "" && item["AccessGroupType"].(string) != v.(string) {
 				continue
 			}
-			if v, ok := d.GetOk("description"); ok && v.(string) != "" && item.Description != v.(string) {
+			if v, ok := d.GetOk("description"); ok && v.(string) != "" && item["Description"].(string) != v.(string) {
 				continue
 			}
 			objects = append(objects, item)
 		}
-		if len(response.AccessGroups.AccessGroup) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
-
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	ids := make([]string, 0)
-	names := make([]string, 0)
+	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":                 fmt.Sprintf("%v:%v", object.AccessGroupName, request.FileSystemType),
-			"access_group_name":  object.AccessGroupName,
-			"access_group_type":  object.AccessGroupType,
-			"type":               object.AccessGroupType,
-			"description":        object.Description,
-			"mount_target_count": object.MountTargetCount,
-			"rule_count":         object.RuleCount,
+			"id":                 fmt.Sprint(object["AccessGroupName"], ":", request["FileSystemType"]),
+			"access_group_name":  object["AccessGroupName"],
+			"access_group_type":  object["AccessGroupType"],
+			"type":               object["AccessGroupType"],
+			"description":        object["Description"],
+			"mount_target_count": formatInt(object["MountTargetCount"]),
+			"rule_count":         formatInt(object["RuleCount"]),
 		}
-		ids = append(ids, fmt.Sprintf("%v:%v", object.AccessGroupName, request.FileSystemType))
-		names = append(names, object.AccessGroupName)
+		ids = append(ids, fmt.Sprint(object["AccessGroupName"], ":", request["FileSystemType"]))
+		names = append(names, object["AccessGroupName"])
 		s = append(s, mapping)
 	}
 

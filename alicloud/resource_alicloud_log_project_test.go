@@ -136,6 +136,78 @@ func TestAccAlicloudLogProject_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudLogProject_tags(t *testing.T) {
+	var v *sls.LogProject
+	resourceId := "alicloud_log_project.default"
+	ra := resourceAttrInit(resourceId, logProjectMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacclogproject-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogProjectConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"key1": "value1",
+						"Key2": "Value2",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":    "2",
+						"tags.key1": "value1",
+						"tags.Key2": "Value2",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"key1-update": "value1-update",
+						"Key2-update": "Value2-update",
+						"key3-new":    "value3-new",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":           "3",
+						"tags.key1-update": "value1-update",
+						"tags.Key2-update": "Value2-update",
+						"tags.key3-new":    "value3-new",
+						"tags.key1":        REMOVEKEY,
+						"tags.Key2":        REMOVEKEY,
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudLogProject_multi(t *testing.T) {
 	var v *sls.LogProject
 	resourceId := "alicloud_log_project.default.4"

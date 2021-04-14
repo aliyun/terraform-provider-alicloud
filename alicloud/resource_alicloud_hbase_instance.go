@@ -14,10 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func payTypePostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.ToLower(d.Get("pay_type").(string)) == "postpaid"
-}
-
 func resourceAlicloudHBaseInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudHBaseInstanceCreate,
@@ -75,16 +71,18 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Default:      2,
 			},
 			"core_disk_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "cloud_essd_pl1", "cloud_efficiency", "local_hdd_pro", "local_ssd_pro", "-", ""}, false),
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"cloud_ssd", "cloud_essd_pl1", "cloud_efficiency", "local_hdd_pro", "local_ssd_pro", ""}, false),
+				DiffSuppressFunc: engineDiffSuppressFunc,
 			},
 			"core_disk_size": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.Any(validation.IntBetween(20, 8000), validation.IntInSlice([]int{0})),
-				Default:      400,
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     validation.Any(validation.IntBetween(20, 64000), validation.IntInSlice([]int{0})),
+				Default:          400,
+				DiffSuppressFunc: engineDiffSuppressFunc,
 			},
 			"pay_type": {
 				Type:         schema.TypeString,
@@ -112,9 +110,10 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"cold_storage_size": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  0,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.Any(validation.IntBetween(800, 1000000), validation.IntInSlice([]int{0})),
+				Default:      0,
 			},
 			"maintain_start_time": {
 				Type:     schema.TypeString,
@@ -138,18 +137,21 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			},
 			"tags": tagsSchema(),
 			"account": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(0, 128),
 			},
 			"password": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Sensitive:    true,
+				ValidateFunc: validation.StringLenBetween(0, 128),
 			},
 			"ip_white": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: whiteIpListDiffSuppressFunc,
 			},
 			"security_groups": {
 				Type:     schema.TypeList,
@@ -283,7 +285,7 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 	}
 	request.ColdStorageSize = requests.NewInteger(d.Get("cold_storage_size").(int))
 
-	request.SecurityIPList = LOCAL_HOST_IP
+	request.SecurityIPList = d.Get("ip_white").(string)
 	return request, checkParams(request)
 }
 
@@ -433,28 +435,30 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 		}
 		target := strings.ToLower(d.Get("pay_type").(string))
 		if strings.ToLower(object.PayType) != target {
+			request := hbase.CreateConvertInstanceRequest()
+			request.ClusterId = d.Id()
+			request.PayType = string(Postpaid)
 			if target == "prepaid" {
-				request := hbase.CreateConvertInstanceRequest()
-				request.ClusterId = d.Id()
-				if d.Get("duration").(int) > 9 {
-					request.PricingCycle = "year"
-					request.Duration = requests.NewInteger(d.Get("duration").(int) / 12)
-				} else {
-					request.PricingCycle = "month"
-					request.Duration = requests.NewInteger(d.Get("duration").(int))
-				}
-				raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
-					return hbaseClient.ConvertInstance(request)
-				})
-				addDebug(request.GetActionName(), raw)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-				}
-				stateConf := BuildStateConf([]string{}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
-					10*time.Second, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{}))
-				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
-				}
+				request.PayType = string(Prepaid)
+			}
+			if d.Get("duration").(int) > 9 {
+				request.PricingCycle = "year"
+				request.Duration = requests.NewInteger(d.Get("duration").(int) / 12)
+			} else {
+				request.PricingCycle = "month"
+				request.Duration = requests.NewInteger(d.Get("duration").(int))
+			}
+			raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
+				return hbaseClient.ConvertInstance(request)
+			})
+			addDebug(request.GetActionName(), raw)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			stateConf := BuildStateConf([]string{}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+				2*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
 			}
 			d.SetPartial("pay_type")
 		}
@@ -526,6 +530,23 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 
 	if err := hBaseService.setInstanceTags(d); err != nil {
 		return WrapError(err)
+	}
+
+	if d.HasChange("account") || d.HasChange("password") {
+		request := hbase.CreateModifyUIAccountPasswordRequest()
+		request.ClusterId = d.Id()
+		request.AccountName = d.Get("account").(string)
+		request.AccountPassword = d.Get("password").(string)
+
+		raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
+			return client.ModifyUIAccountPassword(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("account")
+		d.SetPartial("password")
 	}
 
 	if d.IsNewResource() {
@@ -647,23 +668,6 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("cold_storage_size")
-	}
-
-	if d.HasChange("account") || d.HasChange("password") {
-		request := hbase.CreateModifyUIAccountPasswordRequest()
-		request.ClusterId = d.Id()
-		request.AccountName = d.Get("account").(string)
-		request.AccountPassword = d.Get("password").(string)
-
-		raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
-			return client.ModifyUIAccountPassword(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("account")
-		d.SetPartial("password")
 	}
 
 	d.Partial(false)

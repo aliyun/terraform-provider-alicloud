@@ -130,7 +130,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
   tags 		= {
 		Created = "TF"
@@ -151,6 +151,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 data "alicloud_vpcs" "default" {
+	enable_details = true
   %s
 }
 `, rand, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), strings.Join(pairs, "\n  "))
@@ -169,6 +170,7 @@ var existVpcsMapFunc = func(rand int) map[string]string {
 		"vpcs.0.vswitch_ids.#":  "1",
 		"vpcs.0.cidr_block":     "172.16.0.0/12",
 		"vpcs.0.vrouter_id":     CHECKSET,
+		"vpcs.0.router_id":      CHECKSET,
 		"vpcs.0.route_table_id": CHECKSET,
 		"vpcs.0.description":    "",
 		"vpcs.0.is_default":     "false",

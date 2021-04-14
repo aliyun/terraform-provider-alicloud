@@ -17,6 +17,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCSServerlessKubernetesCreate,
 		Read:   resourceAlicloudCSServerlessKubernetesRead,
+		Update: resourceAlicloudCSServerlessKubernetesUpdate,
 		Delete: resourceAlicloudCSServerlessKubernetesDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -112,8 +113,6 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
-				ForceNew: true,
-				//ValidateFunc: validateCSClusterTags,
 			},
 			"force_update": {
 				Type:     schema.TypeBool,
@@ -158,6 +157,13 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+			},
+			"load_balancer_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
+				Default:      "slb.s1.small",
 			},
 		},
 	}
@@ -231,6 +237,10 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		args.VswitchIds = expandStringList(v.([]interface{}))
 	}
 
+	if lbSpec, ok := d.GetOk("load_balancer_spec"); ok {
+		args.LoadBalancerSpec = lbSpec.(string)
+	}
+
 	//set tags
 	if len(tags) > 0 {
 		args.Tags = tags
@@ -284,10 +294,16 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	_ = d.Set("vswitch_id", object.VSwitchId)
 	_ = d.Set("security_group_id", object.SecurityGroupId)
 	_ = d.Set("deletion_protection", object.DeletionProtection)
-	_ = d.Set("tags", object.Tags)
 	_ = d.Set("version", object.CurrentVersion)
 	_ = d.Set("resource_group_id", object.ResourceGroupId)
 	_ = d.Set("cluster_spec", object.ClusterSpec)
+
+	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
+		return WrapError(err)
+	}
+	if d.Get("load_balancer_spec") == "" {
+		_ = d.Set("load_balancer_spec", "slb.s1.small")
+	}
 
 	var requestInfo *cs.Client
 	var response interface{}
@@ -350,6 +366,27 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		}
 	}
 	return nil
+}
+
+func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
+	d.Partial(true)
+	// modify cluster tag
+	if d.HasChange("tags") {
+		err := updateKubernetesClusterTag(d, meta)
+		if err != nil {
+			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("tags")
+	}
+
+	// upgrade cluster version
+	err := UpgradeAlicloudKubernetesCluster(d, meta)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeClusterVersion", DenverdinoAliyungo)
+	}
+
+	d.Partial(false)
+	return resourceAlicloudCSServerlessKubernetesRead(d, meta)
 }
 
 func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta interface{}) error {

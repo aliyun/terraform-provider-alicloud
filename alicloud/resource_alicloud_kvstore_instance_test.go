@@ -282,11 +282,11 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"private_connection_prefix": "privateconnectionstringprefix",
+					"private_connection_prefix": fmt.Sprintf("privateprefix%d", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"private_connection_prefix": "privateconnectionstringprefix",
+						"private_connection_prefix": CHECKSET,
 					}),
 				),
 			},
@@ -323,7 +323,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 					"maintain_end_time":         "06:00Z",
 					"backup_period":             []string{"Wednesday"},
 					"backup_time":               "11:00Z-12:00Z",
-					"private_connection_prefix": "privateconnectionstringprefixupdate",
+					"private_connection_prefix": fmt.Sprintf("privateprefixupdate%d", rand),
 					"timeouts": []map[string]interface{}{
 						{
 							"update": "1h",
@@ -351,7 +351,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"maintain_end_time":             "06:00Z",
 						"backup_period.#":               "1",
 						"backup_time":                   "11:00Z-12:00Z",
-						"private_connection_prefix":     "privateconnectionstringprefixupdate",
+						"private_connection_prefix":     CHECKSET,
 					}),
 				),
 			},
@@ -524,11 +524,11 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"private_connection_prefix": "privateconnectionstringprefix1",
+					"private_connection_prefix": fmt.Sprintf("privateconnection%d", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"private_connection_prefix": "privateconnectionstringprefix1",
+						"private_connection_prefix": CHECKSET,
 					}),
 				),
 			},
@@ -560,7 +560,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 					"maintain_end_time":         "06:00Z",
 					"backup_period":             []string{"Wednesday"},
 					"backup_time":               "11:00Z-12:00Z",
-					"private_connection_prefix": "privateconnectionstringprefix1update",
+					"private_connection_prefix": fmt.Sprintf("privateconnectionupdate%d", rand),
 					"timeouts": []map[string]interface{}{
 						{
 							"update": "1h",
@@ -584,7 +584,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 						"maintain_end_time":           "06:00Z",
 						"backup_period.#":             "1",
 						"backup_time":                 "11:00Z-12:00Z",
-						"private_connection_prefix":   "privateconnectionstringprefix1update",
+						"private_connection_prefix":   CHECKSET,
 					}),
 				),
 			},

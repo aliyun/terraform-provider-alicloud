@@ -7,9 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/mse"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -25,62 +24,73 @@ func init() {
 func testSweepMSECluster(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return WrapErrorf(err, "Error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testacc",
+		"tf-test",
 	}
-
-	request := mse.CreateListClustersRequest()
-	request.PageSize = requests.NewInteger(PageSizeXLarge)
-	request.PageNum = requests.NewInteger(1)
-	raw, err := client.WithMseClient(func(MseClient *mse.Client) (interface{}, error) {
-		return MseClient.ListClusters(request)
-	})
+	request := make(map[string]interface{})
+	var response map[string]interface{}
+	action := "ListClusters"
+	conn, err := client.NewMseClient()
 	if err != nil {
-		log.Printf("[ERROR] Error retrieving Mse Clusters: %s", WrapError(err))
+		return WrapError(err)
 	}
-	response, _ := raw.(*mse.ListClustersResponse)
-
-	sweeped := false
-	for _, v := range response.Data {
-		id := v.InstanceId
-		name := v.ClusterAliasName
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Mse Clusters: %s (%s)", name, id)
-			continue
-		}
-
-		sweeped = true
-		log.Printf("[INFO] Deleting Mse Clusters: %s (%s)", name, id)
-		req := mse.CreateDeleteClusterRequest()
-		req.InstanceId = id
-		_, err := client.WithMseClient(func(MseClient *mse.Client) (interface{}, error) {
-			return MseClient.DeleteCluster(req)
-		})
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-05-31"), StringPointer("AK"), request, nil, &runtime)
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Mse Clusters (%s (%s)): %s", name, id, err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_mse_clusters", action, AlibabaCloudSdkGoERROR)
 		}
-	}
-	if sweeped {
-		// Waiting 30 seconds to ensure these Mse Clusters have been deleted.
-		time.Sleep(30 * time.Second)
+		resp, err := jsonpath.Get("$.Data", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+		}
+		sweeped := false
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(item["ClusterAliasName"].(string)), strings.ToLower(prefix)) {
+					skip = false
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Mse Clusters: %s (%s)", item["ClusterAliasName"].(string), item["InstanceId"].(string))
+				continue
+			}
+			sweeped = true
+			action = "DeleteCluster"
+			request := map[string]interface{}{
+				"InstanceId": item["InstanceId"],
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Mse Clusters (%s (%s)): %s", item["ClusterAliasName"].(string), item["InstanceId"].(string), err)
+			}
+			if sweeped {
+				// Waiting 30 seconds to ensure these Mse Clusters have been deleted.
+				time.Sleep(30 * time.Second)
+			}
+			log.Printf("[INFO] Delete mse cluster success: %s ", item["InstanceId"].(string))
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNum"] = request["PageNum"].(int) + 1
 	}
 	return nil
 }
 
 func TestAccAlicloudMSECluster_basic(t *testing.T) {
-	var v mse.Data
+	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
 	ra := resourceAttrInit(resourceId, MseClusterMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

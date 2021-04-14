@@ -170,7 +170,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -178,12 +178,13 @@ resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/16"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+  vswitch_name = "${var.name}"
 }
 
 resource "alicloud_slb" "default" {
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
+  specification = "slb.s1.small"
   master_zone_id = "${data.alicloud_zones.default.zones.0.id}"
   tags = {
     tag_a = 1

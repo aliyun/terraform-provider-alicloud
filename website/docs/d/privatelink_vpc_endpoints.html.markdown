@@ -55,12 +55,9 @@ The following attributes are exported in addition to the arguments listed above:
 	* `endpoint_domain` - The Endpoint Domain.
 	* `endpoint_id` - The ID of the Vpc Endpoint.
 	* `id` - The ID of the Vpc Endpoint.
-	* `security_group_id` - The security group associated with the terminal node network card.
-	* `service_id` - The terminal node service associated with the terminal node..
+	* `security_group_ids` - The security group associated with the terminal node network card.
+	* `service_id` - The terminal node service associated with the terminal node.
 	* `service_name` - The name of the terminal node service associated with the terminal node.
 	* `status` - The status of Vpc Endpoint.
 	* `vpc_endpoint_name` - The name of Vpc Endpoint.
 	* `vpc_id` - The private network to which the terminal node belongs.
-	* `zone` - Availability zone.
-		* `vswitch_id` - To create the vswitch of the terminal node network card in the available zone.
-		* `zone_id` - Availability zone corresponding to terminal node service.

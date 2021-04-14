@@ -1,10 +1,12 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -16,14 +18,16 @@ func dataSourceAlicloudFileSystems() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"storage_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Capacity", "Performance"}, false),
 			},
 			"protocol_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"NFS", "SMB"}, false),
 			},
 			"description_regex": {
 				Type:         schema.TypeString,
@@ -90,105 +94,107 @@ func dataSourceAlicloudFileSystems() *schema.Resource {
 
 func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := nas.CreateDescribeFileSystemsRequest()
-	request.RegionId = string(client.Region)
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	var allfss []nas.FileSystem
-	invoker := NewInvoker()
+
+	action := "DescribeFileSystems"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.Region
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+
+	var objects []map[string]interface{}
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+	var filesystemDescriptionRegex *regexp.Regexp
+	if v, ok := d.GetOk("description_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		filesystemDescriptionRegex = r
+	}
+	var response map[string]interface{}
+	conn, err := client.NewNasClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		var raw interface{}
-		if err := invoker.Run(func() error {
-			rsp, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-				return nasClient.DescribeFileSystems(request)
-			})
-			raw = rsp
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_file_systems", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_file_systems", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		destription, ok := d.GetOk("description_regex")
-		var r *regexp.Regexp
-		if ok && destription.(string) != "" {
-			r = regexp.MustCompile(destription.(string))
+		addDebug(action, response, request)
+		resp, err := jsonpath.Get("$.FileSystems.FileSystem", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.FileSystems.FileSystem", response)
 		}
-		response, _ := raw.(*nas.DescribeFileSystemsResponse)
-		if len(response.FileSystems.FileSystem) < 1 {
-			break
-		}
-		for _, file_system := range response.FileSystems.FileSystem {
-			if v, ok := d.GetOk("storage_type"); ok && file_system.StorageType != Trim(v.(string)) {
-				continue
-			}
-			if v, ok := d.GetOk("protocol_type"); ok && string(file_system.ProtocolType) != Trim(v.(string)) {
-				continue
-			}
-			if r != nil && !r.MatchString(file_system.Description) {
-				continue
-			}
-			if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
-				id_found := false
-				for _, id := range v.([]interface{}) {
-					if id == nil {
-						continue
-					}
-					if string(file_system.FileSystemId) == id.(string) {
-						id_found = true
-						break
-					}
-				}
-				if !id_found {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if filesystemDescriptionRegex != nil {
+				if !filesystemDescriptionRegex.MatchString(fmt.Sprint(item["Description"])) {
 					continue
 				}
 			}
-			allfss = append(allfss, file_system)
+			if v, ok := d.GetOk("storage_type"); ok && v.(string) != "" && item["StorageType"].(string) != v.(string) {
+				continue
+			}
+			if v, ok := d.GetOk("protocol_type"); ok && v.(string) != "" && item["ProtocolType"].(string) != v.(string) {
+				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["FileSystemId"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
 		}
-
-		if len(response.FileSystems.FileSystem) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
-
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
-		} else {
-			request.PageNumber = page
-		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	return fileSystemsDecriptionAttributes(d, allfss, meta)
-}
-
-func fileSystemsDecriptionAttributes(d *schema.ResourceData, fssSetTypes []nas.FileSystem, meta interface{}) error {
-	var ids []string
-	var descriptions []string
-	var s []map[string]interface{}
-	for _, fs := range fssSetTypes {
+	ids := make([]string, 0)
+	descriptions := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":            fs.FileSystemId,
-			"region_id":     fs.RegionId,
-			"create_time":   fs.CreateTime,
-			"description":   fs.Description,
-			"protocol_type": fs.ProtocolType,
-			"storage_type":  fs.StorageType,
-			"metered_size":  fs.MeteredSize,
+			"id":            fmt.Sprint(object["FileSystemId"]),
+			"region_id":     object["RegionId"],
+			"create_time":   object["CreateTime"],
+			"description":   object["Description"],
+			"protocol_type": object["ProtocolType"],
+			"storage_type":  object["StorageType"],
+			"metered_size":  formatInt(object["MeteredSize"]),
 		}
-		ids = append(ids, fs.FileSystemId)
-		descriptions = append(descriptions, fs.Description)
+		ids = append(ids, fmt.Sprint(object["FileSystemId"]))
+		descriptions = append(descriptions, object["Description"])
 		s = append(s, mapping)
 	}
+
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("systems", s); err != nil {
-		return WrapError(err)
-	}
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
+
 	if err := d.Set("descriptions", descriptions); err != nil {
 		return WrapError(err)
 	}
-	// create a json file in current directory and write data source to it.
+
+	if err := d.Set("systems", s); err != nil {
+		return WrapError(err)
+	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
+
 	return nil
 }

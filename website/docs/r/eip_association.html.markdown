@@ -1,5 +1,5 @@
 ---
-subcategory: "VPC"
+subcategory: "Elastic IP Address (EIP)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_eip_association"
 sidebar_current: "docs-alicloud-resource-eip-association"
@@ -84,8 +84,8 @@ to create several EIP instances and associate them with other resources one-clic
 The following arguments are supported:
 
 * `allocation_id` - (Required, ForcesNew) The allocation EIP ID.
-* `instance_id` - (Required, ForcesNew) The ID of the ECS or SLB instance or Nat Gateway.
-* `instance_type` - (Optional, ForceNew, Available in 1.46.0+) The type of cloud product that the eip instance to bind.
+* `instance_id` - (Required, ForcesNew) The ID of the ECS or SLB instance or Nat Gateway or NetworkInterface or HaVip.
+* `instance_type` - (Optional, ForceNew, Available in 1.46.0+) The type of cloud product that the eip instance to bind. Valid values: `EcsInstance`, `SlbInstance`, `Nat`, `NetworkInterface` and `HaVip`.
 * `private_ip_address` - (Optional, ForceNew, Available in 1.52.2+) The private IP address in the network segment of the vswitch which has been assigned.
 * `force` - (Optional, Available in 1.95.0+) When EIP is bound to a NAT gateway, and the NAT gateway adds a DNAT or SNAT entry, set it for `true` can unassociation any way. Default to `false`.
 
@@ -94,5 +94,14 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `allocation_id` - As above.
-* `instance_id` - As above.
+* `id` - The EIP Association ID and it formats as `<allocation_id>:<instance_id>`.
+
+## Import
+
+-> **NOTE:** Available in 1.117.0+.
+
+Elastic IP address association can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_eip_association.example eip-abc12345678:i-abc12355
+```

@@ -180,7 +180,9 @@ func (s *RosService) ListTagResources(id string, resourceType string) (object in
 			if err != nil {
 				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
 			}
-			tags = append(tags, v.([]interface{})...)
+			if v != nil {
+				tags = append(tags, v.([]interface{})...)
+			}
 			return nil
 		})
 		if err != nil {
@@ -218,7 +220,7 @@ func (s *RosService) SetResourceTags(d *schema.ResourceData, resourceType string
 				"ResourceType": resourceType,
 				"ResourceId.1": d.Id(),
 			}
-			for i, key := range removed {
+			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(2*time.Second, 1*time.Second)

@@ -10,16 +10,23 @@ import (
 var (
 	existHBaseInstanceTypesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"types.#":          CHECKSET,
-			"types.0.cpu_size": CHECKSET,
-			"types.0.mem_size": CHECKSET,
-			"types.0.value":    CHECKSET,
+			"ids.#":                                 CHECKSET,
+			"types.#":                               CHECKSET,
+			"master_instance_types.#":               CHECKSET,
+			"master_instance_types.0.instance_type": CHECKSET,
+			"master_instance_types.0.cpu_size":      CHECKSET,
+			"master_instance_types.0.mem_size":      CHECKSET,
+			"core_instance_types.#":                 CHECKSET,
+			"core_instance_types.0.instance_type":   CHECKSET,
+			"core_instance_types.0.cpu_size":        CHECKSET,
+			"core_instance_types.0.mem_size":        CHECKSET,
 		}
 	}
 
 	fakeHBaseInstanceTypesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"types.#": "0",
+			"master_instance_types.#": "0",
+			"core_instance_types.#":   "0",
 		}
 	}
 
@@ -35,18 +42,28 @@ func TestAccAlicloudHBaseInstanceTypesDataSource(t *testing.T) {
 	resourceID := "data.alicloud_hbase_instance_types.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceID,
-		fmt.Sprintf("tf-testacc%sbase-instance-types%v.abc", defaultRegionToTest, rand),
+		fmt.Sprintf("tf-testacc%sbase-instance-instance_types%v.abc", defaultRegionToTest, rand),
 		dataSourceHBaseInstanceTypesConfigDependence)
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_type": "hbase.sn1.large",
+			"charge_type": "Postpaid",
+			"region_id":   "cn-shanghai",
+			"zone_id":     "cn-shanghai-g",
+			"engine":      "hbaseue",
+			"version":     "2.0",
 		}),
 	}
 
 	oneConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_type": "hbase.sn1.large",
+			"charge_type":   "Postpaid",
+			"region_id":     "cn-shanghai",
+			"zone_id":       "cn-shanghai-g",
+			"engine":        "hbaseue",
+			"version":       "2.0",
+			"instance_type": "hbase.sn1.8xlarge",
+			"disk_type":     "cloud_ssd",
 		}),
 	}
 

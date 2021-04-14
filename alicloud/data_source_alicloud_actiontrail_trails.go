@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -19,6 +20,12 @@ func dataSourceAlicloudActiontrailTrails() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
+			},
+			"include_organization_trail": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+				ForceNew: true,
 			},
 			"include_shadow_trails": {
 				Type:     schema.TypeBool,
@@ -57,6 +64,10 @@ func dataSourceAlicloudActiontrailTrails() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"is_organization_trail": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 						"oss_bucket_name": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -65,7 +76,7 @@ func dataSourceAlicloudActiontrailTrails() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"role_name": {
+						"oss_write_role_arn": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -105,6 +116,10 @@ func dataSourceAlicloudActiontrailTrails() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"is_organization_trail": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 						"oss_bucket_name": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -113,7 +128,7 @@ func dataSourceAlicloudActiontrailTrails() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"role_name": {
+						"oss_write_role_arn": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -152,11 +167,15 @@ func dataSourceAlicloudActiontrailTrails() *schema.Resource {
 func dataSourceAlicloudActiontrailTrailsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := actiontrail.CreateDescribeTrailsRequest()
-	if v, ok := d.GetOkExists("include_shadow_trails"); ok {
-		request.IncludeShadowTrails = requests.NewBoolean(v.(bool))
+	action := "DescribeTrails"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOkExists("include_organization_trail"); ok {
+		request["IncludeOrganizationTrail"] = v
 	}
-	var objects []actiontrail.TrailListItem
+	if v, ok := d.GetOkExists("include_shadow_trails"); ok {
+		request["IncludeShadowTrails"] = v
+	}
+	var objects []map[string]interface{}
 	var trailNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -176,51 +195,61 @@ func dataSourceAlicloudActiontrailTrailsRead(d *schema.ResourceData, meta interf
 		}
 	}
 	status, statusOk := d.GetOk("status")
-	var response *actiontrail.DescribeTrailsResponse
-	raw, err := client.WithActiontrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
-		return actiontrailClient.DescribeTrails(request)
-	})
+	var response map[string]interface{}
+	conn, err := client.NewActiontrailClient()
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_actiontrail_trails", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ = raw.(*actiontrail.DescribeTrailsResponse)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_actiontrail_trails", action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
 
-	for _, item := range response.TrailList {
+	resp, err := jsonpath.Get("$.TrailList", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TrailList", response)
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
 		if trailNameRegex != nil {
-			if !trailNameRegex.MatchString(item.Name) {
+			if !trailNameRegex.MatchString(fmt.Sprint(item["Name"])) {
 				continue
 			}
 		}
 		if len(idsMap) > 0 {
-			if _, ok := idsMap[item.Name]; !ok {
+			if _, ok := idsMap[fmt.Sprint(item["Name"])]; !ok {
 				continue
 			}
 		}
-		if statusOk && status != "" && status != item.Status {
+		if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
 			continue
 		}
 		objects = append(objects, item)
 	}
-	ids := make([]string, len(objects))
-	names := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-	for i, object := range objects {
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"event_rw":           object.EventRW,
-			"oss_bucket_name":    object.OssBucketName,
-			"oss_key_prefix":     object.OssKeyPrefix,
-			"role_name":          object.RoleName,
-			"sls_project_arn":    object.SlsProjectArn,
-			"sls_write_role_arn": object.SlsWriteRoleArn,
-			"status":             object.Status,
-			"id":                 object.Name,
-			"trail_name":         object.Name,
-			"trail_region":       object.TrailRegion,
+			"event_rw":              object["EventRW"],
+			"is_organization_trail": object["IsOrganizationTrail"],
+			"oss_bucket_name":       object["OssBucketName"],
+			"oss_key_prefix":        object["OssKeyPrefix"],
+			"oss_write_role_arn":    object["OssWriteRoleArn"],
+			"sls_project_arn":       object["SlsProjectArn"],
+			"sls_write_role_arn":    object["SlsWriteRoleArn"],
+			"status":                object["Status"],
+			"id":                    fmt.Sprint(object["Name"]),
+			"trail_name":            fmt.Sprint(object["Name"]),
+			"trail_region":          object["TrailRegion"],
 		}
-		ids[i] = object.Name
-		names[i] = object.Name
-		s[i] = mapping
+		ids = append(ids, fmt.Sprint(object["Name"]))
+		names = append(names, object["Name"])
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
@@ -232,10 +261,11 @@ func dataSourceAlicloudActiontrailTrailsRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 
-	if err := d.Set("trails", s); err != nil {
+	if err := d.Set("actiontrails", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("actiontrails", s); err != nil {
+
+	if err := d.Set("trails", s); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

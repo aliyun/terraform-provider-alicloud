@@ -21,7 +21,6 @@ import (
 )
 
 // UpgradeDBProxyInstanceKernelVersion invokes the rds.UpgradeDBProxyInstanceKernelVersion API synchronously
-// api document: https://help.aliyun.com/api/rds/upgradedbproxyinstancekernelversion.html
 func (client *Client) UpgradeDBProxyInstanceKernelVersion(request *UpgradeDBProxyInstanceKernelVersionRequest) (response *UpgradeDBProxyInstanceKernelVersionResponse, err error) {
 	response = CreateUpgradeDBProxyInstanceKernelVersionResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) UpgradeDBProxyInstanceKernelVersion(request *UpgradeDBProx
 }
 
 // UpgradeDBProxyInstanceKernelVersionWithChan invokes the rds.UpgradeDBProxyInstanceKernelVersion API asynchronously
-// api document: https://help.aliyun.com/api/rds/upgradedbproxyinstancekernelversion.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpgradeDBProxyInstanceKernelVersionWithChan(request *UpgradeDBProxyInstanceKernelVersionRequest) (<-chan *UpgradeDBProxyInstanceKernelVersionResponse, <-chan error) {
 	responseChan := make(chan *UpgradeDBProxyInstanceKernelVersionResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) UpgradeDBProxyInstanceKernelVersionWithChan(request *Upgra
 }
 
 // UpgradeDBProxyInstanceKernelVersionWithCallback invokes the rds.UpgradeDBProxyInstanceKernelVersion API asynchronously
-// api document: https://help.aliyun.com/api/rds/upgradedbproxyinstancekernelversion.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpgradeDBProxyInstanceKernelVersionWithCallback(request *UpgradeDBProxyInstanceKernelVersionRequest, callback func(response *UpgradeDBProxyInstanceKernelVersionResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -87,10 +82,9 @@ type UpgradeDBProxyInstanceKernelVersionRequest struct {
 // UpgradeDBProxyInstanceKernelVersionResponse is the response struct for api UpgradeDBProxyInstanceKernelVersion
 type UpgradeDBProxyInstanceKernelVersionResponse struct {
 	*responses.BaseResponse
-	RequestId          string `json:"RequestId" xml:"RequestId"`
-	DBInstanceName     string `json:"DBInstanceName" xml:"DBInstanceName"`
-	TaskId             string `json:"TaskId" xml:"TaskId"`
-	TargetMinorVersion string `json:"TargetMinorVersion" xml:"TargetMinorVersion"`
+	RequestId      string `json:"RequestId" xml:"RequestId"`
+	DBInstanceName string `json:"DBInstanceName" xml:"DBInstanceName"`
+	TaskId         string `json:"TaskId" xml:"TaskId"`
 }
 
 // CreateUpgradeDBProxyInstanceKernelVersionRequest creates a request to invoke UpgradeDBProxyInstanceKernelVersion API

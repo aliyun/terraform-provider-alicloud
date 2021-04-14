@@ -2,12 +2,98 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_ros_stack_group",
+		&resource.Sweeper{
+			Name: "alicloud_ros_stack_group",
+			F:    testSweepRosStackGroup,
+		})
+}
+
+func testSweepRosStackGroup(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "Error getting Alicloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	request := map[string]interface{}{
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+		"RegionId":   region,
+	}
+	var response map[string]interface{}
+	action := "ListStackGroups"
+	conn, err := client.NewRosClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ros_stack_group", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.StackGroups", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.StackGroups", response)
+		}
+		sweeped := false
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(item["StackGroupName"].(string)), strings.ToLower(prefix)) {
+					skip = false
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Ros StackGroup: %s", item["StackGroupName"].(string))
+				continue
+			}
+			sweeped = true
+			action = "DeleteStackGroup"
+			request := map[string]interface{}{
+				"StackGroupName": item["StackGroupName"],
+				"RegionId":       region,
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Ros StackGroup (%s): %s", item["StackGroupName"].(string), err)
+			}
+			if sweeped {
+				// Waiting 5 seconds to ensure Ros StackGroup have been deleted.
+				time.Sleep(5 * time.Second)
+			}
+			log.Printf("[INFO] Delete Ros StackGroup success: %s ", item["StackGroupName"].(string))
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return nil
+}
 
 func TestAccAlicloudRosStackGroup_basic(t *testing.T) {
 	var v map[string]interface{}

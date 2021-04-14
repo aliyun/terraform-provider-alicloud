@@ -54,7 +54,7 @@ The following attributes are exported:
 
 * `id` - This ID of Resource Manager role. The value is set to `role_name`. 
 * `arn` - The resource descriptor of the role.
-* `create_date` - Role creation time.
+* `create_date` (Removed form v1.114.0) - Role creation time.
 * `update_date` - Role update time.
 
 ## Import

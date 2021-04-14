@@ -19,15 +19,15 @@ When NAS is activated, the Default VPC Permission Group is automatically generat
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_nas_access_group" "foo" {
-  name        = "tf-NasConfigName-%d"
-  type        = "Vpc"
-  description = "tf-testAccNasConfig"
+  access_group_name  = "tf-NasConfigName"
+  access_group_type  = "Vpc"
+  description        = "tf-testAccNasConfig"
 }
 
 resource "alicloud_nas_access_rule" "foo" {
-  access_group_name = alicloud_nas_access_group.foo.id
+  access_group_name = alicloud_nas_access_group.foo.access_group_name
   source_cidr_ip    = "168.1.1.0/16"
   rw_access_type    = "RDWR"
   user_access_type  = "no_squash"
@@ -43,9 +43,9 @@ The following arguments are supported:
 
 * `access_group_name` - (Required, ForceNew) Permission group name.
 * `source_cidr_ip` - (Required) Address or address segment.
-* `rw_access_type` - (Optional) Read-write permission type: RDWR (default), RDONLY.
-* `user_access_type` - (Optional) User permission type: no_squash (default), root_squash, all_squash.
-* `priority` - (Optional) Priority level. Range: 1-100. Default value: 1.
+* `rw_access_type` - (Optional) Read-write permission type: `RDWR` (default), `RDONLY`.
+* `user_access_type` - (Optional) User permission type: `no_squash` (default), `root_squash`, `all_squash`.
+* `priority` - (Optional) Priority level. Range: 1-100. Default value: `1`.
 
 ## Attributes Reference
 

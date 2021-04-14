@@ -1,10 +1,13 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
+	"fmt"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func dataSourceAlicloudResourceManagerAccounts() *schema.Resource {
@@ -17,6 +20,12 @@ func dataSourceAlicloudResourceManagerAccounts() *schema.Resource {
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"CreateCancelled", "CreateExpired", "CreateFailed", "CreateSuccess", "CreateVerifying", "InviteSuccess", "PromoteCancelled", "PromoteExpired", "PromoteFailed", "PromoteSuccess", "PromoteVerifying"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -77,10 +86,12 @@ func dataSourceAlicloudResourceManagerAccounts() *schema.Resource {
 func dataSourceAlicloudResourceManagerAccountsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := resourcemanager.CreateListAccountsRequest()
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	var objects []resourcemanager.Account
+	action := "ListAccounts"
+	request := make(map[string]interface{})
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
+
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -90,52 +101,60 @@ func dataSourceAlicloudResourceManagerAccountsRead(d *schema.ResourceData, meta 
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+	status, statusOk := d.GetOk("status")
+	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourcemanagerClient.ListAccounts(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_accounts", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_accounts", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*resourcemanager.ListAccountsResponse)
+		addDebug(action, response, request)
 
-		for _, item := range response.Accounts.Account {
+		resp, err := jsonpath.Get("$.Accounts.Account", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Accounts.Account", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.AccountId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["AccountId"])]; !ok {
 					continue
 				}
 			}
+			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+				continue
+			}
 			objects = append(objects, item)
 		}
-		if len(response.Accounts.Account) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
-
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	ids := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-
-	for i, object := range objects {
+	ids := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":                    object.AccountId,
-			"account_id":            object.AccountId,
-			"display_name":          object.DisplayName,
-			"folder_id":             object.FolderId,
-			"join_method":           object.JoinMethod,
-			"join_time":             object.JoinTime,
-			"modify_time":           object.ModifyTime,
-			"resource_directory_id": object.ResourceDirectoryId,
-			"status":                object.Status,
-			"type":                  object.Type,
+			"id":                    fmt.Sprint(object["AccountId"]),
+			"account_id":            fmt.Sprint(object["AccountId"]),
+			"display_name":          object["DisplayName"],
+			"folder_id":             object["FolderId"],
+			"join_method":           object["JoinMethod"],
+			"join_time":             object["JoinTime"],
+			"modify_time":           object["ModifyTime"],
+			"resource_directory_id": object["ResourceDirectoryId"],
+			"status":                object["Status"],
+			"type":                  object["Type"],
 		}
-		ids[i] = object.AccountId
-		s[i] = mapping
+		ids = append(ids, fmt.Sprint(object["AccountId"]))
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))

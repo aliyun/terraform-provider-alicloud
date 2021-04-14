@@ -15,7 +15,7 @@ This data source provides the Resource Manager Policy Versions of the current Al
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_resource_manager_policy_versions" "default" {
     policy_name = "tftest"
     policy_type = "Custom"
@@ -34,6 +34,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `policy_name` - (Required) The name of the policy.
 * `policy_type` - (Required) The type of the policy. Valid values:`Custom` and `System`.
+* `enable_details` -(Optional, Available in v1.114.0+) Default to `false`. Set it to true can output more details.
 
 ## Attributes Reference
 
@@ -43,7 +44,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `versions` - A list of policy versions. Each element contains the following attributes:
     * `id` - The ID of the resource, the value is `<policy_name>`:`<version_id>`.
     * `version_id`- The ID of the policy version.
-    * `create_date`- The time when the policy version was created.
+    * `create_date`- (Removed form v1.114.0)The time when the policy version was created.
     * `is_default_version`- Indicates whether the policy version is the default version.
+    * `policy_document`- (Available in v1.114.0+) The policy document of the policy version.
     
     

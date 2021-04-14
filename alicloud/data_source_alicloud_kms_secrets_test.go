@@ -34,14 +34,14 @@ func TestAccAlicloudKmsSecretsDataSource(t *testing.T) {
 			"fetch_tags": "true",
 			"tags": map[string]interface{}{
 				"Created": "TF",
-				"For":     "secret test",
+				"For":     "Secrettest",
 			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"fetch_tags": "true",
 			"tags": map[string]interface{}{
 				"Created": "TF_fake",
-				"For":     "secret test",
+				"For":     "Secrettest",
 			},
 		}),
 	}
@@ -52,7 +52,7 @@ func TestAccAlicloudKmsSecretsDataSource(t *testing.T) {
 			"ids":        []string{"${alicloud_kms_secret.default.secret_name}"},
 			"tags": map[string]interface{}{
 				"Created": "TF",
-				"For":     "secret test",
+				"For":     "Secrettest",
 			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
@@ -61,7 +61,7 @@ func TestAccAlicloudKmsSecretsDataSource(t *testing.T) {
 			"ids":        []string{"${alicloud_kms_secret.default.secret_name}-fake"},
 			"tags": map[string]interface{}{
 				"Created": "TF_fake",
-				"For":     "secret test",
+				"For":     "Secrettest",
 			},
 		}),
 	}
@@ -76,7 +76,7 @@ func TestAccAlicloudKmsSecretsDataSource(t *testing.T) {
 			"secrets.0.secret_name":  CHECKSET,
 			"secrets.0.tags.%":       "1",
 			"secrets.0.tags.Created": "TF",
-			"secrets.0.tags.For":     "secret test",
+			"secrets.0.tags.For":     "Secrettest",
 		}
 	}
 
@@ -105,7 +105,7 @@ func dataSourceKmsSecretsDependence(name string) string {
 		  version_id = "v001"
 		  tags = {
 			Created = "TF"
-			For 	= "secret test"
+			For 	= "Secrettest"
 		  }
 		}
 	`, name)

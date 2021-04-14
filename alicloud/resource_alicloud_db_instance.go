@@ -214,7 +214,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"ssl_action": {
@@ -237,7 +236,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("engine").(string) != "PostgreSQL"
+					return d.Get("engine").(string) != "PostgreSQL" && d.Get("engine").(string) != "MySQL"
 				},
 			},
 			"zone_id_slave_a": {
@@ -526,6 +525,18 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			"TDEStatus":    d.Get("tde_status"),
 			"SourceIp":     client.SourceIp,
 		}
+
+		if "MySQL" == d.Get("engine").(string) {
+			if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
+				request["EncryptionKey"] = v.(string)
+				roleArn, err := findKmsRoleArn(client, v.(string))
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				request["RoleARN"] = roleArn
+			}
+		}
+
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
@@ -574,7 +585,21 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		d.SetPartial("security_ips")
 	}
-
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		action := "ModifyResourceGroup"
+		request := map[string]interface{}{
+			"DBInstanceId":    d.Id(),
+			"ResourceGroupId": d.Get("resource_group_id"),
+			"ClientToken":     buildClientToken(action),
+			"SourceIp":        client.SourceIp,
+		}
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		d.SetPartial("resource_group_id")
+	}
 	update := false
 	action := "ModifyDBInstanceSpec"
 	request := map[string]interface{}{
@@ -834,7 +859,7 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		request["ResourceGroupId"] = v
 	}
 
-	if request["Engine"] == "PostgreSQL" {
+	if request["Engine"] == "PostgreSQL" || request["Engine"] == "MySQL" {
 		if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
 			request["EncryptionKey"] = v.(string)
 

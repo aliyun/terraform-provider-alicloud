@@ -231,6 +231,30 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"spec_type":       "professional",
+					"service_version": "2.2.0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spec_type":       "professional",
+						"service_version": "2.2.0",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": `{\"enable.vpc_sasl_ssl\":\"false\",\"kafka.log.retention.hours\":\"96\",\"enable.acl\":\"false\",\"kafka.message.max.bytes\":\"1048576\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config": "{\"enable.vpc_sasl_ssl\":\"false\",\"kafka.log.retention.hours\":\"96\",\"enable.acl\":\"false\",\"kafka.message.max.bytes\":\"1048576\"}",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -274,24 +298,28 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 					"io_max":      "20",
 					"eip_max":     "0",
 					//"paid_type":   "PrePaid",
-					"spec_type": "professional",
-					"tags":      REMOVEKEY,
+					"spec_type":       "professional",
+					"service_version": "2.2.0",
+					"config":          `{\"enable.vpc_sasl_ssl\":\"false\",\"kafka.log.retention.hours\":\"72\",\"enable.acl\":\"false\",\"kafka.message.max.bytes\":\"1048576\"}`,
+					"tags":            REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":         fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
-						"topic_quota":  "50",
-						"disk_type":    "1",
-						"disk_size":    "500",
-						"deploy_type":  "5",
-						"io_max":       "20",
-						"eip_max":      "0",
-						"paid_type":    "PostPaid",
-						"spec_type":    "professional",
-						"tags.%":       REMOVEKEY,
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-						"tags.Updated": REMOVEKEY,
+						"name":            fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
+						"topic_quota":     "50",
+						"disk_type":       "1",
+						"disk_size":       "500",
+						"deploy_type":     "5",
+						"io_max":          "20",
+						"eip_max":         "0",
+						"paid_type":       "PostPaid",
+						"spec_type":       "professional",
+						"service_version": "2.2.0",
+						"config":          "{\"enable.vpc_sasl_ssl\":\"false\",\"kafka.log.retention.hours\":\"72\",\"enable.acl\":\"false\",\"kafka.message.max.bytes\":\"1048576\"}",
+						"tags.%":          REMOVEKEY,
+						"tags.Created":    REMOVEKEY,
+						"tags.For":        REMOVEKEY,
+						"tags.Updated":    REMOVEKEY,
 					}),
 				),
 			},
@@ -328,16 +356,18 @@ func TestAccAlicloudAlikafkaInstance_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"count":       "2",
-					"name":        "${var.name}-${count.index}",
-					"topic_quota": "50",
-					"disk_type":   "1",
-					"disk_size":   "500",
-					"deploy_type": "5",
-					"io_max":      "20",
-					"vswitch_id":  "${data.alicloud_vswitches.default.ids.0}",
-					"paid_type":   "PostPaid",
-					"spec_type":   "normal",
+					"count":           "2",
+					"name":            "${var.name}-${count.index}",
+					"topic_quota":     "50",
+					"disk_type":       "1",
+					"disk_size":       "500",
+					"deploy_type":     "5",
+					"io_max":          "20",
+					"vswitch_id":      "${data.alicloud_vswitches.default.ids.0}",
+					"paid_type":       "PostPaid",
+					"service_version": "0.10.2",
+					"config":          "{}",
+					"spec_type":       "normal",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -371,12 +401,17 @@ func resourceAlikafkaInstanceConfigDependence(name string) string {
 }
 
 var alikafkaInstanceBasicMap = map[string]string{
-	"topic_quota": CHECKSET,
-	"disk_type":   CHECKSET,
-	"disk_size":   CHECKSET,
-	"deploy_type": CHECKSET,
-	"io_max":      CHECKSET,
-	"vswitch_id":  CHECKSET,
-	"paid_type":   CHECKSET,
-	"spec_type":   CHECKSET,
+	"topic_quota":     CHECKSET,
+	"disk_type":       CHECKSET,
+	"disk_size":       CHECKSET,
+	"deploy_type":     CHECKSET,
+	"io_max":          CHECKSET,
+	"vswitch_id":      CHECKSET,
+	"paid_type":       CHECKSET,
+	"spec_type":       CHECKSET,
+	"vpc_id":          CHECKSET,
+	"zone_id":         CHECKSET,
+	"end_point":       CHECKSET,
+	"service_version": CHECKSET,
+	"config":          CHECKSET,
 }

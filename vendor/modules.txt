@@ -19,13 +19,17 @@ github.com/alibabacloud-go/debug/debug
 # github.com/alibabacloud-go/tea v1.1.10
 github.com/alibabacloud-go/tea/tea
 github.com/alibabacloud-go/tea/utils
-# github.com/alibabacloud-go/tea-rpc v1.1.6
+# github.com/alibabacloud-go/tea-roa v1.2.8
+github.com/alibabacloud-go/tea-roa/client
+# github.com/alibabacloud-go/tea-roa-utils v1.1.5
+github.com/alibabacloud-go/tea-roa-utils/service
+# github.com/alibabacloud-go/tea-rpc v1.1.8
 github.com/alibabacloud-go/tea-rpc/client
-# github.com/alibabacloud-go/tea-rpc-utils v1.1.1
+# github.com/alibabacloud-go/tea-rpc-utils v1.1.2
 github.com/alibabacloud-go/tea-rpc-utils/service
-# github.com/alibabacloud-go/tea-utils v1.3.4
+# github.com/alibabacloud-go/tea-utils v1.3.6
 github.com/alibabacloud-go/tea-utils/service
-# github.com/aliyun/alibaba-cloud-sdk-go v1.61.684
+# github.com/aliyun/alibaba-cloud-sdk-go v1.61.890
 github.com/aliyun/alibaba-cloud-sdk-go/sdk
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials
@@ -36,7 +40,6 @@ github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils
-github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail
 github.com/aliyun/alibaba-cloud-sdk-go/services/adb
 github.com/aliyun/alibaba-cloud-sdk-go/services/alidns
 github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka
@@ -54,7 +57,6 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn
 github.com/aliyun/alibaba-cloud-sdk-go/services/ddosbgp
 github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo
 github.com/aliyun/alibaba-cloud-sdk-go/services/dds
-github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise
 github.com/aliyun/alibaba-cloud-sdk-go/services/drds
 github.com/aliyun/alibaba-cloud-sdk-go/services/eci
 github.com/aliyun/alibaba-cloud-sdk-go/services/ecs
@@ -68,17 +70,11 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/kms
 github.com/aliyun/alibaba-cloud-sdk-go/services/location
 github.com/aliyun/alibaba-cloud-sdk-go/services/market
 github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute
-github.com/aliyun/alibaba-cloud-sdk-go/services/mse
-github.com/aliyun/alibaba-cloud-sdk-go/services/nas
-github.com/aliyun/alibaba-cloud-sdk-go/services/ons
-github.com/aliyun/alibaba-cloud-sdk-go/services/oos
 github.com/aliyun/alibaba-cloud-sdk-go/services/ots
 github.com/aliyun/alibaba-cloud-sdk-go/services/polardb
-github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz
 github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore
 github.com/aliyun/alibaba-cloud-sdk-go/services/ram
 github.com/aliyun/alibaba-cloud-sdk-go/services/rds
-github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager
 github.com/aliyun/alibaba-cloud-sdk-go/services/slb
 github.com/aliyun/alibaba-cloud-sdk-go/services/sls
 github.com/aliyun/alibaba-cloud-sdk-go/services/smartag
@@ -88,9 +84,9 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost
 github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit
 # github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
 github.com/aliyun/aliyun-datahub-sdk-go/datahub
-# github.com/aliyun/aliyun-log-go-sdk v0.1.13
+# github.com/aliyun/aliyun-log-go-sdk v0.1.20
 github.com/aliyun/aliyun-log-go-sdk
-# github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20191115025756-088ba95470f4
+# github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 github.com/aliyun/aliyun-mns-go-sdk
 # github.com/aliyun/aliyun-oss-go-sdk v2.1.2+incompatible
 github.com/aliyun/aliyun-oss-go-sdk/oss
@@ -105,6 +101,8 @@ github.com/aliyun/credentials-go/credentials/response
 github.com/aliyun/credentials-go/credentials/utils
 # github.com/aliyun/fc-go-sdk v0.0.0-20200925033337-c013428cbe21
 github.com/aliyun/fc-go-sdk
+# github.com/andybalholm/brotli v1.0.1
+github.com/andybalholm/brotli
 # github.com/apparentlymart/go-cidr v1.0.1
 github.com/apparentlymart/go-cidr/cidr
 # github.com/apparentlymart/go-textseg v1.0.0
@@ -159,7 +157,9 @@ github.com/bgentry/speakeasy
 github.com/cenkalti/backoff
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/denverdino/aliyungo v0.0.0-20201215054313-f635de23c5e0
+# github.com/deckarep/golang-set v1.7.1
+github.com/deckarep/golang-set
+# github.com/denverdino/aliyungo v0.0.0-20210318042315-546d0768f5c7
 github.com/denverdino/aliyungo/cdn
 github.com/denverdino/aliyungo/common
 github.com/denverdino/aliyungo/cs
@@ -333,12 +333,10 @@ github.com/keybase/go-crypto/openpgp/errors
 github.com/keybase/go-crypto/openpgp/packet
 github.com/keybase/go-crypto/openpgp/s2k
 github.com/keybase/go-crypto/rsa
-# github.com/klauspost/compress v0.0.0-20180801095237-b50017755d44
+# github.com/klauspost/compress v1.11.8
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/gzip
 github.com/klauspost/compress/zlib
-# github.com/klauspost/cpuid v1.2.0
-github.com/klauspost/cpuid
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/mattn/go-colorable v0.1.1
@@ -387,9 +385,9 @@ github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
-# github.com/valyala/bytebufferpool v0.0.0-20180905182247-cdfbe9377474
+# github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
-# github.com/valyala/fasthttp v0.0.0-20180927122258-761788a34bb6
+# github.com/valyala/fasthttp v1.22.0
 github.com/valyala/fasthttp
 github.com/valyala/fasthttp/fasthttputil
 github.com/valyala/fasthttp/stackless
@@ -424,7 +422,7 @@ go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
-# golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+# golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/cast5
@@ -443,7 +441,7 @@ golang.org/x/crypto/poly1305
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20200822124328-c89045814202
+# golang.org/x/net v0.0.0-20210226101413-39120d07d75e
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -461,12 +459,15 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20200509044756-6aff5f38e54f
+# golang.org/x/sys v0.0.0-20210225134936-a50acf3fe073
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.2
+# golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
+golang.org/x/term
+# golang.org/x/text v0.3.5
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi

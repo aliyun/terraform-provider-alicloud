@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -13,52 +14,93 @@ import (
 func dataSourceAlicloudForwardEntries() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudForwardEntriesRead,
-
 		Schema: map[string]*schema.Schema{
-			"forward_table_id": {
+			"external_ip": {
 				Type:     schema.TypeString,
+				Optional: true,
 				ForceNew: true,
-				Required: true,
+			},
+			"external_port": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.ValidateRegexp,
+				ForceNew:     true,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"forward_entry_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"forward_table_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"internal_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"internal_port": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ip_protocol": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"any", "tcp", "udp"}, false),
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Available", "Deleting", "Pending"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"external_ip": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"internal_ip": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
-				ForceNew: true,
-			},
-			"names": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				ForceNew: true,
-			},
-
-			// Computed values
 			"entries": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						// the forward_entry resource id is spliced from forward_table_id and forward_entry_id, but,this id refers to forward_entry_id
+						"external_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"external_port": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"forward_entry_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"forward_entry_name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -66,15 +108,7 @@ func dataSourceAlicloudForwardEntries() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"external_ip": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"internal_ip": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"external_port": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -96,114 +130,131 @@ func dataSourceAlicloudForwardEntries() *schema.Resource {
 		},
 	}
 }
+
 func dataSourceAlicloudForwardEntriesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := vpc.CreateDescribeForwardTableEntriesRequest()
-	request.RegionId = string(client.Region)
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	request.ForwardTableId = d.Get("forward_table_id").(string)
+	action := "DescribeForwardTableEntries"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("external_ip"); ok {
+		request["ExternalIp"] = v
+	}
+	if v, ok := d.GetOk("external_port"); ok {
+		request["ExternalPort"] = v
+	}
+	if v, ok := d.GetOk("forward_entry_name"); ok {
+		request["ForwardEntryName"] = v
+	}
+	request["ForwardTableId"] = d.Get("forward_table_id")
+	if v, ok := d.GetOk("internal_ip"); ok {
+		request["InternalIp"] = v
+	}
+	if v, ok := d.GetOk("internal_port"); ok {
+		request["InternalPort"] = v
+	}
+	if v, ok := d.GetOk("ip_protocol"); ok {
+		request["IpProtocol"] = v
+	}
+	request["RegionId"] = client.RegionId
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
+	var forwardEntryNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		forwardEntryNameRegex = r
+	}
+
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			if vv == nil {
 				continue
 			}
-			idsMap[Trim(vv.(string))] = Trim(vv.(string))
+			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	var r *regexp.Regexp
-	var err error
-	if nameRegex, ok := d.GetOk("name_regex"); ok {
-		if r, err = regexp.Compile(nameRegex.(string)); err != nil {
-			return WrapError(err)
-		}
+	status, statusOk := d.GetOk("status")
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	var allForwardEntries []vpc.ForwardTableEntry
-	invoker := NewInvoker()
-	var raw interface{}
 	for {
-		if err := invoker.Run(func() error {
-			raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.DescribeForwardTableEntries(request)
-			})
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_forward_entries", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_forward_entries", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*vpc.DescribeForwardTableEntriesResponse)
-		if len(response.ForwardTableEntries.ForwardTableEntry) < 1 {
-			break
-		}
+		addDebug(action, response, request)
 
-		for _, entries := range response.ForwardTableEntries.ForwardTableEntry {
-			if r != nil && !r.MatchString(entries.ForwardEntryName) {
-				continue
-			}
-			if external_ip, ok := d.GetOk("external_ip"); ok && entries.ExternalIp != external_ip.(string) {
-				continue
-			}
-			if internal_ip, ok := d.GetOk("internal_ip"); ok && entries.InternalIp != internal_ip.(string) {
-				continue
-			}
-			if len(idsMap) > 0 {
-				if _, ok := idsMap[entries.ForwardEntryId]; !ok {
+		resp, err := jsonpath.Get("$.ForwardTableEntries.ForwardTableEntry", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ForwardTableEntries.ForwardTableEntry", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if forwardEntryNameRegex != nil {
+				if !forwardEntryNameRegex.MatchString(fmt.Sprint(item["ForwardEntryName"])) {
 					continue
 				}
 			}
-			allForwardEntries = append(allForwardEntries, entries)
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["ForwardEntryId"])]; !ok {
+					continue
+				}
+			}
+			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+				continue
+			}
+			objects = append(objects, item)
 		}
-
-		if len(response.ForwardTableEntries.ForwardTableEntry) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
-
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
-		} else {
-			request.PageNumber = page
-		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-
-	return ForwardEntriesDecriptionAttributes(d, allForwardEntries, meta)
-}
-
-func ForwardEntriesDecriptionAttributes(d *schema.ResourceData, entries []vpc.ForwardTableEntry, meta interface{}) error {
-	var ids []string
-	var names []string
-	var s []map[string]interface{}
-	for _, entry := range entries {
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":            entry.ForwardEntryId,
-			"name":          entry.ForwardEntryName,
-			"external_ip":   entry.ExternalIp,
-			"internal_ip":   entry.InternalIp,
-			"external_port": entry.ExternalPort,
-			"internal_port": entry.InternalPort,
-			"ip_protocol":   entry.IpProtocol,
-			"status":        entry.Status,
+			"external_ip":        object["ExternalIp"],
+			"external_port":      object["ExternalPort"],
+			"id":                 fmt.Sprint(object["ForwardEntryId"]),
+			"forward_entry_id":   fmt.Sprint(object["ForwardEntryId"]),
+			"forward_entry_name": object["ForwardEntryName"],
+			"name":               object["ForwardEntryName"],
+			"internal_ip":        object["InternalIp"],
+			"internal_port":      object["InternalPort"],
+			"ip_protocol":        object["IpProtocol"],
+			"status":             object["Status"],
 		}
-		ids = append(ids, entry.ForwardEntryId)
-		names = append(names, entry.ForwardEntryName)
+		ids = append(ids, fmt.Sprint(object["ForwardEntryId"]))
+		names = append(names, object["ForwardEntryName"])
 		s = append(s, mapping)
 	}
+
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("entries", s); err != nil {
-		return WrapError(err)
-	}
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
+
 	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 
-	// create a json file in current directory and write data source to it.
+	if err := d.Set("entries", s); err != nil {
+		return WrapError(err)
+	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
-	return nil
 
+	return nil
 }

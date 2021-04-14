@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
@@ -473,48 +475,36 @@ func (s *RamService) WaitForRamAccessKey(id, useName string, status Status, time
 	}
 }
 
-func (s *RamService) DescribeRamPolicy(id string) (*ram.GetPolicyResponse, error) {
-	response := &ram.GetPolicyResponse{}
-	request := ram.CreateGetPolicyRequest()
-	request.RegionId = s.client.RegionId
-	request.PolicyName = id
-	request.PolicyType = "Custom"
-
-	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.GetPolicy(request)
-	})
+func (s *RamService) DescribeRamPolicy(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRamClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetPolicy"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"PolicyName": id,
+		"PolicyType": "Custom",
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
-			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			err = WrapErrorf(Error(GetNotFoundMessage("RamPolicy", id)), NotFoundMsg, ProviderERROR)
+			return object, err
 		}
-		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response = raw.(*ram.GetPolicyResponse)
-	return response, nil
-}
-
-func (s *RamService) WaitForRamPolicy(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeRamPolicy(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-		if object.Policy.PolicyName == id {
-			return nil
-		}
-
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Policy.PolicyName, id, ProviderERROR)
-		}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
+	object = v.(map[string]interface{})
+	return object, nil
 }
 
 func (s *RamService) DescribeRamRoleAttachment(id string) (*ecs.DescribeInstanceRamRoleResponse, error) {
@@ -593,8 +583,20 @@ func (s *RamService) DescribeRamRole(id string) (*ram.GetRoleResponse, error) {
 	request := ram.CreateGetRoleRequest()
 	request.RegionId = s.client.RegionId
 	request.RoleName = id
-	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.GetRole(request)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.GetRole(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+				time.Sleep(2 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*ram.GetRoleResponse)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
@@ -602,8 +604,6 @@ func (s *RamService) DescribeRamRole(id string) (*ram.GetRoleResponse, error) {
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ = raw.(*ram.GetRoleResponse)
 	return response, nil
 }
 

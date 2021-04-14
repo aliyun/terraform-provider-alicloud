@@ -123,50 +123,6 @@ func (s *RdsService) DescribeDBReadonlyInstance(id string) (map[string]interface
 	return dBInstanceAttributes[0].(map[string]interface{}), nil
 }
 
-func (s *RdsService) DescribeDBAccount(id string) (map[string]interface{}, error) {
-	conn, err := s.client.NewRdsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	parts, err := ParseResourceId(id, 2)
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	var response map[string]interface{}
-	action := "DescribeAccounts"
-	request := map[string]interface{}{
-		"RegionId":     s.client.RegionId,
-		"DBInstanceId": parts[0],
-		"AccountName":  parts[1],
-		"SourceIp":     s.client.SourceIp,
-	}
-	invoker := NewInvoker()
-	invoker.AddCatcher(DBInstanceStatusCatcher)
-	if err := invoker.Run(func() error {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		}
-		addDebug(action, response, request)
-		return nil
-	}); err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	v, err := jsonpath.Get("$.Accounts.DBInstanceAccount", response)
-	if err != nil {
-		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Accounts.DBInstanceAccount", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccount", id)), NotFoundMsg, ProviderERROR)
-	}
-	return v.([]interface{})[0].(map[string]interface{}), nil
-}
-
 func (s *RdsService) DescribeDBAccountPrivilege(id string) (map[string]interface{}, error) {
 	var ds map[string]interface{}
 	parts, err := ParseResourceId(id, 3)
@@ -526,7 +482,7 @@ func (s *RdsService) GrantAccountPrivilege(id, dbName string) error {
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"InvalidDB.NotFound"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -568,6 +524,9 @@ func (s *RdsService) RevokeAccountPrivilege(id, dbName string) error {
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 				return resource.RetryableError(err)
+			} else if IsExpectedErrors(err, []string{"InvalidDB.NotFound"}) {
+				log.Printf("[WARN] Resource alicloud_db_account_privilege RevokeAccountPrivilege Failed!!! %s", err)
+				return nil
 			}
 			return resource.NonRetryableError(err)
 		}
@@ -1227,48 +1186,6 @@ func (s *RdsService) WaitForDBReadWriteSplitting(id string, status Status, timeo
 	return nil
 }
 
-func (s *RdsService) WaitForAccount(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeDBAccount(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-		if object != nil {
-			if object["AccountStatus"] == string(status) {
-				break
-			} else if object["AccountStatus"] == "Lock" {
-				action := "DeleteAccount"
-				request := map[string]interface{}{
-					"RegionId":     s.client.RegionId,
-					"DBInstanceId": object["DBInstanceId"],
-					"AccountName":  object["AccountName"],
-					"SourceIp":     s.client.SourceIp,
-				}
-				conn, err := s.client.NewRdsClient()
-				if err != nil {
-					return WrapError(err)
-				}
-				_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-
-				if err != nil && !IsExpectedErrors(err, []string{"InvalidAccountName.NotFound"}) {
-					return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-				}
-			}
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object["AccountStatus"], status, ProviderERROR)
-		}
-	}
-	return nil
-}
-
 func (s *RdsService) WaitForAccountPrivilege(id, dbName string, status Status, timeout int) error {
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -1610,4 +1527,103 @@ func (s *RdsService) DescribeDBProxyEndpoint(id string, endpointName string) (ma
 	}
 	addDebug(action, response, request)
 	return response, nil
+}
+
+func (s *RdsService) DescribeRdsParameterGroup(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeParameterGroup"
+	request := map[string]interface{}{
+		"RegionId":         s.client.RegionId,
+		"ParameterGroupId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ParamGroupsNotExistError"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("RdsParameterGroup", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.ParamGroup.ParameterGroup", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ParamGroup.ParameterGroup", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["ParameterGroupId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *RdsService) DescribeRdsAccount(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeAccounts"
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"SourceIp":     s.client.SourceIp,
+		"AccountName":  parts[1],
+		"DBInstanceId": parts[0],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("RdsAccount", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.Accounts.DBInstanceAccount", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Accounts.DBInstanceAccount", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *RdsService) RdsAccountStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeRdsAccount(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["AccountStatus"].(string) == failState {
+				return object, object["AccountStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["AccountStatus"].(string)))
+			}
+		}
+		return object, object["AccountStatus"].(string), nil
+	}
 }

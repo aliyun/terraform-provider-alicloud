@@ -85,6 +85,7 @@ type ResizeDiskRequest struct {
 type ResizeDiskResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
+	OrderId   string `json:"OrderId" xml:"OrderId"`
 }
 
 // CreateResizeDiskRequest creates a request to invoke ResizeDisk API
@@ -92,7 +93,7 @@ func CreateResizeDiskRequest() (request *ResizeDiskRequest) {
 	request = &ResizeDiskRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "ResizeDisk", "", "")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "ResizeDisk", "ecs", "openAPI")
 	request.Method = requests.POST
 	return
 }

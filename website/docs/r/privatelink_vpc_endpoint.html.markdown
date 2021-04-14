@@ -33,19 +33,11 @@ The following arguments are supported:
 
 * `dry_run` - (Optional) The dry run. Default to: `false`.
 * `endpoint_description` - (Optional) The description of Vpc Endpoint. The length is 2~256 characters and cannot start with `http://` and `https://`.
-* `security_group_id` - (Required, ForceNew) The security group associated with the terminal node network card.
+* `security_group_ids` - (Required) The security group associated with the terminal node network card.
 * `service_id` - (Optional, ForceNew) The terminal node service associated with the terminal node.
 * `service_name` - (Optional, Computed, ForceNew) The name of the terminal node service associated with the terminal node.
 * `vpc_endpoint_name` - (Optional) The name of Vpc Endpoint. The length is between 2 and 128 characters, starting with English letters or Chinese, and can include numbers, hyphens (-) and underscores (_).
 * `vpc_id` - (Required, ForceNew) The private network to which the terminal node belongs.
-* `zone` - (Optional, ForceNew) Availability zone.
-
-#### Block zone
-
-The zone supports the following: 
-
-* `zone_id` - (Optional) Availability zone corresponding to terminal node service.
-* `vswitch_id` - (Optional) To create the vswitch of the terminal node network card in the available zone.
 
 ## Attributes Reference
 

@@ -85,4 +85,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `paid_type` - The paid type of the instance.
   * `spec_type` - The spec type of the instance.
   * `security_group` - The security group of the instance.
+  * `service_version` - The kafka openSource version of the instance.
+  * `config` - The config the instance.
+
 

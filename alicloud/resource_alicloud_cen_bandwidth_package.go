@@ -230,11 +230,13 @@ func resourceAlicloudCenBandwidthPackageRead(d *schema.ResourceData, meta interf
 	d.Set("geographic_region_b_id", convertGeographicRegionBIdResponse(object.GeographicRegionBId))
 	d.Set("payment_type", convertPaymentTypeResponse(object.BandwidthPackageChargeType))
 	d.Set("charge_type", convertPaymentTypeResponse(object.BandwidthPackageChargeType))
-	period, err := computePeriodByUnit(object.CreationTime, object.ExpiredTime, d.Get("period").(int), "Month")
-	if err != nil {
-		return WrapError(err)
+	if convertPaymentTypeResponse(object.BandwidthPackageChargeType) == "PrePaid" {
+		period, err := computePeriodByUnit(object.CreationTime, object.ExpiredTime, d.Get("period").(int), "Month")
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
 	}
-	d.Set("period", period)
 	d.Set("expired_time", object.ExpiredTime)
 	d.Set("status", object.Status)
 	return nil
@@ -339,6 +341,8 @@ func convertGeographicRegionAIdResponse(source string) string {
 		return "Middle-East"
 	case "north-america":
 		return "North-America"
+	case "australia":
+		return "Australia"
 	}
 	return source
 }
@@ -354,6 +358,8 @@ func convertGeographicRegionBIdResponse(source string) string {
 		return "Middle-East"
 	case "north-america":
 		return "North-America"
+	case "australia":
+		return "Australia"
 	}
 	return source
 }

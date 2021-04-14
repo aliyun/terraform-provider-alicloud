@@ -59,11 +59,11 @@ cd terraform-provider-alicloud
 if [[ ${SWEEPER} = true ]]; then
     echo -e "\n--------------- Running Sweeper Test Cases ---------------"
     if [[ ${TEST_SWEEPER_CASE_CODE} == "alicloud_"* ]]; then
-        echo -e "TF_ACC=1 go test ./alicloud -v  -sweep=${ALICLOUD_REGION} -sweep-run=${TEST_SWEEPER_CASE_CODE}"
-        TF_ACC=1 go test ./alicloud -v  -sweep=${ALICLOUD_REGION} -sweep-run=${TEST_SWEEPER_CASE_CODE} -timeout=60m
+        echo -e "TF_ACC=1 go test ./alicloud -v  -sweep=${ALICLOUD_REGION} -sweep-run=${TEST_SWEEPER_CASE_CODE} -sweep-allow-failures=true"
+        TF_ACC=1 go test ./alicloud -v  -sweep=${ALICLOUD_REGION} -sweep-run=${TEST_SWEEPER_CASE_CODE} -sweep-allow-failures=true -timeout=60m
     else
-        echo -e "TF_ACC=1 go test ./alicloud -v  -sweep=${ALICLOUD_REGION}"
-        TF_ACC=1 go test ./alicloud -v  -sweep=${ALICLOUD_REGION} -timeout=60m
+        echo -e "TF_ACC=1 go test ./alicloud -v  -sweep=${ALICLOUD_REGION} -sweep-allow-failures=true"
+        TF_ACC=1 go test ./alicloud -v  -sweep=${ALICLOUD_REGION} -sweep-allow-failures=true -timeout=60m
     fi
     echo -e "\n--------------- END ---------------"
     exit 0

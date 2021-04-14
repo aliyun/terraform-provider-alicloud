@@ -124,6 +124,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			"collector_status": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Enable", "Disabled"}, false),
+				Optional:     true,
+				Computed:     true,
+			},
 			"parameters": {
 				Type: schema.TypeSet,
 				Elem: &schema.Resource{
@@ -312,6 +318,22 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 
 	}
 
+	if d.HasChange("collector_status") {
+		request := polardb.CreateModifyDBClusterAuditLogCollectorRequest()
+		request.RegionId = client.RegionId
+		request.DBClusterId = d.Id()
+		request.CollectorStatus = d.Get("collector_status").(string)
+
+		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.ModifyDBClusterAuditLogCollector(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("collector_status")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudPolarDBClusterRead(d, meta)
@@ -448,6 +470,12 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	if err = polarDBService.RefreshParameters(d); err != nil {
 		return WrapError(err)
 	}
+
+	clusterCollectStatus, err := polarDBService.DescribeDBAuditLogCollectorStatus(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("collector_status", clusterCollectStatus)
 
 	return nil
 }

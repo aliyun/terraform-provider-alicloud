@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/oos"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -55,15 +56,15 @@ func dataSourceAlicloudOosTemplates() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"CreatedDate", "Popularity", "TemplateName", "TotalExecutionCount"}, false),
 				Default:      "TotalExecutionCount",
+				ValidateFunc: validation.StringInSlice([]string{"CreatedDate", "Popularity", "TemplateName", "TotalExecutionCount"}, false),
 			},
 			"sort_order": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Ascending", "Descending"}, false),
 				Default:      "Descending",
+				ValidateFunc: validation.StringInSlice([]string{"Ascending", "Descending"}, false),
 			},
 			"tags": tagsSchema(),
 			"template_format": {
@@ -71,6 +72,11 @@ func dataSourceAlicloudOosTemplates() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"JSON", "YAML"}, false),
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
@@ -163,43 +169,48 @@ func dataSourceAlicloudOosTemplates() *schema.Resource {
 func dataSourceAlicloudOosTemplatesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := oos.CreateListTemplatesRequest()
+	action := "ListTemplates"
+	request := make(map[string]interface{})
 	if v, ok := d.GetOk("category"); ok {
-		request.Category = v.(string)
+		request["Category"] = v
 	}
 	if v, ok := d.GetOk("created_by"); ok {
-		request.CreatedBy = v.(string)
+		request["CreatedBy"] = v
 	}
 	if v, ok := d.GetOk("created_date"); ok {
-		request.CreatedDateBefore = v.(string)
+		request["CreatedDateBefore"] = v
 	}
 	if v, ok := d.GetOk("created_date_after"); ok {
-		request.CreatedDateAfter = v.(string)
+		request["CreatedDateAfter"] = v
 	}
 	if v, ok := d.GetOkExists("has_trigger"); ok {
-		request.HasTrigger = requests.NewBoolean(v.(bool))
+		request["HasTrigger"] = v
 	}
-	request.RegionId = client.RegionId
+	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("share_type"); ok {
-		request.ShareType = v.(string)
+		request["ShareType"] = v
 	}
 	if v, ok := d.GetOk("sort_field"); ok {
-		request.SortField = v.(string)
+		request["SortField"] = v
 	}
 	if v, ok := d.GetOk("sort_order"); ok {
-		request.SortOrder = v.(string)
+		request["SortOrder"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		request.Tags = v.(map[string]interface{})
+		respJson, err := convertMaptoJsonString(v.(map[string]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Tags"] = respJson
 	}
 	if v, ok := d.GetOk("template_format"); ok {
-		request.TemplateFormat = v.(string)
+		request["TemplateFormat"] = v
 	}
 	if v, ok := d.GetOk("template_type"); ok {
-		request.TemplateType = v.(string)
+		request["TemplateType"] = v
 	}
-	request.MaxResults = requests.NewInteger(PageSizeLarge)
-	var objects []oos.Template
+	request["MaxResults"] = PageSizeLarge
+	var objects []map[string]interface{}
 	var templateNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -218,61 +229,77 @@ func dataSourceAlicloudOosTemplatesRead(d *schema.ResourceData, meta interface{}
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	var response *oos.ListTemplatesResponse
+	var response map[string]interface{}
+	conn, err := client.NewOosClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		raw, err := client.WithOosClient(func(oosClient *oos.Client) (interface{}, error) {
-			return oosClient.ListTemplates(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_oos_templates", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_oos_templates", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
-		response, _ = raw.(*oos.ListTemplatesResponse)
+		addDebug(action, response, request)
 
-		for _, item := range response.Templates {
+		resp, err := jsonpath.Get("$.Templates", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Templates", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
 			if templateNameRegex != nil {
-				if !templateNameRegex.MatchString(item.TemplateName) {
+				if !templateNameRegex.MatchString(fmt.Sprint(item["TemplateName"])) {
 					continue
 				}
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.TemplateName]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["TemplateName"])]; !ok {
 					continue
 				}
 			}
 			objects = append(objects, item)
 		}
-		NextToken := response.NextToken
-		if NextToken == "" {
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
 			break
 		}
-		request.NextToken = NextToken
 	}
-	ids := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-	for i, object := range objects {
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"category":         object.Category,
-			"created_by":       object.CreatedBy,
-			"created_date":     object.CreatedDate,
-			"description":      object.Description,
-			"has_trigger":      object.HasTrigger,
-			"share_type":       object.ShareType,
-			"template_format":  object.TemplateFormat,
-			"template_id":      object.TemplateId,
-			"id":               object.TemplateName,
-			"template_name":    object.TemplateName,
-			"template_type":    object.TemplateType,
-			"template_version": object.TemplateVersion,
-			"updated_by":       object.UpdatedBy,
-			"updated_date":     object.UpdatedDate,
+			"category":         object["Category"],
+			"created_by":       object["CreatedBy"],
+			"created_date":     object["CreatedDate"],
+			"description":      object["Description"],
+			"has_trigger":      object["HasTrigger"],
+			"share_type":       object["ShareType"],
+			"tags":             object["Tags"],
+			"template_format":  object["TemplateFormat"],
+			"template_id":      object["TemplateId"],
+			"id":               fmt.Sprint(object["TemplateName"]),
+			"template_name":    fmt.Sprint(object["TemplateName"]),
+			"template_type":    object["TemplateType"],
+			"template_version": object["TemplateVersion"],
+			"updated_by":       object["UpdatedBy"],
+			"updated_date":     object["UpdatedDate"],
 		}
-		ids[i] = object.TemplateName
-		s[i] = mapping
+		ids = append(ids, fmt.Sprint(object["TemplateName"]))
+		names = append(names, object["TemplateName"])
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 

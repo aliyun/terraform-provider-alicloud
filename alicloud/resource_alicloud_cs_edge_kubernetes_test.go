@@ -24,6 +24,7 @@ data "alicloud_zones" default {
 
 data "alicloud_instance_types" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	instance_type_family = "ecs.c6"
 	cpu_core_count = 2
 	memory_size = 4
 	kubernetes_node_role = "Worker"
@@ -37,7 +38,7 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
+  vswitch_name = "${var.name}"
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -59,6 +60,12 @@ resource "alicloud_db_instance" "default" {
   monitoring_period    = "60"
 }
 
+resource "alicloud_snapshot_policy" "default" {
+	name            = "${var.name}"
+	repeat_weekdays = ["1", "2", "3"]
+	retention_days  = -1
+	time_points     = ["1", "22", "23"]
+}
 `
 
 var edgeCheckMap = map[string]string{
@@ -191,6 +198,161 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 						"version":       "1.14.8-aliyunedge.1",
 						"name":          "modified-edge-cluster-again",
 						"worker_number": "3",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudEdgeKubernetes_essd(t *testing.T) {
+	var cluster *cs.KubernetesClusterDetail
+	resourceId := "alicloud_cs_edge_kubernetes.default"
+	resourceAttr := resourceAttrInit(resourceId, edgeCheckMap)
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	resourceCheck := resourceCheckInitWithDescribeMethod(resourceId, &cluster, serviceFunc, "DescribeCsManagedKubernetes")
+	resourceAttrCheck := resourceAttrCheckInit(resourceCheck, resourceAttr)
+
+	testAccCheck := resourceAttrCheck.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testaccedgekubernetes-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, edgeKubernetesConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EssdSupportRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  resourceAttrCheck.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					// global args
+					"name":                         name,
+					"version":                      "1.16.9-aliyunedge.1",
+					"resource_group_id":            "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"node_cidr_mask":               "24",
+					"install_cloud_monitor":        "true",
+					"slb_internet_enabled":         "true",
+					"new_nat_gateway":              "true",
+					"is_enterprise_security_group": "true",
+					"deletion_protection":          "true",
+					"pod_cidr":                     "172.20.0.0/16",
+					"service_cidr":                 "172.21.0.0/20",
+					// worker args
+					"password":                       "Test12345",
+					"worker_number":                  "1",
+					"worker_vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"worker_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"worker_instance_charge_type":    "PostPaid",
+					"worker_disk_category":           "cloud_essd",
+					"worker_disk_snapshot_policy_id": "${alicloud_snapshot_policy.default.id}",
+					"worker_disk_size":               "100",
+					"worker_disk_performance_level":  "PL0",
+					"worker_data_disks": []map[string]string{
+						{
+							"category":                "cloud_essd",
+							"auto_snapshot_policy_id": "${alicloud_snapshot_policy.default.id}",
+							"size":                    "100",
+							"performance_level":       "PL0",
+						},
+					},
+					"tags": map[string]string{
+						"Platform": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						// check global args
+						"name":                         name,
+						"version":                      "1.16.9-aliyunedge.1",
+						"resource_group_id":            CHECKSET,
+						"slb_internet_enabled":         "true",
+						"is_enterprise_security_group": "true",
+						"deletion_protection":          "true",
+						"pod_cidr":                     "172.20.0.0/16",
+						"service_cidr":                 "172.21.0.0/20",
+						// check worker args
+						"password": "Test12345",
+						//"worker_number":                  "1",
+						"worker_disk_snapshot_policy_id": CHECKSET,
+						"worker_disk_size":               "100",
+						"worker_disk_performance_level":  "PL0",
+						"worker_data_disks.#":            "1",
+						"tags.%":                         "1",
+						"tags.Platform":                  "TF",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
+					"install_cloud_monitor", "force_update", "node_cidr_mask", "worker_number", "slb_internet_enabled", "tags", "worker_disk_category",
+					"worker_disk_size", "worker_instance_charge_type", "worker_disk_snapshot_policy_id", "worker_instance_types", "log_config",
+					"worker_vswitch_ids", "proxy_mode", "worker_disk_performance_level", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Platform": "TF",
+						"Env":      "Pre",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":        "2",
+						"tags.Platform": "TF",
+						"tags.Env":      "Pre",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection":            "false",
+					"worker_number":                  "2",
+					"worker_vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"worker_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"worker_disk_category":           "cloud_essd",
+					"worker_disk_snapshot_policy_id": "${alicloud_snapshot_policy.default.id}",
+					"worker_disk_size":               "120",
+					"worker_disk_performance_level":  "PL1",
+					"worker_data_disks": []map[string]string{
+						{
+							"category":                "cloud_essd",
+							"auto_snapshot_policy_id": "${alicloud_snapshot_policy.default.id}",
+							"size":                    "120",
+							"performance_level":       "PL1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection":            "false",
+						"worker_number":                  "1",
+						"worker_vswitch_ids.#":           "1",
+						"worker_instance_types.#":        "1",
+						"worker_disk_category":           "cloud_essd",
+						"worker_disk_snapshot_policy_id": CHECKSET,
+						"worker_disk_size":               "120",
+						"worker_disk_performance_level":  "PL1",
+						"worker_data_disks.#":            "1",
 					}),
 				),
 			},

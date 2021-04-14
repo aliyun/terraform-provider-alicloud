@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/mse"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -196,17 +197,18 @@ func dataSourceAlicloudMseClusters() *schema.Resource {
 func dataSourceAlicloudMseClustersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := mse.CreateListClustersRequest()
+	action := "ListClusters"
+	request := make(map[string]interface{})
 	if v, ok := d.GetOk("cluster_alias_name"); ok {
-		request.ClusterAliasName = v.(string)
+		request["ClusterAliasName"] = v
 	}
-	request.RegionId = client.RegionId
+	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("request_pars"); ok {
-		request.RequestPars = v.(string)
+		request["RequestPars"] = v
 	}
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNum = requests.NewInteger(1)
-	var objects []mse.ClusterForListModel
+	request["PageSize"] = PageSizeLarge
+	request["PageNum"] = 1
+	var objects []map[string]interface{}
 	var clusterNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -226,105 +228,110 @@ func dataSourceAlicloudMseClustersRead(d *schema.ResourceData, meta interface{})
 		}
 	}
 	status, statusOk := d.GetOk("status")
-	var response *mse.ListClustersResponse
+	var response map[string]interface{}
+	conn, err := client.NewMseClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		raw, err := client.WithMseClient(func(mseClient *mse.Client) (interface{}, error) {
-			return mseClient.ListClusters(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-05-31"), StringPointer("AK"), request, nil, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_mse_clusters", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_mse_clusters", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
-		response, _ = raw.(*mse.ListClustersResponse)
+		addDebug(action, response, request)
 
-		for _, item := range response.Data {
+		resp, err := jsonpath.Get("$.Data", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
 			if clusterNameRegex != nil {
-				if !clusterNameRegex.MatchString(item.ClusterAliasName) {
+				if !clusterNameRegex.MatchString(fmt.Sprint(item["ClusterAliasName"])) {
 					continue
 				}
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.InstanceId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["InstanceId"])]; !ok {
 					continue
 				}
 			}
-			if statusOk && status != "" && status != item.InitStatus {
+			if statusOk && status.(string) != "" && status.(string) != item["InitStatus"].(string) {
 				continue
 			}
 			objects = append(objects, item)
 		}
-		if len(response.Data) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
+		request["PageNum"] = request["PageNum"].(int) + 1
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"app_version":      object["AppVersion"],
+			"cluster_id":       object["ClusterId"],
+			"cluster_name":     object["ClusterAliasName"],
+			"cluster_type":     object["ClusterType"],
+			"id":               fmt.Sprint(object["InstanceId"]),
+			"instance_id":      fmt.Sprint(object["InstanceId"]),
+			"internet_address": object["InternetAddress"],
+			"internet_domain":  object["InternetDomain"],
+			"intranet_address": object["IntranetAddress"],
+			"intranet_domain":  object["IntranetDomain"],
+			"status":           object["InitStatus"],
+		}
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			ids = append(ids, fmt.Sprint(object["InstanceId"]))
+			names = append(names, object["ClusterAliasName"])
+			s = append(s, mapping)
+			continue
+		}
 
-		page, err := getNextpageNumber(request.PageNum)
+		mseService := MseService{client}
+		id := fmt.Sprint(object["InstanceId"])
+		getResp, err := mseService.DescribeMseCluster(id)
 		if err != nil {
 			return WrapError(err)
 		}
-		request.PageNum = page
-	}
-	ids := make([]string, len(objects))
-	names := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-	for i, object := range objects {
-		mapping := map[string]interface{}{
-			"app_version":      object.AppVersion,
-			"cluster_id":       object.ClusterId,
-			"cluster_name":     object.ClusterAliasName,
-			"cluster_type":     object.ClusterType,
-			"id":               object.InstanceId,
-			"instance_id":      object.InstanceId,
-			"internet_address": object.InternetAddress,
-			"internet_domain":  object.InternetDomain,
-			"intranet_address": object.IntranetAddress,
-			"intranet_domain":  object.IntranetDomain,
-			"status":           object.InitStatus,
-		}
-		ids[i] = object.InstanceId
-		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
-			names[i] = object.ClusterAliasName
-			s[i] = mapping
-			continue
-		}
-		request := mse.CreateQueryClusterDetailRequest()
-		request.RegionId = client.RegionId
-		request.InstanceId = object.InstanceId
-		raw, err := client.WithMseClient(func(mseClient *mse.Client) (interface{}, error) {
-			return mseClient.QueryClusterDetail(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_mse_clusters", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		responseGet, _ := raw.(*mse.QueryClusterDetailResponse)
-		mapping["acl_id"] = responseGet.Data.AclId
-		mapping["cpu"] = responseGet.Data.Cpu
-		mapping["health_status"] = responseGet.Data.HealthStatus
-		mapping["init_cost_time"] = responseGet.Data.InitCostTime
-		mapping["instance_count"] = responseGet.Data.InstanceCount
+		mapping["acl_id"] = getResp["AclId"]
+		mapping["cpu"] = getResp["Cpu"]
+		mapping["health_status"] = getResp["HealthStatus"]
+		mapping["init_cost_time"] = getResp["InitCostTime"]
+		mapping["instance_count"] = getResp["InstanceCount"]
 
-		instanceModels := make([]map[string]string, len(responseGet.Data.InstanceModels))
-		for i, v := range responseGet.Data.InstanceModels {
-			mapping1 := map[string]string{
-				"health_status":     v.HealthStatus,
-				"instance_type":     v.InstanceType,
-				"internet_ip":       v.InternetIp,
-				"ip":                v.Ip,
-				"pod_name":          v.PodName,
-				"role":              v.Role,
-				"single_tunnel_vip": v.SingleTunnelVip,
-				"vip":               v.Vip,
+		instanceModels := make([]map[string]interface{}, 0)
+		if instanceModelsList, ok := getResp["InstanceModels"].([]interface{}); ok {
+			for _, v := range instanceModelsList {
+				if m1, ok := v.(map[string]interface{}); ok {
+					temp1 := map[string]interface{}{
+						"health_status":     m1["HealthStatus"],
+						"instance_type":     m1["InstanceType"],
+						"internet_ip":       m1["InternetIp"],
+						"ip":                m1["Ip"],
+						"pod_name":          m1["PodName"],
+						"role":              m1["Role"],
+						"single_tunnel_vip": m1["SingleTunnelVip"],
+						"vip":               m1["Vip"],
+					}
+					instanceModels = append(instanceModels, temp1)
+				}
 			}
-			instanceModels[i] = mapping1
 		}
 		mapping["instance_models"] = instanceModels
-		mapping["internet_port"] = responseGet.Data.InternetPort
-		mapping["intranet_port"] = responseGet.Data.IntranetPort
-		mapping["memory_capacity"] = responseGet.Data.MemoryCapacity
-		mapping["pay_info"] = responseGet.Data.PayInfo
-		mapping["pub_network_flow"] = responseGet.Data.PubNetworkFlow
-		names[i] = object.ClusterAliasName
-		s[i] = mapping
+		mapping["internet_port"] = getResp["InternetPort"]
+		mapping["intranet_port"] = getResp["IntranetPort"]
+		mapping["memory_capacity"] = getResp["MemoryCapacity"]
+		mapping["pay_info"] = getResp["PayInfo"]
+		mapping["pub_network_flow"] = getResp["PubNetworkFlow"]
+		ids = append(ids, fmt.Sprint(object["InstanceId"]))
+		names = append(names, object["ClusterAliasName"])
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))

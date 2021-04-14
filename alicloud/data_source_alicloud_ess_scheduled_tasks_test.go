@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
@@ -67,7 +68,7 @@ func TestAccAlicloudEssScheduledtasksDataSource(t *testing.T) {
 			"tasks.0.id":                     CHECKSET,
 			"tasks.0.scheduled_action":       CHECKSET,
 			"tasks.0.launch_expiration_time": CHECKSET,
-			"tasks.0.launch_time":            "2020-02-21T11:37Z",
+			"tasks.0.launch_time":            CHECKSET,
 			"tasks.0.max_value":              CHECKSET,
 			"tasks.0.min_value":              CHECKSET,
 			"tasks.0.task_enabled":           CHECKSET,
@@ -96,6 +97,7 @@ func testAccCheckAlicloudEssScheduledTasksDataSourceConfig(rand int, attrMap map
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
 	}
+	oneDay, _ := time.ParseDuration("24h")
 
 	config := fmt.Sprintf(`
 %s
@@ -121,13 +123,13 @@ resource "alicloud_ess_scaling_rule" "default" {
 
 resource "alicloud_ess_scheduled_task" "default" {
   scheduled_action    = "${alicloud_ess_scaling_rule.default.ari}"
-  launch_time         = "2020-02-21T11:37Z"
+  launch_time         = "%s"
   scheduled_task_name = "${var.name}"
 }
 
 data "alicloud_ess_scheduled_tasks" "default"{
   %s
 }
-`, EcsInstanceCommonTestCase, rand, strings.Join(pairs, "\n  "))
+`, EcsInstanceCommonTestCase, rand, time.Now().Add(oneDay).Format("2006-01-02T15:04Z"), strings.Join(pairs, "\n  "))
 	return config
 }

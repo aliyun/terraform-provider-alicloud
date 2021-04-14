@@ -24,6 +24,10 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -95,7 +99,7 @@ func resourceAlicloudAlikafkaTopicCreate(d *schema.ResourceData, meta interface{
 			return alikafkaClient.CreateTopic(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -110,6 +114,14 @@ func resourceAlicloudAlikafkaTopicCreate(d *schema.ResourceData, meta interface{
 	}
 
 	d.SetId(instanceId + ":" + topic)
+
+	// wait topic status change from Creating to running
+	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, alikafkaService.KafkaTopicStatusRefreshFunc(d.Id()))
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return resourceAlicloudAlikafkaTopicUpdate(d, meta)
 }
 
@@ -176,7 +188,7 @@ func resourceAlicloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{
 					return alikafkaClient.ModifyPartitionNum(modifyPartitionReq)
 				})
 				if err != nil {
-					if IsExpectedErrors(err, []string{ThrottlingUser}) {
+					if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 						time.Sleep(10 * time.Second)
 						return resource.RetryableError(err)
 					}
@@ -249,7 +261,7 @@ func resourceAlicloudAlikafkaTopicDelete(d *schema.ResourceData, meta interface{
 			return alikafkaClient.DeleteTopic(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}

@@ -55,12 +55,13 @@ func TestAccAlicloudResourceManagerFoldersDataSource(t *testing.T) {
 
 	var existResourceManagerFoldersRecordsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"folders.#":             "1",
-			"names.#":               "1",
-			"ids.#":                 "1",
-			"folders.0.id":          CHECKSET,
-			"folders.0.folder_id":   CHECKSET,
-			"folders.0.folder_name": fmt.Sprintf("tf-%d", rand),
+			"folders.#":                  "1",
+			"names.#":                    "1",
+			"ids.#":                      "1",
+			"folders.0.id":               CHECKSET,
+			"folders.0.folder_id":        CHECKSET,
+			"folders.0.folder_name":      fmt.Sprintf("tf-testAcc-%d", rand),
+			"folders.0.parent_folder_id": CHECKSET,
 		}
 	}
 
@@ -93,6 +94,7 @@ resource "alicloud_resource_manager_folder" "example"{
 }
 
 data "alicloud_resource_manager_folders" "example"{
+	enable_details = true
 %s
 }
 

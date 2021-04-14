@@ -1,88 +1,101 @@
 package alicloud
 
 import (
+	"fmt"
+	"log"
+	"strconv"
 	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
-
-	"github.com/denverdino/aliyungo/common"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
-	"strconv"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAliyunNatGateway() *schema.Resource {
+func resourceAlicloudNatGateway() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunNatGatewayCreate,
-		Read:   resourceAliyunNatGatewayRead,
-		Update: resourceAliyunNatGatewayUpdate,
-		Delete: resourceAliyunNatGatewayDelete,
+		Create: resourceAlicloudNatGatewayCreate,
+		Read:   resourceAlicloudNatGatewayRead,
+		Update: resourceAlicloudNatGatewayUpdate,
+		Delete: resourceAlicloudNatGatewayDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"vpc_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"spec": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'spec' has been deprecated from provider version 1.7.1, and new field 'specification' can replace it.",
-			},
-			"specification": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Small", "Middle", "Large"}, false),
-				Default:      "Small",
-			},
-			"name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"nat_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Normal", "Enhanced"}, false),
-				Default:      "Normal",
-			},
-			"vswitch_id": {
-				Type:     schema.TypeString,
+			"dry_run": {
+				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
-			"bandwidth_package_ids": {
-				Type:     schema.TypeString,
-				Computed: true,
+			"force": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
-
-			"snat_table_ids": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
 			"forward_table_ids": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-
+			"internet_charge_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PayByLcu", "PayBySpec"}, false),
+			},
+			"nat_gateway_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"name"},
+			},
+			"name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"nat_gateway_name"},
+			},
+			"nat_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Enhanced", "Normal"}, false),
+				Default:      "Normal",
+			},
+			"payment_type": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ValidateFunc:  validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ConflictsWith: []string{"instance_charge_type"},
+			},
+			"instance_charge_type": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ValidateFunc:  validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
+				ConflictsWith: []string{"payment_type"},
+			},
+			"period": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ForceNew:         true,
+				Default:          1,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+				ValidateFunc: validation.Any(
+					validation.IntBetween(1, 9),
+					validation.IntInSlice([]int{12, 24, 36})),
+			},
 			"bandwidth_packages": {
 				Type: schema.TypeList,
 				Elem: &schema.Resource{
@@ -108,357 +121,112 @@ func resourceAliyunNatGateway() *schema.Resource {
 				},
 				MaxItems: 4,
 				Optional: true,
+				Removed:  "Field 'bandwidth_packages' has been removed from provider version 1.121.0.",
 			},
-			"instance_charge_type": {
+			"bandwidth_package_ids": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Removed:  "Field 'bandwidth_package_ids' has been removed from provider version 1.121.0.",
+			},
+			"spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'spec' has been removed from provider version 1.121.0, replace by 'specification'.",
+			},
+			"snat_table_ids": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"specification": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Large", "Middle", "Small", "XLarge.1"}, false),
+				Default:      "Small",
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("internet_charge_type").(string) != "PayBySpec"
+				},
 			},
-
-			"period": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				ForceNew:         true,
-				Default:          1,
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
-				ValidateFunc: validation.Any(
-					validation.IntBetween(1, 9),
-					validation.IntInSlice([]int{12, 24, 36})),
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"tags": tagsSchema(),
+			"vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("nat_type").(string) != "Enhanced"
+				},
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 		},
 	}
 }
 
-func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-
-	request := vpc.CreateCreateNatGatewayRequest()
-	request.RegionId = string(client.Region)
-	request.VpcId = string(d.Get("vpc_id").(string))
-	request.Spec = string(d.Get("specification").(string))
-	request.NatType = d.Get("nat_type").(string)
-	request.InstanceChargeType = d.Get("instance_charge_type").(string)
-	if request.InstanceChargeType == string(PrePaid) {
-		period := d.Get("period").(int)
-		request.Duration = strconv.Itoa(period)
-		request.PricingCycle = string(Month)
-		if period > 9 {
-			request.Duration = strconv.Itoa(period / 12)
-			request.PricingCycle = string(Year)
-		}
-		request.AutoPay = requests.NewBoolean(true)
+	var response map[string]interface{}
+	action := "CreateNatGateway"
+	request := make(map[string]interface{})
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	request.ClientToken = buildClientToken(request.GetActionName())
-	bandwidthPackages := []vpc.CreateNatGatewayBandwidthPackage{}
-	for _, e := range d.Get("bandwidth_packages").([]interface{}) {
-		pack := e.(map[string]interface{})
-		bandwidthPackage := vpc.CreateNatGatewayBandwidthPackage{
-			IpCount:   strconv.Itoa(pack["ip_count"].(int)),
-			Bandwidth: strconv.Itoa(pack["bandwidth"].(int)),
-		}
-		if pack["zone"].(string) != "" {
-			bandwidthPackage.Zone = pack["zone"].(string)
-		}
-		bandwidthPackages = append(bandwidthPackages, bandwidthPackage)
-	}
-
-	request.BandwidthPackage = &bandwidthPackages
-
-	if v, ok := d.GetOk("name"); ok {
-		request.Name = v.(string)
-	}
-
 	if v, ok := d.GetOk("description"); ok {
-		request.Description = v.(string)
+		request["Description"] = v
+	}
+
+	if v, ok := d.GetOk("internet_charge_type"); ok {
+		request["InternetChargeType"] = v
+	}
+
+	if v, ok := d.GetOk("nat_gateway_name"); ok {
+		request["Name"] = v
+	} else if v, ok := d.GetOk("name"); ok {
+		request["Name"] = v
+	}
+
+	request["NatType"] = d.Get("nat_type")
+	if v, ok := d.GetOk("payment_type"); ok {
+		request["InstanceChargeType"] = convertNatGatewayPaymentTypeRequest(v.(string))
+	} else if v, ok := d.GetOk("instance_charge_type"); ok {
+		request["InstanceChargeType"] = v
+	}
+
+	if v, ok := request["InstanceChargeType"]; ok && v.(string) == "PrePaid" {
+		period := d.Get("period").(int)
+		request["Duration"] = strconv.Itoa(period)
+		request["PricingCycle"] = "Month"
+		if period > 9 {
+			request["Duration"] = strconv.Itoa(period / 12)
+			request["PricingCycle"] = string(Year)
+		}
+		request["AutoPay"] = true
+	}
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("specification"); ok {
+		request["Spec"] = v
 	}
 
 	if v, ok := d.GetOk("vswitch_id"); ok {
-		request.VSwitchId = v.(string)
+		request["VSwitchId"] = v
 	}
 
-	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args := *request
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateNatGateway(&args)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"VswitchStatusError", "TaskConflict"}) {
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(args.GetActionName(), raw, args.RpcRequest, args)
-		response, _ := raw.(*vpc.CreateNatGatewayResponse)
-		d.SetId(response.NatGatewayId)
-		return nil
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nat_gateway", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	if err := vpcService.WaitForNatGateway(d.Id(), Available, DefaultTimeout*3); err != nil {
-		return WrapError(err)
-	}
-	return resourceAliyunNatGatewayRead(d, meta)
-}
-
-func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-
-	object, err := vpcService.DescribeNatGateway(d.Id())
-	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
-		return WrapError(err)
-	}
-
-	d.Set("name", object.Name)
-	d.Set("specification", object.Spec)
-	d.Set("bandwidth_package_ids", strings.Join(object.BandwidthPackageIds.BandwidthPackageId, ","))
-	d.Set("snat_table_ids", strings.Join(object.SnatTableIds.SnatTableId, ","))
-	d.Set("forward_table_ids", strings.Join(object.ForwardTableIds.ForwardTableId, ","))
-	d.Set("description", object.Description)
-	d.Set("vpc_id", object.VpcId)
-	d.Set("nat_type", object.NatType)
-	d.Set("instance_charge_type", object.InstanceChargeType)
-	d.Set("vswitch_id", object.NatGatewayPrivateInfo.VswitchId)
-	if object.InstanceChargeType == "PrePaid" {
-		period, err := computePeriodByUnit(object.CreationTime, object.ExpiredTime, d.Get("period").(int), "Month")
-		if err != nil {
-			return WrapError(err)
-		}
-		d.Set("period", period)
-	}
-
-	bindWidthPackages, err := flattenBandWidthPackages(d.Id(), meta)
-	if err != nil {
-		return WrapError(err)
-	} else {
-		d.Set("bandwidth_packages", bindWidthPackages)
-	}
-
-	return nil
-}
-
-func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
-
-	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-
-	natGateway, err := vpcService.DescribeNatGateway(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
-
-	d.Partial(true)
-	attributeUpdate := false
-	modifyNatGatewayAttributeRequest := vpc.CreateModifyNatGatewayAttributeRequest()
-	modifyNatGatewayAttributeRequest.RegionId = natGateway.RegionId
-	modifyNatGatewayAttributeRequest.NatGatewayId = natGateway.NatGatewayId
-
-	if d.HasChange("name") {
-		d.SetPartial("name")
-		var name string
-		if v, ok := d.GetOk("name"); ok {
-			name = v.(string)
-		} else {
-			return WrapError(Error("cann't change name to empty string"))
-		}
-		modifyNatGatewayAttributeRequest.Name = name
-
-		attributeUpdate = true
-	}
-
-	if d.HasChange("description") {
-		d.SetPartial("description")
-		var description string
-		if v, ok := d.GetOk("description"); ok {
-			description = v.(string)
-		} else {
-			return WrapError(Error("can to change description to empty string"))
-		}
-
-		modifyNatGatewayAttributeRequest.Description = description
-
-		attributeUpdate = true
-	}
-
-	if attributeUpdate {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifyNatGatewayAttribute(modifyNatGatewayAttributeRequest)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyNatGatewayAttributeRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(modifyNatGatewayAttributeRequest.GetActionName(), raw, modifyNatGatewayAttributeRequest.RpcRequest, modifyNatGatewayAttributeRequest)
-	}
-
-	if d.HasChange("specification") {
-		d.SetPartial("specification")
-		modifyNatGatewaySpecRequest := vpc.CreateModifyNatGatewaySpecRequest()
-		modifyNatGatewaySpecRequest.RegionId = natGateway.RegionId
-		modifyNatGatewaySpecRequest.NatGatewayId = natGateway.NatGatewayId
-		modifyNatGatewaySpecRequest.Spec = d.Get("specification").(string)
-
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifyNatGatewaySpec(modifyNatGatewaySpecRequest)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyNatGatewaySpecRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(modifyNatGatewaySpecRequest.GetActionName(), raw, modifyNatGatewaySpecRequest.RpcRequest, modifyNatGatewaySpecRequest)
-	}
-	d.Partial(false)
-	if err := vpcService.WaitForNatGateway(d.Id(), Available, DefaultTimeout); err != nil {
-		return WrapError(err)
-	}
-	return resourceAliyunNatGatewayRead(d, meta)
-}
-
-func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	err := deleteBandwidthPackages(d, meta)
-	if err != nil {
-		return WrapError(err)
-	}
-	request := vpc.CreateDeleteNatGatewayRequest()
-	request.RegionId = string(client.Region)
-	request.NatGatewayId = d.Id()
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		request := vpc.CreateDeleteNatGatewayRequest()
-		request.RegionId = string(client.Region)
-		request.NatGatewayId = d.Id()
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteNatGateway(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"DependencyViolation.BandwidthPackages"}) {
-				return resource.RetryableError(err)
-			}
-			if IsExpectedErrors(err, []string{"InvalidNatGatewayId.NotFound"}) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		return nil
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	return WrapError(vpcService.WaitForNatGateway(d.Id(), Deleted, DefaultTimeoutMedium))
-}
-
-func deleteBandwidthPackages(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	packages, err := DescribeNatBandwidthPackages(d.Id(), meta)
-	if err != nil {
-		return WrapError(err)
-	}
-
-	conn, err := meta.(*connectivity.AliyunClient).NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
-	for _, val := range packages {
-		pg := val.(map[string]interface{})
-		var response map[string]interface{}
-		action := "DeleteBandwidthPackage"
-		request := map[string]interface{}{
-			"RegionId":           client.RegionId,
-			"BandwidthPackageId": pg["BandwidthPackageId"].(string),
-		}
-
-		// If the API supports
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
-			if err != nil {
-				if IsExpectedErrors(err, []string{"Invalid.RegionId"}) {
-					time.Sleep(5 * time.Second)
-					return resource.RetryableError(err)
-				} else if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXISTS"}) {
-					return nil
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), pg["BandwidthPackageId"].(string), AlibabaCloudSdkGoERROR)
-		}
-	}
-	return nil
-}
-
-func flattenBandWidthPackages(natGatewayId string, meta interface{}) ([]map[string]interface{}, error) {
-	packages, err := DescribeNatBandwidthPackages(natGatewayId, meta)
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
-	var result []map[string]interface{}
-	for _, val := range packages {
-		pg := val.(map[string]interface{})
-		var ipAddress []string
-		publicIp := pg["PublicIpAddresses"].(map[string]interface{})["PublicIpAddresse"]
-		publicIpAddresses := publicIp.([]interface{})
-		for _, val := range publicIpAddresses {
-			ipAddress = append(ipAddress, val.(map[string]interface{})["IpAddress"].(string))
-		}
-
-		ipCount, err1 := strconv.Atoi(pg["IpCount"].(string))
-		if err1 != nil {
-			return nil, WrapError(err1)
-		}
-
-		bandwidth, err2 := strconv.Atoi(pg["Bandwidth"].(string))
-		if err2 != nil {
-			return nil, WrapError(err2)
-		}
-
-		l := map[string]interface{}{
-			"ip_count":            ipCount,
-			"bandwidth":           bandwidth,
-			"zone":                pg["ZoneId"].(string),
-			"public_ip_addresses": strings.Join(ipAddress, ","),
-		}
-		result = append(result, l)
-	}
-	return result, nil
-}
-
-func DescribeNatBandwidthPackages(natGatewayId string, meta interface{}) ([]interface{}, error) {
-	client := meta.(*connectivity.AliyunClient)
-	addDebug("DescribeBandwidthPackages", natGatewayId, natGatewayId, "")
-	var response map[string]interface{}
-	action := "DescribeBandwidthPackages"
-	request := map[string]interface{}{
-		"RegionId":     client.RegionId,
-		"NatGatewayId": natGatewayId,
-	}
-
-	conn, err := meta.(*connectivity.AliyunClient).NewVpcClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	// If the API supports
+	request["VpcId"] = d.Get("vpc_id")
+	request["ClientToken"] = buildClientToken("CreateNatGateway")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict", "UnknownError", Throttling}) {
-				time.Sleep(5 * time.Second)
+			if IsExpectedErrors(err, []string{"TaskConflict", "VswitchStatusError"}) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -467,9 +235,267 @@ func DescribeNatBandwidthPackages(natGatewayId string, meta interface{}) ([]inte
 		return nil
 	})
 	if err != nil {
-		return nil, WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nat_gateway", action, AlibabaCloudSdkGoERROR)
 	}
 
-	packages := response["BandwidthPackages"].(map[string]interface{})
-	return packages["BandwidthPackage"].([]interface{}), nil
+	d.SetId(fmt.Sprint(response["NatGatewayId"]))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return resourceAlicloudNatGatewayUpdate(d, meta)
+}
+func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
+	object, err := vpcService.DescribeNatGateway(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_nat_gateway vpcService.DescribeNatGateway Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+	d.Set("description", object["Description"])
+	if v, ok := object["ForwardTableIds"].(map[string]interface{})["ForwardTableId"].([]interface{}); ok {
+		ids := []string{}
+		for _, id := range v {
+			ids = append(ids, id.(string))
+		}
+		d.Set("forward_table_ids", strings.Join(ids, ","))
+	}
+	d.Set("internet_charge_type", object["InternetChargeType"])
+	d.Set("nat_gateway_name", object["Name"])
+	d.Set("name", object["Name"])
+	d.Set("nat_type", object["NatType"])
+	d.Set("payment_type", convertNatGatewayPaymentTypeResponse(object["InstanceChargeType"].(string)))
+	d.Set("instance_charge_type", object["InstanceChargeType"])
+	if object["InstanceChargeType"] == "PrePaid" {
+		period, err := computePeriodByUnit(object["CreationTime"], object["ExpiredTime"], d.Get("period").(int), "Month")
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
+	}
+	if v, ok := object["SnatTableIds"].(map[string]interface{})["SnatTableId"].([]interface{}); ok {
+		ids := []string{}
+		for _, id := range v {
+			ids = append(ids, id.(string))
+		}
+		d.Set("snat_table_ids", strings.Join(ids, ","))
+	}
+	d.Set("specification", object["Spec"])
+	d.Set("status", object["Status"])
+	d.Set("vswitch_id", object["NatGatewayPrivateInfo"].(map[string]interface{})["VswitchId"])
+	d.Set("vpc_id", object["VpcId"])
+
+	listTagResourcesObject, err := vpcService.ListTagResources(d.Id(), "NATGATEWAY")
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", tagsToMap(listTagResourcesObject))
+	return nil
+}
+func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
+	var response map[string]interface{}
+	d.Partial(true)
+
+	if d.HasChange("tags") {
+		if err := vpcService.SetResourceTags(d, "NATGATEWAY"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
+	update := false
+	request := map[string]interface{}{
+		"NatGatewayId": d.Id(),
+	}
+	request["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
+	}
+	if !d.IsNewResource() && d.HasChange("nat_gateway_name") {
+		update = true
+		request["Name"] = d.Get("nat_gateway_name")
+	}
+	if !d.IsNewResource() && d.HasChange("name") {
+		update = true
+		request["Name"] = d.Get("name")
+	}
+	if update {
+		action := "ModifyNatGatewayAttribute"
+		conn, err := client.NewVpcClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("description")
+		d.SetPartial("name")
+		d.SetPartial("nat_gateway_name")
+	}
+	if !d.IsNewResource() && d.HasChange("specification") {
+		request := map[string]interface{}{
+			"NatGatewayId": d.Id(),
+		}
+		request["RegionId"] = client.RegionId
+		request["Spec"] = d.Get("specification")
+		action := "ModifyNatGatewaySpec"
+		conn, err := client.NewVpcClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("specification")
+	}
+	update = false
+	updateNatGatewayNatTypeReq := map[string]interface{}{
+		"NatGatewayId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("nat_type") {
+		update = true
+	}
+	updateNatGatewayNatTypeReq["NatType"] = d.Get("nat_type")
+	updateNatGatewayNatTypeReq["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("vswitch_id") {
+		update = true
+	}
+	updateNatGatewayNatTypeReq["VSwitchId"] = d.Get("vswitch_id")
+	if update {
+		if _, ok := d.GetOkExists("dry_run"); ok {
+			updateNatGatewayNatTypeReq["DryRun"] = d.Get("dry_run")
+		}
+		action := "UpdateNatGatewayNatType"
+		conn, err := client.NewVpcClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		updateNatGatewayNatTypeReq["ClientToken"] = buildClientToken("UpdateNatGatewayNatType")
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, updateNatGatewayNatTypeReq, &runtime)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"OperationFailed.NatGwRouteInMiddleStatus", "TaskConflict", "Throttling", "UnknownError"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, updateNatGatewayNatTypeReq)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("nat_type")
+		d.SetPartial("vswitch_id")
+		d.SetPartial("dry_run")
+	}
+	d.Partial(false)
+	return resourceAlicloudNatGatewayRead(d, meta)
+}
+func resourceAlicloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
+	action := "DeleteNatGateway"
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"NatGatewayId": d.Id(),
+	}
+
+	if v, ok := d.GetOkExists("force"); ok {
+		request["Force"] = v
+	}
+	request["RegionId"] = client.RegionId
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"DependencyViolation.BandwidthPackages"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXISTS", "IncorrectStatus.NatGateway", "InvalidNatGatewayId.NotFound", "InvalidRegionId.NotFound"}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
+}
+func convertNatGatewayPaymentTypeRequest(source string) string {
+	switch source {
+	case "PayAsYouGo":
+		return "PostPaid"
+	case "Subscription":
+		return "PrePaid"
+	}
+	return source
+}
+
+func convertNatGatewayPaymentTypeResponse(source string) string {
+	switch source {
+	case "PostPaid":
+		return "PayAsYouGo"
+	case "PrePaid":
+		return "Subscription"
+	}
+	return source
 }

@@ -3,12 +3,12 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"testing"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -27,46 +27,68 @@ func testSweepResourceManagerHandshake(region string) error {
 		return WrapErrorf(err, "Error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	resourceManagerService := ResourcemanagerService{client}
 
-	request := resourcemanager.CreateListHandshakesForResourceDirectoryRequest()
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
+	action := "ListHandshakesForResourceDirectory"
+	request := make(map[string]interface{})
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+
+	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	var handshakeIds []string
+
 	for {
-		raw, err := resourceManagerService.client.WithResourcemanagerClient(func(resourceManagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourceManagerClient.ListHandshakesForResourceDirectory(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"EntityNotExists.ResourceDirectory"}) {
+				return nil
+			}
 			log.Printf("[ERROR] Failed to retrieve resoure manager handshake in service list: %s", err)
+			return nil
 		}
-
-		response, _ := raw.(*resourcemanager.ListHandshakesForResourceDirectoryResponse)
-
-		for _, v := range response.Handshakes.Handshake {
+		resp, err := jsonpath.Get("$.Handshakes.Handshake", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Handshakes.Handshake", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
 			// Skip Invalid handshake.
-			if v.Status == "Pending" {
-				handshakeIds = append(handshakeIds, v.HandshakeId)
+			if v, ok := item["Status"].(string); ok && v == "Pending" {
+				handshakeIds = append(handshakeIds, item["HandshakeId"].(string))
 			}
 		}
-		if len(response.Handshakes.Handshake) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
 	for _, handshakeId := range handshakeIds {
 		log.Printf("[INFO] Delete resource manager handshake %s ", handshakeId)
 
-		request := resourcemanager.CreateCancelHandshakeRequest()
-		request.HandshakeId = handshakeId
-		_, err = resourceManagerService.client.WithResourcemanagerClient(func(resourceManagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourceManagerClient.CancelHandshake(request)
+		request := map[string]interface{}{
+			"HandshakeId": handshakeId,
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete resource manager handshake (%s): %s", handshakeId, err)
 		}
@@ -75,7 +97,7 @@ func testSweepResourceManagerHandshake(region string) error {
 }
 
 func TestAccAlicloudResourceManagerHandshake_basic(t *testing.T) {
-	var v resourcemanager.Handshake
+	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_handshake.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerHandshakeMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -97,13 +119,13 @@ func TestAccAlicloudResourceManagerHandshake_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"target_entity": os.Getenv("ALICLOUD_ACCOUNT_ID"),
+					"target_entity": "${alicloud_resource_manager_account.example.id}",
 					"target_type":   "Account",
 					"note":          "test resource manager handshake",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"target_entity": os.Getenv("ALICLOUD_ACCOUNT_ID"),
+						"target_entity": CHECKSET,
 						"target_type":   "Account",
 						"note":          "test resource manager handshake",
 					}),
@@ -121,5 +143,9 @@ func TestAccAlicloudResourceManagerHandshake_basic(t *testing.T) {
 var ResourceManagerHandshakeMap = map[string]string{}
 
 func ResourceManagerHandshakeBasicdependence(name string) string {
-	return ""
+	return fmt.Sprintf(`
+resource "alicloud_resource_manager_account" "example" {
+  display_name = "%s"
+}
+`, name)
 }

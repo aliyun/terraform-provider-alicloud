@@ -131,7 +131,8 @@ func dataSourceAlicloudConfigDeliveryChannelsRead(d *schema.ResourceData, meta i
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DeliveryChannels", response)
 	}
-	for _, v := range resp.([]interface{}) {
+	result, _ := resp.([]interface{})
+	for _, v := range result {
 		item := v.(map[string]interface{})
 		if deliveryChannelNameRegex != nil {
 			if !deliveryChannelNameRegex.MatchString(item["DeliveryChannelName"].(string)) {

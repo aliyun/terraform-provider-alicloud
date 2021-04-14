@@ -71,8 +71,9 @@ func (client *Client) UpdateSecretWithCallback(request *UpdateSecretRequest, cal
 // UpdateSecretRequest is the request struct for api UpdateSecret
 type UpdateSecretRequest struct {
 	*requests.RpcRequest
-	Description string `position:"Query" name:"Description"`
-	SecretName  string `position:"Query" name:"SecretName"`
+	Description              string `position:"Query" name:"Description"`
+	SecretName               string `position:"Query" name:"SecretName"`
+	ExtendedConfigCustomData string `position:"Query" name:"ExtendedConfig.CustomData"`
 }
 
 // UpdateSecretResponse is the response struct for api UpdateSecret

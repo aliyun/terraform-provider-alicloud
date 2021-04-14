@@ -289,3 +289,15 @@ func intBetween(min, max int) schema.SchemaValidateFunc {
 		return
 	}
 }
+
+// Validate length(2~128) and prefix of the name.
+func validateNormalName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 2 || len(value) > 128 {
+		errors = append(errors, fmt.Errorf("%s cannot be longer than 128 characters", k))
+	}
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+	}
+	return
+}

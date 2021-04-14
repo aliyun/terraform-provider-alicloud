@@ -11,13 +11,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+var privateConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.rds.aliyuncs.com"
+
 func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 	var v *polardb.DBEndpoint
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccPolarDBendpoint-%s", rand)
 	var basicMap = map[string]string{
 		"db_cluster_id": CHECKSET,
-		"endpoint_type": "Custom",
 	}
 	resourceId := "alicloud_polardb_endpoint.default"
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -42,10 +43,11 @@ func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_id": "${alicloud_polardb_cluster.cluster.id}",
-					"endpoint_type": "Custom",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"endpoint_type": "Custom",
+					}),
 				),
 			},
 			{
@@ -86,31 +88,44 @@ func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 				),
 			},
 			//todo: After resource polardb_node is supported, it is necessary to add a modification check on the “nodes” parameter
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_enabled": "Enable",
+					"net_type":    "Private",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_enabled":           "Enable",
+						"net_type":              "Private",
+						"ssl_connection_string": REGEXMATCH + privateConnectionStringRegexp,
+					}),
+				),
+			},
 		},
 	})
 }
 
 func resourcePolarDBEndpointConfigDependence(name string) string {
 	return fmt.Sprintf(`
-	variable "creation" {
-		default = "PolarDB"
-	}
+        variable "creation" {
+                default = "PolarDB"
+        }
 
-	variable "name" {
-		default = "%s"
-	}
+        variable "name" {
+                default = "%s"
+        }
 
-	data "alicloud_vpcs" "vpcs_ds"{
-		is_default = "true"
-	}
+        data "alicloud_vpcs" "vpcs_ds"{
+                is_default = "true"
+        }
 
-	resource "alicloud_polardb_cluster" "cluster" {
-		db_type = "MySQL"
-		db_version = "8.0"
-		pay_type = "PostPaid"
-		db_node_class = "polar.mysql.x4.medium"
-		vswitch_id = "${data.alicloud_vpcs.vpcs_ds.vpcs.0.vswitch_ids.0}"
-		description = "${var.name}"
-	}
-	`, name)
+        resource "alicloud_polardb_cluster" "cluster" {
+                db_type = "MySQL"
+                db_version = "8.0"
+                pay_type = "PostPaid"
+                db_node_class = "polar.mysql.x4.medium"
+                vswitch_id = "${data.alicloud_vpcs.vpcs_ds.vpcs.0.vswitch_ids.0}"
+                description = "${var.name}"
+        }
+        `, name)
 }

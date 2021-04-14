@@ -1,8 +1,10 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
+	"fmt"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -71,16 +73,16 @@ func dataSourceAlicloudAccessRules() *schema.Resource {
 		},
 	}
 }
-
 func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := nas.CreateDescribeAccessRulesRequest()
-	request.AccessGroupName = d.Get("access_group_name").(string)
-	request.RegionId = string(client.Region)
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	var allArs []nas.AccessRule
+	action := "DescribeAccessRules"
+	request := make(map[string]interface{})
+	request["AccessGroupName"] = d.Get("access_group_name")
+	request["RegionId"] = client.Region
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -90,80 +92,70 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	invoker := NewInvoker()
+	var response map[string]interface{}
+	conn, err := client.NewNasClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		var raw interface{}
-		if err := invoker.Run(func() error {
-			rsp, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-				return nasClient.DescribeAccessRules(request)
-			})
-			raw = rsp
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_access_rules", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_access_rules", action, AlibabaCloudSdkGoERROR)
 		}
+		addDebug(action, response, request)
 
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*nas.DescribeAccessRulesResponse)
-		if len(response.AccessRules.AccessRule) < 1 {
-			break
+		resp, err := jsonpath.Get("$.AccessRules.AccessRule", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AccessRules.AccessRule", response)
 		}
-		for _, rule := range response.AccessRules.AccessRule {
-			if v, ok := d.GetOk("source_cidr_ip"); ok && rule.SourceCidrIp != Trim(v.(string)) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if v, ok := d.GetOk("source_cidr_ip"); ok && v.(string) != "" && item["SourceCidrIp"].(string) != v.(string) {
 				continue
 			}
-			if v, ok := d.GetOk("user_access"); ok && rule.UserAccess != Trim(v.(string)) {
+			if v, ok := d.GetOk("user_access"); ok && v.(string) != "" && item["UserAccess"].(string) != v.(string) {
 				continue
 			}
-			if v, ok := d.GetOk("rw_access"); ok && rule.RWAccess != Trim(v.(string)) {
+			if v, ok := d.GetOk("rw_access"); ok && v.(string) != "" && item["RWAccess"].(string) != v.(string) {
 				continue
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[rule.AccessRuleId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["AccessRuleId"])]; !ok {
 					continue
 				}
 			}
-			allArs = append(allArs, rule)
+			objects = append(objects, item)
 		}
-
-		if len(response.AccessRules.AccessRule) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
-
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
-		} else {
-			request.PageNumber = page
-		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-
-	return accessRulesDecriptionAttributes(d, allArs, meta)
-}
-
-func accessRulesDecriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.AccessRule, meta interface{}) error {
-	var ids []string
-	var s []map[string]interface{}
-
-	for _, ag := range nasSetTypes {
+	ids := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"source_cidr_ip": ag.SourceCidrIp,
-			"priority":       ag.Priority,
-			"access_rule_id": ag.AccessRuleId,
-			"user_access":    ag.UserAccess,
-			"rw_access":      ag.RWAccess,
+			"source_cidr_ip": object["SourceCidrIp"],
+			"priority":       formatInt(object["Priority"]),
+			"access_rule_id": object["AccessRuleId"],
+			"user_access":    object["UserAccess"],
+			"rw_access":      object["RWAccess"],
 		}
-		ids = append(ids, ag.AccessRuleId)
+		ids = append(ids, fmt.Sprint(object["AccessRuleId"]))
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("rules", s); err != nil {
-		return WrapError(err)
-	}
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
-	// create a json file in current directory and write data source to it.
+
+	if err := d.Set("rules", s); err != nil {
+		return WrapError(err)
+	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}

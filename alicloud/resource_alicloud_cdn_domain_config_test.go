@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -311,10 +309,10 @@ func TestAccAlicloudCdnDomainConfig_oss_auth(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 
 					testAccCheck(map[string]string{
-						"domain_name":   fmt.Sprintf("tf-testacc%s-oss.xiaozhu.com", name),
-						"function_name": "oss_auth",
+						"domain_name":     fmt.Sprintf("tf-testacc%s-oss.xiaozhu.com", name),
+						"function_name":   "oss_auth",
+						"function_args.#": "1",
 					}),
-					checkFunctionArgs(resourceId, &v),
 				),
 			},
 			{
@@ -2230,7 +2228,7 @@ func resourceCdnDomainConfigDependence_oss(name string) string {
 	}
 
 	resource "alicloud_oss_bucket" "default" {
-	  bucket = "tf-test-domain-config-%s"
+	  bucket = "tf-testacc-domain-config-%s"
 	}
 `, name, name)
 }
@@ -2238,32 +2236,4 @@ func resourceCdnDomainConfigDependence_oss(name string) string {
 var cdnDomainConfigBasicMap = map[string]string{
 	"domain_name":   CHECKSET,
 	"function_name": CHECKSET,
-}
-
-func checkFunctionArgs(resourceId string, configP **cdn.DomainConfigInDescribeCdnDomainConfigs) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		config := *configP
-		hashcodeFunc := func(args *cdn.FunctionArg) string {
-			return strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
-				"arg_name":  args.ArgName,
-				"arg_value": args.ArgValue,
-			}))
-		}
-		if len(config.FunctionArgs.FunctionArg) > 0 {
-			for _, args := range config.FunctionArgs.FunctionArg {
-				hashcode := hashcodeFunc(&args)
-				index := "function_args." + hashcode + "."
-				if err := resource.TestCheckResourceAttrSet(resourceId, index+"arg_name")(s); err != nil {
-					return WrapError(err)
-				}
-				if err := resource.TestCheckResourceAttrSet(resourceId, index+"arg_value")(s); err != nil {
-					return WrapError(err)
-				}
-			}
-		} else {
-			return WrapError(Error("No FunctionArgs"))
-		}
-		return nil
-
-	}
 }

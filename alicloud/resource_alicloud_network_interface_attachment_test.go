@@ -106,7 +106,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    vpc_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -115,7 +115,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    vswitch_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${reverse(data.alicloud_zones.default.zones).0.id}"
     vpc_id = "${alicloud_vpc.default.id}"
@@ -132,7 +132,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_images" "default" {
-	name_regex  = "^ubuntu_18.*64"
+	name_regex  = "^ubuntu"
   	most_recent = true
 	owners = "system"
 }
@@ -171,7 +171,7 @@ variable "number" {
 	}
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    vpc_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
 }
 
@@ -180,7 +180,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    vswitch_name = "${var.name}"
     cidr_block = "192.168.0.0/24"
     availability_zone = "${reverse(data.alicloud_zones.default.zones).0.id}"
     vpc_id = "${alicloud_vpc.default.id}"
@@ -197,7 +197,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
+  name_regex  = "^ubuntu"
   most_recent = true
   owners      = "system"
 }

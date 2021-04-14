@@ -17,7 +17,7 @@ Provides vpcs bound to Alicloud Private Zone resource.
 
 Using `vpc_ids` to attach being in same region several vpc instances to a private zone
 
-```
+```terraform
 resource "alicloud_pvtz_zone" "zone" {
   name = "foo.test.com"
 }
@@ -39,7 +39,7 @@ resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
 
 Using `vpcs` to attach being in same region several vpc instances to a private zone
 
-```
+```terraform
 resource "alicloud_pvtz_zone" "zone" {
   name = "foo.test.com"
 }
@@ -67,7 +67,7 @@ resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
 Using `vpcs` to attach being in different regions several vpc instances to a private zone
 
 
-```
+```terraform
 resource "alicloud_pvtz_zone" "zone" {
   name = "foo.test.com"
 }
@@ -121,6 +121,16 @@ The following arguments are supported:
 
 * `lang` - (Optional, Available in 1.62.1+) The language of code.
 * `user_client_ip` - (Optional, Available in 1.62.1+) The user custom IP address.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.110.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when creating the Private Zone Attachment.
+* `update` - (Defaults to 5 mins) Used when updating the Private Zone Attachment.
+* `delete` - (Defaults to 5 mins) Used when terminating the Private Zone Attachment. 
 
 ## Attributes Reference
 

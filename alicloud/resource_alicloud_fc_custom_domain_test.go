@@ -17,9 +17,6 @@ func init() {
 	resource.AddTestSweepers("alicloud_fc_custom_domain", &resource.Sweeper{
 		Name: "alicloud_fc_custom_domain",
 		F:    testSweepFCCustomDomain,
-		Dependencies: []string{
-			"alicloud_fc_custom_domain",
-		},
 	})
 }
 
@@ -168,7 +165,9 @@ func testSweepFCCustomDomain(region string) error {
 			return fmt.Errorf("Error retrieving FC custom domains: %s", err)
 		}
 		response := raw.(*fc.ListCustomDomainsOutput)
-		nextToken = *response.NextToken
+		if response == nil {
+			return nil
+		}
 		for _, domain := range response.CustomDomains {
 			log.Printf("[INFO] Deleting FC custom domain: %s", *domain.DomainName)
 			_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
@@ -178,9 +177,10 @@ func testSweepFCCustomDomain(region string) error {
 				log.Printf("[ERROR] Failed to delete FC custom domains(%s): %s", *domain.DomainName, err)
 			}
 		}
-		if nextToken == "" {
+		if response.NextToken == nil || *response.NextToken == "" {
 			break
 		}
+		nextToken = *response.NextToken
 	}
 
 	return nil

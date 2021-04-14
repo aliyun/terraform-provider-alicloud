@@ -186,8 +186,9 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"MASTER_SLAVE", "STAND_ALONE", "double", "single"}, false),
-				Default:      "double",
+				Deprecated:   "Field 'node_type' has been deprecated from version 1.120.1",
 			},
 			"order_type": {
 				Type:         schema.TypeString,
@@ -937,13 +938,14 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	update = false
 	modifyDBInstanceConnectionStringReq := r_kvstore.CreateModifyDBInstanceConnectionStringRequest()
 	modifyDBInstanceConnectionStringReq.DBInstanceId = d.Id()
-	if !d.IsNewResource() && d.HasChange("private_connection_prefix") {
+	if d.HasChange("private_connection_prefix") {
 		update = true
 	}
 	modifyDBInstanceConnectionStringReq.NewConnectionString = d.Get("private_connection_prefix").(string)
 	modifyDBInstanceConnectionStringReq.IPType = "Private"
 	if update {
-		modifyDBInstanceConnectionStringReq.CurrentConnectionString = d.Get("connection_domain").(string)
+		object, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
+		modifyDBInstanceConnectionStringReq.CurrentConnectionString = object.ConnectionDomain
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.ModifyDBInstanceConnectionString(modifyDBInstanceConnectionStringReq)
 		})

@@ -4,159 +4,92 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudNas_MountTarget_update(t *testing.T) {
-	var v nas.MountTarget
-	rand1 := acctest.RandIntRange(10000, 499999)
-	rand2 := acctest.RandIntRange(500000, 999999)
-	resourceID := "alicloud_nas_mount_target.default"
-	ra := resourceAttrInit(resourceID, map[string]string{})
-	serviceFunc := func() interface{} {
+func TestAccAlicloudNasMountTarget_basic(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_mount_target.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasMountTarget0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceID, &v, serviceFunc)
+	}, "DescribeNasMountTarget")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.NasNoSupportedRegions)
-			testAccPreCheckWithNoDefaultVpc(t)
-		},
-		IDRefreshName: resourceID,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckMountTargetDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccNasMountTargetVpcConfig(rand1, rand2),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vswitch_id":        CHECKSET,
-						"file_system_id":    CHECKSET,
-						"status":            "Active",
-						"access_group_name": fmt.Sprintf("tf-testAccNasConfig-%d", rand1),
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceID,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"security_group_id"},
-			},
-			{
-				Config: testAccNasMountTargetConfigUpdateAccessGroup(rand1, rand2),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vswitch_id":        CHECKSET,
-						"file_system_id":    CHECKSET,
-						"status":            "Active",
-						"access_group_name": fmt.Sprintf("tf-testAccNasConfig-2-%d", rand2),
-					}),
-				),
-			},
-			{
-				Config: testAccNasMountTargetConfigUpdateStatus(rand1, rand2),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vswitch_id":        CHECKSET,
-						"file_system_id":    CHECKSET,
-						"status":            "Inactive",
-						"access_group_name": fmt.Sprintf("tf-testAccNasConfig-2-%d", rand2),
-					}),
-				),
-			},
-			{
-				Config: testAccNasMountTargetConfigUpdateAll(rand1, rand2),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vswitch_id":        CHECKSET,
-						"file_system_id":    CHECKSET,
-						"status":            "Active",
-						"access_group_name": fmt.Sprintf("tf-testAccNasConfig-%d", rand1),
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudNas_MountTarget_updateT(t *testing.T) {
-	var v nas.MountTarget
-	rand1 := acctest.RandIntRange(10000, 499999)
-	rand2 := acctest.RandIntRange(500000, 999999)
-	resourceID := "alicloud_nas_mount_target.default"
-	ra := resourceAttrInit(resourceID, map[string]string{})
-	serviceFunc := func() interface{} {
-		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceID, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudNasMountTarget%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasMountTargetBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithNoDefaultVpc(t)
 		},
-		IDRefreshName: resourceID,
+
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckMountTargetDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNasMountTargetVpcConfigT(rand1, rand2),
+				Config: testAccConfig(map[string]interface{}{
+					"access_group_name": "${alicloud_nas_access_group.example.access_group_name}",
+					"file_system_id":    "${alicloud_nas_file_system.example.id}",
+					"vswitch_id":        "${data.alicloud_vpcs.example.vpcs.0.vswitch_ids.0}",
+					"security_group_id": "${alicloud_security_group.example.id}",
+					"status":            "Active",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vswitch_id":        CHECKSET,
+						"access_group_name": name,
 						"file_system_id":    CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"security_group_id": CHECKSET,
 						"status":            "Active",
-						"access_group_name": fmt.Sprintf("tf-testAccNasConfig-%d", rand1),
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceID,
+				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"security_group_id"},
 			},
 			{
-				Config: testAccNasMountTargetConfigUpdateAccessGroupT(rand1, rand2),
+				Config: testAccConfig(map[string]interface{}{
+					"access_group_name": "${alicloud_nas_access_group.example1.access_group_name}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vswitch_id":        CHECKSET,
-						"file_system_id":    CHECKSET,
-						"status":            "Active",
-						"access_group_name": fmt.Sprintf("tf-testAccNasConfig-2-%d", rand2),
+						"access_group_name": name + "change",
 					}),
 				),
 			},
 			{
-				Config: testAccNasMountTargetConfigUpdateStatusT(rand1, rand2),
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Inactive",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vswitch_id":        CHECKSET,
-						"file_system_id":    CHECKSET,
-						"status":            "Inactive",
-						"access_group_name": fmt.Sprintf("tf-testAccNasConfig-2-%d", rand2),
+						"status": "Inactive",
 					}),
 				),
 			},
 			{
-				Config: testAccNasMountTargetConfigUpdateAllT(rand1, rand2),
+				Config: testAccConfig(map[string]interface{}{
+					"access_group_name": "${alicloud_nas_access_group.example.access_group_name}",
+					"file_system_id":    "${alicloud_nas_file_system.example.id}",
+					"vswitch_id":        "${data.alicloud_vpcs.example.vpcs.0.vswitch_ids.0}",
+					"security_group_id": "${alicloud_security_group.example.id}",
+					"status":            "Active",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vswitch_id":        CHECKSET,
+						"access_group_name": name,
 						"file_system_id":    CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"security_group_id": CHECKSET,
 						"status":            "Active",
-						"access_group_name": fmt.Sprintf("tf-testAccNasConfig-%d", rand1),
 					}),
 				),
 			},
@@ -164,358 +97,51 @@ func TestAccAlicloudNas_MountTarget_updateT(t *testing.T) {
 	})
 }
 
-func testAccCheckMountTargetDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	nasService := NasService{client}
+var AlicloudNasMountTarget0 = map[string]string{}
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_nas_mount_target" {
-			continue
-		}
-		instance, err := nasService.DescribeNasMountTarget(rs.Primary.ID)
-
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return WrapError(err)
-		}
-		return WrapError(fmt.Errorf("NAS %s still exist", instance.MountTargetDomain))
-	}
-	return nil
+func AlicloudNasMountTargetBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
 }
 
-func testAccNasMountTargetVpcConfig(rand1 int, rand2 int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-		default = "tf-testAccVswitch"
-	}
-	variable "storage_type" {
-  		default = "Performance"
-	}
-	data "alicloud_nas_protocols" "default" {
-        	type = "${var.storage_type}"
-	}
-	data "alicloud_vpcs" "default" {
-			is_default = true
-	}
-	resource "alicloud_security_group" "default" {
-		  name = var.name
-		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
-	}
-	resource "alicloud_nas_file_system" "default" {
-	        protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
-        	storage_type = "${var.storage_type}"
-	        description = "tf-testAccNasConfigUpdateName"
-	}
-	resource "alicloud_nas_access_group" "default" {
-                access_group_name = "tf-testAccNasConfig-%d"
-              	access_group_type = "Vpc"
-	        	description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_access_group" "bar" {
-				access_group_name = "tf-testAccNasConfig-2-%d"
-				access_group_type = "Vpc"
-				description = "tf-testAccNasConfig-2"
-	}
-	resource "alicloud_nas_mount_target" "default" {
-		file_system_id = "${alicloud_nas_file_system.default.id}"
-		access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
-		vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
-  		security_group_id = "${alicloud_security_group.default.id}"
-	}
-`, rand1, rand2)
+variable "name1" {
+	default = "%schange"
 }
 
-func testAccNasMountTargetConfigUpdateAccessGroup(rand1 int, rand2 int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-                default = "tf-testAccVswitch"
-	}
-
-	data "alicloud_vpcs" "default" {
-			is_default = true
-	}
-	resource "alicloud_security_group" "default" {
-		  name = var.name
-		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
-	}
-	variable "storage_type" {
-  		default = "Performance"
-	}
-	data "alicloud_nas_protocols" "default" {
-        	type = "${var.storage_type}"
-	}
-	resource "alicloud_nas_file_system" "default" {
-		protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
-	        storage_type = "${var.storage_type}"
-	        description = "tf-testAccNasConfigUpdateName"
-	}
-	resource "alicloud_nas_access_group" "default" {
-                access_group_name = "tf-testAccNasConfig-%d"
-               	access_group_type = "Vpc"
-	        	description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_access_group" "bar" {
-        	        access_group_name = "tf-testAccNasConfig-2-%d"
-                	access_group_type = "Vpc"
-	                description = "tf-testAccNasConfig-2"
-	}
-	resource "alicloud_nas_mount_target" "default" {
-		file_system_id = "${alicloud_nas_file_system.default.id}"
-		access_group_name = "${alicloud_nas_access_group.bar.access_group_name}"
-		vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
-  		security_group_id = "${alicloud_security_group.default.id}"
-	}`, rand1, rand2)
+data "alicloud_nas_protocols" "example" {
+	type = "Performance"
 }
 
-func testAccNasMountTargetConfigUpdateStatus(rand1 int, rand2 int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-                default = "tf-testAccVswitch"
-	}
-		data "alicloud_vpcs" "default" {
-			is_default = true
-	}
-	resource "alicloud_security_group" "default" {
-		  name = var.name
-		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
-	}
-	variable "storage_type" {
-  		default = "Performance"
-	}
-	data "alicloud_nas_protocols" "default" {
-        	type = "${var.storage_type}"
-	}
-	resource "alicloud_nas_file_system" "default" {
-	        protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
-        	storage_type = "${var.storage_type}"
-	        description = "tf-testAccNasConfigUpdateName"
-	}
-	resource "alicloud_nas_access_group" "default" {
-                access_group_name = "tf-testAccNasConfig-%d"
-               	access_group_type = "Vpc"
-	        	description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_access_group" "bar" {
-                access_group_name = "tf-testAccNasConfig-2-%d"
-               	access_group_type = "Vpc"
-	        	description = "tf-testAccNasConfig-2"
-	}
-	resource "alicloud_nas_mount_target" "default" {
-			file_system_id = "${alicloud_nas_file_system.default.id}"
-			access_group_name = "${alicloud_nas_access_group.bar.access_group_name}"
-	        status = "Inactive"
-			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
-  			security_group_id = "${alicloud_security_group.default.id}"
-	}`, rand1, rand2)
+data "alicloud_vpcs" "example" {
+	is_default = true
 }
 
-func testAccNasMountTargetConfigUpdateAll(rand1 int, rand2 int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-                default = "tf-testAccVswitch"
-	}
-		data "alicloud_vpcs" "default" {
-			is_default = true
-	}
-	resource "alicloud_security_group" "default" {
-		  name = var.name
-		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
-	}
-	variable "storage_type" {
-  		default = "Performance"
-	}
-	data "alicloud_nas_protocols" "default" {
-        	type = "${var.storage_type}"
-	}
-	resource "alicloud_nas_file_system" "default" {
-	        protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
-        	storage_type = "${var.storage_type}"
-	        description = "tf-testAccNasConfigUpdateName"
-	}
-	resource "alicloud_nas_access_group" "default" {
-                access_group_name = "tf-testAccNasConfig-%d"
-               	access_group_type = "Vpc"
-	        	description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_access_group" "bar" {
-                access_group_name = "tf-testAccNasConfig-2-%d"
-	        	access_group_type = "Vpc"
-                description = "tf-testAccNasConfig-2"
-	}
-	resource "alicloud_nas_mount_target" "default" {
-			file_system_id = "${alicloud_nas_file_system.default.id}"
-			access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
-	        status = "Active"
-			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
-  			security_group_id = "${alicloud_security_group.default.id}"
-	}`, rand1, rand2)
+resource "alicloud_security_group" "example" {
+	name = var.name
+	vpc_id = "${data.alicloud_vpcs.example.vpcs.0.id}"
 }
 
-func testAccNasMountTargetVpcConfigT(rand1 int, rand2 int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-		default = "tf-testAccVswitch"
-	}
-		data "alicloud_vpcs" "default" {
-			is_default = true
-	}
-	resource "alicloud_security_group" "default" {
-		  name = var.name
-		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
-	}
-	variable "storage_type" {
-  		default = "Capacity"
-	}
-	data "alicloud_nas_protocols" "default" {
-	        type = "${var.storage_type}"
-	}
-	resource "alicloud_nas_file_system" "default" {
-        	protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
-	        storage_type = "${var.storage_type}"
-        	description = "tf-testAccNasConfigUpdateName"
-	}
-	resource "alicloud_nas_access_group" "default" {
-        	access_group_name = "tf-testAccNasConfig-%d"
-			access_group_type = "Vpc"
-	        description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_access_group" "bar" {
-		access_group_name = "tf-testAccNasConfig-2-%d"
-		access_group_type = "Vpc"
-		description = "tf-testAccNasConfig-2"
-	}
-	resource "alicloud_nas_mount_target" "default" {
-		file_system_id = "${alicloud_nas_file_system.default.id}"
-		access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
-			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
-  			security_group_id = "${alicloud_security_group.default.id}"              
-	}
-`, rand1, rand2)
+resource "alicloud_nas_file_system" "example" {
+	protocol_type = "${data.alicloud_nas_protocols.example.protocols.0}"
+	storage_type = "Performance"
 }
 
-func testAccNasMountTargetConfigUpdateAccessGroupT(rand1 int, rand2 int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-        	default = "tf-testAccVswitch"
-	}
-		data "alicloud_vpcs" "default" {
-			is_default = true
-	}
-	resource "alicloud_security_group" "default" {
-		  name = var.name
-		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
-	}
-	variable "storage_type" {
-  		default = "Capacity"
-	}
-	data "alicloud_nas_protocols" "default" {
-        	type = "${var.storage_type}"
-	}
-	resource "alicloud_nas_file_system" "default" {
-	        protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
-	        storage_type = "${var.storage_type}"
-	        description = "tf-testAccNasConfigUpdateName"
-	}
-	resource "alicloud_nas_access_group" "default" {
-                access_group_name = "tf-testAccNasConfig-%d"
-               	access_group_type = "Vpc"
-	        	description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_access_group" "bar" {
-                access_group_name = "tf-testAccNasConfig-2-%d"
-               	access_group_type = "Vpc"
-	        	description = "tf-testAccNasConfig-2"
-	}
-	resource "alicloud_nas_mount_target" "default" {
-		file_system_id = "${alicloud_nas_file_system.default.id}"
-		access_group_name = "${alicloud_nas_access_group.bar.access_group_name}"
-			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
-  			security_group_id = "${alicloud_security_group.default.id}"
-	}`, rand1, rand2)
+resource "alicloud_nas_access_group" "example" {
+	access_group_name = "${var.name}"
+	access_group_type = "Vpc"
 }
 
-func testAccNasMountTargetConfigUpdateStatusT(rand1 int, rand2 int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-                default = "tf-testAccVswitch"
-	}
-		data "alicloud_vpcs" "default" {
-			is_default = true
-	}
-	resource "alicloud_security_group" "default" {
-		  name = var.name
-		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
-	}
-	variable "storage_type" {
-  		default = "Capacity"
-	}
-	data "alicloud_nas_protocols" "default" {
-        	type = "${var.storage_type}"
-	}
-	resource "alicloud_nas_file_system" "default" {
-	        protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
-        	storage_type = "${var.storage_type}"
-	        description = "tf-testAccNasConfigUpdateName"
-	}
-	resource "alicloud_nas_access_group" "default" {
-                access_group_name = "tf-testAccNasConfig-%d"
-               	access_group_type = "Vpc"
-	        	description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_access_group" "bar" {
-                access_group_name = "tf-testAccNasConfig-2-%d"
-               	access_group_type = "Vpc"
-	        	description = "tf-testAccNasConfig-2"
-	}
-	resource "alicloud_nas_mount_target" "default" {
-		file_system_id = "${alicloud_nas_file_system.default.id}"
-               	access_group_name = "${alicloud_nas_access_group.bar.access_group_name}"
-	        status = "Inactive"
-			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
-  			security_group_id = "${alicloud_security_group.default.id}"
-	}`, rand1, rand2)
+resource "alicloud_nas_access_group" "example1" {
+	access_group_name = "${var.name1}"
+	access_group_type = "Vpc"
 }
 
-func testAccNasMountTargetConfigUpdateAllT(rand1 int, rand2 int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-                default = "tf-testAccVswitch"
-	}
-		data "alicloud_vpcs" "default" {
-			is_default = true
-	}
-	resource "alicloud_security_group" "default" {
-		  name = var.name
-		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
-	}
-	variable "storage_type" {
-  		default = "Capacity"
-	}
-	data "alicloud_nas_protocols" "default" {
-        	type = "${var.storage_type}"
-	}
-	resource "alicloud_nas_file_system" "default" {
-	        protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
-        	storage_type = "${var.storage_type}"
-	        description = "tf-testAccNasConfigUpdateName"
-	}
-	resource "alicloud_nas_access_group" "default" {
-                access_group_name = "tf-testAccNasConfig-%d"
-	        	access_group_type = "Vpc"
-                description = "tf-testAccNasConfig"
-	}
-	resource "alicloud_nas_access_group" "bar" {
-                access_group_name = "tf-testAccNasConfig-2-%d"
-	        	access_group_type = "Vpc"
-                description = "tf-testAccNasConfig-2"
-	}
-	resource "alicloud_nas_mount_target" "default" {
-                file_system_id = "${alicloud_nas_file_system.default.id}"
-               	access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
-	        status = "Active"
-			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
-  			security_group_id = "${alicloud_security_group.default.id}"
-	}`, rand1, rand2)
+resource "alicloud_nas_mount_target" "example" {
+	file_system_id = "${alicloud_nas_file_system.example.id}"
+	access_group_name = "${alicloud_nas_access_group.example.access_group_name}"
+	vswitch_id = "${data.alicloud_vpcs.example.vpcs.0.vswitch_ids.0}"
+	security_group_id = "${alicloud_security_group.example.id}"
+}
+`, name, name)
 }

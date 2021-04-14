@@ -1,10 +1,13 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
+	"fmt"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func dataSourceAlicloudResourceManagerHandshakes() *schema.Resource {
@@ -17,6 +20,12 @@ func dataSourceAlicloudResourceManagerHandshakes() *schema.Resource {
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Accepted", "Cancelled", "Declined", "Deleted", "Expired", "Pending"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -39,11 +48,19 @@ func dataSourceAlicloudResourceManagerHandshakes() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"invited_account_real_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"master_account_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"master_account_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"master_account_real_name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -74,6 +91,11 @@ func dataSourceAlicloudResourceManagerHandshakes() *schema.Resource {
 					},
 				},
 			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -81,10 +103,12 @@ func dataSourceAlicloudResourceManagerHandshakes() *schema.Resource {
 func dataSourceAlicloudResourceManagerHandshakesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := resourcemanager.CreateListHandshakesForResourceDirectoryRequest()
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	var objects []resourcemanager.Handshake
+	action := "ListHandshakesForResourceDirectory"
+	request := make(map[string]interface{})
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
+
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -94,53 +118,75 @@ func dataSourceAlicloudResourceManagerHandshakesRead(d *schema.ResourceData, met
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+	status, statusOk := d.GetOk("status")
+	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourcemanagerClient.ListHandshakesForResourceDirectory(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_handshakes", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_handshakes", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*resourcemanager.ListHandshakesForResourceDirectoryResponse)
+		addDebug(action, response, request)
 
-		for _, item := range response.Handshakes.Handshake {
+		resp, err := jsonpath.Get("$.Handshakes.Handshake", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Handshakes.Handshake", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.HandshakeId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["HandshakeId"])]; !ok {
 					continue
 				}
 			}
+			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+				continue
+			}
 			objects = append(objects, item)
 		}
-		if len(response.Handshakes.Handshake) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	ids := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"expire_time":           object["ExpireTime"],
+			"id":                    fmt.Sprint(object["HandshakeId"]),
+			"handshake_id":          fmt.Sprint(object["HandshakeId"]),
+			"master_account_id":     object["MasterAccountId"],
+			"master_account_name":   object["MasterAccountName"],
+			"modify_time":           object["ModifyTime"],
+			"note":                  object["Note"],
+			"resource_directory_id": object["ResourceDirectoryId"],
+			"status":                object["Status"],
+			"target_entity":         object["TargetEntity"],
+			"target_type":           object["TargetType"],
+		}
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			ids = append(ids, fmt.Sprint(object["HandshakeId"]))
+			s = append(s, mapping)
+			continue
+		}
 
-		page, err := getNextpageNumber(request.PageNumber)
+		resourcemanagerService := ResourcemanagerService{client}
+		id := fmt.Sprint(object["HandshakeId"])
+		getResp, err := resourcemanagerService.DescribeResourceManagerHandshake(id)
 		if err != nil {
 			return WrapError(err)
 		}
-		request.PageNumber = page
-	}
-	ids := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-
-	for i, object := range objects {
-		mapping := map[string]interface{}{
-			"expire_time":           object.ExpireTime,
-			"id":                    object.HandshakeId,
-			"handshake_id":          object.HandshakeId,
-			"master_account_id":     object.MasterAccountId,
-			"master_account_name":   object.MasterAccountName,
-			"modify_time":           object.ModifyTime,
-			"note":                  object.Note,
-			"resource_directory_id": object.ResourceDirectoryId,
-			"status":                object.Status,
-			"target_entity":         object.TargetEntity,
-			"target_type":           object.TargetType,
-		}
-		ids[i] = object.HandshakeId
-		s[i] = mapping
+		mapping["invited_account_real_name"] = getResp["InvitedAccountRealName"]
+		mapping["master_account_real_name"] = getResp["MasterAccountRealName"]
+		ids = append(ids, fmt.Sprint(object["HandshakeId"]))
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))

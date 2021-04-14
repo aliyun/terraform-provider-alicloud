@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	roa "github.com/alibabacloud-go/tea-roa/client"
+
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -100,6 +102,15 @@ type Config struct {
 	FnfEndpoint             string
 	RosEndpoint             string
 	PrivatelinkEndpoint     string
+	MaxcomputeEndpoint      string
+	ResourcesharingEndpoint string
+	GaEndpoint              string
+	HitsdbEndpoint          string
+	BrainIndustrialEndpoint string
+	EipanycastEndpoint      string
+	ImsEndpoint             string
+	QuotasEndpoint          string
+	SgwEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {
@@ -227,11 +238,30 @@ func (c *Config) MakeConfigByEcsRoleName() error {
 }
 
 func (c *Config) getTeaDslSdkConfig(stsSupported bool) (config rpc.Config, err error) {
-	credentialType := ""
-	credentialConfig := &credential.Config{}
 	config.SetRegionId(c.RegionId)
 	config.SetUserAgent(fmt.Sprintf("%s/%s %s/%s %s/%s", Terraform, terraformVersion, Provider, providerVersion, Module, c.ConfigurationSource))
-
+	credential, err := credential.NewCredential(c.getCredentialConfig(stsSupported))
+	config.SetCredential(credential).
+		SetRegionId(c.RegionId).
+		SetProtocol(c.Protocol).
+		SetReadTimeout(30000).
+		SetConnectTimeout(30000)
+	return
+}
+func (c *Config) getTeaRoaDslSdkConfig(stsSupported bool) (config roa.Config, err error) {
+	config.SetRegionId(c.RegionId)
+	config.SetUserAgent(fmt.Sprintf("%s/%s %s/%s %s/%s", Terraform, terraformVersion, Provider, providerVersion, Module, c.ConfigurationSource))
+	credential, err := credential.NewCredential(c.getCredentialConfig(stsSupported))
+	config.SetCredential(credential).
+		SetRegionId(c.RegionId).
+		SetProtocol(c.Protocol).
+		SetReadTimeout(30000).
+		SetConnectTimeout(30000)
+	return
+}
+func (c *Config) getCredentialConfig(stsSupported bool) *credential.Config {
+	credentialType := ""
+	credentialConfig := &credential.Config{}
 	if c.AccessKey != "" && c.SecretKey != "" {
 		credentialType = "access_key"
 		credentialConfig.AccessKeyId = &c.AccessKey     // AccessKeyId
@@ -254,11 +284,5 @@ func (c *Config) getTeaDslSdkConfig(stsSupported bool) (config rpc.Config, err e
 	}
 
 	credentialConfig.Type = &credentialType
-	credential, err := credential.NewCredential(credentialConfig)
-	config.SetCredential(credential).
-		SetRegionId(c.RegionId).
-		SetProtocol(c.Protocol).
-		SetReadTimeout(30000).
-		SetConnectTimeout(30000)
-	return
+	return credentialConfig
 }

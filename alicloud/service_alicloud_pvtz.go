@@ -10,7 +10,6 @@ import (
 
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -50,17 +49,34 @@ func (s *PvtzService) DescribePvtzZone(id string) (object map[string]interface{}
 }
 
 func (s *PvtzService) DescribePvtzZoneAttachment(id string) (object map[string]interface{}, err error) {
-	object, err = s.DescribePvtzZone(id)
+	var response map[string]interface{}
+	conn, err := s.client.NewPvtzClient()
 	if err != nil {
-		err = WrapError(err)
-		return
+		return nil, WrapError(err)
 	}
-	vpcs := object["BindVpcs"].(map[string]interface{})["Vpc"].([]interface{})
-	if len(vpcs) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("PvtzZoneAttachment", id)), NotFoundMsg, ProviderERROR)
+	action := "DescribeZoneInfo"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"ZoneId":   id,
 	}
-
-	return
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("PvtzZoneAttachment", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }
 
 func (s *PvtzService) WaitForZoneAttachment(id string, vpcIdMap map[string]string, timeout int) error {
@@ -83,6 +99,8 @@ func (s *PvtzService) WaitForZoneAttachment(id string, vpcIdMap map[string]strin
 					break
 				}
 			}
+		} else {
+			equal = false
 		}
 		if equal {
 			break
@@ -109,8 +127,8 @@ func (s *PvtzService) DescribePvtzZoneRecord(id string) (object map[string]inter
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"ZoneId":     parts[1],
-		"PageNumber": "1",
-		"PageSize":   "20",
+		"PageNumber": 1,
+		"PageSize":   20,
 	}
 	for {
 		runtime := util.RuntimeOptions{}
@@ -148,16 +166,10 @@ func (s *PvtzService) DescribePvtzZoneRecord(id string) (object map[string]inter
 				return v.(map[string]interface{}), nil
 			}
 		}
-		size, _ := strconv.Atoi(request["PageSize"].(string))
-		if len(v.([]interface{})) < size {
+		if len(v.([]interface{})) < request["PageSize"].(int) {
 			break
 		}
-		number, _ := strconv.Atoi(request["PageNumber"].(string))
-		if page, err := getNextpageNumber(requests.NewInteger(number)); err != nil {
-			return object, WrapError(err)
-		} else {
-			request["PageNumber"] = page
-		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	return
 }

@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -45,7 +46,7 @@ func dataSourceAlicloudResourceManagerRoles() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"create_date": {
+						"assume_role_policy_document": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -76,6 +77,11 @@ func dataSourceAlicloudResourceManagerRoles() *schema.Resource {
 					},
 				},
 			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -83,17 +89,18 @@ func dataSourceAlicloudResourceManagerRoles() *schema.Resource {
 func dataSourceAlicloudResourceManagerRolesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := resourcemanager.CreateListRolesRequest()
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	var objects []resourcemanager.Role
-	var nameRegex *regexp.Regexp
+	action := "ListRoles"
+	request := make(map[string]interface{})
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
+	var roleNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
 			return WrapError(err)
 		}
-		nameRegex = r
+		roleNameRegex = r
 	}
 
 	idsMap := make(map[string]string)
@@ -105,58 +112,74 @@ func dataSourceAlicloudResourceManagerRolesRead(d *schema.ResourceData, meta int
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
-			return resourcemanagerClient.ListRoles(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_roles", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*resourcemanager.ListRolesResponse)
+		addDebug(action, response, request)
 
-		for _, item := range response.Roles.Role {
-			if nameRegex != nil {
-				if !nameRegex.MatchString(item.RoleName) {
+		resp, err := jsonpath.Get("$.Roles.Role", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Roles.Role", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if roleNameRegex != nil {
+				if !roleNameRegex.MatchString(fmt.Sprint(item["RoleName"])) {
 					continue
 				}
 			}
-
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.RoleName]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["RoleName"])]; !ok {
 					continue
 				}
 			}
 			objects = append(objects, item)
 		}
-		if len(response.Roles.Role) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"arn":                  object["Arn"],
+			"description":          object["Description"],
+			"max_session_duration": object["MaxSessionDuration"],
+			"role_id":              object["RoleId"],
+			"id":                   fmt.Sprint(object["RoleName"]),
+			"role_name":            fmt.Sprint(object["RoleName"]),
+			"update_date":          object["UpdateDate"],
+		}
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			ids = append(ids, fmt.Sprint(object["RoleName"]))
+			names = append(names, object["RoleName"])
+			s = append(s, mapping)
+			continue
+		}
 
-		page, err := getNextpageNumber(request.PageNumber)
+		resourcemanagerService := ResourcemanagerService{client}
+		id := fmt.Sprint(object["RoleName"])
+		getResp, err := resourcemanagerService.DescribeResourceManagerRole(id)
 		if err != nil {
 			return WrapError(err)
 		}
-		request.PageNumber = page
-	}
-	ids := make([]string, len(objects))
-	names := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-
-	for i, object := range objects {
-		mapping := map[string]interface{}{
-			"arn":                  object.Arn,
-			"create_date":          object.CreateDate,
-			"description":          object.Description,
-			"max_session_duration": object.MaxSessionDuration,
-			"role_id":              object.RoleId,
-			"id":                   object.RoleName,
-			"role_name":            object.RoleName,
-			"update_date":          object.UpdateDate,
-		}
-		ids[i] = object.RoleName
-		names[i] = object.RoleName
-		s[i] = mapping
+		mapping["assume_role_policy_document"] = getResp["AssumeRolePolicyDocument"]
+		ids = append(ids, fmt.Sprint(object["RoleName"]))
+		names = append(names, object["RoleName"])
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))

@@ -74,22 +74,6 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServices() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
-						"resources": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"resource_id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"resource_type": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
-						},
 						"service_business_status": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -120,11 +104,6 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServices() *schema.Resource {
 						},
 					},
 				},
-			},
-			"enable_details": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
 			},
 		},
 	}
@@ -186,10 +165,11 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServicesRead(d *schema.ResourceData
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Services", response)
 		}
-		for _, v := range resp.([]interface{}) {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if vpcEndpointServiceNameRegex != nil {
-				if !vpcEndpointServiceNameRegex.MatchString(item["ServiceName"].(string)) {
+				if !vpcEndpointServiceNameRegex.MatchString(fmt.Sprint(item["ServiceName"])) {
 					continue
 				}
 			}
@@ -207,7 +187,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServicesRead(d *schema.ResourceData
 		}
 	}
 	ids := make([]string, 0)
-	names := make([]string, 0)
+	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
@@ -221,35 +201,8 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServicesRead(d *schema.ResourceData
 			"status":                    object["ServiceStatus"],
 			"vpc_endpoint_service_name": object["ServiceName"],
 		}
-		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
-			ids = append(ids, fmt.Sprint(object["ServiceId"]))
-			names = append(names, object["ServiceName"].(string))
-			s = append(s, mapping)
-			continue
-		}
-
-		privatelinkService := PrivatelinkService{client}
-		id := fmt.Sprint(object["ServiceId"])
-		getResp, err := privatelinkService.ListVpcEndpointServiceResources(id)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		resources := make([]map[string]interface{}, 0)
-		if resourcesList, ok := getResp["Resources"].([]interface{}); ok {
-			for _, v := range resourcesList {
-				if m1, ok := v.(map[string]interface{}); ok {
-					temp1 := map[string]interface{}{
-						"resource_id":   m1["ResourceId"],
-						"resource_type": m1["ResourceType"],
-					}
-					resources = append(resources, temp1)
-				}
-			}
-		}
-		mapping["resources"] = resources
 		ids = append(ids, fmt.Sprint(object["ServiceId"]))
-		names = append(names, object["ServiceName"].(string))
+		names = append(names, object["ServiceName"])
 		s = append(s, mapping)
 	}
 

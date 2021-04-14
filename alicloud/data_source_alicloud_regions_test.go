@@ -20,7 +20,7 @@ func TestAccAlicloudRegionsDataSource_regions(t *testing.T) {
 					resource.TestCheckResourceAttr("data.alicloud_regions.region", "regions.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.region", "regions.0.id", "cn-beijing"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.region", "regions.0.region_id", "cn-beijing"),
-					resource.TestCheckResourceAttr("data.alicloud_regions.region", "regions.0.local_name", "华北 2"),
+					resource.TestCheckResourceAttr("data.alicloud_regions.region", "regions.0.local_name", "华北2（北京）"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.region", "ids.#", "1"),
 				),
 			},

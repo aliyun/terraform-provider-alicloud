@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+type SpotPrice struct {
+	InstanceType string `json:"instance_type"`
+	PriceLimit   string `json:"price_limit"`
+}
+
 type NodePoolInfo struct {
 	NodePoolId      string        `json:"nodepool_id"`
 	RegionId        common.Region `json:"region_id"`
@@ -20,34 +25,44 @@ type NodePoolInfo struct {
 }
 
 type ScalingGroup struct {
-	VpcId              string             `json:"vpc_id"`
-	VswitchIds         []string           `json:"vswitch_ids"`
-	InstanceTypes      []string           `json:"instance_types"`
-	LoginPassword      string             `json:"login_password"`
-	KeyPair            string             `json:"key_pair"`
-	SecurityGroupId    string             `json:"security_group_id"`
-	SystemDiskCategory ecs.DiskCategory   `json:"system_disk_category"`
-	SystemDiskSize     int64              `json:"system_disk_size"`
-	DataDisks          []NodePoolDataDisk `json:"data_disks"` //支持多个数据盘
-	Tags               []Tag              `json:"tags"`
-	ImageId            string             `json:"image_id"`
-	Platform           string             `json:"platform"`
+	VpcId                      string             `json:"vpc_id"`
+	VswitchIds                 []string           `json:"vswitch_ids"`
+	InstanceTypes              []string           `json:"instance_types"`
+	LoginPassword              string             `json:"login_password"`
+	KeyPair                    string             `json:"key_pair"`
+	SecurityGroupId            string             `json:"security_group_id"`
+	SystemDiskCategory         ecs.DiskCategory   `json:"system_disk_category"`
+	SystemDiskSize             int64              `json:"system_disk_size"`
+	SystemDiskPerformanceLevel string             `json:"system_disk_performance_level"`
+	DataDisks                  []NodePoolDataDisk `json:"data_disks"` //支持多个数据盘
+	Tags                       []Tag              `json:"tags"`
+	ImageId                    string             `json:"image_id"`
+	Platform                   string             `json:"platform"`
 	// 支持包年包月
-	InstanceChargeType string   `json:"instance_charge_type"`
-	Period             int      `json:"period"`
-	PeriodUnit         string   `json:"period_unit"`
-	AutoRenew          bool     `json:"auto_renew"`
-	AutoRenewPeriod    int      `json:"auto_renew_period"`
-	RdsInstances       []string ` json:"rds_instances"`
-	ScalingPolicy      string   `json:"scaling_policy"`
-	ScalingGroupId     string   `json:"scaling_group_id"`
+	InstanceChargeType string `json:"instance_charge_type"`
+	Period             int    `json:"period"`
+	PeriodUnit         string `json:"period_unit"`
+	AutoRenew          bool   `json:"auto_renew"`
+	AutoRenewPeriod    int    `json:"auto_renew_period"`
+	// spot实例
+	SpotStrategy   string      `json:"spot_strategy"`
+	SpotPriceLimit []SpotPrice `json:"spot_price_limit"`
+
+	RdsInstances   []string `json:"rds_instances"`
+	ScalingPolicy  string   `json:"scaling_policy"`
+	ScalingGroupId string   `json:"scaling_group_id"`
+
+	WorkerSnapshotPolicyId string `json:"worker_system_disk_snapshot_policy_id"`
+	// 公网ip
+	InternetChargeType      string `json:"internet_charge_type"`
+	InternetMaxBandwidthOut int    `json:"internet_max_bandwidth_out"`
 }
 
 type AutoScaling struct {
-	Enable      bool   `json:"enable"`
-	MaxInstance int64  `json:"max_instance"`
-	MinInstance int64  `json:"min_instance"`
-	Type        string `json:"type"`
+	Enable       bool   `json:"enable"`
+	MaxInstances int64  `json:"max_instances"`
+	MinInstances int64  `json:"min_instances"`
+	Type         string `json:"type"`
 	// eip
 	IsBindEip *bool `json:"is_bond_eip"`
 	// value: PayByBandwidth / PayByTraffic
@@ -67,6 +82,7 @@ type KubernetesConfig struct {
 	RuntimeVersion    string `json:"runtime_version"`
 	CmsEnabled        bool   `json:"cms_enabled"`
 	OverwriteHostname bool   `json:"overwrite_hostname"`
+	Unschedulable     bool   `json:"unschedulable"`
 }
 
 // 加密计算节点池
@@ -131,6 +147,7 @@ type CreateNodePoolResponse struct {
 	Response
 	NodePoolID string `json:"nodepool_id"`
 	Message    string `json:"Message"`
+	TaskID     string `json:"task_id"`
 }
 
 type UpdateNodePoolRequest struct {
