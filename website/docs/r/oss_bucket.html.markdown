@@ -336,9 +336,9 @@ The lifecycle_rule object supports the following:
 * `enabled` - (Required, Type: bool) Specifies lifecycle rule status.
 * `expiration` - (Optional, Type: set) Specifies a period in the object's expire (documented below).
 * `transitions` - (Optional, Type: set, Available in 1.62.1+) Specifies the time when an object is converted to the IA or archive storage class during a valid life cycle. (documented below).
-* `abort_multipart_upload` - (Optional, Type: set, Available in 1.122.0+) Specifies the number of days after initiating a multipart upload when the multipart upload must be completed (documented below).
-* `noncurrent_version_expiration` - (Optional, Type: set, Available in 1.122.0+) Specifies when noncurrent object versions expire (documented below).
-* `noncurrent_version_transition` - (Optional, Type: set, Available in 1.122.0+) Specifies when noncurrent object versions transitions (documented below).
+* `abort_multipart_upload` - (Optional, Type: set, Available in 1.121.2+) Specifies the number of days after initiating a multipart upload when the multipart upload must be completed (documented below).
+* `noncurrent_version_expiration` - (Optional, Type: set, Available in 1.121.2+) Specifies when noncurrent object versions expire (documented below).
+* `noncurrent_version_transition` - (Optional, Type: set, Available in 1.121.2+) Specifies when noncurrent object versions transitions (documented below).
 
 `NOTE`: At least one of expiration, transitions, abort_multipart_upload, noncurrent_version_expiration and noncurrent_version_transition should be configured.
 
@@ -348,8 +348,8 @@ The lifecycle_rule expiration object supports the following:
 
 * `date` - (Optional) Specifies the date after which you want the corresponding action to take effect. The value obeys ISO8601 format like `2017-03-09`.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
-* `created_before_date` - (Optional, Available in 1.122.0+) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that objects updated before 2002-10-11T00:00:00.000Z are deleted or converted to another storage class, and objects updated after this time (including this time) are not deleted or converted.
-* `expired_object_delete_markers` - (Optional, Type: bool, Available in 1.122.0+) On a versioned bucket (versioning-enabled or versioning-suspended bucket), you can add this element in the lifecycle configuration to direct OSS to delete expired object delete markers. This cannot be specified with Days, Date or CreatedBeforeDate in a Lifecycle Expiration Policy.
+* `created_before_date` - (Optional, Available in 1.121.2+) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that objects updated before 2002-10-11T00:00:00.000Z are deleted or converted to another storage class, and objects updated after this time (including this time) are not deleted or converted.
+* `expired_object_delete_markers` - (Optional, Type: bool, Available in 1.121.2+) On a versioned bucket (versioning-enabled or versioning-suspended bucket), you can add this element in the lifecycle configuration to direct OSS to delete expired object delete markers. This cannot be specified with Days, Date or CreatedBeforeDate in a Lifecycle Expiration Policy.
 
 `NOTE`: One and only one of "date", "days", "created_before_date" and "expired_object_delete_markers" can be specified in one expiration configuration.
 
