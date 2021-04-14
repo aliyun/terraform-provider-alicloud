@@ -185,7 +185,12 @@ variable "name" {
 	default = "%s"
 }
 data "alicloud_nas_protocols" "example" {
-        type = "Capacity"
+        type = "Performance"
+}
+resource "alicloud_kms_key" "key" {
+ description             = "Hello KMS"
+ pending_window_in_days  = "7"
+ key_state               = "Enabled"
 }
 resource "alicloud_kms_key" "key" {
  description             = "Hello KMS"
