@@ -83,7 +83,7 @@ func TestAccAlicloudCmsAlarmContactGroup_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAcc%sCmsAlarmContactGrouptf-test%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testAccCmsAlarmContactGroup%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, CmsAlarmContactGroupBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
