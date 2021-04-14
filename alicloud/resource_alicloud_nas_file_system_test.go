@@ -192,15 +192,5 @@ resource "alicloud_kms_key" "key" {
  pending_window_in_days  = "7"
  key_state               = "Enabled"
 }
-resource "alicloud_kms_key" "key" {
- description             = "Hello KMS"
- pending_window_in_days  = "7"
- key_state               = "Enabled"
-}
-resource "alicloud_kms_key" "key" {
- description             = "Hello KMS"
- pending_window_in_days  = "7"
- key_state               = "Enabled"
-}
 `, name)
 }
