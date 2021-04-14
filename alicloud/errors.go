@@ -206,13 +206,28 @@ func NeedRetry(err error) bool {
 		re := regexp.MustCompile("^Post [\"]*https://.*EOF$")
 		return re.MatchString(err.Error())
 	}
+
+	throttlingRegex := regexp.MustCompile("^Throttling.*")
+
 	if e, ok := err.(*tea.SDKError); ok {
 		if strings.Contains(*e.Message, "code: 500, 您已开通过") {
 			return false
 		}
+		if *e.Code == ServiceUnavailable || throttlingRegex.MatchString(*e.Code) {
+			return true
+		}
 		re := regexp.MustCompile("^code: 5[\\d]{2}")
 		return re.MatchString(*e.Message)
 	}
+
+	if e, ok := err.(*errors.ServerError); ok {
+		return e.ErrorCode() == ServiceUnavailable || throttlingRegex.MatchString(e.ErrorCode())
+	}
+
+	if e, ok := err.(*common.Error); ok {
+		return e.Code == ServiceUnavailable || throttlingRegex.MatchString(e.Code)
+	}
+
 	return false
 }
 
