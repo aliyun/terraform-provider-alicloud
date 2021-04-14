@@ -997,17 +997,28 @@ func (s *VpcService) DescribeNetworkAcl(id string) (networkAcl vpc.NetworkAcl, e
 	request.RegionId = s.client.RegionId
 	request.NetworkAclId = id
 
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeNetworkAcls(request)
-	})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidNetworkAcl.NotFound"}) {
-			return networkAcl, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	var response *vpc.DescribeNetworkAclsResponse
+	if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeNetworkAcls(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if IsExpectedErrors(err, []string{"InvalidNetworkAcl.NotFound"}) {
+				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+			}
+			return resource.NonRetryableError(err)
 		}
+		response, _ = raw.(*vpc.DescribeNetworkAclsResponse)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	}); err != nil {
 		return networkAcl, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	response, _ := raw.(*vpc.DescribeNetworkAclsResponse)
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if len(response.NetworkAcls.NetworkAcl) <= 0 || response.NetworkAcls.NetworkAcl[0].NetworkAclId != id {
 		return networkAcl, WrapErrorf(Error(GetNotFoundMessage("NetworkAcl", id)), NotFoundMsg, ProviderERROR)
 	}
