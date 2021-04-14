@@ -170,8 +170,17 @@ func resourceAlicloudOssBucket() *schema.Resource {
 										Optional:     true,
 										ValidateFunc: validateOssBucketDateTimestamp,
 									},
+									"created_before_date": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: validateOssBucketDateTimestamp,
+									},
 									"days": {
 										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"expired_object_delete_marker": {
+										Type:     schema.TypeBool,
 										Optional: true,
 									},
 								},
@@ -196,6 +205,59 @@ func resourceAlicloudOssBucket() *schema.Resource {
 										Type:     schema.TypeString,
 										Default:  oss.StorageStandard,
 										Optional: true,
+										ValidateFunc: validation.StringInSlice([]string{
+											string(oss.StorageStandard),
+											string(oss.StorageIA),
+											string(oss.StorageArchive),
+										}, false),
+									},
+								},
+							},
+						},
+						"abort_multipart_upload": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Set:      abortMultipartUploadHash,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"created_before_date": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: validateOssBucketDateTimestamp,
+									},
+									"days": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"noncurrent_version_expiration": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Set:      expirationHash,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"days": {
+										Type:     schema.TypeInt,
+										Required: true,
+									},
+								},
+							},
+						},
+						"noncurrent_version_transition": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Set:      transitionsHash,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"days": {
+										Type:     schema.TypeInt,
+										Required: true,
+									},
+									"storage_class": {
+										Type:     schema.TypeString,
+										Required: true,
 										ValidateFunc: validation.StringInSlice([]string{
 											string(oss.StorageStandard),
 											string(oss.StorageIA),
@@ -541,6 +603,16 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 				}
 				e["date"] = t.Format("2006-01-02")
 			}
+			if lifecycleRule.Expiration.CreatedBeforeDate != "" {
+				t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.Expiration.CreatedBeforeDate)
+				if err != nil {
+					return WrapError(err)
+				}
+				e["created_before_date"] = t.Format("2006-01-02")
+			}
+			if lifecycleRule.Expiration.ExpiredObjectDeleteMarker != nil {
+				e["expired_object_delete_marker"] = *lifecycleRule.Expiration.ExpiredObjectDeleteMarker
+			}
 			e["days"] = int(lifecycleRule.Expiration.Days)
 			rule["expiration"] = schema.NewSet(expirationHash, []interface{}{e})
 		}
@@ -562,7 +634,39 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 			}
 			rule["transitions"] = schema.NewSet(transitionsHash, eSli)
 		}
-
+		// abort_multipart_upload
+		if lifecycleRule.AbortMultipartUpload != nil {
+			e := make(map[string]interface{})
+			if lifecycleRule.AbortMultipartUpload.CreatedBeforeDate != "" {
+				t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.AbortMultipartUpload.CreatedBeforeDate)
+				if err != nil {
+					return WrapError(err)
+				}
+				e["created_before_date"] = t.Format("2006-01-02")
+			}
+			valDays := int(lifecycleRule.AbortMultipartUpload.Days)
+			if valDays > 0 {
+				e["days"] = int(lifecycleRule.AbortMultipartUpload.Days)
+			}
+			rule["abort_multipart_upload"] = schema.NewSet(abortMultipartUploadHash, []interface{}{e})
+		}
+		// NoncurrentVersionExpiration
+		if lifecycleRule.NonVersionExpiration != nil {
+			e := make(map[string]interface{})
+			e["days"] = int(lifecycleRule.NonVersionExpiration.NoncurrentDays)
+			rule["noncurrent_version_expiration"] = schema.NewSet(expirationHash, []interface{}{e})
+		}
+		// NoncurrentVersionTransitions
+		if len(lifecycleRule.NonVersionTransitions) != 0 {
+			var eSli []interface{}
+			for _, transition := range lifecycleRule.NonVersionTransitions {
+				e := make(map[string]interface{})
+				e["days"] = transition.NoncurrentDays
+				e["storage_class"] = string(transition.StorageClass)
+				eSli = append(eSli, e)
+			}
+			rule["noncurrent_version_transition"] = schema.NewSet(transitionsHash, eSli)
+		}
 		lrules = append(lrules, rule)
 	}
 
@@ -938,17 +1042,32 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 			e := expiration[0].(map[string]interface{})
 			i := oss.LifecycleExpiration{}
 			valDate, _ := e["date"].(string)
+			valCreatedBeforeDate, _ := e["created_before_date"].(string)
 			valDays, _ := e["days"].(int)
 
-			if (valDate != "" && valDays > 0) || (valDate == "" && valDays <= 0) {
-				return WrapError(Error("'date' conflicts with 'days'. One and only one of them can be specified in one expiration configuration."))
-			}
+			if val, ok := e["expired_object_delete_marker"].(bool); ok && val {
+				if valDays > 0 || valDate != "" || valCreatedBeforeDate != "" {
+					return WrapError(Error("'date/created_before_date/days' conflicts with 'expired_object_delete_marker'. One and only one of them can be specified in one expiration configuration."))
+				}
+				i.ExpiredObjectDeleteMarker = &val
+			} else {
+				cnt := 0
+				if valDate != "" {
+					i.Date = fmt.Sprintf("%sT00:00:00.000Z", valDate)
+					cnt++
+				}
+				if valCreatedBeforeDate != "" {
+					i.CreatedBeforeDate = fmt.Sprintf("%sT00:00:00.000Z", valCreatedBeforeDate)
+					cnt++
+				}
+				if valDays > 0 {
+					i.Days = valDays
+					cnt++
+				}
 
-			if valDate != "" {
-				i.Date = fmt.Sprintf("%sT00:00:00.000Z", valDate)
-			}
-			if valDays > 0 {
-				i.Days = valDays
+				if cnt != 1 {
+					return WrapError(Error("One and only one of 'date', 'created_before_date' and 'days' can be specified in one expiration configuration."))
+				}
 			}
 			rule.Expiration = &i
 		}
@@ -978,6 +1097,53 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 					i.StorageClass = oss.StorageClassType(valStorageClass)
 				}
 				rule.Transitions = append(rule.Transitions, i)
+			}
+		}
+
+		// AbortMultipartUpload
+		abortMultipartUpload := d.Get(fmt.Sprintf("lifecycle_rule.%d.abort_multipart_upload", i)).(*schema.Set).List()
+		if len(abortMultipartUpload) > 0 {
+			e := abortMultipartUpload[0].(map[string]interface{})
+			i := oss.LifecycleAbortMultipartUpload{}
+			valCreatedBeforeDate, _ := e["created_before_date"].(string)
+			valDays, _ := e["days"].(int)
+
+			if (valCreatedBeforeDate != "" && valDays > 0) || (valCreatedBeforeDate == "" && valDays <= 0) {
+				return WrapError(Error("'CreatedBeforeDate' conflicts with 'days'. One and only one of them can be specified in one abort_multipart_upload configuration."))
+			}
+
+			if valCreatedBeforeDate != "" {
+				i.CreatedBeforeDate = fmt.Sprintf("%sT00:00:00.000Z", valCreatedBeforeDate)
+			}
+			if valDays > 0 {
+				i.Days = valDays
+			}
+			rule.AbortMultipartUpload = &i
+		}
+
+		// Noncurrent Version Expiration
+		noncurrentVersionExpiration := d.Get(fmt.Sprintf("lifecycle_rule.%d.noncurrent_version_expiration", i)).(*schema.Set).List()
+		if len(noncurrentVersionExpiration) > 0 {
+			e := noncurrentVersionExpiration[0].(map[string]interface{})
+			i := oss.LifecycleVersionExpiration{}
+			valDays, _ := e["days"].(int)
+			i.NoncurrentDays = valDays
+			rule.NonVersionExpiration = &i
+		}
+
+		// Noncurrent Version Transitions
+		noncurrentVersionTransitions := d.Get(fmt.Sprintf("lifecycle_rule.%d.noncurrent_version_transition", i)).(*schema.Set).List()
+		if len(noncurrentVersionTransitions) > 0 {
+			for _, transition := range noncurrentVersionTransitions {
+				i := oss.LifecycleVersionTransition{}
+
+				valDays := transition.(map[string]interface{})["days"].(int)
+				valStorageClass := transition.(map[string]interface{})["storage_class"].(string)
+
+				i.NoncurrentDays = valDays
+				i.StorageClass = oss.StorageClassType(valStorageClass)
+
+				rule.NonVersionTransitions = append(rule.NonVersionTransitions, i)
 			}
 		}
 
@@ -1207,8 +1373,14 @@ func expirationHash(v interface{}) int {
 	if v, ok := m["date"]; ok {
 		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
 	}
+	if v, ok := m["created_before_date"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
 	if v, ok := m["days"]; ok {
 		buf.WriteString(fmt.Sprintf("%d-", v.(int)))
+	}
+	if v, ok := m["expired_object_delete_marker"]; ok {
+		buf.WriteString(fmt.Sprintf("%v-", v.(bool)))
 	}
 	return hashcode.String(buf.String())
 }
@@ -1220,6 +1392,18 @@ func transitionsHash(v interface{}) int {
 		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
 	}
 	if v, ok := m["storage_class"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+	if v, ok := m["days"]; ok {
+		buf.WriteString(fmt.Sprintf("%d-", v.(int)))
+	}
+	return hashcode.String(buf.String())
+}
+
+func abortMultipartUploadHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	if v, ok := m["created_before_date"]; ok {
 		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
 	}
 	if v, ok := m["days"]; ok {

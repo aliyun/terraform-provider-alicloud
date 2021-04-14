@@ -116,12 +116,16 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc-bucket-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketConfigDependence)
 	hashcode1 := strconv.Itoa(expirationHash(map[string]interface{}{
-		"days": 365,
-		"date": "",
+		"days":                         365,
+		"date":                         "",
+		"created_before_date":          "",
+		"expired_object_delete_marker": false,
 	}))
 	hashcode2 := strconv.Itoa(expirationHash(map[string]interface{}{
-		"days": 0,
-		"date": "2018-01-12",
+		"days":                         0,
+		"date":                         "2018-01-12",
+		"created_before_date":          "",
+		"expired_object_delete_marker": false,
 	}))
 	hashcode3 := strconv.Itoa(transitionsHash(map[string]interface{}{
 		"days":                3,
@@ -142,6 +146,20 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 		"days":                0,
 		"created_before_date": "2021-11-11",
 		"storage_class":       "Archive",
+	}))
+	hashcode7 := strconv.Itoa(expirationHash(map[string]interface{}{
+		"days":                         0,
+		"date":                         "",
+		"created_before_date":          "2018-01-12",
+		"expired_object_delete_marker": false,
+	}))
+	hashcode8 := strconv.Itoa(abortMultipartUploadHash(map[string]interface{}{
+		"days":                0,
+		"created_before_date": "2018-01-22",
+	}))
+	hashcode9 := strconv.Itoa(abortMultipartUploadHash(map[string]interface{}{
+		"days":                10,
+		"created_before_date": "",
 	}))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -313,11 +331,36 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 								},
 							},
 						},
+						{
+							"id":      "rule5",
+							"prefix":  "path5/",
+							"enabled": "true",
+							"expiration": []map[string]string{
+								{
+									"created_before_date": "2018-01-12",
+								},
+							},
+							"abort_multipart_upload": []map[string]string{
+								{
+									"created_before_date": "2018-01-22",
+								},
+							},
+						},
+						{
+							"id":      "rule6",
+							"prefix":  "path6/",
+							"enabled": "true",
+							"abort_multipart_upload": []map[string]string{
+								{
+									"days": "10",
+								},
+							},
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"lifecycle_rule.#":                                   "4",
+						"lifecycle_rule.#":                                   "6",
 						"lifecycle_rule.0.id":                                "rule1",
 						"lifecycle_rule.0.prefix":                            "path1/",
 						"lifecycle_rule.0.enabled":                           "true",
@@ -342,6 +385,17 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 						"lifecycle_rule.3.transitions." + hashcode5 + ".storage_class":       string(oss.StorageIA),
 						"lifecycle_rule.3.transitions." + hashcode6 + ".created_before_date": "2021-11-11",
 						"lifecycle_rule.3.transitions." + hashcode6 + ".storage_class":       string(oss.StorageArchive),
+
+						"lifecycle_rule.4.id":      "rule5",
+						"lifecycle_rule.4.prefix":  "path5/",
+						"lifecycle_rule.4.enabled": "true",
+						"lifecycle_rule.4.expiration." + hashcode7 + ".created_before_date":             "2018-01-12",
+						"lifecycle_rule.4.abort_multipart_upload." + hashcode8 + ".created_before_date": "2018-01-22",
+
+						"lifecycle_rule.5.id":      "rule6",
+						"lifecycle_rule.5.prefix":  "path6/",
+						"lifecycle_rule.5.enabled": "true",
+						"lifecycle_rule.5.abort_multipart_upload." + hashcode9 + ".days": "10",
 					}),
 				),
 			},
@@ -432,6 +486,17 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 						"lifecycle_rule.3.transitions." + hashcode6 + ".created_before_date": REMOVEKEY,
 						"lifecycle_rule.3.transitions." + hashcode6 + ".storage_class":       REMOVEKEY,
 
+						"lifecycle_rule.4.id":      REMOVEKEY,
+						"lifecycle_rule.4.prefix":  REMOVEKEY,
+						"lifecycle_rule.4.enabled": REMOVEKEY,
+						"lifecycle_rule.4.expiration." + hashcode7 + ".created_before_date":             REMOVEKEY,
+						"lifecycle_rule.4.abort_multipart_upload." + hashcode8 + ".created_before_date": REMOVEKEY,
+
+						"lifecycle_rule.5.id":      REMOVEKEY,
+						"lifecycle_rule.5.prefix":  REMOVEKEY,
+						"lifecycle_rule.5.enabled": REMOVEKEY,
+						"lifecycle_rule.5.abort_multipart_upload." + hashcode9 + ".days": REMOVEKEY,
+
 						"tags.%":           "0",
 						"tags.key1-update": REMOVEKEY,
 						"tags.Key2-update": REMOVEKEY,
@@ -460,10 +525,27 @@ func TestAccAlicloudOssBucketVersioning(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc-bucket-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketConfigDependence)
+	hashcode1 := strconv.Itoa(expirationHash(map[string]interface{}{
+		"days":                         0,
+		"date":                         "",
+		"created_before_date":          "",
+		"expired_object_delete_marker": true,
+	}))
+	hashcode2 := strconv.Itoa(expirationHash(map[string]interface{}{
+		"days": 10,
+	}))
+	hashcode3 := strconv.Itoa(transitionsHash(map[string]interface{}{
+		"days":          3,
+		"storage_class": "IA",
+	}))
+	hashcode4 := strconv.Itoa(transitionsHash(map[string]interface{}{
+		"days":          5,
+		"storage_class": "Archive",
+	}))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
+			//testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -511,6 +593,60 @@ func TestAccAlicloudOssBucketVersioning(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"versioning.0.status": "Suspended",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"lifecycle_rule": []map[string]interface{}{
+						{
+							"id":      "rule1",
+							"prefix":  "path1/",
+							"enabled": "true",
+							"expiration": []map[string]string{
+								{
+									"expired_object_delete_marker": "true",
+								},
+							},
+						},
+						{
+							"id":      "rule2",
+							"prefix":  "path2/",
+							"enabled": "true",
+							"noncurrent_version_expiration": []map[string]string{
+								{
+									"days": "10",
+								},
+							},
+							"noncurrent_version_transition": []map[string]string{
+								{
+									"days":          "3",
+									"storage_class": "IA",
+								},
+								{
+									"days":          "5",
+									"storage_class": "Archive",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"lifecycle_rule.#":         "2",
+						"lifecycle_rule.0.id":      "rule1",
+						"lifecycle_rule.0.prefix":  "path1/",
+						"lifecycle_rule.0.enabled": "true",
+						"lifecycle_rule.0.expiration." + hashcode1 + ".expired_object_delete_marker": "true",
+
+						"lifecycle_rule.1.id":      "rule2",
+						"lifecycle_rule.1.prefix":  "path2/",
+						"lifecycle_rule.1.enabled": "true",
+						"lifecycle_rule.1.noncurrent_version_expiration." + hashcode2 + ".days":          "10",
+						"lifecycle_rule.1.noncurrent_version_transition." + hashcode3 + ".days":          "3",
+						"lifecycle_rule.1.noncurrent_version_transition." + hashcode3 + ".storage_class": string(oss.StorageIA),
+						"lifecycle_rule.1.noncurrent_version_transition." + hashcode4 + ".days":          "5",
+						"lifecycle_rule.1.noncurrent_version_transition." + hashcode4 + ".storage_class": string(oss.StorageArchive),
 					}),
 				),
 			},

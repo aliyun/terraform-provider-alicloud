@@ -53,7 +53,9 @@ type LifecycleRule struct {
 	Transitions          []LifecycleTransition          `xml:"Transition,omitempty"`           // The transition property
 	AbortMultipartUpload *LifecycleAbortMultipartUpload `xml:"AbortMultipartUpload,omitempty"` // The AbortMultipartUpload property
 	NonVersionExpiration *LifecycleVersionExpiration    `xml:"NoncurrentVersionExpiration,omitempty"`
-	NonVersionTransition *LifecycleVersionTransition    `xml:"NoncurrentVersionTransition,omitempty"`
+	// Deprecated: Use NonVersionTransitions instead.
+	NonVersionTransition  *LifecycleVersionTransition  `xml:"-"` // NonVersionTransition is not suggested to use
+	NonVersionTransitions []LifecycleVersionTransition `xml:"NoncurrentVersionTransition,omitempty"`
 }
 
 // LifecycleExpiration defines the rule's expiration property
@@ -121,7 +123,7 @@ func verifyLifecycleRules(rules []LifecycleRule) error {
 	if len(rules) == 0 {
 		return fmt.Errorf("invalid rules, the length of rules is zero")
 	}
-	for _, rule := range rules {
+	for k, rule := range rules {
 		if rule.Status != "Enabled" && rule.Status != "Disabled" {
 			return fmt.Errorf("invalid rule, the value of status must be Enabled or Disabled")
 		}
@@ -135,20 +137,19 @@ func verifyLifecycleRules(rules []LifecycleRule) error {
 
 		transitions := rule.Transitions
 		if len(transitions) > 0 {
-			if len(transitions) > 2 {
-				return fmt.Errorf("invalid count of transition lifecycles, the count must than less than 3")
-			}
-
 			for _, transition := range transitions {
 				if (transition.Days != 0 && transition.CreatedBeforeDate != "") || (transition.Days == 0 && transition.CreatedBeforeDate == "") {
 					return fmt.Errorf("invalid transition lifecycle, must be set one of CreatedBeforeDate and Days")
 				}
-				if transition.StorageClass != StorageIA && transition.StorageClass != StorageArchive {
-					return fmt.Errorf("invalid transition lifecylce, the value of storage class must be IA or Archive")
-				}
 			}
-		} else if rule.Expiration == nil && abortMPU == nil && rule.NonVersionExpiration == nil && rule.NonVersionTransition == nil {
-			return fmt.Errorf("invalid rule, must set one of Expiration, AbortMultipartUplaod, NonVersionExpiration, NonVersionTransition and Transitions")
+		}
+
+		// NonVersionTransition is not suggested to use
+		// to keep compatible
+		if rule.NonVersionTransition != nil && len(rule.NonVersionTransitions) > 0 {
+			return fmt.Errorf("NonVersionTransition and NonVersionTransitions cannot both have values")
+		} else if rule.NonVersionTransition != nil {
+			rules[k].NonVersionTransitions = append(rules[k].NonVersionTransitions, *rule.NonVersionTransition)
 		}
 	}
 
@@ -339,6 +340,20 @@ type ObjectProperties struct {
 	Owner        Owner     `xml:"Owner"`        // Object owner information
 	LastModified time.Time `xml:"LastModified"` // Object last modified time
 	StorageClass string    `xml:"StorageClass"` // Object storage class (Standard, IA, Archive)
+}
+
+// ListObjectsResultV2 defines the result from ListObjectsV2 request
+type ListObjectsResultV2 struct {
+	XMLName               xml.Name           `xml:"ListBucketResult"`
+	Prefix                string             `xml:"Prefix"`                // The object prefix
+	StartAfter            string             `xml:"StartAfter"`            // the input StartAfter
+	ContinuationToken     string             `xml:"ContinuationToken"`     // the input ContinuationToken
+	MaxKeys               int                `xml:"MaxKeys"`               // Max keys to return
+	Delimiter             string             `xml:"Delimiter"`             // The delimiter for grouping objects' name
+	IsTruncated           bool               `xml:"IsTruncated"`           // Flag indicates if all results are returned (when it's false)
+	NextContinuationToken string             `xml:"NextContinuationToken"` // The start point of the next NextContinuationToken
+	Objects               []ObjectProperties `xml:"Contents"`              // Object list
+	CommonPrefixes        []string           `xml:"CommonPrefixes>Prefix"` // You can think of commonprefixes as "folders" whose names end with the delimiter
 }
 
 // ListObjectVersionsResult defines the result from ListObjectVersions request
@@ -581,6 +596,40 @@ func decodeListObjectsResult(result *ListObjectsResult) error {
 	return nil
 }
 
+// decodeListObjectsResult decodes list objects result in URL encoding
+func decodeListObjectsResultV2(result *ListObjectsResultV2) error {
+	var err error
+	result.Prefix, err = url.QueryUnescape(result.Prefix)
+	if err != nil {
+		return err
+	}
+	result.StartAfter, err = url.QueryUnescape(result.StartAfter)
+	if err != nil {
+		return err
+	}
+	result.Delimiter, err = url.QueryUnescape(result.Delimiter)
+	if err != nil {
+		return err
+	}
+	result.NextContinuationToken, err = url.QueryUnescape(result.NextContinuationToken)
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(result.Objects); i++ {
+		result.Objects[i].Key, err = url.QueryUnescape(result.Objects[i].Key)
+		if err != nil {
+			return err
+		}
+	}
+	for i := 0; i < len(result.CommonPrefixes); i++ {
+		result.CommonPrefixes[i], err = url.QueryUnescape(result.CommonPrefixes[i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // decodeListObjectVersionsResult decodes list version objects result in URL encoding
 func decodeListObjectVersionsResult(result *ListObjectVersionsResult) error {
 	var err error
@@ -697,6 +746,7 @@ type createBucketConfiguration struct {
 	XMLName            xml.Name           `xml:"CreateBucketConfiguration"`
 	StorageClass       StorageClassType   `xml:"StorageClass,omitempty"`
 	DataRedundancyType DataRedundancyType `xml:"DataRedundancyType,omitempty"`
+	ObjectHashFunction ObjecthashFuncType `xml:"ObjectHashFunction,omitempty"`
 }
 
 // LiveChannelConfiguration defines the configuration for live-channel
@@ -1174,4 +1224,25 @@ type AsyncTaskInfo struct {
 	Callback      string   `xml:"Callback,omitempty"`
 	StorageClass  string   `xml:"StorageClass,omitempty"`
 	IgnoreSameKey bool     `xml:"IgnoreSameKey"`
+}
+
+// InitiateWormConfiguration define InitiateBucketWorm configuration
+type InitiateWormConfiguration struct {
+	XMLName               xml.Name `xml:"InitiateWormConfiguration"`
+	RetentionPeriodInDays int      `xml:"RetentionPeriodInDays"` // specify retention days
+}
+
+// ExtendWormConfiguration define ExtendWormConfiguration configuration
+type ExtendWormConfiguration struct {
+	XMLName               xml.Name `xml:"ExtendWormConfiguration"`
+	RetentionPeriodInDays int      `xml:"RetentionPeriodInDays"` // specify retention days
+}
+
+// WormConfiguration define WormConfiguration
+type WormConfiguration struct {
+	XMLName               xml.Name `xml:"WormConfiguration"`
+	WormId                string   `xml:"WormId,omitempty"`
+	State                 string   `xml:"State,omitempty"`
+	RetentionPeriodInDays int      `xml:"RetentionPeriodInDays"` // specify retention days
+	CreationDate          string   `xml:"CreationDate,omitempty"`
 }
