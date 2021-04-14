@@ -24,6 +24,7 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(11 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(11 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -250,10 +251,21 @@ func resourceAlicloudCenBandwidthPackageUpdate(d *schema.ResourceData, meta inte
 		request := cbn.CreateModifyCenBandwidthPackageSpecRequest()
 		request.CenBandwidthPackageId = d.Id()
 		request.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
-		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.ModifyCenBandwidthPackageSpec(request)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+				return cbnClient.ModifyCenBandwidthPackageSpec(request)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"InvalidStatus.Resource", "Operation.Blocking"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw)
+			return nil
 		})
-		addDebug(request.GetActionName(), raw)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -278,10 +290,21 @@ func resourceAlicloudCenBandwidthPackageUpdate(d *schema.ResourceData, meta inte
 		request.Description = d.Get("description").(string)
 	}
 	if update {
-		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.ModifyCenBandwidthPackageAttribute(request)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+				return cbnClient.ModifyCenBandwidthPackageAttribute(request)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"InvalidStatus.Resource", "Operation.Blocking"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw)
+			return nil
 		})
-		addDebug(request.GetActionName(), raw)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
