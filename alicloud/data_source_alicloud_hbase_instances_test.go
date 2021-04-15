@@ -98,17 +98,28 @@ variable "name" {
   default = "tf-testAccHBaseInstance_datasource_%d"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
+data "alicloud_hbase_zones" "default" {}
+data "alicloud_vpcs" "default" {
+	is_default = true
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_hbase_zones.default.ids.0
+}
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id = data.alicloud_hbase_zones.default.ids.0
+  vswitch_name              = var.name
 }
 
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_hbase_instance" "default" {
   name = var.name
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "2.0"
   master_instance_type = "hbase.sn1.large"
   core_instance_type = "hbase.sn1.large"
@@ -117,7 +128,7 @@ resource "alicloud_hbase_instance" "default" {
   pay_type = "PostPaid"
   duration = 1
   auto_renew = false
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
+  vswitch_id = local.vswitch_id
   cold_storage_size = 0
   deletion_protection = false
   immediate_delete_flag = true

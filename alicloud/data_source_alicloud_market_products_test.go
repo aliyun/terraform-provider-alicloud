@@ -16,7 +16,7 @@ func TestAccAlicloudMarketProductsDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex":   "BatchCompute Ubuntu14.04",
+			"name_regex":   "BatchCompute",
 			"product_type": "MIRROR",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
@@ -24,16 +24,16 @@ func TestAccAlicloudMarketProductsDataSource(t *testing.T) {
 			"product_type": "MIRROR",
 		}),
 	}
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"ids":          []string{"cmjj022644"},
-			"product_type": "MIRROR",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":          []string{"cmjj022644_fake"},
-			"product_type": "MIRROR",
-		}),
-	}
+	//idsConf := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"ids":          []string{"cmjj022644"},
+	//		"product_type": "MIRROR",
+	//	}),
+	//	fakeConfig: testAccConfig(map[string]interface{}{
+	//		"ids":          []string{"cmjj022644_fake"},
+	//		"product_type": "MIRROR",
+	//	}),
+	//}
 	sortConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"sort":         "user_count-desc",
@@ -52,28 +52,26 @@ func TestAccAlicloudMarketProductsDataSource(t *testing.T) {
 	}
 	searchTermConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"search_term": "镜像",
+			"search_term": "Image",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"sort":         "created_on-desc",
-			"category_id":  "56024006",
-			"product_type": "MIRROR",
-			"name_regex":   "SQLServer2016_Ent_FullFeature_winupdate",
-			"ids":          []string{"cmjj031537"},
-			"search_term":  "SQLServer2016_Ent_FullFeature_winupdate",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"sort":         "created_on-desc",
-			"category_id":  "56024006",
-			"product_type": "MIRROR",
-			"name_regex":   "SQLServer2016_Ent_FullFeature_winupdate_fake",
-			"ids":          []string{"cmjj031537"},
-			"search_term":  "镜像",
-		}),
-	}
+	//allConf := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"sort":         "created_on-desc",
+	//		"category_id":  "56024006",
+	//		"product_type": "MIRROR",
+	//		"name_regex":   "BatchCompute",
+	//		"search_term":  "Image",
+	//	}),
+	//	fakeConfig: testAccConfig(map[string]interface{}{
+	//		"sort":         "created_on-desc",
+	//		"category_id":  "56024006",
+	//		"product_type": "MIRROR",
+	//		"name_regex":   "BatchCompute_fake",
+	//		"search_term":  "Image",
+	//	}),
+	//}
 
 	var existMarketProductsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
@@ -106,7 +104,7 @@ func TestAccAlicloudMarketProductsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeMarketProductsMapFunc,
 	}
 
-	pvtzZoneRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, sortConf, categoryIdConf, productTypeConf, searchTermConf, allConf)
+	pvtzZoneRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, sortConf, categoryIdConf, productTypeConf, searchTermConf)
 }
 
 func dataSourceMarketProductsConfigDependence(name string) string {

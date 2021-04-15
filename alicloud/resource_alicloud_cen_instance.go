@@ -182,10 +182,22 @@ func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 	cbnService := CbnService{client}
 	request := cbn.CreateDeleteCenRequest()
 	request.CenId = d.Id()
-	raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-		return cbnClient.DeleteCen(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DeleteCen(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
-	addDebug(request.GetActionName(), raw)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
 			return nil

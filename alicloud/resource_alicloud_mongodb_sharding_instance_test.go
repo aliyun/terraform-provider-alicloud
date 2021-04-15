@@ -170,8 +170,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 						"name":                      "",
 						"storage_engine":            "WiredTiger",
 						"instance_charge_type":      "PostPaid",
-						"tags.%":                    "1",
-						"tags.Created":              "TF",
+						"tags.%":                    "0",
 					}),
 				),
 			},
@@ -232,6 +231,16 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				),
 			},
 			{
+				Config: testMongoDBShardingInstance_classic_tags,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.for":     "terraform_test123",
+					}),
+				),
+			},
+			{
 				Config: testMongoDBShardingInstance_classic_together,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -244,6 +253,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 						"backup_period.1592931319":    "Tuesday",
 						"backup_period.1970423419":    "Wednesday",
 						"backup_time":                 "10:00Z-11:00Z",
+						"tags.%":                      "0",
 					}),
 				),
 			}},
@@ -554,9 +564,6 @@ resource "alicloud_mongodb_sharding_instance" "default" {
   mongo_list {
     node_class = "dds.mongos.mid"
   }
-  tags = {
-    Created = "TF"
-  }
 }`
 
 const testMongoDBShardingInstance_classic_base4 = `
@@ -604,7 +611,8 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 
 const testMongoDBShardingInstance_classic_security_group_id = `
 data "alicloud_mongodb_zones" "default" {}
-data "alicloud_security_groups" "default" {
+resource "alicloud_security_group" "default" {
+	name = "tf-testaccformongodbsharding"
 }
 resource "alicloud_mongodb_sharding_instance" "default" {
   zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
@@ -624,7 +632,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_class = "dds.mongos.mid"
   }
   tde_status    = "enabled"
-  security_group_id    = "${data.alicloud_security_groups.default.groups.0.id}"
+  security_group_id    = alicloud_security_group.default.id
 }`
 
 const testMongoDBShardingInstance_classic_name = `
@@ -758,6 +766,42 @@ resource "alicloud_mongodb_sharding_instance" "default" {
   account_password = "YourPassword_"
   backup_period    = ["Wednesday"]
   backup_time      = "11:00Z-12:00Z"
+}`
+
+const testMongoDBShardingInstance_classic_tags = `
+data "alicloud_mongodb_zones" "default" {}
+resource "alicloud_mongodb_sharding_instance" "default" {
+  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
+  engine_version = "3.4"
+  shard_list {
+    node_class   = "dds.shard.mid"
+    node_storage = 10
+    }
+  shard_list {
+    node_class   = "dds.shard.standard"
+    node_storage = 20
+    }
+  shard_list {
+    node_class   = "dds.shard.standard"
+    node_storage = 20
+  }
+  mongo_list {
+    node_class = "dds.mongos.mid"
+    }
+  mongo_list {
+    node_class = "dds.mongos.mid"
+    }
+   mongo_list {
+    node_class = "dds.mongos.mid"
+  }
+  name             = "tf-testAccMongoDBShardingInstance_test"
+  account_password = "YourPassword_"
+  backup_period    = ["Wednesday"]
+  backup_time      = "11:00Z-12:00Z"
+  tags = {
+	Created = "TF"
+	for = "terraform_test123"
+  }
 }`
 
 const testMongoDBShardingInstance_classic_together = `

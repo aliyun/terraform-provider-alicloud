@@ -137,6 +137,54 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
   }
 }
 
+resource "alicloud_oss_bucket" "bucket-lifecycle" {
+  bucket = "bucket-170309-lifecycle"
+  acl    = "public-read"
+
+  lifecycle_rule {
+    id      = "rule-abort-multipart-upload"
+    prefix  = "path3/"
+    enabled = true
+
+    abort_multipart_upload {
+      days = 128
+    }
+  }
+}
+
+resource "alicloud_oss_bucket" "bucket-versioning-lifecycle" {
+  bucket = "bucket-170309-lifecycle"
+  acl    = "private"
+
+  versioning {
+    status = "Enabled"
+  }
+
+  lifecycle_rule {
+    id      = "rule-versioning"
+    prefix  = "path1/"
+    enabled = true
+
+    expiration {
+        expired_object_delete_marker = true
+    }
+
+    noncurrent_version_expiration {
+        days = 240
+    }
+
+    noncurrent_version_transition {
+        days          = 180
+        storage_class = "Archive"
+    }
+    
+    noncurrent_version_transition {
+        days          = 60
+        storage_class = "IA"
+    }
+  }
+}
+
 ```
 
 Set bucket policy 
@@ -288,8 +336,11 @@ The lifecycle_rule object supports the following:
 * `enabled` - (Required, Type: bool) Specifies lifecycle rule status.
 * `expiration` - (Optional, Type: set) Specifies a period in the object's expire (documented below).
 * `transitions` - (Optional, Type: set, Available in 1.62.1+) Specifies the time when an object is converted to the IA or archive storage class during a valid life cycle. (documented below).
+* `abort_multipart_upload` - (Optional, Type: set, Available in 1.121.2+) Specifies the number of days after initiating a multipart upload when the multipart upload must be completed (documented below).
+* `noncurrent_version_expiration` - (Optional, Type: set, Available in 1.121.2+) Specifies when noncurrent object versions expire (documented below).
+* `noncurrent_version_transition` - (Optional, Type: set, Available in 1.121.2+) Specifies when noncurrent object versions transitions (documented below).
 
-`NOTE`: At least one of expiration and transitions should be configured.
+`NOTE`: At least one of expiration, transitions, abort_multipart_upload, noncurrent_version_expiration and noncurrent_version_transition should be configured.
 
 #### Block expiration
 
@@ -297,8 +348,10 @@ The lifecycle_rule expiration object supports the following:
 
 * `date` - (Optional) Specifies the date after which you want the corresponding action to take effect. The value obeys ISO8601 format like `2017-03-09`.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
+* `created_before_date` - (Optional, Available in 1.121.2+) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that objects updated before 2002-10-11T00:00:00.000Z are deleted or converted to another storage class, and objects updated after this time (including this time) are not deleted or converted.
+* `expired_object_delete_markers` - (Optional, Type: bool, Available in 1.121.2+) On a versioned bucket (versioning-enabled or versioning-suspended bucket), you can add this element in the lifecycle configuration to direct OSS to delete expired object delete markers. This cannot be specified with Days, Date or CreatedBeforeDate in a Lifecycle Expiration Policy.
 
-`NOTE`: One and only one of "date" and "days" can be specified in one expiration configuration.
+`NOTE`: One and only one of "date", "days", "created_before_date" and "expired_object_delete_markers" can be specified in one expiration configuration.
 
 #### Block transitions
 
@@ -309,6 +362,29 @@ The lifecycle_rule transitions object supports the following:
 * `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`. 
 
 `NOTE`: One and only one of "created_before_date" and "days" can be specified in one transition configuration.
+
+#### Block abort_multipart_upload
+
+The lifecycle_rule abort_multipart_upload object supports the following:
+
+* `created_before_date` - (Optional) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that parts created before 2002-10-11T00:00:00.000Z are deleted, and parts created after this time (including this time) are not deleted.
+* `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
+
+`NOTE`: One and only one of "created_before_date" and "days" can be specified in one abort_multipart_upload configuration.
+
+#### Block noncurrent_version_expiration
+
+The lifecycle_rule noncurrent_version_expiration object supports the following:
+
+* `days` - (Required, Type: int) Specifies the number of days noncurrent object versions expire.
+
+#### Block noncurrent_version_transition
+
+The lifecycle_rule noncurrent_version_transition object supports the following:
+
+* `days` - (Required, Type: int) Specifies the number of days noncurrent object versions transition.
+* `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`. 
+
 
 #### Block server-side encryption rule
 

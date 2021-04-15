@@ -61,7 +61,7 @@ func TestAccAlicloudMongoDBInstancesDataSource(t *testing.T) {
 	availabilityZoneConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
-			"availability_zone": `"${data.alicloud_zones.default.zones.1.id}"`,
+			"availability_zone": `"${data.alicloud_mongodb_zones.default.zones.0.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
@@ -72,14 +72,14 @@ func TestAccAlicloudMongoDBInstancesDataSource(t *testing.T) {
 		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
 			"ids":               `["${alicloud_mongodb_instance.default.id}"]`,
-			"availability_zone": `"${data.alicloud_zones.default.zones.1.id}"`,
+			"availability_zone": `"${data.alicloud_mongodb_zones.default.zones.0.id}"`,
 			"instance_type":     `"replicate"`,
 			"instance_class":    `"dds.mongo.mid"`,
 		}),
 		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${alicloud_mongodb_instance.default.name}_fake"`,
 			"ids":               `["${alicloud_mongodb_instance.default.id}"]`,
-			"availability_zone": `"${data.alicloud_zones.default.zones.1.id}"`,
+			"availability_zone": `"${data.alicloud_mongodb_zones.default.zones.0.id}"`,
 			"instance_type":     `"replicate"`,
 			"instance_class":    `"dds.mongo.mid"`,
 		}),
@@ -143,14 +143,14 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "${data.alicloud_mongodb_zones.default.zones.0.id}"
+  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
   count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
   vpc_id            = data.alicloud_vpcs.default.ids.0
   cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id = var.zone_id
+  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
   vswitch_name              = "subnet-for-local-test"
 }
 

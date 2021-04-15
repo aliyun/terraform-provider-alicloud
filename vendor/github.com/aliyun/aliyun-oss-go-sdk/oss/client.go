@@ -117,12 +117,17 @@ func (client Client) CreateBucket(bucketName string, options ...Option) error {
 
 	isStorageSet, valStroage, _ := IsOptionSet(options, storageClass)
 	isRedundancySet, valRedundancy, _ := IsOptionSet(options, redundancyType)
+	isObjectHashFuncSet, valHashFunc, _ := IsOptionSet(options, objectHashFunc)
 	if isStorageSet {
 		cbConfig.StorageClass = valStroage.(StorageClassType)
 	}
 
 	if isRedundancySet {
 		cbConfig.DataRedundancyType = valRedundancy.(DataRedundancyType)
+	}
+
+	if isObjectHashFuncSet {
+		cbConfig.ObjectHashFunction = valHashFunc.(ObjecthashFuncType)
 	}
 
 	bs, err := xml.Marshal(cbConfig)
@@ -345,6 +350,14 @@ func (client Client) GetBucketLifecycle(bucketName string) (GetBucketLifecycleRe
 	defer resp.Body.Close()
 
 	err = xmlUnmarshal(resp.Body, &out)
+
+	// NonVersionTransition is not suggested to use
+	// to keep compatible
+	for k, rule := range out.Rules {
+		if len(rule.NonVersionTransitions) > 0 {
+			out.Rules[k].NonVersionTransition = &(out.Rules[k].NonVersionTransitions[0])
+		}
+	}
 	return out, err
 }
 
@@ -635,6 +648,28 @@ func (client Client) GetBucketWebsite(bucketName string) (GetBucketWebsiteResult
 	defer resp.Body.Close()
 
 	err = xmlUnmarshal(resp.Body, &out)
+	return out, err
+}
+
+// GetBucketWebsiteXml gets the bucket's website config xml config.
+//
+// bucketName    the bucket name
+//
+// string   the bucket's xml config, It's only valid when error is nil.
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) GetBucketWebsiteXml(bucketName string) (string, error) {
+	params := map[string]interface{}{}
+	params["website"] = nil
+	resp, err := client.do("GET", bucketName, params, nil, nil)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	out := string(body)
 	return out, err
 }
 
@@ -1105,7 +1140,7 @@ func (client Client) GetUserQoSInfo(options ...Option) (UserQoSConfiguration, er
 //
 // Set Bucket Qos information.
 //
-// bucketName tht bucket name.
+// bucketName the bucket name.
 //
 // qosConf the qos configuration.
 //
@@ -1140,7 +1175,7 @@ func (client Client) SetBucketQoSInfo(bucketName string, qosConf BucketQoSConfig
 //
 // Get Bucket Qos information.
 //
-// bucketName tht bucket name.
+// bucketName the bucket name.
 //
 // BucketQoSConfiguration the  return qos configuration.
 //
@@ -1165,7 +1200,7 @@ func (client Client) GetBucketQosInfo(bucketName string, options ...Option) (Buc
 //
 // Delete Bucket QoS information.
 //
-// bucketName tht bucket name.
+// bucketName the bucket name.
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
@@ -1180,47 +1215,6 @@ func (client Client) DeleteBucketQosInfo(bucketName string, options ...Option) e
 	defer resp.Body.Close()
 
 	return CheckRespCode(resp.StatusCode, []int{http.StatusNoContent})
-}
-
-// LimitUploadSpeed set upload bandwidth limit speed,default is 0,unlimited
-// upSpeed KB/s, 0 is unlimited,default is 0
-// error it's nil if success, otherwise failure
-func (client Client) LimitUploadSpeed(upSpeed int) error {
-	if client.Config == nil {
-		return fmt.Errorf("client config is nil")
-	}
-	return client.Config.LimitUploadSpeed(upSpeed)
-}
-
-// UseCname sets the flag of using CName. By default it's false.
-//
-// isUseCname    true: the endpoint has the CName, false: the endpoint does not have cname. Default is false.
-//
-func UseCname(isUseCname bool) ClientOption {
-	return func(client *Client) {
-		client.Config.IsCname = isUseCname
-		client.Conn.url.Init(client.Config.Endpoint, client.Config.IsCname, client.Config.IsUseProxy)
-	}
-}
-
-// Timeout sets the HTTP timeout in seconds.
-//
-// connectTimeoutSec    HTTP timeout in seconds. Default is 10 seconds. 0 means infinite (not recommended)
-// readWriteTimeout    HTTP read or write's timeout in seconds. Default is 20 seconds. 0 means infinite.
-//
-func Timeout(connectTimeoutSec, readWriteTimeout int64) ClientOption {
-	return func(client *Client) {
-		client.Config.HTTPTimeout.ConnectTimeout =
-			time.Second * time.Duration(connectTimeoutSec)
-		client.Config.HTTPTimeout.ReadWriteTimeout =
-			time.Second * time.Duration(readWriteTimeout)
-		client.Config.HTTPTimeout.HeaderTimeout =
-			time.Second * time.Duration(readWriteTimeout)
-		client.Config.HTTPTimeout.IdleConnTimeout =
-			time.Second * time.Duration(readWriteTimeout)
-		client.Config.HTTPTimeout.LongTimeout =
-			time.Second * time.Duration(readWriteTimeout*10)
-	}
 }
 
 // SetBucketInventory API operation for Object Storage Service
@@ -1405,6 +1399,173 @@ func (client Client) GetBucketAsyncTask(bucketName string, taskID string, option
 	defer resp.Body.Close()
 	err = xmlUnmarshal(resp.Body, &out)
 	return out, err
+}
+
+// InitiateBucketWorm creates bucket worm Configuration
+// bucketName the bucket name.
+// retentionDays the retention period in days
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) InitiateBucketWorm(bucketName string, retentionDays int, options ...Option) (string, error) {
+	var initiateWormConf InitiateWormConfiguration
+	initiateWormConf.RetentionPeriodInDays = retentionDays
+
+	var respHeader http.Header
+	isOptSet, _, _ := IsOptionSet(options, responseHeader)
+	if !isOptSet {
+		options = append(options, GetResponseHeader(&respHeader))
+	}
+
+	bs, err := xml.Marshal(initiateWormConf)
+	if err != nil {
+		return "", err
+	}
+	buffer := new(bytes.Buffer)
+	buffer.Write(bs)
+
+	contentType := http.DetectContentType(buffer.Bytes())
+	headers := make(map[string]string)
+	headers[HTTPHeaderContentType] = contentType
+
+	params := map[string]interface{}{}
+	params["worm"] = nil
+
+	resp, err := client.do("POST", bucketName, params, headers, buffer, options...)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	respOpt, _ := FindOption(options, responseHeader, nil)
+	wormID := ""
+	err = CheckRespCode(resp.StatusCode, []int{http.StatusOK})
+	if err == nil && respOpt != nil {
+		wormID = (respOpt.(*http.Header)).Get("x-oss-worm-id")
+	}
+	return wormID, err
+}
+
+// AbortBucketWorm delete bucket worm Configuration
+// bucketName the bucket name.
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) AbortBucketWorm(bucketName string, options ...Option) error {
+	params := map[string]interface{}{}
+	params["worm"] = nil
+	resp, err := client.do("DELETE", bucketName, params, nil, nil, options...)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return CheckRespCode(resp.StatusCode, []int{http.StatusNoContent})
+}
+
+// CompleteBucketWorm complete bucket worm Configuration
+// bucketName the bucket name.
+// wormID the worm id
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) CompleteBucketWorm(bucketName string, wormID string, options ...Option) error {
+	params := map[string]interface{}{}
+	params["wormId"] = wormID
+	resp, err := client.do("POST", bucketName, params, nil, nil, options...)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return CheckRespCode(resp.StatusCode, []int{http.StatusOK})
+}
+
+// ExtendBucketWorm exetend bucket worm Configuration
+// bucketName the bucket name.
+// retentionDays the retention period in days
+// wormID the worm id
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) ExtendBucketWorm(bucketName string, retentionDays int, wormID string, options ...Option) error {
+	var extendWormConf ExtendWormConfiguration
+	extendWormConf.RetentionPeriodInDays = retentionDays
+
+	bs, err := xml.Marshal(extendWormConf)
+	if err != nil {
+		return err
+	}
+	buffer := new(bytes.Buffer)
+	buffer.Write(bs)
+
+	contentType := http.DetectContentType(buffer.Bytes())
+	headers := make(map[string]string)
+	headers[HTTPHeaderContentType] = contentType
+
+	params := map[string]interface{}{}
+	params["wormId"] = wormID
+	params["wormExtend"] = nil
+
+	resp, err := client.do("POST", bucketName, params, headers, buffer, options...)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return CheckRespCode(resp.StatusCode, []int{http.StatusOK})
+}
+
+// GetBucketWorm get bucket worm Configuration
+// bucketName the bucket name.
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) GetBucketWorm(bucketName string, options ...Option) (WormConfiguration, error) {
+	var out WormConfiguration
+	params := map[string]interface{}{}
+	params["worm"] = nil
+
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
+	if err != nil {
+		return out, err
+	}
+	defer resp.Body.Close()
+	err = xmlUnmarshal(resp.Body, &out)
+	return out, err
+}
+
+// LimitUploadSpeed set upload bandwidth limit speed,default is 0,unlimited
+// upSpeed KB/s, 0 is unlimited,default is 0
+// error it's nil if success, otherwise failure
+func (client Client) LimitUploadSpeed(upSpeed int) error {
+	if client.Config == nil {
+		return fmt.Errorf("client config is nil")
+	}
+	return client.Config.LimitUploadSpeed(upSpeed)
+}
+
+// UseCname sets the flag of using CName. By default it's false.
+//
+// isUseCname    true: the endpoint has the CName, false: the endpoint does not have cname. Default is false.
+//
+func UseCname(isUseCname bool) ClientOption {
+	return func(client *Client) {
+		client.Config.IsCname = isUseCname
+		client.Conn.url.Init(client.Config.Endpoint, client.Config.IsCname, client.Config.IsUseProxy)
+	}
+}
+
+// Timeout sets the HTTP timeout in seconds.
+//
+// connectTimeoutSec    HTTP timeout in seconds. Default is 10 seconds. 0 means infinite (not recommended)
+// readWriteTimeout    HTTP read or write's timeout in seconds. Default is 20 seconds. 0 means infinite.
+//
+func Timeout(connectTimeoutSec, readWriteTimeout int64) ClientOption {
+	return func(client *Client) {
+		client.Config.HTTPTimeout.ConnectTimeout =
+			time.Second * time.Duration(connectTimeoutSec)
+		client.Config.HTTPTimeout.ReadWriteTimeout =
+			time.Second * time.Duration(readWriteTimeout)
+		client.Config.HTTPTimeout.HeaderTimeout =
+			time.Second * time.Duration(readWriteTimeout)
+		client.Config.HTTPTimeout.IdleConnTimeout =
+			time.Second * time.Duration(readWriteTimeout)
+		client.Config.HTTPTimeout.LongTimeout =
+			time.Second * time.Duration(readWriteTimeout*10)
+	}
 }
 
 // SecurityToken sets the temporary user's SecurityToken.

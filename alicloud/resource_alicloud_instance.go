@@ -109,6 +109,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional:         true,
 				Computed:         true,
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
+				Deprecated:       "The attribute is invalid and no any affect for the instance. So it has been deprecated from version v1.121.2.",
 			},
 			"internet_max_bandwidth_out": {
 				Type:     schema.TypeInt,
@@ -1501,9 +1502,6 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 				return update, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 		}
-		//if err != nil {
-		//	return update, err
-		//}
 
 		// Ensure instance's type has been replaced successfully.
 		timeout := DefaultTimeoutMedium
@@ -1597,16 +1595,15 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 			}
 
 			if instance.InternetMaxBandwidthOut == d.Get("internet_max_bandwidth_out").(int) &&
-				instance.InternetChargeType == d.Get("internet_charge_type").(string) &&
-				instance.InternetMaxBandwidthIn == d.Get("internet_max_bandwidth_in").(int) {
+				instance.InternetChargeType == d.Get("internet_charge_type").(string) {
 				break
 			}
 
 			if time.Now().After(deadline) {
 				return WrapError(Error(`wait for internet update timeout! expect internet_charge_type value %s, get %s
-					expect internet_max_bandwidth_out value %d, get %d, expect internet_max_bandwidth_out value %d, get %d,`,
+					expect internet_max_bandwidth_out value %d, get %d,`,
 					d.Get("internet_charge_type").(string), instance.InternetChargeType, d.Get("internet_max_bandwidth_out").(int),
-					instance.InternetMaxBandwidthOut, d.Get("internet_max_bandwidth_in").(int), instance.InternetMaxBandwidthIn))
+					instance.InternetMaxBandwidthOut))
 			}
 			time.Sleep(1 * time.Second)
 		}

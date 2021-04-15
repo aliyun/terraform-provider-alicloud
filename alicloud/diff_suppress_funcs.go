@@ -275,7 +275,13 @@ func archiveBackupPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceD
 }
 
 func PostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.ToLower(d.Get("instance_charge_type").(string)) == "postpaid"
+	if v, ok := d.GetOk("instance_charge_type"); ok && strings.ToLower(v.(string)) == "postpaid" {
+		return true
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "PayAsYouGo" {
+		return true
+	}
+	return false
 }
 
 func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -356,13 +362,19 @@ func polardbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.Resou
 }
 
 func adbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.Get("pay_type").(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
+	if v, ok := d.GetOk("pay_type"); ok && v.(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
+		return false
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
 		return false
 	}
 	return true
 }
 func adbPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.Get("pay_type").(string) == "PrePaid" {
+	if v, ok := d.GetOk("pay_type"); ok && v.(string) == "PrePaid" {
+		return false
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
 		return false
 	}
 	return true

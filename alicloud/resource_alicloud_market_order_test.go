@@ -24,13 +24,14 @@ func TestAccAlicloudMarketOrder_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"product_code":    "cmapi033136",
+					"product_code":    "${data.alicloud_market_products.default.ids.0}",
 					"pay_type":        "PrePaid",
 					"quantity":        "1",
 					"duration":        "1",
@@ -53,11 +54,15 @@ func TestAccAlicloudMarketOrder_basic(t *testing.T) {
 }
 
 func resourceMarketOrderDependence(name string) string {
-	return ""
+	return `
+		data "alicloud_market_products" "default" {
+			name_regex = "BatchCompute"
+			product_type = "MIRROR"
+		}
+`
 }
 
 var marketOrderMap = map[string]string{
-	"product_code":    "cmapi033136",
 	"pay_type":        "PrePaid",
 	"quantity":        "1",
 	"duration":        "1",

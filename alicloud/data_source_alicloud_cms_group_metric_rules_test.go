@@ -23,10 +23,6 @@ func TestAccAlicloudCmsGroupMetricRulesDataSource(t *testing.T) {
 			"ids":      `["${alicloud_cms_group_metric_rule.default.id}"]`,
 			"group_id": `"${alicloud_cms_group_metric_rule.default.group_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCmsGroupMetricRulesDataSourceName(rand, map[string]string{
-			"ids":      `["${alicloud_cms_group_metric_rule.default.id}"]`,
-			"group_id": `"${alicloud_cms_group_metric_rule.default.group_id}_fake"`,
-		}),
 	}
 	groupMetricRuleNameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCmsGroupMetricRulesDataSourceName(rand, map[string]string{
@@ -78,7 +74,6 @@ func TestAccAlicloudCmsGroupMetricRulesDataSource(t *testing.T) {
 			"status":                 `"${alicloud_cms_group_metric_rule.default.status}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCmsGroupMetricRulesDataSourceName(rand, map[string]string{
-			"group_id":               `"${alicloud_cms_group_metric_rule.default.group_id}_fake"`,
 			"group_metric_rule_name": `"${alicloud_cms_group_metric_rule.default.group_metric_rule_name}_fake"`,
 			"ids":                    `["${alicloud_cms_group_metric_rule.default.id}_fake"]`,
 			"metric_name":            `"${alicloud_cms_group_metric_rule.default.metric_name}_fake"`,
@@ -93,7 +88,7 @@ func TestAccAlicloudCmsGroupMetricRulesDataSource(t *testing.T) {
 			"rules.#":                        "1",
 			"rules.0.contact_groups":         CHECKSET,
 			"rules.0.email_subject":          "tf-testacc-rule-name-warning",
-			"rules.0.group_id":               "5390371",
+			"rules.0.group_id":               CHECKSET,
 			"rules.0.group_metric_rule_name": CHECKSET,
 			"rules.0.metric_name":            "cpu_total",
 			"rules.0.namespace":              "acs_ecs_dashboard",
@@ -138,10 +133,13 @@ func testAccCheckAlicloudCmsGroupMetricRulesDataSourceName(rand int, attrMap map
 		  describe = "tf-testacc" 
 		  contacts = ["zhangsan","lisi","lll"] 
 		}
-
+		resource "alicloud_cms_monitor_group" "default" {
+			monitor_group_name = var.name
+			contact_groups = [alicloud_cms_alarm_contact_group.this.id]
+		}
 		resource "alicloud_cms_group_metric_rule" "default" {
 		  contact_groups         = alicloud_cms_alarm_contact_group.this.alarm_contact_group_name
-		  group_id               = "5390371" 
+		  group_id               = "${alicloud_cms_monitor_group.default.id}" 
 		  rule_id                = "4a9a8978-a9cc-55ca-aa7c-530ccd91ae57"
 		
 		  category               = "ecs"

@@ -1,4 +1,35 @@
-## 1.121.0 (Unreleased)
+## 1.122.0 (Unreleased)
+## 1.121.1 (April 13, 2021)
+
+ENHANCEMENTS:
+
+- resource/alicloud_ecs_key_pair: Supports retry strategy when deleting to fix the error InvalidParameter.KeypairAlreadyAttachedInstance ([#3423](https://github.com/aliyun/terraform-provider-alicloud/issues/3423))
+- testcase: Improves the mongodb and ess scaling configuration testcase ([#3422](https://github.com/aliyun/terraform-provider-alicloud/issues/3422))
+- testcase: Improves the snat entry testcase results from using the new data type ([#3424](https://github.com/aliyun/terraform-provider-alicloud/issues/3424))
+
+BUG FIXES:
+
+- docs/alicloud_alidns_domain: Corrects the dns_servers spelling error ([#3434](https://github.com/aliyun/terraform-provider-alicloud/issues/3434))
+- resource/nat_gateway: Recovers the snat_table_ids and forward_table_ids data type to fix the format error ([#3432](https://github.com/aliyun/terraform-provider-alicloud/issues/3432))
+- resource/alicloud_adb_db_cluster: Fixes the crash error ([#3429](https://github.com/aliyun/terraform-provider-alicloud/issues/3429))
+- testcase: Fixes the mongodb and ess testcases ([#3421](https://github.com/aliyun/terraform-provider-alicloud/issues/3421))
+- docs/zones: Fixes the docs spelling error in the datasource alicloud_xxx_zones ([#3425](https://github.com/aliyun/terraform-provider-alicloud/issues/3425))
+
+## 1.121.0 (April 10, 2021)
+
+- **New Resource:** `alicloud_log_oss_shipper` ([#3414](https://github.com/aliyun/terraform-provider-alicloud/issues/3414))
+
+ENHANCEMENTS:
+
+- resource/alicloud_db_readonly_instance: Adds force_restart to fix the crash error when modifying the parameters ([#3419](https://github.com/aliyun/terraform-provider-alicloud/issues/3419))
+- resource/alicloud_polardb_endpoint: Supports new attributes ssl_enabled and net_type ([#3408](https://github.com/aliyun/terraform-provider-alicloud/issues/3408))
+- resource/alicloud_disk: Sets the attribute kms_key_id to forceNew results from there is no API can update it in local place ([#3409](https://github.com/aliyun/terraform-provider-alicloud/issues/3409))
+- resource/alicloud_kvstore_instance: Deprecates attributes node_type and it is useless for this resource ([#3411](https://github.com/aliyun/terraform-provider-alicloud/issues/3411))
+- resource/alicloud_ecs_key_pair: Deprecates the key_name and use key_pair_name instead; Upgrades the its dependence sdk ([#3413](https://github.com/aliyun/terraform-provider-alicloud/issues/3413))
+- resource/alicloud_nat_gateway: Deprecates name, instance_charge_type and using standard nat_gateway_name and payment_type instead; Supports new attributes 'tags' and 'internet_charge_type'; Upgrade its depend sdk ([#3415](https://github.com/aliyun/terraform-provider-alicloud/issues/3415))
+- resource/alicloud_fc_function: Attribute code_checksum supports undating in place ([#3416](https://github.com/aliyun/terraform-provider-alicloud/issues/3416))
+- resource/alicloud_adb_cluster: Upgrades to alicloud_adb_db_cluster; Adds new attributes 'compute_resource', 'db_cluster_class', 'elastic_io_resource', 'mode', 'modify_type', 'payment_type', 'resource_group_id', 'status' attributes; Upgrades its dependence SDK ([#3295](https://github.com/aliyun/terraform-provider-alicloud/issues/3295))
+
 ## 1.120.0 (April 02, 2021)
 
 - **New Resource:** `alicloud_resource_manager_control_policy` ([#3383](https://github.com/aliyun/terraform-provider-alicloud/issues/3383))

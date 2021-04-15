@@ -302,7 +302,7 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 	request := &fc.UpdateFunctionInput{}
 
 	update := false
-	if d.HasChange("filename") || d.HasChange("oss_bucket") || d.HasChange("oss_key") {
+	if d.HasChange("filename") || d.HasChange("oss_bucket") || d.HasChange("oss_key") || d.HasChange("code_checksum") {
 		update = true
 	}
 	if d.HasChange("description") {

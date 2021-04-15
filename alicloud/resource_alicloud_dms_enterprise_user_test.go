@@ -66,14 +66,14 @@ func testSweepDMSEnterpriseUsers(region string) error {
 				skip = false
 			} else {
 				for _, prefix := range prefixes {
-					if strings.HasPrefix(strings.ToLower(item["NickName"].(string)), strings.ToLower(prefix)) {
+					if strings.HasPrefix(strings.ToLower(fmt.Sprintf("%v", item["NickName"])), strings.ToLower(prefix)) {
 						skip = false
 						break
 					}
 				}
 			}
 			if skip {
-				log.Printf("[INFO] Skipping DMS Enterprise User: %s", item["NickName"].(string))
+				log.Printf("[INFO] Skipping DMS Enterprise User: %v", item["NickName"])
 				continue
 			}
 			sweeped = true
@@ -83,7 +83,7 @@ func testSweepDMSEnterpriseUsers(region string) error {
 			}
 			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete DMS Enterprise User (%s): %s", item["NickName"].(string), err)
+				log.Printf("[ERROR] Failed to delete DMS Enterprise User (%v): %s", item["NickName"], err)
 				continue
 			}
 			if sweeped {
