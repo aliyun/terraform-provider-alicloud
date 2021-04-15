@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
 )
@@ -207,6 +211,19 @@ func (config *Config) loadEndpointFromLocal() error {
 	return nil
 }
 
+func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration) func() {
+	retryCount := 1
+	return func() {
+		var waitTime time.Duration
+		if retryCount == 1 {
+			waitTime = firstDuration
+		} else if retryCount > 1 {
+			waitTime += increaseDuration
+		}
+		time.Sleep(waitTime)
+		retryCount++
+	}
+}
 func (client *AliyunClient) describeEndpointForService(serviceCode string) (string, error) {
 	args := location.CreateDescribeEndpointsRequest()
 	args.ServiceCode = serviceCode
@@ -227,19 +244,36 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 	locationClient.AppendUserAgent(Terraform, terraformVersion)
 	locationClient.AppendUserAgent(Provider, providerVersion)
 	locationClient.AppendUserAgent(Module, client.config.ConfigurationSource)
-	endpointsResponse, err := locationClient.DescribeEndpoints(args)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var endpointResult string
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		endpointsResponse, err := locationClient.DescribeEndpoints(args)
+		if err != nil {
+			re := regexp.MustCompile("^Post [\"]*https://.*")
+			if err.Error() != "" && re.MatchString(err.Error()) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if endpointsResponse != nil && len(endpointsResponse.Endpoints.Endpoint) > 0 {
+			for _, e := range endpointsResponse.Endpoints.Endpoint {
+				if e.Type == "openAPI" {
+					client.config.Endpoints[strings.ToLower(serviceCode)] = e.Endpoint
+					endpointResult = e.Endpoint
+					return nil
+				}
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return "", fmt.Errorf("Describe %s endpoint using region: %#v got an error: %#v.", serviceCode, client.RegionId, err)
 	}
-	if endpointsResponse != nil && len(endpointsResponse.Endpoints.Endpoint) > 0 {
-		for _, e := range endpointsResponse.Endpoints.Endpoint {
-			if e.Type == "openAPI" {
-				client.config.Endpoints[strings.ToLower(serviceCode)] = e.Endpoint
-				return e.Endpoint, nil
-			}
-		}
+	if endpointResult == "" {
+		return "", fmt.Errorf("There is no any available endpoint for %s in region %s.", serviceCode, client.RegionId)
 	}
-	return "", fmt.Errorf("There is no any available endpoint for %s in region %s.", serviceCode, client.RegionId)
+	return endpointResult, nil
 }
 
 var serviceCodeMapping = map[string]string{
