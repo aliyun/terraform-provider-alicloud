@@ -218,9 +218,22 @@ func (s *CmsService) DescribeCmsAlarmContactGroup(id string) (object cms.Contact
 	request.PageSize = requests.NewInteger(20)
 	for {
 
-		raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DescribeContactGroupList(request)
+		var raw interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err = s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+				return cmsClient.DescribeContactGroupList(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ContactGroupNotExists", "ResourceNotFound"}) {
 				err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContactGroup", id)), NotFoundMsg, ProviderERROR)

@@ -15,15 +15,9 @@ func TestAccAlicloudMarketProductDataSource(t *testing.T) {
 		dataSourceMarketProductConfigDependence)
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"product_code": "cmapi022206",
+			"product_code": "${data.alicloud_market_products.default.ids.0}",
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"product_code": "cmapi033136",
-		}),
-	}
-
 	var existMarketProductMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"product.#":             "1",
@@ -46,9 +40,14 @@ func TestAccAlicloudMarketProductDataSource(t *testing.T) {
 		fakeMapFunc:  fakeMarketProductMapFunc,
 	}
 
-	marketProductCheckInfo.dataSourceTestCheck(t, rand, basicConf, allConf)
+	marketProductCheckInfo.dataSourceTestCheck(t, rand, basicConf)
 }
 
 func dataSourceMarketProductConfigDependence(name string) string {
-	return ""
+	return `
+		data "alicloud_market_products" "default" {
+			name_regex = "BatchCompute"
+			product_type = "MIRROR"
+		}
+`
 }
