@@ -1013,7 +1013,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 02
+        resource: 02Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1518,13 +1518,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 02
-    type: time
-    source:
-      start: 02:00 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 02
+#    type: time
+#    source:
+#      start: 02:00 AM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
   - name: 0230
     type: time

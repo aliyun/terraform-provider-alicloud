@@ -3,6 +3,8 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+
 	"fmt"
 	"log"
 	"strings"
@@ -106,425 +108,50 @@ func testSweepHBaseInstances(region string) error {
 	return nil
 }
 
-const resourceHBaseConfigVpc = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
+func AlicloudHbaseBasicDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_hbase_zones" "default" {}
+variable "name" {
+	default = "%s"
 }
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_hbase_instance" "default" {
-  name = "tf_testAccHBase_vpc"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 400
-  pay_type = "PostPaid"
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 0
-  deletion_protection = false
-  immediate_delete_flag = true
-}
-`
-
-const resourceHBaseConfigVpcName = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
-}
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_hbase_instance" "default" {
-  name = "tf_testAccHBase_vpc_change_name"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 400
-  pay_type = "PostPaid"
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 0
-  deletion_protection = false
-  immediate_delete_flag = true
-}
-`
-
-const resourceHBaseConfigVpcMaintainTime = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
-}
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_hbase_instance" "default" {
-  name = "tf_testAccHBase_vpc_change_name"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 400
-  pay_type = "PostPaid"
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 0
-  maintain_start_time = "04:00Z"
-  maintain_end_time = "06:00Z"
-  deletion_protection = false
-  immediate_delete_flag = true
-}
-`
-
-const resourceHBaseConfigVpcTags = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
-}
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_hbase_instance" "default" {
-  name = "tf_testAccHBase_vpc_change_name"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 400
-  pay_type = "PostPaid"
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 0
-  maintain_start_time = "04:00Z"
-  maintain_end_time = "06:00Z"
-  deletion_protection = false
-  immediate_delete_flag = true
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}
-`
-const resourceHBaseConfigVpcDiskSize = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
-}
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_hbase_instance" "default" {
-  name = "tf_testAccHBase_vpc_change_name"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 440
-  pay_type = "PostPaid"
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 0
-  maintain_start_time = "04:00Z"
-  maintain_end_time = "06:00Z"
-  deletion_protection = false
-  immediate_delete_flag = true
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}
-`
-
-const resourceHBaseConfigVpcIpWhite = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
-}
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_hbase_instance" "default" {
-  name = "tf_testAccHBase_vpc_change_name"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 440
-  pay_type = "PostPaid"
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 0
-  maintain_start_time = "04:00Z"
-  maintain_end_time = "06:00Z"
-  deletion_protection = false
-  immediate_delete_flag = true
-  ip_white  = "192.168.1.1"
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}
-`
-
-const resourceHBaseConfigVpcSecurityAccount = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
-}
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_hbase_instance" "default" {
-  name = "tf_testAccHBase_vpc_change_name"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 440
-  pay_type = "PostPaid"
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 0
-  maintain_start_time = "04:00Z"
-  maintain_end_time = "06:00Z"
-  deletion_protection = false
-  immediate_delete_flag = true
-  account = "admin"
-  password = "admin!@#"
-  ip_white  = "192.168.1.1"
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}
-`
-
-const resourceHBaseConfigColdStorage = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
-}
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_hbase_instance" "default" {
-  name = "tf_testAccHBase_vpc_change_name"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 440
-  pay_type = "PostPaid"
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 800
-  maintain_start_time = "04:00Z"
-  maintain_end_time = "06:00Z"
-  deletion_protection = false
-  immediate_delete_flag = true
-  account = "admin"
-  password = "admin!@#"
-  ip_white  = "192.168.1.1"
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}
-`
-
-const resourceHBaseConfigPrePaid = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
-}
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_hbase_instance" "default" {
-  name = "tf_testAccHBase_vpc_change_name"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 440
-  pay_type = "PrePaid"
-  duration = 1
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 800
-  maintain_start_time = "04:00Z"
-  maintain_end_time = "06:00Z"
-  deletion_protection = false
-  immediate_delete_flag = true
-  account = "admin"
-  password = "admin!@#"
-  ip_white  = "192.168.1.1"
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}
-`
-
-const resourceHBaseConfigPostPaid = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
-}
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_hbase_instance" "default" {
-  name = "tf_testAccHBase_vpc_change_name"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 440
-  pay_type = "PostPaid"
-  duration = 1
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 800
-  maintain_start_time = "04:00Z"
-  maintain_end_time = "06:00Z"
-  deletion_protection = false
-  immediate_delete_flag = true
-  account = "admin"
-  password = "admin!@#"
-  ip_white  = "192.168.1.1"
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}
-`
-
-const resourceHBaseConfigVpcSecurityGroups = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
-}
-
 data "alicloud_vpcs" "default" {
-  is_default = "true"
+	is_default = true
 }
-
 data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_hbase_zones.default.ids.0
+}
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id = data.alicloud_hbase_zones.default.ids.0
+  vswitch_name              = var.name
 }
 
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
 resource "alicloud_security_group" "default" {
-  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
-  inner_access_policy = "Accept"
-  name = "tf_testAccHBase_vpc-s-g"
+	count = 2
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	name = var.name
 }
-
-resource "alicloud_hbase_instance" "default" {
-  name = "tf_testAccHBase_vpc_change_name"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 440
-  pay_type = "PostPaid"
-  duration = 1
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 800
-  maintain_start_time = "04:00Z"
-  maintain_end_time = "06:00Z"
-  deletion_protection = false
-  immediate_delete_flag = true
-  account = "admin"
-  password = "admin!@#"
-  ip_white  = "192.168.1.1"
-  security_groups = ["${alicloud_security_group.default.id}"]
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
+`, name)
 }
-`
-
-const resourceHBaseConfigMultiInstance = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
-}
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_hbase_instance" "default" {
-  count = 2
-  name = "tf_testAccHBase_multi"
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 400
-  pay_type = "PostPaid"
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 0
-  deletion_protection = false
-  immediate_delete_flag = true
-}
-`
-
-const resourceHBaseConfigMultiInstanceChangeName = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "HBase"
-}
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_hbase_instance" "default" {
-  count = 2
-  name = "tf_testAccHBase_multi_change_name"
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
-  core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 400
-  pay_type = "PostPaid"
-  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-  cold_storage_size = 0
-  deletion_protection = false
-  immediate_delete_flag = true
-}
-`
 
 func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
-	var instance hbase.DescribeInstanceResponse
-
+	var v map[string]interface{}
 	resourceId := "alicloud_hbase_instance.default"
 	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &HBaseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeHBaseInstance")
 	rac := resourceAttrCheckInit(rc, ra)
-
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbaseBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -537,14 +164,37 @@ func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: resourceHBaseConfigVpc,
+				Config: testAccConfig(map[string]interface{}{
+					"name":                  "${var.name}",
+					"engine_version":        "2.0",
+					"master_instance_type":  "hbase.sn1.large",
+					"core_instance_type":    "hbase.sn1.large",
+					"core_disk_type":        "cloud_efficiency",
+					"vswitch_id":            "${local.vswitch_id}",
+					"immediate_delete_flag": "true",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":               "tf_testAccHBase_vpc",
-						"engine_version":     "2.0",
-						"core_instance_type": "hbase.sn1.large",
-						"core_disk_type":     "cloud_efficiency",
-						"pay_type":           "PostPaid",
+						"name":                     name,
+						"engine":                   "hbase",
+						"engine_version":           "2.0",
+						"core_instance_type":       "hbase.sn1.large",
+						"core_disk_type":           "cloud_efficiency",
+						"vswitch_id":               CHECKSET,
+						"immediate_delete_flag":    "true",
+						"core_instance_quantity":   "2",
+						"cold_storage_size":        "0",
+						"deletion_protection":      "true",
+						"zone_id":                  CHECKSET,
+						"master_instance_quantity": CHECKSET,
+						"maintain_start_time":      CHECKSET,
+						"maintain_end_time":        CHECKSET,
+						"pay_type":                 "PostPaid",
+						"ip_white":                 CHECKSET,
+						"security_groups.#":        "0",
+						"ui_proxy_conn_addrs.#":    "1",
+						"zk_conn_addrs.#":          "3",
+						"slb_conn_addrs.#":         "1",
 					}),
 				),
 			},
@@ -555,186 +205,151 @@ func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"immediate_delete_flag"},
 			},
 			{
-				Config: resourceHBaseConfigVpcName,
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf_testAccHBase_vpc_change_name",
+						"deletion_protection": "false",
 					}),
 				),
 			},
 			{
-				Config: resourceHBaseConfigVpcMaintainTime,
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                "tf_testAccHBase_vpc_change_name",
+						"name": name + "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_start_time": "04:00Z",
+					"maintain_end_time":   "06:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
 						"maintain_start_time": "04:00Z",
 						"maintain_end_time":   "06:00Z",
 					}),
 				),
 			},
 			{
-				Config: resourceHBaseConfigVpcTags,
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                "tf_testAccHBase_vpc_change_name",
-						"maintain_start_time": "04:00Z",
-						"maintain_end_time":   "06:00Z",
-						"tags.%":              "2",
-						"tags.Created":        "TF",
-						"tags.For":            "acceptance test",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
 					}),
 				),
 			},
 			{
-				Config: resourceHBaseConfigVpcDiskSize,
+				Config: testAccConfig(map[string]interface{}{
+					"core_disk_size": "440",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                "tf_testAccHBase_vpc_change_name",
-						"maintain_start_time": "04:00Z",
-						"maintain_end_time":   "06:00Z",
-						"tags.%":              "2",
-						"tags.Created":        "TF",
-						"tags.For":            "acceptance test",
-						"core_disk_size":      "440",
+						"core_disk_size": "440",
 					}),
 				),
 			},
 			{
-				Config: resourceHBaseConfigVpcIpWhite,
+				Config: testAccConfig(map[string]interface{}{
+					"ip_white": "192.168.1.1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                "tf_testAccHBase_vpc_change_name",
-						"maintain_start_time": "04:00Z",
-						"maintain_end_time":   "06:00Z",
-						"tags.%":              "2",
-						"tags.Created":        "TF",
-						"tags.For":            "acceptance test",
-						"ip_white":            "192.168.1.1",
+						"ip_white": "192.168.1.1",
 					}),
 				),
 			},
 			{
-				Config: resourceHBaseConfigVpcSecurityAccount,
+				Config: testAccConfig(map[string]interface{}{
+					"account":  "admin",
+					"password": "YourPassword@123",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                "tf_testAccHBase_vpc_change_name",
-						"maintain_start_time": "04:00Z",
-						"maintain_end_time":   "06:00Z",
-						"tags.%":              "2",
-						"tags.Created":        "TF",
-						"tags.For":            "acceptance test",
-						"ip_white":            "192.168.1.1",
-						"account":             "admin",
+						"account":  "admin",
+						"password": "YourPassword@123",
 					}),
 				),
 			},
 			{
-				Config: resourceHBaseConfigColdStorage,
+				Config: testAccConfig(map[string]interface{}{
+					"cold_storage_size": "800",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                "tf_testAccHBase_vpc_change_name",
-						"maintain_start_time": "04:00Z",
-						"maintain_end_time":   "06:00Z",
-						"tags.%":              "2",
-						"tags.Created":        "TF",
-						"tags.For":            "acceptance test",
-						"ip_white":            "192.168.1.1",
-						"cold_storage_size":   "800",
+						"cold_storage_size": "800",
 					}),
 				),
 			},
-			{
-				Config: resourceHBaseConfigPrePaid,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":                "tf_testAccHBase_vpc_change_name",
-						"maintain_start_time": "04:00Z",
-						"maintain_end_time":   "06:00Z",
-						"tags.%":              "2",
-						"tags.Created":        "TF",
-						"tags.For":            "acceptance test",
-						"ip_white":            "192.168.1.1",
-						"cold_storage_size":   "800",
-						"pay_type":            "PrePaid",
-					}),
-				),
-			},
-			{
-				Config: resourceHBaseConfigPostPaid,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":                "tf_testAccHBase_vpc_change_name",
-						"maintain_start_time": "04:00Z",
-						"maintain_end_time":   "06:00Z",
-						"tags.%":              "2",
-						"tags.Created":        "TF",
-						"tags.For":            "acceptance test",
-						"ip_white":            "192.168.1.1",
-						"cold_storage_size":   "800",
-						"pay_type":            "PostPaid",
-					}),
-				),
-			},
-			{
-				Config: resourceHBaseConfigVpcSecurityGroups,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":                "tf_testAccHBase_vpc_change_name",
-						"maintain_start_time": "04:00Z",
-						"maintain_end_time":   "06:00Z",
-						"tags.%":              "2",
-						"tags.Created":        "TF",
-						"tags.For":            "acceptance test",
-						"ip_white":            "192.168.1.1",
-						"cold_storage_size":   "800",
-						"pay_type":            "PostPaid",
-						"security_groups.#":   "1",
-					}),
-				),
-			},
-		},
-	})
-}
+			//{
+			//	Config: resourceHBaseConfigPrePaid,
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"name":                "tf_testAccHBase_vpc_change_name",
+			//			"maintain_start_time": "04:00Z",
+			//			"maintain_end_time":   "06:00Z",
+			//			"tags.%":              "2",
+			//			"tags.Created":        "TF",
+			//			"tags.For":            "acceptance test",
+			//			"ip_white":            "192.168.1.1",
+			//			"cold_storage_size":   "800",
+			//			"pay_type":            "PrePaid",
+			//		}),
+			//	),
+			//},
 
-func TestAccAlicloudHBaseInstanceMultiInstance(t *testing.T) {
-	var instance hbase.DescribeInstanceResponse
-
-	resourceId := "alicloud_hbase_instance.default.1"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
-		return &HBaseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeHBaseInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
-		},
-
-		IDRefreshName: resourceId,
-
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
 			{
-				Config: resourceHBaseConfigMultiInstance,
+				Config: testAccConfig(map[string]interface{}{
+					"security_groups": []string{"${alicloud_security_group.default.0.id}"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":               "tf_testAccHBase_multi",
-						"engine_version":     "2.0",
-						"core_instance_type": "hbase.sn1.large",
-						"core_disk_type":     "cloud_efficiency",
-						"pay_type":           "PostPaid",
+						"security_groups.#": "1",
 					}),
 				),
 			},
 			{
-				Config: resourceHBaseConfigMultiInstanceChangeName,
+				Config: testAccConfig(map[string]interface{}{
+					"name":                name,
+					"maintain_start_time": "14:00Z",
+					"maintain_end_time":   "16:00Z",
+					"security_groups":     []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "acceptance test 123",
+					},
+					"core_disk_size":    "500",
+					"ip_white":          "192.168.1.2",
+					"account":           "adminu",
+					"password":          "YourPassword@123u",
+					"cold_storage_size": "900",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf_testAccHBase_multi_change_name",
+						"name":                name,
+						"maintain_start_time": "14:00Z",
+						"maintain_end_time":   "16:00Z",
+						"security_groups.#":   "2",
+						"tags.%":              "2",
+						"tags.Created":        "TF-update",
+						"tags.For":            "acceptance test 123",
+						"core_disk_size":      "500",
+						"ip_white":            "192.168.1.2",
+						"account":             "adminu",
+						"password":            "YourPassword@123u",
+						"cold_storage_size":   "900",
 					}),
 				),
 			},
