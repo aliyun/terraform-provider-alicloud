@@ -254,6 +254,8 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 						"backup_period.1970423419":    "Wednesday",
 						"backup_time":                 "10:00Z-11:00Z",
 						"tags.%":                      "0",
+						"tags.Created":                REMOVEKEY,
+						"tags.for":                    REMOVEKEY,
 					}),
 				),
 			}},
