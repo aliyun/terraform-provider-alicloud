@@ -204,7 +204,8 @@ func NeedRetry(err error) bool {
 	}
 	if err.Error() != "" {
 		re := regexp.MustCompile("^Post [\"]*https://.*EOF$")
-		return re.MatchString(err.Error())
+		re2 := regexp.MustCompile("^Post [\"]*https://.*headers\\)$")
+		return re.MatchString(err.Error()) || re2.MatchString(err.Error())
 	}
 
 	throttlingRegex := regexp.MustCompile("^Throttling.*")
