@@ -37,8 +37,21 @@ func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstanc
 
 	for pageNum := 1; ; pageNum++ {
 		request.PageNumber = requests.NewInteger(pageNum)
-		raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribeCenAttachedChildInstances(request)
+		var raw interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+				return cbnClient.DescribeCenAttachedChildInstances(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
 
 		if err != nil {
@@ -48,7 +61,6 @@ func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstanc
 			return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), ProviderERROR)
 		}
 		response, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		instanceList := response.ChildInstances.ChildInstance
 		for instanceNum := 0; instanceNum <= len(instanceList)-1; instanceNum++ {
@@ -99,13 +111,14 @@ func (s *CenService) DescribeCenBandwidthPackage(id string) (c cbn.CenBandwidthP
 	request.Filter = &filters
 
 	var raw interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
 		raw, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenBandwidthPackages(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, ThrottlingUser}) {
-				time.Sleep(10 * time.Second)
+			if NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -231,9 +244,22 @@ func (s *CenService) DescribeCenBandwidthLimit(id string) (c cbn.CenInterRegionB
 	for pageNum := 1; ; pageNum++ {
 		request.PageNumber = requests.NewInteger(pageNum)
 		request.PageSize = requests.NewInteger(PageSizeLarge)
-		raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribeCenInterRegionBandwidthLimits(request)
+		var raw interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+			raw, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+				return cbnClient.DescribeCenInterRegionBandwidthLimits(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+
 		if err != nil {
 			return c, WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_bandwidth_limit", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -320,13 +346,14 @@ func (s *CenService) DescribeCenRouteEntry(id string) (c cbn.PublishedRouteEntry
 	request.DestinationCidrBlock = cidr
 
 	var raw interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribePublishedRouteEntries(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, ThrottlingUser}) {
-				time.Sleep(10 * time.Second)
+			if NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
