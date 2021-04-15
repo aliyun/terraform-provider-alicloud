@@ -18,15 +18,27 @@ func (s *CbnService) DescribeCenFlowlog(id string) (object cbn.FlowLog, err erro
 	request.RegionId = s.client.RegionId
 
 	request.FlowLogId = id
-
-	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-		return cbnClient.DescribeFlowlogs(request)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeFlowlogs(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cbn.DescribeFlowlogsResponse)
 
 	if len(response.FlowLogs.FlowLog) < 1 {
@@ -73,14 +85,27 @@ func (s *CbnService) DescribeCenInstance(id string) (object cbn.Cen, err error) 
 	})
 	request.Filter = &filters
 
-	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-		return cbnClient.DescribeCens(request)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCens(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cbn.DescribeCensResponse)
 
 	if len(response.Cens.Cen) < 1 {
@@ -165,14 +190,27 @@ func (s *CbnService) DescribeCenRouteMap(id string) (object cbn.RouteMap, err er
 	request.CenId = parts[0]
 	request.RouteMapId = parts[1]
 
-	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-		return cbnClient.DescribeCenRouteMaps(request)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCenRouteMaps(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cbn.DescribeCenRouteMapsResponse)
 
 	if len(response.RouteMaps.RouteMap) < 1 {
@@ -213,14 +251,27 @@ func (s *CbnService) DescribeCenPrivateZone(id string) (object cbn.PrivateZoneIn
 	request.AccessRegionId = parts[1]
 	request.CenId = parts[0]
 
-	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-		return cbnClient.DescribeCenPrivateZoneRoutes(request)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCenPrivateZoneRoutes(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cbn.DescribeCenPrivateZoneRoutesResponse)
 
 	if len(response.PrivateZoneInfos.PrivateZoneInfo) < 1 {
@@ -261,14 +312,27 @@ func (s *CbnService) DescribeCenVbrHealthCheck(id string) (object cbn.VbrHealthC
 	request.VbrInstanceId = parts[0]
 	request.VbrInstanceRegionId = parts[1]
 
-	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-		return cbnClient.DescribeCenVbrHealthCheck(request)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCenVbrHealthCheck(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cbn.DescribeCenVbrHealthCheckResponse)
 
 	if len(response.VbrHealthChecks.VbrHealthCheck) < 1 {
@@ -291,9 +355,23 @@ func (s *CbnService) DescribeCenInstanceAttachment(id string) (object cbn.Descri
 	request.ChildInstanceType = parts[2]
 	request.CenId = parts[0]
 
-	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-		return cbnClient.DescribeCenAttachedChildInstanceAttribute(request)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCenAttachedChildInstanceAttribute(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParameterCenInstanceId", "ParameterError", "ParameterInstanceId"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("CenInstanceAttachment", id)), NotFoundMsg, ProviderERROR)
@@ -302,7 +380,6 @@ func (s *CbnService) DescribeCenInstanceAttachment(id string) (object cbn.Descri
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cbn.DescribeCenAttachedChildInstanceAttributeResponse)
 	return *response, nil
 }
@@ -444,9 +521,23 @@ func (s *CbnService) DescribeCenRouteService(id string) (object cbn.RouteService
 	request.Host = parts[2]
 	request.HostRegionId = parts[1]
 
-	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-		return cbnClient.DescribeRouteServicesInCen(request)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeRouteServicesInCen(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
