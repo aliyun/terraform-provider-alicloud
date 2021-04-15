@@ -73,6 +73,8 @@ github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58 h1:hX1oYy
 github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58/go.mod h1:eD/mEH7SwtLSwI9p8fP9VTH2cYM3wFSY1WNaxEdLIFU=
 github.com/aliyun/aliyun-oss-go-sdk v2.1.7+incompatible h1:hG4TUPxKksYy39lwrfuCYUxGtmfYwgi7OxbQInWfKMI=
 github.com/aliyun/aliyun-oss-go-sdk v2.1.7+incompatible/go.mod h1:T/Aws4fEfogEE9v+HPhhw+CntffsBHJ8nXQCwKr0/g8=
+github.com/aliyun/aliyun-oss-go-sdk v2.1.8+incompatible h1:hLUNPbx10wawWW7DeNExvTrlb90db3UnnNTFKHZEFhE=
+github.com/aliyun/aliyun-oss-go-sdk v2.1.8+incompatible/go.mod h1:T/Aws4fEfogEE9v+HPhhw+CntffsBHJ8nXQCwKr0/g8=
 github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible h1:UbBDubZ5xDDaB50NvikAEPxz9dNG4+JVgIvV4y3dvFM=
 github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible/go.mod h1:LDQHRZylxvcg8H7wBIDfvO5g/cy4/sz1iucBlc2l3Jw=
 github.com/aliyun/credentials-go v1.1.2 h1:qU1vwGIBb3UJ8BwunHDRFtAhS6jnQLnde/yk0+Ih2GY=
