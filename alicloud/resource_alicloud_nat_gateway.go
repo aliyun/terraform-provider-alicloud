@@ -143,7 +143,7 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Large", "Middle", "Small", "XLarge.1"}, false),
 				Default:      "Small",
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("internet_charge_type").(string) != "PayBySpec"
+					return d.Get("internet_charge_type").(string) == "PayByLcu"
 				},
 			},
 			"status": {
