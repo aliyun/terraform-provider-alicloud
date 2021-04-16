@@ -62,7 +62,7 @@ The following arguments are supported:
 * `db_version` - (Required,ForceNew) Database version. Value options can refer to the latest docs [CreateDBCluster](https://help.aliyun.com/document_detail/98169.html) `DBVersion`.
 * `db_node_class` - (Required) The db_node_class of cluster node.
 * `modify_type` - (Optional, Available in 1.71.2+) Use as `db_node_class` change class, define upgrade or downgrade. Valid values are `Upgrade`, `Downgrade`, Default to `Upgrade`.
-* `db_node_count` - (Optional, Available in 1.95.0+)Number of the PolarDB cluster nodes, default is 2(Each cluster must contain at least a primary node and a read-only node). Add/remove nodes by modifying this parameter, valid values: [2~16].
+* `db_node_count` - (Optional, Available in 1.95.0+)Number of the PolarDB cluster nodes, default is 2(Each cluster must contain at least a primary node and a read-only node). Add/remove nodes by modifying this parameter, valid values: [2~16].  
     **NOTE:** To avoid adding or removing multiple read-only nodes by mistake, the system allows you to add or remove one read-only node at a time.
 * `zone_id` - (Optional) The Zone to launch the DB cluster. it supports multiple zone.
 * `pay_type` - (Optional,ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`. Currently, the resource can not supports change pay type.
@@ -71,7 +71,8 @@ The following arguments are supported:
 * `period` - (Optional) The duration that you will buy DB cluster (in month). It is valid when pay_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of an cluster. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `resource_group_id` (Optional, ForceNew, Computed, Available in 1.96.0+) The ID of resource group which the PolarDB cluster belongs. If not specified, then it belongs to the default resource group.
-* `vswitch_id` - (Optional) The virtual switch ID to launch DB instances in one VPC.
+* `vswitch_id` - (Optional) The virtual switch ID to launch DB instances in one VPC.  
+    **NOTE:** If vswitch_id is not specified, system will get a vswitch belongs to the user automatically.
 * `maintain_time` - (Optional) Maintainable time period format of the instance: HH:MMZ-HH:MMZ (UTC time)
 * `description` - (Optional) The description of cluster.
 * `collector_status` - (Optional, Available in 1.114.0+) Specifies whether to enable or disable SQL data collector. Valid values are `Enable`, `Disabled`.

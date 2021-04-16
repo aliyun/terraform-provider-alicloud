@@ -176,13 +176,23 @@ func resourceAlicloudPolarDBAccountUpdate(d *schema.ResourceData, meta interface
 		request.AccountName = accountName
 		request.AccountDescription = d.Get("account_description").(string)
 
-		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-			return polarDBClient.ModifyAccountDescription(request)
-		})
-		if err != nil {
+		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+				return polarDBClient.ModifyAccountDescription(request)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ConcurrentTaskExceeded"}) {
+					time.Sleep(DefaultIntervalShort * time.Second)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
+		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		d.SetPartial("account_description")
 	}
 
@@ -215,13 +225,23 @@ func resourceAlicloudPolarDBAccountUpdate(d *schema.ResourceData, meta interface
 			d.SetPartial("kms_encryption_context")
 		}
 
-		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-			return polarDBClient.ModifyAccountPassword(request)
-		})
-		if err != nil {
+		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+				return polarDBClient.ModifyAccountPassword(request)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ConcurrentTaskExceeded"}) {
+					time.Sleep(DefaultIntervalShort * time.Second)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
+		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		d.SetPartial("account_password")
 	}
 
@@ -241,16 +261,25 @@ func resourceAlicloudPolarDBAccountDelete(d *schema.ResourceData, meta interface
 	request.DBClusterId = parts[0]
 	request.AccountName = parts[1]
 
-	raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-		return polarDBClient.DeleteAccount(request)
-	})
-	if err != nil {
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.DeleteAccount(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ConcurrentTaskExceeded"}) {
+				time.Sleep(DefaultIntervalShort * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	}); err != nil {
 		if IsExpectedErrors(err, []string{"InvalidAccountName.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return polarDBService.WaitForPolarDBAccount(d.Id(), Deleted, DefaultTimeoutMedium)
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-var clusterConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.rds.aliyuncs.com"
+var clusterConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com"
 
 func init() {
 	resource.AddTestSweepers("alicloud_polardb_cluster", &resource.Sweeper{
