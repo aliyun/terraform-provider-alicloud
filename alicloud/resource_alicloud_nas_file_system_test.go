@@ -136,15 +136,75 @@ func TestAccAlicloudNasFileSystem_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"protocol_type": "${data.alicloud_nas_protocols.example.protocols.0}",
 					"storage_type":  "Capacity",
-					"encrypt_type":  "2",
-					"kms_key_id":    "${alicloud_kms_key.key.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocol_type": CHECKSET,
 						"storage_type":  "Capacity",
-						"encrypt_type":  "2",
-						"kms_key_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "Update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "Update",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudNasFileSystemEncrypt(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasFileSystem0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudNasFileSystem%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocol_type": "${data.alicloud_nas_protocols.example.protocols.0}",
+					"storage_type":  "Capacity",
+					"encrypt_type":  "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocol_type": CHECKSET,
+						"storage_type":  "Capacity",
+						"encrypt_type":  "1",
 					}),
 				),
 			},
@@ -187,10 +247,16 @@ variable "name" {
 data "alicloud_nas_protocols" "example" {
         type = "Capacity"
 }
-resource "alicloud_kms_key" "key" {
- description             = "Hello KMS"
- pending_window_in_days  = "7"
- key_state               = "Enabled"
+`, name)
+}
+
+func AlicloudNasFileSystemBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_nas_protocols" "example" {
+        type = "Capacity"
 }
 resource "alicloud_kms_key" "key" {
  description             = "Hello KMS"
