@@ -188,7 +188,6 @@ func TestAccAlicloudNasFileSystemEncrypt(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
