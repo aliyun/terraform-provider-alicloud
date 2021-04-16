@@ -1443,34 +1443,52 @@ func (s *VpcService) DescribeRouteTableList(id string) (object map[string]interf
 	}
 	action := "DescribeRouteTableList"
 	request := map[string]interface{}{
-		"RegionId": s.client.RegionId,
-		"VpcId":    id,
+		"RegionId":   s.client.RegionId,
+		"VpcId":      id,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
-	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return
-	}
-	addDebug(action, response, request)
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		err = Error("DescribeRouteTableList failed for " + response["Message"].(string))
-		return object, err
-	}
-	v, err := jsonpath.Get("$.RouterTableList.RouterTableListType", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RouterTableList.RouterTableListType", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
-	} else {
-		if v.([]interface{})[0].(map[string]interface{})["VpcId"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
+		if fmt.Sprint(response["Code"]) != "200" {
+			err = Error("DescribeRouteTableList failed for " + response["Message"].(string))
+			return object, err
+		}
+		v, err := jsonpath.Get("$.RouterTableList.RouterTableListType", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RouterTableList.RouterTableListType", response)
+		}
+		result, _ := v.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if item["RouteTableType"] == "System" {
+				object = item
+				return object, nil
+			}
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	object = v.([]interface{})[0].(map[string]interface{})
-	return object, nil
+	return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
 }
 
 func (s *VpcService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
