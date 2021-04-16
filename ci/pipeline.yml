@@ -8,7 +8,7 @@ groups:
       - Instance
       - Disk
       - SecurityGroup
-      - KeyPair
+#      - KeyPair
       - NetworkInterface
       - Snapshot
       - LaunchTemplate
@@ -128,7 +128,7 @@ groups:
       - Instance
       - Disk
       - SecurityGroup
-      - KeyPair
+#      - KeyPair
       - NetworkInterface
       - Snapshot
       - LaunchTemplate
@@ -628,19 +628,19 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Images"
 
-  - name: KeyPair
-    plan:
-      - <<: *clone-provider
-      - get: trigger
-        trigger: true
-        resource: 16Thu
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          TEST_CASE_CODE: "KeyPair"
-          SWEEPER_CODE: "alicloud_key_pair"
+#  - name: KeyPair
+#    plan:
+#      - <<: *clone-provider
+#      - get: trigger
+#        trigger: true
+#        resource: 16Thu
+#      - aggregate:
+#          - *get-aliyun-cli
+#      - <<: *run
+#        params:
+#          <<: *run-params
+#          TEST_CASE_CODE: "KeyPair"
+#          SWEEPER_CODE: "alicloud_key_pair"
 
   - name: Kms
     plan:
@@ -2059,13 +2059,13 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
-  - name: 16Thu
-    type: time
-    source:
-      start: 04:00 PM
-      stop: 10:50 PM
-      days: [Thursday]
-      location: {{time_location}}
+#  - name: 16Thu
+#    type: time
+#    source:
+#      start: 04:00 PM
+#      stop: 10:50 PM
+#      days: [Thursday]
+#      location: {{time_location}}
 
   - name: 1630Thu
     type: time
