@@ -107,6 +107,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"maintain_time": {
 				Type:     schema.TypeString,
