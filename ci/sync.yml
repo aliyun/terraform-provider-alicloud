@@ -35,7 +35,7 @@ resources:
   type: git
   source:
     uri: https://github.com/aliyun/terraform-provider-alicloud.git
-    branch: xiaozhu
+    branch: master
 
 - name: aliyun-cli
   type: s3

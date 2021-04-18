@@ -13,6 +13,7 @@ ENHANCEMENTS:
 - errors.go: Improves the retry strategy by supporting error code Throttling and ServiceUnavailable [GH-3437]
 - errors.go: Improves the connection faild error by adding another error [GH-3452]
 - errors: Adds retry error code for throttling error [GH-3462]
+- ci: Sync the provider repo to oss to avoid network faild when running in China [GH-3468]
 
 BUG FIXES:
 
