@@ -44,7 +44,7 @@ func TestAccAlicloudAdbAccount_update_forSuper(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id":    "${alicloud_adb_cluster.cluster.id}",
+					"db_cluster_id":    "${alicloud_adb_db_cluster.cluster.id}",
 					"account_name":     "tftestsuper",
 					"account_password": "YourPassword_123",
 				}),
@@ -106,14 +106,11 @@ func resourceAdbAccountConfigDependence(name string) string {
 		default = "%s"
 	}
 
-	resource "alicloud_adb_cluster" "cluster" {
-        db_cluster_version      = "3.0"
-        db_cluster_category     = "Cluster"
-        db_node_class           = "C8"
-        db_node_count           = 2
-        db_node_storage         = 200
-		pay_type                = "PostPaid"
-		vswitch_id              = "${data.alicloud_vswitches.default.ids.0}"
+	resource "alicloud_adb_db_cluster" "cluster" {
+		db_cluster_category = "MixedStorage"
+		mode = "flexible"
+		compute_resource = "8Core32GB"
+		vswitch_id              = local.vswitch_id
 		description             = "${var.name}"
 	}`, AdbCommonTestCase, name)
 }
