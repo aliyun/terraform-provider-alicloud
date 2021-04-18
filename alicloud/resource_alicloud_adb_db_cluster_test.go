@@ -395,7 +395,7 @@ func TestAccAlicloudAdbDbCluster_flexible(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"compute_resource":    "8Core32GB",
-					"elastic_io_resource": "2",
+					"elastic_io_resource": "1",
 					"description":         name,
 					"maintain_time":       "01:00Z-02:00Z",
 					"security_ips":        []string{"10.168.1.13"},
@@ -407,10 +407,10 @@ func TestAccAlicloudAdbDbCluster_flexible(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"compute_resource":    "8Core32GB",
-						"elastic_io_resource": "2",
+						"elastic_io_resource": "0",
 						"description":         name,
 						"maintain_time":       "01:00Z-02:00Z",
-						"security_ips.#":      "1",
+						"security_ips.#":      "0",
 						"tags.%":              "2",
 						"tags.Created":        "TF-update",
 						"tags.For":            "test-update",

@@ -1,37 +1,38 @@
-## 1.121.2 (Unreleased)
+## 1.122.0 (Unreleased)
+## 1.121.2 (April 18, 2021)
 
 ENHANCEMENTS:
 
-- resource/alicloud_nas_file_system: Removes the attribute kms_key_id because of it does not support all of users [GH-3464]
-- resource/alicloud_nas_file_system: Adds new attribute encrypt_type and kms_key_id to support encrypt the resource data [GH-3431]
-- resource/alicloud_oss_bucket: Adds attributes created_before_date , expired_object_delete_marker , abort_multipart_upload , noncurrent_version_expiration and noncurrent_version_transition [GH-3441]
-- resource/alicloud_instance: Deprecates the useless attribute internet_max_bandwidth_in [GH-3445]
-- resource/alicloud_polardb_cluster: Sets attribute vswitch_id to Computed and improve its testcase [GH-3456]
-- testcase: Adds the sag qos sweeper test [GH-3435]
-- testcase: Improves the hbase and market testcases [GH-3453]
-- testcase: Improve hbase instance testcase [GH-3454]
-- errors.go: Improves the retry strategy by supporting error code Throttling and ServiceUnavailable [GH-3437]
-- errors.go: Improves the connection faild error by adding another error [GH-3452]
-- errors: Adds retry error code for throttling error [GH-3462]
-- ci: Sync the provider repo to oss to avoid network faild when running in China [GH-3468]
+- resource/alicloud_nas_file_system: Removes the attribute kms_key_id because of it does not support all of users ([#3464](https://github.com/aliyun/terraform-provider-alicloud/issues/3464))
+- resource/alicloud_nas_file_system: Adds new attribute encrypt_type and kms_key_id to support encrypt the resource data ([#3431](https://github.com/aliyun/terraform-provider-alicloud/issues/3431))
+- resource/alicloud_oss_bucket: Adds attributes created_before_date , expired_object_delete_marker , abort_multipart_upload , noncurrent_version_expiration and noncurrent_version_transition ([#3441](https://github.com/aliyun/terraform-provider-alicloud/issues/3441))
+- resource/alicloud_instance: Deprecates the useless attribute internet_max_bandwidth_in ([#3445](https://github.com/aliyun/terraform-provider-alicloud/issues/3445))
+- resource/alicloud_polardb_cluster: Sets attribute vswitch_id to Computed and improve its testcase ([#3456](https://github.com/aliyun/terraform-provider-alicloud/issues/3456))
+- testcase: Adds the sag qos sweeper test ([#3435](https://github.com/aliyun/terraform-provider-alicloud/issues/3435))
+- testcase: Improves the hbase and market testcases ([#3453](https://github.com/aliyun/terraform-provider-alicloud/issues/3453))
+- testcase: Improve hbase instance testcase ([#3454](https://github.com/aliyun/terraform-provider-alicloud/issues/3454))
+- errors.go: Improves the retry strategy by supporting error code Throttling and ServiceUnavailable ([#3437](https://github.com/aliyun/terraform-provider-alicloud/issues/3437))
+- errors.go: Improves the connection faild error by adding another error ([#3452](https://github.com/aliyun/terraform-provider-alicloud/issues/3452))
+- errors: Adds retry error code for throttling error ([#3462](https://github.com/aliyun/terraform-provider-alicloud/issues/3462))
+- ci: Sync the provider repo to oss to avoid network faild when running in China ([#3468](https://github.com/aliyun/terraform-provider-alicloud/issues/3468))
 
 BUG FIXES:
 
-- resource/alicloud_adb_db_cluster: Fixes the diff bug caused by attribute payment_type and db_cluster_category [GH-3466]
-- resource/nat_gateway: Recovers the snat_table_ids and forward_table_ids data type to fix the format error [GH-3432]
-- resource/alicloud_cen_bandwidth_package: Fixes the parsing expire time failed error which only work in PrePaid [GH-3436]
-- resource/alicloud_cen_bandwidth_package: Fixes the InvalidStatus.Resource error when updating this resource [GH-3440]
-- resource/alicloud_sag_qos_car & alicloud_sag_qos_policy: Fixes the error ResourceInOperating in concurrent scenario [GH-3446]
-- resource/alicloud_network_acl: Fixes the Throttling error when describing the resources [GH-3447]
-- resource/alicloud_mongodb_instance: Fixes the InstanceStatusInvalid error when ModifySecurityGroupConfiguration [GH-3449]
-- resource/alicloud_cen_xxx: Adds the retry strategy to fix the connection error when fetching the resources [GH-3450]
-- resource/alicloud_polardb_account: Adds the retry strategy to fix the ConcurrentTaskExceeded error when update the resources [GH-3456]
-- resource/alicloud_nat_gateway: Fixes the specification diff bug; Fixes the period diff bug [GH-3458]
-- datasource/alicloud_cms_service: Adds error code Has.effect.suit to avoid needless error when repeated opening [GH-3463]
-- testcase/alicloud_cms_alarm_contact: Improves the docs and adds limitation descriptions for attribute name; Fixes the its testcase [GH-3439]
-- testcase/alicloud_adb_connection: Fixes its testcase caused by missing mode [GH-3467]
-- docs/alicloud_alidns_domain: Corrects the dns_servers spelling error [GH-3434]
-- locations: Fixes fetching endpoint failed error because of network connection failed [GH-3459]
+- resource/alicloud_adb_db_cluster: Fixes the diff bug caused by attribute payment_type and db_cluster_category ([#3466](https://github.com/aliyun/terraform-provider-alicloud/issues/3466))
+- resource/nat_gateway: Recovers the snat_table_ids and forward_table_ids data type to fix the format error ([#3432](https://github.com/aliyun/terraform-provider-alicloud/issues/3432))
+- resource/alicloud_cen_bandwidth_package: Fixes the parsing expire time failed error which only work in PrePaid ([#3436](https://github.com/aliyun/terraform-provider-alicloud/issues/3436))
+- resource/alicloud_cen_bandwidth_package: Fixes the InvalidStatus.Resource error when updating this resource ([#3440](https://github.com/aliyun/terraform-provider-alicloud/issues/3440))
+- resource/alicloud_sag_qos_car & alicloud_sag_qos_policy: Fixes the error ResourceInOperating in concurrent scenario ([#3446](https://github.com/aliyun/terraform-provider-alicloud/issues/3446))
+- resource/alicloud_network_acl: Fixes the Throttling error when describing the resources ([#3447](https://github.com/aliyun/terraform-provider-alicloud/issues/3447))
+- resource/alicloud_mongodb_instance: Fixes the InstanceStatusInvalid error when ModifySecurityGroupConfiguration ([#3449](https://github.com/aliyun/terraform-provider-alicloud/issues/3449))
+- resource/alicloud_cen_xxx: Adds the retry strategy to fix the connection error when fetching the resources ([#3450](https://github.com/aliyun/terraform-provider-alicloud/issues/3450))
+- resource/alicloud_polardb_account: Adds the retry strategy to fix the ConcurrentTaskExceeded error when update the resources ([#3456](https://github.com/aliyun/terraform-provider-alicloud/issues/3456))
+- resource/alicloud_nat_gateway: Fixes the specification diff bug; Fixes the period diff bug ([#3458](https://github.com/aliyun/terraform-provider-alicloud/issues/3458))
+- datasource/alicloud_cms_service: Adds error code Has.effect.suit to avoid needless error when repeated opening ([#3463](https://github.com/aliyun/terraform-provider-alicloud/issues/3463))
+- testcase/alicloud_cms_alarm_contact: Improves the docs and adds limitation descriptions for attribute name; Fixes the its testcase ([#3439](https://github.com/aliyun/terraform-provider-alicloud/issues/3439))
+- testcase/alicloud_adb_connection: Fixes its testcase caused by missing mode ([#3467](https://github.com/aliyun/terraform-provider-alicloud/issues/3467))
+- docs/alicloud_alidns_domain: Corrects the dns_servers spelling error ([#3434](https://github.com/aliyun/terraform-provider-alicloud/issues/3434))
+- locations: Fixes fetching endpoint failed error because of network connection failed ([#3459](https://github.com/aliyun/terraform-provider-alicloud/issues/3459))
 
 ## 1.121.1 (April 13, 2021)
 
