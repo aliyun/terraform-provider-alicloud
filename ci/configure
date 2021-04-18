@@ -5,7 +5,7 @@ international_time_location=(Europe/London Asia/Kolkata)
 # 国内站账号
 for (( i=0;i<${#domestic_regions[@]};i++)) do
     fly -t terraform-china sp -p ${domestic_regions[i]} \
-    -c pipeline.yml \
+    -c pipeline-cn.yml \
     -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
     -v aliyun_cli_region=$ALIYUN_CLI_REGION \
     -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
@@ -52,7 +52,7 @@ international_regions=(eu-central-1)
 
 for (( i=0;i<${#domestic_regions[@]};i++)) do
     fly -t terraform-china sp -p ${domestic_regions[i]}-intl \
-    -c pipeline.yml \
+    -c pipeline-cn.yml \
     -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
     -v aliyun_cli_region=$ALIYUN_CLI_REGION \
     -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
@@ -112,3 +112,15 @@ fly -t terraform-intl sp -p publish-alicloud-provider \
   -v alicloud_github_token=$GITHUB_TOKEN \
   -v alicloud_gpg_fingerprint=$GPG_FINGERPRINT \
   --load-vars-from=vars-publish.yml
+
+# 同步 Terraform provider 仓库到 OSS
+fly -t terraform-intl sp -p sync-alicloud-provider \
+  -c sync.yml \
+  -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
+  -v aliyun_cli_region=$ALIYUN_CLI_REGION \
+  -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
+  -v aliyun_cli_secret_key=$ALIYUN_CLI_SECRET_KEY \
+  -v alicloud_access_key=$ALICLOUD_ACCESS_KEY \
+  -v alicloud_secret_key=$ALICLOUD_SECRET_KEY \
+  -v terraform_provider_bucket_region="cn-beijing" \
+  -v terraform_provider_bucket_name="terraform-ci"
