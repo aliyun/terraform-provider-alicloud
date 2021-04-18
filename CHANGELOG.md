@@ -2,6 +2,7 @@
 
 ENHANCEMENTS:
 
+- resource/alicloud_nas_file_system: Removes the attribute kms_key_id because of it does not support all of users [GH-3464]
 - resource/alicloud_nas_file_system: Adds new attribute encrypt_type and kms_key_id to support encrypt the resource data [GH-3431]
 - resource/alicloud_oss_bucket: Adds attributes created_before_date , expired_object_delete_marker , abort_multipart_upload , noncurrent_version_expiration and noncurrent_version_transition [GH-3441]
 - resource/alicloud_instance: Deprecates the useless attribute internet_max_bandwidth_in [GH-3445]
@@ -15,6 +16,7 @@ ENHANCEMENTS:
 
 BUG FIXES:
 
+- resource/alicloud_adb_db_cluster: Fixes the diff bug caused by attribute payment_type and db_cluster_category [GH-3467]
 - resource/nat_gateway: Recovers the snat_table_ids and forward_table_ids data type to fix the format error [GH-3432]
 - resource/alicloud_cen_bandwidth_package: Fixes the parsing expire time failed error which only work in PrePaid [GH-3436]
 - resource/alicloud_cen_bandwidth_package: Fixes the InvalidStatus.Resource error when updating this resource [GH-3440]

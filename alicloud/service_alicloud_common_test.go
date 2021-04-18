@@ -837,24 +837,24 @@ locals {
 }
 `
 const AdbCommonTestCase = `
+data "alicloud_adb_zones" "default" {}
 data "alicloud_vpcs" "default" {
- is_default = "true"
+	is_default = true
 }
-data "alicloud_zones" "default" {
- available_resource_creation = "ADB"
-}
-
 data "alicloud_vswitches" "default" {
- vpc_id = "${data.alicloud_vpcs.default.ids.0}"
- zone_id = "${data.alicloud_zones.default.zones.0.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_adb_zones.default.ids.0
+}
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id = data.alicloud_adb_zones.default.ids.0
+  vswitch_name              = var.name
 }
 
-resource "alicloud_vswitch" "this" {
- count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
- name = "tf_testAccAdb_vpc"
- vpc_id = "${data.alicloud_vpcs.default.ids.0}"
- availability_zone = "${data.alicloud_zones.default.zones.0.id}"
- cidr_block = "172.16.0.0/24"
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 `
 
