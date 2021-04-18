@@ -79,7 +79,7 @@ The following arguments are supported:
 * `description` - (Optional, Computed) The description of DBCluster.
 * `elastic_io_resource` - (Optional) The elastic io resource.
 * `maintain_time` - (Optional, Computed) The maintenance window of the cluster. Format: hh:mmZ-hh:mmZ.
-* `mode` - (Optional) The mode of the cluster. Valid values: `reserver`, `flexible`.
+* `mode` - (Required) The mode of the cluster. Valid values: `reserver`, `flexible`.
 * `modify_type` - (Optional) The modify type.
 * `pay_type` - (Optional, Computed, ForceNew) Field `pay_type` has been deprecated. New field `payment_type` instead.
 * `payment_type` - (Optional, Computed, ForceNew) The payment type of the resource. Valid values are `PayAsYouGo` and `Subscription`. Default to `PayAsYouGo`.

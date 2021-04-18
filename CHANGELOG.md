@@ -16,7 +16,7 @@ ENHANCEMENTS:
 
 BUG FIXES:
 
-- resource/alicloud_adb_db_cluster: Fixes the diff bug caused by attribute payment_type and db_cluster_category [GH-3467]
+- resource/alicloud_adb_db_cluster: Fixes the diff bug caused by attribute payment_type and db_cluster_category [GH-3466]
 - resource/nat_gateway: Recovers the snat_table_ids and forward_table_ids data type to fix the format error [GH-3432]
 - resource/alicloud_cen_bandwidth_package: Fixes the parsing expire time failed error which only work in PrePaid [GH-3436]
 - resource/alicloud_cen_bandwidth_package: Fixes the InvalidStatus.Resource error when updating this resource [GH-3440]
@@ -28,6 +28,7 @@ BUG FIXES:
 - resource/alicloud_nat_gateway: Fixes the specification diff bug; Fixes the period diff bug [GH-3458]
 - datasource/alicloud_cms_service: Adds error code Has.effect.suit to avoid needless error when repeated opening [GH-3463]
 - testcase/alicloud_cms_alarm_contact: Improves the docs and adds limitation descriptions for attribute name; Fixes the its testcase [GH-3439]
+- testcase/alicloud_adb_connection: Fixes its testcase caused by missing mode [GH-3467]
 - docs/alicloud_alidns_domain: Corrects the dns_servers spelling error [GH-3434]
 - locations: Fixes fetching endpoint failed error because of network connection failed [GH-3459]
 
