@@ -47,13 +47,23 @@ if [[ ${DEBUG} = true ]]; then
 fi
 
 CURRENT_PATH=$(pwd)
+provider="terraform-provider-alicloud"
 
 go version
 
 cd $GOPATH
 mkdir -p src/github.com/aliyun
 cd src/github.com/aliyun
-cp -rf $CURRENT_PATH/terraform-provider-alicloud ./
+if [[ ${ALICLOUD_REGION} == "cn-"* ]]]; then
+  echo -e "Downloading ${provider}.tgz ..."
+  aliyun oss cp oss://${terraform_provider_bucket_name}/${provider}.tgz ${provider}.tgz -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region "cn-beijing"
+  echo -e "Unpacking ${provider}.tgz ..."
+  tar -xzvf ${provider}.tgz
+else
+  cp -rf $CURRENT_PATH/terraform-provider-alicloud ./
+  rm -rf ${provider}.tgz
+fi
+
 cd terraform-provider-alicloud
 
 if [[ ${SWEEPER} = true ]]; then

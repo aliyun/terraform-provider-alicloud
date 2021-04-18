@@ -1475,6 +1475,8 @@ resources:
     source:
       uri: https://github.com/aliyun/terraform-provider-alicloud.git
       branch: master
+      paths:
+        - ci/**
 
   - name: aliyun-cli
     type: s3
