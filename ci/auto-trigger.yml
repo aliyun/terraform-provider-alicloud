@@ -2,6 +2,7 @@ groups:
   - name: All
     jobs:
       - build-terraform-provider-package
+      - point-to-point-ci-test
 
 shared:
   - &clone-provider
@@ -12,6 +13,7 @@ shared:
   - &get-aliyun-cli
     get: aliyun-cli
     resource: aliyun-cli
+
   - &build
     task: build
     file: terraform-provider-alicloud/ci/tasks/build-package.yml
@@ -20,6 +22,22 @@ shared:
       terraform_provider_secret_key: {{alicloud_secret_key}}
       terraform_provider_bucket_name: {{terraform_provider_bucket_name}}
       terraform_provider_bucket_region: {{terraform_provider_bucket_region}}
+
+  - &run
+    task: terraform ci
+    file: terraform-provider-alicloud/ci/tasks/ci-test.yml
+    params:
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
+      ALICLOUD_REGION: {{alicloud_region}}
+      DING_TALK_TOKEN: {{ding_talk_token}}
+      ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
+      ALICLOUD_RESOURCE_GROUP_ID: {{alicloud_resource_group_id}}
+      ALICLOUD_WAF_INSTANCE_ID: {{alicloud_waf_instance_id}}
+      CONCOURSE_TARGET: {{alicloud_concourse_target}}
+      CONCOURSE_TARGET_URL: {{alicloud_concourse_target_url}}
+      CONCOURSE_TARGET_USER: {{alicloud_concourse_target_user}}
+      CONCOURSE_TARGET_PASSWORD: {{alicloud_concourse_target_password}}
 
 jobs:
   - name: build-terraform-provider-package
@@ -30,12 +48,28 @@ jobs:
           - *get-aliyun-cli
       - <<: *build
 
+  - name: point-to-point-ci-test
+    serial: true
+    plan:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+        trigger: true
+        passed: [build-terraform-provider-package]
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+
 resources:
 - name: terraform-provider-alicloud
   type: git
   source:
     uri: https://github.com/aliyun/terraform-provider-alicloud.git
-    branch: master
+    branch: xiaozhu
+    paths:
+      - alicloud/*
+      - vendor/*
+      - go.mod
+      - main.go
 
 - name: aliyun-cli
   type: s3

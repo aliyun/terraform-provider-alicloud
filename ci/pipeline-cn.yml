@@ -742,7 +742,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 0330
+        resource: 0330Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -769,7 +769,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 0530
+        resource: 0530Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1474,10 +1474,10 @@ resources:
     type: git
     source:
       uri: https://github.com/aliyun/terraform-provider-alicloud.git
-      branch: xiaozhu
+      branch: master
       skip_ssl_verification: true
       paths:
-        - ci/tasks/**
+        - ci/tasks/*
 
   - name: aliyun-cli
     type: s3
@@ -1545,13 +1545,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 0330
-    type: time
-    source:
-      start: 03:30 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 0330
+#    type: time
+#    source:
+#      start: 03:30 AM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
   - name: 04
     type: time
@@ -1926,6 +1926,14 @@ resources:
     type: time
     source:
       start: 04:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
+  - name: 0530Thu
+    type: time
+    source:
+      start: 05:30 AM
       stop: 10:50 PM
       days: [Thursday]
       location: {{time_location}}
