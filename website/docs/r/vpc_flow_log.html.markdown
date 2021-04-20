@@ -57,12 +57,12 @@ The following arguments are supported:
 
 * `flow_log_name` - (Optional) The Name of the VPC Flow Log.
 * `description` - (Optional) The Description of the VPC Flow Log.
-* `resource_type` - (Required, ForceNew) The type of the resource to capture traffic.
+* `resource_type` - (Required, ForceNew) The type of the resource to capture traffic. Valid values `NetworkInterface`, `VPC`, and `VSwitch`.
 * `resource_id` - (Required, ForceNew) The ID of the resource.
-* `traffic_type` - (Required, ForceNew) The type of traffic collected.
+* `traffic_type` - (Required, ForceNew) The type of traffic collected. Valid values `All`, `Drop` and `Allow`.
 * `project_name` - (Required, ForceNew) The name of the project.
 * `log_store_name` - (Required, ForceNew) The name of the logstore.
-* `status` - (Optional, Computed) The status of the VPC Flow Log. 
+* `status` - (Optional, Computed) The status of the VPC Flow Log. Valid values `Active` and `Inactive`.
 
 ## Attributes Reference
 
