@@ -50,28 +50,40 @@ func (s *EcsService) JudgeRegionValidation(key, region string) error {
 }
 
 // DescribeZone validate zoneId is valid in region
-func (s *EcsService) DescribeZone(id string) (zone ecs.Zone, err error) {
-	request := ecs.CreateDescribeZonesRequest()
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeZones(request)
-	})
+func (s *EcsService) DescribeZone(id string) (zone map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		return nil, WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ecs.DescribeZonesResponse)
-	if len(response.Zones.Zone) < 1 {
+	action := "DescribeZones"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return zone, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.Zones.Zone", response)
+	if err != nil {
+		return zone, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	if len(v.([]interface{})) < 1 {
 		return zone, WrapError(Error("There is no any availability zone in region %s.", s.client.RegionId))
 	}
 
 	zoneIds := []string{}
-	for _, z := range response.Zones.Zone {
-		if z.ZoneId == id {
-			return z, nil
+	for _, z := range v.([]interface{}) {
+		tmp := z.(map[string]interface{})
+		if tmp["ZoneId"].(string) == id {
+			return tmp, nil
 		}
-		zoneIds = append(zoneIds, z.ZoneId)
+		zoneIds = append(zoneIds, tmp["ZoneId"].(string))
 	}
 	return zone, WrapError(Error("availability_zone %s not exists in region %s, all zones are %s", id, s.client.RegionId, zoneIds))
 }
@@ -205,13 +217,13 @@ func (s *EcsService) ResourceAvailable(zone ecs.Zone, resourceType ResourceType)
 	return WrapError(Error("%s is not available in %s zone of %s region", resourceType, zone.ZoneId, s.client.Region))
 }
 
-func (s *EcsService) DiskAvailable(zone ecs.Zone, diskCategory DiskCategory) error {
-	for _, disk := range zone.AvailableDiskCategories.DiskCategories {
-		if disk == string(diskCategory) {
+func (s *EcsService) DiskAvailable(zone map[string]interface{}, diskCategory DiskCategory) error {
+	for _, disk := range zone["AvailableDiskCategories"].(map[string]interface{})["DiskCategories"].([]interface{}) {
+		if disk.(string) == string(diskCategory) {
 			return nil
 		}
 	}
-	return WrapError(Error("%s is not available in %s zone of %s region", diskCategory, zone.ZoneId, s.client.Region))
+	return WrapError(Error("%s is not available in %s zone of %s region", diskCategory, zone["ZoneId"], s.client.Region))
 }
 
 func (s *EcsService) JoinSecurityGroups(instanceId string, securityGroupIds []string) error {
@@ -537,18 +549,18 @@ func (s *EcsService) DescribeDisk(id string) (disk ecs.Disk, err error) {
 	return response.Disks.Disk[0], nil
 }
 
-func (s *EcsService) DescribeDiskAttachment(id string) (disk ecs.Disk, err error) {
+func (s *EcsService) DescribeEcsDiskAttachment(id string) (disk map[string]interface{}, err error) {
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return disk, WrapError(err)
 	}
-	disk, err = s.DescribeDisk(parts[0])
+	disk, err = s.DescribeEcsDisk(parts[0])
 	if err != nil {
 		return disk, WrapError(err)
 	}
 
-	if disk.InstanceId != parts[1] && disk.Status != string(InUse) {
-		err = WrapErrorf(Error(GetNotFoundMessage("DiskAttachment", id)), NotFoundMsg, ProviderERROR)
+	if disk["InstanceId"] != parts[1] && disk["Status"] != string(InUse) {
+		err = WrapErrorf(Error(GetNotFoundMessage("EcsDiskAttachment", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
 }
@@ -854,29 +866,6 @@ func (s *EcsService) WaitForKeyPair(id string, status Status, timeout int) error
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, Null, string(status), ProviderERROR)
-		}
-
-	}
-}
-
-func (s *EcsService) WaitForDiskAttachment(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeDiskAttachment(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-		if object.Status == string(status) {
-			return nil
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 
 	}
@@ -1956,4 +1945,71 @@ func (s *EcsService) DescribeEcsKeyPair(id string) (object map[string]interface{
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
+}
+
+func (s *EcsService) DescribeEcsDisk(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDisks"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"DiskIds":  convertListToJsonString([]interface{}{id}),
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDiskChargeType.NotFound", "InvalidDiskIds.ValueNotSupported", "InvalidFilterKey.NotFound", "InvalidFilterValue", "InvalidLockReason.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS:Disk", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Disks.Disk", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Disks.Disk", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["DiskId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *EcsService) EcsDiskStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEcsDisk(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["Status"].(string) == failState {
+				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+			}
+		}
+		return object, object["Status"].(string), nil
+	}
 }
