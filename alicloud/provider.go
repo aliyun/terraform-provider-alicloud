@@ -406,6 +406,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_snapshots":                               dataSourceAlicloudEcsSnapshots(),
 			"alicloud_ecs_key_pairs":                               dataSourceAlicloudEcsKeyPairs(),
 			"alicloud_adb_db_clusters":                             dataSourceAlicloudAdbDbClusters(),
+			"alicloud_vpc_flow_logs":                               dataSourceAlicloudVpcFlowLogs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
