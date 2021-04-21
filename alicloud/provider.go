@@ -414,6 +414,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ddoscoo_ports":                               dataSourceAlicloudDdoscooPorts(),
 			"alicloud_slb_load_balancers":                          dataSourceAlicloudSlbLoadBalancers(),
 			"alicloud_ecs_network_interfaces":                      dataSourceAlicloudEcsNetworkInterfaces(),
+			"alicloud_config_aggregators":                          dataSourceAlicloudConfigAggregators(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -741,6 +742,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_slb_load_balancer":                          resourceAlicloudSlbLoadBalancer(),
 			"alicloud_ecs_network_interface":                      resourceAlicloudEcsNetworkInterface(),
 			"alicloud_ecs_network_interface_attachment":           resourceAlicloudEcsNetworkInterfaceAttachment(),
+			"alicloud_config_aggregator":                          resourceAlicloudConfigAggregator(),
 		},
 
 		ConfigureFunc: providerConfigure,
