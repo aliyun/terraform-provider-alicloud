@@ -36,7 +36,7 @@ data "alicloud_zones" "default" {
 
 data "alicloud_instance_types" "default" {
   provider          = alicloud.hz
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  zone_id = data.alicloud_zones.default.zones[0].id
   cpu_core_count    = 1
   memory_size       = 2
 }
@@ -58,7 +58,7 @@ resource "alicloud_vswitch" "default" {
   provider          = alicloud.hz
   vpc_id            = alicloud_vpc.vpc.id
   cidr_block        = "172.16.0.0/21"
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  zone_id = data.alicloud_zones.default.zones[0].id
   vswitch_name      = var.name
 }
 
