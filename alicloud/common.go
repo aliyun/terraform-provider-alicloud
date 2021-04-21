@@ -962,3 +962,11 @@ func formatInt(src interface{}) int {
 	}
 	return 0
 }
+
+func convertArrayObjectToJsonString(src interface{}) (string, error) {
+	res, err := json.Marshal(&src)
+	if err != nil {
+		return "", err
+	}
+	return string(res), nil
+}
