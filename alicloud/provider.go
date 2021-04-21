@@ -406,6 +406,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_snapshots":                               dataSourceAlicloudEcsSnapshots(),
 			"alicloud_ecs_key_pairs":                               dataSourceAlicloudEcsKeyPairs(),
 			"alicloud_adb_db_clusters":                             dataSourceAlicloudAdbDbClusters(),
+			"alicloud_config_aggregators":                          dataSourceAlicloudConfigAggregators(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -724,6 +725,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_key_pair":                               resourceAlicloudEcsKeyPair(),
 			"alicloud_ecs_key_pair_attachment":                    resourceAlicloudEcsKeyPairAttachment(),
 			"alicloud_adb_db_cluster":                             resourceAlicloudAdbDbCluster(),
+			"alicloud_config_aggregator":                          resourceAlicloudConfigAggregator(),
 		},
 
 		ConfigureFunc: providerConfigure,
