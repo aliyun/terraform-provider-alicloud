@@ -28,7 +28,7 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-  zone_id = data.alicloud_zones.default.zones[0].id
+  availability_zone = data.alicloud_zones.default.zones[0].id
   cpu_core_count    = 2
   memory_size       = 4
 }

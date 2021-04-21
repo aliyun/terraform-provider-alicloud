@@ -48,7 +48,7 @@ resource "alicloud_security_group" "group" {
 }
 
 data "alicloud_instance_types" "instance_type" {
-  zone_id = data.alicloud_zones.default.zones[0].id
+  availability_zone = data.alicloud_zones.default.zones[0].id
   eni_amount        = 2
 }
 
@@ -60,7 +60,7 @@ data "alicloud_images" "default" {
 
 resource "alicloud_instance" "instance" {
   count             = var.number
-  zone_id = data.alicloud_zones.default.zones[0].id
+  availability_zone = data.alicloud_zones.default.zones[0].id
   security_groups   = [alicloud_security_group.group.id]
 
   instance_type              = data.alicloud_instance_types.instance_type.instance_types[0].id
