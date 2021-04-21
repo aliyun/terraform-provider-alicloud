@@ -47,7 +47,7 @@ resource "alicloud_vpc" "main" {
 
 resource "alicloud_vswitch" "main" {
   vpc_id            = alicloud_vpc.main.id
-  zone_id = data.alicloud_zones.default.zones[0].id
+  zone_id           = data.alicloud_zones.default.zones[0].id
   vswitch_name      = var.name
   cidr_block = "172.16.0.0/16"
 }
