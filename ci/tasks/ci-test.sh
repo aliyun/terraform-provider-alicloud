@@ -36,6 +36,7 @@ if [[ ${ALICLOUD_REGION} == "cn-"* ]]; then
   echo -e "Downloading ${provider}.tgz ..."
   aliyun oss cp oss://${BUCKET_NAME}/${provider}.tgz ${provider}.tgz -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
   echo -e "Unpacking ${provider}.tgz ..."
+  aliyun oss ls oss://${BUCKET_NAME}/${provider}.tgz ${provider}.tgz --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
   tar -xzf ${provider}.tgz
   rm -rf ${provider}.tgz
 else
@@ -57,7 +58,8 @@ do
         echo -e "found the test funcs:\n${checkFuncs}\n"
         testFuncNameRaw=${checkFuncs[0]}
         testFuncNameFirstFilter=${testFuncNameRaw:5}
-        arr=(${testFuncNameFirstFilter//_/ })
+        testFuncNameSecondFilter=(${testFuncNameFirstFilter//(/ })
+        arr=(${testFuncNameSecondFilter//_/ })
         TEST_CASE_CODE=${arr[0]}
         go clean -cache -modcache -i -r
         echo -e "TF_ACC=1 go test ./alicloud -v -run=${arr[0]} -timeout=1200m"
@@ -66,7 +68,7 @@ do
         do
             echo -e "$LINE"
             FAIL_FLAG=false
-            if [[ $LINE == "--- FAIL: "* ]]; then
+            if [[ $LINE == "--- FAIL: "* || ${LINE} == "FAIL"* ]]; then
                 FAILED_COUNT=$((${FAILED_COUNT}+1))
                 FAIL_FLAG=true
             fi
@@ -76,10 +78,17 @@ do
                 break
             fi
         done
+        # send child var to an temp file
+        echo $FAILED_COUNT > temp.txt
         }
         echo -e "finished"
     fi
 done
+
+# read var from temp file and remove this file
+read FAILED_COUNT < temp.txt
+echo -e "There gets $FAILED_COUNT failed testcase."
+rm -rf temp.txt
 
 # Notify Ding Talk if failed
 if [[ $FAILED_COUNT -gt 0 ]]; then
