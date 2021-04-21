@@ -110,6 +110,7 @@ func TestAccAlicloudResourceManagerHandshake_basic(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ResourceManagerHandshakeBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheck(t)
 		},
 

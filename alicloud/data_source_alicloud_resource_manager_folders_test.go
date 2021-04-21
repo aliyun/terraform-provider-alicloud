@@ -79,7 +79,11 @@ func TestAccAlicloudResourceManagerFoldersDataSource(t *testing.T) {
 		fakeMapFunc:  fakeResourceManagerFoldersRecordsMapFunc,
 	}
 
-	foldersRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, parentFolderIdConf, allConf)
+	preCheck := func() {
+		testAccPreCheckEnterpriseAccountEnabled(t)
+	}
+
+	foldersRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, parentFolderIdConf, allConf)
 
 }
 

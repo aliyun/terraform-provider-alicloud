@@ -23,6 +23,7 @@ func TestAccAlicloudResourceManagerResourceShare_basic(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerResourceShareBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheck(t)
 		},
 

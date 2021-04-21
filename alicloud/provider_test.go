@@ -236,6 +236,14 @@ func testAccPreCheckWithAlikafkaAclEnable(t *testing.T) {
 	}
 }
 
+func testAccPreCheckEnterpriseAccountEnabled(t *testing.T) {
+	enable := os.Getenv("ENTERPRISE_ACCOUNT_ENABLED")
+	if enable != "true" {
+		t.Skipf("Skipping the test case because the enterprise account is not enabled.")
+		t.Skipped()
+	}
+}
+
 func testAccPreCheckWithNoDefaultVpc(t *testing.T) {
 	region := os.Getenv("ALICLOUD_REGION")
 	rawClient, err := sharedClientForRegion(region)

@@ -26,6 +26,7 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheck(t)
 			// The created account resource cannot be deleted, and the created dependent resource folder will also be deleted. Therefore, the existing folder is specified in the environment variable for testing. If it is not specified, skip the test.
 			testAccPreCheckWithResourceManagerFloderIdSetting(t)
