@@ -24,7 +24,7 @@ data "alicloud_images" "ecs_image" {
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  zone_id = data.alicloud_zones.default.zones[0].id
   cpu_core_count    = 1
   memory_size       = 2
 }
@@ -38,14 +38,14 @@ resource "alicloud_vswitch" "foo" {
   vswitch_name      = "tf-testAccEssAlarm_basic_foo"
   vpc_id            = alicloud_vpc.foo.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  zone_id = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_vswitch" "bar" {
   vswitch_name      = "tf-testAccEssAlarm_basic_bar"
   vpc_id            = alicloud_vpc.foo.id
   cidr_block        = "172.16.1.0/24"
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  zone_id = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_ess_scaling_group" "foo" {

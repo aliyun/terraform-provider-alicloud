@@ -32,13 +32,13 @@ resource "alicloud_vpc" "vpc" {
 resource "alicloud_vswitch" "vsw" {
   vpc_id            = alicloud_vpc.vpc.id
   cidr_block        = "10.1.1.0/24"
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  zone_id = data.alicloud_zones.default.zones[0].id
 
   depends_on = [alicloud_vpc.vpc]
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  zone_id = data.alicloud_zones.default.zones[0].id
 }
 
 data "alicloud_images" "default" {
@@ -50,7 +50,7 @@ data "alicloud_images" "default" {
 resource "alicloud_instance" "ecs_instance" {
   image_id          = data.alicloud_images.default.images[0].id
   instance_type     = data.alicloud_instance_types.default.instance_types[0].id
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  zone_id = data.alicloud_zones.default.zones[0].id
   security_groups   = [alicloud_security_group.group.id]
   vswitch_id        = alicloud_vswitch.vsw.id
   instance_name     = "hello"

@@ -23,7 +23,7 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  zone_id = data.alicloud_zones.default.zones[0].id
   cpu_core_count    = 1
   memory_size       = 2
 }
@@ -46,7 +46,7 @@ resource "alicloud_vpc" "foo" {
 resource "alicloud_vswitch" "foo" {
   vpc_id            = alicloud_vpc.foo.id
   cidr_block        = "172.16.0.0/21"
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  zone_id = data.alicloud_zones.default.zones[0].id
   name              = var.name
 }
 
@@ -67,7 +67,7 @@ resource "alicloud_security_group" "tf_test_foo" {
 }
 
 resource "alicloud_instance" "foo" {
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  zone_id = data.alicloud_zones.default.zones[0].id
   vswitch_id        = alicloud_vswitch.foo.id
   image_id          = data.alicloud_images.default.images[0].id
 
