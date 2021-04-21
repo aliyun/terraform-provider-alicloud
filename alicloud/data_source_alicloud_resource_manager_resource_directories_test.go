@@ -40,6 +40,10 @@ func TestAccAlicloudResourceManagerResourceDirectoriesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeResourceManagerResourceDirectoriesRecordsMapFunc,
 	}
 
-	ResourceDirectoriesRecordsCheckInfo.dataSourceTestCheck(t, rand, conf)
+	preCheck := func() {
+		testAccPreCheckEnterpriseAccountEnabled(t)
+	}
+
+	ResourceDirectoriesRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, conf)
 
 }

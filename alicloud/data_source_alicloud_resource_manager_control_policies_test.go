@@ -70,7 +70,10 @@ func TestAccAlicloudResourceManagerControlPoliciesDataSource(t *testing.T) {
 		existMapFunc: existAlicloudResourceManagerControlPoliciesDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudResourceManagerControlPoliciesDataSourceNameMapFunc,
 	}
-	alicloudResourceManagerControlPoliciesCheckInfo.dataSourceTestCheck(t, rand, idsConf, policyTypeConf, nameRegexConf, allConf)
+	preCheck := func() {
+		testAccPreCheckEnterpriseAccountEnabled(t)
+	}
+	alicloudResourceManagerControlPoliciesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, policyTypeConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudResourceManagerControlPoliciesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

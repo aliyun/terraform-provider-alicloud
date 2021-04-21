@@ -123,6 +123,7 @@ func TestAccAlicloudResourceManagerFolder_basic(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ResourceManagerFolderBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheck(t)
 		},
 

@@ -64,6 +64,7 @@ func TestAccAlicloudResourceManagerHandshakesDataSource(t *testing.T) {
 	}
 
 	var preCheck = func() {
+		testAccPreCheckEnterpriseAccountEnabled(t)
 		testAccPreCheck(t)
 		testAccPreCheckWithResourceManagerHandshakesSetting(t)
 	}
