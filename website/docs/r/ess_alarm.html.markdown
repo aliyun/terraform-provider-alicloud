@@ -38,14 +38,14 @@ resource "alicloud_vswitch" "foo" {
   vswitch_name      = "tf-testAccEssAlarm_basic_foo"
   vpc_id            = alicloud_vpc.foo.id
   cidr_block        = "172.16.0.0/24"
-  zone_id = data.alicloud_zones.default.zones[0].id
+  zone_id           = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_vswitch" "bar" {
   vswitch_name      = "tf-testAccEssAlarm_basic_bar"
   vpc_id            = alicloud_vpc.foo.id
   cidr_block        = "172.16.1.0/24"
-  zone_id = data.alicloud_zones.default.zones[0].id
+  zone_id           = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_ess_scaling_group" "foo" {
