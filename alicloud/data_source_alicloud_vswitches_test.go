@@ -59,7 +59,7 @@ func TestAccAlicloudVSwitchesDataSourceBasic(t *testing.T) {
 		fakeConfig: testAccCheckAlicloudVSwitchesDataSourceConfig(rand, map[string]string{
 			"name_regex":      `"${alicloud_vswitch.default.vswitch_name}"`,
 			"cidr_block":      `"172.16.0.0/24"`,
-			"ipv6_cidr_block": "1",
+			"ipv6_cidr_block": "0",
 		}),
 	}
 
