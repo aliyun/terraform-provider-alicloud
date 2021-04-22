@@ -54,6 +54,9 @@ for fileName in ${diffFiles[@]};
 do
     echo -e "\nchecking diff file $fileName ..."
     if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* ]];then
+        if [[ ${fileName} != *?_test.go ]]; then
+            fileName=(${fileName//\.go/_test\.go })
+        fi
         checkFuncs=$(grep "func TestAcc.*" ${fileName})
         echo -e "found the test funcs:\n${checkFuncs}\n"
         testFuncNameRaw=${checkFuncs[0]}
