@@ -63,7 +63,7 @@ if [[ ${ALICLOUD_REGION} == "cn-"* ]]; then
   echo -e "Downloading ${provider}.tgz ..."
   aliyun oss cp oss://${BUCKET_NAME}/${provider}.tgz ${provider}.tgz -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
   echo -e "Unpacking ${provider}.tgz ..."
-  aliyun oss ls oss://${BUCKET_NAME}/${provider}.tgz ${provider}.tgz --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
+  aliyun oss ls oss://${BUCKET_NAME}/${provider}.tgz --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
   tar -xzf ${provider}.tgz
   rm -rf ${provider}.tgz
 else
