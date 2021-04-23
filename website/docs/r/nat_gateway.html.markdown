@@ -103,7 +103,7 @@ The following arguments are supported:
 * `instance_charge_type` - (Optional, ForceNew,  Deprecated from v1.121.0+) Field `instance_charge_type` has been deprecated from provider version 1.121.0. New field `payment_type` instead.
 * `payment_type` - (Optional, ForceNew, Available in 1.121.0+) The billing method of the NAT gateway. Valid values are `PayAsYouGo` and `Subscription`. Default to `PayAsYouGo`.
 * `period` - (Optional, Available in 1.45.0+) The duration that you will buy the resource, in month. It is valid when `payment_type` is `Subscription`. Valid values: [1-9, 12, 24, 36]. At present, the provider does not support modify "period" and you can do that via web console.
--> **NOTE:** This attribute is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
+-> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `nat_type` - (Optional, Available in 1.102.0+) The type of NAT gateway. Default to `Normal`. Valid values: [`Normal`, `Enhanced`].
 * `vswitch_id` - (Optional, Available in 1.102.0+) The id of VSwitch.
 * `internet_charge_type` - (Optional, ForceNew, Available in 1.121.0+) The internet charge type. Valid values `PayByLcu` and `PayBySpec`, default value is `PayBySpec`. The `PayByLcu` is only support enhanced NAT.

@@ -5,6 +5,7 @@ ENHANCEMENTS:
 - resource/alicloud_db_instance: Supports to encrypt the disk for MSSQL [GH-3486]
 - testcase: Skipes ResourceManager testcase while the resource directory is not enabled [GH-3475]
 - docs/alicloud_vswitch: Replaces deprecated availability_zone with zone _id in the all of docs examples [GH-3481]
+- docs: Improves the docs for the attribute period note [GH-3489]
 - ci: Improves the running ci testcase and got failed count [GH-3478]
 - ci: improve ci testcase by adding point-to-point test when there is a merg [GH-3472]
 - ci: Improves the ci-test to get the precise test case [GH-3483]
