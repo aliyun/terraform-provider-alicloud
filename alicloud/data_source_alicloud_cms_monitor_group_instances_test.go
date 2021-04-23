@@ -61,9 +61,9 @@ data "alicloud_vpcs" "default" {
 data "alicloud_vswitches" "default" {
   ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
 }
-resource "alicloud_slb" "default" {
-  name = var.name
-  specification = "slb.s2.small"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = var.name
+  load_balancer_spec = "slb.s2.small"
   vswitch_id = data.alicloud_vswitches.default.ids.0
 }
 resource "alicloud_cms_monitor_group" "default" {
@@ -72,8 +72,8 @@ monitor_group_name = var.name
 resource "alicloud_cms_monitor_group_instances" "default" {
   group_id = alicloud_cms_monitor_group.default.id
   instances {
-    instance_id = alicloud_slb.default.id
-    instance_name = alicloud_slb.default.name
+    instance_id = alicloud_slb_load_balancer.default.id
+    instance_name = alicloud_slb_load_balancer.default.name
     region_id = "%s"
     category = "slb"
   }

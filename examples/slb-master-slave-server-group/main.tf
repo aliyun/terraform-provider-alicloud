@@ -53,15 +53,15 @@ resource "alicloud_instance" "instance" {
   vswitch_id                 = alicloud_vswitch.main.id
 }
 
-resource "alicloud_slb" "instance" {
-  name              = var.name
+resource "alicloud_slb_load_balancer" "instance" {
+  load_balancer_name              = var.name
   vswitch_id        = alicloud_vswitch.main.id
-  specification     = "slb.s2.small"
+  load_balancer_spec     = "slb.s2.small"
   delete_protection = "on"
 }
 
 resource "alicloud_slb_master_slave_server_group" "this" {
-  load_balancer_id = alicloud_slb.instance.id
+  load_balancer_id = alicloud_slb_load_balancer.instance.id
   name             = var.name
   servers {
     server_id   = alicloud_instance.instance.0.id

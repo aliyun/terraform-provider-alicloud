@@ -330,14 +330,14 @@ resource "alicloud_vswitch" "default" {
   name = "${var.name}"
 }
 
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+  load_balancer_spec = "slb.s1.small"
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   backend_port = 80
   frontend_port = 80
   protocol = "http"
@@ -381,15 +381,15 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSlbListenersDataSourceHttps-%d"
 }
 
-resource "alicloud_slb" "default" {
+resource "alicloud_slb_load_balancer" "default" {
   name = "${var.name}"
   internet_charge_type = "PayByTraffic"
   internet = true
-  specification = "slb.s2.small"
+  load_balancer_spec = "slb.s2.small"
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   backend_port = 80
   frontend_port = 80
   protocol = "https"
@@ -476,14 +476,14 @@ resource "alicloud_vswitch" "default" {
   name = "${var.name}"
 }
 
-resource "alicloud_slb" "default" {
+resource "alicloud_slb_load_balancer" "default" {
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+  load_balancer_spec = "slb.s1.small"
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   backend_port = 22
   frontend_port = 22
   protocol = "tcp"
@@ -531,14 +531,14 @@ resource "alicloud_vswitch" "default" {
   name = "${var.name}"
 }
 
-resource "alicloud_slb" "default" {
+resource "alicloud_slb_load_balancer" "default" {
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+  load_balancer_spec = "slb.s1.small"
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   backend_port = 10
   frontend_port = 11
   protocol = "udp"

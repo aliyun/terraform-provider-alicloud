@@ -38,7 +38,7 @@ func TestAccAlicloudSlbListener_http_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"backend_port":              "80",
 					"frontend_port":             "80",
 					"protocol":                  "http",
@@ -409,7 +409,7 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"backend_port":              "80",
 					"frontend_port":             "80",
 					"protocol":                  "https",
@@ -660,7 +660,7 @@ func TestAccAlicloudSlbListener_tcp_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"frontend_port":             "22",
 					"backend_port":              "22",
 					"protocol":                  "tcp",
@@ -854,7 +854,7 @@ func TestAccAlicloudSlbListener_tcp_server_group(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"frontend_port":             "22",
 					"protocol":                  "tcp",
 					"backend_port":              "22",
@@ -940,7 +940,7 @@ func TestAccAlicloudSlbListener_udp_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"backend_port":              "2001",
 					"frontend_port":             "2001",
 					"protocol":                  "udp",
@@ -1094,7 +1094,7 @@ func TestAccAlicloudSlbListener_http_healcheckmethod(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"backend_port":              "80",
 					"frontend_port":             "80",
 					"protocol":                  "http",
@@ -1205,7 +1205,7 @@ func TestAccAlicloudSlbListener_https_healcheckmethod(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"backend_port":              "80",
 					"frontend_port":             "80",
 					"protocol":                  "https",
@@ -1296,14 +1296,14 @@ func testAccSlbListenerHttpForward(name string) string {
 	return fmt.Sprintf(`
 	%s
 	resource "alicloud_slb_listener" "default"{
-  		load_balancer_id = "${alicloud_slb.default.id}"
+  		load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   		frontend_port = 80
   		protocol = "http"
   		listener_forward = "on"
   		forward_port = "${alicloud_slb_listener.default-1.frontend_port}"
 	}
 	resource "alicloud_slb_listener" "default-1" {
-  		load_balancer_id = "${alicloud_slb.default.id}"
+  		load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   		backend_port = 80
   		frontend_port = 443
   		protocol = "https"
@@ -1329,14 +1329,14 @@ func testAccSlbListenerSamePort(name string) string {
   		default = "%s"
 	}
 	resource "alicloud_slb_listener" "default"{
-  		load_balancer_id = "${alicloud_slb.default.id}"
+  		load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   		frontend_port = 80
   		protocol = "tcp"
 		bandwidth = "10"
 		backend_port = 80
 	}
 	resource "alicloud_slb_listener" "default-1" {
-  		load_balancer_id = "${alicloud_slb.default.id}"
+  		load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   		frontend_port = 80
   		protocol = "udp"
 		bandwidth = "10"

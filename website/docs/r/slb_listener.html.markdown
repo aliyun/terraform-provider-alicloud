@@ -31,14 +31,14 @@ variable "ip_version" {
   default = "ipv4"
 }
 
-resource "alicloud_slb" "default" {
-  name                 = "tf-testAccSlbListenerHttp"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name   = "tf-testAccSlbListenerHttp"
   internet_charge_type = "PayByTraffic"
   internet             = true
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id          = alicloud_slb.default.id
+  load_balancer_id          = alicloud_slb_load_balancer.default.id
   backend_port              = 80
   frontend_port             = 80
   protocol                  = "http"

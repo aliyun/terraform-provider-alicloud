@@ -21,8 +21,8 @@ Please refer to the [documentation](https://www.alibabacloud.com/help/doc-detail
 ```
 # Create a new load balancer and domain extension
 
-resource "alicloud_slb" "instance" {
-  name                 = "tffTestDomainExtension"
+resource "alicloud_slb_load_balancer" "instance" {
+  load_balancer_name   = "tffTestDomainExtension"
   internet_charge_type = "PayByTraffic"
   internet             = "true"
 }
@@ -34,7 +34,7 @@ resource "alicloud_slb_server_certificate" "foo" {
 }
 
 resource "alicloud_slb_listener" "https" {
-  load_balancer_id          = alicloud_slb.instance.id
+  load_balancer_id          = alicloud_slb_load_balancer.instance.id
   backend_port              = 80
   frontend_port             = 443
   protocol                  = "https"
@@ -55,7 +55,7 @@ resource "alicloud_slb_listener" "https" {
 }
 
 resource "alicloud_slb_domain_extension" "example1" {
-  load_balancer_id      = alicloud_slb.instance.id
+  load_balancer_id      = alicloud_slb_load_balancer.instance.id
   frontend_port         = alicloud_slb_listener.https.frontend_port
   domain                = "www.test.com"
   server_certificate_id = alicloud_slb_server_certificate.foo.id

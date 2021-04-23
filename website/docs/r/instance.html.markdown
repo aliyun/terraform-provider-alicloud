@@ -62,8 +62,8 @@ resource "alicloud_vswitch" "vswitch" {
   vswitch_name      = var.name
 }
 
-resource "alicloud_slb" "slb" {
-  name       = "test-slb-tf"
+resource "alicloud_slb_load_balancer" "slb" {
+  load_balancer_name       = "test-slb-tf"
   vswitch_id = alicloud_vswitch.vswitch.id
 }
 
