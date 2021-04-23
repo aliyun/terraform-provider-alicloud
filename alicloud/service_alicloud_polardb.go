@@ -1194,3 +1194,40 @@ func (s *PolarDBService) WaitForPolarDBParameter(clusterId string, timeout int, 
 	}
 	return nil
 }
+
+func (s *PolarDBService) DescribeDBClusterTDE(id string) (clusterTDE *polardb.DescribeDBClusterTDEResponse, err error) {
+	request := polardb.CreateDescribeDBClusterTDERequest()
+	request.DBClusterId = id
+	raw, err := s.client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+		return polardbClient.DescribeDBClusterTDE(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return clusterTDE, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return clusterTDE, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*polardb.DescribeDBClusterTDEResponse)
+
+	return response, nil
+}
+
+func (s *PolarDBService) WaitForPolarDBTDEStatus(id string, status string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeDBClusterTDE(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		if object.TDEStatus == status {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object, status, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalMedium * time.Second)
+	}
+	return nil
+}
