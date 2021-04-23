@@ -1,24 +1,25 @@
-## 1.121.3 (Unreleased)
+## 1.122.0 (Unreleased)
+## 1.121.3 (April 24, 2021)
 
 ENHANCEMENTS:
 
-- resource/alicloud_polardb_cluster: Improves the attribute tde_status using standard values [GH-3490]
-- resource/alicloud_db_instance: Supports to encrypt the disk for MSSQL [GH-3486]
-- resource/alicloud_polardb_cluster: Supports new attribute tde_status for PolarDB Mysql [GH-3485]
-- testcase: Skipes ResourceManager testcase while the resource directory is not enabled [GH-3475]
-- docs/alicloud_vswitch: Replaces deprecated availability_zone with zone _id in the all of docs examples [GH-3481]
-- docs: Improves the docs for the attribute period note [GH-3489]
-- ci: Improves the running ci testcase and got failed count [GH-3478]
-- ci: improve ci testcase by adding point-to-point test when there is a merg [GH-3472]
-- ci: Improves the ci-test to get the precise test case [GH-3483]
+- resource/alicloud_polardb_cluster: Improves the attribute tde_status using standard values ([#3490](https://github.com/aliyun/terraform-provider-alicloud/issues/3490))
+- resource/alicloud_db_instance: Supports to encrypt the disk for MSSQL ([#3486](https://github.com/aliyun/terraform-provider-alicloud/issues/3486))
+- resource/alicloud_polardb_cluster: Supports new attribute tde_status for PolarDB Mysql ([#3485](https://github.com/aliyun/terraform-provider-alicloud/issues/3485))
+- testcase: Skipes ResourceManager testcase while the resource directory is not enabled ([#3475](https://github.com/aliyun/terraform-provider-alicloud/issues/3475))
+- docs/alicloud_vswitch: Replaces deprecated availability_zone with zone _id in the all of docs examples ([#3481](https://github.com/aliyun/terraform-provider-alicloud/issues/3481))
+- docs: Improves the docs for the attribute period note ([#3489](https://github.com/aliyun/terraform-provider-alicloud/issues/3489))
+- ci: Improves the running ci testcase and got failed count ([#3478](https://github.com/aliyun/terraform-provider-alicloud/issues/3478))
+- ci: improve ci testcase by adding point-to-point test when there is a merg ([#3472](https://github.com/aliyun/terraform-provider-alicloud/issues/3472))
+- ci: Improves the ci-test to get the precise test case ([#3483](https://github.com/aliyun/terraform-provider-alicloud/issues/3483))
 
 BUG FIXES:
 
-- resource/alicloud_adb_db_connection: Adds retry error code IncorrectDBInstanceState to fix deleting adb connection failed error [GH-3491]
-- datasource/alicloud_nat_gateways: Recovers the ip_lists type to fix the missing expected error [GH-3480]
-- ci: Fixes the ci test bug when running the aliyun oss ls command [GH-3482]
-- ci: Fixes the CI bug and update changelog [GH-3469]
-- ci: improves the test scripts to fix missing parameter bug [GH-3474]
+- resource/alicloud_adb_db_connection: Adds retry error code IncorrectDBInstanceState to fix deleting adb connection failed error ([#3491](https://github.com/aliyun/terraform-provider-alicloud/issues/3491))
+- datasource/alicloud_nat_gateways: Recovers the ip_lists type to fix the missing expected error ([#3480](https://github.com/aliyun/terraform-provider-alicloud/issues/3480))
+- ci: Fixes the ci test bug when running the aliyun oss ls command ([#3482](https://github.com/aliyun/terraform-provider-alicloud/issues/3482))
+- ci: Fixes the CI bug and update changelog ([#3469](https://github.com/aliyun/terraform-provider-alicloud/issues/3469))
+- ci: improves the test scripts to fix missing parameter bug ([#3474](https://github.com/aliyun/terraform-provider-alicloud/issues/3474))
 
 ## 1.121.2 (April 18, 2021)
 
