@@ -34,7 +34,8 @@ The following arguments are supported:
 * `name` - (Optional, Deprecated in 1.98.0+) Field 'name' has been deprecated from version 1.97.0. Use `cen_bandwidth_package_name` and instead.
 * `description` - (Optional) The description of the bandwidth package. Default to null.
 * `charge_type` - (Optional, Deprecated in 1.98.0+) Field `charge_type` has been deprecated from version 1.97.0. Use `payment_type` and instead.
-* `period` - (Optional) The purchase period in month. Valid value: `1`, `2`, `3`, `6`, `12`. Default to `1`.
+* `period` - (Optional) The purchase period in month. Valid value: `1`, `2`, `3`, `6`, `12`.
+-> **NOTE:** This attribute is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `geographic_region_a_id` - (Required, ForceNew, Available in 1.98.0+) The area A to which the network instance belongs. Valid values: `China` | `North-America` | `Asia-Pacific` | `Europe` | `Australia`.
 * `geographic_region_b_id` - (Required, ForceNew, Available in 1.98.0+) The area B to which the network instance belongs. Valid values: `China` | `North-America` | `Asia-Pacific` | `Europe` | `Australia`.
 * `payment_type` - (Optional, Available in 1.98.0+) The billing method. Valid value: `PostPaid` | `PrePaid`. Default to `PostPaid`. If set to PrePaid, the bandwidth package can't be deleted before expired time.

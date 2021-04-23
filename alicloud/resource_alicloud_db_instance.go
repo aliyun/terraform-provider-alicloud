@@ -69,7 +69,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
-				Default:          1,
 				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"monitoring_period": {
@@ -771,11 +770,11 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 			d.Set("auto_renew", renew["AutoRenew"] == "True")
 			d.Set("auto_renew_period", renew["Duration"])
 		}
-		period, err := computePeriodByUnit(instance["CreationTime"], instance["ExpireTime"], d.Get("period").(int), "Month")
-		if err != nil {
-			return WrapError(err)
-		}
-		d.Set("period", period)
+		//period, err := computePeriodByUnit(instance["CreationTime"], instance["ExpireTime"], d.Get("period").(int), "Month")
+		//if err != nil {
+		//	return WrapError(err)
+		//}
+		//d.Set("period", period)
 	}
 
 	groups, err := rdsService.DescribeSecurityGroupConfiguration(d.Id())

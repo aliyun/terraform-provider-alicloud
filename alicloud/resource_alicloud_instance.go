@@ -277,7 +277,6 @@ func resourceAliyunInstance() *schema.Resource {
 			"period": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  1,
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
@@ -598,16 +597,16 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 				d.Set("auto_renew_period", renew.Duration*12)
 			}
 		}
-		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpiredTime, d.Get("period").(int), periodUnit)
-		if err != nil {
-			return WrapError(err)
-		}
-		thisPeriod := d.Get("period").(int)
-		if thisPeriod != 0 && thisPeriod != period {
-			d.Set("period", thisPeriod)
-		} else {
-			d.Set("period", period)
-		}
+		//period, err := computePeriodByUnit(instance.CreationTime, instance.ExpiredTime, d.Get("period").(int), periodUnit)
+		//if err != nil {
+		//	return WrapError(err)
+		//}
+		//thisPeriod := d.Get("period").(int)
+		//if thisPeriod != 0 && thisPeriod != period {
+		//	d.Set("period", thisPeriod)
+		//} else {
+		//	d.Set("period", period)
+		//}
 		d.Set("period_unit", periodUnit)
 	}
 

@@ -132,11 +132,9 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 			},
 			"period": {
 				Type:             schema.TypeInt,
-				Default:          1,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				DiffSuppressFunc: adbPostPaidDiffSuppressFunc,
 				Optional:         true,
-				ForceNew:         true,
 			},
 			"renewal_status": {
 				Type:             schema.TypeString,
@@ -327,11 +325,11 @@ func resourceAlicloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 			renewPeriod = renewPeriod * 12
 		}
 		d.Set("auto_renew_period", renewPeriod)
-		period, err := computePeriodByUnit(object["CreationTime"], object["ExpireTime"], d.Get("period").(int), "Month")
-		if err != nil {
-			return WrapError(err)
-		}
-		d.Set("period", period)
+		//period, err := computePeriodByUnit(object["CreationTime"], object["ExpireTime"], d.Get("period").(int), "Month")
+		//if err != nil {
+		//	return WrapError(err)
+		//}
+		//d.Set("period", period)
 		d.Set("renewal_status", describeAutoRenewAttributeObject["RenewalStatus"])
 	}
 

@@ -43,7 +43,8 @@ The following arguments are supported:
 
 * `license_code` - (Required)  The package type of Cloud Bastionhost instance. You can query more supported types through the [DescribePricingModule](https://help.aliyun.com/document_detail/96469.html).
 * `description` - (Required) Description of the instance. This name can have a string of 1 to 63 characters.
-* `period` - (ForceNew) Duration for initially producing the instance. Valid values: [1~9], 12, 24, 36. Default to 1. At present, the provider does not support modify "period".
+* `period` - (Optional) Duration for initially producing the instance. Valid values: [1~9], 12, 24, 36. At present, the provider does not support modify "period".
+-> **NOTE:** This attribute is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `vswitch_id` - (Required, ForceNew) VSwitch ID configured to Bastionhost.
 * `security_group_ids` - (Required) security group IDs configured to Bastionhost.
 * `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
