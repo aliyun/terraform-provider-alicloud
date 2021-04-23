@@ -859,7 +859,7 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		request["ResourceGroupId"] = v
 	}
 
-	if request["Engine"] == "PostgreSQL" || request["Engine"] == "MySQL" {
+	if request["Engine"] == "PostgreSQL" || request["Engine"] == "MySQL" || request["Engine"] == "SQLServer" {
 		if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
 			request["EncryptionKey"] = v.(string)
 
