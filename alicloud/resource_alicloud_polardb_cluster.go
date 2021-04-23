@@ -148,6 +148,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"tde_status": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Enable", "Disable"}, false),
+				Optional:     true,
+				Computed:     true,
+			},
 			"tags": tagsSchema(),
 		},
 	}
@@ -334,6 +340,31 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("collector_status")
 	}
 
+	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
+		if d.HasChange("tde_status") {
+			if v, ok := d.GetOk("tde_status"); ok && v.(string) != "Disable" {
+				// init modify TDE request
+				request := polardb.CreateModifyDBClusterTDERequest()
+				request.DBClusterId = d.Id()
+				request.TDEStatus = v.(string)
+				// do handler
+				resp, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+					return polarDBClient.ModifyDBClusterTDE(request)
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+				addDebug(request.GetActionName(), resp, request.RpcRequest, request)
+
+				if err := polarDBService.WaitForPolarDBTDEStatus(d.Id(), "Enabled", DefaultLongTimeout); err != nil {
+					return WrapError(err)
+				}
+
+				d.SetPartial("tde_status")
+			}
+		}
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudPolarDBClusterRead(d, meta)
@@ -477,6 +508,16 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 	d.Set("collector_status", clusterCollectStatus)
 
+	clusterTDEStatus, err := polarDBService.DescribeDBClusterTDE(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if clusterTDEStatus.TDEStatus == "Enabled" {
+		d.Set("tde_status", "Enable")
+	}
+	if clusterTDEStatus.TDEStatus == "Disabled" {
+		d.Set("tde_status", "Disable")
+	}
 	return nil
 }
 
@@ -584,6 +625,13 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (*polar
 		} else {
 			request.AutoRenew = requests.Boolean(strconv.FormatBool(false))
 		}
+	}
+
+	status := d.Get("tde_status").(string)
+	if status == "Enable" {
+		request.TDEStatus = requests.NewBoolean(true)
+	} else {
+		request.TDEStatus = requests.NewBoolean(false)
 	}
 
 	return request, nil

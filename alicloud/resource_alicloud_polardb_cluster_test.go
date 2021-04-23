@@ -267,6 +267,16 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.13,100.69.7.113"),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status": "Enable",
+					}),
+				),
+			},
 		},
 	})
 

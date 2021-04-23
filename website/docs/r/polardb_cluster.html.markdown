@@ -81,7 +81,8 @@ The following arguments are supported:
 * `tags` - (Optional, Available in v1.68.0+) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-
+* `tde_status` - (Optional, Available in 1.122.0git+) turn on TDE encryption. Valid values are `Enable`, `Disabled`. TDE cannot be closed after it is turned on.
+  **NOTE:** `tde_status` cannot modify after created when `db_type` is `PostgreSQL` or `Oracle`.`tde_status` only support modification from `Disable` to `Enable` when `db_type` is `MySQL`.
 -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
 ### Removing alicloud_polardb_cluster from your configuration
