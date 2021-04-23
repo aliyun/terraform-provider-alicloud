@@ -2,7 +2,9 @@
 
 ENHANCEMENTS:
 
+- resource/alicloud_polardb_cluster: Improves the attribute tde_status using standard values [GH-3490]
 - resource/alicloud_db_instance: Supports to encrypt the disk for MSSQL [GH-3486]
+- resource/alicloud_polardb_cluster: Supports new attribute tde_status for PolarDB Mysql [GH-3485]
 - testcase: Skipes ResourceManager testcase while the resource directory is not enabled [GH-3475]
 - docs/alicloud_vswitch: Replaces deprecated availability_zone with zone _id in the all of docs examples [GH-3481]
 - docs: Improves the docs for the attribute period note [GH-3489]

@@ -113,6 +113,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 		"vswitch_id":    CHECKSET,
 		"db_type":       CHECKSET,
 		"db_version":    CHECKSET,
+		"tde_status":    "Disabled",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
@@ -269,11 +270,11 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tde_status": "Enable",
+					"tde_status": "Enabled",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tde_status": "Enable",
+						"tde_status": "Enabled",
 					}),
 				),
 			},

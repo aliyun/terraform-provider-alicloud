@@ -407,7 +407,7 @@ func TestAccAlicloudAdbDbCluster_flexible(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"compute_resource":    "8Core32GB",
-						"elastic_io_resource": "0",
+						"elastic_io_resource": "1",
 						"description":         name,
 						"maintain_time":       "01:00Z-02:00Z",
 						"security_ips.#":      "0",
