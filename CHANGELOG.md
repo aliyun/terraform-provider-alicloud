@@ -1,4 +1,21 @@
-## 1.122.0 (Unreleased)
+## 1.121.3 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_db_instance: Supports to encrypt the disk for MSSQL [GH-3486]
+- testcase: Skipes ResourceManager testcase while the resource directory is not enabled [GH-3475]
+- docs/alicloud_vswitch: Replaces deprecated availability_zone with zone _id in the all of docs examples [GH-3481]
+- ci: Improves the running ci testcase and got failed count [GH-3478]
+- ci: improve ci testcase by adding point-to-point test when there is a merg [GH-3472]
+- ci: Improves the ci-test to get the precise test case [GH-3483]
+
+BUG FIXES:
+
+- datasource/alicloud_nat_gateways: Recovers the ip_lists type to fix the missing expected error [GH-3480]
+- ci: Fixes the ci test bug when running the aliyun oss ls command [GH-3482]
+- ci: Fixes the CI bug and update changelog [GH-3469]
+- ci: improves the test scripts to fix missing parameter bug [GH-3474]
+
 ## 1.121.2 (April 18, 2021)
 
 ENHANCEMENTS:
