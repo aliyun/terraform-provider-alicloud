@@ -41,7 +41,7 @@ The following arguments are supported:
 * `internet_charge_type` - (Optional, ForceNew) Internet charge type of the EIP, Valid values are `PayByBandwidth`, `PayByTraffic`. Default to `PayByBandwidth`. From version `1.7.1`, default to `PayByTraffic`. It is only PayByBandwidth when `instance_charge_type` is PrePaid.
 * `instance_charge_type` - (Optional, ForceNew) Elastic IP instance charge type. Valid values are "PrePaid" and "PostPaid". Default to "PostPaid".
 * `period` - (Optional) The duration that you will buy the resource, in month. It is valid when `instance_charge_type` is `PrePaid`. Valid values: [1-9, 12, 24, 36]. At present, the provider does not support modify "period" and you can do that via web console.
--> **NOTE:** This attribute is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
+-> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `isp` - (Optional, ForceNew, Available in 1.47.0+) The line type of the Elastic IP instance. Default to `BGP`. Other type of the isp need to open a whitelist.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional, Available in 1.58.0+, Modifiable in 1.115.0+) The Id of resource group which the eip belongs.

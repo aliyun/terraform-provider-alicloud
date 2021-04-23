@@ -132,7 +132,7 @@ On other OSs such as Linux, the host name can contain a maximum of 64 characters
 * `period` - (Optional) The duration that you will buy the resource, in month. It is valid when `instance_charge_type` is `PrePaid`. Valid values:
     - [1-9, 12, 24, 36, 48, 60] when `period_unit` in "Month"
     - [1-3] when `period_unit` in "Week"
--> **NOTE:** This attribute is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
+-> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 
 * `renewal_status` - (Optional) Whether to renew an ECS instance automatically or not. It is valid when `instance_charge_type` is `PrePaid`. Default to "Normal". Valid values:
     - `AutoRenewal`: Enable auto renewal.
