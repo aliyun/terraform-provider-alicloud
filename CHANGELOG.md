@@ -14,6 +14,7 @@ ENHANCEMENTS:
 
 BUG FIXES:
 
+- resource/alicloud_adb_db_connection: Adds retry error code IncorrectDBInstanceState to fix deleting adb connection failed error [GH-3491]
 - datasource/alicloud_nat_gateways: Recovers the ip_lists type to fix the missing expected error [GH-3480]
 - ci: Fixes the ci test bug when running the aliyun oss ls command [GH-3482]
 - ci: Fixes the CI bug and update changelog [GH-3469]
