@@ -334,6 +334,10 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 			addDebug(action, response, request)
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, s.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 			templateRecords := response["Parameters"].(map[string]interface{})["TemplateRecord"].([]interface{})
 			for _, para := range templateRecords {
 				para := para.(map[string]interface{})
