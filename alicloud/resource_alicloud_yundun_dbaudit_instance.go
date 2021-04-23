@@ -47,8 +47,6 @@ func resourceAlicloudDbauditInstance() *schema.Resource {
 				Type:         schema.TypeInt,
 				ValidateFunc: validation.IntInSlice([]int{1, 3, 6, 12, 24, 36}),
 				Optional:     true,
-				Default:      1,
-				ForceNew:     true,
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -117,11 +115,11 @@ func resourceAlicloudDbauditInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	d.Set("description", instance.Description)
-	period, err := computePeriodByUnit(instance.StartTime/1000, instance.ExpireTime/1000, d.Get("period").(int), "Month")
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("period", period)
+	//period, err := computePeriodByUnit(instance.StartTime/1000, instance.ExpireTime/1000, d.Get("period").(int), "Month")
+	//if err != nil {
+	//	return WrapError(err)
+	//}
+	//d.Set("period", period)
 	d.Set("plan_code", instance.LicenseCode)
 	d.Set("region_id", client.RegionId)
 	d.Set("vswitch_id", instance.VswitchId)

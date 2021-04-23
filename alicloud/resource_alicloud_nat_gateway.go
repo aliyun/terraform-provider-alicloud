@@ -89,8 +89,6 @@ func resourceAlicloudNatGateway() *schema.Resource {
 			"period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				ForceNew:         true,
-				Default:          1,
 				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
@@ -272,13 +270,13 @@ func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("nat_type", object["NatType"])
 	d.Set("payment_type", convertNatGatewayPaymentTypeResponse(object["InstanceChargeType"].(string)))
 	d.Set("instance_charge_type", object["InstanceChargeType"])
-	if object["InstanceChargeType"] == "PrePaid" {
-		period, err := computePeriodByUnit(object["CreationTime"], object["ExpiredTime"], d.Get("period").(int), "Month")
-		if err != nil {
-			return WrapError(err)
-		}
-		d.Set("period", period)
-	}
+	//if object["InstanceChargeType"] == "PrePaid" {
+	//	period, err := computePeriodByUnit(object["CreationTime"], object["ExpiredTime"], d.Get("period").(int), "Month")
+	//	if err != nil {
+	//		return WrapError(err)
+	//	}
+	//	d.Set("period", period)
+	//}
 	if v, ok := object["SnatTableIds"].(map[string]interface{})["SnatTableId"].([]interface{}); ok {
 		ids := []string{}
 		for _, id := range v {

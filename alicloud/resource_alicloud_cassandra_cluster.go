@@ -91,7 +91,6 @@ func resourceAlicloudCassandraCluster() *schema.Resource {
 			"period": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"period_unit": {
 				Type:     schema.TypeString,
