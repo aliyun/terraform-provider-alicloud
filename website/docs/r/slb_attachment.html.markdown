@@ -65,13 +65,13 @@ resource "alicloud_instance" "default" {
   vswitch_id                 = alicloud_vswitch.default.id
 }
 
-resource "alicloud_slb" "default" {
-  name       = var.name
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name  = var.name
   vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_attachment" "default" {
-  load_balancer_id = alicloud_slb.default.id
+  load_balancer_id = alicloud_slb_load_balancer.default.id
   instance_ids     = [alicloud_instance.default.id]
   weight           = 90
 }

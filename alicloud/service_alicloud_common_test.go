@@ -16,7 +16,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -701,20 +700,47 @@ func (s *SlbService) sweepSlb(id string) error {
 		return nil
 	}
 	log.Printf("[DEBUG] Set SLB DeleteProtection to off before deleting %s ...", id)
-	request := slb.CreateSetLoadBalancerDeleteProtectionRequest()
-	request.LoadBalancerId = id
-	request.DeleteProtection = "off"
-	_, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.SetLoadBalancerDeleteProtection(request)
+	action := "SetLoadBalancerDeleteProtection"
+	request := map[string]interface{}{
+		"RegionId":         s.client.RegionId,
+		"LoadBalancerId":   id,
+		"DeleteProtection": "off",
+	}
+	conn, err := s.client.NewSlbClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	wait := incrementalWait(3*time.Second, 10*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err != nil {
 		log.Printf("[ERROR] Set SLB %s DeleteProtection to off failed.", id)
 	}
 	log.Printf("[DEBUG] Deleting SLB %s ...", id)
-	delRequest := slb.CreateDeleteLoadBalancerRequest()
-	delRequest.LoadBalancerId = id
-	_, err = s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DeleteLoadBalancer(delRequest)
+	delRequest := map[string]interface{}{
+		"RegionId":       s.client.RegionId,
+		"LoadBalancerId": id,
+	}
+	action = "DeleteLoadBalancer"
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, delRequest, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err == nil {
 		time.Sleep(1 * time.Second)
@@ -1204,11 +1230,11 @@ const SlbListenerCommonTestCase = `
 variable "ip_version" {
   default = "ipv4"
 }	
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
   internet_charge_type = "PayByTraffic"
   address_type = "internet"
-  specification = "slb.s1.small"
+  load_balancer_spec = "slb.s1.small"
 }
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
@@ -1270,19 +1296,19 @@ resource "alicloud_instance" "default" {
   vswitch_id = "${alicloud_vswitch.default.id}"
 }
 
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+  load_balancer_spec = "slb.s1.small"
 }
 
 resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   name = "${var.name}"
 }
 
 resource "alicloud_slb_master_slave_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   name = "${var.name}"
   servers {
       server_id = "${alicloud_instance.default.0.id}"

@@ -15,7 +15,7 @@ This data source provides the server load balancer attachments of the current Al
 
 ```
 data "alicloud_slb_attachments" "sample_ds" {
-  load_balancer_id = "${alicloud_slb.sample_slb.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.sample_slb.id}"
 }
 
 output "first_slb_attachment_instance_id" {

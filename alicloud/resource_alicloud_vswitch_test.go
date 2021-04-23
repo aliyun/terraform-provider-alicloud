@@ -23,7 +23,7 @@ func init() {
 		Dependencies: []string{
 			"alicloud_instance",
 			"alicloud_db_instance",
-			"alicloud_slb",
+			"alicloud_slb_load_balancer",
 			"alicloud_ess_scalinggroup",
 			"alicloud_fc_service",
 			"alicloud_cs_kubernetes",

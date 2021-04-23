@@ -34,7 +34,7 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb.default.id}",
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
 					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -82,7 +82,7 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb.default.id}",
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
 					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
 					"weight":           "90",
 					"server_type":      "ecs",
@@ -126,7 +126,7 @@ func TestAccAlicloudSlbAttachment_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb.default.id}",
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
 					"instance_ids":     []string{"${alicloud_instance.default.id}"},
 					"count":            "10",
 				}),
@@ -162,7 +162,7 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb.default.id}",
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
 					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -204,7 +204,7 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb.default.id}",
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
 					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
 					"weight":           "90",
 					"server_type":      "ecs",
@@ -294,10 +294,10 @@ resource "alicloud_network_interface_attachment" "default" {
     instance_id = "${alicloud_instance.new.0.id}"
     network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
 }
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  specification  = "slb.s2.small"
+  load_balancer_spec  = "slb.s2.small"
 }
 `, name)
 }
@@ -346,10 +346,10 @@ resource "alicloud_instance" "default" {
   vswitch_id = "${alicloud_vswitch.default.id}"
   availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
 }
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+  load_balancer_spec = "slb.s1.small"
 }
 `, name)
 }
@@ -425,9 +425,9 @@ resource "alicloud_network_interface_attachment" "default" {
     instance_id = "${alicloud_instance.new.0.id}"
     network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
 }
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  specification  = "slb.s2.small"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
+  load_balancer_spec  = "slb.s2.small"
 }
 `, name)
 }

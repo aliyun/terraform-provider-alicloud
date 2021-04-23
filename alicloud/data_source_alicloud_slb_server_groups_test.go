@@ -117,14 +117,14 @@ resource "alicloud_security_group" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+  load_balancer_spec = "slb.s1.small"
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   backend_port = 80
   frontend_port = 80
   protocol = "http"
@@ -161,7 +161,7 @@ resource "alicloud_instance" "default" {
 }
 
 resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   name = "${var.name}"
   servers {
       server_ids = ["${alicloud_instance.default.id}"]
@@ -171,7 +171,7 @@ resource "alicloud_slb_server_group" "default" {
 }
 
 resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   frontend_port = "${alicloud_slb_listener.default.frontend_port}"
   name = "${var.name}"
   domain = "*.aliyun.com"

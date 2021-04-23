@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_slb
 
+-> **DEPRECATED:** This resource has been renamed to [alicloud_slb_load_balancer](https://www.terraform.io/docs/providers/alicloud/r/slb_load_balancer.html) from version 1.124.0.
+
 Provides an Application Load Balancer resource.
 
 -> **NOTE:** At present, to avoid some unnecessary regulation confusion, SLB can not support alicloud international account to create "paybybandwidth" instance.
@@ -107,5 +109,5 @@ The following attributes are exported:
 Load balancer can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_slb.example lb-abc123456
+$ terraform import alicloud_slb_load_balancer.example lb-abc123456
 ```

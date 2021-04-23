@@ -919,7 +919,7 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "Slb"
-          SWEEPER_CODE: "alicloud_slb"
+          SWEEPER_CODE: "alicloud_slb_load_balancer"
 
   - name: Snat
     plan:

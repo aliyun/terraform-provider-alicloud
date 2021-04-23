@@ -83,10 +83,10 @@ resource "alicloud_vswitch" "default" {
   name = "${var.name}"
 }
 
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+  load_balancer_spec = "slb.s1.small"
 }
 
 resource "alicloud_security_group" "default" {
@@ -108,7 +108,7 @@ resource "alicloud_instance" "default" {
 }
 
 resource "alicloud_slb_attachment" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   instance_ids = ["${alicloud_instance.default.id}"]
   weight = 42
 }

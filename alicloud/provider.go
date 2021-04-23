@@ -163,7 +163,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ram_policies":                                dataSourceAlicloudRamPolicies(),
 			"alicloud_security_groups":                             dataSourceAlicloudSecurityGroups(),
 			"alicloud_security_group_rules":                        dataSourceAlicloudSecurityGroupRules(),
-			"alicloud_slbs":                                        dataSourceAlicloudSlbs(),
+			"alicloud_slbs":                                        dataSourceAlicloudSlbLoadBalancers(),
 			"alicloud_slb_attachments":                             dataSourceAlicloudSlbAttachments(),
 			"alicloud_slb_backend_servers":                         dataSourceAlicloudSlbBackendServers(),
 			"alicloud_slb_listeners":                               dataSourceAlicloudSlbListeners(),
@@ -412,6 +412,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_disks":                                   dataSourceAlicloudEcsDisks(),
 			"alicloud_ddoscoo_domain_resources":                    dataSourceAlicloudDdoscooDomainResources(),
 			"alicloud_ddoscoo_ports":                               dataSourceAlicloudDdoscooPorts(),
+			"alicloud_slb_load_balancers":                          dataSourceAlicloudSlbLoadBalancers(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -471,7 +472,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_forward_entry":                 resourceAlicloudForwardEntry(),
 			"alicloud_eip":                           resourceAliyunEip(),
 			"alicloud_eip_association":               resourceAliyunEipAssociation(),
-			"alicloud_slb":                           resourceAliyunSlb(),
+			"alicloud_slb":                           resourceAlicloudSlbLoadBalancer(),
 			"alicloud_slb_listener":                  resourceAliyunSlbListener(),
 			"alicloud_slb_attachment":                resourceAliyunSlbAttachment(),
 			"alicloud_slb_backend_server":            resourceAliyunSlbBackendServer(),
@@ -736,6 +737,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_auto_snapshot_policy_attachment":        resourceAlicloudEcsAutoSnapshotPolicyAttachment(),
 			"alicloud_ddoscoo_domain_resource":                    resourceAlicloudDdoscooDomainResource(),
 			"alicloud_ddoscoo_port":                               resourceAlicloudDdoscooPort(),
+			"alicloud_slb_load_balancer":                          resourceAlicloudSlbLoadBalancer(),
 		},
 
 		ConfigureFunc: providerConfigure,

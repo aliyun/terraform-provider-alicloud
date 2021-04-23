@@ -67,7 +67,7 @@ func TestAccAlicloudCmsMonitorGroupInstances_basic(t *testing.T) {
 						},
 						{
 							"category":      "slb",
-							"instance_id":   "${alicloud_slb.default1.id}",
+							"instance_id":   "${alicloud_slb_load_balancer.default1.id}",
 							"instance_name": "tf-testacccmsslb1",
 							"region_id":     os.Getenv("ALICLOUD_REGION"),
 						},
@@ -105,14 +105,14 @@ data "alicloud_vpcs" "default" {
 data "alicloud_vswitches" "default" {
   ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
 }
-resource "alicloud_slb" "default" {
-  name = var.name
-  specification = "slb.s2.small"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = var.name
+  load_balancer_spec = "slb.s2.small"
   vswitch_id = data.alicloud_vswitches.default.ids.0
 }
-resource "alicloud_slb" "default1" {
-  name = "${var.name}1"
-  specification = "slb.s2.small"
+resource "alicloud_slb_load_balancer" "default1" {
+  load_balancer_name = "${var.name}1"
+  load_balancer_spec = "slb.s2.small"
   vswitch_id = data.alicloud_vswitches.default.ids.0
 }
 `, name)
