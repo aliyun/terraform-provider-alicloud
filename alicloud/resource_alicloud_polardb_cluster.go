@@ -150,9 +150,9 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"tde_status": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Enable", "Disable"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Enabled", "Disabled"}, false),
 				Optional:     true,
-				Computed:     true,
+				Default:      "Disabled",
 			},
 			"tags": tagsSchema(),
 		},
@@ -342,11 +342,11 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 
 	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
 		if d.HasChange("tde_status") {
-			if v, ok := d.GetOk("tde_status"); ok && v.(string) != "Disable" {
+			if v, ok := d.GetOk("tde_status"); ok && v.(string) != "Disabled" {
 				// init modify TDE request
 				request := polardb.CreateModifyDBClusterTDERequest()
 				request.DBClusterId = d.Id()
-				request.TDEStatus = v.(string)
+				request.TDEStatus = convertPolarDBTdeStatusUpdateRequest(v.(string))
 				// do handler
 				resp, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 					return polarDBClient.ModifyDBClusterTDE(request)
@@ -512,12 +512,7 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapError(err)
 	}
-	if clusterTDEStatus.TDEStatus == "Enabled" {
-		d.Set("tde_status", "Enable")
-	}
-	if clusterTDEStatus.TDEStatus == "Disabled" {
-		d.Set("tde_status", "Disable")
-	}
+	d.Set("tde_status", clusterTDEStatus.TDEStatus)
 	return nil
 }
 
@@ -627,12 +622,23 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (*polar
 		}
 	}
 
-	status := d.Get("tde_status").(string)
-	if status == "Enable" {
-		request.TDEStatus = requests.NewBoolean(true)
-	} else {
-		request.TDEStatus = requests.NewBoolean(false)
-	}
+	request.TDEStatus = requests.NewBoolean(convertPolarDBTdeStatusCreateRequest(d.Get("tde_status").(string)))
 
 	return request, nil
+}
+
+func convertPolarDBTdeStatusCreateRequest(source string) bool {
+	switch source {
+	case "Enabled":
+		return true
+	}
+	return false
+}
+
+func convertPolarDBTdeStatusUpdateRequest(source string) string {
+	switch source {
+	case "Enabled":
+		return "Enable"
+	}
+	return "Disable"
 }

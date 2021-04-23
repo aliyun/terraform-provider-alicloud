@@ -78,11 +78,11 @@ The following arguments are supported:
 * `description` - (Optional) The description of cluster.
 * `collector_status` - (Optional, Available in 1.114.0+) Specifies whether to enable or disable SQL data collector. Valid values are `Enable`, `Disabled`.
 * `parameters` - (Optional) Set of parameters needs to be set after DB cluster was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/98122.htm) .
-* `tags` - (Optional, Available in v1.68.0+) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available in 1.68.0+) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-* `tde_status` - (Optional, Available in 1.122.0git+) turn on TDE encryption. Valid values are `Enable`, `Disabled`. TDE cannot be closed after it is turned on.
-  **NOTE:** `tde_status` cannot modify after created when `db_type` is `PostgreSQL` or `Oracle`.`tde_status` only support modification from `Disable` to `Enable` when `db_type` is `MySQL`.
+* `tde_status` - (Optional, Available in 1.121.3+) turn on TDE encryption. Valid values are `Enabled`, `Disabled`. Default to `Disabled`. TDE cannot be closed after it is turned on.
+  **NOTE:** `tde_status` cannot modify after created when `db_type` is `PostgreSQL` or `Oracle`.`tde_status` only support modification from `Disabled` to `Enabled` when `db_type` is `MySQL`.
 -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
 ### Removing alicloud_polardb_cluster from your configuration
