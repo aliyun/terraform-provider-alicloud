@@ -54,44 +54,48 @@ for fileName in ${diffFiles[@]};
 do
     echo -e "\nchecking diff file $fileName ..."
     if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* ]];then
-        if [[ ${fileName} != *?_test.go ]]; then
-            fileName=(${fileName//\.go/_test\.go })
+        if [[ ${fileName} == *?_test.go ]]; then
+            echo -e "skipping the file $fileName, continue..."
+            continue
         fi
+        fileName=(${fileName//\.go/_test\.go })
         checkFuncs=$(grep "func TestAcc.*" ${fileName})
         echo -e "found the test funcs:\n${checkFuncs}\n"
-        testFuncNameRaw=${checkFuncs[0]}
-        testFuncNameFirstFilter=${testFuncNameRaw:5}
-        testFuncNameSecondFilter=(${testFuncNameFirstFilter//(/ })
-        arr=(${testFuncNameSecondFilter//_/ })
-        TEST_CASE_CODE=${arr[0]}
-        go clean -cache -modcache -i -r
-        echo -e "TF_ACC=1 go test ./alicloud -v -run=${arr[0]} -timeout=1200m"
-        TF_ACC=1 go test ./alicloud -v -run=${arr[0]} -timeout=1200m | {
-        while read LINE
+        funcs=(${checkFuncs//"(t *testing.T) {"/ })
+        for func in ${funcs[@]};
         do
-            echo -e "$LINE"
-            FAIL_FLAG=false
-            if [[ $LINE == "--- FAIL: "* || ${LINE} == "FAIL"* ]]; then
-                FAILED_COUNT=$((${FAILED_COUNT}+1))
-                FAIL_FLAG=true
-            fi
-            if [[ $LINE == "panic: "* ]]; then
-                FAILED_COUNT=$((${FAILED_COUNT}+1))
-                FAIL_FLAG=true
-                break
-            fi
+          if [[ ${func} != "TestAcc"* ]]; then
+            continue
+          fi
+          go clean -cache -modcache -i -r
+          echo -e "TF_ACC=1 go test ./alicloud -v -run=${func} -timeout=1200m"
+          TF_ACC=1 go test ./alicloud -v -run=${func} -timeout=1200m | {
+          while read LINE
+          do
+              echo -e "$LINE"
+              if [[ $LINE == "--- FAIL: "* || ${LINE} == "FAIL"* ]]; then
+                  FAILED_COUNT=$((${FAILED_COUNT}+1))
+              fi
+              if [[ $LINE == "panic: "* ]]; then
+                  FAILED_COUNT=$((${FAILED_COUNT}+1))
+                  break
+              fi
+          done
+          # send child var to an failed file
+          if [[ $FAILED_COUNT -gt 0 ]]; then
+            echo -e "record the failed count $FAILED_COUNT into a temp file"
+            echo $FAILED_COUNT > failed.txt
+          fi
+          }
         done
-        # send child var to an temp file
-        echo $FAILED_COUNT > temp.txt
-        }
         echo -e "finished"
     fi
 done
 
-# read var from temp file and remove this file
-read FAILED_COUNT < temp.txt
+# read var from failed file and remove this file
+read FAILED_COUNT < failed.txt
 echo -e "There gets $FAILED_COUNT failed testcase."
-rm -rf temp.txt
+rm -rf failed.txt
 
 # Notify Ding Talk if failed
 if [[ $FAILED_COUNT -gt 0 ]]; then
