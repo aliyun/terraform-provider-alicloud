@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -85,6 +86,9 @@ type RuntimeObject struct {
 	HttpsProxy     *string                `json:"httpsProxy" xml:"httpsProxy"`
 	NoProxy        *string                `json:"noProxy" xml:"noProxy"`
 	MaxIdleConns   *int                   `json:"maxIdleConns" xml:"maxIdleConns"`
+	Key            *string                `json:"key" xml:"key"`
+	Cert           *string                `json:"cert" xml:"cert"`
+	CA             *string                `json:"ca" xml:"ca"`
 	Socks5Proxy    *string                `json:"socks5Proxy" xml:"socks5Proxy"`
 	Socks5NetWork  *string                `json:"socks5NetWork" xml:"socks5NetWork"`
 	Listener       utils.ProgressListener `json:"listener" xml:"listener"`
@@ -123,6 +127,9 @@ func NewRuntimeObject(runtime map[string]interface{}) *RuntimeObject {
 		MaxIdleConns:   TransInterfaceToInt(runtime["maxIdleConns"]),
 		Socks5Proxy:    TransInterfaceToString(runtime["socks5Proxy"]),
 		Socks5NetWork:  TransInterfaceToString(runtime["socks5NetWork"]),
+		Key:            TransInterfaceToString(runtime["key"]),
+		Cert:           TransInterfaceToString(runtime["cert"]),
+		CA:             TransInterfaceToString(runtime["ca"]),
 	}
 	if runtime["listener"] != nil {
 		runtimeObject.Listener = runtime["listener"].(utils.ProgressListener)
@@ -202,7 +209,7 @@ func (err *CastError) Error() string {
 // Convert is use convert map[string]interface object to struct
 func Convert(in interface{}, out interface{}) error {
 	byt, _ := json.Marshal(in)
-	err := json.Unmarshal(byt, out)
+	err := jsonParser.Unmarshal(byt, out)
 	return err
 }
 
@@ -264,20 +271,9 @@ func DoRequest(request *Request, requestRuntime map[string]interface{}) (respons
 		request.Protocol = String(strings.ToLower(StringValue(request.Protocol)))
 	}
 
-	if StringValue(request.Protocol) == "http" {
-		request.Port = Int(80)
-	} else if StringValue(request.Protocol) == "https" {
-		request.Port = Int(443)
-	}
-
 	requestURL := ""
 	request.Domain = request.Headers["host"]
-	matched, _ := regexp.MatchString(":", StringValue(request.Domain))
-	if matched {
-		requestURL = fmt.Sprintf("%s://%s%s", StringValue(request.Protocol), StringValue(request.Domain), StringValue(request.Pathname))
-	} else {
-		requestURL = fmt.Sprintf("%s://%s:%d%s", StringValue(request.Protocol), StringValue(request.Domain), IntValue(request.Port), StringValue(request.Pathname))
-	}
+	requestURL = fmt.Sprintf("%s://%s%s", StringValue(request.Protocol), StringValue(request.Domain), StringValue(request.Pathname))
 	queryParams := request.Query
 	// sort QueryParams by key
 	q := url.Values{}
@@ -367,8 +363,29 @@ func getHttpTransport(req *Request, runtime *RuntimeObject) (*http.Transport, er
 	if err != nil {
 		return nil, err
 	}
-	trans.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: BoolValue(runtime.IgnoreSSL),
+	if strings.ToLower(*req.Protocol) == "https" &&
+		runtime.Key != nil && runtime.Cert != nil {
+		cert, err := tls.X509KeyPair([]byte(StringValue(runtime.Cert)), []byte(StringValue(runtime.Key)))
+		if err != nil {
+			return nil, err
+		}
+
+		trans.TLSClientConfig = &tls.Config{
+			Certificates:       []tls.Certificate{cert},
+			InsecureSkipVerify: BoolValue(runtime.IgnoreSSL),
+		}
+		if runtime.CA != nil {
+			clientCertPool := x509.NewCertPool()
+			ok := clientCertPool.AppendCertsFromPEM([]byte(StringValue(runtime.CA)))
+			if !ok {
+				return nil, errors.New("Failed to parse root certificate")
+			}
+			trans.TLSClientConfig.RootCAs = clientCertPool
+		}
+	} else {
+		trans.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: BoolValue(runtime.IgnoreSSL),
+		}
 	}
 	if httpProxy != nil {
 		trans.Proxy = http.ProxyURL(httpProxy)
@@ -397,7 +414,7 @@ func getHttpTransport(req *Request, runtime *RuntimeObject) (*http.Transport, er
 				&net.Dialer{
 					Timeout:   time.Duration(IntValue(runtime.ConnectTimeout)) * time.Millisecond,
 					DualStack: true,
-					LocalAddr: getLocalAddr(StringValue(runtime.LocalAddr), IntValue(req.Port)),
+					LocalAddr: getLocalAddr(StringValue(runtime.LocalAddr)),
 				})
 			if err != nil {
 				return nil, err
@@ -405,7 +422,7 @@ func getHttpTransport(req *Request, runtime *RuntimeObject) (*http.Transport, er
 			trans.Dial = dialer.Dial
 		}
 	} else {
-		trans.DialContext = setDialContext(runtime, IntValue(req.Port))
+		trans.DialContext = setDialContext(runtime)
 	}
 	return trans, nil
 }
@@ -493,22 +510,20 @@ func getSocks5Proxy(runtime *RuntimeObject) (proxy *url.URL, err error) {
 	return proxy, err
 }
 
-func getLocalAddr(localAddr string, port int) (addr *net.TCPAddr) {
+func getLocalAddr(localAddr string) (addr *net.TCPAddr) {
 	if localAddr != "" {
 		addr = &net.TCPAddr{
-			Port: port,
-			IP:   []byte(localAddr),
+			IP: []byte(localAddr),
 		}
 	}
 	return addr
 }
 
-func setDialContext(runtime *RuntimeObject, port int) func(cxt context.Context, net, addr string) (c net.Conn, err error) {
+func setDialContext(runtime *RuntimeObject) func(cxt context.Context, net, addr string) (c net.Conn, err error) {
 	return func(ctx context.Context, network, address string) (net.Conn, error) {
 		if runtime.LocalAddr != nil && StringValue(runtime.LocalAddr) != "" {
 			netAddr := &net.TCPAddr{
-				Port: port,
-				IP:   []byte(StringValue(runtime.LocalAddr)),
+				IP: []byte(StringValue(runtime.LocalAddr)),
 			}
 			return (&net.Dialer{
 				Timeout:   time.Duration(IntValue(runtime.ConnectTimeout)) * time.Second,
@@ -698,7 +713,9 @@ func structToMap(dataValue reflect.Value) map[string]interface{} {
 		if !fieldValue.IsValid() || fieldValue.IsNil() {
 			continue
 		}
-		if field.Type.Kind().String() == "struct" {
+		if field.Type.String() == "io.Reader" || field.Type.String() == "io.Writer" {
+			continue
+		} else if field.Type.Kind().String() == "struct" {
 			out[name] = structToMap(fieldValue)
 		} else if field.Type.Kind().String() == "ptr" &&
 			field.Type.Elem().Kind().String() == "struct" {
@@ -931,7 +948,8 @@ func checkRequire(field reflect.StructField, valueField reflect.Value) error {
 func checkPattern(field reflect.StructField, valueField reflect.Value, tag string) error {
 	if valueField.IsValid() && valueField.String() != "" {
 		value := valueField.String()
-		if match, _ := regexp.MatchString(tag, value); !match { // Determines whether the parameter value satisfies the regular expression or not, and throws an error
+		r, _ := regexp.Compile("^" + tag + "$")
+		if match := r.MatchString(value); !match { // Determines whether the parameter value satisfies the regular expression or not, and throws an error
 			return errors.New(value + " is not matched " + tag)
 		}
 	}
@@ -1080,4 +1098,12 @@ func TransInterfaceToString(val interface{}) *string {
 func Prettify(i interface{}) string {
 	resp, _ := json.MarshalIndent(i, "", "   ")
 	return string(resp)
+}
+
+func ToInt(a *int32) *int {
+	return Int(int(Int32Value(a)))
+}
+
+func ToInt32(a *int) *int32 {
+	return Int32(int32(IntValue(a)))
 }
