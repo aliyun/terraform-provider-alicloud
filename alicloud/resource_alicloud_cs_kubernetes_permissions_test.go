@@ -109,6 +109,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   service_cidr                 = "172.21.0.0/20"
   worker_vswitch_ids           = ["${alicloud_vswitch.default.id}"]
   worker_instance_types        = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+  depends_on                     = ["alicloud_ram_user_policy_attachment.attach"]
 }
 
 # Create a new RAM user.
@@ -130,7 +131,7 @@ resource "alicloud_ram_policy" "policy" {
         "Action":"cs:Get*",
         "Effect":"Allow",
         "Resource":[
-            "acs:cs:*:*:cluster/${alicloud_cs_managed_kubernetes.default.0.id}"
+            "*"
         ]
       }
     ],
