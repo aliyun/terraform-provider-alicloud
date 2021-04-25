@@ -249,9 +249,9 @@ func AssertAsMap(a interface{}) map[string]interface{} {
 	}
 
 	res := make(map[string]interface{})
-	tmp := r.MapRange()
-	for tmp.Next() {
-		res[tmp.Key().String()] = tmp.Value().Interface()
+	tmp := r.MapKeys()
+	for _, key := range tmp {
+		res[key.String()] = r.MapIndex(key).Interface()
 	}
 
 	return res
@@ -321,13 +321,34 @@ func AssertAsReadable(a interface{}) io.Reader {
 	return res
 }
 
+func AssertAsArray(a interface{}) []interface{} {
+	r := reflect.ValueOf(a)
+	if r.Kind().String() != "array" && r.Kind().String() != "slice" {
+		panic(fmt.Sprintf("%v is not a [x]interface{}", a))
+	}
+	aLen := r.Len()
+	res := make([]interface{}, 0)
+	for i := 0; i < aLen; i++ {
+		res = append(res, r.Index(i).Interface())
+	}
+	return res
+}
+
 func ParseJSON(a *string) interface{} {
-	tmp := make(map[string]interface{})
+	mapTmp := make(map[string]interface{})
 	d := json.NewDecoder(bytes.NewReader([]byte(tea.StringValue(a))))
 	d.UseNumber()
-	err := d.Decode(&tmp)
+	err := d.Decode(&mapTmp)
 	if err == nil {
-		return tmp
+		return mapTmp
+	}
+
+	sliceTmp := make([]interface{}, 0)
+	d = json.NewDecoder(bytes.NewReader([]byte(tea.StringValue(a))))
+	d.UseNumber()
+	err = d.Decode(&sliceTmp)
+	if err == nil {
+		return sliceTmp
 	}
 
 	if num, err := strconv.Atoi(tea.StringValue(a)); err == nil {
@@ -401,9 +422,10 @@ func Is5xx(code *int) *bool {
 	return tea.Bool(tmp >= 500 && tmp < 600)
 }
 
-func Sleep(millisecond *int) {
+func Sleep(millisecond *int) error {
 	ms := tea.IntValue(millisecond)
 	time.Sleep(time.Duration(ms) * time.Millisecond)
+	return nil
 }
 
 func ToArray(in interface{}) []map[string]interface{} {

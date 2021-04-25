@@ -14,9 +14,17 @@ github.com/PaesslerAG/jsonpath
 github.com/Sirupsen/logrus
 # github.com/agext/levenshtein v1.2.2
 github.com/agext/levenshtein
+# github.com/alibabacloud-go/cs-20151215/v2 v2.4.1
+github.com/alibabacloud-go/cs-20151215/v2/client
+# github.com/alibabacloud-go/darabonba-openapi v0.1.5
+github.com/alibabacloud-go/darabonba-openapi/client
 # github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68
 github.com/alibabacloud-go/debug/debug
-# github.com/alibabacloud-go/tea v1.1.10
+# github.com/alibabacloud-go/endpoint-util v1.1.0
+github.com/alibabacloud-go/endpoint-util/service
+# github.com/alibabacloud-go/openapi-util v0.0.7
+github.com/alibabacloud-go/openapi-util/service
+# github.com/alibabacloud-go/tea v1.1.15
 github.com/alibabacloud-go/tea/tea
 github.com/alibabacloud-go/tea/utils
 # github.com/alibabacloud-go/tea-roa v1.2.8
@@ -27,7 +35,7 @@ github.com/alibabacloud-go/tea-roa-utils/service
 github.com/alibabacloud-go/tea-rpc/client
 # github.com/alibabacloud-go/tea-rpc-utils v1.1.2
 github.com/alibabacloud-go/tea-rpc-utils/service
-# github.com/alibabacloud-go/tea-utils v1.3.6
+# github.com/alibabacloud-go/tea-utils v1.3.9
 github.com/alibabacloud-go/tea-utils/service
 # github.com/aliyun/alibaba-cloud-sdk-go v1.61.890
 github.com/aliyun/alibaba-cloud-sdk-go/sdk
@@ -317,7 +325,7 @@ github.com/hashicorp/yamux
 github.com/imdario/mergo
 # github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 github.com/jmespath/go-jmespath
-# github.com/json-iterator/go v1.1.8
+# github.com/json-iterator/go v1.1.10
 github.com/json-iterator/go
 # github.com/keybase/go-crypto v0.0.0-20190416182011-b785b22cc757
 github.com/keybase/go-crypto/brainpool
@@ -380,6 +388,8 @@ github.com/spf13/afero
 github.com/spf13/afero/mem
 # github.com/spf13/pflag v1.0.3
 github.com/spf13/pflag
+# github.com/tjfoc/gmsm v1.3.2
+github.com/tjfoc/gmsm/sm3
 # github.com/ulikunitz/xz v0.5.5
 github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
