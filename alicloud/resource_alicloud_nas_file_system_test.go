@@ -67,7 +67,7 @@ func testSweepNasFileSystem(region string) error {
 				}
 			}
 			if skip {
-				log.Printf("[INFO] Skipping FileSystem: %s (%s)", description, item["FileSystemId"].(string))
+				log.Printf("[INFO] Skipping FileSystem: %s (%s)", description, item["FileSystemId"])
 				continue
 			}
 			// 删除 fileSystem 时需要先删除其挂载关系

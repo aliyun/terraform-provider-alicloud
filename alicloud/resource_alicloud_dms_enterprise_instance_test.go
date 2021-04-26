@@ -80,7 +80,7 @@ func testSweepDMSEnterpriseInstances(region string) error {
 				continue
 			}
 			sweeped = true
-			action = "DeleteInstance"
+			action := "DeleteInstance"
 			request := map[string]interface{}{
 				"Host": item["Host"],
 				"Port": item["Port"],

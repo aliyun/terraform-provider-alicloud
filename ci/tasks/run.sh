@@ -199,5 +199,6 @@ if [[ ${ALICLOUD_REGION} != "cn-"* ]]; then
   wget https://github.com/concourse/concourse/releases/download/v5.0.1/fly-5.0.1-linux-amd64.tgz
   tar -xzf fly-5.0.1-linux-amd64.tgz
   ./fly -t ${CONCOURSE_TARGET} login -c ${CONCOURSE_TARGET_URL} -u ${CONCOURSE_TARGET_USER} -p ${CONCOURSE_TARGET_PASSWORD}
+  echo -e "\n./fly -t ${CONCOURSE_TARGET} trigger-job --job ${CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME}/${TEST_CASE_CODE}"
   ./fly -t ${CONCOURSE_TARGET} trigger-job --job ${CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME}/${TEST_CASE_CODE}
 fi
