@@ -2,7 +2,9 @@ package alicloud
 
 import (
 	cs "github.com/alibabacloud-go/cs-20151215/v2/client"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -57,7 +59,12 @@ func dataSourceAlicloudCSKubernetesPermissions() *schema.Resource {
 }
 
 func dataAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta interface{}) error {
-	client, err := initCsClient(meta)
+	client, err := cs.NewClient(&openapi.Config{
+		AccessKeyId:     String(meta.(*connectivity.AliyunClient).AccessKey),
+		AccessKeySecret: String(meta.(*connectivity.AliyunClient).SecretKey),
+		RegionId:        String(meta.(*connectivity.AliyunClient).RegionId),
+		Endpoint:        String(connectivity.OpenAckService),
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
 	}

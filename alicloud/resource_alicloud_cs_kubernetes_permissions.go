@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -75,7 +76,12 @@ func resourceAlicloudCSKubernetesPermissions() *schema.Resource {
 }
 
 func resourceAlicloudCSKubernetesPermissionsCreate(d *schema.ResourceData, meta interface{}) error {
-	client, err := initCsClient(meta)
+	client, err := cs.NewClient(&openapi.Config{
+		AccessKeyId:     String(meta.(*connectivity.AliyunClient).AccessKey),
+		AccessKeySecret: String(meta.(*connectivity.AliyunClient).SecretKey),
+		RegionId:        String(meta.(*connectivity.AliyunClient).RegionId),
+		Endpoint:        String(connectivity.OpenAckService),
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
 	}
@@ -98,26 +104,19 @@ func resourceAlicloudCSKubernetesPermissionsCreate(d *schema.ResourceData, meta 
 }
 
 func resourceAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta interface{}) error {
-	client, err := initCsClient(meta)
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
-	}
-
-	// Query existing permissions, DescribeUserPermission
-	uid := d.Get("uid").(string)
-	_, _ = describeUserPermission(client, uid)
-	//if _err != nil {
-	//	return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DescribeUserPermission", err)
-	//}
-
-	_ = d.Set("uid", uid)
+	_ = d.Set("uid", d.Id())
 	return nil
 }
 
 func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true)
 
-	client, err := initCsClient(meta)
+	client, err := cs.NewClient(&openapi.Config{
+		AccessKeyId:     String(meta.(*connectivity.AliyunClient).AccessKey),
+		AccessKeySecret: String(meta.(*connectivity.AliyunClient).SecretKey),
+		RegionId:        String(meta.(*connectivity.AliyunClient).RegionId),
+		Endpoint:        String(connectivity.OpenAckService),
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
 	}
@@ -128,6 +127,38 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 	// If other permissions of the cluster already exist, they will replace the existing permissions, and they will be added if they do not exist.
 	// Keep other existing cluster permissions.
 	if d.HasChange("permissions") {
+		oldValue, newValue := d.GetChange("permissions")
+		o, ok := oldValue.([]interface{})
+		if ok != true {
+			return WrapErrorf(fmt.Errorf("permissions old value can not be parsed"), "parseError %d", oldValue)
+		}
+		n, ok := newValue.([]interface{})
+		if ok != true {
+			return WrapErrorf(fmt.Errorf("permissions old value can not be parsed"), "parseError %d", oldValue)
+		}
+
+		// Remove all clusters permission
+		if len(n) == 0 {
+			err := grantPermissions(client, uid, []*cs.GrantPermissionsRequestBody{})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveAllClustersPermissions", err)
+			}
+			d.Partial(false)
+			return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
+		}
+
+		// Remove some clusters permission
+		if len(n) > 0 && len(n) < len(o) {
+			// get difference cluster of permissions
+			clusters := difference(parseClusterIds(o), parseClusterIds(n))
+			err := grantPermissionsForDeleteSomeClusterPerms(client, uid, clusters)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveSomeClustersPermissions", err)
+			}
+			d.Partial(false)
+			return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
+		}
+		// update user permissions
 		updatePermissionsRequest := buildPermissionArgs(d)
 		err := grantPermissionsForUpdateSomeClusterPerms(client, uid, updatePermissionsRequest)
 		if err != nil {
@@ -145,12 +176,17 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 }
 
 func resourceAlicloudCSKubernetesPermissionsDelete(d *schema.ResourceData, meta interface{}) error {
-	client, err := initCsClient(meta)
+	client, err := cs.NewClient(&openapi.Config{
+		AccessKeyId:     String(meta.(*connectivity.AliyunClient).AccessKey),
+		AccessKeySecret: String(meta.(*connectivity.AliyunClient).SecretKey),
+		RegionId:        String(meta.(*connectivity.AliyunClient).RegionId),
+		Endpoint:        String(connectivity.OpenAckService),
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
 	}
 
-	uid := d.Get("uid").(string)
+	uid := d.Id()
 
 	// Remove up all permissions owned by the user
 	err = grantPermissions(client, uid, []*cs.GrantPermissionsRequestBody{})
@@ -158,19 +194,6 @@ func resourceAlicloudCSKubernetesPermissionsDelete(d *schema.ResourceData, meta 
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveUserPermissions", err)
 	}
 	return nil
-}
-
-func initCsClient(meta interface{}) (*cs.Client, error) {
-	config := new(openapi.Config)
-	config.SetAccessKeyId(meta.(*connectivity.AliyunClient).AccessKey).
-		SetAccessKeySecret(meta.(*connectivity.AliyunClient).SecretKey).
-		SetRegionId(meta.(*connectivity.AliyunClient).RegionId).
-		SetEndpoint(connectivity.OpenAckService)
-	client, err := cs.NewClient(config)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
 }
 
 func buildPermissionArgs(d *schema.ResourceData) []*cs.GrantPermissionsRequestBody {
@@ -317,4 +340,67 @@ func grantPermissionsForUpdateSomeClusterPerms(client *cs.Client, uid string, bo
 		return err
 	}
 	return nil
+}
+
+func grantPermissionsForDeleteSomeClusterPerms(client *cs.Client, uid string, clusters []string) error {
+	describePerms, err := describeUserPermission(client, uid)
+	if err != nil {
+		return err
+	}
+	existPerms := convertDescribePermissionsToGrantPermissionsRequestBody(describePerms)
+	var newPerms []*cs.GrantPermissionsRequestBody
+	toDeleteClusterMap := map[string]bool{}
+	for _, c := range clusters {
+		toDeleteClusterMap[c] = true
+	}
+	for _, p := range existPerms {
+		p := p
+		cluster := tea.StringValue(p.Cluster)
+		if !toDeleteClusterMap[cluster] {
+			newPerms = append(newPerms, p)
+		}
+	}
+
+	req := &cs.GrantPermissionsRequest{
+		Body: newPerms,
+	}
+	_, err = client.GrantPermissions(tea.String(uid), req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func parseClusterIds(perms []interface{}) []string {
+	var clusters []string
+	for _, v := range perms {
+		m := v.(map[string]interface{})
+		clusters = append(clusters, m["cluster"].(string))
+	}
+	return clusters
+}
+
+func difference(slice1 []string, slice2 []string) []string {
+	var diff []string
+
+	for i := 0; i < 2; i++ {
+		for _, s1 := range slice1 {
+			found := false
+			for _, s2 := range slice2 {
+				if s1 == s2 {
+					found = true
+					break
+				}
+			}
+			if !found {
+				diff = append(diff, s1)
+			}
+		}
+		if i == 0 {
+			slice1, slice2 = slice2, slice1
+		}
+	}
+
+	return diff
 }

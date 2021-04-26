@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -15,7 +17,12 @@ func TestAccAlicloudCSKubernetesPermissions_basic(t *testing.T) {
 	var v []*cs.GrantPermissionsRequestBody
 	resourceId := "alicloud_cs_kubernetes_permissions.default"
 	serviceFunc := func() interface{} {
-		client, _ := initCsClient(testAccProvider.Meta())
+		client, _ := cs.NewClient(&openapi.Config{
+			AccessKeyId:     String(testAccProvider.Meta().(*connectivity.AliyunClient).AccessKey),
+			AccessKeySecret: String(testAccProvider.Meta().(*connectivity.AliyunClient).SecretKey),
+			RegionId:        String(testAccProvider.Meta().(*connectivity.AliyunClient).RegionId),
+			Endpoint:        String(connectivity.OpenAckService),
+		})
 		return &CsClient{client}
 	}
 
@@ -78,7 +85,7 @@ data "alicloud_zones" default {
 }
 
 data "alicloud_instance_types" "default" {
-	availability_zone          = "${data.alicloud_zones.default.zones.0.id}"
+	availability_zone          = data.alicloud_zones.default.zones.0.id
 	cpu_core_count             = 2
 	memory_size                = 4
 	kubernetes_node_role       = "Worker"
@@ -90,15 +97,15 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vswitch_name                 = "${var.name}"
-  vpc_id                       = "${alicloud_vpc.default.id}"
+  vswitch_name                 = var.name
+  vpc_id                       = alicloud_vpc.default.id
   cidr_block                   = "10.1.1.0/24"
-  availability_zone            = "${data.alicloud_zones.default.zones.0.id}"
+  zone_id                      = data.alicloud_zones.default.zones.0.id
 }
 
 # Create a management cluster
 resource "alicloud_cs_managed_kubernetes" "default" {
-  name                         = "${var.name}"
+  name                         = var.name
   count                        = 1
   cluster_spec                 = "ack.pro.small"
   is_enterprise_security_group = true
@@ -107,9 +114,9 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   password                     = "Hello1234"
   pod_cidr                     = "172.20.0.0/16"
   service_cidr                 = "172.21.0.0/20"
-  worker_vswitch_ids           = ["${alicloud_vswitch.default.id}"]
-  worker_instance_types        = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  depends_on                     = ["alicloud_ram_user_policy_attachment.attach"]
+  worker_vswitch_ids           = [alicloud_vswitch.default.id]
+  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
+  depends_on                   = ["alicloud_ram_user_policy_attachment.attach"]
 }
 
 # Create a new RAM user.
