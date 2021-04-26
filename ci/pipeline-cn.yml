@@ -413,7 +413,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 00Thu
       - aggregate:
           - *get-aliyun-cli
@@ -427,7 +427,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 01Thu
       - aggregate:
           - *get-aliyun-cli
@@ -440,7 +440,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 02Thu
       - aggregate:
           - *get-aliyun-cli
@@ -468,7 +468,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 04
       - aggregate:
           - *get-aliyun-cli
@@ -482,7 +482,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 05
       - aggregate:
           - *get-aliyun-cli
@@ -496,7 +496,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 06Thu
       - aggregate:
           - *get-aliyun-cli
@@ -510,7 +510,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 07Thu
       - aggregate:
           - *get-aliyun-cli
@@ -524,7 +524,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 08Thu
       - aggregate:
           - *get-aliyun-cli
@@ -537,7 +537,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 09Thu
       - aggregate:
           - *get-aliyun-cli
@@ -550,7 +550,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 10Thu
       - aggregate:
           - *get-aliyun-cli
@@ -563,7 +563,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 11Thu
       - aggregate:
           - *get-aliyun-cli
@@ -577,7 +577,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 12
       - aggregate:
           - *get-aliyun-cli
@@ -591,7 +591,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 13
       - aggregate:
           - *get-aliyun-cli
@@ -605,7 +605,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 14
       - aggregate:
           - *get-aliyun-cli
@@ -619,7 +619,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 15
       - aggregate:
           - *get-aliyun-cli
@@ -632,7 +632,7 @@ jobs:
 #    plan:
 #      - <<: *clone-provider
 #      - get: trigger
-#        trigger: true
+#        trigger: false
 #        resource: 16Thu
 #      - aggregate:
 #          - *get-aliyun-cli
@@ -646,7 +646,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 17Thu
       - aggregate:
           - *get-aliyun-cli
@@ -659,7 +659,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 18
       - aggregate:
           - *get-aliyun-cli
@@ -673,7 +673,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 19Thu
       - aggregate:
           - *get-aliyun-cli
@@ -687,7 +687,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 20Thu
       - aggregate:
           - *get-aliyun-cli
@@ -700,7 +700,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0030Thu
       - aggregate:
           - *get-aliyun-cli
@@ -727,7 +727,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0230Thu
       - aggregate:
           - *get-aliyun-cli
@@ -741,7 +741,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0330Thu
       - aggregate:
           - *get-aliyun-cli
@@ -754,7 +754,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0430Thu
       - aggregate:
           - *get-aliyun-cli
@@ -768,7 +768,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0530Thu
       - aggregate:
           - *get-aliyun-cli
@@ -782,7 +782,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0630Thu
       - aggregate:
           - *get-aliyun-cli
@@ -796,7 +796,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0930Thu
       - aggregate:
           - *get-aliyun-cli
@@ -810,7 +810,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0830Thu
       - aggregate:
           - *get-aliyun-cli
@@ -824,7 +824,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0930
       - aggregate:
           - *get-aliyun-cli
@@ -837,7 +837,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1030Thu
       - aggregate:
           - *get-aliyun-cli
@@ -851,7 +851,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1130Thu
       - aggregate:
           - *get-aliyun-cli
@@ -865,7 +865,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1230Thu
       - aggregate:
           - *get-aliyun-cli
@@ -879,7 +879,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1330Thu
       - aggregate:
           - *get-aliyun-cli
@@ -893,7 +893,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1430Thu
       - aggregate:
           - *get-aliyun-cli
@@ -907,8 +907,8 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
-        resource: 1530
+        trigger: false
+        resource: 1530Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -920,7 +920,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1630
       - aggregate:
           - *get-aliyun-cli
@@ -933,7 +933,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1730Thu
       - aggregate:
           - *get-aliyun-cli
@@ -947,7 +947,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1830
       - aggregate:
           - *get-aliyun-cli
@@ -960,7 +960,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1930Thu
       - aggregate:
           - *get-aliyun-cli
@@ -973,7 +973,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 2030Thu
       - aggregate:
           - *get-aliyun-cli
@@ -986,7 +986,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 00
       - aggregate:
           - *get-aliyun-cli
@@ -1012,7 +1012,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 02Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1038,7 +1038,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 04
       - aggregate:
           - *get-aliyun-cli
@@ -1051,7 +1051,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 05
       - aggregate:
           - *get-aliyun-cli
@@ -1064,7 +1064,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 06Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1077,7 +1077,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0730Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1090,7 +1090,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 08Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1103,7 +1103,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 09Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1129,7 +1129,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 11
       - aggregate:
           - *get-aliyun-cli
@@ -1142,7 +1142,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 12Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1155,7 +1155,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 13Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1168,7 +1168,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 14Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1206,7 +1206,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 17Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1219,7 +1219,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 17Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1232,7 +1232,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0030Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1245,7 +1245,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0130
       - aggregate:
           - *get-aliyun-cli
@@ -1259,7 +1259,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0230
       - aggregate:
           - *get-aliyun-cli
@@ -1272,7 +1272,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0330Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1298,7 +1298,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0530
       - aggregate:
           - *get-aliyun-cli
@@ -1311,7 +1311,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0630
       - aggregate:
           - *get-aliyun-cli
@@ -1324,7 +1324,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0730
       - aggregate:
           - *get-aliyun-cli
@@ -1337,7 +1337,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0830Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1363,7 +1363,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1030Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1376,7 +1376,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1130
       - aggregate:
           - *get-aliyun-cli
@@ -1389,7 +1389,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1230
       - aggregate:
           - *get-aliyun-cli
@@ -1402,7 +1402,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1330Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1415,7 +1415,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1430Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1428,7 +1428,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1530Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1441,7 +1441,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 1630Thu
       - aggregate:
           - *get-aliyun-cli
@@ -1737,13 +1737,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 1530
-    type: time
-    source:
-      start: 03:30 PM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 1530
+#    type: time
+#    source:
+#      start: 03:30 PM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
   - name: 16
     type: time

@@ -77,7 +77,7 @@ func testSweepDMSEnterpriseUsers(region string) error {
 				continue
 			}
 			sweeped = true
-			action = "DeleteUser"
+			action := "DeleteUser"
 			request := map[string]interface{}{
 				"Uid": item["Uid"],
 			}
