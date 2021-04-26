@@ -181,7 +181,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_network_acl" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
-	name = "${var.name}%d"
+	network_acl_name = "${var.name}%d"
 }
 
 resource "alicloud_network_acl_entries" "default" {
@@ -226,7 +226,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_network_acl" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
-	name = "${var.name}%d"
+	network_acl_name = "${var.name}%d"
 }
 
 resource "alicloud_network_acl_entries" "default" {
@@ -291,7 +291,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_network_acl" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
-	name = "${var.name}%d"
+	network_acl_name = "${var.name}%d"
 }
 
 resource "alicloud_network_acl_entries" "default" {
