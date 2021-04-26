@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -40,7 +39,7 @@ func resourceAlicloudCSKubernetesPermissions() *schema.Resource {
 			},
 			"permissions": {
 				Optional: true,
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"role_type": {
@@ -128,14 +127,8 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 	// Keep other existing cluster permissions.
 	if d.HasChange("permissions") {
 		oldValue, newValue := d.GetChange("permissions")
-		o, ok := oldValue.([]interface{})
-		if ok != true {
-			return WrapErrorf(fmt.Errorf("permissions old value can not be parsed"), "parseError %d", oldValue)
-		}
-		n, ok := newValue.([]interface{})
-		if ok != true {
-			return WrapErrorf(fmt.Errorf("permissions old value can not be parsed"), "parseError %d", oldValue)
-		}
+		o := oldValue.(*schema.Set).List()
+		n := newValue.(*schema.Set).List()
 
 		// Remove all clusters permission
 		if len(n) == 0 {
@@ -156,7 +149,6 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 				return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveSomeClustersPermissions", err)
 			}
 			d.Partial(false)
-			return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
 		}
 		// update user permissions
 		updatePermissionsRequest := buildPermissionArgs(d)
@@ -198,7 +190,8 @@ func resourceAlicloudCSKubernetesPermissionsDelete(d *schema.ResourceData, meta 
 
 func buildPermissionArgs(d *schema.ResourceData) []*cs.GrantPermissionsRequestBody {
 	var grantPermissionsRequest []*cs.GrantPermissionsRequestBody
-	if permissions, ok := d.Get("permissions").([]interface{}); ok {
+	if perms, ok := d.GetOk("permissions"); ok {
+		permissions := perms.(*schema.Set).List()
 		var perms *cs.GrantPermissionsRequestBody
 		for _, v := range permissions {
 			pack := v.(map[string]interface{})
