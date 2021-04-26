@@ -40,7 +40,7 @@ func testSweepMSECluster(region string) error {
 		return WrapError(err)
 	}
 	request["PageSize"] = PageSizeLarge
-	request["PageNumber"] = 1
+	request["PageNum"] = 1
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)

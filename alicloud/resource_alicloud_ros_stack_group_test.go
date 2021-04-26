@@ -72,7 +72,7 @@ func testSweepRosStackGroup(region string) error {
 				continue
 			}
 			sweeped = true
-			action = "DeleteStackGroup"
+			action := "DeleteStackGroup"
 			request := map[string]interface{}{
 				"StackGroupName": item["StackGroupName"],
 				"RegionId":       region,

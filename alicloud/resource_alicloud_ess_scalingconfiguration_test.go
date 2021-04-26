@@ -396,7 +396,7 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 	}
 	
 	resource "alicloud_key_pair" "default" {
-  		key_name = "${var.name}"
+  		key_pair_name = "${var.name}"
 	}
 
 	resource "alicloud_ram_role" "default" {
