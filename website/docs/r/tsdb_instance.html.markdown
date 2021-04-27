@@ -75,7 +75,7 @@ The following arguments are supported:
     - `tsdb.12x.standard` refers to standard edition I; 
     - `tsdb.24x.standard` refers to standard edition II; 
     - `tsdb.48x.large` refers to ultimate edition I;
-    - `tsdb.94x.large` refers to ultimate edition II. 
+    - `tsdb.96x.large` refers to ultimate edition II.
 * `instance_storage` - (Required) The storage capacity of the instance. Unit: GB. For example, the value 50 indicates 50 GB. Does not support shrink storage.
 * `payment_type` - (Required, ForceNew) The billing method. Valid values: `PayAsYouGo` and `Subscription`. The `PayAsYouGo` value indicates the pay-as-you-go method, and the `Subscription` value indicates the subscription method.
 * `vswitch_id` - (Required, ForceNew) The vswitch id.
