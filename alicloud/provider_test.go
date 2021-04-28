@@ -81,6 +81,13 @@ func testAccPreCheckPrePaidResources(t *testing.T) {
 	}
 }
 
+func testAccClassicNetworkResources(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ENABLE_CLASSIC_NETWORK")); v != "true" {
+		t.Skip("Skipping testing classic resources, otherwise setting environment parameter 'ENABLE_CLASSIC_NETWORK'.")
+		t.Skipped()
+	}
+}
+
 // Skip automatically the testcases which does not support some known regions.
 // If supported is true, the regions should a list of supporting the service regions.
 // If supported is false, the regions should a list of unsupporting the service regions.

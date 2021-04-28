@@ -159,6 +159,7 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EcsClassicSupportedRegions)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccClassicNetworkResources(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1486,7 +1487,7 @@ data "alicloud_instance_types" "essd" {
  	system_disk_category = "cloud_essd"
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu*"
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
@@ -1561,7 +1562,7 @@ data "alicloud_instance_types" "default" {
   instance_charge_type = "PrePaid"
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu*"
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
@@ -1621,14 +1622,13 @@ data "alicloud_instance_types" "default" {
   cpu_core_count    = 1
   memory_size       = 2
 }
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  owners      = "system"
+}
 
 variable "resource_group_id" {
 		default = "%s"
-	}
-
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu*"
-  owners      = "system"
 }
 
 resource "alicloud_security_group" "default" {
@@ -1665,7 +1665,7 @@ func resourceInstanceTypeConfigDependence(name string) string {
 	  available_resource_creation = "VSwitch"
 	}
 	data "alicloud_images" "default" {
-	  name_regex  = "^ubuntu"
+      name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
 	  most_recent = true
 	  owners      = "system"
 	}
@@ -1741,6 +1741,7 @@ func testAccCheckSpotInstanceDependence(name string) string {
 	  	cpu_core_count    = 2
 	  	memory_size       = 4
 	  	spot_strategy = "SpotWithPriceLimit"
+		image_id = data.alicloud_images.default.images.0.id
 	}
 	
 	`, EcsInstanceCommonNoZonesTestCase, name)
