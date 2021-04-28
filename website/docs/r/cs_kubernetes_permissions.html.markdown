@@ -35,27 +35,27 @@ data "alicloud_zones" default {
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone          = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone          = data.alicloud_zones.default.zones.0.id
   cpu_core_count             = 2
   memory_size                = 4
   kubernetes_node_role       = "Worker"
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name                     = "${var.name}"
+  vpc_name                     = var.name
   cidr_block                   = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  vswitch_name                 = "${var.name}"
-  vpc_id                       = "${alicloud_vpc.default.id}"
+  vswitch_name                 = var.name
+  vpc_id                       = alicloud_vpc.default.id
   cidr_block                   = "10.1.1.0/24"
-  availability_zone            = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone            = data.alicloud_zones.default.zones.0.id
 }
 
 # Create a managed cluster
 resource "alicloud_cs_managed_kubernetes" "default" {
-  name                         = "${var.name}"
+  name                         = var.name
   count                        = 1
   cluster_spec                 = "ack.pro.small"
   is_enterprise_security_group = true
@@ -63,8 +63,8 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   password                     = "Hello1234"
   pod_cidr                     = "172.20.0.0/16"
   service_cidr                 = "172.21.0.0/20"
-  worker_vswitch_ids           = ["${alicloud_vswitch.default.id}"]
-  worker_instance_types        = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+  worker_vswitch_ids           = [alicloud_vswitch.default.id]
+  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
 }
 ```
 Step 2: Use Teraform to create a RAM user and authorize access to the cluster created in step 1 (at least read-only permission is required). 
@@ -115,19 +115,19 @@ resource "alicloud_cs_kubernetes_permissions_grant" "default" {
   uid = alicloud_ram_user.user.id
   # permissions
   permissions {
-    cluster     = ${alicloud_cs_managed_kubernetes.default.0.id}
+    cluster     = alicloud_cs_managed_kubernetes.default.0.id
     role_type   = "cluster"
     role_name   = "dev"
-    namespace =  ""
+    namespace   =  ""
     is_custom   = false
     is_ram_role = false
   }
   # If you want to grant users multiple cluster permissions, you can define multiple sets of permissions 
   #  permissions {
-  #    cluster     = ${cluster_id_2}
+  #    cluster     = "cluster_id_2"
   #    role_type   = "cluster"
   #    role_name   = "ops"
-  #    namespace =  ""
+  #    namespace   =  ""
   #    is_custom   = false
   #    is_ram_role = false
   #  }
@@ -137,7 +137,7 @@ If you already have users and clusters, to complete RBAC authorization, you only
 ```terraform
 # Get RAM user ID 
 data "alicloud_ram_users" "users_ds" {
-    name_regex  = "^${your ram user name}"
+    name_regex  = "your ram user name"
 }
 
 # Create a new RAM Policy.
@@ -172,7 +172,7 @@ resource "alicloud_ram_user_policy_attachment" "attach" {
 resource "alicloud_cs_kubernetes_permissions_grant" "default" {
   uid = data.alicloud_ram_users.users_ds.users.0.id
   permissions {
-    cluster     = ${target cluster id1}
+    cluster     = "target cluster id1"
     role_type   = "cluster"
     role_name   = "ops"
     is_custom   = false
@@ -180,7 +180,7 @@ resource "alicloud_cs_kubernetes_permissions_grant" "default" {
     namespace =  ""
   }
   permissions {
-    cluster     = ${target cluster id2}
+    cluster     = "target cluster id2"
     role_type   = "cluster"
     role_name   = "ops"
     is_custom   = false
@@ -202,8 +202,8 @@ resource "alicloud_cs_kubernetes_permissions_grant" "default" {
 
 The following arguments are supported.
 
-* `uid` - (Required, ForceNew, Available in 1.122.0+) The ID of the RAM user.
-* `permissions` - (Required, Available in 1.122.0+) A list of user permission.
+* `uid` - (Required, ForceNew) The ID of the RAM user.
+* `permissions` - (Required) A list of user permission.
   * `cluster` - (Required) The ID of the cluster that you want to manage.
   * `role_name` - (Required) Specifies the predefined role that you want to assign. Valid values `admin`, `ops`, `dev`, `restricted` and the custom cluster roles.
   * `role_type` - (Required) The authorization type. Valid values `cluster`, `namespace`.

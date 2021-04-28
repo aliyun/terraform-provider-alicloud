@@ -91,7 +91,6 @@ func resourceAlicloudCSKubernetesPermissionsCreate(d *schema.ResourceData, meta 
 	}
 
 	addDebug("GrantPermissions", grantPermissionsRequest, err)
-	d.Set("uid", uid)
 	d.SetId(uid)
 	return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
 }

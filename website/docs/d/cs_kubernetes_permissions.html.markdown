@@ -18,7 +18,7 @@ This data source provides a list of Ram user permissions.
 ```terraform
 # Declare the data source
 data "alicloud_ram_users" "users_ds" {
-  name_regex  = "^${user_name}"
+  name_regex  = "your_user_name"
 }
 
 # permissions
@@ -34,7 +34,7 @@ output "permissions" {
 ## Argument Reference
 
 The following arguments are supported.
-* `uid` - The ID of the RAM user. If you want to query the permissions of a RAM role, specify the ID of the RAM role.
+* `uid` - (Required) The ID of the RAM user. If you want to query the permissions of a RAM role, specify the ID of the RAM role.
 
 ## Attributes Reference
 
