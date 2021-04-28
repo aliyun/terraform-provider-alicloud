@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -17,12 +15,7 @@ func TestAccAlicloudCSKubernetesPermissions_basic(t *testing.T) {
 	var v []*cs.GrantPermissionsRequestBody
 	resourceId := "alicloud_cs_kubernetes_permissions.default"
 	serviceFunc := func() interface{} {
-		client, _ := cs.NewClient(&openapi.Config{
-			AccessKeyId:     String(testAccProvider.Meta().(*connectivity.AliyunClient).AccessKey),
-			AccessKeySecret: String(testAccProvider.Meta().(*connectivity.AliyunClient).SecretKey),
-			RegionId:        String(testAccProvider.Meta().(*connectivity.AliyunClient).RegionId),
-			Endpoint:        String(connectivity.OpenAckService),
-		})
+		client, _ := testAccProvider.Meta().(*connectivity.AliyunClient).NewRoaCsClient()
 		return &CsClient{client}
 	}
 

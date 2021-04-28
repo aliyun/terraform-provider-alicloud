@@ -6,8 +6,6 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
-	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
-
 	cs "github.com/alibabacloud-go/cs-20151215/v2/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -75,12 +73,7 @@ func resourceAlicloudCSKubernetesPermissions() *schema.Resource {
 }
 
 func resourceAlicloudCSKubernetesPermissionsCreate(d *schema.ResourceData, meta interface{}) error {
-	client, err := cs.NewClient(&openapi.Config{
-		AccessKeyId:     String(meta.(*connectivity.AliyunClient).AccessKey),
-		AccessKeySecret: String(meta.(*connectivity.AliyunClient).SecretKey),
-		RegionId:        String(meta.(*connectivity.AliyunClient).RegionId),
-		Endpoint:        String(connectivity.OpenAckService),
-	})
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
 	}
@@ -110,12 +103,7 @@ func resourceAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta in
 func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true)
 
-	client, err := cs.NewClient(&openapi.Config{
-		AccessKeyId:     String(meta.(*connectivity.AliyunClient).AccessKey),
-		AccessKeySecret: String(meta.(*connectivity.AliyunClient).SecretKey),
-		RegionId:        String(meta.(*connectivity.AliyunClient).RegionId),
-		Endpoint:        String(connectivity.OpenAckService),
-	})
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
 	}
@@ -168,12 +156,7 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 }
 
 func resourceAlicloudCSKubernetesPermissionsDelete(d *schema.ResourceData, meta interface{}) error {
-	client, err := cs.NewClient(&openapi.Config{
-		AccessKeyId:     String(meta.(*connectivity.AliyunClient).AccessKey),
-		AccessKeySecret: String(meta.(*connectivity.AliyunClient).SecretKey),
-		RegionId:        String(meta.(*connectivity.AliyunClient).RegionId),
-		Endpoint:        String(connectivity.OpenAckService),
-	})
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
 	}
