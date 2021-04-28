@@ -435,6 +435,7 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "CdnDomain"
+          CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME: "Cdn"
 
   - name: Cen
     plan:
@@ -571,6 +572,7 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "Eip"
+          CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME: "EIP"
           SWEEPER_CODE: "alicloud_eip"
 
   - name: Ess
