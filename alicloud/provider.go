@@ -731,6 +731,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_db_cluster":                             resourceAlicloudAdbDbCluster(),
 			"alicloud_ecs_disk":                                   resourceAlicloudEcsDisk(),
 			"alicloud_ecs_disk_attachment":                        resourceAlicloudEcsDiskAttachment(),
+			"alicloud_ecs_auto_snapshot_policy_attachment":        resourceAlicloudEcsAutoSnapshotPolicyAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
