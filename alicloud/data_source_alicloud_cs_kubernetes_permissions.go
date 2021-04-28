@@ -41,14 +41,12 @@ func dataSourceAlicloudCSKubernetesPermissions() *schema.Resource {
 							Optional: true,
 						},
 						"is_owner": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							ValidateFunc: validation.IntInSlice([]int{0, 1}),
+							Type:     schema.TypeBool,
+							Optional: true,
 						},
 						"is_ram_role": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							ValidateFunc: validation.IntInSlice([]int{0, 1}),
+							Type:     schema.TypeBool,
+							Optional: true,
 						},
 					},
 				},
@@ -95,10 +93,22 @@ func flattenPermissionsConfig(permissions []*cs.DescribeUserPermissionResponseBo
 			"resource_type": permission.ResourceType,
 			"role_name":     permission.RoleName,
 			"role_type":     permission.RoleType,
-			"is_owner":      permission.IsOwner,
-			"is_ram_role":   permission.IsRamRole,
+			"is_owner":      convertToBool(permission.IsOwner),
+			"is_ram_role":   convertToBool(permission.IsRamRole),
 		})
 	}
 
 	return m
+}
+
+func convertToBool(i *int64) bool {
+	in := tea.Int64Value(i)
+	var b bool
+	if in == 0 {
+		b = false
+	}
+	if in == 1 {
+		b = true
+	}
+	return b
 }
