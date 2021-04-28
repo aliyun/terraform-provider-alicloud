@@ -35,6 +35,16 @@ func resourceAlicloudLogStoreIndex() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"log_reduce": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"max_text_len": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  2048,
+			},
 			"full_text": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -175,6 +185,12 @@ func resourceAlicloudLogStoreIndexCreate(d *schema.ResourceData, meta interface{
 	if fieldOk {
 		index.Keys = buildIndexKeys(d)
 	}
+	if v, ok := d.GetOk("log_reduce"); ok {
+		index.LogReduce = BoolPointer(v.(bool))
+	}
+	if v, ok := d.GetOk("max_text_len"); ok {
+		index.MaxTextLen = Int64Pointer(int64(v.(int)))
+	}
 
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 
@@ -211,6 +227,12 @@ func resourceAlicloudLogStoreIndexRead(d *schema.ResourceData, meta interface{})
 			return nil
 		}
 		return WrapError(err)
+	}
+	if index.LogReduce != nil {
+		d.Set("log_reduce", index.LogReduce)
+	}
+	if index.MaxTextLen != nil {
+		d.Set("max_text_len", index.MaxTextLen)
 	}
 	if line := index.Line; line != nil {
 		mapping := map[string]interface{}{
@@ -279,6 +301,12 @@ func resourceAlicloudLogStoreIndexUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("field_search") {
 		index.Keys = buildIndexKeys(d)
 		update = true
+	}
+	if d.HasChange("log_reduce") {
+		index.LogReduce = BoolPointer(d.Get("log_reduce").(bool))
+	}
+	if d.HasChange("max_text_len") {
+		index.MaxTextLen = Int64Pointer(int64(d.Get("max_text_len").(int)))
 	}
 
 	if update {

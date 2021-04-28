@@ -126,9 +126,9 @@ type IndexLine struct {
 type Index struct {
 	Keys                   map[string]IndexKey `json:"keys,omitempty"`
 	Line                   *IndexLine          `json:"line,omitempty"`
-	Ttl                    uint32              `json:"ttl,omitempty"`
-	MaxTextLen             uint32              `json:"max_text_len,omitempty"`
-	LogReduce              bool                `json:"log_reduce"`
+	Ttl                    *uint32             `json:"ttl,omitempty"`
+	LogReduce              *bool               `json:"log_reduce,omitempty"`
+	MaxTextLen             *int64              `json:"max_text_len,omitempty"`
 	LogReduceWhiteListDict []string            `json:"log_reduce_white_list,omitempty"`
 	LogReduceBlackListDict []string            `json:"log_reduce_black_list,omitempty"`
 }
