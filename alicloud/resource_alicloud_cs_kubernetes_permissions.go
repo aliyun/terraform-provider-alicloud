@@ -34,6 +34,7 @@ func resourceAlicloudCSKubernetesPermissions() *schema.Resource {
 			"uid": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"permissions": {
 				Optional: true,
@@ -90,13 +91,13 @@ func resourceAlicloudCSKubernetesPermissionsCreate(d *schema.ResourceData, meta 
 	}
 
 	addDebug("GrantPermissions", grantPermissionsRequest, err)
-	_ = d.Set("uid", uid)
+	d.Set("uid", uid)
 	d.SetId(uid)
 	return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
 }
 
 func resourceAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta interface{}) error {
-	_ = d.Set("uid", d.Id())
+	d.Set("uid", d.Id())
 	return nil
 }
 
