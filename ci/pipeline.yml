@@ -59,7 +59,7 @@ groups:
       # Dcdn
       - Dcdn
       # Api Gateway
-      - ApiGateway
+      - Apigateway
       # Mns
       - Mns
       # Rocket MQ
@@ -238,7 +238,7 @@ groups:
   - name: Application Service
     jobs:
       # Api Gateway
-      - ApiGateway
+      - Apigateway
       # Sls
       - Log
       - Sweeper-1
@@ -414,7 +414,7 @@ jobs:
           SWEEPER: true
           TEST_CASE_CODE: "-"
 
-  - name: ApiGateway
+  - name: Apigateway
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -440,6 +440,7 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "CdnDomain"
+          CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME: "Cdn"
 
   - name: Cen
     plan:
@@ -1463,7 +1464,7 @@ jobs:
         passed: [
             Instance, Disk, SecurityGroup, NetworkInterface, Ess, CS, FC,
             Vpc, VSwitch, EIP, RouteTable, RouteEntry, RouterInterface, NatGateway, Snat, Forward, CommonBandwidth,
-            Slb, DB, KVStore, DRDS, ApiGateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, Snapshot, LaunchTemplate
+            Slb, DB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, Snapshot, LaunchTemplate
         ]
       - aggregate:
           - *get-aliyun-cli
