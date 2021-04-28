@@ -415,6 +415,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_slb_load_balancers":                          dataSourceAlicloudSlbLoadBalancers(),
 			"alicloud_ecs_network_interfaces":                      dataSourceAlicloudEcsNetworkInterfaces(),
 			"alicloud_config_aggregators":                          dataSourceAlicloudConfigAggregators(),
+			"alicloud_config_aggregate_config_rules":               dataSourceAlicloudConfigAggregateConfigRules(),
+			"alicloud_config_aggregate_compliance_packs":           dataSourceAlicloudConfigAggregateCompliancePacks(),
+			"alicloud_config_compliance_packs":                     dataSourceAlicloudConfigCompliancePacks(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -744,6 +747,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_network_interface":                      resourceAlicloudEcsNetworkInterface(),
 			"alicloud_ecs_network_interface_attachment":           resourceAlicloudEcsNetworkInterfaceAttachment(),
 			"alicloud_config_aggregator":                          resourceAlicloudConfigAggregator(),
+			"alicloud_config_aggregate_config_rule":               resourceAlicloudConfigAggregateConfigRule(),
+			"alicloud_config_aggregate_compliance_pack":           resourceAlicloudConfigAggregateCompliancePack(),
+			"alicloud_config_compliance_pack":                     resourceAlicloudConfigCompliancePack(),
 		},
 
 		ConfigureFunc: providerConfigure,

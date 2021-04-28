@@ -775,6 +775,17 @@ func addDebug(action, content interface{}, requestInfo ...interface{}) {
 				requestContent = fmt.Sprintf("%#v", requestInfo[1])
 			}
 
+			if len(requestInfo) == 1 {
+				if v, ok := requestInfo[0].(map[string]interface{}); ok {
+					if res, err := json.Marshal(&v); err == nil {
+						requestContent = string(res)
+					}
+					if res, err := json.Marshal(&content); err == nil {
+						content = string(res)
+					}
+				}
+			}
+
 			content = fmt.Sprintf("%vDomain:%v, Version:%v, ActionName:%v, Method:%v, Product:%v, Region:%v\n\n"+
 				"*************** %s Request ***************\n%#v\n",
 				content, request.Domain, request.Version, request.ActionName,

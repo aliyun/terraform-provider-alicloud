@@ -36,9 +36,6 @@ func testSweepConfigAggregator(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf_test_",
-		"tf-test-",
-		"testAcc",
 	}
 	conn, err := client.NewConfigClient()
 	if err != nil {
