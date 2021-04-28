@@ -233,7 +233,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_type":  REMOVEKEY,
-					"instance_types": []string{"${data.alicloud_instance_types.t5.instance_types.0.id}", "${data.alicloud_instance_types.default.t5.1.id}"},
+					"instance_types": []string{"${data.alicloud_instance_types.t5.instance_types.0.id}", "${data.alicloud_instance_types.t5.instance_types.1.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
