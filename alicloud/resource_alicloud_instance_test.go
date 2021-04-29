@@ -1741,7 +1741,6 @@ func testAccCheckSpotInstanceDependence(name string) string {
 	  	cpu_core_count    = 2
 	  	memory_size       = 4
 	  	spot_strategy = "SpotWithPriceLimit"
-		image_id = data.alicloud_images.default.images.0.id
 	}
 	
 	`, EcsInstanceCommonNoZonesTestCase, name)
