@@ -142,6 +142,7 @@ func resourceAlicloudLogOssShipperCreate(d *schema.ResourceData, meta interface{
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			project, _ := sls.NewLogProject(projectName, slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
+			project.WithToken(slsClient.SecurityToken)
 			logstore, _ := sls.NewLogStore(logstoreName, project)
 			return nil, logstore.CreateShipper(buildConfig(d))
 		})
