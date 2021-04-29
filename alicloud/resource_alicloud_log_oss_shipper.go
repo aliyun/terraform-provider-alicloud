@@ -265,6 +265,7 @@ func resourceAlicloudLogOssShipperDelete(d *schema.ResourceData, meta interface{
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			project, _ := sls.NewLogProject(parts[0], slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
+			project.WithToken(slsClient.SecurityToken)
 			logstore, _ := sls.NewLogStore(parts[1], project)
 			return nil, logstore.DeleteShipper(parts[2])
 		})
