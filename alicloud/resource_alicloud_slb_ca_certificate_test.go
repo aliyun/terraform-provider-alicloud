@@ -2,10 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"log"
-	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -30,21 +33,45 @@ func testSweepSlbCACertificate(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
-
-	req := slb.CreateDescribeCACertificatesRequest()
-	req.RegionId = client.RegionId
-
-	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeCACertificates(req)
+	action := "DescribeCACertificates"
+	conn, err := client.NewSlbClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+	}
+	var response map[string]interface{}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err != nil {
-		return err
+		if IsExpectedErrors(err, []string{"CACertificateId.NotFound"}) {
+			return nil
+		}
+		log.Println("List CA certificate failed!", err)
 	}
-	resp := raw.(*slb.DescribeCACertificatesResponse)
+	resp, err := jsonpath.Get("$.CACertificates.CACertificate", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.CACertificates.CACertificate", response)
+	}
+	result, _ := resp.([]interface{})
 
-	for _, caCertificate := range resp.CACertificates.CACertificate {
-		name := caCertificate.CACertificateName
-		id := caCertificate.CACertificateId
+	for _, v := range result {
+		caCertificate, _ := v.(map[string]interface{})
+		name := fmt.Sprint(caCertificate["CACertificateName"])
+		id := fmt.Sprint(caCertificate["CACertificateId"])
 
 		skip := true
 		for _, prefix := range prefixes {
@@ -59,11 +86,22 @@ func testSweepSlbCACertificate(region string) error {
 		}
 
 		log.Printf("[INFO] Deleting Slb CA Certificate : %s (%s)", name, id)
-		req := slb.CreateDeleteCACertificateRequest()
-		req.CACertificateId = id
-
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DeleteCACertificate(req)
+		request := map[string]interface{}{
+			"CACertificateId": id,
+		}
+		action := "DeleteCACertificate"
+		request["RegionId"] = client.RegionId
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Slb CA Certificate (%s (%s)): %s", name, id, err)
@@ -81,7 +119,8 @@ func TestAccAlicloudSlbCACertificate_basic(t *testing.T) {
 	}, "DescribeSlbCACertificate")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testAccSlbCACertificateUpdate")
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccSlbCACertificateUpdate-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbCACertificateBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -95,18 +134,13 @@ func TestAccAlicloudSlbCACertificate_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ca_certificate":    ca_certificate,
-					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "acceptance test123",
-					},
+					"ca_certificate":      ca_certificate,
+					"ca_certificate_name": name,
+					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "acceptance test123",
+						"ca_certificate_name": name,
 					}),
 				),
 			},
@@ -118,11 +152,11 @@ func TestAccAlicloudSlbCACertificate_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": name,
+					"ca_certificate_name": name + "change",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-testAccSlbCACertificateUpdate",
+						"ca_certificate_name": name + "change",
 					}),
 				),
 			},
@@ -143,6 +177,7 @@ func TestAccAlicloudSlbCACertificate_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ca_certificate_name": name,
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test123",
@@ -150,10 +185,10 @@ func TestAccAlicloudSlbCACertificate_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":         name,
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "acceptance test123",
+						"ca_certificate_name": name,
+						"tags.%":              "2",
+						"tags.Created":        "TF",
+						"tags.For":            "acceptance test123",
 					}),
 				),
 			},
@@ -184,9 +219,10 @@ func TestAccAlicloudSlbCACertificate_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"count":             "10",
-					"ca_certificate":    ca_certificate,
-					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+					"count":               "10",
+					"ca_certificate_name": name,
+					"ca_certificate":      ca_certificate,
+					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -197,13 +233,21 @@ func TestAccAlicloudSlbCACertificate_multi(t *testing.T) {
 }
 
 func resourceSlbCACertificateBasicdependence(name string) string {
-	return ""
+	return fmt.Sprintf(`
+variable "name" {
+		default = "%s"
+	}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+	name_regex = "^default$"
+}
+`, name)
 }
 
 var ca_certificateMap = map[string]string{
 	"id":                CHECKSET,
 	"ca_certificate":    "-----BEGIN CERTIFICATE-----\nMIIDRjCCAq+gAwIBAgIJAJn3ox4K13PoMA0GCSqGSIb3DQEBBQUAMHYxCzAJBgNV\nBAYTAkNOMQswCQYDVQQIEwJCSjELMAkGA1UEBxMCQkoxDDAKBgNVBAoTA0FMSTEP\nMA0GA1UECxMGQUxJWVVOMQ0wCwYDVQQDEwR0ZXN0MR8wHQYJKoZIhvcNAQkBFhB0\nZXN0QGhvdG1haWwuY29tMB4XDTE0MTEyNDA2MDQyNVoXDTI0MTEyMTA2MDQyNVow\ndjELMAkGA1UEBhMCQ04xCzAJBgNVBAgTAkJKMQswCQYDVQQHEwJCSjEMMAoGA1UE\nChMDQUxJMQ8wDQYDVQQLEwZBTElZVU4xDTALBgNVBAMTBHRlc3QxHzAdBgkqhkiG\n9w0BCQEWEHRlc3RAaG90bWFpbC5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJ\nAoGBAM7SS3e9+Nj0HKAsRuIDNSsS3UK6b+62YQb2uuhKrp1HMrOx61WSDR2qkAnB\ncoG00Uz38EE+9DLYNUVQBK7aSgLP5M1Ak4wr4GqGyCgjejzzh3DshUzLCCy2rook\nKOyRTlPX+Q5l7rE1fcSNzgepcae5i2sE1XXXzLRIDIvQxcspAgMBAAGjgdswgdgw\nHQYDVR0OBBYEFBdy+OuMsvbkV7R14f0OyoLoh2z4MIGoBgNVHSMEgaAwgZ2AFBdy\n+OuMsvbkV7R14f0OyoLoh2z4oXqkeDB2MQswCQYDVQQGEwJDTjELMAkGA1UECBMC\nQkoxCzAJBgNVBAcTAkJKMQwwCgYDVQQKEwNBTEkxDzANBgNVBAsTBkFMSVlVTjEN\nMAsGA1UEAxMEdGVzdDEfMB0GCSqGSIb3DQEJARYQdGVzdEBob3RtYWlsLmNvbYIJ\nAJn3ox4K13PoMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEFBQADgYEAY7KOsnyT\ncQzfhiiG7ASjiPakw5wXoycHt5GCvLG5htp2TKVzgv9QTliA3gtfv6oV4zRZx7X1\nOfi6hVgErtHaXJheuPVeW6eAW8mHBoEfvDAfU3y9waYrtUevSl07643bzKL6v+Qd\nDUBTxOAvSYfXTtI90EAxEG/bJJyOm5LqoiA=\n-----END CERTIFICATE-----",
-	"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+	"resource_group_id": CHECKSET,
 }
 
 const ca_certificate = `-----BEGIN CERTIFICATE-----\nMIIDRjCCAq+gAwIBAgIJAJn3ox4K13PoMA0GCSqGSIb3DQEBBQUAMHYxCzAJBgNV\nBAYTAkNOMQswCQYDVQQIEwJCSjELMAkGA1UEBxMCQkoxDDAKBgNVBAoTA0FMSTEP\nMA0GA1UECxMGQUxJWVVOMQ0wCwYDVQQDEwR0ZXN0MR8wHQYJKoZIhvcNAQkBFhB0\nZXN0QGhvdG1haWwuY29tMB4XDTE0MTEyNDA2MDQyNVoXDTI0MTEyMTA2MDQyNVow\ndjELMAkGA1UEBhMCQ04xCzAJBgNVBAgTAkJKMQswCQYDVQQHEwJCSjEMMAoGA1UE\nChMDQUxJMQ8wDQYDVQQLEwZBTElZVU4xDTALBgNVBAMTBHRlc3QxHzAdBgkqhkiG\n9w0BCQEWEHRlc3RAaG90bWFpbC5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJ\nAoGBAM7SS3e9+Nj0HKAsRuIDNSsS3UK6b+62YQb2uuhKrp1HMrOx61WSDR2qkAnB\ncoG00Uz38EE+9DLYNUVQBK7aSgLP5M1Ak4wr4GqGyCgjejzzh3DshUzLCCy2rook\nKOyRTlPX+Q5l7rE1fcSNzgepcae5i2sE1XXXzLRIDIvQxcspAgMBAAGjgdswgdgw\nHQYDVR0OBBYEFBdy+OuMsvbkV7R14f0OyoLoh2z4MIGoBgNVHSMEgaAwgZ2AFBdy\n+OuMsvbkV7R14f0OyoLoh2z4oXqkeDB2MQswCQYDVQQGEwJDTjELMAkGA1UECBMC\nQkoxCzAJBgNVBAcTAkJKMQwwCgYDVQQKEwNBTEkxDzANBgNVBAsTBkFMSVlVTjEN\nMAsGA1UEAxMEdGVzdDEfMB0GCSqGSIb3DQEJARYQdGVzdEBob3RtYWlsLmNvbYIJ\nAJn3ox4K13PoMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEFBQADgYEAY7KOsnyT\ncQzfhiiG7ASjiPakw5wXoycHt5GCvLG5htp2TKVzgv9QTliA3gtfv6oV4zRZx7X1\nOfi6hVgErtHaXJheuPVeW6eAW8mHBoEfvDAfU3y9waYrtUevSl07643bzKL6v+Qd\nDUBTxOAvSYfXTtI90EAxEG/bJJyOm5LqoiA=\n-----END CERTIFICATE-----`
