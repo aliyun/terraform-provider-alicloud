@@ -163,7 +163,7 @@ func TestAccAlicloudLogOssShipper_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"oss_bucket":      "test_bucket",
-					"oss_prefix":      "",
+					"oss_prefix":      "root",
 					"buffer_interval": "300",
 					"buffer_size":     "250",
 					"compress_type":   "none",
@@ -174,7 +174,7 @@ func TestAccAlicloudLogOssShipper_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"oss_bucket":      "test_bucket",
-						"oss_prefix":      "",
+						"oss_prefix":      "root",
 						"buffer_interval": "300",
 						"buffer_size":     "250",
 						"compress_type":   "none",
