@@ -234,6 +234,7 @@ func resourceAlicloudLogOssShipperUpdate(d *schema.ResourceData, meta interface{
 	if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			project, _ := sls.NewLogProject(parts[0], slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
+			project.WithToken(slsClient.SecurityToken)
 			logstore, _ := sls.NewLogStore(parts[1], project)
 			return nil, logstore.UpdateShipper(buildConfig(d))
 		})
