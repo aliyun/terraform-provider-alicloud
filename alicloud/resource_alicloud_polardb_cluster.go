@@ -91,7 +91,6 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
-				Default:          1,
 				DiffSuppressFunc: polardbPostPaidDiffSuppressFunc,
 			},
 			"security_ips": {
@@ -107,6 +106,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"maintain_time": {
 				Type:     schema.TypeString,
@@ -147,6 +147,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Set:      parameterToHash,
 				Optional: true,
 				Computed: true,
+			},
+			"tde_status": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Enabled", "Disabled"}, false),
+				Optional:     true,
+				Default:      "Disabled",
 			},
 			"tags": tagsSchema(),
 		},
@@ -334,6 +340,31 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("collector_status")
 	}
 
+	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
+		if d.HasChange("tde_status") {
+			if v, ok := d.GetOk("tde_status"); ok && v.(string) != "Disabled" {
+				// init modify TDE request
+				request := polardb.CreateModifyDBClusterTDERequest()
+				request.DBClusterId = d.Id()
+				request.TDEStatus = convertPolarDBTdeStatusUpdateRequest(v.(string))
+				// do handler
+				resp, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+					return polarDBClient.ModifyDBClusterTDE(request)
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+				addDebug(request.GetActionName(), resp, request.RpcRequest, request)
+
+				if err := polarDBService.WaitForPolarDBTDEStatus(d.Id(), "Enabled", DefaultLongTimeout); err != nil {
+					return WrapError(err)
+				}
+
+				d.SetPartial("tde_status")
+			}
+		}
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudPolarDBClusterRead(d, meta)
@@ -459,11 +490,11 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 			renewPeriod = renewPeriod * 12
 		}
 		d.Set("auto_renew_period", renewPeriod)
-		period, err := computePeriodByUnit(clusterAttribute.CreationTime, clusterAttribute.ExpireTime, d.Get("period").(int), "Month")
-		if err != nil {
-			return WrapError(err)
-		}
-		d.Set("period", period)
+		//period, err := computePeriodByUnit(clusterAttribute.CreationTime, clusterAttribute.ExpireTime, d.Get("period").(int), "Month")
+		//if err != nil {
+		//	return WrapError(err)
+		//}
+		//d.Set("period", period)
 		d.Set("renewal_status", clusterAutoRenew.RenewalStatus)
 	}
 
@@ -477,6 +508,11 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 	d.Set("collector_status", clusterCollectStatus)
 
+	clusterTDEStatus, err := polarDBService.DescribeDBClusterTDE(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tde_status", clusterTDEStatus.TDEStatus)
 	return nil
 }
 
@@ -586,5 +622,23 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (*polar
 		}
 	}
 
+	request.TDEStatus = requests.NewBoolean(convertPolarDBTdeStatusCreateRequest(d.Get("tde_status").(string)))
+
 	return request, nil
+}
+
+func convertPolarDBTdeStatusCreateRequest(source string) bool {
+	switch source {
+	case "Enabled":
+		return true
+	}
+	return false
+}
+
+func convertPolarDBTdeStatusUpdateRequest(source string) string {
+	switch source {
+	case "Enabled":
+		return "Enable"
+	}
+	return "Disable"
 }

@@ -40,6 +40,12 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 			"compute_resource": {
 				Type:     schema.TypeString,
 				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("mode"); ok && v.(string) == "reserver" {
+						return true
+					}
+					return false
+				},
 			},
 			"connection_string": {
 				Type:     schema.TypeString,
@@ -51,9 +57,9 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Basic", "Cluster", "MixedStorage"}, false),
 			},
 			"db_cluster_class": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "It duplicates with attribute db_node_class and is deprecated from 1.121.2.",
 			},
 			"db_cluster_version": {
 				Type:         schema.TypeString,
@@ -70,10 +76,12 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 			"db_node_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 			},
 			"db_node_storage": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 			},
 			"description": {
 				Type:         schema.TypeString,
@@ -85,6 +93,12 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  0,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("mode"); ok && v.(string) == "reserver" {
+						return true
+					}
+					return false
+				},
 			},
 			"maintain_time": {
 				Type:     schema.TypeString,
@@ -93,7 +107,7 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 			},
 			"mode": {
 				Type:         schema.TypeString,
-				Optional:     true,
+				Required:     true,
 				ValidateFunc: validation.StringInSlice([]string{"reserver", "flexible"}, false),
 			},
 			"modify_type": {
@@ -118,11 +132,9 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 			},
 			"period": {
 				Type:             schema.TypeInt,
-				Default:          1,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				DiffSuppressFunc: adbPostPaidDiffSuppressFunc,
 				Optional:         true,
-				ForceNew:         true,
 			},
 			"renewal_status": {
 				Type:             schema.TypeString,
@@ -179,9 +191,9 @@ func resourceAlicloudAdbDbClusterCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	request["DBClusterCategory"] = d.Get("db_cluster_category")
-	if v, ok := d.GetOk("db_cluster_class"); ok {
+	if v, ok := d.GetOk("db_node_class"); ok {
 		request["DBClusterClass"] = v
-	} else if v, ok := d.GetOk("db_node_class"); ok {
+	} else if v, ok := d.GetOk("db_cluster_class"); ok {
 		request["DBClusterClass"] = v
 	}
 
@@ -203,7 +215,7 @@ func resourceAlicloudAdbDbClusterCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	if v, ok := d.GetOk("payment_type"); ok {
-		request["PayType"] = convertAdbDbClusterDBClusterPaymentTypeRequest(v.(string))
+		request["PayType"] = convertAdbDBClusterPaymentTypeRequest(v.(string))
 		if request["PayType"] != string(Postpaid) {
 			request["PayType"] = string(Prepaid)
 			period := d.Get("period").(int)
@@ -284,14 +296,15 @@ func resourceAlicloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("compute_resource", object["ComputeResource"])
 	d.Set("connection_string", object["ConnectionString"])
-	d.Set("db_cluster_category", object["Category"])
+	d.Set("db_cluster_category", convertAdbDBClusterCategoryResponse(object["Category"].(string)))
 	d.Set("db_node_class", object["DBNodeClass"])
 	d.Set("db_node_count", object["DBNodeCount"])
 	d.Set("db_node_storage", object["DBNodeStorage"])
 	d.Set("description", object["DBClusterDescription"])
 	d.Set("elastic_io_resource", formatInt(object["ElasticIOResource"]))
 	d.Set("maintain_time", object["MaintainTime"])
-	d.Set("payment_type", convertAdbDbClusterDBClusterPaymentTypeResponse(object["PayType"].(string)))
+	d.Set("mode", object["Mode"])
+	d.Set("payment_type", convertAdbDBClusterPaymentTypeResponse(object["PayType"].(string)))
 	d.Set("pay_type", convertAdbDbClusterDBClusterPayTypeResponse(object["PayType"].(string)))
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("status", object["DBClusterStatus"])
@@ -306,17 +319,17 @@ func resourceAlicloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 		}
 		renewPeriod := 1
 		if describeAutoRenewAttributeObject != nil {
-			renewPeriod = describeAutoRenewAttributeObject["Duration"].(int)
+			renewPeriod = formatInt(describeAutoRenewAttributeObject["Duration"])
 		}
 		if describeAutoRenewAttributeObject != nil && describeAutoRenewAttributeObject["PeriodUnit"] == string(Year) {
 			renewPeriod = renewPeriod * 12
 		}
 		d.Set("auto_renew_period", renewPeriod)
-		period, err := computePeriodByUnit(object["CreationTime"], object["ExpireTime"], d.Get("period").(int), "Month")
-		if err != nil {
-			return WrapError(err)
-		}
-		d.Set("period", period)
+		//period, err := computePeriodByUnit(object["CreationTime"], object["ExpireTime"], d.Get("period").(int), "Month")
+		//if err != nil {
+		//	return WrapError(err)
+		//}
+		//d.Set("period", period)
 		d.Set("renewal_status", describeAutoRenewAttributeObject["RenewalStatus"])
 	}
 
@@ -434,7 +447,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		"DBClusterId": d.Id(),
 	}
 	request["RegionId"] = client.RegionId
-	if d.Get("pay_type").(string) == string(PrePaid) || d.Get("payment_type").(string) == string(PrePaid) && d.HasChange("auto_renew_period") {
+	if d.Get("pay_type").(string) == string(PrePaid) || d.Get("payment_type").(string) == "Subscription" && d.HasChange("auto_renew_period") {
 		update = true
 		if d.Get("renewal_status").(string) == string(RenewAutoRenewal) {
 			period := d.Get("auto_renew_period").(int)
@@ -446,7 +459,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			}
 		}
 	}
-	if d.Get("pay_type").(string) == string(PrePaid) || d.Get("payment_type").(string) == string(PrePaid) && d.HasChange("renewal_status") {
+	if d.Get("pay_type").(string) == string(PrePaid) || d.Get("payment_type").(string) == "Subscription" && d.HasChange("renewal_status") {
 		update = true
 		request["RenewalStatus"] = d.Get("renewal_status")
 	}
@@ -522,7 +535,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		update = true
 		modifyDBClusterReq["DBClusterCategory"] = d.Get("db_cluster_category")
 	}
-	if d.HasChange("db_node_class") {
+	if !d.IsNewResource() && d.HasChange("db_node_class") {
 		update = true
 		modifyDBClusterReq["DBNodeClass"] = d.Get("db_node_class")
 	}
@@ -640,7 +653,7 @@ func convertAdbDbClusterDBClusterPayTypeResponse(source string) string {
 	return source
 }
 
-func convertAdbDbClusterDBClusterPaymentTypeRequest(source string) string {
+func convertAdbDBClusterPaymentTypeRequest(source string) string {
 	switch source {
 	case "PayAsYouGo":
 		return "Postpaid"
@@ -650,12 +663,20 @@ func convertAdbDbClusterDBClusterPaymentTypeRequest(source string) string {
 	return source
 }
 
-func convertAdbDbClusterDBClusterPaymentTypeResponse(source string) string {
+func convertAdbDBClusterPaymentTypeResponse(source string) string {
 	switch source {
 	case "Postpaid":
 		return "PayAsYouGo"
 	case "Prepaid":
 		return "Subscription"
+	}
+	return source
+}
+
+func convertAdbDBClusterCategoryResponse(source string) string {
+	switch source {
+	case "MIXED_STORAGE":
+		return "MixedStorage"
 	}
 	return source
 }

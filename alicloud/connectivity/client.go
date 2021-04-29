@@ -1,8 +1,11 @@
 package connectivity
 
 import (
+	roaCS "github.com/alibabacloud-go/cs-20151215/v2/client"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
 	roa "github.com/alibabacloud-go/tea-roa/client"
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -95,6 +98,7 @@ type AliyunClient struct {
 	ramconn                      *ram.Client
 	csconn                       *cs.Client
 	officalCSConn                *officalCS.Client
+	roaCSConn                    *roaCS.Client
 	cdnconn_new                  *cdn_new.Client
 	crconn                       *cr.Client
 	creeconn                     *cr_ee.Client
@@ -174,7 +178,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.121.1"
+var providerVersion = "1.121.3"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Temporarily maintain map for old ecs client methods and store special endpoint information
@@ -659,6 +663,27 @@ func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error
 	}
 
 	return do(client.csconn)
+}
+
+func (client *AliyunClient) NewRoaCsClient() (*roaCS.Client, error) {
+	endpoint := client.config.CsEndpoint
+	if endpoint == "" {
+		endpoint = OpenAckService
+	}
+	// Initialize the CS client if necessary
+	roaCSConn, err := roaCS.NewClient(&openapi.Config{
+		AccessKeyId:     tea.String(client.config.AccessKey),
+		AccessKeySecret: tea.String(client.config.SecretKey),
+		SecurityToken:   tea.String(client.config.SecurityToken),
+		RegionId:        tea.String(client.config.RegionId),
+		UserAgent:       tea.String(client.getUserAgent()),
+		Endpoint:        tea.String(endpoint),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return roaCSConn, nil
 }
 
 func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error)) (interface{}, error) {

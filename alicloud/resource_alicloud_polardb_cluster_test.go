@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-var clusterConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.rds.aliyuncs.com"
+var clusterConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com"
 
 func init() {
 	resource.AddTestSweepers("alicloud_polardb_cluster", &resource.Sweeper{
@@ -113,6 +113,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 		"vswitch_id":    CHECKSET,
 		"db_type":       CHECKSET,
 		"db_version":    CHECKSET,
+		"tde_status":    "Disabled",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
@@ -265,6 +266,16 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 						"db_node_class": CHECKSET,
 					}),
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.13,100.69.7.113"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status": "Enabled",
+					}),
 				),
 			},
 		},

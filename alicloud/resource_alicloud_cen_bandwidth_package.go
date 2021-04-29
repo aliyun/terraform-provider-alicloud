@@ -102,8 +102,6 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
-				Default:      1,
 				ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return PayType(d.Get("charge_type").(string)) == PostPaid || PayType(d.Get("payment_type").(string)) == PostPaid
@@ -231,13 +229,13 @@ func resourceAlicloudCenBandwidthPackageRead(d *schema.ResourceData, meta interf
 	d.Set("geographic_region_b_id", convertGeographicRegionBIdResponse(object.GeographicRegionBId))
 	d.Set("payment_type", convertPaymentTypeResponse(object.BandwidthPackageChargeType))
 	d.Set("charge_type", convertPaymentTypeResponse(object.BandwidthPackageChargeType))
-	if convertPaymentTypeResponse(object.BandwidthPackageChargeType) == "PrePaid" {
-		period, err := computePeriodByUnit(object.CreationTime, object.ExpiredTime, d.Get("period").(int), "Month")
-		if err != nil {
-			return WrapError(err)
-		}
-		d.Set("period", period)
-	}
+	//if convertPaymentTypeResponse(object.BandwidthPackageChargeType) == "PrePaid" {
+	//	period, err := computePeriodByUnit(object.CreationTime, object.ExpiredTime, d.Get("period").(int), "Month")
+	//	if err != nil {
+	//		return WrapError(err)
+	//	}
+	//	d.Set("period", period)
+	//}
 	d.Set("expired_time", object.ExpiredTime)
 	d.Set("status", object.Status)
 	return nil

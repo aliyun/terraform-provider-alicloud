@@ -38,7 +38,7 @@ resource "alicloud_vpc" "example" {
 resource "alicloud_vswitch" "example" {
   vpc_id            = alicloud_vpc.example.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = data.alicloud_zones.example.zones[0].id
+  zone_id           = data.alicloud_zones.example.zones[0].id
   name              = var.name
 }
 
@@ -65,7 +65,7 @@ resource "alicloud_vpc" "example" {
 resource "alicloud_vswitch" "example" {
   vpc_id            = alicloud_vpc.example.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = data.alicloud_zones.example.zones.0.id
+  zone_id           = data.alicloud_zones.example.zones.0.id
   name              = "vpc-123456"
 }
 
@@ -112,7 +112,7 @@ resource "alicloud_vswitch" "example" {
   count             = 2
   vpc_id            = alicloud_vpc.example.id
   cidr_block        = format("172.16.%d.0/24", count.index+1)
-  availability_zone = data.alicloud_zones.example.zones[count.index].id
+  zone_id           = data.alicloud_zones.example.zones[count.index].id
   name              = format("vswich_%d", var.name, count.index)
 }
 
@@ -152,7 +152,7 @@ resource "alicloud_vswitch" "example" {
   count             = length(data.alicloud_zones.example.zones.0.multi_zone_ids)
   vpc_id            = alicloud_vpc.example.id
   cidr_block        = format("172.16.%d.0/24", count.index+1)
-  availability_zone = data.alicloud_zones.example.zones.0.multi_zone_ids[count.index]
+  zone_id           = data.alicloud_zones.example.zones.0.multi_zone_ids[count.index]
   name              = format("vswitch_%d", count.index)
 }
 
@@ -188,7 +188,7 @@ resource "alicloud_vswitch" "example" {
   count             = 3
   vpc_id            = alicloud_vpc.example.id
   cidr_block        = format("172.16.%d.0/24", count.index+1)
-  availability_zone = data.alicloud_zones.example.zones[count.index].id
+  zone_id           = data.alicloud_zones.example.zones[count.index].id
   name              = format("vswich_%d", var.name, count.index)
 }
 
@@ -235,7 +235,8 @@ The following arguments are supported:
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
 * `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`. Currently, the resource only supports PostPaid to PrePaid.
 * `resource_group_id` (Optional, Computed, Available in 1.86.0+, Modifiable in 1.115.0+) The ID of resource group which the DB instance belongs.
-* `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
+* `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36.
+-> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `monitoring_period` - (Optional) The monitoring frequency in seconds. Valid values are 5, 60, 300. Defaults to 300. 
 * `auto_renew` - (Optional, Available in 1.34.0+) Whether to renewal a DB instance automatically or not. It is valid when instance_charge_type is `PrePaid`. Default to `false`.
 * `auto_renew_period` - (Optional, Available in 1.34.0+) Auto-renewal period of an instance, in the unit of the month. It is valid when instance_charge_type is `PrePaid`. Valid value:[1~12], Default to 1.

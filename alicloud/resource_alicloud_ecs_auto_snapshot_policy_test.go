@@ -66,7 +66,7 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 				}
 			}
 			if skip {
-				log.Printf("[INFO] Skipping Ecs SnapShot Policy: %s (%s)", item["AutoSnapshotPolicyName"].(string), item["InstanceId"].(string))
+				log.Printf("[INFO] Skipping Ecs SnapShot Policy: %s (%s)", item["AutoSnapshotPolicyName"], item["AutoSnapshotPolicyId"])
 				continue
 			}
 			sweeped = true

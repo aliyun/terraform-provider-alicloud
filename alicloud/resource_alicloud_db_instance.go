@@ -69,7 +69,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
-				Default:          1,
 				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"monitoring_period": {
@@ -424,6 +423,10 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 		d.SetPartial("auto_upgrade_minor_version")
 	}
 
@@ -509,6 +512,10 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 		d.SetPartial("ssl_action")
 
 		// wait instance status is running after modifying
@@ -763,11 +770,11 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 			d.Set("auto_renew", renew["AutoRenew"] == "True")
 			d.Set("auto_renew_period", renew["Duration"])
 		}
-		period, err := computePeriodByUnit(instance["CreationTime"], instance["ExpireTime"], d.Get("period").(int), "Month")
-		if err != nil {
-			return WrapError(err)
-		}
-		d.Set("period", period)
+		//period, err := computePeriodByUnit(instance["CreationTime"], instance["ExpireTime"], d.Get("period").(int), "Month")
+		//if err != nil {
+		//	return WrapError(err)
+		//}
+		//d.Set("period", period)
 	}
 
 	groups, err := rdsService.DescribeSecurityGroupConfiguration(d.Id())
@@ -859,7 +866,7 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		request["ResourceGroupId"] = v
 	}
 
-	if request["Engine"] == "PostgreSQL" || request["Engine"] == "MySQL" {
+	if request["Engine"] == "PostgreSQL" || request["Engine"] == "MySQL" || request["Engine"] == "SQLServer" {
 		if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
 			request["EncryptionKey"] = v.(string)
 

@@ -17,6 +17,12 @@ set -e
 : ${BUCKET_REGION:=?}
 : ${ALICLOUD_RESOURCE_GROUP_ID:=""}
 : ${ALICLOUD_WAF_INSTANCE_ID:=""}
+: ${CONCOURSE_TARGET:=""}
+: ${CONCOURSE_TARGET_URL:=""}
+: ${CONCOURSE_TARGET_USER:=""}
+: ${CONCOURSE_TARGET_PASSWORD:=""}
+: ${CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME:=""}
+: ${CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME:=""}
 
 
 export ALICLOUD_ACCESS_KEY=${ALICLOUD_ACCESS_KEY}
@@ -47,13 +53,24 @@ if [[ ${DEBUG} = true ]]; then
 fi
 
 CURRENT_PATH=$(pwd)
+provider="terraform-provider-alicloud"
 
 go version
 
 cd $GOPATH
 mkdir -p src/github.com/aliyun
 cd src/github.com/aliyun
-cp -rf $CURRENT_PATH/terraform-provider-alicloud ./
+if [[ ${ALICLOUD_REGION} == "cn-"* ]]; then
+  echo -e "Downloading ${provider}.tgz ..."
+  aliyun oss cp oss://${BUCKET_NAME}/${provider}.tgz ${provider}.tgz -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
+  echo -e "Unpacking ${provider}.tgz ..."
+  aliyun oss ls oss://${BUCKET_NAME}/${provider}.tgz --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
+  tar -xzf ${provider}.tgz
+  rm -rf ${provider}.tgz
+else
+  cp -rf $CURRENT_PATH/terraform-provider-alicloud ./
+fi
+
 cd terraform-provider-alicloud
 
 if [[ ${SWEEPER} = true ]]; then
@@ -176,3 +193,16 @@ fi
 
 exit ${EXITCODE}
 }
+
+## If success, it should trigger an job in the China region
+if [[ ${ALICLOUD_REGION} != "cn-"* ]]; then
+  echo -e "\nDownloading the fly ..."
+  wget https://github.com/concourse/concourse/releases/download/v5.0.1/fly-5.0.1-linux-amd64.tgz
+  tar -xzf fly-5.0.1-linux-amd64.tgz
+  ./fly -t ${CONCOURSE_TARGET} login -c ${CONCOURSE_TARGET_URL} -u ${CONCOURSE_TARGET_USER} -p ${CONCOURSE_TARGET_PASSWORD}
+  if [[ $CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME == "" ]]; then
+    CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME=${TEST_CASE_CODE}
+  fi
+  echo -e "\n./fly -t ${CONCOURSE_TARGET} trigger-job --job ${CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME}/${CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME}"
+  ./fly -t ${CONCOURSE_TARGET} trigger-job --job ${CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME}/${CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME}
+fi

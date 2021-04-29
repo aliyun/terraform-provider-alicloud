@@ -116,3 +116,4 @@ var TsdbInstanceSupportRegions = []Region{Beijing, Hangzhou, Shenzhen, Shanghai,
 var EipanycastSupportRegions = []Region{Hangzhou}
 var VpcIpv6SupportRegions = []Region{Hangzhou, Shanghai, Shenzhen, Beijing, Huhehaote, Hongkong, APSouthEast1}
 var EssdSupportRegions = []Region{Zhangjiakou, Huhehaote}
+var AdbReserverUnSupportRegions = []Region{EUCentral1}

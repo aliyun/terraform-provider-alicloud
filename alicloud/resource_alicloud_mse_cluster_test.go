@@ -40,7 +40,7 @@ func testSweepMSECluster(region string) error {
 		return WrapError(err)
 	}
 	request["PageSize"] = PageSizeLarge
-	request["PageNumber"] = 1
+	request["PageNum"] = 1
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -63,7 +63,7 @@ func testSweepMSECluster(region string) error {
 				}
 			}
 			if skip {
-				log.Printf("[INFO] Skipping Mse Clusters: %s (%s)", item["ClusterAliasName"].(string), item["InstanceId"].(string))
+				log.Printf("[INFO] Skipping Mse Clusters: %s (%s)", item["ClusterAliasName"], item["InstanceId"])
 				continue
 			}
 			sweeped = true

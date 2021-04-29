@@ -70,15 +70,20 @@ func TestAccAlicloudAdbDbClustersDataSource(t *testing.T) {
 			"clusters.#":                     "1",
 			"clusters.0.id":                  CHECKSET,
 			"clusters.0.description":         CHECKSET,
+			"clusters.0.payment_type":        "PayAsYouGo",
 			"clusters.0.charge_type":         "PostPaid",
 			"clusters.0.region_id":           CHECKSET,
 			"clusters.0.expired":             "false",
 			"clusters.0.lock_mode":           "Unlock",
 			"clusters.0.create_time":         CHECKSET,
-			"clusters.0.db_node_count":       "4",
-			"clusters.0.db_node_class":       "C8",
-			"clusters.0.db_node_storage":     "400",
-			"clusters.0.db_cluster_category": "Cluster",
+			"clusters.0.db_cluster_version":  "3.0",
+			"clusters.0.db_node_class":       "E8",
+			"clusters.0.db_node_count":       "1",
+			"clusters.0.db_node_storage":     "300",
+			"clusters.0.compute_resource":    "8Core32GB",
+			"clusters.0.elastic_io_resource": "0",
+			"clusters.0.zone_id":             CHECKSET,
+			"clusters.0.db_cluster_category": "MixedStorage",
 			"clusters.0.maintain_time":       "23:00Z-00:00Z",
 			"clusters.0.security_ips.#":      "2",
 		}
@@ -122,15 +127,12 @@ variable "name" {
 }
 
 resource "alicloud_adb_db_cluster" "default" {
-  db_cluster_category = "Cluster"
-  db_cluster_class    = "C8"
-  db_node_count       = "4"
-  db_node_storage     = "400"
-  mode                = "reserver"
-  db_cluster_version  = "3.0"
-  payment_type        = "PostPaid"
-  vswitch_id          = data.alicloud_vswitches.default.ids[0]
-  description         = "Test new adb again."
+  db_cluster_category = "MixedStorage"
+  mode = "flexible"
+  compute_resource = "8Core32GB"
+  payment_type        = "PayAsYouGo"
+  vswitch_id          = local.vswitch_id
+  description         = var.name
   maintain_time       = "23:00Z-00:00Z"
   tags = {
     Created = "TF-update"

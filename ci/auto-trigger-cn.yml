@@ -1,0 +1,54 @@
+groups:
+  - name: All
+    jobs:
+      - point-to-point-ci-test
+
+shared:
+  - &clone-provider
+    get: terraform-provider-alicloud
+    resource: terraform-provider-alicloud
+    trigger: false
+
+  - &get-aliyun-cli
+    get: aliyun-cli
+    resource: aliyun-cli
+
+  - &run
+    task: terraform ci
+    file: terraform-provider-alicloud/ci/tasks/ci-test.yml
+    params:
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
+      ALICLOUD_REGION: {{alicloud_region}}
+      DING_TALK_TOKEN: {{ding_talk_token}}
+      ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
+      ALICLOUD_RESOURCE_GROUP_ID: {{alicloud_resource_group_id}}
+      ALICLOUD_WAF_INSTANCE_ID: {{alicloud_waf_instance_id}}
+
+jobs:
+  - name: point-to-point-ci-test
+    serial: true
+    plan:
+      - <<: *clone-provider
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+
+resources:
+- name: terraform-provider-alicloud
+  type: git
+  source:
+    uri: https://github.com/aliyun/terraform-provider-alicloud.git
+    branch: master
+    paths:
+      - ci/tasks/*
+
+- name: aliyun-cli
+  type: s3
+  source:
+    access_key_id: {{aliyun_cli_access_key}}
+    secret_access_key: {{aliyun_cli_secret_key}}
+    bucket: {{aliyun_cli_bucket}}
+    regexp: .*-cli-linux-3\.0\.(\d+)-amd64\.tgz
+    region_name: {{aliyun_cli_region}}
+    endpoint: oss-((aliyun_cli_region)).aliyuncs.com

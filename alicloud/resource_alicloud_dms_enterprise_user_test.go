@@ -33,6 +33,7 @@ func testSweepDMSEnterpriseUsers(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		"testacc",
 	}
 	request := make(map[string]interface{})
 	var response map[string]interface{}
@@ -43,6 +44,8 @@ func testSweepDMSEnterpriseUsers(region string) error {
 	}
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
+	sweeped := false
+
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -57,7 +60,6 @@ func testSweepDMSEnterpriseUsers(region string) error {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.UserList.User", response)
 		}
 
-		sweeped := false
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
@@ -77,7 +79,7 @@ func testSweepDMSEnterpriseUsers(region string) error {
 				continue
 			}
 			sweeped = true
-			action = "DeleteUser"
+			action := "DeleteUser"
 			request := map[string]interface{}{
 				"Uid": item["Uid"],
 			}
@@ -86,16 +88,17 @@ func testSweepDMSEnterpriseUsers(region string) error {
 				log.Printf("[ERROR] Failed to delete DMS Enterprise User (%v): %s", item["NickName"], err)
 				continue
 			}
-			if sweeped {
-				// Waiting 30 seconds to ensure these DMS Enterprise User have been deleted.
-				time.Sleep(30 * time.Second)
-			}
+
 			log.Printf("[INFO] Delete DMS Enterprise User Success: %v ", item["NickName"])
 		}
 		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	if sweeped {
+		// Waiting 30 seconds to ensure these DMS Enterprise User have been deleted.
+		time.Sleep(30 * time.Second)
 	}
 	return nil
 }

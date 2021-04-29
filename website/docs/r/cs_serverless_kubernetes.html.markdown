@@ -50,7 +50,7 @@ resource "alicloud_vswitch" "default" {
   vswitch_name      = var.name
   vpc_id            = alicloud_vpc.default.id
   cidr_block        = "10.1.1.0/24"
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  zone_id           = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_cs_serverless_kubernetes" "serverless" {

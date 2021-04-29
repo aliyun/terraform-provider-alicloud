@@ -5,7 +5,7 @@ international_time_location=(Europe/London Asia/Kolkata)
 # 国内站账号
 for (( i=0;i<${#domestic_regions[@]};i++)) do
     fly -t terraform-china sp -p ${domestic_regions[i]} \
-    -c pipeline.yml \
+    -c pipeline-cn.yml \
     -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
     -v aliyun_cli_region=$ALIYUN_CLI_REGION \
     -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
@@ -42,7 +42,12 @@ for (( i=0;i<${#international_regions[@]};i++)) do
     -v time_location=${international_time_location[i]} \
     -v alicloud_access_key=$ALICLOUD_ACCESS_KEY \
     -v alicloud_secret_key=$ALICLOUD_SECRET_KEY \
-    -v alicloud_region=${international_regions[i]}
+    -v alicloud_region=${international_regions[i]} \
+    -v alicloud_concourse_target=terraform-china \
+    -v alicloud_concourse_target_url=$CHINA_ACCESS_CI_URL \
+    -v alicloud_concourse_target_user=$CHINA_ACCESS_CI_USER_NAME \
+    -v alicloud_concourse_target_password=$CHINA_ACCESS_CI_PASSWORD \
+    -v alicloud_concourse_target_pipeline_name="cn-hangzhou"
 done
 
 
@@ -52,7 +57,7 @@ international_regions=(eu-central-1)
 
 for (( i=0;i<${#domestic_regions[@]};i++)) do
     fly -t terraform-china sp -p ${domestic_regions[i]}-intl \
-    -c pipeline.yml \
+    -c pipeline-cn.yml \
     -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
     -v aliyun_cli_region=$ALIYUN_CLI_REGION \
     -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
@@ -87,7 +92,12 @@ for (( i=0;i<${#international_regions[@]};i++)) do
     -v time_location=${international_time_location[i]} \
     -v alicloud_access_key=$ALICLOUD_ACCESS_KEY_INTL \
     -v alicloud_secret_key=$ALICLOUD_SECRET_KEY_INTL \
-    -v alicloud_region=${international_regions[i]}
+    -v alicloud_region=${international_regions[i]} \
+    -v alicloud_concourse_target=terraform-china \
+    -v alicloud_concourse_target_url=$CHINA_ACCESS_CI_URL \
+    -v alicloud_concourse_target_user=$CHINA_ACCESS_CI_USER_NAME \
+    -v alicloud_concourse_target_password=$CHINA_ACCESS_CI_PASSWORD \
+    -v alicloud_concourse_target_pipeline_name="cn-hangzhou"
 done
 
 
@@ -112,3 +122,41 @@ fly -t terraform-intl sp -p publish-alicloud-provider \
   -v alicloud_github_token=$GITHUB_TOKEN \
   -v alicloud_gpg_fingerprint=$GPG_FINGERPRINT \
   --load-vars-from=vars-publish.yml
+
+# 同步 Terraform provider 仓库到 OSS 并在德国 Region 自动触发
+fly -t terraform-intl sp -p auto-trigger \
+  -c auto-trigger.yml \
+  -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
+  -v aliyun_cli_region=$ALIYUN_CLI_REGION \
+  -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
+  -v aliyun_cli_secret_key=$ALIYUN_CLI_SECRET_KEY \
+  -v alicloud_access_key=$ALICLOUD_ACCESS_KEY \
+  -v alicloud_secret_key=$ALICLOUD_SECRET_KEY \
+  -v alicloud_region="eu-central-1" \
+  -v terraform_provider_bucket_region="cn-beijing" \
+  -v terraform_provider_bucket_name="terraform-ci" \
+  -v ding_talk_token=$DING_TALK_TOKEN \
+  -v alicloud_accound_id=$ALICLOUD_ACCOUNT_ID \
+  -v alicloud_resource_group_id=$ALICLOUD_RESOURCE_GROUP_ID \
+  -v alicloud_waf_instance_id=$ALICLOUD_WAF_INSTANCE_ID \
+  -v alicloud_concourse_target=terraform-china \
+  -v alicloud_concourse_target_url=$CHINA_ACCESS_CI_URL \
+  -v alicloud_concourse_target_user=$CHINA_ACCESS_CI_USER_NAME \
+  -v alicloud_concourse_target_password=$CHINA_ACCESS_CI_PASSWORD
+
+# 在杭州 Region 自动触发
+fly -t terraform-china sp -p auto-trigger \
+  -c auto-trigger-cn.yml \
+  -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
+  -v aliyun_cli_region=$ALIYUN_CLI_REGION \
+  -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
+  -v aliyun_cli_secret_key=$ALIYUN_CLI_SECRET_KEY \
+  -v alicloud_access_key=$ALICLOUD_ACCESS_KEY \
+  -v alicloud_secret_key=$ALICLOUD_SECRET_KEY \
+  -v alicloud_region="cn-hangzhou" \
+  -v terraform_provider_bucket_region="cn-beijing" \
+  -v terraform_provider_bucket_name="terraform-ci" \
+  -v ding_talk_token=$DING_TALK_TOKEN \
+  -v alicloud_accound_id=$ALICLOUD_ACCOUNT_ID \
+  -v alicloud_resource_group_id=$ALICLOUD_RESOURCE_GROUP_ID \
+  -v alicloud_waf_instance_id=$ALICLOUD_WAF_INSTANCE_ID

@@ -211,9 +211,8 @@ func TestAccAlicloudResourceManagerPolicy_basic(t *testing.T) {
 }
 
 var ResourceManagerPolicyMap = map[string]string{
-	"default_version":  CHECKSET,
-	"policy_type":      CHECKSET,
-	"attachment_count": CHECKSET,
+	"default_version": CHECKSET,
+	"policy_type":     CHECKSET,
 }
 
 func ResourceManagerPolicyBasicdependence(name string) string {
