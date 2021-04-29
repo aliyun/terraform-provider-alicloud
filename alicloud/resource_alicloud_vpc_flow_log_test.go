@@ -2,132 +2,25 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func init() {
-	resource.AddTestSweepers("alicloud_vpc_flow_log", &resource.Sweeper{
-		Name: "alicloud_vpc_flow_log",
-		F:    testSweepVpcFlowLog,
-	})
-}
-
-func testSweepVpcFlowLog(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return WrapErrorf(err, "Error getting Alicloud client.")
-	}
-	prefixes := []string{
-		"tf-testAcc",
-		"tf-test",
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-	request := make(map[string]interface{}, 0)
-	action := "DescribeFlowLogs"
-	request["RegionId"] = client.RegionId
-	request["PageSize"] = PageSizeLarge
-	request["PageNumber"] = 1
-	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	var instances []string
-	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
-		if err != nil {
-			log.Printf("[ERROR] Failed to retrieve VpcFlowLog service list: %s", err)
-		}
-		addDebug(action, response, request)
-
-		resp, err := jsonpath.Get("$.FlowLogs.FlowLog", response)
-		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.FlowLogs.FlowLog", response)
-		}
-		result, _ := resp.([]interface{})
-		for _, v := range result {
-			item := v.(map[string]interface{})
-			if v, ok := item["FlowLogId"]; !ok || v.(string) == "" {
-				continue
-			}
-			instances = append(instances, fmt.Sprint(item["FlowLogId"], ":", item["FlowLogName"]))
-		}
-
-		if len(result) < PageSizeLarge {
-			break
-		}
-		request["PageNumber"] = request["PageNumber"].(int) + 1
-	}
-
-	for _, instance := range instances {
-		instanceId := strings.Split(instance, ":")[0]
-		instanceName := strings.Split(instance, ":")[1]
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(instanceName), strings.ToLower(prefix)) {
-				skip = false
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping vpc_flow_log: %s ", instanceId)
-			continue
-		}
-
-		action := "DeleteFlowLog"
-		var response map[string]interface{}
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		request := map[string]interface{}{
-			"FlowLogId": instanceId,
-		}
-
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(time.Minute*10, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			log.Printf("[ERROR] Failed to retrieve vpc_flow_log %s %v", instanceId, err)
-			continue
-		}
-		log.Printf("[INFO] Delete vpc_flow_log instance: %s ", instanceId)
-	}
-	return nil
-}
-
 func TestAccAlicloudVpcFlowLog_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_flow_log.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap)
+	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFlowLogs")
+	}, "DescribeVpcFlowLog")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccVpcFlowLog-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcFlowLogBasicDependence)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcflowlog%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcFlowLogBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -139,25 +32,21 @@ func TestAccAlicloudVpcFlowLog_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"flow_log_name":  "${var.name}",
+					"log_store_name": "${alicloud_log_store.default.name}",
+					"project_name":   "${alicloud_log_project.default.name}",
 					"resource_id":    "${alicloud_vpc.default.id}",
 					"resource_type":  "VPC",
 					"traffic_type":   "All",
-					"log_store_name": "${var.log_store_name}",
-					"project_name":   "${var.project_name}",
-					"flow_log_name":  name,
-					"description":    "test",
-					"status":         "Active",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status":         "Active",
+						"flow_log_name":  name,
+						"log_store_name": CHECKSET,
+						"project_name":   CHECKSET,
+						"resource_id":    CHECKSET,
 						"resource_type":  "VPC",
 						"traffic_type":   "All",
-						"resource_id":    CHECKSET,
-						"project_name":   "vpc-flow-log-for-vpc",
-						"log_store_name": "vpc-flow-log-for-vpc",
-						"flow_log_name":  name,
-						"description":    "test",
 					}),
 				),
 			},
@@ -168,13 +57,21 @@ func TestAccAlicloudVpcFlowLog_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"flow_log_name": name + "change",
-					"description":   name + "change",
+					"description": "tf-testaccflowlogchange",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"flow_log_name": name + "change",
-						"description":   name + "change",
+						"description": "tf-testaccflowlogchange",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"flow_log_name": name + "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"flow_log_name": name + "1",
 					}),
 				),
 			},
@@ -190,15 +87,23 @@ func TestAccAlicloudVpcFlowLog_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"status":        "Active",
-					"flow_log_name": name + "change_again",
-					"description":   name + "change_again",
+					"status": "Active",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status":        "Active",
-						"flow_log_name": name + "change_again",
-						"description":   name + "change_again",
+						"status": "Active",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":   "tf-testaccflowlog",
+					"flow_log_name": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":   "tf-testaccflowlog",
+						"flow_log_name": name,
 					}),
 				),
 			},
@@ -206,27 +111,35 @@ func TestAccAlicloudVpcFlowLog_basic(t *testing.T) {
 	})
 }
 
-var AlicloudVpcFlowLogMap = map[string]string{
-	"status": "Active",
+var AlicloudVpcFlowLogMap0 = map[string]string{
+	"status":         "Active",
+	"log_store_name": CHECKSET,
+	"project_name":   CHECKSET,
+	"resource_id":    CHECKSET,
+	"resource_type":  "VPC",
+	"traffic_type":   "All",
+	"flow_log_name":  "",
+	"description":    "",
 }
 
-func AlicloudVpcFlowLogBasicDependence(name string) string {
+func AlicloudVpcFlowLogBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%v"
 }
 
-variable "log_store_name" {
-  default = "vpc-flow-log-for-vpc"
-}
-
-variable "project_name" {
-  default = "vpc-flow-log-for-vpc"
-}
-
 resource "alicloud_vpc" "default" {
   cidr_block = "192.168.0.0/24"
+  vpc_name       = var.name
+}
+
+resource "alicloud_log_project" "default" {
   name       = var.name
+}
+
+resource "alicloud_log_store" "default" {
+  project  = alicloud_log_project.default.name
+  name     = var.name
 }
 
 `, name)

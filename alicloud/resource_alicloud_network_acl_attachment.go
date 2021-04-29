@@ -195,15 +195,16 @@ func resourceAliyunNetworkAclAttachmentDelete(d *schema.ResourceData, meta inter
 	request.RegionId = client.RegionId
 	request.NetworkAclId = networkAclId
 	request.ClientToken = buildClientToken(request.GetActionName())
-	for _, e := range object.Resources.Resource {
-
+	res, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
+	for _, e := range res {
+		item := e.(map[string]interface{})
 		resources = append(resources, vpc.UnassociateNetworkAclResource{
-			ResourceId:   e.ResourceId,
-			ResourceType: e.ResourceType,
+			ResourceId:   item["ResourceId"].(string),
+			ResourceType: item["ResourceType"].(string),
 		})
 		vpcResource = append(vpcResource, vpc.Resource{
-			ResourceId:   e.ResourceId,
-			ResourceType: e.ResourceType,
+			ResourceId:   item["ResourceId"].(string),
+			ResourceType: item["ResourceType"].(string),
 		})
 	}
 	request.Resource = &resources

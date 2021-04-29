@@ -3,10 +3,12 @@ module github.com/aliyun/terraform-provider-alicloud
 require (
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/Sirupsen/logrus v0.0.0-20181010200618-458213699411 // indirect
-	github.com/alibabacloud-go/tea v1.1.10
+	github.com/alibabacloud-go/cs-20151215/v2 v2.4.1
+	github.com/alibabacloud-go/darabonba-openapi v0.1.5
+	github.com/alibabacloud-go/tea v1.1.15
 	github.com/alibabacloud-go/tea-roa v1.2.8
 	github.com/alibabacloud-go/tea-rpc v1.1.8
-	github.com/alibabacloud-go/tea-utils v1.3.6
+	github.com/alibabacloud-go/tea-utils v1.3.9
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.890
 	github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
 	github.com/aliyun/aliyun-log-go-sdk v0.1.20

@@ -69,8 +69,10 @@ func TestAccAlicloudResourceManagerSharedTargetsDataSource(t *testing.T) {
 		existMapFunc: existResourceManagerSharedTargetsMapFunc,
 		fakeMapFunc:  fakeResourceManagerSharedTargetsMapFunc,
 	}
-
-	resourceManagerShareTargetsCheckInfo.dataSourceTestCheck(t, rand, idsConf, statusConf, allConf)
+	preCheck := func() {
+		testAccPreCheckEnterpriseAccountEnabled(t)
+	}
+	resourceManagerShareTargetsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, allConf)
 
 }
 

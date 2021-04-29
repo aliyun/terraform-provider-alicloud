@@ -275,13 +275,15 @@ func archiveBackupPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceD
 }
 
 func PostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if v, ok := d.GetOk("instance_charge_type"); ok && strings.ToLower(v.(string)) == "postpaid" {
-		return true
+	// payment_type is the instance_charge_type's replacement.
+	// If both instance_charge_type and payment_type are "", it means hiding a default "PostPaid"
+	if v, ok := d.GetOk("instance_charge_type"); ok && strings.ToLower(v.(string)) == "prepaid" {
+		return false
 	}
-	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "PayAsYouGo" {
-		return true
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
+		return false
 	}
-	return false
+	return true
 }
 
 func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {

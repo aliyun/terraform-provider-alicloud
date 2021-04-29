@@ -174,7 +174,17 @@ func testAccCheckNetworkAclAttachmentExists(n string) resource.TestCheckFunc {
 		networkAclId := parts[0]
 
 		object, err := vpcService.DescribeNetworkAcl(networkAclId)
-		err = vpcService.DescribeNetworkAclAttachment(networkAclId, object.Resources.Resource)
+		res, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
+		resources := make([]vpc.Resource, 0)
+		for _, v := range res {
+			item := v.(map[string]interface{})
+			resources = append(resources, vpc.Resource{
+				Status:       fmt.Sprint(item["Status"]),
+				ResourceId:   fmt.Sprint(item["ResourceId"]),
+				ResourceType: fmt.Sprint(item["ResourceType"]),
+			})
+		}
+		err = vpcService.DescribeNetworkAclAttachment(networkAclId, resources)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -199,11 +209,13 @@ func testAccCheckNetworkAclAttachmentDestroy(s *terraform.State) error {
 
 		object, err := vpcService.DescribeNetworkAcl(networkAclId)
 		vpcResource := []vpc.Resource{}
-		for _, e := range object.Resources.Resource {
+		resources, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
+		for _, e := range resources {
+			item := e.(map[string]interface{})
 
 			vpcResource = append(vpcResource, vpc.Resource{
-				ResourceId:   e.ResourceId,
-				ResourceType: e.ResourceType,
+				ResourceId:   item["ResourceId"].(string),
+				ResourceType: item["ResourceType"].(string),
 			})
 		}
 		err = vpcService.WaitForNetworkAclAttachment(networkAclId, vpcResource, Deleted, DefaultTimeout)
@@ -234,32 +246,30 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_network_acl" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
-	name = "${var.name}%d"
+	network_acl_name = "${var.name}%d"
 }
 
 
 resource "alicloud_vswitch" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
 	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	zone_id = "${data.alicloud_zones.default.zones.0.id}"
+	vswitch_name = "${var.name}"
 }
 
 resource "alicloud_vswitch" "default2" {
 	vpc_id = "${alicloud_vpc.default.id}"
 	cidr_block = "172.16.1.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	zone_id = "${data.alicloud_zones.default.zones.0.id}"
+	vswitch_name = "${var.name}"
 }
 
 resource "alicloud_network_acl_attachment" "default" {
 	network_acl_id = "${alicloud_network_acl.default.id}"
-    resources = [
-        {
+    resources {
           resource_id = "${alicloud_vswitch.default.id}"
           resource_type = "VSwitch"
         }
-    ]
 }
 `, randInt)
 }
@@ -275,42 +285,40 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	vpc_name = "${var.name}"
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_network_acl" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
-	name = "${var.name}%d"
+	network_acl_name = "${var.name}%d"
 }
 
 
 resource "alicloud_vswitch" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
 	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	zone_id = "${data.alicloud_zones.default.zones.0.id}"
+	vswitch_name = "${var.name}"
 }
 
 resource "alicloud_vswitch" "default2" {
 	vpc_id = "${alicloud_vpc.default.id}"
 	cidr_block = "172.16.1.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	zone_id = "${data.alicloud_zones.default.zones.0.id}"
+	vswitch_name = "${var.name}"
 }
 
 resource "alicloud_network_acl_attachment" "default" {
 	network_acl_id = "${alicloud_network_acl.default.id}"
-    resources = [
-        {
+    resources {
           resource_id = "${alicloud_vswitch.default.id}"
           resource_type = "VSwitch"
-        },
-        {
+        }
+	resources {
           resource_id = "${alicloud_vswitch.default2.id}"
           resource_type = "VSwitch"
         }
-    ]
 }
 `, randInt)
 }
@@ -332,32 +340,30 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_network_acl" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
-	name = "${var.name}%d"
+	network_acl_name = "${var.name}%d"
 }
 
 
 resource "alicloud_vswitch" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
 	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	zone_id = "${data.alicloud_zones.default.zones.0.id}"
+	vswitch_name = "${var.name}"
 }
 
 resource "alicloud_vswitch" "default2" {
 	vpc_id = "${alicloud_vpc.default.id}"
 	cidr_block = "172.16.1.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	zone_id = "${data.alicloud_zones.default.zones.0.id}"
+	vswitch_name = "${var.name}"
 }
 
 resource "alicloud_network_acl_attachment" "default" {
 	network_acl_id = "${alicloud_network_acl.default.id}"
-    resources = [
-        {
+    resources {
           resource_id = "${alicloud_vswitch.default.id}"
           resource_type = "VSwitch"
         }
-    ]
 }
 `, randInt)
 }

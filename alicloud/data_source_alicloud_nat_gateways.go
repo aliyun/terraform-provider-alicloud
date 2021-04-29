@@ -121,18 +121,7 @@ func dataSourceAlicloudNatGateways() *schema.Resource {
 						"ip_lists": {
 							Type:     schema.TypeList,
 							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"ip_address": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"snat_entry_enabled": {
-										Type:     schema.TypeBool,
-										Computed: true,
-									},
-								},
-							},
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"id": {
 							Type:     schema.TypeString,
@@ -329,15 +318,11 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 			"vpc_id":               object["VpcId"],
 		}
 
-		ipList := make([]map[string]interface{}, 0)
+		ipList := make([]string, 0)
 		if ipListList, ok := object["IpLists"].(map[string]interface{})["IpList"].([]interface{}); ok {
 			for _, v := range ipListList {
 				if m1, ok := v.(map[string]interface{}); ok {
-					temp1 := map[string]interface{}{
-						"ip_address":         m1["IpAddress"],
-						"snat_entry_enabled": m1["SnatEntryEnabled"],
-					}
-					ipList = append(ipList, temp1)
+					ipList = append(ipList, fmt.Sprint(m1["IpAddress"]))
 				}
 			}
 		}

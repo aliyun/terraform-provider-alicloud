@@ -49,5 +49,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `storage_type` - StorageType block of the FileSystem.
   * `metered_size` - MeteredSize of the FileSystem.
   * `create_time` - Time of creation.
-  * `encrypt_type` - (Optional, Available in v1.121.2+) Whether the file system is encrypted.Valid values: `0` and `1` and `2`.
-  * `kms_key_id` - (Optional, Available in v1.121.2+) The File System Kms key ID.
+  * `encrypt_type` - (Optional, Available in v1.121.2+) Whether the file system is encrypted.
+                      Valid values:
+                      0: The file system is not encrypted.
+                      1: The file system is encrypted with a managed secret key.

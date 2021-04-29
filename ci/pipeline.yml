@@ -8,7 +8,7 @@ groups:
       - Instance
       - Disk
       - SecurityGroup
-      - KeyPair
+#      - KeyPair
       - NetworkInterface
       - Snapshot
       - LaunchTemplate
@@ -59,7 +59,7 @@ groups:
       # Dcdn
       - Dcdn
       # Api Gateway
-      - ApiGateway
+      - Apigateway
       # Mns
       - Mns
       # Rocket MQ
@@ -128,7 +128,7 @@ groups:
       - Instance
       - Disk
       - SecurityGroup
-      - KeyPair
+#      - KeyPair
       - NetworkInterface
       - Snapshot
       - LaunchTemplate
@@ -238,7 +238,7 @@ groups:
   - name: Application Service
     jobs:
       # Api Gateway
-      - ApiGateway
+      - Apigateway
       # Sls
       - Log
       - Sweeper-1
@@ -337,6 +337,11 @@ shared:
       DING_TALK_TOKEN: {{ding_talk_token}}
       ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
       ALICLOUD_RESOURCE_GROUP_ID: {{alicloud_resource_group_id}}
+      CONCOURSE_TARGET: {{alicloud_concourse_target}}
+      CONCOURSE_TARGET_URL: {{alicloud_concourse_target_url}}
+      CONCOURSE_TARGET_USER: {{alicloud_concourse_target_user}}
+      CONCOURSE_TARGET_PASSWORD: {{alicloud_concourse_target_password}}
+      CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME: {{alicloud_concourse_target_pipeline_name}}
 
 jobs:
   - name: Sweeper-1
@@ -409,7 +414,7 @@ jobs:
           SWEEPER: true
           TEST_CASE_CODE: "-"
 
-  - name: ApiGateway
+  - name: Apigateway
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -435,6 +440,7 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "CdnDomain"
+          CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME: "Cdn"
 
   - name: Cen
     plan:
@@ -571,6 +577,7 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "Eip"
+          CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME: "EIP"
           SWEEPER_CODE: "alicloud_eip"
 
   - name: Ess
@@ -628,19 +635,19 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Images"
 
-  - name: KeyPair
-    plan:
-      - <<: *clone-provider
-      - get: trigger
-        trigger: true
-        resource: 16Thu
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          TEST_CASE_CODE: "KeyPair"
-          SWEEPER_CODE: "alicloud_key_pair"
+#  - name: KeyPair
+#    plan:
+#      - <<: *clone-provider
+#      - get: trigger
+#        trigger: true
+#        resource: 16Thu
+#      - aggregate:
+#          - *get-aliyun-cli
+#      - <<: *run
+#        params:
+#          <<: *run-params
+#          TEST_CASE_CODE: "KeyPair"
+#          SWEEPER_CODE: "alicloud_key_pair"
 
   - name: Kms
     plan:
@@ -742,7 +749,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 0330
+        resource: 0330Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -769,7 +776,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 0530
+        resource: 0530Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -908,7 +915,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 1530
+        resource: 1530Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1065,7 +1072,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 06
+        resource: 06Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1169,7 +1176,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 14
+        resource: 14Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1207,7 +1214,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 17
+        resource: 17Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1458,7 +1465,7 @@ jobs:
         passed: [
             Instance, Disk, SecurityGroup, NetworkInterface, Ess, CS, FC,
             Vpc, VSwitch, EIP, RouteTable, RouteEntry, RouterInterface, NatGateway, Snat, Forward, CommonBandwidth,
-            Slb, DB, KVStore, DRDS, ApiGateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, Snapshot, LaunchTemplate
+            Slb, DB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, Snapshot, LaunchTemplate
         ]
       - aggregate:
           - *get-aliyun-cli
@@ -1542,13 +1549,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 0330
-    type: time
-    source:
-      start: 03:30 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 0330
+#    type: time
+#    source:
+#      start: 03:30 AM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
   - name: 04
     type: time
@@ -1582,13 +1589,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 06
-    type: time
-    source:
-      start: 06:00 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 06
+#    type: time
+#    source:
+#      start: 06:00 AM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
   - name: 0630
     type: time
@@ -1734,13 +1741,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 1530
-    type: time
-    source:
-      start: 03:30 PM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 1530
+#    type: time
+#    source:
+#      start: 03:30 PM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
   - name: 16
     type: time
@@ -1758,13 +1765,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 17
-    type: time
-    source:
-      start: 05:00 PM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 17
+#    type: time
+#    source:
+#      start: 05:00 PM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
   #- name: 1730
   #  type: time
@@ -1927,6 +1934,14 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
+  - name: 0530Thu
+    type: time
+    source:
+      start: 05:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
   - name: 06Thu
     type: time
     source:
@@ -2051,6 +2066,14 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
+  - name: 14Thu
+    type: time
+    source:
+      start: 02:00 PM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
+
   - name: 1430Thu
     type: time
     source:
@@ -2059,13 +2082,13 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
-  - name: 16Thu
-    type: time
-    source:
-      start: 04:00 PM
-      stop: 10:50 PM
-      days: [Thursday]
-      location: {{time_location}}
+#  - name: 16Thu
+#    type: time
+#    source:
+#      start: 04:00 PM
+#      stop: 10:50 PM
+#      days: [Thursday]
+#      location: {{time_location}}
 
   - name: 1630Thu
     type: time

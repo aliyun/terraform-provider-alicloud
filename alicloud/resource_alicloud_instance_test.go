@@ -159,6 +159,7 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EcsClassicSupportedRegions)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccClassicNetworkResources(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1136,7 +1137,7 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAcc%sEcsInstanceDataDisks%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstancePrePaidConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -1166,19 +1167,35 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 					"role_name":            "${alicloud_ram_role.default.name}",
 					"data_disks": []map[string]string{
 						{
-							"name":              "disk1",
-							"size":              "20",
-							"category":          "cloud_essd",
-							"performance_level": "PL1",
-							"description":       "disk1",
+							"name": "${var.name}-1",
+							"size": "20",
 						},
 						{
-							"name":        "disk2",
+							"name":     "${var.name}-2",
+							"size":     "20",
+							"category": "cloud_ssd",
+						},
+						{
+							"name":      "${var.name}-3",
+							"size":      "20",
+							"encrypted": "true",
+						},
+						{
+							"name":       "${var.name}-4",
+							"size":       "20",
+							"encrypted":  "true",
+							"kms_key_id": "${alicloud_kms_key.key.id}",
+						},
+						{
+							"name":        "${var.name}-5",
 							"size":        "20",
-							"category":    "cloud_efficiency",
-							"description": "disk2",
-							"encrypted":   "true",
-							"kms_key_id":  "${alicloud_kms_key.key.id}",
+							"description": "${var.name} description",
+						},
+						{
+							"name":              "${var.name}-6",
+							"size":              "20",
+							"category":          "cloud_ssd",
+							"performance_level": "PL1",
 						},
 					},
 					"force_delete": "true",
@@ -1190,19 +1207,63 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 						"role_name":     name,
 						"user_data":     "I_am_user_data",
 
-						"data_disks.#":             "2",
-						"data_disks.0.name":        "disk1",
-						"data_disks.0.size":        "20",
-						"data_disks.0.category":    "cloud_efficiency",
-						"data_disks.0.description": "disk1",
-						"data_disks.1.name":        "disk2",
-						"data_disks.1.size":        "20",
-						"data_disks.1.category":    "cloud_efficiency",
-						"data_disks.1.description": "disk2",
-						"data_disks.1.encrypted":   "true",
-						"data_disks.1.kms_key_id":  CHECKSET,
-						"instance_charge_type":     "PostPaid",
-						"dry_run":                  "false",
+						"data_disks.#":                         "6",
+						"data_disks.0.name":                    name + "-1",
+						"data_disks.0.size":                    "20",
+						"data_disks.0.category":                "cloud_efficiency",
+						"data_disks.0.encrypted":               "false",
+						"data_disks.0.kms_key_id":              "",
+						"data_disks.0.snapshot_id":             "",
+						"data_disks.0.auto_snapshot_policy_id": "",
+						"data_disks.0.delete_with_instance":    "true",
+						"data_disks.0.description":             "",
+						"data_disks.0.performance_level":       "",
+						"data_disks.1.name":                    name + "-2",
+						"data_disks.1.size":                    "20",
+						"data_disks.1.category":                "cloud_ssd",
+						"data_disks.1.encrypted":               "false",
+						"data_disks.1.kms_key_id":              "",
+						"data_disks.1.snapshot_id":             "",
+						"data_disks.1.auto_snapshot_policy_id": "",
+						"data_disks.1.delete_with_instance":    "true",
+						"data_disks.1.description":             "",
+						"data_disks.1.performance_level":       "",
+						"data_disks.2.name":                    name + "-3",
+						"data_disks.2.category":                "cloud_efficiency",
+						"data_disks.2.encrypted":               "true",
+						"data_disks.2.kms_key_id":              "",
+						"data_disks.2.snapshot_id":             "",
+						"data_disks.2.auto_snapshot_policy_id": "",
+						"data_disks.2.delete_with_instance":    "true",
+						"data_disks.2.description":             "",
+						"data_disks.2.performance_level":       "",
+						"data_disks.3.name":                    name + "-4",
+						"data_disks.3.category":                "cloud_efficiency",
+						"data_disks.3.encrypted":               "true",
+						"data_disks.3.kms_key_id":              CHECKSET,
+						"data_disks.3.snapshot_id":             "",
+						"data_disks.3.auto_snapshot_policy_id": "",
+						"data_disks.3.delete_with_instance":    "true",
+						"data_disks.3.description":             "",
+						"data_disks.3.performance_level":       "",
+						"data_disks.4.name":                    name + "-5",
+						"data_disks.4.category":                "cloud_efficiency",
+						"data_disks.4.encrypted":               "false",
+						"data_disks.4.kms_key_id":              "",
+						"data_disks.4.snapshot_id":             "",
+						"data_disks.4.auto_snapshot_policy_id": "",
+						"data_disks.4.delete_with_instance":    "true",
+						"data_disks.4.description":             name + " description",
+						"data_disks.4.performance_level":       "",
+						"data_disks.5.name":                    name + "-6",
+						"data_disks.5.category":                "cloud_ssd",
+						"data_disks.5.encrypted":               "false",
+						"data_disks.5.kms_key_id":              "",
+						"data_disks.5.snapshot_id":             "",
+						"data_disks.5.auto_snapshot_policy_id": "",
+						"data_disks.5.delete_with_instance":    "true",
+						"data_disks.5.description":             "",
+						"data_disks.5.performance_level":       "PL1",
 					}),
 				),
 			},
@@ -1420,8 +1481,13 @@ data "alicloud_instance_types" "default" {
 	memory_size       = 2
 }
 
+data "alicloud_instance_types" "essd" {
+ 	cpu_core_count    = 2
+	memory_size       = 4
+ 	system_disk_category = "cloud_essd"
+}
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu*"
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
@@ -1479,6 +1545,11 @@ resource "alicloud_ram_role" "default" {
 resource "alicloud_key_pair" "default" {
 	key_pair_name = "${var.name}"
 }
+resource "alicloud_kms_key" "key" {
+        description             = var.name
+        pending_window_in_days  = "7"
+        key_state               = "Enabled"
+}
 
 `, name)
 }
@@ -1491,18 +1562,18 @@ data "alicloud_instance_types" "default" {
   instance_charge_type = "PrePaid"
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu*"
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  vpc_name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name              = "${var.name}"
+  zone_id = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+  vswitch_name              = "${var.name}"
 }
 resource "alicloud_security_group" "default" {
   count = "2"
@@ -1532,7 +1603,7 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_key_pair" "default" {
-	key_name = "${var.name}"
+	key_pair_name = "${var.name}"
 }
 
 resource "alicloud_kms_key" "key" {
@@ -1551,14 +1622,13 @@ data "alicloud_instance_types" "default" {
   cpu_core_count    = 1
   memory_size       = 2
 }
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  owners      = "system"
+}
 
 variable "resource_group_id" {
 		default = "%s"
-	}
-
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu*"
-  owners      = "system"
 }
 
 resource "alicloud_security_group" "default" {
@@ -1595,7 +1665,7 @@ func resourceInstanceTypeConfigDependence(name string) string {
 	  available_resource_creation = "VSwitch"
 	}
 	data "alicloud_images" "default" {
-	  name_regex  = "^ubuntu"
+      name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
 	  most_recent = true
 	  owners      = "system"
 	}
@@ -1671,6 +1741,7 @@ func testAccCheckSpotInstanceDependence(name string) string {
 	  	cpu_core_count    = 2
 	  	memory_size       = 4
 	  	spot_strategy = "SpotWithPriceLimit"
+		image_id = data.alicloud_images.default.images.0.id
 	}
 	
 	`, EcsInstanceCommonNoZonesTestCase, name)

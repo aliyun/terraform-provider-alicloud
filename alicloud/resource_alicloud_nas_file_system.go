@@ -50,13 +50,8 @@ func resourceAlicloudNasFileSystem() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.IntInSlice([]int{0, 1, 2}),
+				ValidateFunc: validation.IntInSlice([]int{0, 1}),
 				Default:      0,
-			},
-			"kms_key_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}
@@ -75,7 +70,6 @@ func resourceAlicloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 	request["ProtocolType"] = d.Get("protocol_type")
 	request["StorageType"] = d.Get("storage_type")
 	request["EncryptType"] = d.Get("encrypt_type")
-	request["KmsKeyId"] = d.Get("kms_key_id")
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -149,7 +143,6 @@ func resourceAlicloudNasFileSystemRead(d *schema.ResourceData, meta interface{})
 	d.Set("protocol_type", object["ProtocolType"])
 	d.Set("storage_type", object["StorageType"])
 	d.Set("encrypt_type", object["EncryptType"])
-	d.Set("kms_key_id", object["KMSKeyId"])
 	return nil
 }
 

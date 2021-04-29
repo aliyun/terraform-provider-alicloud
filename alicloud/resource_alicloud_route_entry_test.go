@@ -342,8 +342,9 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_nat_gateway" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
-	specification = "Middle"
-	name = "${var.name}"
+	nat_type = "Enhanced"
+	vswitch_id = alicloud_vswitch.default.id
+	nat_gateway_name = "${var.name}"
 }
 
 resource "alicloud_route_entry" "default" {

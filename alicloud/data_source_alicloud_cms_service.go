@@ -54,7 +54,7 @@ func dataSourceAlicloudCmsServiceRead(d *schema.ResourceData, meta interface{}) 
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ORDER.OPEND"}) {
+		if IsExpectedErrors(err, []string{"ORDER.OPEND", "Has.effect.suit"}) {
 			d.SetId("CmsServiceHasBeenOpened")
 			d.Set("status", "Opened")
 			return nil
