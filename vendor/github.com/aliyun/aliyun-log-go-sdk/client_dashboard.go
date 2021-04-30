@@ -7,29 +7,12 @@ import (
 	"strconv"
 )
 
-type ChartSearch struct {
-	Logstore string `json:"logstore"`
-	Topic    string `json:"topic"`
-	Query    string `json:"query"`
-	Start    string `json:"start"`
-	End      string `json:"end"`
-}
-
-type ChartDisplay struct {
-	XAxisKeys   []string `json:"xAxis,omitempty"`
-	YAxisKeys   []string `json:"yAxis,omitempty"`
-	XPosition   float64  `json:"xPos"`
-	YPosition   float64  `json:"yPos"`
-	Width       float64  `json:"width"`
-	Height      float64  `json:"height"`
-	DisplayName string   `json:"displayName"`
-}
-
 type Chart struct {
-	Title   string       `json:"title"`
-	Type    string       `json:"type"`
-	Search  ChartSearch  `json:"search"`
-	Display ChartDisplay `json:"display"`
+	Title   string                 `json:"title"`
+	Type    string                 `json:"type"`
+	Action  map[string]interface{} `json:"action,omitempty"` // key->action or action only, omit this will clear action
+	Search  map[string]interface{} `json:"search"`
+	Display map[string]interface{} `json:"display"`
 }
 
 type Dashboard struct {
@@ -40,8 +23,8 @@ type Dashboard struct {
 }
 
 type ResponseDashboardItem struct {
-	DashboardName string  `json:"dashboardName"`
-	DisplayName   string  `json:"displayName"`
+	DashboardName string `json:"dashboardName"`
+	DisplayName   string `json:"displayName"`
 }
 
 
@@ -283,14 +266,14 @@ func (c *Client) ListDashboardV2(project string, dashboardName string, offset, s
 	uri := "/dashboards"
 	r, err := c.request(project, "GET", uri, h, nil)
 	if err != nil {
-		return nil, nil,0, 0, err
+		return nil, nil, 0, 0, err
 	}
 	defer r.Body.Close()
 
 	type ListDashboardResponse struct {
-		DashboardList []string `json:"dashboards"`
-		Total         int      `json:"total"`
-		Count         int      `json:"count"`
+		DashboardList  []string                `json:"dashboards"`
+		Total          int                     `json:"total"`
+		Count          int                     `json:"count"`
 		DashboardItems []ResponseDashboardItem `json:"dashboardItems"`
 	}
 

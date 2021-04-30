@@ -543,7 +543,7 @@ func GetCharTitile(project, dashboard, char string, client *sls.Client) string {
 		return char
 	}
 	for _, v := range board.ChartList {
-		if v.Display.DisplayName == char {
+		if v.Display["displayName"] == char {
 			return v.Title
 		} else {
 			return char
