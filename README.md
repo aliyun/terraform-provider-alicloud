@@ -10,6 +10,17 @@ Terraform Provider For Alibaba Cloud
 
 <img src="https://www.datocms-assets.com/2885/1506527326-color.svg" width="400px">
 
+
+Supported Versions
+------------------
+
+| Terraform version | minimum provider version |maxmimum provider version
+| ---- | ---- | ----| 
+| 0.11.x	| 1.0.0	| 1.122.0 |
+| 0.12.x	| 1.0.0	| 1.122.0 |
+| 0.13.x	| 1.0.0	| 1.122.0 |
+| 0.14.x	| 1.0.0	| 1.122.0 |
+
 Requirements
 ------------
 
