@@ -1,28 +1,29 @@
-## 1.122.0 (Unreleased)
+## 1.123.0 (Unreleased)
+## 1.122.0 (April 30, 2021)
 
-- **New Resource:** `alicloud_auto_snapshot_policy_attachment` [GH-3503]
-- **New Resource:** `alicloud_cs_kubernetes_permission` [GH-3495]
-- **New Resource:** `alicloud_ecs_disk` [GH-3443]
-- **New Data Source:** `alicloud_cs_kubernetes_permissions` [GH-3495]
-- **New Data Source:** `alicloud_vpc_flow_log` [GH-3477]
+- **New Resource:** `alicloud_auto_snapshot_policy_attachment` ([#3503](https://github.com/aliyun/terraform-provider-alicloud/issues/3503))
+- **New Resource:** `alicloud_cs_kubernetes_permission` ([#3495](https://github.com/aliyun/terraform-provider-alicloud/issues/3495))
+- **New Resource:** `alicloud_ecs_disk` ([#3443](https://github.com/aliyun/terraform-provider-alicloud/issues/3443))
+- **New Data Source:** `alicloud_cs_kubernetes_permissions` ([#3495](https://github.com/aliyun/terraform-provider-alicloud/issues/3495))
+- **New Data Source:** `alicloud_vpc_flow_log` ([#3477](https://github.com/aliyun/terraform-provider-alicloud/issues/3477))
 
 ENHANCEMENTS:
 
-- resource/alicloud_network_acl: Supports setting timeout; Adds new attributes status, ingress acl entries and egress acl entries; Upgrades its dependence SDK; Adds its datasource [GH-3444]
-- resource/alicloud_disk: Renames alicloud_disk to alicloud_ecs_disk; Deprecates the name and use disk_name instead; Adds more attribute, like payment_type, encrypt_algorithm, auto_snapshot and so on; Upgrades the its dependence sdk [GH-3443] 
-- testcase: Improves the image and instance testcases [GH-3510]
-- testcase: Improves the instance testcases [GH-3504]
-- testcase: Improves the ess scaling testcase and trigger job [GH-3502]
-- testcase: Improves the sweeper testcase [GH-3498]
-- testcase: Improves resource alicloud_instance testcase for attribute data_disks [GH-3497]
-- testcase: Fixes the has deprecated attribute [GH-3496]
-- testcase: Improves the testcase of scaling configurations and manager policy  [GH-3494]
-- docs: Fixes TSDB instance document error [GH-3500]
-- ci: Improves the ci test in parsing func methods [GH-3492]
+- resource/alicloud_network_acl: Supports setting timeout; Adds new attributes status, ingress acl entries and egress acl entries; Upgrades its dependence SDK; Adds its datasource ([#3444](https://github.com/aliyun/terraform-provider-alicloud/issues/3444))
+- resource/alicloud_disk: Renames alicloud_disk to alicloud_ecs_disk; Deprecates the name and use disk_name instead; Adds more attribute, like payment_type, encrypt_algorithm, auto_snapshot and so on; Upgrades the its dependence sdk [[#3443](https://github.com/aliyun/terraform-provider-alicloud/issues/3443)] 
+- testcase: Improves the image and instance testcases ([#3510](https://github.com/aliyun/terraform-provider-alicloud/issues/3510))
+- testcase: Improves the instance testcases ([#3504](https://github.com/aliyun/terraform-provider-alicloud/issues/3504))
+- testcase: Improves the ess scaling testcase and trigger job ([#3502](https://github.com/aliyun/terraform-provider-alicloud/issues/3502))
+- testcase: Improves the sweeper testcase ([#3498](https://github.com/aliyun/terraform-provider-alicloud/issues/3498))
+- testcase: Improves resource alicloud_instance testcase for attribute data_disks ([#3497](https://github.com/aliyun/terraform-provider-alicloud/issues/3497))
+- testcase: Fixes the has deprecated attribute ([#3496](https://github.com/aliyun/terraform-provider-alicloud/issues/3496))
+- testcase: Improves the testcase of scaling configurations and manager policy  ([#3494](https://github.com/aliyun/terraform-provider-alicloud/issues/3494))
+- docs: Fixes TSDB instance document error ([#3500](https://github.com/aliyun/terraform-provider-alicloud/issues/3500))
+- ci: Improves the ci test in parsing func methods ([#3492](https://github.com/aliyun/terraform-provider-alicloud/issues/3492))
 
 BUG FIXES:
 
-- resource/alicloud_log_oss_shipper: Fixes sls oss shipper token bug which unsupporting security token [GH-3508]
+- resource/alicloud_log_oss_shipper: Fixes sls oss shipper token bug which unsupporting security token ([#3508](https://github.com/aliyun/terraform-provider-alicloud/issues/3508))
 
 ## 1.121.3 (April 24, 2021)
 
