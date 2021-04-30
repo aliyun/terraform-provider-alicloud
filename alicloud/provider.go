@@ -410,6 +410,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_flow_logs":                               dataSourceAlicloudVpcFlowLogs(),
 			"alicloud_network_acls":                                dataSourceAlicloudNetworkAcls(),
 			"alicloud_ecs_disks":                                   dataSourceAlicloudEcsDisks(),
+			"alicloud_ddoscoo_domain_resources":                    dataSourceAlicloudDdoscooDomainResources(),
+			"alicloud_ddoscoo_ports":                               dataSourceAlicloudDdoscooPorts(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -732,6 +734,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_disk":                                   resourceAlicloudEcsDisk(),
 			"alicloud_ecs_disk_attachment":                        resourceAlicloudEcsDiskAttachment(),
 			"alicloud_ecs_auto_snapshot_policy_attachment":        resourceAlicloudEcsAutoSnapshotPolicyAttachment(),
+			"alicloud_ddoscoo_domain_resource":                    resourceAlicloudDdoscooDomainResource(),
+			"alicloud_ddoscoo_port":                               resourceAlicloudDdoscooPort(),
 		},
 
 		ConfigureFunc: providerConfigure,
