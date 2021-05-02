@@ -160,3 +160,22 @@ fly -t terraform-china sp -p auto-trigger \
   -v alicloud_accound_id=$ALICLOUD_ACCOUNT_ID \
   -v alicloud_resource_group_id=$ALICLOUD_RESOURCE_GROUP_ID \
   -v alicloud_waf_instance_id=$ALICLOUD_WAF_INSTANCE_ID
+
+# 兼容性测试
+fly -t terraform-intl sp -p certify \
+  -c certify.yml \
+  -v aliyun_cli_bucket=$ALIYUN_CLI_BUCKET \
+  -v aliyun_cli_region=$ALIYUN_CLI_REGION \
+  -v aliyun_cli_access_key=$ALIYUN_CLI_ACCESS_KEY \
+  -v aliyun_cli_secret_key=$ALIYUN_CLI_SECRET_KEY \
+  -v alicloud_access_key=$ALICLOUD_ACCESS_KEY \
+  -v alicloud_secret_key=$ALICLOUD_SECRET_KEY \
+  -v alicloud_region="eu-central-1" \
+  -v access_ci_url=$INTL_ACCESS_CI_URL \
+  -v ding_talk_token=$DING_TALK_TOKEN \
+  -v terraform_backend_bucket="terraform-ci" \
+  -v terraform_backend_region="cn-beijing" \
+  -v terraform_backend_tablestore_endpoint="https://tf-oss-remote.cn-hangzhou.ots.aliyuncs.com" \
+  -v terraform_backend_tablestore_table="terraform_state" \
+  -v terraform_configuration_names="vpc-flow-log" \
+  -v terraform_configuration_ignore_names=""

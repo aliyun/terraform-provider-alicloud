@@ -1,0 +1,36 @@
+---
+platform: linux
+
+image_resource:
+  type: registry-image
+  source: {repository: golang, tag: 1.13.4}
+
+inputs:
+  - name: terraform-provider-alicloud
+  - name: aliyun-cli
+  - name: next-provider
+
+run:
+  path: terraform-provider-alicloud/ci/tasks/validate.sh
+
+params:
+  ALICLOUD_ACCESS_KEY: ""
+  ALICLOUD_SECRET_KEY: ""
+  ALICLOUD_REGION: ""
+  DING_TALK_TOKEN: ""
+  ACCESS_URL: ""
+  CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME: "certify"
+  CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME: ""
+  terraform_version: ""
+  remote_state_access_key: ""
+  remote_state_secret_key: ""
+  remote_state_region: ""
+  remote_state_bucket: ""
+  remote_state_tablestore_endpoint: ""
+  remote_state_tablestore_table: ""
+  remote_state_file_path: "tf-ci-backend/examples"
+  remote_state_file_name: "terraform.tfstate"
+  terraform_configuration_path: terraform-provider-alicloud/examples
+  terraform_backend_config_path: terraform-provider-alicloud/ci/assets/terraform/terraform.tf
+  terraform_configuration_names: ""
+  terraform_configuration_ignore_names: ""
