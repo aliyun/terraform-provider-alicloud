@@ -585,7 +585,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 12
+        resource: 12Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -599,7 +599,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 13
+        resource: 13Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1319,7 +1319,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 0630
+        resource: 0630Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1597,13 +1597,13 @@ resources:
 #      #    days: [Sunday]
 #      location: {{time_location}}
 
-  - name: 0630
-    type: time
-    source:
-      start: 06:30 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 0630
+#    type: time
+#    source:
+#      start: 06:30 AM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
 #  - name: 07
 #    type: time
@@ -1685,13 +1685,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 12
-    type: time
-    source:
-      start: 12:00 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 12
+#    type: time
+#    source:
+#      start: 12:00 AM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
   - name: 1230
     type: time
@@ -1701,13 +1701,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 13
-    type: time
-    source:
-      start: 01:00 PM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+#  - name: 13
+#    type: time
+#    source:
+#      start: 01:00 PM
+#      stop: 10:50 PM
+#      #    days: [Sunday]
+#      location: {{time_location}}
 
 #  - name: 1330
 #    type: time
