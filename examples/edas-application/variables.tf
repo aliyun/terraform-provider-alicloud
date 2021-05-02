@@ -11,7 +11,7 @@ variable "package_type" {
 }
 
 variable "build_pack_id" {
-  type = number
+  type        = number
   description = "The package ID of Enterprise Distributed Application Service (EDAS) Container, which can be retrieved by calling container version list interface ListBuildPack or the \"Pack ID\" column in container version list. When creating High-speed Service Framework (HSF) application, this parameter is required."
 }
 
@@ -32,7 +32,7 @@ variable "component_ids" {
 }
 
 variable "ecu_info" {
-  type = list(string)
+  type        = list(string)
   description = "The IDs of the Elastic Compute Unit (ECU) where you want to deploy the application."
 }
 

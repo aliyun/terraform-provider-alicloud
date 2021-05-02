@@ -178,4 +178,4 @@ fly -t terraform-intl sp -p certify \
   -v terraform_backend_tablestore_endpoint="https://tf-oss-remote.cn-hangzhou.ots.aliyuncs.com" \
   -v terraform_backend_tablestore_table="terraform_state" \
   -v terraform_configuration_names="vpc-flow-log" \
-  -v terraform_configuration_ignore_names=""
+  -v terraform_configuration_ignore_names="ddosbgp,ddoscoo"

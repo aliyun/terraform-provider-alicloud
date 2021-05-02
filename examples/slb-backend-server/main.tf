@@ -23,15 +23,15 @@ variable "number" {
 }
 
 resource "alicloud_vpc" "main" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "main" {
-  vpc_id            = alicloud_vpc.main.id
-  cidr_block        = "172.16.0.0/16"
-  availability_zone = data.alicloud_zones.default.zones[0].id
-  name              = var.name
+  vpc_id       = alicloud_vpc.main.id
+  cidr_block   = "172.16.0.0/16"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_security_group" "group" {
