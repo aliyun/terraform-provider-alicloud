@@ -71,6 +71,7 @@ resources:
         - vendor/*
         - go.mod
         - main.go
+        - ci/*
 
   - name: aliyun-cli
     type: s3

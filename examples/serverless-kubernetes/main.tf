@@ -1,18 +1,18 @@
 // Zones data source for availability_zone
-data "alicloud_zones" default {
+data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
-  name       = var.vpc_name
+  vpc_name   = var.vpc_name
   cidr_block = var.vpc_cidr
 }
 
 resource "alicloud_vswitch" "default" {
-  name              = var.vswitch_name
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = var.vswitch_cidr
-  availability_zone = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.vswitch_name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = var.vswitch_cidr
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_cs_serverless_kubernetes" "serverless" {

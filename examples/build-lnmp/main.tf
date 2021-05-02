@@ -22,9 +22,9 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "vsw" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = var.vswitch_cidr
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  vpc_id     = alicloud_vpc.default.id
+  cidr_block = var.vswitch_cidr
+  zone_id    = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_security_group" "sg" {

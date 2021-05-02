@@ -7,7 +7,7 @@ provider "alicloud" {
 resource "alicloud_vpc" "init" {
   provider    = alicloud
   count       = var.init_vpc_id == "" ? 1 : 0
-  name        = var.vpc_name
+  vpc_name    = var.vpc_name
   cidr_block  = var.init_vpc_cidr
   description = var.vpc_description
 }
@@ -41,7 +41,7 @@ provider "alicloud" {
 resource "alicloud_vpc" "accept" {
   provider    = alicloud.accept
   count       = var.accept_vpc_id == "" ? 1 : 0
-  name        = var.vpc_name
+  vpc_name    = var.vpc_name
   cidr_block  = var.accept_vpc_cidr
   description = var.vpc_description
 }

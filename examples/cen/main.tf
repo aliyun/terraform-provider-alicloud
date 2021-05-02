@@ -35,13 +35,13 @@ resource "alicloud_cen_instance" "cen" {
 
 resource "alicloud_vpc" "vpc_1" {
   provider   = alicloud.hz
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vpc" "vpc_2" {
   provider   = alicloud.bj
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "192.168.0.0/16"
 }
 
@@ -55,11 +55,11 @@ resource "alicloud_cen_bandwidth_package" "bwp" {
 }
 
 resource "alicloud_vswitch" "default" {
-  provider          = alicloud.hz
-  vpc_id            = alicloud_vpc.vpc_1.id
-  cidr_block        = "172.16.0.0/21"
-  availability_zone = data.alicloud_zones.default.zones[0].id
-  name              = var.name
+  provider     = alicloud.hz
+  vpc_id       = alicloud_vpc.vpc_1.id
+  cidr_block   = "172.16.0.0/21"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_security_group" "default" {

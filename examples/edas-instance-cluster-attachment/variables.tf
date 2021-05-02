@@ -3,6 +3,6 @@ variable "cluster_id" {
 }
 
 variable "instance_ids" {
-  type = list(string)
+  type        = list(string)
   description = "The ID of instance. e.g. instanceId1, instanceId2."
 }

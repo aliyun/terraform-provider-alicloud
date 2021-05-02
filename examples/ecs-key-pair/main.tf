@@ -10,14 +10,14 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "main" {
-  name       = "vpc-${var.short_name}"
+  vpc_name   = "vpc-${var.short_name}"
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "main" {
-  vpc_id            = alicloud_vpc.main.id
-  cidr_block        = "10.1.1.0/24"
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  vpc_id     = alicloud_vpc.main.id
+  cidr_block = "10.1.1.0/24"
+  zone_id    = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_security_group" "group" {
