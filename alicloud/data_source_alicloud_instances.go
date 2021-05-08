@@ -281,12 +281,16 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 	nameRegex, ok := d.GetOk("name_regex")
 	imageId, okImg := d.GetOk("image_id")
 	if (ok && nameRegex.(string) != "") || (okImg && imageId.(string) != "") {
-		var r *regexp.Regexp
+		var instanceNameRegex *regexp.Regexp
 		if nameRegex != "" {
-			r = regexp.MustCompile(nameRegex.(string))
+			r, err := regexp.Compile(nameRegex.(string))
+			if err != nil {
+				return WrapError(err)
+			}
+			instanceNameRegex = r
 		}
 		for _, inst := range allInstances {
-			if r != nil && !r.MatchString(inst.InstanceName) {
+			if instanceNameRegex != nil && !instanceNameRegex.MatchString(inst.InstanceName) {
 				continue
 			}
 			if imageId.(string) != "" && inst.ImageId != imageId.(string) {

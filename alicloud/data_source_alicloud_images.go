@@ -334,7 +334,10 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 
 	var filteredImages []ecs.Image
 	if nameRegexOk {
-		r := regexp.MustCompile(nameRegex.(string))
+		r, err := regexp.Compile(nameRegex.(string))
+		if err != nil {
+			return WrapError(err)
+		}
 		for _, image := range allImages {
 			// Check for a very rare case where the response would include no
 			// image name. No name means nothing to attempt a match against,

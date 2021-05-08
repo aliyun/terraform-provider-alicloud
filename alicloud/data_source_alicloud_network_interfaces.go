@@ -216,11 +216,15 @@ func dataSourceAlicloudNetworkInterfacesRead(d *schema.ResourceData, meta interf
 	var filterEnis []ecs.NetworkInterfaceSet
 	nameRegex, ok := d.GetOk("name_regex")
 	if ok && nameRegex.(string) != "" {
-		var r *regexp.Regexp
-		r = regexp.MustCompile(nameRegex.(string))
+		var networkInterfaceNameRegex *regexp.Regexp
+		r, err := regexp.Compile(nameRegex.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		networkInterfaceNameRegex = r
 
 		for i := range allEnis {
-			if r.MatchString(allEnis[i].NetworkInterfaceName) {
+			if networkInterfaceNameRegex.MatchString(allEnis[i].NetworkInterfaceName) {
 				filterEnis = append(filterEnis, allEnis[i])
 			}
 		}

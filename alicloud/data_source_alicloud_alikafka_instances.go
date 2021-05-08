@@ -158,7 +158,10 @@ func dataSourceAlicloudAlikafkaInstancesRead(d *schema.ResourceData, meta interf
 	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
 		var r *regexp.Regexp
 		if nameRegex != "" {
-			r = regexp.MustCompile(nameRegex.(string))
+			r, err = regexp.Compile(nameRegex.(string))
+			if err != nil {
+				return WrapError(err)
+			}
 		}
 		for _, instance := range response.InstanceList.InstanceVO {
 			if r != nil && !r.MatchString(instance.Name) {
