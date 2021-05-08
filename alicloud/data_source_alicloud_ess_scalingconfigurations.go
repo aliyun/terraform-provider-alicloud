@@ -191,7 +191,10 @@ func dataSourceAlicloudEssScalingConfigurationsRead(d *schema.ResourceData, meta
 	if okNameRegex || okIds {
 		for _, configuration := range allScalingConfigurations {
 			if okNameRegex && nameRegex != "" {
-				var r = regexp.MustCompile(nameRegex.(string))
+				r, err := regexp.Compile(nameRegex.(string))
+				if err != nil {
+					return WrapError(err)
+				}
 				if r != nil && !r.MatchString(configuration.ScalingConfigurationName) {
 					continue
 				}

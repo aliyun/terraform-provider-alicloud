@@ -137,7 +137,10 @@ func dataSourceAlicloudSlbCACertificatesRead(d *schema.ResourceData, meta interf
 	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
 		var r *regexp.Regexp
 		if nameRegex != "" {
-			r = regexp.MustCompile(nameRegex.(string))
+			r, err = regexp.Compile(nameRegex.(string))
+			if err != nil {
+				return WrapError(err)
+			}
 		}
 		for _, certificate := range response.CACertificates.CACertificate {
 			if r != nil && !r.MatchString(certificate.CACertificateName) {

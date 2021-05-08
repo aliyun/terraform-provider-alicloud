@@ -154,7 +154,10 @@ func dataSourceAlicloudSlbAclsRead(d *schema.ResourceData, meta interface{}) err
 	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
 		var r *regexp.Regexp
 		if nameRegex != "" {
-			r = regexp.MustCompile(nameRegex.(string))
+			r, err = regexp.Compile(nameRegex.(string))
+			if err != nil {
+				return WrapError(err)
+			}
 		}
 		for _, acl := range response.Acls.Acl {
 			if r != nil && !r.MatchString(acl.AclName) {
