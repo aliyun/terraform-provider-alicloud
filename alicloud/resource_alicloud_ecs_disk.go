@@ -145,7 +145,6 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"offline", "online"}, false),
-				Default:      "offline",
 			},
 			"zone_id": {
 				Type:          schema.TypeString,
