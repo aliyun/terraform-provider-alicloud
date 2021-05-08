@@ -1,4 +1,18 @@
-## 1.123.0 (Unreleased)
+## 1.122.1 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_kvstore_instance: Fixes the attribute config does not affect bug when creating a new resource ([#3523](https://github.com/aliyun/terraform-provider-alicloud/issues/3523))
+- resource/alicloud_ecs_disk: delete param type default ​​and enumerated values ([#3522](https://github.com/aliyun/terraform-provider-alicloud/issues/3522))
+- resource/alicloud_rds_account: add validFunc for param account name ([#3527](https://github.com/aliyun/terraform-provider-alicloud/issues/3527))
+- datasource: use Compile replace MustComplile, Catch the error ([#3524](https://github.com/aliyun/terraform-provider-alicloud/issues/3524))
+- testcase: Fixes the polardb cluster resource and datasource testcase ([#3526](https://github.com/aliyun/terraform-provider-alicloud/issues/3526))
+- docs: Improves the cs_kubernetes docs ([#3512](https://github.com/aliyun/terraform-provider-alicloud/issues/3512))
+- docs: update alidns_domain ([#3519](https://github.com/aliyun/terraform-provider-alicloud/issues/3519))
+- readme: Adds supported version statement ([#3513](https://github.com/aliyun/terraform-provider-alicloud/issues/3513))
+- ci: Adds compatible test for the provider ([#3514](https://github.com/aliyun/terraform-provider-alicloud/issues/3514))
+- examples: Removes the useless examples and replaces the deprecated attributes ([#3515](https://github.com/aliyun/terraform-provider-alicloud/issues/3515))
+
 ## 1.122.0 (April 30, 2021)
 
 - **New Resource:** `alicloud_auto_snapshot_policy_attachment` ([#3503](https://github.com/aliyun/terraform-provider-alicloud/issues/3503))
