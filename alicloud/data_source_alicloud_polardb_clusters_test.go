@@ -96,7 +96,7 @@ func TestAccAlicloudPolarDBClustersDataSource(t *testing.T) {
 			"clusters.0.create_time":    CHECKSET,
 			"clusters.0.vpc_id":         CHECKSET,
 			"clusters.0.db_node_number": "2",
-			"clusters.0.db_node_class":  "polar.mysql.x4.large",
+			"clusters.0.db_node_class":  CHECKSET,
 			"clusters.0.storage_used":   CHECKSET,
 			"clusters.0.db_nodes.#":     "2",
 		}
