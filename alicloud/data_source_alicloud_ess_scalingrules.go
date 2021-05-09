@@ -155,7 +155,10 @@ func dataSourceAlicloudEssScalingRulesRead(d *schema.ResourceData, meta interfac
 	if okNameRegex || okIds {
 		for _, rule := range allScalingRules {
 			if okNameRegex && nameRegex != "" {
-				var r = regexp.MustCompile(nameRegex.(string))
+				r, err := regexp.Compile(nameRegex.(string))
+				if err != nil {
+					return WrapError(err)
+				}
 				if r != nil && !r.MatchString(rule.ScalingRuleName) {
 					continue
 				}

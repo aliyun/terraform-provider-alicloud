@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-var privateConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.rds.aliyuncs.com"
+var privateConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com"
 
 func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 	var v *polardb.DBEndpoint

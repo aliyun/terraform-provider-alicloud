@@ -89,7 +89,10 @@ func dataSourceAlicloudCRNamespacesRead(d *schema.ResourceData, meta interface{}
 
 	for _, ns := range crResp.Data.Namespace {
 		if nameRegex, ok := d.GetOk("name_regex"); ok {
-			r := regexp.MustCompile(nameRegex.(string))
+			r, err := regexp.Compile(nameRegex.(string))
+			if err != nil {
+				return WrapError(err)
+			}
 			if !r.MatchString(ns.Namespace) {
 				continue
 			}

@@ -13,17 +13,17 @@ data "alicloud_zones" "default" {
 
 // VPC Resource for Module
 resource "alicloud_vpc" "vpc" {
-  name       = var.vpc_name
+  vpc_name   = var.vpc_name
   cidr_block = var.vpc_cidr
 }
 
 // VSwitch Resource for Module
 resource "alicloud_vswitch" "vswitch" {
-  count             = var.vswitch_id == "" ? 1 : 0
-  availability_zone = data.alicloud_zones.default.zones[0].id
-  name              = var.vswitch_name
-  cidr_block        = var.vswitch_cidr
-  vpc_id            = alicloud_vpc.vpc.id
+  count        = var.vswitch_id == "" ? 1 : 0
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.vswitch_name
+  cidr_block   = var.vswitch_cidr
+  vpc_id       = alicloud_vpc.vpc.id
 }
 
 // Security Group Resource for Module

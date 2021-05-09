@@ -286,13 +286,13 @@ func TestAccAlicloudImagesDataSource_linux(t *testing.T) {
 			"images.0.image_owner_alias":      CHECKSET,
 			"images.0.os_type":                "linux",
 			"images.0.name":                   CHECKSET,
-			"images.0.os_name":                REGEXMATCH + "^.*位.*",
-			"images.0.os_name_en":             REGEXMATCH + "^.*bit.*",
-			"images.0.progress":               "100%",
-			"images.0.state":                  "Available",
-			"images.0.status":                 "Available",
-			"images.0.usage":                  "instance",
-			"images.0.tags.%":                 "0",
+			//"images.0.os_name":                REGEXMATCH + "^.*位.*",
+			//"images.0.os_name_en":             REGEXMATCH + "^.*bit.*",
+			"images.0.progress": "100%",
+			"images.0.state":    "Available",
+			"images.0.status":   "Available",
+			"images.0.usage":    "instance",
+			"images.0.tags.%":   "0",
 		}
 	}
 

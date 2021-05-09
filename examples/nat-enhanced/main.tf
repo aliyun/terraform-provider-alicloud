@@ -3,18 +3,18 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "enhanced" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "10.0.0.0/8"
 }
 
-data "alicloud_enhanced_nat_available_zones" "enhanced"{
+data "alicloud_enhanced_nat_available_zones" "enhanced" {
 }
 
 resource "alicloud_vswitch" "enhanced" {
-  name              = var.name
-  availability_zone = data.alicloud_enhanced_nat_available_zones.enhanced.zones[0].zone_id
-  cidr_block        = "10.10.0.0/20"
-  vpc_id            = alicloud_vpc.enhanced.id
+  vswitch_name = var.name
+  zone_id      = data.alicloud_enhanced_nat_available_zones.enhanced.zones[0].zone_id
+  cidr_block   = "10.10.0.0/20"
+  vpc_id       = alicloud_vpc.enhanced.id
 }
 
 resource "alicloud_nat_gateway" "enhanced" {

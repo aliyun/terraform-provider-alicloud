@@ -394,14 +394,6 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request.Capacity = requests.NewInteger(v.(int))
 	}
 
-	if v, ok := d.GetOk("config"); ok {
-		respJson, err := convertMaptoJsonString(v.(map[string]interface{}))
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_kvstore_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		request.Config = respJson
-	}
-
 	if v, ok := d.GetOk("coupon_no"); ok {
 		request.CouponNo = v.(string)
 	}
@@ -664,7 +656,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		d.SetPartial("tags")
 	}
-	if !d.IsNewResource() && d.HasChange("config") {
+	if d.HasChange("config") {
 		request := r_kvstore.CreateModifyInstanceConfigRequest()
 		request.InstanceId = d.Id()
 		respJson, err := convertMaptoJsonString(d.Get("config").(map[string]interface{}))

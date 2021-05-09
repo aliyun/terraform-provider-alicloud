@@ -28,7 +28,7 @@ data "alicloud_emr_disk_types" "system_disk" {
 resource "alicloud_vpc" "vpc" {
   count = var.vpc_id == "" ? 1 : 0
 
-  name       = var.vpc_name
+  vpc_name   = var.vpc_name
   cidr_block = var.vpc_cidr
 }
 
@@ -43,10 +43,10 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_vswitch" "vswitch" {
   count = var.vswitch_id == "" ? 1 : 0
 
-  availability_zone = var.availability_zone == "" ? data.alicloud_emr_instance_types.default.types.0.zone_id : var.availability_zone
-  name              = var.vswitch_name
-  cidr_block        = var.vswitch_cidr
-  vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
+  zone_id      = var.availability_zone == "" ? data.alicloud_emr_instance_types.default.types.0.zone_id : var.availability_zone
+  vswitch_name = var.vswitch_name
+  cidr_block   = var.vswitch_cidr
+  vpc_id       = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
 }
 
 // Ram role Resource for Module

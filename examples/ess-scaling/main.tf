@@ -12,19 +12,19 @@ data "alicloud_zones" "default" {
 // If there is not specifying vpc_id, the module will launch a new vpc
 resource "alicloud_vpc" "vpc" {
   count       = var.vswitch_id == "" ? var.vpc_id == "" ? 1 : 0 : 0
-  name        = var.vpc_name
+  vpc_name    = var.vpc_name
   cidr_block  = var.vpc_cidr
   description = var.vpc_description
 }
 
 // According to the vswitch cidr blocks to launch several vswitches
 resource "alicloud_vswitch" "vswitch" {
-  count             = var.vswitch_id == "" ? 1 : 0
-  vpc_id            = var.vpc_id != "" ? var.vpc_id : alicloud_vpc.vpc[0].id
-  cidr_block        = var.vswitch_cidr
-  availability_zone = var.availability_zone == "" ? data.alicloud_zones.default.zones[0].id : var.availability_zone
-  name              = var.vswitch_name
-  description       = var.vswitch_description
+  count        = var.vswitch_id == "" ? 1 : 0
+  vpc_id       = var.vpc_id != "" ? var.vpc_id : alicloud_vpc.vpc[0].id
+  cidr_block   = var.vswitch_cidr
+  zone_id      = var.availability_zone == "" ? data.alicloud_zones.default.zones[0].id : var.availability_zone
+  vswitch_name = var.vswitch_name
+  description  = var.vswitch_description
 }
 
 resource "alicloud_security_group" "sg" {

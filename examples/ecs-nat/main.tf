@@ -10,10 +10,10 @@ resource "alicloud_vpc" "main" {
 }
 
 resource "alicloud_vswitch" "main" {
-  vpc_id            = alicloud_vpc.main.id
-  cidr_block        = var.vswitch_cidr
-  availability_zone = var.zone
-  depends_on        = [alicloud_vpc.main]
+  vpc_id     = alicloud_vpc.main.id
+  cidr_block = var.vswitch_cidr
+  zone_id    = var.zone
+  depends_on = [alicloud_vpc.main]
 }
 
 resource "alicloud_route_entry" "entry" {

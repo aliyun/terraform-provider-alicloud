@@ -3,15 +3,15 @@ provider "alicloud" {
 }
 
 resource "alicloud_vpc" "main" {
-  name       = var.long_name
+  vpc_name   = var.long_name
   cidr_block = var.vpc_cidr
 }
 
 resource "alicloud_vswitch" "main" {
-  vpc_id            = alicloud_vpc.main.id
-  count             = length(var.cidr_blocks)
-  cidr_block        = var.cidr_blocks["az${count.index}"]
-  availability_zone = var.availability_zones
+  vpc_id     = alicloud_vpc.main.id
+  count      = length(var.cidr_blocks)
+  cidr_block = var.cidr_blocks["az${count.index}"]
+  zone_id    = var.availability_zones
 
   depends_on = [alicloud_vpc.main]
 }
