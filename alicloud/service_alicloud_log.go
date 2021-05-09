@@ -752,6 +752,7 @@ func (s *LogService) DescribeLogOssShipper(id string) (*sls.Shipper, error) {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			project, _ := sls.NewLogProject(projectName, slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
+			project, _ = project.WithToken(slsClient.SecurityToken)
 			logstore, _ := sls.NewLogStore(logstoreName, project)
 			return logstore.GetShipper(shipperName)
 		})
