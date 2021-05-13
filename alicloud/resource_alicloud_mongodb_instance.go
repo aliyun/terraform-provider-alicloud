@@ -335,7 +335,7 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("replicationFactor", replicationFactor)
+	d.Set("replication_factor", replicationFactor)
 	if replicationFactor != 1 {
 		tdeInfo, err := ddsService.DescribeMongoDBTDEInfo(d.Id())
 		if err != nil {
