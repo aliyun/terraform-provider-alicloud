@@ -71,6 +71,18 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 					if d.Get("type").(string) == string(fc.TRIGGER_TYPE_MNS_TOPIC) {
 						return true
 					}
+					if d.Get("type").(string) == string(fc.TRIGGER_TYPE_TIMER) {
+						resolvedNew, err := delEmptyPayloadIfExist(removeSpaceAndEnter(new))
+						if err != nil {
+							panic(err)
+						}
+						resolvedOld, err := delEmptyPayloadIfExist(removeSpaceAndEnter(old))
+						if err != nil {
+							panic(err)
+						}
+
+						return resolvedOld == resolvedNew
+					}
 					return removeSpaceAndEnter(old) == removeSpaceAndEnter(new)
 				},
 				ValidateFunc: validation.ValidateJsonString,
