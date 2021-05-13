@@ -1,6 +1,7 @@
 groups:
   - name: All
     jobs:
+      - All
       # ECS
       - Regions
       - Zones
@@ -413,6 +414,19 @@ jobs:
           <<: *run-params
           SWEEPER: true
           TEST_CASE_CODE: "-"
+
+  - name: All
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 00Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "All"
 
   - name: Apigateway
     plan:
