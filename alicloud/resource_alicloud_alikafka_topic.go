@@ -56,7 +56,7 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      12,
-				ValidateFunc: validation.IntBetween(0, 48),
+				ValidateFunc: validation.IntBetween(0, 360),
 			},
 			"remark": {
 				Type:         schema.TypeString,
