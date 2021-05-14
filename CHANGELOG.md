@@ -1,4 +1,5 @@
-## 1.123.0 (Unreleased)
+## 1.124.0 (Unreleased)
+## 1.123.0 (May 14, 2021)
 
 - **New Resource:** `alicloud_ddoscoo_domain_resource` ([#3530](https://github.com/aliyun/terraform-provider-alicloud/issues/3530))
 - **New Resource:** `alicloud_ddoscoo_port` ([#3530](https://github.com/aliyun/terraform-provider-alicloud/issues/3530))
