@@ -1,4 +1,27 @@
 ## 1.123.0 (Unreleased)
+
+- **New Resource:** `alicloud_ddoscoo_domain_resource` ([#3530](https://github.com/aliyun/terraform-provider-alicloud/issues/3530))
+- **New Resource:** `alicloud_ddoscoo_port` ([#3530](https://github.com/aliyun/terraform-provider-alicloud/issues/3530))
+- **New Data Source:** `alicloud_ddoscoo_domain_resources` ([#3530](https://github.com/aliyun/terraform-provider-alicloud/issues/3530))
+- **New Data Source:** `alicloud_ddoscoo_ports` ([#3530](https://github.com/aliyun/terraform-provider-alicloud/issues/3530))
+
+ENHANCEMENTS:
+
+- resource/alicloud_vpc: Improves the vpc attribute limitation by adding ConflictWith for enable_ipv6 and cidr_block ([#3535](https://github.com/aliyun/terraform-provider-alicloud/issues/3535))
+- resource/alicloud_mongodb_instance: Reset replicationFactor to replication_factor when setting iinto state ([#3537](https://github.com/aliyun/terraform-provider-alicloud/issues/3537))
+- resource/alicloud_db_instance: encryption_key supports SqlServer ([#3538](https://github.com/aliyun/terraform-provider-alicloud/issues/3538))
+- resource/alicloud_alikafka_topic: Enlarges the partition_num limitation to 360 and adds more supported regions statement in docs ([#3539](https://github.com/aliyun/terraform-provider-alicloud/issues/3539))
+- testcast: Adds ddoscoo support region ([#3536](https://github.com/aliyun/terraform-provider-alicloud/issues/3536))
+- ci: Improves the ci task to output test result coverage ([#3541](https://github.com/aliyun/terraform-provider-alicloud/issues/3541))
+
+BUG FIXES:
+
+- resource/alicloud_log_oss_shipper: Fixes the AK not exist error when using sts ([#3528](https://github.com/aliyun/terraform-provider-alicloud/issues/3528))
+- resource/alicloud_fc_trigger: Removes the empty payload to fix the diff error ([#3531](https://github.com/aliyun/terraform-provider-alicloud/issues/3531))
+- resource/alicloud_mongodb_instance: Fixes describeing tde status bug when db instance type is single ([#3533](https://github.com/aliyun/terraform-provider-alicloud/issues/3533))
+- resource/alicloud_slb_server_group: Removes the attribute servers Computed to fix the diff bug when there is no any server ids ([#3540](https://github.com/aliyun/terraform-provider-alicloud/issues/3540))
+- datasource/alicloud_vpcs: Fixes the vpc datasource bug while invoking the DescribeRouteTableList ([#3529](https://github.com/aliyun/terraform-provider-alicloud/issues/3529))
+
 ## 1.122.1 (May 8, 2021)
 
 ENHANCEMENTS:
