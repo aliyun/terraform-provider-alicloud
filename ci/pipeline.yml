@@ -43,6 +43,7 @@ groups:
       # Database
       # Rds
       - DB
+      - Rds
       # Redis and Memcache
       - KVStore
       - DRDS
@@ -174,6 +175,7 @@ groups:
     jobs:
       # Database
       - DB
+      - Rds
       - KVStore
       - DRDS
       # MongoDB
@@ -524,6 +526,20 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "DB"
+          SWEEPER_CODE: "alicloud_db_instance"
+
+  - name: Rds
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 06Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Rds"
           SWEEPER_CODE: "alicloud_db_instance"
 
   - name: Disk
