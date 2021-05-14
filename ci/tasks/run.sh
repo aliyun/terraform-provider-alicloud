@@ -104,14 +104,14 @@ TestRunPrefix="TestAccAlicloud${TEST_CASE_CODE}"
 if [[ ${TEST_CASE_CODE} == "All" ]]; then
   TestRunPrefix="TestAccAlicloud"
 fi
-echo -e "TF_ACC=1 go test -cover -covermode=count ./alicloud -v -run=${TestRunPrefix} -timeout=1200m"
+echo -e "TF_ACC=1 go test ./alicloud -v -run=${TestRunPrefix} -timeout=1200m -cover"
 
 PASSED=100%
 
 FILE_NAME=${ALICLOUD_REGION}-${TEST_CASE_CODE}
 FAIL_FLAG=false
 
-TF_ACC=1 go test -cover -covermode=count ./alicloud -v -run=${TestRunPrefix} -timeout=1200m | {
+TF_ACC=1 go test ./alicloud -v -run=${TestRunPrefix} -timeout=1200m -cover | {
 while read LINE
 do
     echo "$LINE" >> ${FILE_NAME}.log
@@ -136,6 +136,8 @@ do
         fi
     elif [[ ${FAIL_FLAG} == true ]];then
         echo -e "$LINE"
+    else
+      echo -e "$LINE"
     fi
 done
 
