@@ -100,7 +100,7 @@ The following arguments are supported:
 * `vswitch_id` - (Optional) The VSwitch ID linked to ENIs.
 * `private_ip` - (Optional) The primary private IP address of the ENI.
 * `security_group_id` - (Optional) The security group ID linked to ENIs.
-* `name` - (Optional) The name of the ENIs.
+* `names` - (Optional) The list of ENI names.
 * `type` - (Optional) The type of ENIs, Only support for "Primary" or "Secondary".
 * `instance_id` - (Optional) The ECS instance ID that the ENI is attached to.
 * `tags` - (Optional) A map of tags assigned to ENIs.
