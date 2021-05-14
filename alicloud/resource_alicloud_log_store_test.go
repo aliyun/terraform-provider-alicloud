@@ -37,12 +37,26 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 					"name":        name,
 					"project":     "${alicloud_log_project.foo.name}",
 					"shard_count": "1",
+					"encrypt_conf": []map[string]interface{}{
+						{
+							"enable":       true,
+							"encrypt_type": "default",
+							"user_cmk_info": []map[string]interface{}{
+								{
+									"cmk_key_id": "your_cmk_key_id",
+									"arn":        "your_arn",
+									"region_id":  "you_cmk_key_id_region_id",
+								},
+							},
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        name,
-						"project":     name,
-						"shard_count": "1",
+						"name":           name,
+						"project":        name,
+						"shard_count":    "1",
+						"encrypt_conf.#": "3",
 					}),
 				),
 			},
