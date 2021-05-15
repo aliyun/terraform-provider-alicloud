@@ -3,6 +3,8 @@ package alicloud
 import (
 	"regexp"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -91,6 +93,7 @@ func dataSourceAlicloudRamGroupsRead(d *schema.ResourceData, meta interface{}) e
 	// groups filtered by name_regex
 	request := ram.CreateListGroupsRequest()
 	request.RegionId = client.RegionId
+	request.MaxItems = requests.NewInteger(1000)
 	for {
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.ListGroups(request)
@@ -169,12 +172,12 @@ func ramGroupsDescriptionAttributes(d *schema.ResourceData, groups []interface{}
 	var ids []string
 	var s []map[string]interface{}
 	for _, v := range groups {
-		group := v.(ram.GroupInListGroupsForUser)
+		group := v.(ram.GroupInListGroups)
 		mapping := map[string]interface{}{
 			"name":     group.GroupName,
 			"comments": group.Comments,
 		}
-		ids = append(ids, v.(ram.GroupInListGroupsForUser).GroupName)
+		ids = append(ids, v.(ram.GroupInListGroups).GroupName)
 		s = append(s, mapping)
 	}
 
