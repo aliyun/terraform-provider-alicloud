@@ -4,6 +4,8 @@ import (
 	"log"
 	"regexp"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -114,6 +116,7 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 	// all users
 	request := ram.CreateListUsersRequest()
 	request.RegionId = client.RegionId
+	request.MaxItems = requests.NewInteger(1000)
 	for {
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.ListUsers(request)

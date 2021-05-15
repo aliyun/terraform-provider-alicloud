@@ -1,8 +1,9 @@
 package alicloud
 
 import (
-	"log"
 	"regexp"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -117,33 +118,40 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 
 	request := ram.CreateListRolesRequest()
 	request.RegionId = client.RegionId
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.ListRoles(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	response, _ := raw.(*ram.ListRolesResponse)
-	for _, v := range response.Roles.Role {
-		if nameRegexOk {
-			r, err := regexp.Compile(nameRegex.(string))
-			if err != nil {
-				return WrapError(err)
-			}
-			if !r.MatchString(v.RoleName) {
-				continue
-			}
+	request.MaxItems = requests.NewInteger(1000)
+	for {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListRoles(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		if len(idsMap) > 0 {
-			if _, ok := idsMap[v.RoleId]; !ok {
-				continue
+
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		response, _ := raw.(*ram.ListRolesResponse)
+		for _, v := range response.Roles.Role {
+			if nameRegexOk {
+				r, err := regexp.Compile(nameRegex.(string))
+				if err != nil {
+					return WrapError(err)
+				}
+				if !r.MatchString(v.RoleName) {
+					continue
+				}
 			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[v.RoleId]; !ok {
+					continue
+				}
+			}
+			allRolesMap[v.RoleName] = v
+			allRoles = append(allRoles, v)
 		}
-		allRolesMap[v.RoleName] = v
-		allRoles = append(allRoles, v)
+		if !response.IsTruncated {
+			break
+		}
+		request.Marker = response.Marker
 	}
 
 	// roles which attach with this policy
@@ -204,7 +212,6 @@ func ramRolesDescriptionAttributes(d *schema.ResourceData, meta interface{}, rol
 			"assume_role_policy_document": response.Role.AssumeRolePolicyDocument,
 			"document":                    response.Role.AssumeRolePolicyDocument,
 		}
-		log.Printf("[DEBUG] alicloud_ram_roles - adding role: %v", mapping)
 		ids = append(ids, role.RoleId)
 		names = append(names, role.RoleName)
 		s = append(s, mapping)
