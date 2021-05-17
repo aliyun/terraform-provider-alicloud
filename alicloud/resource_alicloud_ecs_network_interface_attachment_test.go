@@ -69,11 +69,6 @@ func TestAccAlicloudEcsNetworkInterfaceAttachmentMulti(t *testing.T) {
 					testAccCheck(nil),
 				),
 			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
 		},
 	})
 }
