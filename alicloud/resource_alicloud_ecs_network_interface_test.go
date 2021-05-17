@@ -50,13 +50,14 @@ func testAlicloudEcsNetworkInterface(region string) error {
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecs_network_interfaces", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Describe NetworkInterface failed, %#v", err)
+			continue
 		}
-		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.NetworkInterfaceSets.NetworkInterfaceSet", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NetworkInterfaceSets.NetworkInterfaceSet", response)
+			log.Printf("[ERROR] jsonpath Get NetworkInterface failed, %#v", err)
+			continue
 		}
 
 		result, _ := resp.([]interface{})
@@ -64,10 +65,14 @@ func testAlicloudEcsNetworkInterface(region string) error {
 		ecsService := EcsService{client}
 		for _, v := range result {
 			item := v.(map[string]interface{})
+			if _, ok := item["NetworkInterfaceName"]; !ok {
+				continue
+			}
 			skip := true
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(strings.ToLower(item["NetworkInterfaceName"].(string)), strings.ToLower(prefix)) {
 					skip = false
+					break
 				}
 			}
 			// If a nat gateway name is not set successfully, it should be fetched by vpc name and deleted.
@@ -110,6 +115,7 @@ func testAlicloudEcsNetworkInterface(region string) error {
 			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete NetworkInterface (%s): %s", item["NetworkInterfaceName"].(string), err)
+				continue
 			}
 			log.Printf("[INFO] Delete NetworkInterface success: %s ", item["NetworkInterfaceName"].(string))
 		}
