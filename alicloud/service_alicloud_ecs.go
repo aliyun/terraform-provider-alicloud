@@ -1495,49 +1495,51 @@ func (s *EcsService) SetResourceTags(d *schema.ResourceData, resourceType string
 	return nil
 }
 
-func (s *EcsService) DescribeEcsDedicatedHost(id string) (object ecs.DedicatedHost, err error) {
-	request := ecs.CreateDescribeDedicatedHostsRequest()
-	request.RegionId = s.client.RegionId
-
-	request.PageNumber = requests.NewInteger(1)
-	request.PageSize = requests.NewInteger(20)
-	response := new(ecs.DescribeDedicatedHostsResponse)
-	for {
-
-		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeDedicatedHosts(request)
-		})
+func (s *EcsService) DescribeEcsDedicatedHost(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDedicatedHosts"
+	request := map[string]interface{}{
+		"RegionId":         s.client.RegionId,
+		"DedicatedHostIds": convertListToJsonString([]interface{}{id}),
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidLockReason.NotFound"}) {
-				err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR)
-				return object, err
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
 			}
-			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-			return object, err
+			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ = raw.(*ecs.DescribeDedicatedHostsResponse)
-
-		if len(response.DedicatedHosts.DedicatedHost) < 1 {
-			err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-			return object, err
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDedicatedHostId.NotFound", "InvalidLockReason.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS:DedicatedHost", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
-		for _, object := range response.DedicatedHosts.DedicatedHost {
-			if object.DedicatedHostId == id {
-				return object, nil
-			}
-		}
-		if len(response.DedicatedHosts.DedicatedHost) < PageSizeMedium {
-			break
-		}
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return object, WrapError(err)
-		} else {
-			request.PageNumber = page
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.DedicatedHosts.DedicatedHost", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DedicatedHosts.DedicatedHost", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["DedicatedHostId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
 		}
 	}
-	err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-	return
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
 func (s *EcsService) EcsDedicatedHostStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
@@ -1552,11 +1554,11 @@ func (s *EcsService) EcsDedicatedHostStateRefreshFunc(id string, failStates []st
 		}
 
 		for _, failState := range failStates {
-			if object.Status == failState {
-				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
-		return object, object.Status, nil
+		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
 
