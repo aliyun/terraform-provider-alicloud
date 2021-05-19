@@ -2,6 +2,9 @@ package alicloud
 
 import (
 	"encoding/json"
+	"fmt"
+	roa "github.com/alibabacloud-go/tea-roa/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"strings"
 	"time"
 
@@ -28,7 +31,7 @@ func (s *ElasticsearchService) DescribeElasticsearchInstance(id string) (*elasti
 		raw, err := s.client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 			return elasticsearchClient.DescribeInstance(request)
 		})
-
+		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -77,6 +80,27 @@ func (s *ElasticsearchService) ElasticsearchRetryFunc(wait func(), errorCodeList
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err = s.client.WithElasticsearchClient(do)
 
+		if err != nil {
+			if IsExpectedErrors(err, errorCodeList) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+
+		return nil
+	})
+
+	return raw, WrapError(err)
+}
+
+func (s *ElasticsearchService) NewElasticsearchRetryFunc(wait func(), errorCodeList []string, do func(*roa.Client) (map[string]interface{}, error)) (map[string]interface{}, error) {
+	var raw map[string]interface{}
+	var err error
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		client, err := s.client.NewElasticsearchCommonClient()
+		raw, err = do(client)
 		if err != nil {
 			if IsExpectedErrors(err, errorCodeList) {
 				wait()
@@ -222,28 +246,20 @@ func (s *ElasticsearchService) getActionType(actionType bool) string {
 
 func updateDescription(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	action := "UpdateDescription"
 
 	content := make(map[string]interface{})
 	content["description"] = d.Get("description").(string)
-	data, err := json.Marshal(content)
-	if err != nil {
-		return WrapError(err)
+	requestQuery := map[string]*string{
+		"clientToken": StringPointer(buildClientToken(action)),
 	}
-
-	request := elasticsearch.CreateUpdateDescriptionRequest()
-	request.ClientToken = buildClientToken(request.GetActionName())
-	request.RegionId = client.RegionId
-	request.InstanceId = d.Id()
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.UpdateDescription(request)
-	})
+	elasticsearchClient, err := client.NewElasticsearchCommonClient()
+	response, err := elasticsearchClient.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"),
+		String(fmt.Sprintf("/openapi/instances/%s/description", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+	addDebug(action, response, nil)
 	return nil
 }
 

@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-const DataNodeSpec = "elasticsearch.n4.small"
+const DataNodeSpec = "elasticsearch.sn1ne.large"
 const DataNodeAmount = "2"
 const DataNodeDisk = "20"
 const DataNodeDiskType = "cloud_ssd"
@@ -169,7 +169,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
-					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"version":              "5.5.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,

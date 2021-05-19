@@ -1210,6 +1210,31 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 	return do(client.elasticsearchconn)
 }
 
+func (client *AliyunClient) NewElasticsearchCommonClient() (*roa.Client, error) {
+	productCode := "elasticsearch"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
+		}
+	}
+
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] misssing the product %s endpoint.", productCode)
+	}
+	roaSdkConfig := client.teaRoaSdkConfig
+	roaSdkConfig.SetEndpoint(endpoint)
+
+	conn, err := roa.NewClient(&roaSdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, err
+}
+
 func (client *AliyunClient) WithMnsQueueManager(do func(ali_mns.AliQueueManager) (interface{}, error)) (interface{}, error) {
 	return client.WithMnsClient(func(mnsClient *ali_mns.MNSClient) (interface{}, error) {
 		queueManager := ali_mns.NewMNSQueueManager(*mnsClient)
