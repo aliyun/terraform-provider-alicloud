@@ -37,26 +37,27 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 					"name":        name,
 					"project":     "${alicloud_log_project.foo.name}",
 					"shard_count": "1",
-					"encrypt_conf": []map[string]interface{}{
-						{
-							"enable":       true,
-							"encrypt_type": "default",
-							"user_cmk_info": []map[string]interface{}{
-								{
-									"cmk_key_id": "your_cmk_key_id",
-									"arn":        "your_arn",
-									"region_id":  "you_cmk_key_id_region_id",
-								},
-							},
-						},
-					},
+					// The following parameters are only used to enable logstore encryption when create logstore
+					// "encrypt_conf": []map[string]interface{}{
+					// 	{
+					// 		"enable":       "true",
+					// 		"encrypt_type": "default",
+					// 		"user_cmk_info": []map[string]string{
+					// 			{
+					// 				"cmk_key_id": "your_cmk_key_id",
+					// 				"arn":        "your_role_arn",
+					// 				"region_id":  "you_cmk_region_id",
+					// 			},
+					// 		},
+					// 	},
+					// },
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":           name,
-						"project":        name,
-						"shard_count":    "1",
-						"encrypt_conf.#": "3",
+						"name":        name,
+						"project":     name,
+						"shard_count": "1",
+						// "encrypt_conf.#": "1",
 					}),
 				),
 			},
@@ -64,6 +65,16 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_split_shard_count": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_split_shard_count": "60",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -82,16 +93,6 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"auto_split": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"max_split_shard_count": "60",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"max_split_shard_count": "60",
 					}),
 				),
 			},
