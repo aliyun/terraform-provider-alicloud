@@ -91,7 +91,7 @@ func dataSourceKmsKeysConfigDependence(name string) string {
 	return fmt.Sprintf(`
 resource "alicloud_kms_key" "default" {
     description = "%s"
-    deletion_window_in_days = 7
+    pending_window_in_days = 7
 }
 `, name)
 }

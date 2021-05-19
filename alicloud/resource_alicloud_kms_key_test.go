@@ -2,12 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"log"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -32,53 +33,74 @@ func testSweepKmsKey(region string) error {
 		"tf_testacc",
 	}
 
-	req := kms.CreateListKeysRequest()
-	raw, err := client.WithKmsClient(func(kmsclient *kms.Client) (interface{}, error) {
-		return kmsclient.ListKeys(req)
-	})
+	request := map[string]interface{}{
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+		"RegionId":   client.RegionId,
+	}
+	action := "ListKeys"
+
+	var response map[string]interface{}
+	conn, err := client.NewKmsClient()
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "kms_keys", req.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	keys := raw.(*kms.ListKeysResponse)
-	swept := false
-
-	for _, v := range keys.Keys.Key {
-		kmsService := &KmsService{client: client}
-		key, err := kmsService.DescribeKmsKey(v.KeyId)
+	sweeped := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NotFoundError(err) {
-				if strings.Contains(err.Error(), "Provider ERROR") {
-					continue
-				}
-				return nil
-			}
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_key", action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
 
-			return WrapError(err)
+		resp, err := jsonpath.Get("$.Keys.Key", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Keys.Key", response)
 		}
-		for _, description := range prefixes {
-			if strings.HasPrefix(strings.ToLower(key.Description), strings.ToLower(description)) {
-				req := kms.CreateScheduleKeyDeletionRequest()
-				req.KeyId = v.KeyId
-				req.PendingWindowInDays = requests.NewInteger(7)
-				raw, err = client.WithKmsClient(func(kmsclient *kms.Client) (interface{}, error) {
-					return kmsclient.ScheduleKeyDeletion(req)
-				})
-				swept = true
-				if err != nil {
-					return WrapErrorf(err, DataDefaultErrorMsg, v.KeyId, req.GetActionName(), AlibabaCloudSdkGoERROR)
-				}
-				break
+
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			skip := true
+			if _, ok := item["Description"]; !ok {
+				continue
 			}
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(item["Description"].(string)), strings.ToLower(prefix)) {
+					skip = false
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Kms Key: %s", item["Description"].(string))
+				continue
+			}
+			sweeped = true
+			action = "ScheduleKeyDeletion"
+			request := map[string]interface{}{
+				"KeyId":               item["KeyId"],
+				"PendingWindowInDays": 7,
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Kms Key (%s): %s", item["Description"].(string), err)
+			}
+			log.Printf("[INFO] Delete Kms Key success: %s ", item["Description"].(string))
 		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	if swept {
+	if sweeped {
 		time.Sleep(5 * time.Second)
 	}
 	return nil
 }
 
 func TestAccAlicloudKMSKey_basic(t *testing.T) {
-	var v kms.KeyMetadata
+	var v map[string]interface{}
 	resourceId := "alicloud_kms_key.default"
 	ra := resourceAttrInit(resourceId, KmsKeyMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -122,21 +144,21 @@ func TestAccAlicloudKMSKey_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"key_state": "Disabled",
+					"status": "Disabled",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"key_state": "Disabled",
+						"status": "Disabled",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"key_state": "Enabled",
+					"status": "Enabled",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"key_state": "Enabled",
+						"status": "Enabled",
 					}),
 				),
 			},
@@ -186,7 +208,7 @@ var KmsKeyMap = map[string]string{
 	"automatic_rotation":  "Disabled",
 	"creation_date":       CHECKSET,
 	"creator":             CHECKSET,
-	"key_state":           "Enabled",
+	"status":              "Enabled",
 	"key_usage":           "ENCRYPT/DECRYPT",
 	"last_rotation_date":  CHECKSET,
 	"origin":              "Aliyun_KMS",
