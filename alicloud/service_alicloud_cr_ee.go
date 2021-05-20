@@ -7,6 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func (c *CrService) ListCrEEInstances(pageNo int, pageSize int) (*cr_ee.ListInstanceResponse, error) {
@@ -37,23 +38,32 @@ func (c *CrService) DescribeCrEEInstance(instanceId string) (*cr_ee.GetInstanceR
 	request := cr_ee.CreateGetInstanceRequest()
 	request.RegionId = c.client.RegionId
 	request.InstanceId = instanceId
-	resource := instanceId
+	resourceId := instanceId
 	action := request.GetActionName()
 
-	raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-		return creeClient.GetInstance(request)
+	err := resource.Retry(6*time.Second, func() *resource.RetryError {
+		raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+			return creeClient.GetInstance(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST"}) {
+				time.Sleep(time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, raw, request.RpcRequest, request)
+		response, _ = raw.(*cr_ee.GetInstanceResponse)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return response, WrapErrorf(err, DefaultErrorMsg, resource, action, AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, resourceId, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, raw, request.RpcRequest, request)
-
-	response, _ = raw.(*cr_ee.GetInstanceResponse)
 	if !response.GetInstanceIsSuccess {
-		return response, c.wrapCrServiceError(resource, action, response.Code)
+		return response, c.wrapCrServiceError(resourceId, action, response.Code)
 	}
 	return response, nil
 }
