@@ -110,7 +110,7 @@ resource "alicloud_ram_user_policy_attachment" "attach" {
 Finally, complete the RBAC authorization.
 ```terraform
 # Grant users developer permissions for the cluster.
-resource "alicloud_cs_kubernetes_permissions_grant" "default" {
+resource "alicloud_cs_kubernetes_permissions" "default" {
   # uid
   uid = alicloud_ram_user.user.id
   # permissions
@@ -169,7 +169,7 @@ resource "alicloud_ram_user_policy_attachment" "attach" {
 }
 
 # RBAC authorization for the cluster
-resource "alicloud_cs_kubernetes_permissions_grant" "default" {
+resource "alicloud_cs_kubernetes_permissions" "default" {
   uid = data.alicloud_ram_users.users_ds.users.0.id
   permissions {
     cluster     = "target cluster id1"
@@ -193,7 +193,7 @@ resource "alicloud_cs_kubernetes_permissions_grant" "default" {
 Remove the current user's permissions on the cluster
 ```terraform
 # remove the permissions on the "cluster_id_01", "cluster_id_02".
-resource "alicloud_cs_kubernetes_permissions_grant" "default" {
+resource "alicloud_cs_kubernetes_permissions" "default" {
   uid = data.alicloud_ram_users.users_ds.users.0.id
 }
 ```

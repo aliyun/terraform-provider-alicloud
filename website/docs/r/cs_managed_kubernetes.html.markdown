@@ -11,6 +11,8 @@ description: |-
 
 This resource will help you to manage a ManagedKubernetes Cluster in Alibaba Cloud Kubernetes Service. 
 
+-> **NOTE:** It is recommended to create a cluster with zero worker nodes, and then use a node pool to manage the cluster nodes. 
+
 -> **NOTE:** Kubernetes cluster only supports VPC network and it can access internet while creating kubernetes cluster.
 A Nat Gateway and configuring a SNAT for it can ensure one VPC network access internet. If there is no nat gateway in the
 VPC, you can set `new_nat_gateway` to "true" to create one automatically.

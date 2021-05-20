@@ -44,25 +44,33 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                           name,
 					"vpc_id":                         "${alicloud_vpc.default.id}",
-					"vswitch_id":                     "${alicloud_vswitch.default.id}",
+					"vswitch_ids":                    []string{"${alicloud_vswitch.default.id}"},
+					"zone_id":                        "",
 					"new_nat_gateway":                "true",
-					"deletion_protection":            "false",
+					"deletion_protection":            "true",
 					"endpoint_public_access_enabled": "true",
 					"load_balancer_spec":             "slb.s2.small",
 					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"tags": map[string]string{
 						"Platform": "TF",
 					},
+					"service_cidr":            "172.21.0.0/20",
+					"service_discovery_types": []string{"PrivateZone"},
+					"logging_type":            "SLS",
+					"time_zone":               "Asia/Shanghai",
+					"region_id":               "cn-hangzhou",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                           name,
+						"deletion_protection":            "true",
 						"new_nat_gateway":                "true",
-						"deletion_protection":            "false",
 						"endpoint_public_access_enabled": "true",
 						"resource_group_id":              CHECKSET,
+						"vswitch_ids.#":                  "1",
 						"tags.%":                         "1",
 						"tags.Platform":                  "TF",
+						"region_id":                      "cn-hangzhou",
 					}),
 				),
 			},
@@ -71,7 +79,7 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"load_balancer_spec", "endpoint_public_access_enabled", "force_update",
-					"new_nat_gateway", "private_zone"},
+					"new_nat_gateway", "private_zone", "zone_id", "vswitch_ids", "service_cidr", "service_discovery_types", "logging_type", "time_zone"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -79,12 +87,14 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 						"Platform": "TF",
 						"Env":      "Pre",
 					},
+					"deletion_protection": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":        "2",
-						"tags.Platform": "TF",
-						"tags.Env":      "Pre",
+						"tags.%":              "2",
+						"tags.Platform":       "TF",
+						"tags.Env":            "Pre",
+						"deletion_protection": "false",
 					}),
 				),
 			},
@@ -105,15 +115,15 @@ data "alicloud_zones" default {
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
+  vpc_name    = var.name
+  cidr_block  = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  vswitch_name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  vswitch_name      = var.name
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = "10.1.1.0/24"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 `, name)
 }

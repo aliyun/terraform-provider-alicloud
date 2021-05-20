@@ -309,21 +309,65 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 							ValidateFunc: validation.StringInSlice([]string{"cpu", "gpu", "gpushare", "spot"}, false),
 						},
 						"is_bond_eip": {
-							Type:     schema.TypeBool,
-							Optional: true,
+							Type:          schema.TypeBool,
+							Optional:      true,
+							ConflictsWith: []string{"internet_charge_type"},
 						},
 						"eip_internet_charge_type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
+							Type:          schema.TypeString,
+							Optional:      true,
+							ValidateFunc:  validation.StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
+							ConflictsWith: []string{"internet_charge_type"},
 						},
 						"eip_bandwidth": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							ValidateFunc: validation.IntBetween(1, 500),
+							Type:          schema.TypeInt,
+							Optional:      true,
+							ValidateFunc:  validation.IntBetween(1, 500),
+							ConflictsWith: []string{"internet_charge_type"},
 						},
 					},
 				},
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"internet_charge_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PayByTraffic", "PayByBandwidth"}, false),
+			},
+			"internet_max_bandwidth_out": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"spot_strategy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"SpotWithPriceLimit"}, false),
+			},
+			"spot_price_limit": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"instance_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"price_limit": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+				DiffSuppressFunc: csNodepoolSpotInstanceSettingDiffSuppressFunc,
 			},
 		},
 	}
@@ -554,6 +598,24 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.Management = setManagedNodepoolConfig(v)
 	}
 
+	if v, ok := d.GetOk("internet_charge_type"); ok {
+		args.InternetChargeType = v.(string)
+	}
+
+	if v, ok := d.GetOk("internet_max_bandwidth_out"); ok {
+		args.InternetMaxBandwidthOut = v.(int)
+	}
+
+	// spot
+	if d.HasChange("spot_strategy") {
+		update = true
+		args.ResourceGroupId = d.Get("spot_strategy").(string)
+	}
+	if d.HasChange("spot_price_limit") {
+		update = true
+		args.SpotPriceLimit = setSpotPriceLimit(d.Get("spot_price_limit").([]interface{}))
+	}
+
 	if update {
 
 		var resoponse interface{}
@@ -616,12 +678,16 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("scaling_group_id", object.ScalingGroupId)
 	d.Set("unschedulable", object.Unschedulable)
 	d.Set("instance_charge_type", object.InstanceChargeType)
+	d.Set("resource_group_id", object.ResourceGroupId)
+	d.Set("spot_strategy", object.SpotStrategy)
+	d.Set("internet_charge_type", object.InternetChargeType)
+	d.Set("internet_max_bandwidth_out", object.InternetMaxBandwidthOut)
+	d.Set("install_cloud_monitor", object.CmsEnabled)
 	if object.InstanceChargeType == "PrePaid" {
 		d.Set("period", object.Period)
 		d.Set("period_unit", object.PeriodUnit)
 		d.Set("auto_renew", object.AutoRenew)
 		d.Set("auto_renew_period", object.AutoRenewPeriod)
-		d.Set("install_cloud_monitor", object.CmsEnabled)
 	}
 
 	if passwd, ok := d.GetOk("password"); ok && passwd.(string) != "" {
@@ -657,6 +723,10 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if err := d.Set("scaling_config", flattenAutoScalingConfig(&object.AutoScaling)); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("spot_price_limit", flattenSpotPriceLimit(object.SpotPriceLimit)); err != nil {
 		return WrapError(err)
 	}
 
@@ -815,6 +885,25 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 		creationArgs.SystemDiskPerformanceLevel = v.(string)
 	}
 
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		creationArgs.ResourceGroupId = v.(string)
+	}
+
+	// setting spot instance
+	if v, ok := d.GetOk("spot_strategy"); ok {
+		creationArgs.SpotStrategy = v.(string)
+	}
+
+	if v, ok := d.GetOk("spot_price_limit"); ok {
+		creationArgs.SpotPriceLimit = setSpotPriceLimit(v.([]interface{}))
+	}
+	if v, ok := d.GetOk("internet_charge_type"); ok {
+		creationArgs.InternetChargeType = v.(string)
+	}
+	if v, ok := d.GetOk("internet_max_bandwidth_out"); ok {
+		creationArgs.InternetMaxBandwidthOut = v.(int)
+	}
+
 	return creationArgs, nil
 }
 
@@ -969,6 +1058,37 @@ func setAutoScalingConfig(l []interface{}) (config cs.AutoScaling) {
 	}
 
 	return config
+}
+
+func setSpotPriceLimit(l []interface{}) (config []cs.SpotPrice) {
+	if len(l) == 0 || l[0] == nil {
+		return config
+	}
+	for _, v := range l {
+		if m, ok := v.(map[string]interface{}); ok {
+			config = append(config, cs.SpotPrice{
+				InstanceType: m["instance_type"].(string),
+				PriceLimit:   m["price_limit"].(string),
+			})
+		}
+	}
+
+	return
+}
+
+func flattenSpotPriceLimit(config []cs.SpotPrice) (m []map[string]interface{}) {
+	if config == nil {
+		return []map[string]interface{}{}
+	}
+
+	for _, spotInfo := range config {
+		m = append(m, map[string]interface{}{
+			"instance_type": spotInfo.InstanceType,
+			"price_limit":   spotInfo.PriceLimit,
+		})
+	}
+
+	return m
 }
 
 func flattenAutoScalingConfig(config *cs.AutoScaling) (m []map[string]interface{}) {

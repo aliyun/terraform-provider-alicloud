@@ -824,7 +824,7 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCSKubernetesUpdate(d, meta)
+	return resourceAlicloudCSKubernetesRead(d, meta)
 }
 
 func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
