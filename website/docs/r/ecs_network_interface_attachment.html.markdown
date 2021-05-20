@@ -13,7 +13,7 @@ Provides a ECS Network Interface Attachment resource.
 
 For information about ECS Network Interface Attachment and how to use it, see [What is Network Interface Attachment](https://www.alibabacloud.com/help/en/doc-detail/58515.htm).
 
--> **NOTE:** Available in v1.124.0+.
+-> **NOTE:** Available in v1.123.1+.
 
 ## Example Usage
 

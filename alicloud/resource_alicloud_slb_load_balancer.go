@@ -114,7 +114,7 @@ func resourceAlicloudSlbLoadBalancer() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				Deprecated:    "Field 'name' has been deprecated from provider version 1.124.0. New field 'load_balancer_name' instead",
+				Deprecated:    "Field 'name' has been deprecated from provider version 1.123.1. New field 'load_balancer_name' instead",
 				ConflictsWith: []string{"load_balancer_name"},
 			},
 			"load_balancer_spec": {
@@ -129,7 +129,7 @@ func resourceAlicloudSlbLoadBalancer() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ValidateFunc:  validation.StringInSlice([]string{"slb.s1.small", "slb.s2.medium", "slb.s2.small", "slb.s3.large", "slb.s3.medium", "slb.s3.small", "slb.s4.large"}, false),
-				Deprecated:    "Field 'specification' has been deprecated from provider version 1.124.0. New field 'load_balancer_spec' instead",
+				Deprecated:    "Field 'specification' has been deprecated from provider version 1.123.1. New field 'load_balancer_spec' instead",
 				ConflictsWith: []string{"load_balancer_spec"},
 			},
 			"master_zone_id": {

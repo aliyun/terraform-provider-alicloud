@@ -91,7 +91,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				ForceNew:      true,
 				Default:       false,
 				ConflictsWith: []string{"service_discovery_types"},
-				Deprecated:    "Field 'private_zone' has been deprecated from provider version 1.124.0. New field 'service_discovery_types' replace it.",
+				Deprecated:    "Field 'private_zone' has been deprecated from provider version 1.123.1. New field 'service_discovery_types' replace it.",
 			},
 			"service_discovery_types": {
 				Type:     schema.TypeList,

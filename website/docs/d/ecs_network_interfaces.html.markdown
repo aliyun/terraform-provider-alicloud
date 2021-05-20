@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Ecs Network Interfaces of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.124.0+.
+-> **NOTE:** Available in v1.123.1+.
 
 ## Example Usage
 
@@ -34,12 +34,12 @@ The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of Network Interface IDs.
 * `instance_id` - (Optional, ForceNew) The instance id.
-* `name` - (Optional, ForceNew, Deprecated in v1.124.0+) Field `name` has been deprecated from provider version 1.124.0. New field `network_interface_name` instead
+* `name` - (Optional, ForceNew, Deprecated in v1.123.1+) Field `name` has been deprecated from provider version 1.123.1. New field `network_interface_name` instead
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Network Interface name.
 * `network_interface_name` - (Optional, ForceNew) The network interface name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `primary_ip_address` - (Optional, ForceNew) The primary private IP address of the ENI.
-* `private_ip` - (Optional, ForceNew, Deprecated in v1.124.0+) Field `private_ip` has been deprecated from provider version 1.124.0. New field `primary_ip_address` instead
+* `private_ip` - (Optional, ForceNew, Deprecated in v1.123.1+) Field `private_ip` has been deprecated from provider version 1.123.1. New field `primary_ip_address` instead
 * `resource_group_id` - (Optional, ForceNew) The resource group id.
 * `security_group_id` - (Optional, ForceNew) The security group id.
 * `service_managed` - (Optional, ForceNew) Whether the user of the elastic network card is a cloud product or a virtual vendor.

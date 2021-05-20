@@ -68,9 +68,9 @@ The following arguments are supported:
 * `sale_cycle` - (Optional, Computed) The unit of the subscription period of the dedicated host.
 * `zone_id` - (Optional, ForceNew, Computed) The zone ID of the dedicated host. This parameter is empty by default. If you do not specify this parameter, the system automatically selects a zone.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `cpu_over_commit_ratio` - (Optional, Available in 1.124.0+) CPU oversold ratio. Only custom specifications g6s, c6s, r6s support setting the CPU oversold ratio.
-* `dedicated_host_cluster_id` - (Optional, Available in 1.124.0+) The dedicated host cluster ID to which the dedicated host belongs.
-* `min_quantity` - (Optional, Available in 1.124.0+) Specify the minimum purchase quantity of a dedicated host.
+* `cpu_over_commit_ratio` - (Optional, Available in 1.123.1+) CPU oversold ratio. Only custom specifications g6s, c6s, r6s support setting the CPU oversold ratio.
+* `dedicated_host_cluster_id` - (Optional, Available in 1.123.1+) The dedicated host cluster ID to which the dedicated host belongs.
+* `min_quantity` - (Optional, Available in 1.123.1+) Specify the minimum purchase quantity of a dedicated host.
 
 ## Attributes Reference
 

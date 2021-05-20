@@ -2,6 +2,7 @@
 
 ENHANCEMENTS:
 
+- resource/alicloud_cs_kubernetes_nood_pool: Adds supports to create spot instance, set public IP and resource_group_id; resource/alicloud_cs_serverless_kubernetes: Support to set coredns as service discovery, time zone and sls log config; resource/alicloud_cs_managed_kubernetes: Fixes the bug that upgrades the cluster after creating it. [GH-3558]
 - resource/alicloud_ecs_dedicated_host: Adds new attributes cpu_over_commit_ratio, dedicated_host_cluster_id and min_quantity; Its datasource adds new attributes operation_locks; Updates its dependence SDK [GH-3548]
 - resource/alicloud_kms_key: Deprecates the key_state and use status instead; Its datasource supports filters and more output attributes; Upgrades its dependence sdk [GH-3555]
 - docs: Updates the ACK code in the docs [GH-3547]
@@ -14,6 +15,7 @@ BUG FIXES:
 - datasource/alicloud_ecs_disks: Add judgment to assertion [GH-3553]
 - testcase: remove import check from alicloud_ecs_network_interface multi testcase and sweep skip resource not has name [GH-3545]
 - testcase: skip unsupport region for alicloud_kms_key [GH-3564]
+- testcase: Fix deprecated field for slb listener testcase [GH-3562]
 
 ## 1.123.0 (May 14, 2021)
 

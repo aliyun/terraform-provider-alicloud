@@ -46,7 +46,7 @@ func resourceAlicloudEcsNetworkInterface() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				Deprecated:    "Field 'name' has been deprecated from provider version 1.124.0. New field 'network_interface_name' instead",
+				Deprecated:    "Field 'name' has been deprecated from provider version 1.123.1. New field 'network_interface_name' instead",
 				ConflictsWith: []string{"network_interface_name"},
 			},
 			"primary_ip_address": {
@@ -61,7 +61,7 @@ func resourceAlicloudEcsNetworkInterface() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ForceNew:      true,
-				Deprecated:    "Field 'private_ip' has been deprecated from provider version 1.124.0. New field 'primary_ip_address' instead",
+				Deprecated:    "Field 'private_ip' has been deprecated from provider version 1.123.1. New field 'primary_ip_address' instead",
 				ConflictsWith: []string{"primary_ip_address"},
 			},
 			"private_ip_addresses": {
@@ -82,7 +82,7 @@ func resourceAlicloudEcsNetworkInterface() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				MaxItems:      10,
-				Deprecated:    "Field 'private_ips' has been deprecated from provider version 1.124.0. New field 'private_ip_addresses' instead",
+				Deprecated:    "Field 'private_ips' has been deprecated from provider version 1.123.1. New field 'private_ip_addresses' instead",
 				ConflictsWith: []string{"private_ip_addresses", "secondary_private_ip_address_count", "private_ips_count"},
 			},
 			"queue_number": {
@@ -107,7 +107,7 @@ func resourceAlicloudEcsNetworkInterface() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ValidateFunc:  validation.IntBetween(0, 10),
-				Deprecated:    "Field 'private_ips_count' has been deprecated from provider version 1.124.0. New field 'secondary_private_ip_address_count' instead",
+				Deprecated:    "Field 'private_ips_count' has been deprecated from provider version 1.123.1. New field 'secondary_private_ip_address_count' instead",
 				ConflictsWith: []string{"secondary_private_ip_address_count", "private_ip_addresses", "private_ips"},
 			},
 			"security_group_ids": {
@@ -128,7 +128,7 @@ func resourceAlicloudEcsNetworkInterface() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				MinItems:      1,
-				Deprecated:    "Field 'security_groups' has been deprecated from provider version 1.124.0. New field 'security_group_ids' instead",
+				Deprecated:    "Field 'security_groups' has been deprecated from provider version 1.123.1. New field 'security_group_ids' instead",
 				ConflictsWith: []string{"security_group_ids"},
 			},
 			"status": {

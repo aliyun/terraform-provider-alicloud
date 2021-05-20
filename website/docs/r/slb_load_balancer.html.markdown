@@ -11,7 +11,7 @@ description: |-
 
 Provides an Application Load Balancer resource.
 
--> **NOTE:** Available in 1.124.0+
+-> **NOTE:** Available in 1.123.1+
 
 -> **NOTE:** At present, to avoid some unnecessary regulation confusion, SLB can not support alicloud international account to create `PayByBandwidth` instance.
 

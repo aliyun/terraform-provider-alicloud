@@ -13,7 +13,7 @@ Provides a ECS Network Interface resource.
 
 For information about ECS Network Interface and how to use it, see [What is Network Interface](https://www.alibabacloud.com/help/en/doc-detail/58504.htm).
 
--> **NOTE:** Available in v1.124.0+.
+-> **NOTE:** Available in v1.123.1+.
 
 -> **NOTE** Only one of `private_ip_addresses` or `secondary_private_ip_address_count` can be specified when assign private IPs. 
 
@@ -71,18 +71,18 @@ resource "alicloud_ecs_network_interface" "default" {
 The following arguments are supported:
 
 * `description` - (Optional) The description of the ENI. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
-* `name` - (Optional, Computed, Deprecated in v1.124.0+) Field `name` has been deprecated from provider version 1.124.0. New field `network_interface_name` instead
+* `name` - (Optional, Computed, Deprecated in v1.123.1+) Field `name` has been deprecated from provider version 1.123.1. New field `network_interface_name` instead
 * `network_interface_name` - (Optional, Computed) The name of the ENI. The name must be 2 to 128 characters in length, and can contain letters, digits, colons (:), underscores (_), and hyphens (-). It must start with a letter and cannot start with http:// or https://.
 * `primary_ip_address` - (Optional, Computed, ForceNew) The primary private IP address of the ENI. The specified IP address must be available within the CIDR block of the VSwitch. If this parameter is not specified, an available IP address is assigned from the VSwitch CIDR block at random.
-* `private_ip` - (Optional, Computed, ForceNew, Deprecated in v1.124.0+) Field `private_ip` has been deprecated from provider version 1.124.0. New field `primary_ip_address` instead
+* `private_ip` - (Optional, Computed, ForceNew, Deprecated in v1.123.1+) Field `private_ip` has been deprecated from provider version 1.123.1. New field `primary_ip_address` instead
 * `private_ip_addresses` - (Optional, Computed) Specifies secondary private IP address N of the ENI. This IP address must be an available IP address within the CIDR block of the VSwitch to which the ENI belongs.
-* `private_ips` - (Optional, Computed, Deprecated in v1.124.0+) Field `private_ips` has been deprecated from provider version 1.124.0. New field `private_ip_addresses` instead
-* `private_ips_count` - (Optional, Computed, Deprecated in v1.124.0+) Field `private_ips_count` has been deprecated from provider version 1.124.0. New field `secondary_private_ip_address_count` instead
+* `private_ips` - (Optional, Computed, Deprecated in v1.123.1+) Field `private_ips` has been deprecated from provider version 1.123.1. New field `private_ip_addresses` instead
+* `private_ips_count` - (Optional, Computed, Deprecated in v1.123.1+) Field `private_ips_count` has been deprecated from provider version 1.123.1. New field `secondary_private_ip_address_count` instead
 * `queue_number` - (Optional, Computed) The queue number of the ENI.
 * `resource_group_id` - (Optional, ForceNew) The resource group id.
 * `secondary_private_ip_address_count` - (Optional, Computed) The number of private IP addresses that can be automatically created by ECS.
 * `security_group_ids` - (Optional, Computed) The ID of security group N. The security groups and the ENI must belong to the same VPC. The valid values of N are based on the maximum number of security groups to which an ENI can be added.
-* `security_groups` - (Optional, Computed, Deprecated in v1.124.0+) Field `security_groups` has been deprecated from provider version 1.124.0. New field `security_group_ids` instead
+* `security_groups` - (Optional, Computed, Deprecated in v1.123.1+) Field `security_groups` has been deprecated from provider version 1.123.1. New field `security_group_ids` instead
 * `vswitch_id` - (Required, ForceNew) The ID of the VSwitch in the specified VPC. The private IP addresses assigned to the ENI must be available IP addresses within the CIDR block of the VSwitch.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 

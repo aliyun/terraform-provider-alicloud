@@ -23,7 +23,7 @@ This resource will help you to manager node pool in Kubernetes Cluster.
 
 -> **NOTE:** ACK adds a new RamRole（AliyunCSManagedNlcRole） for the permission control of the management node pool. If you use the management node pool, please click [AliyunCSManagedNlcRole](https://ram.console.aliyun.com/role/authorization?spm=5176.2020520152.0.0.387f16ddEOZxMv&request=%7B%22Services%22%3A%5B%7B%22Service%22%3A%22CS%22%2C%22Roles%22%3A%5B%7B%22RoleName%22%3A%22AliyunCSManagedNlcRole%22%2C%22TemplateId%22%3A%22AliyunCSManagedNlcRole%22%7D%5D%7D%5D%2C%22ReturnUrl%22%3A%22https%3A%2F%2Fcs.console.aliyun.com%2F%22%7D) to complete the authorization.
 
--> **NOTE:** From version 1.124.0, supports the creation of a node pool of spot instance.
+-> **NOTE:** From version 1.123.1, supports the creation of a node pool of spot instance.
 
 -> **NOTE:** It is recommended to create a cluster with zero worker nodes, and then use a node pool to manage the cluster nodes. 
 
@@ -282,13 +282,13 @@ The following arguments are supported:
 * `auto_renew_period`- (Optional, Available in 1.119.0+) Node payment auto-renew period, one of `1`, `2`, `3`,`6`, `12`.
 * `install_cloud_monitor`- (Optional, Available in 1.119.0+) Install the cloud monitoring plug-in on the node, and you can view the monitoring information of the instance through the cloud monitoring console. Default is `true`.
 * `unschedulable`- (Optional, Available in 1.119.0+) Set the newly added node as unschedulable. If you want to open the scheduling option, you can open it in the node list of the console. If you are using an auto-scaling node pool, the setting will not take effect. Default is `false`.
-* `resource_group_id` - (Optional, ForceNew, Available in 1.124.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `internet_charge_type` - (Optional, Available in 1.124.0+) The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one. 
-* `internet_max_bandwidth_out` - (Optional, Available in 1.124.0+) The maximum outbound bandwidth for the public network. Unit: Mbit/s. Valid values: 0 to 100.
-* `spot_strategy` - (Optional, Available in 1.124.0+) The preemption policy for the pay-as-you-go instance. This parameter takes effect only when `instance_charge_type` is set to `PostPaid`. Valid value `SpotWithPriceLimit`.
-* `spot_price_limit` - (Optional, Available in 1.124.0+) The maximum hourly price of the instance. This parameter takes effect only when `spot_strategy` is set to `SpotWithPriceLimit`. A maximum of three decimal places are allowed.
-  * `instance_type` - (Optional, Available in 1.124.0+) Spot instance type.
-  * `price_limit` - (Optional, Available in 1.124.0+) The maximum hourly price of the spot instance.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.123.1+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
+* `internet_charge_type` - (Optional, Available in 1.123.1+) The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one. 
+* `internet_max_bandwidth_out` - (Optional, Available in 1.123.1+) The maximum outbound bandwidth for the public network. Unit: Mbit/s. Valid values: 0 to 100.
+* `spot_strategy` - (Optional, Available in 1.123.1+) The preemption policy for the pay-as-you-go instance. This parameter takes effect only when `instance_charge_type` is set to `PostPaid`. Valid value `SpotWithPriceLimit`.
+* `spot_price_limit` - (Optional, Available in 1.123.1+) The maximum hourly price of the instance. This parameter takes effect only when `spot_strategy` is set to `SpotWithPriceLimit`. A maximum of three decimal places are allowed.
+  * `instance_type` - (Optional, Available in 1.123.1+) Spot instance type.
+  * `price_limit` - (Optional, Available in 1.123.1+) The maximum hourly price of the spot instance.
 
 #### tags
 

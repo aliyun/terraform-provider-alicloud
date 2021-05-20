@@ -22,13 +22,13 @@ func dataSourceAlicloudSlbLoadBalancers() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Removed:  "Field 'master_availability_zone' has removed from v1.124.0 and replace by 'master_zone_id'.",
+				Removed:  "Field 'master_availability_zone' has removed from v1.123.1 and replace by 'master_zone_id'.",
 			},
 			"slave_availability_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Removed:  "Field 'slave_availability_zone' has removed from v1.124.0 and replace by 'slave_zone_id'.",
+				Removed:  "Field 'slave_availability_zone' has removed from v1.123.1 and replace by 'slave_zone_id'.",
 			},
 			"address": {
 				Type:     schema.TypeString,
@@ -329,7 +329,7 @@ func dataSourceAlicloudSlbLoadBalancers() *schema.Resource {
 			"slbs": {
 				Type:       schema.TypeList,
 				Computed:   true,
-				Deprecated: "Field 'slbs' has deprecated from v1.124.0 and replace by 'balancers'.",
+				Deprecated: "Field 'slbs' has deprecated from v1.123.1 and replace by 'balancers'.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {

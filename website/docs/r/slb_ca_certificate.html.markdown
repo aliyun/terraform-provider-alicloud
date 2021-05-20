@@ -41,11 +41,11 @@ resource "alicloud_slb_ca_certificate" "foo-file" {
 
 The following arguments are supported:
 
-* `ca_certifacate_name` - (Optional, Available in 1.124.0+) Name of the CA Certificate.
+* `ca_certifacate_name` - (Optional, Available in 1.123.1+) Name of the CA Certificate.
 * `ca_certificate` - (Required, ForceNew) the content of the CA certificate.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the slb_ca certificate belongs.
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
-* `name` - (Deprecated) Field `name` has been deprecated from provider version 1.124.0. New field `ca_certificate_name` instead
+* `name` - (Deprecated) Field `name` has been deprecated from provider version 1.123.1. New field `ca_certificate_name` instead
 
 ## Attributes Reference
 
@@ -55,7 +55,7 @@ The following attributes are exported:
 
 ### Timeouts
 
--> **NOTE:** -Available in 1.124.0+
+-> **NOTE:** -Available in 1.123.1+
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the server load balancers of the current Alibaba Cloud user.
 
--> **NOTE:** Available in 1.124.0+
+-> **NOTE:** Available in 1.123.1+
 
 ## Example Usage
 
