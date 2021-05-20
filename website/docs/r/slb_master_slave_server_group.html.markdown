@@ -1,5 +1,5 @@
 ---
-subcategory: "Server Load Balancer (SLB)"
+subcategory: "Classic Load Balancer (CLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_master_slave_server_group"
 sidebar_current: "docs-alicloud-resource-slb-master-slave-server-group"
@@ -83,10 +83,10 @@ resource "alicloud_instance" "instance" {
   vswitch_id                 = alicloud_vswitch.main.id
 }
 
-resource "alicloud_slb" "instance" {
-  name          = var.name
+resource "alicloud_slb_load_balancer" "instance" {
+  load_balancer_name  = var.name
   vswitch_id    = alicloud_vswitch.main.id
-  specification = "slb.s2.small"
+  load_balancer_spec = "slb.s2.small"
 }
 
 resource "alicloud_network_interface" "default" {
@@ -103,7 +103,7 @@ resource "alicloud_network_interface_attachment" "default" {
 }
 
 resource "alicloud_slb_master_slave_server_group" "group" {
-  load_balancer_id = alicloud_slb.instance.id
+  load_balancer_id = alicloud_slb_load_balancer.instance.id
   name             = var.name
 
   servers {
@@ -122,7 +122,7 @@ resource "alicloud_slb_master_slave_server_group" "group" {
 }
 
 resource "alicloud_slb_listener" "tcp" {
-  load_balancer_id             = alicloud_slb.instance.id
+  load_balancer_id             = alicloud_slb_load_balancer.instance.id
   master_slave_server_group_id = alicloud_slb_master_slave_server_group.group.id
   frontend_port                = "22"
   protocol                     = "tcp"

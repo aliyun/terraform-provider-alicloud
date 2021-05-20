@@ -1421,7 +1421,7 @@ func (s *VpcService) DescribeRouteTableList(id string) (object map[string]interf
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Code"]) != "200" {
-			err = Error("DescribeRouteTableList failed for " + response["Message"].(string))
+			err = fmt.Errorf("DescribeRouteTableList failed, response: %v ", response)
 			return object, err
 		}
 		v, err := jsonpath.Get("$.RouterTableList.RouterTableListType", response)

@@ -12,14 +12,14 @@ resource "alicloud_vswitch" "main" {
   depends_on = [alicloud_vpc.main]
 }
 
-resource "alicloud_slb" "instance" {
-  name                 = var.name
+resource "alicloud_slb_load_balancer" "instance" {
+  load_balancer_name                 = var.name
   vswitch_id           = alicloud_vswitch.main[0].id
   internet_charge_type = var.internet_charge_type
 }
 
 resource "alicloud_slb_listener" "listener" {
-  load_balancer_id = alicloud_slb.instance.id
+  load_balancer_id = alicloud_slb_load_balancer.instance.id
   backend_port     = "2111"
   frontend_port    = "21"
   protocol         = "tcp"

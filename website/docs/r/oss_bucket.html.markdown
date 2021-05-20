@@ -276,6 +276,18 @@ resource "alicloud_oss_bucket" "bucket-redundancytype" {
 }
 ```
 
+Set bucket accelerate configuration
+
+```terraform
+resource "alicloud_oss_bucket" "bucket-accelerate" {
+  bucket          = "bucket_name"
+
+  transfer_acceleration {
+	  enabled = false
+  }
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -295,6 +307,7 @@ The following arguments are supported:
 * `tags` - (Optional, Available in 1.45.0+) A mapping of tags to assign to the bucket. The items are no more than 10 for a bucket.
 * `versioning` - (Optional, Available in 1.45.0+) A state of versioning (documented below).
 * `force_destroy` - (Optional, Available in 1.45.0+) A boolean that indicates all objects should be deleted from the bucket so that the bucket can be destroyed without error. These objects are not recoverable. Defaults to "false".
+* `transfer_acceleration` - (Optional, Available in 1.124.0+) A transfer acceleration status of a bucket (documented below).
 
 #### Block cors_rule
 
@@ -400,6 +413,12 @@ The versioning supports the following:
 * `status` - (Required) Specifies the versioning state of a bucket. Valid values: `Enabled` and `Suspended`.
 
 `NOTE`: Currently, the `versioning` feature is only available in ap-south-1 and with white list. If you want to use it, please contact us.
+
+#### Block transfer_acceleration
+
+The transfer_acceleration supports the following:
+
+* `enabled` - (Required, Type: bool) Specifies the accelerate status of a bucket.
 
 ## Attributes Reference
 

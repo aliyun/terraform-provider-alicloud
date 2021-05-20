@@ -235,7 +235,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("engine").(string) != "PostgreSQL" && d.Get("engine").(string) != "MySQL"
+					return d.Get("engine").(string) != "PostgreSQL" && d.Get("engine").(string) != "MySQL" && d.Get("engine").(string) != "SQLServer"
 				},
 			},
 			"zone_id_slave_a": {

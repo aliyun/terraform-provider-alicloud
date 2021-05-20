@@ -32,7 +32,7 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb.default.id}",
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
@@ -138,7 +138,7 @@ func TestAccAlicloudSlbServerGroup_multi_vpc(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb.default.id}",
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
 					"count":            "10",
 					"servers": []map[string]interface{}{
 						{
@@ -184,7 +184,7 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb.default.id}",
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
@@ -329,10 +329,10 @@ resource "alicloud_network_interface_attachment" "default" {
     instance_id = "${alicloud_instance.new.0.id}"
     network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
 }
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  specification  = "slb.s2.small"
+  load_balancer_spec  = "slb.s2.small"
 }
 `, name)
 }
@@ -379,9 +379,9 @@ resource "alicloud_instance" "default" {
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"
 }
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  specification = "slb.s1.small"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
+  load_balancer_spec = "slb.s1.small"
 }
 `, name)
 
@@ -429,10 +429,10 @@ resource "alicloud_instance" "default" {
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"
 }
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+  load_balancer_spec = "slb.s1.small"
 }
 `)
 

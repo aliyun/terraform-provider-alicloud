@@ -60,14 +60,14 @@ resource "alicloud_instance" "instance" {
   }
 }
 
-resource "alicloud_slb" "instance" {
-  name                 = var.slb_name
+resource "alicloud_slb_load_balancer" "instance" {
+  load_balancer_name                 = var.slb_name
   internet_charge_type = var.slb_internet_charge_type
   internet             = var.internet
 }
 
 resource "alicloud_slb_listener" "listener" {
-  load_balancer_id = alicloud_slb.instance.id
+  load_balancer_id = alicloud_slb_load_balancer.instance.id
   backend_port     = 2111
   frontend_port    = 21
   protocol         = "tcp"
@@ -75,7 +75,7 @@ resource "alicloud_slb_listener" "listener" {
 }
 
 resource "alicloud_slb_attachment" "default" {
-  load_balancer_id = alicloud_slb.instance.id
+  load_balancer_id = alicloud_slb_load_balancer.instance.id
   instance_ids     = alicloud_instance.instance.*.id
 }
 

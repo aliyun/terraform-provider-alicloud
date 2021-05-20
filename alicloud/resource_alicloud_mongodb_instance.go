@@ -331,14 +331,18 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("ssl_status", sslAction.SSLStatus)
 
-	if replication_factor, err := strconv.Atoi(instance.ReplicationFactor); err == nil {
-		d.Set("replication_factor", replication_factor)
-	}
-	tdeInfo, err := ddsService.DescribeMongoDBTDEInfo(d.Id())
+	replicationFactor, err := strconv.Atoi(instance.ReplicationFactor)
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("tde_Status", tdeInfo.TDEStatus)
+	d.Set("replication_factor", replicationFactor)
+	if replicationFactor != 1 {
+		tdeInfo, err := ddsService.DescribeMongoDBTDEInfo(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("tde_Status", tdeInfo.TDEStatus)
+	}
 
 	d.Set("tags", ddsService.tagsInAttributeToMap(instance.Tags.Tag))
 	return nil

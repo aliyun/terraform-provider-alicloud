@@ -3,12 +3,12 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -24,6 +24,7 @@ func resourceAlicloudEcsDedicatedHost() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(11 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
 			Update: schema.DefaultTimeout(11 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -36,7 +37,7 @@ func resourceAlicloudEcsDedicatedHost() *schema.Resource {
 			"auto_placement": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"false", "on"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
 				Default:      "on",
 			},
 			"auto_release_time": {
@@ -50,7 +51,14 @@ func resourceAlicloudEcsDedicatedHost() *schema.Resource {
 			"auto_renew_period": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
+			},
+			"cpu_over_commit_ratio": {
+				Type:     schema.TypeFloat,
+				Optional: true,
+			},
+			"dedicated_host_cluster_id": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"dedicated_host_name": {
 				Type:     schema.TypeString,
@@ -80,9 +88,14 @@ func resourceAlicloudEcsDedicatedHost() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"min_quantity": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"network_attributes": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"udp_timeout": {
@@ -130,85 +143,118 @@ func resourceAlicloudEcsDedicatedHost() *schema.Resource {
 func resourceAlicloudEcsDedicatedHostCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-
-	request := ecs.CreateAllocateDedicatedHostsRequest()
+	var response map[string]interface{}
+	action := "AllocateDedicatedHosts"
+	request := make(map[string]interface{})
+	conn, err := client.NewEcsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	if v, ok := d.GetOk("action_on_maintenance"); ok {
-		request.ActionOnMaintenance = v.(string)
+		request["ActionOnMaintenance"] = v
 	}
+
 	if v, ok := d.GetOk("auto_placement"); ok {
-		request.AutoPlacement = v.(string)
+		request["AutoPlacement"] = v
 	}
+
 	if v, ok := d.GetOk("auto_release_time"); ok {
-		request.AutoReleaseTime = v.(string)
+		request["AutoReleaseTime"] = v
 	}
+
 	if v, ok := d.GetOkExists("auto_renew"); ok {
-		request.AutoRenew = requests.NewBoolean(v.(bool))
+		request["AutoRenew"] = v
 	}
+
 	if v, ok := d.GetOk("auto_renew_period"); ok {
-		request.AutoRenewPeriod = requests.NewInteger(v.(int))
+		request["AutoRenewPeriod"] = v
 	}
+
+	if v, ok := d.GetOk("cpu_over_commit_ratio"); ok {
+		request["CpuOverCommitRatio"] = v
+	}
+
+	if v, ok := d.GetOk("dedicated_host_cluster_id"); ok {
+		request["DedicatedHostClusterId"] = v
+	}
+
 	if v, ok := d.GetOk("dedicated_host_name"); ok {
-		request.DedicatedHostName = v.(string)
+		request["DedicatedHostName"] = v
 	}
-	request.DedicatedHostType = d.Get("dedicated_host_type").(string)
+
+	request["DedicatedHostType"] = d.Get("dedicated_host_type")
 	if v, ok := d.GetOk("description"); ok {
-		request.Description = v.(string)
+		request["Description"] = v
 	}
-	if _, ok := d.GetOk("expired_time"); ok {
-		if v, err := strconv.Atoi(d.Get("expired_time").(string)); err == nil {
-			request.Period = requests.NewInteger(v)
-		} else {
-			return WrapError(err)
-		}
+
+	if v, ok := d.GetOk("expired_time"); ok {
+		request["Period"] = v
 	}
+
+	if v, ok := d.GetOk("min_quantity"); ok {
+		request["MinQuantity"] = v
+	}
+
 	if v, ok := d.GetOk("network_attributes"); ok {
-		network_attributes := v.(*schema.Set).List()
-		for _, value := range network_attributes {
-			arg := value.(map[string]interface{})
-			request.NetworkAttributesSlbUdpTimeout = requests.NewInteger(arg["slb_udp_timeout"].(int))
-			request.NetworkAttributesUdpTimeout = requests.NewInteger(arg["udp_timeout"].(int))
+		networkAttributesMap := make(map[string]interface{})
+		for _, networkAttributes := range v.(*schema.Set).List() {
+			networkAttributesArg := networkAttributes.(map[string]interface{})
+			networkAttributesMap["SlbUdpTimeout"] = requests.NewInteger(networkAttributesArg["slb_udp_timeout"].(int))
+			networkAttributesMap["UdpTimeout"] = requests.NewInteger(networkAttributesArg["udp_timeout"].(int))
 		}
+		request["NetworkAttributes"] = networkAttributesMap
+
 	}
 	if v, ok := d.GetOk("payment_type"); ok {
-		request.ChargeType = v.(string)
-	}
-	request.Quantity = requests.NewInteger(1)
-	request.RegionId = client.RegionId
-	if v, ok := d.GetOk("resource_group_id"); ok {
-		request.ResourceGroupId = v.(string)
-	}
-	if v, ok := d.GetOk("sale_cycle"); ok {
-		request.PeriodUnit = v.(string)
-	}
-	if v, ok := d.GetOk("tags"); ok {
-		addTags := make([]ecs.AllocateDedicatedHostsTag, 0)
-		for key, value := range v.(map[string]interface{}) {
-			addTags = append(addTags, ecs.AllocateDedicatedHostsTag{
-				Key:   key,
-				Value: value.(string),
-			})
-		}
-		request.Tag = &addTags
-	}
-	if v, ok := d.GetOk("zone_id"); ok {
-		request.ZoneId = v.(string)
+		request["ChargeType"] = v
 	}
 
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.AllocateDedicatedHosts(request)
+	request["Quantity"] = 1
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+
+	if v, ok := d.GetOk("sale_cycle"); ok {
+		request["PeriodUnit"] = v
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		count := 1
+		for key, value := range v.(map[string]interface{}) {
+			request[fmt.Sprintf("Tag.%d.Key", count)] = key
+			request[fmt.Sprintf("Tag.%d.Value", count)] = value
+			count++
+		}
+	}
+	if v, ok := d.GetOk("zone_id"); ok {
+		request["ZoneId"] = v
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ecs_dedicated_host", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ecs_dedicated_host", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*ecs.AllocateDedicatedHostsResponse)
-	d.SetId(fmt.Sprintf("%v", response.DedicatedHostIdSets.DedicatedHostId[0]))
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ecsService.EcsDedicatedHostStateRefreshFunc(d.Id(), []string{"PermanentFailure"}))
+	responseDedicatedHostIdSets := response["DedicatedHostIdSets"].(map[string]interface{})
+	d.SetId(fmt.Sprint(responseDedicatedHostIdSets["DedicatedHostId"].([]interface{})[0]))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 15*time.Second, ecsService.EcsDedicatedHostStateRefreshFunc(d.Id(), []string{"PermanentFailure"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudEcsDedicatedHostUpdate(d, meta)
+	return resourceAlicloudEcsDedicatedHostRead(d, meta)
 }
 func resourceAlicloudEcsDedicatedHostRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -222,24 +268,38 @@ func resourceAlicloudEcsDedicatedHostRead(d *schema.ResourceData, meta interface
 		}
 		return WrapError(err)
 	}
+	d.Set("action_on_maintenance", object["ActionOnMaintenance"])
+	d.Set("auto_placement", object["AutoPlacement"])
+	d.Set("auto_release_time", object["AutoReleaseTime"])
+	d.Set("cpu_over_commit_ratio", object["CpuOverCommitRatio"])
+	d.Set("dedicated_host_name", object["DedicatedHostName"])
+	d.Set("dedicated_host_type", object["DedicatedHostType"])
+	d.Set("description", object["Description"])
+	d.Set("expired_time", object["ExpiredTime"])
 
-	d.Set("action_on_maintenance", object.ActionOnMaintenance)
-	d.Set("auto_placement", object.AutoPlacement)
-	d.Set("auto_release_time", object.AutoReleaseTime)
-	d.Set("dedicated_host_name", object.DedicatedHostName)
-	d.Set("dedicated_host_type", object.DedicatedHostType)
-	d.Set("description", object.Description)
-	d.Set("expired_time", object.ExpiredTime)
-	d.Set("payment_type", object.ChargeType)
-	d.Set("resource_group_id", object.ResourceGroupId)
-	d.Set("sale_cycle", object.SaleCycle)
-	d.Set("status", object.Status)
-	d.Set("zone_id", object.ZoneId)
+	networkAttributesSli := make([]map[string]interface{}, 0)
+	if len(object["NetworkAttributes"].(map[string]interface{})) > 0 {
+		networkAttributes := object["NetworkAttributes"]
+		networkAttributesMap := make(map[string]interface{})
+		networkAttributesMap["slb_udp_timeout"] = networkAttributes.(map[string]interface{})["SlbUdpTimeout"]
+		networkAttributesMap["udp_timeout"] = networkAttributes.(map[string]interface{})["UdpTimeout"]
+		networkAttributesSli = append(networkAttributesSli, networkAttributesMap)
+	}
+	d.Set("network_attributes", networkAttributesSli)
+	d.Set("payment_type", object["ChargeType"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
+	d.Set("sale_cycle", object["SaleCycle"])
+	d.Set("status", object["Status"])
+	if v, ok := object["Tags"].(map[string]interface{}); ok {
+		d.Set("tags", tagsToMap(v["Tag"]))
+	}
+	d.Set("zone_id", object["ZoneId"])
 	return nil
 }
 func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
+	var response map[string]interface{}
 	d.Partial(true)
 
 	if !d.IsNewResource() && d.HasChange("tags") {
@@ -248,177 +308,273 @@ func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interfa
 		}
 		d.SetPartial("tags")
 	}
-	update := false
-	request := ecs.CreateModifyDedicatedHostAutoReleaseTimeRequest()
-	request.DedicatedHostId = d.Id()
-	request.RegionId = client.RegionId
 	if !d.IsNewResource() && d.HasChange("auto_release_time") {
-		update = true
-		request.AutoReleaseTime = d.Get("auto_release_time").(string)
-	}
-	if update {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyDedicatedHostAutoReleaseTime(request)
-		})
-		addDebug(request.GetActionName(), raw)
+		request := map[string]interface{}{
+			"DedicatedHostId": d.Id(),
+		}
+		request["RegionId"] = client.RegionId
+		request["AutoReleaseTime"] = d.Get("auto_release_time")
+		action := "ModifyDedicatedHostAutoReleaseTime"
+		conn, err := client.NewEcsClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.EcsDedicatedHostStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("auto_release_time")
 	}
-	update = false
-	joinResourceGroupReq := ecs.CreateJoinResourceGroupRequest()
-	joinResourceGroupReq.ResourceId = d.Id()
-	joinResourceGroupReq.RegionId = client.RegionId
 	if !d.IsNewResource() && d.HasChange("resource_group_id") {
-		update = true
-		joinResourceGroupReq.ResourceGroupId = d.Get("resource_group_id").(string)
-	}
-	joinResourceGroupReq.ResourceType = "ddh"
-	if update {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.JoinResourceGroup(joinResourceGroupReq)
-		})
-		addDebug(joinResourceGroupReq.GetActionName(), raw)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), joinResourceGroupReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		request := map[string]interface{}{
+			"ResourceId": d.Id(),
 		}
-		// Wait two seconds for the `resource_group_id` attribute to take effect, otherwise get data from the cache. After the problem is solved, remove the wait.
-		time.Sleep(DefaultIntervalMini * time.Second)
-		d.SetPartial("resource_group_id")
-	}
-	update = false
-	renewDedicatedHostsReq := ecs.CreateRenewDedicatedHostsRequest()
-	renewDedicatedHostsReq.DedicatedHostIds = d.Id()
-	if !d.IsNewResource() && d.HasChange("expired_time") {
-		update = true
-		if v, err := strconv.Atoi(d.Get("expired_time").(string)); err == nil {
-			renewDedicatedHostsReq.Period = requests.NewInteger(v)
-		} else {
+		request["RegionId"] = client.RegionId
+		request["ResourceGroupId"] = d.Get("resource_group_id")
+		request["ResourceType"] = "ddh"
+		action := "JoinResourceGroup"
+		conn, err := client.NewEcsClient()
+		if err != nil {
 			return WrapError(err)
 		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.EcsDedicatedHostStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("resource_group_id")
 	}
-	renewDedicatedHostsReq.RegionId = client.RegionId
+	update := false
+	request := map[string]interface{}{
+		"DedicatedHostIds": convertListToJsonString(convertListStringToListInterface([]string{d.Id()})),
+	}
+	if !d.IsNewResource() && d.HasChange("expired_time") {
+		update = true
+		request["Period"] = d.Get("expired_time")
+	}
+	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("sale_cycle") {
 		update = true
-		renewDedicatedHostsReq.PeriodUnit = d.Get("sale_cycle").(string)
+		request["PeriodUnit"] = d.Get("sale_cycle")
 	}
-	if update && d.Get("charge_type").(string) == string(PrePaid) && !d.HasChange("charge_type") {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.RenewDedicatedHosts(renewDedicatedHostsReq)
-		})
-		addDebug(renewDedicatedHostsReq.GetActionName(), raw)
+	if update {
+		action := "RenewDedicatedHosts"
+		conn, err := client.NewEcsClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), renewDedicatedHostsReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.EcsDedicatedHostStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("expired_time")
 		d.SetPartial("sale_cycle")
 	}
 	update = false
-	modifyDedicatedHostAttributeReq := ecs.CreateModifyDedicatedHostAttributeRequest()
-	modifyDedicatedHostAttributeReq.DedicatedHostId = d.Id()
-	modifyDedicatedHostAttributeReq.RegionId = client.RegionId
-	if !d.IsNewResource() && d.HasChange("action_on_maintenance") {
-		update = true
-		modifyDedicatedHostAttributeReq.ActionOnMaintenance = d.Get("action_on_maintenance").(string)
+	modifyDedicatedHostsChargeTypeReq := map[string]interface{}{
+		"DedicatedHostIds": convertListToJsonString(convertListStringToListInterface([]string{d.Id()})),
 	}
-	if !d.IsNewResource() && d.HasChange("auto_placement") {
-		update = true
-		modifyDedicatedHostAttributeReq.AutoPlacement = d.Get("auto_placement").(string)
-	}
-	if !d.IsNewResource() && d.HasChange("dedicated_host_name") {
-		update = true
-		modifyDedicatedHostAttributeReq.DedicatedHostName = d.Get("dedicated_host_name").(string)
-	}
-	if !d.IsNewResource() && d.HasChange("description") {
-		update = true
-		modifyDedicatedHostAttributeReq.Description = d.Get("description").(string)
-	}
-	if !d.IsNewResource() && d.HasChange("network_attributes") {
-		update = true
-		for _, value := range d.Get("network_attributes").(*schema.Set).List() {
-			arg := value.(map[string]interface{})
-			modifyDedicatedHostAttributeReq.NetworkAttributesUdpTimeout = requests.NewInteger(arg["udp_timeout"].(int))
-			modifyDedicatedHostAttributeReq.NetworkAttributesSlbUdpTimeout = requests.NewInteger(arg["slb_udp_timeout"].(int))
-		}
-	}
-	if update {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyDedicatedHostAttribute(modifyDedicatedHostAttributeReq)
-		})
-		addDebug(modifyDedicatedHostAttributeReq.GetActionName(), raw)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyDedicatedHostAttributeReq.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		d.SetPartial("action_on_maintenance")
-		d.SetPartial("auto_placement")
-		d.SetPartial("dedicated_host_name")
-		d.SetPartial("description")
-		d.SetPartial("network_attributes")
-	}
-	update = false
-	modifyDedicatedHostsChargeTypeReq := ecs.CreateModifyDedicatedHostsChargeTypeRequest()
-	modifyDedicatedHostsChargeTypeReq.DedicatedHostIds = d.Id()
-	modifyDedicatedHostsChargeTypeReq.RegionId = client.RegionId
-	if !d.IsNewResource() && d.HasChange("auto_renew") {
-		modifyDedicatedHostsChargeTypeReq.AutoPay = requests.NewBoolean(d.Get("auto_renew").(bool))
-	}
-	if d.HasChange("detail_fee") {
-		modifyDedicatedHostsChargeTypeReq.DetailFee = requests.NewBoolean(d.Get("detail_fee").(bool))
-	}
-	if d.HasChange("dry_run") {
-		modifyDedicatedHostsChargeTypeReq.DryRun = requests.NewBoolean(d.Get("dry_run").(bool))
-	}
-	if !d.IsNewResource() && d.HasChange("expired_time") {
-		if v, err := strconv.Atoi(d.Get("expired_time").(string)); err == nil {
-			modifyDedicatedHostsChargeTypeReq.Period = requests.NewInteger(v)
-		} else {
-			return WrapError(err)
-		}
-	}
+	modifyDedicatedHostsChargeTypeReq["RegionId"] = client.RegionId
+	modifyDedicatedHostsChargeTypeReq["AutoPay"] = true
+	modifyDedicatedHostsChargeTypeReq["Period"] = d.Get("expired_time")
 	if !d.IsNewResource() && d.HasChange("payment_type") {
 		update = true
-		modifyDedicatedHostsChargeTypeReq.DedicatedHostChargeType = d.Get("payment_type").(string)
+		modifyDedicatedHostsChargeTypeReq["DedicatedHostChargeType"] = d.Get("payment_type")
 	}
-	if !d.IsNewResource() && d.HasChange("sale_cycle") {
-		modifyDedicatedHostsChargeTypeReq.PeriodUnit = d.Get("sale_cycle").(string)
-	}
+	modifyDedicatedHostsChargeTypeReq["PeriodUnit"] = d.Get("sale_cycle")
 	if update {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyDedicatedHostsChargeType(modifyDedicatedHostsChargeTypeReq)
-		})
-		addDebug(modifyDedicatedHostsChargeTypeReq.GetActionName(), raw)
+		if _, ok := d.GetOkExists("detail_fee"); ok {
+			modifyDedicatedHostsChargeTypeReq["DetailFee"] = d.Get("detail_fee")
+		}
+		if _, ok := d.GetOkExists("dry_run"); ok {
+			modifyDedicatedHostsChargeTypeReq["DryRun"] = d.Get("dry_run")
+		}
+		action := "ModifyDedicatedHostsChargeType"
+		conn, err := client.NewEcsClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyDedicatedHostsChargeTypeReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, modifyDedicatedHostsChargeTypeReq, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, modifyDedicatedHostsChargeTypeReq)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ecsService.EcsDedicatedHostStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("auto_renew")
 		d.SetPartial("detail_fee")
 		d.SetPartial("dry_run")
 		d.SetPartial("expired_time")
 		d.SetPartial("payment_type")
 		d.SetPartial("sale_cycle")
 	}
+	update = false
+	modifyDedicatedHostAttributeReq := map[string]interface{}{
+		"DedicatedHostId": d.Id(),
+	}
+	modifyDedicatedHostAttributeReq["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("action_on_maintenance") {
+		update = true
+		modifyDedicatedHostAttributeReq["ActionOnMaintenance"] = d.Get("action_on_maintenance")
+	}
+	if !d.IsNewResource() && d.HasChange("auto_placement") {
+		update = true
+		modifyDedicatedHostAttributeReq["AutoPlacement"] = d.Get("auto_placement")
+	}
+	if !d.IsNewResource() && d.HasChange("cpu_over_commit_ratio") {
+		update = true
+		modifyDedicatedHostAttributeReq["CpuOverCommitRatio"] = d.Get("cpu_over_commit_ratio")
+	}
+	if !d.IsNewResource() && d.HasChange("dedicated_host_name") {
+		update = true
+		modifyDedicatedHostAttributeReq["DedicatedHostName"] = d.Get("dedicated_host_name")
+	}
+	if !d.IsNewResource() && d.HasChange("description") {
+		update = true
+		modifyDedicatedHostAttributeReq["Description"] = d.Get("description")
+	}
+	if !d.IsNewResource() && d.HasChange("network_attributes") {
+		update = true
+		if d.Get("network_attributes") != nil {
+			networkAttributesMap := make(map[string]interface{})
+			for _, networkAttributes := range d.Get("network_attributes").(*schema.Set).List() {
+				networkAttributesArg := networkAttributes.(map[string]interface{})
+				networkAttributesMap["SlbUdpTimeout"] = requests.NewInteger(networkAttributesArg["slb_udp_timeout"].(int))
+				networkAttributesMap["UdpTimeout"] = requests.NewInteger(networkAttributesArg["udp_timeout"].(int))
+			}
+			modifyDedicatedHostAttributeReq["NetworkAttributes"] = networkAttributesMap
+		}
+	}
+	if update {
+		if _, ok := d.GetOk("dedicated_host_cluster_id"); ok {
+			modifyDedicatedHostAttributeReq["DedicatedHostClusterId"] = d.Get("dedicated_host_cluster_id")
+		}
+		action := "ModifyDedicatedHostAttribute"
+		conn, err := client.NewEcsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, modifyDedicatedHostAttributeReq, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, modifyDedicatedHostAttributeReq)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.EcsDedicatedHostStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("action_on_maintenance")
+		d.SetPartial("auto_placement")
+		d.SetPartial("cpu_over_commit_ratio")
+		d.SetPartial("dedicated_host_cluster_id")
+		d.SetPartial("dedicated_host_name")
+		d.SetPartial("description")
+		d.SetPartial("network_attributes")
+	}
 	d.Partial(false)
 	return resourceAlicloudEcsDedicatedHostRead(d, meta)
 }
 func resourceAlicloudEcsDedicatedHostDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := ecs.CreateReleaseDedicatedHostRequest()
-	request.DedicatedHostId = d.Id()
-	request.RegionId = client.RegionId
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.ReleaseDedicatedHost(request)
+	action := "ReleaseDedicatedHost"
+	var response map[string]interface{}
+	conn, err := client.NewEcsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"DedicatedHostId": d.Id(),
+	}
+
+	request["RegionId"] = client.RegionId
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"IncorrectHostStatus.Initializing"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
-	addDebug(request.GetActionName(), raw)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDedicatedHostId.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

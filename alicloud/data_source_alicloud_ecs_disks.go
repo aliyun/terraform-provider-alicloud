@@ -582,15 +582,17 @@ func dataSourceAlicloudEcsDisksRead(d *schema.ResourceData, meta interface{}) er
 		}
 
 		mountInstance := make([]map[string]interface{}, 0)
-		if mountInstanceList, ok := object["MountInstances"].(map[string]interface{})["MountInstance"].([]interface{}); ok {
-			for _, v := range mountInstanceList {
-				if m1, ok := v.(map[string]interface{}); ok {
-					temp1 := map[string]interface{}{
-						"attached_time": m1["AttachedTime"],
-						"device":        m1["Device"],
-						"instance_id":   m1["InstanceId"],
+		if mountInstances, ok := object["MountInstances"]; ok {
+			if mountInstanceList, ok := mountInstances.(map[string]interface{})["MountInstance"].([]interface{}); ok {
+				for _, v := range mountInstanceList {
+					if m1, ok := v.(map[string]interface{}); ok {
+						temp1 := map[string]interface{}{
+							"attached_time": m1["AttachedTime"],
+							"device":        m1["Device"],
+							"instance_id":   m1["InstanceId"],
+						}
+						mountInstance = append(mountInstance, temp1)
 					}
-					mountInstance = append(mountInstance, temp1)
 				}
 			}
 		}

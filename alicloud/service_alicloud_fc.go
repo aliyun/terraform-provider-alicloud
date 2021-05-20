@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -185,6 +186,24 @@ func removeSpaceAndEnter(s string) string {
 		return Trim(s)
 	}
 	return strings.Replace(strings.Replace(strings.Replace(s, " ", "", -1), "\n", "", -1), "\t", "", -1)
+}
+
+func delEmptyPayloadIfExist(s string) (string, error) {
+	if s == "" {
+		return s, nil
+	}
+	in := []byte(s)
+	var raw map[string]interface{}
+	if err := json.Unmarshal(in, &raw); err != nil {
+		return s, err
+	}
+
+	if _, ok := raw["payload"]; ok {
+		delete(raw, "payload")
+	}
+
+	out, err := json.Marshal(raw)
+	return string(out), err
 }
 
 func (s *FcService) WaitForFcTrigger(id string, status Status, timeout int) error {

@@ -152,13 +152,11 @@ func TestAccAlicloudVpc_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"user_cidrs":  []string{"106.11.62.0/24"},
-					"enable_ipv6": "true",
+					"user_cidrs": []string{"106.11.62.0/24"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"user_cidrs.#": "1",
-						"enable_ipv6":  "true",
 					}),
 				),
 			},
@@ -273,10 +271,155 @@ var AlicloudVpcMap = map[string]string{
 	"router_id":       CHECKSET,
 	"router_table_id": CHECKSET,
 	"route_table_id":  CHECKSET,
-	"ipv6_cidr_block": CHECKSET,
+	"ipv6_cidr_block": "",
 }
 
 func AlicloudVpcBasicDependence(name string) string {
+	return fmt.Sprintf(`
+
+data "alicloud_resource_manager_resource_groups" "default" {
+  name_regex = "terraformci"
+}
+`)
+}
+
+func TestAccAlicloudVpc_enableIpv6(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpcMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpc")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.VpcIpv6SupportRegions)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_cidrs":  []string{"106.11.62.0/24"},
+					"enable_ipv6": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_cidrs.#": "1",
+						"enable_ipv6":  "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "enable_ipv6"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_cidr_blocks": []string{"10.0.0.0/8"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_cidr_blocks.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_name":              name + "update",
+					"description":           name + "update",
+					"secondary_cidr_blocks": []string{"10.0.0.0/8"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_name":                name + "update",
+						"description":             name + "update",
+						"secondary_cidr_blocks.#": "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+var AlicloudVpcMap1 = map[string]string{
+	"status":          CHECKSET,
+	"router_id":       CHECKSET,
+	"router_table_id": CHECKSET,
+	"route_table_id":  CHECKSET,
+	"ipv6_cidr_block": CHECKSET,
+}
+
+func AlicloudVpcBasicDependence1(name string) string {
 	return fmt.Sprintf(`
 
 data "alicloud_resource_manager_resource_groups" "default" {

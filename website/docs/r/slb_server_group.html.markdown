@@ -1,5 +1,5 @@
 ---
-subcategory: "Server Load Balancer (SLB)"
+subcategory: "Classic Load Balancer (CLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_server_group"
 sidebar_current: "docs-alicloud-resource-slb-server-group"
@@ -77,13 +77,13 @@ resource "alicloud_instance" "instance" {
   vswitch_id                 = alicloud_vswitch.default.id
 }
 
-resource "alicloud_slb" "default" {
-  name       = var.name
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = var.name
   vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = alicloud_slb.default.id
+  load_balancer_id = alicloud_slb_load_balancer.default.id
   name             = var.name
   servers {
     server_ids = [alicloud_instance.instance[0].id, alicloud_instance.instance[1].id]
