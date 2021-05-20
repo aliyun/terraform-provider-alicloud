@@ -101,7 +101,7 @@ The following arguments are supported:
 * `vswitch_ids` - (Required, ForceNew) The vswitches where new kubernetes cluster will be located.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. SNAT must be configured when a new VPC is automatically created. Default is `true`.
 * `endpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
-* `service_discovery_types` - (ForceNew, Available in 1.124.0+) Service discovery type. If the value is empty, it means that service discovery is not enabled. Valid values are `CoreDNS` and `PrivateZone`. 
+* `service_discovery_types` - (ForceNew, Available in 1.123.1+) Service discovery type. If the value is empty, it means that service discovery is not enabled. Valid values are `CoreDNS` and `PrivateZone`. 
 * `deletion_protection` - (Optional, ForceNew) Whether enable the deletion protection or not.
     - true: Enable deletion protection.
     - false: Disable deletion protection.
@@ -115,11 +115,11 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `load_balancer_spec` - (ForceNew, Available in 1.117.0+) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
 * `addons` - (Available in 1.91.0+)) You can specific network plugin,log component,ingress component and so on.Detailed below.
-* `time_zone` - (Optional, ForceNew, Available in 1.124.0+) The time zone of the cluster.
-* `zone_id` - (Optional, ForceNew, Available in 1.124.0+) When creating a cluster using automatic VPC creation, you need to specify the zone where the VPC is located. 
-* `service_cidr` - (Optional, ForceNew, Available in 1.124.0+) CIDR block of the service network. The specified CIDR block cannot overlap with that of the VPC or those of the ACK clusters that are deployed in the VPC. The CIDR block cannot be modified after the cluster is created.
-* `logging_type` - (ForceNew, Available in 1.124.0+) Enable log service, Valid value `SLS`. 
-* `sls_project_name` - (ForceNew, Available in 1.124.0+) If you use an existing SLS project, you must specify `sls_project_name`.
+* `time_zone` - (Optional, ForceNew, Available in 1.123.1+) The time zone of the cluster.
+* `zone_id` - (Optional, ForceNew, Available in 1.123.1+) When creating a cluster using automatic VPC creation, you need to specify the zone where the VPC is located. 
+* `service_cidr` - (Optional, ForceNew, Available in 1.123.1+) CIDR block of the service network. The specified CIDR block cannot overlap with that of the VPC or those of the ACK clusters that are deployed in the VPC. The CIDR block cannot be modified after the cluster is created.
+* `logging_type` - (ForceNew, Available in 1.123.1+) Enable log service, Valid value `SLS`. 
+* `sls_project_name` - (ForceNew, Available in 1.123.1+) If you use an existing SLS project, you must specify `sls_project_name`.
 
 #### addons 
 It is a new field since 1.91.0. You can specific network plugin,log component,ingress component and so on. 
@@ -155,7 +155,7 @@ addons {
 
 #### Removed params (Never Supported)
 * `vswitch_id` - (Deprecated from version 1.91.0) (Required, ForceNew) The vswitch where new kubernetes cluster will be located. Specify one vswitch's id, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
-* `private_zone` - (Deprecated from version 1.124.0) (Optional, ForceNew) Has been deprecated from provider version 1.124.0. `PrivateZone` is used as the enumeration value of `service_discovery_types`.
+* `private_zone` - (Deprecated from version 1.123.1) (Optional, ForceNew) Has been deprecated from provider version 1.123.1. `PrivateZone` is used as the enumeration value of `service_discovery_types`.
 
 ### Timeouts
 

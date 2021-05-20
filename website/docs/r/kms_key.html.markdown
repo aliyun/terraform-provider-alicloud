@@ -34,8 +34,8 @@ The following arguments are supported:
 * `is_enabled` - (Optional) Field `is_enabled` has been deprecated from provider version 1.85.0. New field `key_state` instead.
 * `automatic_rotation` - (Optional) Specifies whether to enable automatic key rotation. Default:"Disabled".
 * `key_spec`   - (Optional, ForceNew) The type of the CMK.
-* `key_state` - (Optional) Field `key_state` has been deprecated from provider version 1.124.0. New field `status` instead.
-* `status` - (Optional, Available in 1.124.0+) The status of CMK. Defaults to Enabled. Valid Values: `Disabled`, `Enabled`, `PendingDeletion`.
+* `key_state` - (Optional) Field `key_state` has been deprecated from provider version 1.123.1. New field `status` instead.
+* `status` - (Optional, Available in 1.123.1+) The status of CMK. Defaults to Enabled. Valid Values: `Disabled`, `Enabled`, `PendingDeletion`.
 * `origin` - (Optional, ForceNew) The source of the key material for the CMK. Defaults to "Aliyun_KMS".
 * `pending_window_in_days` - (Optional) Duration in days after which the key is deleted after destruction of the resource, must be between 7 and 30 days. Defaults to 30 days.
 * `protection_level` - (Optional, ForceNew) The protection level of the CMK. Defaults to "SOFTWARE".

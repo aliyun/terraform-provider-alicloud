@@ -49,7 +49,7 @@ func dataSourceAlicloudEcsNetworkInterfaces() *schema.Resource {
 				Type:       schema.TypeString,
 				Optional:   true,
 				ForceNew:   true,
-				Deprecated: "Field 'name' has been deprecated from provider version 1.124.0. New field 'network_interface_name' instead",
+				Deprecated: "Field 'name' has been deprecated from provider version 1.123.1. New field 'network_interface_name' instead",
 			},
 			"primary_ip_address": {
 				Type:     schema.TypeString,
@@ -60,7 +60,7 @@ func dataSourceAlicloudEcsNetworkInterfaces() *schema.Resource {
 				Type:       schema.TypeString,
 				Optional:   true,
 				ForceNew:   true,
-				Deprecated: "Field 'private_ip' has been deprecated from provider version 1.124.0. New field 'primary_ip_address' instead",
+				Deprecated: "Field 'private_ip' has been deprecated from provider version 1.123.1. New field 'primary_ip_address' instead",
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,

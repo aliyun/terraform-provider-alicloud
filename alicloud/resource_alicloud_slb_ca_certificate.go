@@ -39,7 +39,7 @@ func resourceAlicloudSlbCaCertificate() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				Deprecated:    "Field 'name' has been deprecated from provider version 1.124.0. New field 'ca_certificate_name' instead",
+				Deprecated:    "Field 'name' has been deprecated from provider version 1.123.1. New field 'ca_certificate_name' instead",
 				ConflictsWith: []string{"ca_certificate_name"},
 			},
 			"resource_group_id": {

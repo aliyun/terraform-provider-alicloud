@@ -39,7 +39,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `names` - A list of SLB ca certificates names.
 * `certificates` - A list of SLB ca certificates. Each element contains the following attributes:
   * `id` - CA certificate ID.
-  * `ca_certificate_name` - (Available in v1.124.0+) CA certificate name.
+  * `ca_certificate_name` - (Available in v1.123.1+) CA certificate name.
   * `fingerprint` - CA certificate fingerprint.
   * `common_name` - CA certificate common name.
   * `expired_time` - CA certificate expired time.
@@ -47,7 +47,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `created_timestamp` - CA certificate created timestamp.
   * `resource_group_id` - The resource group Id of CA certificate.
   * `tags` - (Available in v1.66.0+) A mapping of tags to assign to the resource.
-  * `ca_certificate_id` - (Available in v1.124.0+) CA certificate ID.
-  * `name` - (Deprecated from v1.124.0) Deprecated and replace by `ca_certificate_name`.
-  * `created_time` - (Removed from v1.124.0) CA certificate created time.
-  * `region_id` - (Removed from v1.124.0) The region Id of CA certificate.
+  * `ca_certificate_id` - (Available in v1.123.1+) CA certificate ID.
+  * `name` - (Deprecated from v1.123.1) Deprecated and replace by `ca_certificate_name`.
+  * `created_time` - (Removed from v1.123.1) CA certificate created time.
+  * `region_id` - (Removed from v1.123.1) The region Id of CA certificate.

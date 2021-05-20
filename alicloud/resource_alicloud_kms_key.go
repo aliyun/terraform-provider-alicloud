@@ -129,7 +129,7 @@ func resourceAlicloudKmsKey() *schema.Resource {
 				Computed:      true,
 				ValidateFunc:  validation.StringInSlice([]string{"Disabled", "Enabled", "PendingDeletion"}, false),
 				ConflictsWith: []string{"status"},
-				Deprecated:    "Field 'key_state' has been deprecated from provider version 1.124.0. New field 'status' instead.",
+				Deprecated:    "Field 'key_state' has been deprecated from provider version 1.123.1. New field 'status' instead.",
 			},
 		},
 	}

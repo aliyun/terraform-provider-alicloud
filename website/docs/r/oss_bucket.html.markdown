@@ -307,7 +307,7 @@ The following arguments are supported:
 * `tags` - (Optional, Available in 1.45.0+) A mapping of tags to assign to the bucket. The items are no more than 10 for a bucket.
 * `versioning` - (Optional, Available in 1.45.0+) A state of versioning (documented below).
 * `force_destroy` - (Optional, Available in 1.45.0+) A boolean that indicates all objects should be deleted from the bucket so that the bucket can be destroyed without error. These objects are not recoverable. Defaults to "false".
-* `transfer_acceleration` - (Optional, Available in 1.124.0+) A transfer acceleration status of a bucket (documented below).
+* `transfer_acceleration` - (Optional, Available in 1.123.1+) A transfer acceleration status of a bucket (documented below).
 
 #### Block cors_rule
 
