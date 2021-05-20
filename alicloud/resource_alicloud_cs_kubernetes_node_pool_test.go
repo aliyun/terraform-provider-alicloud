@@ -316,6 +316,109 @@ func TestAccAlicloudCSKubernetesNodePool_PrePaid(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCSKubernetesNodePool_Spot(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.spot_nodepool"
+	ra := resourceAttrInit(resourceId, csdKubernetesNodePoolBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSNodePoolConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                       name,
+					"cluster_id":                 "${alicloud_cs_managed_kubernetes.default.0.id}",
+					"vswitch_ids":                []string{"${alicloud_vswitch.default.id}"},
+					"instance_types":             []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"system_disk_category":       "cloud_efficiency",
+					"system_disk_size":           "120",
+					"resource_group_id":          "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"password":                   "Terraform1234",
+					"node_count":                 "1",
+					"install_cloud_monitor":      "false",
+					"internet_charge_type":       "PayByTraffic",
+					"internet_max_bandwidth_out": "5",
+					"spot_strategy":              "SpotWithPriceLimit",
+					"spot_price_limit": []map[string]string{
+						{
+							"instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
+							"price_limit":   "0.57",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                             name,
+						"cluster_id":                       CHECKSET,
+						"vswitch_ids.#":                    "1",
+						"instance_types.#":                 "1",
+						"system_disk_category":             "cloud_efficiency",
+						"system_disk_size":                 "120",
+						"resource_group_id":                CHECKSET,
+						"password":                         CHECKSET,
+						"node_count":                       "1",
+						"install_cloud_monitor":            "false",
+						"internet_charge_type":             "PayByTraffic",
+						"internet_max_bandwidth_out":       "5",
+						"spot_strategy":                    "SpotWithPriceLimit",
+						"spot_price_limit.#":               "1",
+						"spot_price_limit.0.instance_type": CHECKSET,
+						"spot_price_limit.0.price_limit":   "0.57",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"internet_charge_type":       "PayByTraffic",
+					"internet_max_bandwidth_out": "10",
+					"spot_price_limit": []map[string]string{
+						{
+							"instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
+							"price_limit":   "0.60",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"internet_charge_type":             "PayByTraffic",
+						"internet_max_bandwidth_out":       "10",
+						"spot_strategy":                    "SpotWithPriceLimit",
+						"spot_price_limit.#":               "1",
+						"spot_price_limit.0.instance_type": CHECKSET,
+						"spot_price_limit.0.price_limit":   "0.60",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var csdKubernetesNodePoolBasicMap = map[string]string{
 	"system_disk_size":     "40",
 	"system_disk_category": "cloud_efficiency",
@@ -331,31 +434,33 @@ data "alicloud_zones" default {
   available_resource_creation  = "VSwitch"
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {}
+
 data "alicloud_instance_types" "default" {
-	availability_zone          = "${data.alicloud_zones.default.zones.0.id}"
+	availability_zone          = data.alicloud_zones.default.zones.0.id
 	cpu_core_count             = 2
 	memory_size                = 4
 	kubernetes_node_role       = "Worker"
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name                         = "${var.name}"
+  vpc_name                     = var.name
   cidr_block                   = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  vswitch_name                         = "${var.name}"
-  vpc_id                       = "${alicloud_vpc.default.id}"
+  vswitch_name                 = var.name
+  vpc_id                       = alicloud_vpc.default.id
   cidr_block                   = "10.1.1.0/24"
-  availability_zone            = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone            = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_key_pair" "default" {
-	key_name                   = "${var.name}"
+	key_name                   = var.name
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
-  name                         = "${var.name}"
+  name                         = var.name
   count                        = 1
   cluster_spec                 = "ack.pro.small"
   is_enterprise_security_group = true
@@ -363,8 +468,8 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   password                     = "Hello1234"
   pod_cidr                     = "172.20.0.0/16"
   service_cidr                 = "172.21.0.0/20"
-  worker_vswitch_ids           = ["${alicloud_vswitch.default.id}"]
-  worker_instance_types        = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+  worker_vswitch_ids           = [alicloud_vswitch.default.id]
+  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
   
   maintenance_window {
     enable            = true

@@ -1,8 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -66,6 +69,11 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 				ConflictsWith:    []string{"vswitch_id"},
 			},
+			"service_cidr": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"new_nat_gateway": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -75,14 +83,28 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 			"deletion_protection": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 				Default:  false,
 			},
 			"private_zone": {
-				Type:     schema.TypeBool,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				ForceNew:   true,
+				Default:    false,
+				Deprecated: "Field 'private_zone' has been deprecated from provider version 1.124.0. New field 'service_discovery_types' replace it.",
+			},
+			"service_discovery_types": {
+				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
-				Default:  false,
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: validation.StringInSlice([]string{"CoreDNS", "PrivateZone"}, false),
+				},
+			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Optional: true,
 			},
 			"endpoint_public_access_enabled": {
 				Type:     schema.TypeBool,
@@ -165,6 +187,30 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
 				Default:      "slb.s1.small",
 			},
+			"logging_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Default:  "SLS",
+			},
+			"sls_project_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"time_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -220,13 +266,37 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		RegionId:             client.RegionId,
 		VpcId:                d.Get("vpc_id").(string),
 		EndpointPublicAccess: d.Get("endpoint_public_access_enabled").(bool),
-		PrivateZone:          d.Get("private_zone").(bool),
-		NatGateway:           d.Get("new_nat_gateway").(bool),
-		SecurityGroupId:      d.Get("security_group_id").(string),
-		Addons:               addons,
-		KubernetesVersion:    d.Get("version").(string),
-		DeletionProtection:   d.Get("deletion_protection").(bool),
-		ResourceGroupId:      d.Get("resource_group_id").(string),
+		//PrivateZone:          d.Get("private_zone").(bool),
+		NatGateway:         d.Get("new_nat_gateway").(bool),
+		SecurityGroupId:    d.Get("security_group_id").(string),
+		Addons:             addons,
+		KubernetesVersion:  d.Get("version").(string),
+		DeletionProtection: d.Get("deletion_protection").(bool),
+		ResourceGroupId:    d.Get("resource_group_id").(string),
+	}
+
+	if v, ok := d.GetOk("time_zone"); ok {
+		args.TimeZone = v.(string)
+	}
+
+	if v, ok := d.GetOk("zone_id"); ok {
+		args.ZoneID = v.(string)
+	}
+
+	if v, ok := d.GetOk("service_cidr"); ok {
+		args.ServiceCIDR = v.(string)
+	}
+
+	if v, ok := d.GetOk("logging_type"); ok {
+		args.LoggingType = v.(string)
+	}
+
+	if v, ok := d.GetOk("sls_project_name"); ok {
+		args.SLSProjectName = v.(string)
+	}
+
+	if v, ok := d.GetOk("service_discovery_types"); ok {
+		args.ServiceDiscoveryTypes = expandStringList(v.([]interface{}))
 	}
 
 	if v := d.Get("vswitch_id").(string); v != "" {
@@ -297,12 +367,16 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	_ = d.Set("version", object.CurrentVersion)
 	_ = d.Set("resource_group_id", object.ResourceGroupId)
 	_ = d.Set("cluster_spec", object.ClusterSpec)
+	_ = d.Set("region_id", object.RegionId)
 
 	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
 		return WrapError(err)
 	}
 	if d.Get("load_balancer_spec") == "" {
 		_ = d.Set("load_balancer_spec", "slb.s1.small")
+	}
+	if d.Get("logging_type") == "" {
+		_ = d.Set("logging_type", "SLS")
 	}
 
 	var requestInfo *cs.Client
@@ -385,6 +459,10 @@ func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta i
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeClusterVersion", DenverdinoAliyungo)
 	}
 
+	if err := modifyKubernetesCluster(d, meta); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
+	}
+
 	d.Partial(false)
 	return resourceAlicloudCSServerlessKubernetesRead(d, meta)
 }
@@ -416,5 +494,49 @@ func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta i
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+	return nil
+}
+
+func modifyKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
+	var update bool
+	action := "ModifyCluster"
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
+
+	var modifyClusterRequest cs.ModifyClusterArgs
+	if d.HasChange("deletion_protection") {
+		update = true
+		modifyClusterRequest.DeletionProtection = d.Get("deletion_protection").(bool)
+	}
+
+	if update {
+		conn, err := meta.(*connectivity.AliyunClient).NewTeaRoaCommonClient(connectivity.OpenAckService)
+		if err != nil {
+			return WrapError(err)
+		}
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2015-12-15"), nil, StringPointer("PUT"), StringPointer("AK"), String(fmt.Sprintf("/api/v2/clusters/%s", d.Id())), nil, nil, modifyClusterRequest, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
+					return resource.RetryableError(err)
+				}
+				addDebug(action, response, nil)
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, nil)
+			return nil
+		})
+
+		stateConf := BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return err
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+	d.SetPartial("deletion_protection")
+
 	return nil
 }

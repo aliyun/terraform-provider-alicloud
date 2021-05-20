@@ -19,9 +19,13 @@ This resource will help you to manager node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.111.0, support auto scaling node pool. For more information on how to use auto scaling node pools, see [Use Terraform to create an elastic node pool](https://help.aliyun.com/document_detail/197717.htm).
 
--> **NOTE:** ACK adds a new RamRole (AliyunCSManagedAutoScalerRole) for the permission control of the auto-scaling node pool. If you use the auto-scaling node pool, please click [AliyunCSManagedAutoScalerRole](https://ram.console.aliyun.com/role/authorization?request=%7B%22Services%22%3A%5B%7B%22Service%22%3A%22CS%22%2C%22Roles%22%3A%5B%7B%22RoleName%22%3A%22AliyunCSManagedAutoScalerRole%22%2C%22TemplateId%22%3A%22AliyunCSManagedAutoScalerRole%22%7D%5D%7D%5D%2C%22ReturnUrl%22%3A%22https%3A%2F%2Fcs.console.aliyun.com%2F%22%7D) to complete the authorization. 
+-> **NOTE:** ACK adds a new RamRole (AliyunCSManagedAutoScalerRole) for the permission control of the node pool with auto-scaling enabled. If you are using a node pool with auto scaling, please click [AliyunCSManagedAutoScalerRole](https://ram.console.aliyun.com/role/authorization?request=%7B%22Services%22%3A%5B%7B%22Service%22%3A%22CS%22%2C%22Roles%22%3A%5B%7B%22RoleName%22%3A%22AliyunCSManagedAutoScalerRole%22%2C%22TemplateId%22%3A%22AliyunCSManagedAutoScalerRole%22%7D%5D%7D%5D%2C%22ReturnUrl%22%3A%22https%3A%2F%2Fcs.console.aliyun.com%2F%22%7D) to complete the authorization. 
 
 -> **NOTE:** ACK adds a new RamRole（AliyunCSManagedNlcRole） for the permission control of the management node pool. If you use the management node pool, please click [AliyunCSManagedNlcRole](https://ram.console.aliyun.com/role/authorization?spm=5176.2020520152.0.0.387f16ddEOZxMv&request=%7B%22Services%22%3A%5B%7B%22Service%22%3A%22CS%22%2C%22Roles%22%3A%5B%7B%22RoleName%22%3A%22AliyunCSManagedNlcRole%22%2C%22TemplateId%22%3A%22AliyunCSManagedNlcRole%22%7D%5D%7D%5D%2C%22ReturnUrl%22%3A%22https%3A%2F%2Fcs.console.aliyun.com%2F%22%7D) to complete the authorization.
+
+-> **NOTE:** From version 1.124.0, supports the creation of a node pool of spot instance.
+
+-> **NOTE:** It is recommended to create a cluster with zero worker nodes, and then use a node pool to manage the cluster nodes. 
 
 ## Example Usage
 
@@ -67,7 +71,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
 }
 ```
 
-Custom node pool in kubernetes cluster.
+Create a node pool.
 
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
@@ -85,7 +89,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 }
 ```
 
-Management node pool in kubernetes cluster. If you need to enable maintenance window, you need to set the maintenance window in `alicloud_cs_managed_kubernetes`.
+Create a managed node pool. If you need to enable maintenance window, you need to set the maintenance window in `alicloud_cs_managed_kubernetes`.
 
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
@@ -113,7 +117,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 }
 ```
 
-Automatic scaling node pool in kubernetes cluster. `node_count` is not required when using an automatic scaling node pool.
+Enable automatic scaling for the node pool. `scaling_config` is required.
 
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
@@ -134,7 +138,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 }
 ```
 
-Enables auto-scaling of the managed node pool in kubernetes cluster.
+Enable automatic scaling for managed node pool.
 
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
@@ -160,6 +164,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   }
 }
 ```
+
 Create a `PrePaid` node pool.
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
@@ -189,6 +194,56 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 }
 ```
 
+Create a node pool with spot instance.
+```terraform
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  name                         = var.name
+  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids                  = [alicloud_vswitch.default.id]
+  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
+  
+  system_disk_category         = "cloud_efficiency"
+  system_disk_size             = 40
+  key_name                     = alicloud_key_pair.default.key_name
+
+  # you need to specify the number of nodes in the node pool, which can be 0
+  node_count                   = 1
+
+  # spot config
+  spot_strategy = "SpotWithPriceLimit"
+  spot_price_limit  {
+    instance_type = data.alicloud_instance_types.default.instance_types.0.id"
+    # Different instance types have different price caps 
+    price_limit   = "0.70"
+  }
+}
+```
+
+Use Spot instances to create a node pool with auto-scaling enabled 
+```terraform
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  name                         = var.name
+  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids                  = [alicloud_vswitch.default.id]
+  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category         = "cloud_efficiency"
+  system_disk_size             = 40
+  key_name                     = alicloud_key_pair.default.key_name
+
+  # automatic scaling node pool configuration.
+  scaling_config {
+    min_size      = 1
+    max_size      = 10
+    type          = "spot"
+  }
+  # spot price config
+  spot_strategy = "SpotWithPriceLimit"
+  spot_price_limit  {
+    instance_type = data.alicloud_instance_types.default.instance_types.0.id
+    price_limit   = "0.70"
+  }
+}
+```
 
 ## Argument Reference
 
@@ -227,6 +282,13 @@ The following arguments are supported:
 * `auto_renew_period`- (Optional, Available in 1.119.0+) Node payment auto-renew period, one of `1`, `2`, `3`,`6`, `12`.
 * `install_cloud_monitor`- (Optional, Available in 1.119.0+) Install the cloud monitoring plug-in on the node, and you can view the monitoring information of the instance through the cloud monitoring console. Default is `true`.
 * `unschedulable`- (Optional, Available in 1.119.0+) Set the newly added node as unschedulable. If you want to open the scheduling option, you can open it in the node list of the console. If you are using an auto-scaling node pool, the setting will not take effect. Default is `false`.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.124.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
+* `internet_charge_type` - (Optional, Available in 1.124.0+) The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one. 
+* `internet_max_bandwidth_out` - (Optional, Available in 1.124.0+) The maximum outbound bandwidth for the public network. Unit: Mbit/s. Valid values: 0 to 100.
+* `spot_strategy` - (Optional, Available in 1.124.0+) The preemption policy for the pay-as-you-go instance. This parameter takes effect only when `instance_charge_type` is set to `PostPaid`. Valid value `SpotWithPriceLimit`.
+* `spot_price_limit` - (Optional, Available in 1.124.0+) The maximum hourly price of the instance. This parameter takes effect only when `spot_strategy` is set to `SpotWithPriceLimit`. A maximum of three decimal places are allowed.
+  * `instance_type` - (Optional, Available in 1.124.0+) Spot instance type.
+  * `price_limit` - (Optional, Available in 1.124.0+) The maximum hourly price of the spot instance.
 
 #### tags
 
@@ -257,7 +319,7 @@ The following arguments are supported in the `scaling_config` configuration bloc
 * `max_size` - (Required, Available in 1.111.0+) Max number of instances in a auto scaling group, its valid value range [0~1000]. `max_size` has to be greater than `min_size`.
 * `type` - (Optional, Available in 1.111.0+) Instance classification, not required. Vaild value: `cpu`, `gpu`, `gpushare` and `spot`. Default: `cpu`. The actual instance type is determined by `instance_types`.
 * `is_bond_eip` - (Optional, Available in 1.111.0+) Whether to bind EIP for an instance. Default: `false`.
-* `eip_internet_charge_type` - (Optional, Available in 1.111.0+) EIP billing type. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`.
+* `eip_internet_charge_type` - (Optional, Available in 1.111.0+) EIP billing type. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`. Conflict with `internet_charge_type`, EIP and public network IP can only choose one. 
 * `eip_bandwidth` - (Optional, Available in 1.111.0+) Peak EIP bandwidth. Its valid value range [1~500] in Mbps. Default to `5`.
 
 ## Attributes Reference
