@@ -207,10 +207,10 @@ func csNodepoolDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schem
 }
 
 func csNodepoolSpotInstanceSettingDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if v, ok := d.GetOk("spot_strategy"); !ok && v.(string) != "SpotWithPriceLimit" {
-		return true
+	if v, ok := d.GetOk("spot_strategy"); ok && v.(string) == "SpotWithPriceLimit" {
+		return false
 	}
-	return false
+	return true
 }
 
 func csForceUpdate(k, old, new string, d *schema.ResourceData) bool {

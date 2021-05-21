@@ -2,6 +2,8 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -13,8 +15,27 @@ import (
 )
 
 func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
-	var v *cs.ServerlessClusterResponse
+	var timeZoneMap = map[string]string{
+		"eu-central-1": "Europe/London",
+		"cn-hangzhou":  "Asia/Shanghai",
+		"cn-shanghai":  "Asia/Shanghai",
+		"cn-beijing":   "Asia/Shanghai",
+	}
 
+	var regionId string
+	if v := os.Getenv("ALICLOUD_REGION"); v != "" {
+		regionId = v
+	} else {
+		log.Println("[INFO] Test: Using cn-beijing as test region")
+		regionId = "cn-beijing"
+	}
+
+	var timeZone string
+	if v, ok := timeZoneMap[regionId]; ok {
+		timeZone = v
+	}
+
+	var v *cs.ServerlessClusterResponse
 	resourceId := "alicloud_cs_serverless_kubernetes.default"
 	ra := resourceAttrInit(resourceId, csServerlessKubernetesBasicMap)
 
@@ -57,8 +78,7 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 					"service_cidr":            "172.21.0.0/20",
 					"service_discovery_types": []string{"PrivateZone"},
 					"logging_type":            "SLS",
-					"time_zone":               "Asia/Shanghai",
-					"region_id":               "cn-hangzhou",
+					"time_zone":               timeZone,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -70,7 +90,6 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 						"vswitch_ids.#":                  "1",
 						"tags.%":                         "1",
 						"tags.Platform":                  "TF",
-						"region_id":                      "cn-hangzhou",
 					}),
 				),
 			},
