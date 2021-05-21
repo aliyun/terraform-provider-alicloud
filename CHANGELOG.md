@@ -1,4 +1,20 @@
-## 1.124.0 (Unreleased)
+## 1.123.1 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_ecs_dedicated_host: Adds new attributes cpu_over_commit_ratio, dedicated_host_cluster_id and min_quantity; Its datasource adds new attributes operation_locks; Updates its dependence SDK [GH-3548]
+- resource/alicloud_kms_key: Deprecates the key_state and use status instead; Its datasource supports filters and more output attributes; Upgrades its dependence sdk [GH-3555]
+- docs: Updates the ACK code in the docs [GH-3547]
+- docs: Rename Server Load Balancer(SLB) to Classic Load Balancer(CLB) [GH-3556]
+- ci: Adds the color output when running the test [GH-3544]
+
+BUG FIXES:
+
+- datasource/alicloud_ram_groups: Fixes the crash bug that parsing failed; datasource/alicloud_ram_roles: Fixes the fetching failed when the role is too many; resource/alicloud_ram_login_profile: Fixes the deleting error EntityNotExist.User [GH-3543]
+- datasource/alicloud_ecs_disks: Add judgment to assertion [GH-3553]
+- testcase: remove import check from alicloud_ecs_network_interface multi testcase and sweep skip resource not has name [GH-3545]
+- testcase: skip unsupport region for alicloud_kms_key [GH-3564]
+
 ## 1.123.0 (May 14, 2021)
 
 - **New Resource:** `alicloud_ddoscoo_domain_resource` ([#3530](https://github.com/aliyun/terraform-provider-alicloud/issues/3530))
