@@ -195,6 +195,75 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+
+						"ssl_expire_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"require_update": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"acl": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ca_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_ca_cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_ca_cert_expire_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_cert_revocation_list": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"last_modify_status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"modify_status_reason": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"replication_acl": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"require_update_item": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"require_update_reason": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ssl_create_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ssl_enabled": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"server_ca_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"server_cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"server_key": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -334,6 +403,62 @@ func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, dbi []rds
 			"instance_storage":         instance["DBInstanceStorage"],
 			"master_zone":              instance["MasterZone"],
 		}
+		sslResponse, sslErr := rdsService.DescribeDBInstanceSSL(item.DBInstanceId)
+		if sslErr == nil {
+			if v, ok := sslResponse["SSLExpireTime"]; ok && v != "" {
+				mapping["ssl_expire_time"] = sslResponse["SSLExpireTime"]
+			}
+			if v, ok := sslResponse["RequireUpdate"]; ok && v != "" {
+				mapping["require_update"] = sslResponse["RequireUpdate"]
+			}
+			if v, ok := sslResponse["ACL"]; ok && v != "" {
+				mapping["acl"] = sslResponse["ACL"]
+			}
+			if v, ok := sslResponse["CAType"]; ok && v != "" {
+				mapping["ca_type"] = sslResponse["CAType"]
+			}
+			if v, ok := sslResponse["ClientCACert"]; ok && v != "" {
+				mapping["client_ca_cert"] = sslResponse["ClientCACert"]
+			}
+			if v, ok := sslResponse["ClientCACertExpireTime"]; ok && v != "" {
+				mapping["client_ca_cert_expire_time"] = sslResponse["ClientCACertExpireTime"]
+			}
+			if v, ok := sslResponse["ClientCertRevocationList"]; ok && v != "" {
+				mapping["client_cert_revocation_list"] = sslResponse["ClientCertRevocationList"]
+			}
+			if v, ok := sslResponse["LastModifyStatus"]; ok && v != "" {
+				mapping["last_modify_status"] = sslResponse["LastModifyStatus"]
+			}
+			if v, ok := sslResponse["ModifyStatusReason"]; ok && v != "" {
+				mapping["modify_status_reason"] = sslResponse["ModifyStatusReason"]
+			}
+			if v, ok := sslResponse["ReplicationACL"]; ok && v != "" {
+				mapping["replication_acl"] = sslResponse["ReplicationACL"]
+			}
+			if v, ok := sslResponse["RequireUpdateItem"]; ok && v != "" {
+				mapping["require_update_item"] = sslResponse["RequireUpdateItem"]
+			}
+			if v, ok := sslResponse["RequireUpdateReason"]; ok && v != "" {
+				mapping["require_update_reason"] = sslResponse["RequireUpdateReason"]
+			}
+			if v, ok := sslResponse["SSLCreateTime"]; ok && v != "" {
+				mapping["ssl_create_time"] = sslResponse["SSLCreateTime"]
+			}
+			if v, ok := sslResponse["SSLEnabled"]; ok && v != "" {
+				mapping["ssl_enabled"] = sslResponse["SSLEnabled"]
+			}
+			if v, ok := sslResponse["ServerCAUrl"]; ok && v != "" {
+				mapping["server_ca_url"] = sslResponse["ServerCAUrl"]
+			}
+			if v, ok := sslResponse["ServerCert"]; ok && v != "" {
+				mapping["server_cert"] = sslResponse["ServerCert"]
+			}
+			if v, ok := sslResponse["ServerKey"]; ok && v != "" {
+				mapping["server_key"] = sslResponse["ServerKey"]
+			}
+
+		}
+
 		slaveZones := instance["SlaveZones"].(map[string]interface{})["SlaveZone"].([]interface{})
 		if len(slaveZones) == 2 {
 			mapping["zone_id_slave_a"] = slaveZones[0].(map[string]interface{})["ZoneId"]

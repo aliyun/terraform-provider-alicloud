@@ -248,6 +248,44 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"ca_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"server_cert": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"server_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"client_ca_enabled": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"client_ca_cert": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"client_crl_enabled": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"client_cert_revocation_list": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"acl": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"replication_acl": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -498,6 +536,11 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if sslAction == "Update" {
 			request["SSLEnabled"] = 2
 		}
+
+		if sslAction == "Update" && d.Get("engine").(string) == "PostgreSQL" {
+			request["SSLEnabled"] = 1
+		}
+
 		instance, err := rdsService.DescribeDBInstance(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
@@ -506,8 +549,56 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return WrapError(err)
 		}
+
+		if d.Get("engine").(string) == "PostgreSQL" {
+			if v, ok := d.GetOk("ca_type"); ok && v.(string) != "" {
+				request["CAType"] = v.(string)
+			}
+			if v, ok := d.GetOk("server_cert"); ok && v.(string) != "" {
+				request["ServerCert"] = v.(string)
+			}
+			if v, ok := d.GetOk("server_key"); ok && v.(string) != "" {
+				request["ServerKey"] = v.(string)
+			}
+			if v, ok := d.GetOk("client_ca_enabled"); ok {
+				request["ClientCAEnabled"] = v.(int)
+			}
+
+			if v, ok := d.GetOk("client_ca_cert"); ok && v.(string) != "" {
+				request["ClientCACert"] = v.(string)
+			}
+
+			if v, ok := d.GetOk("client_crl_enabled"); ok {
+				request["ClientCrlEnabled"] = v.(int)
+			}
+
+			if v, ok := d.GetOk("client_cert_revocation_list"); ok && v.(string) != "" {
+				request["ClientCertRevocationList"] = v.(string)
+			}
+
+			if v, ok := d.GetOk("acl"); ok && v.(string) != "" {
+				request["ACL"] = v.(string)
+			}
+
+			if v, ok := d.GetOk("replication_acl"); ok && v.(string) != "" {
+				request["ReplicationACL"] = v.(string)
+			}
+		}
 		request["ConnectionString"] = instance["ConnectionString"]
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -790,7 +881,15 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("ssl_status", sslAction["RequireUpdate"])
 	d.Set("ssl_action", d.Get("ssl_action"))
-
+	d.Set("client_ca_enabled", d.Get("client_ca_enabled"))
+	d.Set("client_crl_enabled", d.Get("client_crl_enabled"))
+	d.Set("ca_type", sslAction["CAType"])
+	d.Set("server_cert", sslAction["ServerCert"])
+	d.Set("server_key", sslAction["ServerKey"])
+	d.Set("client_ca_cert", sslAction["ClientCACert"])
+	d.Set("client_cert_revocation_list", sslAction["ClientCertRevocationList"])
+	d.Set("acl", sslAction["ACL"])
+	d.Set("replication_acl", sslAction["ReplicationACL"])
 	tdeInfo, err := rdsService.DescribeRdsTDEInfo(d.Id())
 	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
 		return WrapError(err)
