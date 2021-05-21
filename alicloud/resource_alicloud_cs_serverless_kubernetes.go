@@ -86,11 +86,12 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Default:  false,
 			},
 			"private_zone": {
-				Type:       schema.TypeBool,
-				Optional:   true,
-				ForceNew:   true,
-				Default:    false,
-				Deprecated: "Field 'private_zone' has been deprecated from provider version 1.124.0. New field 'service_discovery_types' replace it.",
+				Type:          schema.TypeBool,
+				Optional:      true,
+				ForceNew:      true,
+				Default:       false,
+				ConflictsWith: []string{"service_discovery_types"},
+				Deprecated:    "Field 'private_zone' has been deprecated from provider version 1.124.0. New field 'service_discovery_types' replace it.",
 			},
 			"service_discovery_types": {
 				Type:     schema.TypeList,
@@ -100,6 +101,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringInSlice([]string{"CoreDNS", "PrivateZone"}, false),
 				},
+				ConflictsWith: []string{"private_zone"},
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -266,13 +268,12 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		RegionId:             client.RegionId,
 		VpcId:                d.Get("vpc_id").(string),
 		EndpointPublicAccess: d.Get("endpoint_public_access_enabled").(bool),
-		//PrivateZone:          d.Get("private_zone").(bool),
-		NatGateway:         d.Get("new_nat_gateway").(bool),
-		SecurityGroupId:    d.Get("security_group_id").(string),
-		Addons:             addons,
-		KubernetesVersion:  d.Get("version").(string),
-		DeletionProtection: d.Get("deletion_protection").(bool),
-		ResourceGroupId:    d.Get("resource_group_id").(string),
+		NatGateway:           d.Get("new_nat_gateway").(bool),
+		SecurityGroupId:      d.Get("security_group_id").(string),
+		Addons:               addons,
+		KubernetesVersion:    d.Get("version").(string),
+		DeletionProtection:   d.Get("deletion_protection").(bool),
+		ResourceGroupId:      d.Get("resource_group_id").(string),
 	}
 
 	if v, ok := d.GetOk("time_zone"); ok {
@@ -297,6 +298,14 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 
 	if v, ok := d.GetOk("service_discovery_types"); ok {
 		args.ServiceDiscoveryTypes = expandStringList(v.([]interface{}))
+	}
+
+	if v, ok := d.GetOk("private_zone"); ok {
+		if v.(bool) == true {
+			args.ServiceDiscoveryTypes = []string{"PrivateZone"}
+		} else {
+			args.ServiceDiscoveryTypes = []string{}
+		}
 	}
 
 	if v := d.Get("vswitch_id").(string); v != "" {
@@ -359,24 +368,24 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 
-	_ = d.Set("name", object.Name)
-	_ = d.Set("vpc_id", object.VpcId)
-	_ = d.Set("vswitch_id", object.VSwitchId)
-	_ = d.Set("security_group_id", object.SecurityGroupId)
-	_ = d.Set("deletion_protection", object.DeletionProtection)
-	_ = d.Set("version", object.CurrentVersion)
-	_ = d.Set("resource_group_id", object.ResourceGroupId)
-	_ = d.Set("cluster_spec", object.ClusterSpec)
-	_ = d.Set("region_id", object.RegionId)
+	d.Set("name", object.Name)
+	d.Set("vpc_id", object.VpcId)
+	d.Set("vswitch_id", object.VSwitchId)
+	d.Set("security_group_id", object.SecurityGroupId)
+	d.Set("deletion_protection", object.DeletionProtection)
+	d.Set("version", object.CurrentVersion)
+	d.Set("resource_group_id", object.ResourceGroupId)
+	d.Set("cluster_spec", object.ClusterSpec)
+	d.Set("region_id", object.RegionId)
 
 	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
 		return WrapError(err)
 	}
 	if d.Get("load_balancer_spec") == "" {
-		_ = d.Set("load_balancer_spec", "slb.s1.small")
+		d.Set("load_balancer_spec", "slb.s1.small")
 	}
 	if d.Get("logging_type") == "" {
-		_ = d.Set("logging_type", "SLS")
+		d.Set("logging_type", "SLS")
 	}
 
 	var requestInfo *cs.Client

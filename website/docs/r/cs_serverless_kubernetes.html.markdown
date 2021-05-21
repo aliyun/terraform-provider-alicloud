@@ -185,5 +185,5 @@ The following attributes are exported:
 Serverless Kubernetes cluster can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_cs_serverless_kubernetes.main ${cluster_id}
+$ terraform import alicloud_cs_serverless_kubernetes.main ce4273f9156874b46bb
 ```
