@@ -114,6 +114,8 @@ func TestAccAlicloudKMSKey_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			// eu-central-1 not support Aliyun_SM4
+			testAccPreCheckWithRegions(t, false, connectivity.KmsKeyUnSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
