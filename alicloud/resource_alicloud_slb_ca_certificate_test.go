@@ -2,13 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"log"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
