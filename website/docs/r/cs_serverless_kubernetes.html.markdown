@@ -27,8 +27,6 @@ after creating cluster successfully, and you can put them into the specified loc
 -> **NOTE:** You need to activate several other products and confirm Authorization Policy used by Container Service before using this resource.
 Please refer to the `Authorization management` and `Cluster management` sections in the [Document Center](https://www.alibabacloud.com/help/doc-detail/86488.htm).
 
--> **NOTE:** 
-
 ## Example Usage
 
 Basic Usage
@@ -119,7 +117,6 @@ The following arguments are supported:
 * `addons` - (Available in 1.91.0+)) You can specific network plugin,log component,ingress component and so on.Detailed below.
 * `time_zone` - (Optional, ForceNew, Available in 1.124.0+) The time zone of the cluster.
 * `zone_id` - (Optional, ForceNew, Available in 1.124.0+) When creating a cluster using automatic VPC creation, you need to specify the zone where the VPC is located. 
-* `region_id` - (Optional, ForceNew, Available in 1.124.0+) ID of the region where the cluster is located.
 * `service_cidr` - (Optional, ForceNew, Available in 1.124.0+) CIDR block of the service network. The specified CIDR block cannot overlap with that of the VPC or those of the ACK clusters that are deployed in the VPC. The CIDR block cannot be modified after the cluster is created.
 * `logging_type` - (ForceNew, Available in 1.124.0+) Enable log service, Valid value `SLS`. 
 * `sls_project_name` - (ForceNew, Available in 1.124.0+) If you use an existing SLS project, you must specify `sls_project_name`.

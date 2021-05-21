@@ -609,7 +609,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 	// spot
 	if d.HasChange("spot_strategy") {
 		update = true
-		args.ResourceGroupId = d.Get("spot_strategy").(string)
+		args.SpotStrategy = d.Get("spot_strategy").(string)
 	}
 	if d.HasChange("spot_price_limit") {
 		update = true

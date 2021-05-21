@@ -207,12 +207,6 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
-			"region_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
-			},
 		},
 	}
 }
@@ -300,7 +294,7 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		args.ServiceDiscoveryTypes = expandStringList(v.([]interface{}))
 	}
 
-	if v, ok := d.GetOk("private_zone"); ok {
+	if v, ok := d.GetOkExists("private_zone"); ok {
 		if v.(bool) == true {
 			args.ServiceDiscoveryTypes = []string{"PrivateZone"}
 		} else {
@@ -376,7 +370,6 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	d.Set("version", object.CurrentVersion)
 	d.Set("resource_group_id", object.ResourceGroupId)
 	d.Set("cluster_spec", object.ClusterSpec)
-	d.Set("region_id", object.RegionId)
 
 	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
 		return WrapError(err)
