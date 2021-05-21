@@ -919,9 +919,13 @@ data "alicloud_zones" "default" {
     available_resource_creation = "${var.creation}"
 }
 
+data "alicloud_vpcs" "default" {
+  is_default = true
+}
+
 data "alicloud_vswitches" "default" {
-  zone_id = data.alicloud_zones.default.ids[0]
-  name_regex = "default-tf--testAcc-00"
+ vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+ name_regex = "default-tf--testAcc-00"
 }
 `
 
