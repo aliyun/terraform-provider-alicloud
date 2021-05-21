@@ -382,9 +382,9 @@ variable "name" {
 }
 
 resource "alicloud_slb_load_balancer" "default" {
-  name = "${var.name}"
+  load_balancer_name = "${var.name}"
   internet_charge_type = "PayByTraffic"
-  internet = true
+  address_type = "internet"
   load_balancer_spec = "slb.s2.small"
 }
 
@@ -477,7 +477,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_slb_load_balancer" "default" {
-  name = "${var.name}"
+  load_balancer_name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
   load_balancer_spec = "slb.s1.small"
 }
@@ -532,7 +532,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_slb_load_balancer" "default" {
-  name = "${var.name}"
+  load_balancer_name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
   load_balancer_spec = "slb.s1.small"
 }

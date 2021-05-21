@@ -84,7 +84,7 @@ func resourceSlbDomainExtensionConfigDependence(name string) string {
    resource "alicloud_slb_load_balancer" "instance" {
         load_balancer_name                 = "${var.name}"
         internet_charge_type = "PayByTraffic"
-        internet             = "true"
+        address_type             = "internet"
 		load_balancer_spec        = "slb.s2.small"
 	}
 	resource "alicloud_slb_server_certificate" "foo" {
