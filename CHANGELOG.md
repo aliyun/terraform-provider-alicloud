@@ -1,21 +1,23 @@
-## 1.123.1 (Unreleased)
+## 1.124.0 (Unreleased)
+## 1.123.1 (May 22, 2021)
 
 ENHANCEMENTS:
 
-- resource/alicloud_cs_kubernetes_nood_pool: Adds supports to create spot instance, set public IP and resource_group_id; resource/alicloud_cs_serverless_kubernetes: Support to set coredns as service discovery, time zone and sls log config; resource/alicloud_cs_managed_kubernetes: Fixes the bug that upgrades the cluster after creating it. [GH-3558]
-- resource/alicloud_ecs_dedicated_host: Adds new attributes cpu_over_commit_ratio, dedicated_host_cluster_id and min_quantity; Its datasource adds new attributes operation_locks; Updates its dependence SDK [GH-3548]
-- resource/alicloud_kms_key: Deprecates the key_state and use status instead; Its datasource supports filters and more output attributes; Upgrades its dependence sdk [GH-3555]
-- docs: Updates the ACK code in the docs [GH-3547]
-- docs: Rename Server Load Balancer(SLB) to Classic Load Balancer(CLB) [GH-3556]
-- ci: Adds the color output when running the test [GH-3544]
+- resource/alicloud_mongodb_instance: Fixes the parsing replication_factor error when it is empty ([#3570](https://github.com/aliyun/terraform-provider-alicloud/issues/3570))
+- resource/alicloud_cs_kubernetes_nood_pool: Adds supports to create spot instance, set public IP and resource_group_id; resource/alicloud_cs_serverless_kubernetes: Support to set coredns as service discovery, time zone and sls log config; resource/alicloud_cs_managed_kubernetes: Fixes the bug that upgrades the cluster after creating it. ([#3558](https://github.com/aliyun/terraform-provider-alicloud/issues/3558))
+- resource/alicloud_ecs_dedicated_host: Adds new attributes cpu_over_commit_ratio, dedicated_host_cluster_id and min_quantity; Its datasource adds new attributes operation_locks; Updates its dependence SDK ([#3548](https://github.com/aliyun/terraform-provider-alicloud/issues/3548))
+- resource/alicloud_kms_key: Deprecates the key_state and use status instead; Its datasource supports filters and more output attributes; Upgrades its dependence sdk ([#3555](https://github.com/aliyun/terraform-provider-alicloud/issues/3555))
+- docs: Updates the ACK code in the docs ([#3547](https://github.com/aliyun/terraform-provider-alicloud/issues/3547))
+- docs: Rename Server Load Balancer(SLB) to Classic Load Balancer(CLB) ([#3556](https://github.com/aliyun/terraform-provider-alicloud/issues/3556))
+- ci: Adds the color output when running the test ([#3544](https://github.com/aliyun/terraform-provider-alicloud/issues/3544))
 
 BUG FIXES:
 
-- datasource/alicloud_ram_groups: Fixes the crash bug that parsing failed; datasource/alicloud_ram_roles: Fixes the fetching failed when the role is too many; resource/alicloud_ram_login_profile: Fixes the deleting error EntityNotExist.User [GH-3543]
-- datasource/alicloud_ecs_disks: Add judgment to assertion [GH-3553]
-- testcase: remove import check from alicloud_ecs_network_interface multi testcase and sweep skip resource not has name [GH-3545]
-- testcase: skip unsupport region for alicloud_kms_key [GH-3564]
-- testcase: Fix deprecated field for slb listener testcase [GH-3562]
+- datasource/alicloud_ram_groups: Fixes the crash bug that parsing failed; datasource/alicloud_ram_roles: Fixes the fetching failed when the role is too many; resource/alicloud_ram_login_profile: Fixes the deleting error EntityNotExist.User ([#3543](https://github.com/aliyun/terraform-provider-alicloud/issues/3543))
+- datasource/alicloud_ecs_disks: Add judgment to assertion ([#3553](https://github.com/aliyun/terraform-provider-alicloud/issues/3553))
+- testcase: remove import check from alicloud_ecs_network_interface multi testcase and sweep skip resource not has name ([#3545](https://github.com/aliyun/terraform-provider-alicloud/issues/3545))
+- testcase: skip unsupport region for alicloud_kms_key ([#3564](https://github.com/aliyun/terraform-provider-alicloud/issues/3564))
+- testcase: Fix deprecated field for slb listener testcase ([#3562](https://github.com/aliyun/terraform-provider-alicloud/issues/3562))
 
 ## 1.123.0 (May 14, 2021)
 
