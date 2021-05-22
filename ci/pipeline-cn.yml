@@ -6,10 +6,10 @@ groups:
       - Zones
       - Images
       - Instance
-      - Disk
+#      - Disk
       - SecurityGroup
 #      - KeyPair
-      - NetworkInterface
+#      - NetworkInterface
       - Snapshot
       - LaunchTemplate
       # ESS
@@ -127,10 +127,10 @@ groups:
       - Zones
       - Images
       - Instance
-      - Disk
+#      - Disk
       - SecurityGroup
 #      - KeyPair
-      - NetworkInterface
+#      - NetworkInterface
       - Snapshot
       - LaunchTemplate
       - Ecs
@@ -523,19 +523,19 @@ jobs:
           TEST_CASE_CODE: "Rds"
           SWEEPER_CODE: "alicloud_db_instance"
 
-  - name: Disk
-    plan:
-      - <<: *clone-provider
-      - get: trigger
-        trigger: false
-        resource: 07Thu
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          TEST_CASE_CODE: "Disk"
-          SWEEPER_CODE: "alicloud_disk"
+#  - name: Disk
+#    plan:
+#      - <<: *clone-provider
+#      - get: trigger
+#        trigger: false
+#        resource: 07Thu
+#      - aggregate:
+#          - *get-aliyun-cli
+#      - <<: *run
+#        params:
+#          <<: *run-params
+#          TEST_CASE_CODE: "Disk"
+#          SWEEPER_CODE: "alicloud_disk"
 
   - name: Forward
     plan:
@@ -768,19 +768,19 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "CR"
 
-  - name: NetworkInterface
-    plan:
-      - <<: *clone-provider
-      - get: trigger
-        trigger: false
-        resource: 0430Thu
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          TEST_CASE_CODE: "NetworkInterface"
-          SWEEPER_CODE: "alicloud_network_interface"
+#  - name: NetworkInterface
+#    plan:
+#      - <<: *clone-provider
+#      - get: trigger
+#        trigger: false
+#        resource: 0430Thu
+#      - aggregate:
+#          - *get-aliyun-cli
+#      - <<: *run
+#        params:
+#          <<: *run-params
+#          TEST_CASE_CODE: "NetworkInterface"
+#          SWEEPER_CODE: "alicloud_network_interface"
 
   - name: Oss
     plan:
@@ -1474,7 +1474,7 @@ jobs:
         resource: terraform-provider-alicloud
         trigger: true
         passed: [
-            Instance, Disk, SecurityGroup, NetworkInterface, Ess, CS, FC,
+            Instance, SecurityGroup, Ess, CS, FC,
             Vpc, VSwitch, EIP, RouteTable, RouteEntry, RouterInterface, NatGateway, Snat, Forward, CommonBandwidth,
             Slb, DB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, Snapshot, LaunchTemplate
         ]
@@ -1940,13 +1940,13 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
-  - name: 0430Thu
-    type: time
-    source:
-      start: 04:30 AM
-      stop: 10:50 PM
-      days: [Thursday]
-      location: {{time_location}}
+#  - name: 0430Thu
+#    type: time
+#    source:
+#      start: 04:30 AM
+#      stop: 10:50 PM
+#      days: [Thursday]
+#      location: {{time_location}}
 
   - name: 0530Thu
     type: time
@@ -1972,13 +1972,13 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
-  - name: 07Thu
-    type: time
-    source:
-      start: 07:00 AM
-      stop: 10:50 PM
-      days: [Thursday]
-      location: {{time_location}}
+#  - name: 07Thu
+#    type: time
+#    source:
+#      start: 07:00 AM
+#      stop: 10:50 PM
+#      days: [Thursday]
+#      location: {{time_location}}
 
   - name: 0730Thu
     type: time
