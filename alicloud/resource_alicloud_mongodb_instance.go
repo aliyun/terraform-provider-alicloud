@@ -330,13 +330,8 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	d.Set("ssl_status", sslAction.SSLStatus)
-
-	replicationFactor, err := strconv.Atoi(instance.ReplicationFactor)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("replication_factor", replicationFactor)
-	if replicationFactor != 1 {
+	d.Set("replication_factor", instance.ReplicationFactor)
+	if instance.ReplicationFactor != "" {
 		tdeInfo, err := ddsService.DescribeMongoDBTDEInfo(d.Id())
 		if err != nil {
 			return WrapError(err)
