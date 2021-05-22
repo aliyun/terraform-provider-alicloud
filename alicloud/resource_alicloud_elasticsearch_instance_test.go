@@ -169,7 +169,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
-					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":           "${local.vswitch_id}",
 					"version":              "5.5.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
@@ -376,7 +376,7 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
-					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
+					"vswitch_id":           "${local.vswitch_id}",
 					"version":              "5.5.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
@@ -435,7 +435,7 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
-					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
+					"vswitch_id":           "${local.vswitch_id}",
 					"version":              "6.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
@@ -499,7 +499,7 @@ func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"vswitch_id":           "${local.vswitch_id}",
 					"version":              "5.5.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
@@ -551,7 +551,7 @@ func TestAccAlicloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":              name,
-					"vswitch_id":               "${data.alicloud_vswitches.default.ids[0]}",
+					"vswitch_id":               "${local.vswitch_id}",
 					"version":                  "5.5.3_with_X-Pack",
 					"password":                 "Yourpassword1234",
 					"data_node_spec":           DataNodeSpec,
@@ -612,7 +612,7 @@ func TestAccAlicloudElasticsearchInstance_client_node(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
-					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
+					"vswitch_id":           "${local.vswitch_id}",
 					"version":              "6.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
@@ -680,7 +680,7 @@ func TestAccAlicloudElasticsearchInstance_https(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
-					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
+					"vswitch_id":           "${local.vswitch_id}",
 					"version":              "6.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
@@ -749,10 +749,6 @@ var elasticsearchMap = map[string]string{
 func resourceElasticsearchInstanceConfigDependence(name string) string {
 	return fmt.Sprintf(`
     %s
-    variable "creation" {
-		default = "Elasticsearch"
-	}
-
 	variable "name" {
 		default = "%s"
 	}
@@ -762,10 +758,6 @@ func resourceElasticsearchInstanceConfigDependence(name string) string {
 func resourceElasticsearchInstanceConfigDependence_multi(name string) string {
 	return fmt.Sprintf(`
     %s
-    variable "creation" {
-		default = "Elasticsearch"
-	}
-
 	variable "name" {
 		default = "%s"
 	}
