@@ -1014,9 +1014,9 @@ func (s *VpcService) DescribeNetworkAcl(id string) (object map[string]interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidNetworkAcl.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("VPC:NetworkAcl", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
@@ -1820,10 +1820,10 @@ func (s *VpcService) NetworkAclStateRefreshFunc(id string, failStates []string) 
 		}
 
 		for _, failState := range failStates {
-			if object["Status"].(string) == failState {
-				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
-		return object, object["Status"].(string), nil
+		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
