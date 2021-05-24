@@ -37,27 +37,12 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 					"name":        name,
 					"project":     "${alicloud_log_project.foo.name}",
 					"shard_count": "1",
-					// The following parameters are only used to enable logstore encryption when create logstore
-					// "encrypt_conf": []map[string]interface{}{
-					// 	{
-					// 		"enable":       "true",
-					// 		"encrypt_type": "default",
-					// 		"user_cmk_info": []map[string]string{
-					// 			{
-					// 				"cmk_key_id": "your_cmk_key_id",
-					// 				"arn":        "your_role_arn",
-					// 				"region_id":  "you_cmk_region_id",
-					// 			},
-					// 		},
-					// 	},
-					// },
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":        name,
 						"project":     name,
 						"shard_count": "1",
-						// "encrypt_conf.#": "1",
 					}),
 				),
 			},
@@ -131,6 +116,60 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 						"max_split_shard_count": "0",
 						"append_meta":           "true",
 						"enable_web_tracking":   "false",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudLogStore_create_with_encrypt(t *testing.T) {
+	var v *sls.LogStore
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, logStoreMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-log-store-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogStoreConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"project":     "${alicloud_log_project.foo.name}",
+					"shard_count": "1",
+					"encrypt_conf": []map[string]interface{}{
+						{
+							"enable":       "true",
+							"encrypt_type": "default",
+							"user_cmk_info": []map[string]string{
+								{
+									"cmk_key_id": "your_cmk_key_id",
+									"arn":        "your_role_arn",
+									"region_id":  "you_cmk_region_id",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":           name,
+						"project":        name,
+						"shard_count":    "1",
+						"encrypt_conf.#": "1",
 					}),
 				),
 			},

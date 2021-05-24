@@ -49,7 +49,7 @@ The following arguments are supported:
 * `max_split_shard_count` - (Optional) The maximum number of shards for automatic split, which is in the range of 1 to 64. You must specify this parameter when autoSplit is true.
 * `append_meta` - (Optional) Determines whether to append log meta automatically. The meta includes log receive time and client IP address. Default to `true`.
 * `enable_web_tracking` - (Optional) Determines whether to enable Web Tracking. Default `false`.
-* `encrypt_conf` (ForceNew,Optional) Encrypted storage of data, providing data static protection capability
+* `encrypt_conf` (ForceNew, Optional, Available in 1.124.0+) Encrypted storage of data, providing data static protection capability, only supported at creation time.
   * `enable` (Optional) enable encryption. Default `false`
   * `encrypt_type` (Optional) Supported encryption type, only supports `default(AES)`,` m4`
   * `user_cmk_info` (Optional) User bring your own key (BYOK) encryption.[Refer to details](https://www.alibabacloud.com/help/zh/doc-detail/187853.htm?spm=a2c63.p38356.b99.673.cafa2b38qBskFV)
