@@ -100,6 +100,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 				Type:     schema.TypeSet,
 				ForceNew: true,
 				Optional: true,
+				MaxItems: 1,
 				Default:  nil,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -117,6 +118,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 						"user_cmk_info": {
 							Type:     schema.TypeSet,
 							Optional: true,
+							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"cmk_key_id": {
