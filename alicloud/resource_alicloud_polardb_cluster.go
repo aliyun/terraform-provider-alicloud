@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"strings"
 	"time"
 
@@ -65,7 +66,6 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"pay_type": {
 				Type:         schema.TypeString,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
 				Optional:     true,
 				Default:      PostPaid,
@@ -163,7 +163,6 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 
 	client := meta.(*connectivity.AliyunClient)
 	polarDBService := PolarDBService{client}
-
 	request, err := buildPolarDBCreateRequest(d, meta)
 	if err != nil {
 		return WrapError(err)
@@ -171,7 +170,6 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 	raw, err := client.WithPolarDBClient(func(polarClient *polardb.Client) (interface{}, error) {
 		return polarClient.CreateDBCluster(request)
 	})
-
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_polardb_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -184,7 +182,6 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-
 	return resourceAlicloudPolarDBClusterUpdate(d, meta)
 }
 
@@ -204,6 +201,50 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
+	payType := d.Get("pay_type").(string)
+	if !d.IsNewResource() && d.HasChange("pay_type") {
+		action := "TransformDBClusterPayType"
+		request := map[string]interface{}{
+			"RegionId":    client.RegionId,
+			"DBClusterId": d.Id(),
+			"PayType":     convertPolarDBPayTypeUpdateRequest(payType),
+		}
+		if payType == string(PrePaid) {
+			period := d.Get("period").(int)
+			request["UsedTime"] = strconv.Itoa(period)
+			request["Period"] = Month
+			if period > 9 {
+				request["UsedTime"] = strconv.Itoa(period / 12)
+				request["Period"] = Year
+			}
+		}
+		conn, err := client.NewPolarDBClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		if payType == string(PrePaid) {
+			d.SetPartial("period")
+		}
+		d.SetPartial("pay_type")
+	}
+
 	if (d.Get("pay_type").(string) == string(PrePaid)) &&
 		(d.HasChange("renewal_status") || d.HasChange("auto_renew_period")) {
 		status := d.Get("renewal_status").(string)
@@ -220,7 +261,10 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				request.PeriodUnit = string(Year)
 			}
 		}
-
+		//wait asynchronously cluster payType
+		if err := polarDBService.WaitForPolarDBPayType(d.Id(), "Prepaid", DefaultLongTimeout); err != nil {
+			return WrapError(err)
+		}
 		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.ModifyAutoRenewAttribute(request)
 		})
@@ -376,6 +420,10 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		request.DBClusterId = d.Id()
 		request.ModifyType = d.Get("modify_type").(string)
 		request.DBNodeTargetClass = d.Get("db_node_class").(string)
+		//wait asynchronously cluster nodes num the same
+		if err := polarDBService.WaitForPolarDBNodeClass(d.Id(), DefaultLongTimeout); err != nil {
+			return WrapError(err)
+		}
 
 		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.ModifyDBNodeClass(request)
@@ -530,7 +578,7 @@ func resourceAlicloudPolarDBClusterDelete(d *schema.ResourceData, meta interface
 
 	// Pre paid cluster can not be release.
 	if PayType(cluster.PayType) == Prepaid {
-		return nil
+		return WrapError(Error("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically."))
 	}
 
 	request := polardb.CreateDeleteDBClusterRequest()
@@ -641,4 +689,12 @@ func convertPolarDBTdeStatusUpdateRequest(source string) string {
 		return "Enable"
 	}
 	return "Disable"
+}
+
+func convertPolarDBPayTypeUpdateRequest(source string) string {
+	switch source {
+	case "PrePaid":
+		return "Prepaid"
+	}
+	return "Postpaid"
 }

@@ -1231,3 +1231,43 @@ func (s *PolarDBService) WaitForPolarDBTDEStatus(id string, status string, timeo
 	}
 	return nil
 }
+
+func (s *PolarDBService) WaitForPolarDBNodeClass(id string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		clusters, err := s.DescribePolarDBCluster(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		clusterAttribute, err := s.DescribePolarDBClusterAttribute(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		if len(clusters.DBNodes.DBNode) == len(clusterAttribute.DBNodes) {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalMedium * time.Second)
+	}
+	return nil
+}
+
+func (s *PolarDBService) WaitForPolarDBPayType(id string, status string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		clusters, err := s.DescribePolarDBCluster(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		if clusters.PayType == status {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, clusters, status, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalMedium * time.Second)
+	}
+	return nil
+}
