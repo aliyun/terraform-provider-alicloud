@@ -1527,7 +1527,7 @@ resources:
     type: time
     source:
       start: 00:00 AM
-#      stop: 11:50 PM
+      stop: 12:00 PM
       days: [Sunday, Tuesday, Thursday]
       location: {{time_location}}
 
