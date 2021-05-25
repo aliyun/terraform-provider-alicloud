@@ -27,10 +27,6 @@ func init() {
 }
 
 func testSweepNetworkAcl(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.NetworkAclSupportedRegions) {
-		log.Printf("[INFO] Skipping Network Acl unsupported region: %s", region)
-		return nil
-	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)

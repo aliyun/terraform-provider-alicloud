@@ -24,10 +24,6 @@ func init() {
 }
 
 func testSweepNetworkAclAttachment(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.NetworkAclSupportedRegions) {
-		log.Printf("[INFO] Skipping Network Acl unsupported region: %s", region)
-		return nil
-	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -114,7 +110,7 @@ func TestAccAlicloudNetworkAclAttachment_basic(t *testing.T) {
 	testAccCheck := ra.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.NetworkAclSupportedRegions)
+			testAccPreCheck(t)
 		},
 		// module name
 		IDRefreshName: resourceId,

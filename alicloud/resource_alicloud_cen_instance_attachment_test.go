@@ -417,14 +417,13 @@ func deleteCenInstancAttachmet(id string, client *connectivity.AliyunClient) err
 	if err != nil {
 		return WrapError(err)
 	}
-	cbnService := CbnService{client}
 	request := cbn.CreateDetachCenChildInstanceRequest()
 	request.ChildInstanceId = parts[1]
 	request.ChildInstanceRegionId = parts[3]
 	request.ChildInstanceType = parts[2]
 	request.CenId = parts[0]
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DetachCenChildInstance(request)
 		})
@@ -437,9 +436,5 @@ func deleteCenInstancAttachmet(id string, client *connectivity.AliyunClient) err
 		}
 		return nil
 	})
-	stateConf := BuildStateConf([]string{}, []string{}, 10*time.Minute, 5*time.Second, cbnService.CenInstanceAttachmentStateRefreshFunc(id, []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return err
-	}
-	return nil
+	return err
 }
