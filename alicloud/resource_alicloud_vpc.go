@@ -47,8 +47,6 @@ func resourceAlicloudVpc() *schema.Resource {
 			"enable_ipv6": {
 				Type:          schema.TypeBool,
 				Optional:      true,
-				ForceNew:      true,
-				Default:       false,
 				ConflictsWith: []string{"cidr_block"},
 			},
 			"ipv6_cidr_block": {
