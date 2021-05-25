@@ -30,7 +30,7 @@ func init() {
 			"alicloud_kvstore_instance",
 			"alicloud_route_table_attachment",
 			//"alicloud_havip",
-			"alicloud_network_interface",
+			"alicloud_ecs_network_interface",
 			"alicloud_drds_instance",
 			"alicloud_elasticsearch_instance",
 			"alicloud_vpn_gateway",
