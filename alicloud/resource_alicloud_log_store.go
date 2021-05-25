@@ -96,6 +96,48 @@ func resourceAlicloudLogStore() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"encrypt_conf": {
+				Type:     schema.TypeSet,
+				ForceNew: true,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"encrypt_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      "default",
+							ValidateFunc: validation.StringInSlice([]string{"default", "m4"}, false),
+						},
+						"user_cmk_info": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"cmk_key_id": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"arn": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"region_id": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -110,6 +152,9 @@ func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) er
 		AutoSplit:     d.Get("auto_split").(bool),
 		MaxSplitShard: d.Get("max_split_shard_count").(int),
 		AppendMeta:    d.Get("append_meta").(bool),
+	}
+	if encrypt := buildEncrypt(d); encrypt != nil {
+		logstore.EncryptConf = encrypt
 	}
 	var requestinfo *sls.Client
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
@@ -192,7 +237,23 @@ func resourceAlicloudLogStoreRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("auto_split", object.AutoSplit)
 	d.Set("enable_web_tracking", object.WebTracking)
 	d.Set("max_split_shard_count", object.MaxSplitShard)
-
+	if encrypt := object.EncryptConf; encrypt != nil {
+		encryptMap := map[string]interface{}{
+			"enable":       encrypt.Enable,
+			"encrypt_type": encrypt.EncryptType,
+		}
+		if userCmkInfo := encrypt.UserCmkInfo; userCmkInfo != nil {
+			userCmkInfoMap := map[string]interface{}{
+				"cmk_key_id": userCmkInfo.CmkKeyId,
+				"arn":        userCmkInfo.Arn,
+				"region_id":  userCmkInfo.RegionId,
+			}
+			encryptMap["user_cmk_info"] = []map[string]interface{}{userCmkInfoMap}
+		}
+		if err := d.Set("encrypt_conf", []map[string]interface{}{encryptMap}); err != nil {
+			return WrapError(err)
+		}
+	}
 	return nil
 }
 
@@ -284,4 +345,24 @@ func resourceAlicloudLogStoreDelete(d *schema.ResourceData, meta interface{}) er
 	}
 	addDebug("DeleteLogStore", nil)
 	return WrapError(logService.WaitForLogStore(d.Id(), Deleted, DefaultTimeout))
+}
+
+func buildEncrypt(d *schema.ResourceData) *sls.EncryptConf {
+	var encryptConf *sls.EncryptConf
+	if field, ok := d.GetOk("encrypt_conf"); ok {
+		encryptConf = new(sls.EncryptConf)
+		value := field.(*schema.Set).List()[0].(map[string]interface{})
+		encryptConf.Enable = value["enable"].(bool)
+		encryptConf.EncryptType = value["encrypt_type"].(string)
+		cmkInfo := value["user_cmk_info"].(*schema.Set).List()
+		if len(cmkInfo) > 0 {
+			cmk := cmkInfo[0].(map[string]interface{})
+			encryptConf.UserCmkInfo = &sls.EncryptUserCmkConf{
+				CmkKeyId: cmk["cmk_key_id"].(string),
+				Arn:      cmk["arn"].(string),
+				RegionId: cmk["region_id"].(string),
+			}
+		}
+	}
+	return encryptConf
 }

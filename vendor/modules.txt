@@ -92,7 +92,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost
 github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit
 # github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
 github.com/aliyun/aliyun-datahub-sdk-go/datahub
-# github.com/aliyun/aliyun-log-go-sdk v0.1.20
+# github.com/aliyun/aliyun-log-go-sdk v0.1.21
 github.com/aliyun/aliyun-log-go-sdk
 # github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 github.com/aliyun/aliyun-mns-go-sdk
@@ -373,7 +373,7 @@ github.com/modern-go/concurrent
 github.com/modern-go/reflect2
 # github.com/oklog/run v1.0.0
 github.com/oklog/run
-# github.com/pierrec/lz4 v2.5.2+incompatible
+# github.com/pierrec/lz4 v2.6.0+incompatible
 github.com/pierrec/lz4
 github.com/pierrec/lz4/internal/xxh32
 # github.com/pkg/errors v0.9.1
