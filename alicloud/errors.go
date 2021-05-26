@@ -202,30 +202,30 @@ func NeedRetry(err error) bool {
 	if err == nil {
 		return false
 	}
-	if err.Error() != "" {
-		re := regexp.MustCompile("^Post [\"]*https://.*")
-		return re.MatchString(err.Error())
+
+	postRegex := regexp.MustCompile("^Post [\"]*https://.*")
+	if postRegex.MatchString(err.Error()) {
+		return true
 	}
 
 	throttlingRegex := regexp.MustCompile("^Throttling.*")
+	codeRegex := regexp.MustCompile("^code: 5[\\d]{2}")
 
 	if e, ok := err.(*tea.SDKError); ok {
 		if strings.Contains(*e.Message, "code: 500, 您已开通过") {
 			return false
 		}
-		if *e.Code == ServiceUnavailable || *e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(*e.Code) {
+		if *e.Code == ServiceUnavailable || *e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(*e.Code) || codeRegex.MatchString(*e.Message) {
 			return true
 		}
-		re := regexp.MustCompile("^code: 5[\\d]{2}")
-		return re.MatchString(*e.Message)
 	}
 
 	if e, ok := err.(*errors.ServerError); ok {
-		return e.ErrorCode() == ServiceUnavailable || e.ErrorCode() == "Rejected.Throttling" || throttlingRegex.MatchString(e.ErrorCode())
+		return e.ErrorCode() == ServiceUnavailable || e.ErrorCode() == "Rejected.Throttling" || throttlingRegex.MatchString(e.ErrorCode()) || codeRegex.MatchString(e.Message())
 	}
 
 	if e, ok := err.(*common.Error); ok {
-		return e.Code == ServiceUnavailable || e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(e.Code)
+		return e.Code == ServiceUnavailable || e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(e.Code) || codeRegex.MatchString(e.Message)
 	}
 
 	return false

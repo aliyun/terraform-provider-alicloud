@@ -32,14 +32,14 @@ func TestAccAlicloudConfigRulesDataSource(t *testing.T) {
 		}),
 	}
 
-	messageTypeConf := dataSourceTestAccConfig{
+	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudConfigRulesSourceConfig(rand, map[string]string{
-			"ids":          `["${alicloud_config_rule.example.id}"]`,
-			"message_type": `"${alicloud_config_rule.example.source_detail_message_type}"`,
+			"ids":    `["${alicloud_config_rule.example.id}"]`,
+			"status": `"ACTIVE"`,
 		}),
 		fakeConfig: testAccCheckAlicloudConfigRulesSourceConfig(rand, map[string]string{
-			"ids":          `["${alicloud_config_rule.example.id}"]`,
-			"message_type": `"ScheduledNotification"`,
+			"ids":    `["${alicloud_config_rule.example.id}"]`,
+			"status": `"INACTIVE"`,
 		}),
 	}
 
@@ -55,16 +55,16 @@ func TestAccAlicloudConfigRulesDataSource(t *testing.T) {
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudConfigRulesSourceConfig(rand, map[string]string{
-			"name_regex":   `"${alicloud_config_rule.example.rule_name}"`,
-			"ids":          `["${alicloud_config_rule.example.id}"]`,
-			"risk_level":   `1`,
-			"message_type": `"${alicloud_config_rule.example.source_detail_message_type}"`,
+			"name_regex": `"${alicloud_config_rule.example.rule_name}"`,
+			"ids":        `["${alicloud_config_rule.example.id}"]`,
+			"risk_level": `1`,
+			"status":     `"ACTIVE"`,
 		}),
 		fakeConfig: testAccCheckAlicloudConfigRulesSourceConfig(rand, map[string]string{
-			"name_regex":   `"${alicloud_config_rule.example.rule_name}_fake"`,
-			"ids":          `["${alicloud_config_rule.example.id}_fake"]`,
-			"risk_level":   `2`,
-			"message_type": `"ScheduledNotification"`,
+			"name_regex": `"${alicloud_config_rule.example.rule_name}_fake"`,
+			"ids":        `["${alicloud_config_rule.example.id}_fake"]`,
+			"risk_level": `2`,
+			"status":     `"INACTIVE"`,
 		}),
 	}
 
@@ -78,18 +78,28 @@ func TestAccAlicloudConfigRulesDataSource(t *testing.T) {
 			"rules.0.id":                                 CHECKSET,
 			"rules.0.config_rule_id":                     CHECKSET,
 			"rules.0.config_rule_state":                  CHECKSET,
-			"rules.0.create_timestamp":                   CHECKSET,
+			"rules.0.status":                             "ACTIVE",
 			"rules.0.compliance.#":                       CHECKSET,
 			"rules.0.description":                        fmt.Sprintf("tf-testAccConfigRule%d", rand),
-			"rules.0.input_parameters.%":                 "0",
-			"rules.0.modified_timestamp":                 CHECKSET,
+			"rules.0.input_parameters.%":                 "1",
+			"rules.0.modified_timestamp":                 "",
 			"rules.0.risk_level":                         "1",
 			"rules.0.rule_name":                          fmt.Sprintf("tf-testAccConfigRule%d", rand),
 			"rules.0.event_source":                       "aliyun.config",
-			"rules.0.source_maximum_execution_frequency": "Six_Hours",
+			"rules.0.source_maximum_execution_frequency": "",
+			"rules.0.scope_compliance_resource_types.#":  "1",
 			"rules.0.source_detail_message_type":         "ConfigurationItemChangeNotification",
 			"rules.0.source_identifier":                  "ecs-instances-in-vpc",
 			"rules.0.source_owner":                       "ALIYUN",
+			"rules.0.tag_key_scope":                      "tfTest",
+			"rules.0.tag_value_scope":                    "tfTest 123",
+			"rules.0.resource_types_scope.#":             "1",
+			"rules.0.resource_group_ids_scope":           CHECKSET,
+			"rules.0.region_ids_scope":                   "cn-hangzhou",
+			"rules.0.maximum_execution_frequency":        "",
+			"rules.0.exclude_resource_ids_scope":         CHECKSET,
+			"rules.0.config_rule_trigger_types":          "ConfigurationItemChangeNotification",
+			"rules.0.compliance_pack_id":                 "",
 		}
 	}
 
@@ -111,7 +121,7 @@ func TestAccAlicloudConfigRulesDataSource(t *testing.T) {
 		testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
 	}
 
-	rolesRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, messageTypeConf, riskLevelConf, allConf)
+	rolesRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, statusConf, riskLevelConf, allConf)
 
 }
 
@@ -124,16 +134,31 @@ func testAccCheckAlicloudConfigRulesSourceConfig(rand int, attrMap map[string]st
 variable "name" {
   default = "tf-testAccConfigRule%d"
 }
+
+data "alicloud_instances" "default"{}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
 resource "alicloud_config_rule" "example" {
-  rule_name                       = "${var.name}"
-  description                     = "${var.name}"
+  rule_name                       = var.name
+  description                     = var.name
   source_identifier               = "ecs-instances-in-vpc"
   source_owner                    = "ALIYUN"
-  scope_compliance_resource_types = ["ACS::ECS::Instance"]
-  risk_level                         = 1
-  source_detail_message_type         = "ConfigurationItemChangeNotification"
-  source_maximum_execution_frequency = "Six_Hours"
+  resource_types_scope 			  = ["ACS::ECS::Instance"]
+  risk_level                      = 1
+  config_rule_trigger_types       = "ConfigurationItemChangeNotification"
+  tag_key_scope 				  = "tfTest"
+  tag_value_scope 				  = "tfTest 123"
+  resource_group_ids_scope 		  = data.alicloud_resource_manager_resource_groups.default.ids.0
+  exclude_resource_ids_scope      = data.alicloud_instances.default.instances[0].id
+  region_ids_scope 				  = "cn-hangzhou"
+  input_parameters  = {
+		vpcIds= data.alicloud_instances.default.instances[0].vpc_id
+  }
 }
+
 data "alicloud_config_rules" "example"{
  enable_details = true
 %s
