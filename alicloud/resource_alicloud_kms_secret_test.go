@@ -296,6 +296,7 @@ func resourceKmsSecretWithKeyConfigDependence(name string) string {
 		}
 		resource "alicloud_kms_key" "default" {
 			description = var.name
+			pending_window_in_days = 7
 		}
 `, name)
 }
