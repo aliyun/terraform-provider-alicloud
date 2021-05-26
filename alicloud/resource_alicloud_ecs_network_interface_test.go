@@ -31,6 +31,7 @@ func testAlicloudEcsNetworkInterface(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		"fc-eni", // Clean up the eni which created by fc service
 	}
 	request := map[string]interface{}{
 		"PageSize":   PageSizeLarge,
@@ -50,8 +51,8 @@ func testAlicloudEcsNetworkInterface(region string) error {
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			log.Printf("[ERROR] Describe NetworkInterface failed, %#v", err)
-			continue
+			log.Printf("[ERROR] Describe NetworkInterface failed, error: %s. Return!", err.Error())
+			return nil
 		}
 
 		resp, err := jsonpath.Get("$.NetworkInterfaceSets.NetworkInterfaceSet", response)

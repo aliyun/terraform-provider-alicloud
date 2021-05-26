@@ -420,9 +420,9 @@ jobs:
   - name: All
     plan:
       - <<: *clone-provider
-      - get: trigger
-        trigger: true
-        resource: 00
+#      - get: trigger
+#        trigger: true
+#        resource: 00
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -751,7 +751,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: false
+        trigger: true
         resource: 0130
       - aggregate:
           - *get-aliyun-cli
