@@ -118,7 +118,7 @@ The following arguments are supported:
 * `oss_bucket` - (Optional) The OSS bucket location containing the function's deployment package. Conflicts with `filename`. This bucket must reside in the same Alibaba Cloud region where you are creating the function.
 * `oss_key` - (Optional) The OSS key of an object containing the function's deployment package. Conflicts with `filename`.
 * `handler` - (Required) The function [entry point](https://www.alibabacloud.com/help/doc-detail/157704.htm) in your code.
-* `memory_size` - (Optional) Amount of memory in MB your function can use at runtime. Defaults to `128`. Limits to [128, 3072].
+* `memory_size` - (Optional) Amount of memory in MB your function can use at runtime. Defaults to `128`. Limits to [128, 32768].
 * `runtime` - (Required) See [Runtimes][https://www.alibabacloud.com/help/doc-detail/52077.htm] for valid values.
 * `timeout` - (Optional) The amount of time your function has to run in seconds.
 * `environment_variables` - (Optional, available in 1.36.0+) A map that defines environment variables for the function.

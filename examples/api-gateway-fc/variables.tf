@@ -50,7 +50,7 @@ variable "function_filename" {
 }
 
 variable "function_memory_size" {
-  description = "Amount of memory in MB your Function can use at runtime. Defaults to 128. Limits to [128, 3072]."
+  description = "Amount of memory in MB your Function can use at runtime. Defaults to 128. Limits to [128, 32768]."
   default     = "512"
 }
 
