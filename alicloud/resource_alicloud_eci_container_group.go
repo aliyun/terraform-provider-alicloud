@@ -644,6 +644,18 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		request["InstanceType"] = v
 	}
 
+	if v, ok := d.GetOk("eip_instance_id"); ok {
+		request["EipInstanceId"] = v
+	}
+
+	if v, ok := d.GetOk("auto_create_eip"); ok {
+		request["AutoCreateEip"] = v
+	}
+
+	if v, ok := d.GetOk("eip_bandwidth"); ok {
+		request["EipBandwidth"] = v
+	}
+
 	if v, ok := d.GetOk("memory"); ok {
 		request["Memory"] = v
 	}
@@ -696,6 +708,19 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		}
 		request["Volume"] = Volumes
 
+	}
+
+	if v, ok := d.GetOk("acr_registry_infos"); ok {
+		AcrRegistryInfos := make([]map[string]interface{}, len(v.([]interface{})))
+		for i, AcrRegistryInfosValue := range v.([]interface{}) {
+			AcrRegistryInfosMap := AcrRegistryInfosValue.(map[string]interface{})
+			AcrRegistryInfos[i] = make(map[string]interface{})
+			AcrRegistryInfos[i]["Domain"] = AcrRegistryInfosMap["domains"]
+			AcrRegistryInfos[i]["InstanceName"] = AcrRegistryInfosMap["instance_name"]
+			AcrRegistryInfos[i]["InstanceId"] = AcrRegistryInfosMap["instance_id"]
+			AcrRegistryInfos[i]["RegionId"] = AcrRegistryInfosMap["region_id"]
+		}
+		request["AcrRegistryInfo"] = AcrRegistryInfos
 	}
 
 	if v, ok := d.GetOk("zone_id"); ok {
