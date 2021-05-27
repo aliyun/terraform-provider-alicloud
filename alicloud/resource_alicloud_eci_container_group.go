@@ -366,6 +366,18 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"eip_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"auto_create_eip": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"eip_bandwidth": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"memory": {
 				Type:     schema.TypeFloat,
 				Optional: true,
@@ -466,6 +478,33 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 							Optional: true,
 						},
 						"type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"acr_registry_infos": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"domains": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"instance_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"instance_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"region_id": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -644,6 +683,18 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		request["InstanceType"] = v
 	}
 
+	if v, ok := d.GetOk("eip_instance_id"); ok {
+		request["EipInstanceId"] = v
+	}
+
+	if v, ok := d.GetOk("auto_create_eip"); ok {
+		request["AutoCreateEip"] = v
+	}
+
+	if v, ok := d.GetOk("eip_bandwidth"); ok {
+		request["EipBandwidth"] = v
+	}
+
 	if v, ok := d.GetOk("memory"); ok {
 		request["Memory"] = v
 	}
@@ -696,6 +747,19 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		}
 		request["Volume"] = Volumes
 
+	}
+
+	if v, ok := d.GetOk("acr_registry_infos"); ok {
+		AcrRegistryInfos := make([]map[string]interface{}, len(v.([]interface{})))
+		for i, AcrRegistryInfosValue := range v.([]interface{}) {
+			AcrRegistryInfosMap := AcrRegistryInfosValue.(map[string]interface{})
+			AcrRegistryInfos[i] = make(map[string]interface{})
+			AcrRegistryInfos[i]["Domain"] = AcrRegistryInfosMap["domains"]
+			AcrRegistryInfos[i]["InstanceName"] = AcrRegistryInfosMap["instance_name"]
+			AcrRegistryInfos[i]["InstanceId"] = AcrRegistryInfosMap["instance_id"]
+			AcrRegistryInfos[i]["RegionId"] = AcrRegistryInfosMap["region_id"]
+		}
+		request["AcrRegistryInfo"] = AcrRegistryInfos
 	}
 
 	if v, ok := d.GetOk("zone_id"); ok {
@@ -929,6 +993,9 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 	d.Set("instance_type", object["InstanceType"])
+	d.Set("eip_instance_id", object["EipInstanceId"])
+	d.Set("auto_create_eip", object["AutoCreateEip"])
+	d.Set("eip_bandwidth", object["EipBandwidth"])
 	d.Set("memory", object["Memory"])
 	d.Set("ram_role_name", object["RamRoleName"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
@@ -972,6 +1039,24 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		}
 	}
 	if err := d.Set("volumes", volumes); err != nil {
+		return WrapError(err)
+	}
+
+	acrRegistryInfos := make([]map[string]interface{}, 0)
+	if acrRegistryInfosList, ok := object["AcrRegistryInfos"].([]interface{}); ok {
+		for _, v := range acrRegistryInfosList {
+			if m1, ok := v.(map[string]interface{}); ok {
+				temp1 := map[string]interface{}{
+					"domains":       m1["Domains"],
+					"instance_name": m1["InstanceName"],
+					"instance_id":   m1["InstanceId"],
+					"region_id":     m1["region_id"],
+				}
+				acrRegistryInfos = append(acrRegistryInfos, temp1)
+			}
+		}
+	}
+	if err := d.Set("acr_registry_infos", acrRegistryInfos); err != nil {
 		return WrapError(err)
 	}
 	d.Set("zone_id", object["ZoneId"])
