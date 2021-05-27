@@ -142,6 +142,7 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `backup_time`- (Optional, Available in 1.104.0+) Backup time, the format is HH:mmZ-HH:mmZ (UTC time).
 * `enable_backup_log`- (Optional, Available in 1.104.0+) Turn on or off incremental backup. Valid values: `1`, `0`. Default to `0`
 * `private_connection_prefix`- (Optional, Available in 1.105.0+) Private network connection prefix, used to modify the private network connection address. Only supports updating private network connections for existing instance.
+* `private_connection_port`- (Optional, Available in 1.124.0+) Private network connection port, used to modify the private network connection port.
 
 -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
