@@ -31,6 +31,8 @@ func SkipTestAccAlicloudAlidnsInstancesDataSource(t *testing.T) {
 			"instances.0.instance_id":    CHECKSET,
 			"instances.0.version_code":   "version_personal",
 			"instances.0.version_name":   CHECKSET,
+			"instances.0.payment_type":   "Subscription",
+			"instances.0.domain":         "",
 		}
 	}
 

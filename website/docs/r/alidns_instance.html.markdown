@@ -35,7 +35,7 @@ The following arguments are supported:
 
 * `dns_security` - (Required, ForceNew) Alidns security level. Valid values: `no`, `basic`, `advanced`.
 * `domain_numbers` - (Required, ForceNew) Number of domain names bound.
-* `period` - (Optional, ForceNew) Creating a pre-paid instance, it must be set, the unit is month, please enter an integer multiple of 12 for annually paid products.
+* `period` - (Optional) Creating a pre-paid instance, it must be set, the unit is month, please enter an integer multiple of 12 for annually paid products.
 * `renew_period` - (Optional, ForceNew) Automatic renewal period, the unit is month. When setting RenewalStatus to AutoRenewal, it must be set.
 * `renewal_status` - (Optional, ForceNew) Automatic renewal status. Valid values: `AutoRenewal`, `ManualRenewal`, default to `ManualRenewal`.
 * `version_code` - (Required, ForceNew) Paid package version. Valid values: `version_personal`, `version_enterprise_basic`, `version_enterprise_advanced`.

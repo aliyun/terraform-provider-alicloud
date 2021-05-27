@@ -57,7 +57,7 @@ func SkipTestAccAlicloudAlidnsInstance_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "renew_period", "renewal_status", "payment_type"},
+				ImportStateVerifyIgnore: []string{"period"},
 			},
 		},
 	})
