@@ -85,8 +85,12 @@ func resourceAlicloudKvstoreConnectionRead(d *schema.ResourceData, meta interfac
 	}
 
 	d.Set("instance_id", d.Id())
-	d.Set("connection_string", object.ConnectionString)
-	d.Set("port", object.Port)
+	for _, instanceNetInfo := range object {
+		if instanceNetInfo.DBInstanceNetType == "0" {
+			d.Set("connection_string", instanceNetInfo.ConnectionString)
+			d.Set("port", instanceNetInfo.Port)
+		}
+	}
 	return nil
 }
 func resourceAlicloudKvstoreConnectionUpdate(d *schema.ResourceData, meta interface{}) error {

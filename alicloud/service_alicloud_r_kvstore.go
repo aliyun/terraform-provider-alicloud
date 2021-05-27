@@ -218,7 +218,7 @@ func (s *R_kvstoreService) KvstoreInstanceStateRefreshFunc(id string, failStates
 	}
 }
 
-func (s *R_kvstoreService) DescribeKvstoreConnection(id string) (object r_kvstore.InstanceNetInfo, err error) {
+func (s *R_kvstoreService) DescribeKvstoreConnection(id string) (object []r_kvstore.InstanceNetInfo, err error) {
 	request := r_kvstore.CreateDescribeDBInstanceNetInfoRequest()
 	request.RegionId = s.client.RegionId
 
@@ -242,16 +242,7 @@ func (s *R_kvstoreService) DescribeKvstoreConnection(id string) (object r_kvstor
 		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreConnection", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
-
-	for _, netInfo := range response.NetInfoItems.InstanceNetInfo {
-		// DBInstanceNetType is 0 means public network
-		if netInfo.DBInstanceNetType == "0" {
-			return netInfo, nil
-
-		}
-	}
-	err = WrapErrorf(Error("The instance is not bound to the public IP"), DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	return
+	return response.NetInfoItems.InstanceNetInfo, nil
 }
 
 func (s *R_kvstoreService) DescribeKvstoreAccount(id string) (object r_kvstore.Account, err error) {

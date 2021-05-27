@@ -229,6 +229,11 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"private_connection_port": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"private_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -521,10 +526,16 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("enable_public", false)
 	d.Set("connection_string", "")
 	net, _ := r_kvstoreService.DescribeKvstoreConnection(d.Id())
-	if net.DBInstanceNetType == "0" {
-		d.Set("enable_public", true)
-		d.Set("connection_string", net.ConnectionString)
+	for _, instanceNetInfo := range net {
+		if instanceNetInfo.DBInstanceNetType == "0" {
+			d.Set("enable_public", true)
+			d.Set("connection_string", instanceNetInfo.ConnectionString)
+		}
+		if instanceNetInfo.DBInstanceNetType == "2" {
+			d.Set("private_connection_port", instanceNetInfo.Port)
+		}
 	}
+
 	d.Set("bandwidth", object.Bandwidth)
 	d.Set("capacity", object.Capacity)
 	d.Set("config", object.Config)
@@ -932,8 +943,12 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	modifyDBInstanceConnectionStringReq.DBInstanceId = d.Id()
 	if d.HasChange("private_connection_prefix") {
 		update = true
+		modifyDBInstanceConnectionStringReq.NewConnectionString = d.Get("private_connection_prefix").(string)
 	}
-	modifyDBInstanceConnectionStringReq.NewConnectionString = d.Get("private_connection_prefix").(string)
+	if d.HasChange("private_connection_port") {
+		update = true
+		modifyDBInstanceConnectionStringReq.Port = d.Get("private_connection_port").(string)
+	}
 	modifyDBInstanceConnectionStringReq.IPType = "Private"
 	if update {
 		object, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
@@ -950,6 +965,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("private_connection_prefix")
+		d.SetPartial("private_connection_port")
 	}
 	update = false
 	modifySecurityIpsReq := r_kvstore.CreateModifySecurityIpsRequest()
