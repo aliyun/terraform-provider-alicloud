@@ -66,6 +66,7 @@ var testAccAlicloudKmsCiphertextConfig_basic = func(keyId string) string {
 resource "alicloud_kms_key" "default" {
   	description = "%s"
 	is_enabled  = true
+	pending_window_in_days = 7
 }
 
 resource "alicloud_kms_ciphertext" "default" {
@@ -80,6 +81,7 @@ var testAccAlicloudKmsCiphertextConfig_validate = func(keyId string) string {
 	resource "alicloud_kms_key" "default" {
         description = "%s"
 		is_enabled  = true
+		pending_window_in_days = 7
 	}
 	
 	resource "alicloud_kms_ciphertext" "default" {
@@ -98,6 +100,7 @@ var testAccAlicloudKmsCiphertextConfig_validate_withContext = func(keyId string)
 	resource "alicloud_kms_key" "default" {
         description = "%s"
 		is_enabled  = true
+		pending_window_in_days = 7
 	}
 	
 	resource "alicloud_kms_ciphertext" "default" {
