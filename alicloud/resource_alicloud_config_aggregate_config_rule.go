@@ -22,8 +22,8 @@ func resourceAlicloudConfigAggregateConfigRule() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(6 * time.Minute),
-			Update: schema.DefaultTimeout(6 * time.Minute),
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"aggregate_config_rule_name": {
@@ -56,7 +56,14 @@ func resourceAlicloudConfigAggregateConfigRule() *schema.Resource {
 			"maximum_execution_frequency": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"One_Hour", "Six_Hours", "Three_Hours", "Twelve_Hours", "TwentyFour_Hours"}, false),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if fmt.Sprint(d.Get("config_rule_trigger_types")) == "ConfigurationItemChangeNotification" {
+						return true
+					}
+					return false
+				},
 			},
 			"region_ids_scope": {
 				Type:     schema.TypeString,
