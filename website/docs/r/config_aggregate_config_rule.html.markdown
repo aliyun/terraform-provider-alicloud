@@ -57,7 +57,7 @@ The following arguments are supported:
 * `input_parameters` - (Optional) The settings map of the input parameters for the rule.
 * `source_identifier`- (Required, ForceNew) The name of the custom rule or managed rule.
 * `source_owner`- (Required, ForceNew) The source owner of the Config Rule. Valid values `ALIYUN` and `CUSTOM_FC`.
-* `maximum_execution_frequency` - (Optional) The frequency of the compliance evaluations. Valid values:  `One_Hour`, `Three_Hours`, `Six_Hours`, `Twelve_Hours`, `TwentyFour_Hours`.
+* `maximum_execution_frequency` - (Optional) The frequency of the compliance evaluations. Valid values:  `One_Hour`, `Three_Hours`, `Six_Hours`, `Twelve_Hours`, `TwentyFour_Hours`. System default value is `TwentyFour_Hours` and valid when the `config_rule_trigger_types` is `ScheduledNotification`.
 * `region_ids_scope` - (Optional) The region ids scope.
 * `resource_group_ids_scope` - (Optional) The resource group ids scope.
 * `resource_types_scope` - (Required) The types of the resources to be evaluated against the rule.
@@ -75,8 +75,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 6 mins) Used when create the Aggregate Config Rule.
-* `update` - (Defaults to 6 mins) Used when update the Aggregate Config Rule.
+* `create` - (Defaults to 10 mins) Used when create the Aggregate Config Rule.
+* `update` - (Defaults to 10 mins) Used when update the Aggregate Config Rule.
 
 ## Import
 

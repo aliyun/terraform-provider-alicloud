@@ -494,21 +494,21 @@ func SkipTestAccAlicloudConfigAggregateConfigRule_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"maximum_execution_frequency": "Six_Hours",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"maximum_execution_frequency": "Six_Hours",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"config_rule_trigger_types": "ScheduledNotification",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"config_rule_trigger_types": "ScheduledNotification",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maximum_execution_frequency": "Six_Hours",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maximum_execution_frequency": "Six_Hours",
 					}),
 				),
 			},
