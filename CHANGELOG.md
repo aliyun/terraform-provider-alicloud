@@ -13,6 +13,8 @@
 
 ENHANCEMENTS:
 
+- resource/alicloud_kms_key: Adds limitation for pending_window_in_days when deprecating the deletion_window_in_days ([#3593](https://github.com/aliyun/terraform-provider-alicloud/issues/3593))
+- resource/alicloud_config_aggregate_config_rule: Adds DiffSuppressFunc for 'maximum_execution_frequency' for 'maximum_execution_frequency' ([GH-3592])  
 - resource/aliclous_kvstore_instance: support change private connection port ([#3587](https://github.com/aliyun/terraform-provider-alicloud/issues/3587))
 - resource/alicloud_polardb_cluster: supports transform pay_type; add modify db_node_class and renewal_status asynchronous waiting; add PrePaid cluster can not be release. ([#3586](https://github.com/aliyun/terraform-provider-alicloud/issues/3586))
 - resource/alicloud_fc_function: Enlarges the attribute memory_size max value to 32768 ([#3589](https://github.com/aliyun/terraform-provider-alicloud/issues/3589))

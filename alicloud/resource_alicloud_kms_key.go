@@ -391,6 +391,8 @@ func resourceAlicloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) erro
 		request["PendingWindowInDays"] = v
 	} else if v, ok := d.GetOk("deletion_window_in_days"); ok {
 		request["PendingWindowInDays"] = v
+	} else {
+		return WrapError(Error(`[ERROR] Argument "pending_window_in_days" or "deletion_window_in_days" must be set one!`))
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {

@@ -69,9 +69,13 @@ func TestAccAlicloudKmsAlias_basic(t *testing.T) {
 
 func resourceKmsAliadConfigDependence(name string) string {
 	return fmt.Sprintf(`
-resource "alicloud_kms_key" "default" {}
+resource "alicloud_kms_key" "default" {
+	pending_window_in_days = 7
+}
 
-resource "alicloud_kms_key" "default1" {}
+resource "alicloud_kms_key" "default1" {
+	pending_window_in_days = 7
+}
 `)
 }
 

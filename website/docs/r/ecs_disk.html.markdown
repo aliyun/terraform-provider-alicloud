@@ -49,7 +49,7 @@ The following arguments are supported:
 * `dry_run` - (Optional) Specifies whether to check the validity of the request without actually making the request.request Default value: false. Valid values:
     * `true`: The validity of the request is checked but the request is not made. Check items include the required parameters, request format, service limits, and available ECS resources. If the check fails, the corresponding error message is returned. If the check succeeds, the DryRunOperation error code is returned.
     * `false`: The validity of the request is checked. If the check succeeds, a 2xx HTTP status code is returned and the request is made.
-* `enable_auto_snapshot` - (Optional) Indicates whether the automatic snapshot is deleted when the disk is released. Default value: `false`.
+* `enable_auto_snapshot` - (Optional) Indicates whether to enable creating snapshot automatically. Default value: `false`.
 * `encrypted` - (Optional, ForceNew) If true, the disk will be encrypted, conflict with `snapshot_id`.
 * `instance_id` - (Optional, ForceNew) The ID of the instance to which the created subscription disk is automatically attached.
     * After you specify the instance ID, the specified `resource_group_id`, `tags`, and `kms_key_id` parameters are ignored.

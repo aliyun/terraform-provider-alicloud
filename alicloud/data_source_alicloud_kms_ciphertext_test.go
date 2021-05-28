@@ -50,6 +50,7 @@ func dataSourceKmsCiphertextDependence(name string) string {
 	return `
 	resource "alicloud_kms_key" "default" {
     	is_enabled = true
+		pending_window_in_days = 7
 	}
 	`
 }
