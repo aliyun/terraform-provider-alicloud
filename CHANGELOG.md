@@ -1,4 +1,40 @@
-## 1.124.0 (Unreleased)
+## 1.125.0 (Unreleased)
+## 1.124.0 (May 28, 2021)
+
+- **New Resource:** `alicloud_config_aggregate_config_rule` ([#3561](https://github.com/aliyun/terraform-provider-alicloud/issues/3561)) 
+- **New Resource:** `alicloud_config_aggregate_compliance_pack` ([#3561](https://github.com/aliyun/terraform-provider-alicloud/issues/3561)) 
+- **New Resource:** `alicloud_config_compliance_pack` ([#3561](https://github.com/aliyun/terraform-provider-alicloud/issues/3561)) 
+- **New Resource:** `alicloud_config_aggregator` ([#3567](https://github.com/aliyun/terraform-provider-alicloud/issues/3567)) 
+- **New Resource:** `alicloud_cr_ee_instance` ([#3560](https://github.com/aliyun/terraform-provider-alicloud/issues/3560)) 
+- **New Data Source:** `alicloud_config_aggregate_config_rules` ([#3561](https://github.com/aliyun/terraform-provider-alicloud/issues/3561)) 
+- **New Data Source:** `alicloud_config_aggregate_compliance_packs` ([#3561](https://github.com/aliyun/terraform-provider-alicloud/issues/3561)) 
+- **New Data Source:** `alicloud_config_compliance_packs` ([#3561](https://github.com/aliyun/terraform-provider-alicloud/issues/3561)) 
+- **New Data Source:** `alicloud_config_aggregators` ([#3567](https://github.com/aliyun/terraform-provider-alicloud/issues/3567)) 
+
+ENHANCEMENTS:
+
+- resource/aliclous_kvstore_instance: support change private connection port ([#3587](https://github.com/aliyun/terraform-provider-alicloud/issues/3587))
+- resource/alicloud_polardb_cluster: supports transform pay_type; add modify db_node_class and renewal_status asynchronous waiting; add PrePaid cluster can not be release. ([#3586](https://github.com/aliyun/terraform-provider-alicloud/issues/3586))
+- resource/alicloud_fc_function: Enlarges the attribute memory_size max value to 32768 ([#3589](https://github.com/aliyun/terraform-provider-alicloud/issues/3589))
+- resource/alicloud_elasticsearch_instance: Upgrades its dependence sdk ([#3568](https://github.com/aliyun/terraform-provider-alicloud/issues/3568))
+- resource/alicloud_network_acl: Support attributes 'resources' for network ACL. ([#3575](https://github.com/aliyun/terraform-provider-alicloud/issues/3575)) 
+- resource/alicloud_network_acl_attachment: Deprecated from version 1.124.0. ([#3575](https://github.com/aliyun/terraform-provider-alicloud/issues/3575)) 
+- resource/alicloud_kms_secret: Adds new attributes enable_automatic_rotation and rotation_interval; Upgrades its dependence sdk ([#3574](https://github.com/aliyun/terraform-provider-alicloud/issues/3574))
+- resource/alicloud_log_store: Adds new attribute encrypt_conf to support encrypt logstore ([#3576](https://github.com/aliyun/terraform-provider-alicloud/issues/3576))
+- datasource/alicloud_ots_service: Adds support for auto-retry when happened the timeout; docs: Update the next version to 1.123.1 ([#3569](https://github.com/aliyun/terraform-provider-alicloud/issues/3569))
+- docs: Updates alicloud_fc_function max memory_size to 32768 ([#3590](https://github.com/aliyun/terraform-provider-alicloud/issues/3590)) 
+- docs: Update ACK resources and datasources subcategory ([#3577](https://github.com/aliyun/terraform-provider-alicloud/issues/3577))
+- testcase: Add param pending_window_in_days to fix alicloud_kms_secret test error. ([#3585](https://github.com/aliyun/terraform-provider-alicloud/issues/3585))
+- testcase: Improves the elasitcsearch instance testcase ([#3572](https://github.com/aliyun/terraform-provider-alicloud/issues/3572))
+- ci: Removes the usless jobs and change job task go verion to 12 to avoid download dependence always ([#3571](https://github.com/aliyun/terraform-provider-alicloud/issues/3571))
+
+BUG FIXES:
+
+- resource/alicloud_vpc: Fixes force replacement bug caused by 'enable_ipv6' ([#3581](https://github.com/aliyun/terraform-provider-alicloud/issues/3581)) 
+- resource/alicloud_mongodb_instance: Fixes the parsing replication_factor error when it is empty ([#3570](https://github.com/aliyun/terraform-provider-alicloud/issues/3570))
+- testcase: Fixes the sweeper test error caused by new resource ecs_network_interface ([#3578](https://github.com/aliyun/terraform-provider-alicloud/issues/3578))
+- testcase: Fixes the ecs_network_interface sweeper testcase bug ([#3583](https://github.com/aliyun/terraform-provider-alicloud/issues/3583))
+
 ## 1.123.1 (May 22, 2021)
 
 ENHANCEMENTS:
