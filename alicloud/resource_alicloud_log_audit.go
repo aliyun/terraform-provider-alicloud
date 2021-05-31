@@ -61,9 +61,9 @@ func resourceAlicloudLogAuditUpdate(d *schema.ResourceData, meta interface{}) er
 	var variableMap = map[string]interface{}{}
 	mutiAccount := expandStringList(d.Get("multi_account").(*schema.Set).List())
 	if len(mutiAccount) > 0 {
-		mutiAccountMap := map[string]string{}
 		mutiAccountList := []map[string]string{}
 		for _, v := range mutiAccount {
+			mutiAccountMap := map[string]string{}
 			mutiAccountMap["uid"] = v
 			mutiAccountList = append(mutiAccountList, mutiAccountMap)
 		}
@@ -77,7 +77,7 @@ func resourceAlicloudLogAuditUpdate(d *schema.ResourceData, meta interface{}) er
 	variableMap["region"] = client.RegionId
 	variableMap["aliuid"] = d.Get("aliuid").(string)
 	variableMap["project"] = fmt.Sprintf("slsaudit-center-%s-%s", variableMap["aliuid"], variableMap["region"])
-	variableMap["logstore"] = "xx"
+	variableMap["logstore"] = "slsaudit"
 
 	if tempMap, ok := d.GetOk("variable_map"); ok {
 		for k, v := range tempMap.(map[string]interface{}) {
