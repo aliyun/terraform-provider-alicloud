@@ -908,22 +908,14 @@ func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, err
 func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the HBase client if necessary
 	if client.logpopconn == nil {
-		endpoint := client.config.LogEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, LOGCode)
-		}
-		if endpoint != "" {
-			endpoint = fmt.Sprintf("%s.log.aliyuncs.com", client.config.RegionId)
-		}
 		logpopconn, err := slsPop.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the sls client: %#v", err)
 		}
-
 		logpopconn.AppendUserAgent(Terraform, terraformVersion)
 		logpopconn.AppendUserAgent(Provider, providerVersion)
 		logpopconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		logpopconn.Domain = "sls.aliyuncs.com"
 		client.logpopconn = logpopconn
 	}
 
