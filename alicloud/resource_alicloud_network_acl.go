@@ -120,7 +120,6 @@ func resourceAlicloudNetworkAcl() *schema.Resource {
 			"resources": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"resource_id": {

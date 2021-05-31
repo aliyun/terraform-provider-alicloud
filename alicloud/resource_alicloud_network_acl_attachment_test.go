@@ -103,7 +103,8 @@ func testSweepNetworkAclAttachment(region string) error {
 	return nil
 }
 
-func TestAccAlicloudNetworkAclAttachment_basic(t *testing.T) {
+// Skip the test because 'resources' is conflict with 'alicloud_network_acl'.
+func SkipTestAccAlicloudNetworkAclAttachment_basic(t *testing.T) {
 	resourceId := "alicloud_network_acl_attachment.default"
 	ra := resourceAttrInit(resourceId, testAccNaclAttachmentCheckMap)
 	rand := acctest.RandInt()
