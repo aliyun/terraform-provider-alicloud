@@ -204,6 +204,12 @@ func testAccCheckNetworkAclAttachmentDestroy(s *terraform.State) error {
 		networkAclId := parts[0]
 
 		object, err := vpcService.DescribeNetworkAcl(networkAclId)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return WrapError(err)
+		}
 		vpcResource := []vpc.Resource{}
 		resources, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
 		for _, e := range resources {

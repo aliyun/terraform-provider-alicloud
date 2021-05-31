@@ -130,7 +130,7 @@ func resourceAliyunNetworkAclAttachmentUpdate(d *schema.ResourceData, meta inter
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			if err := vpcService.WaitForNetworkAclAttachment(request.NetworkAclId, vpcResource, Available, DefaultTimeout); err != nil {
+			if err := vpcService.WaitForNetworkAclAttachment(request.NetworkAclId, vpcResource, Available, Timeout5Minute); err != nil {
 				return WrapError(err)
 			}
 		}
@@ -168,7 +168,7 @@ func resourceAliyunNetworkAclAttachmentUpdate(d *schema.ResourceData, meta inter
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			if err := vpcService.WaitForNetworkAclAttachment(request.NetworkAclId, vpcResource, Available, DefaultTimeout); err != nil {
+			if err := vpcService.WaitForNetworkAclAttachment(request.NetworkAclId, vpcResource, Available, Timeout5Minute); err != nil {
 				return WrapError(err)
 			}
 		}
@@ -224,5 +224,5 @@ func resourceAliyunNetworkAclAttachmentDelete(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return vpcService.WaitForNetworkAclAttachment(networkAclId, vpcResource, Deleted, DefaultTimeout)
+	return vpcService.WaitForNetworkAclAttachment(networkAclId, vpcResource, Deleted, Timeout5Minute)
 }
