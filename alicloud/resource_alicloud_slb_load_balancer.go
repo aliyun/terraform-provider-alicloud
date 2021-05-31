@@ -270,7 +270,7 @@ func resourceAlicloudSlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("payment_type"); ok {
 		request["PayType"] = convertSlbLoadBalancerPaymentTypeRequest(v.(string))
 	} else if v, ok := d.GetOk("instance_charge_type"); ok {
-		request["PayType"] = v
+		request["PayType"] = convertSlbLoadBalancerInstanceChargeTypeRequest(v.(string))
 	}
 	if v, ok := request["PayType"]; ok && v.(string) == "PrePay" {
 		period := 1
