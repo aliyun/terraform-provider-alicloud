@@ -435,6 +435,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_log_projects":                                dataSourceAlicloudLogProjects(),
 			"alicloud_log_stores":                                  dataSourceAlicloudLogStores(),
 			"alicloud_event_bridge_service":                        dataSourceAlicloudEventBridgeService(),
+			"alicloud_event_bridge_event_buses":                    dataSourceAlicloudEventBridgeEventBuses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -769,6 +770,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_compliance_pack":                     resourceAlicloudConfigCompliancePack(),
 			"alicloud_direct_mail_receivers":                      resourceAlicloudDirectMailReceivers(),
 			"alicloud_eip_address":                                resourceAlicloudEipAddress(),
+			"alicloud_event_bridge_event_bus":                     resourceAlicloudEventBridgeEventBus(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -925,6 +927,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.QuotasEndpoint = strings.TrimSpace(endpoints["quotas"].(string))
 		config.SgwEndpoint = strings.TrimSpace(endpoints["sgw"].(string))
 		config.DmEndpoint = strings.TrimSpace(endpoints["dm"].(string))
+		config.EventbridgeEndpoint = strings.TrimSpace(endpoints["eventbridge"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1143,6 +1146,8 @@ func init() {
 		"sgw_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom sgw endpoints.",
 
 		"dm_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dm endpoints.",
+
+		"eventbridge_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eventbridge_share endpoints.",
 	}
 }
 
@@ -1192,6 +1197,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["dm_endpoint"],
+				},
+
+				"eventbridge": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["eventbridge_endpoint"],
 				},
 
 				"sgw": {
@@ -1680,6 +1692,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["quotas"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["sgw"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dm"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["eventbridge"].(string)))
 	return hashcode.String(buf.String())
 }
 
