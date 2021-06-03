@@ -77,9 +77,7 @@ resource "alicloud_log_etl" "example" {
     project           = alicloud_log_project.example.name
     logstore          = alicloud_log_store.example3.name
   }
-
 }
-
 ```
 Stop the task in progress
 ```
@@ -110,7 +108,6 @@ resource "alicloud_log_etl" "example" {
     logstore          = alicloud_log_store.example3.name
   }
 }
-
 ```
 ReStart the stopped task
 ```
@@ -141,7 +138,6 @@ resource "alicloud_log_etl" "example" {
     logstore          = alicloud_log_store.example3.name
   }
 }
-
 ```
 
 ## Argument Reference
@@ -167,12 +163,12 @@ The following arguments are supported:
 * `from_time` - (Optional) The start time of the processing job, the default starts from the current time.
 * `to_time` - (Optional) Deadline of processing job, the default value is None.
 * `script` - (Required) Processing operation grammar.
-* `version` - (Optional) Log etl job version. the default value is 2.
+* `version` - (Optional) Log etl job version. the default value is `2`.
 * `logstore` - (Required) The source logstore of the processing job.
 * `parameters` - (Optional) Advanced parameter configuration of processing operations.
-* `role_arn` - (Optional) Sts role info.
+* `role_arn` - (Optional) Sts role info under source logstore. `role_arn` and `(access_key_id, access_key_secret)` fill in at most one. If you do not fill in both, then you must fill in `(kms_encrypted_access_key_id, kms_encrypted_access_key_secret, kms_encryption_access_key_id_context, kms_encryption_access_key_secret_context)` to use KMS to get the key pair.
 * `etl_sinks` - (Required) Target logstore configuration for delivery after data processing.
-    * `access_key_id` - (Optional,Sensitive) Dekms_encryption_access_key_id_contextlivery target logstore access key id.
+    * `access_key_id` - (Optional,Sensitive) Delivery target logstore access key id.
     * `kms_encrypted_access_key_id` - (Optional) An KMS encrypts access key id used to a log etl job. If the `access_key_id` is filled in, this field will be ignored.
     * `access_key_secret`- (Optional,Sensitive) Delivery target logstore access key secret.
     * `kms_encrypted_access_key_secret` - (Optional) An KMS encrypts access key secret used to a log etl job. If the `access_key_secret` is filled in, this field will be ignored.
@@ -180,7 +176,7 @@ The following arguments are supported:
     * `name` - (Required) Delivery target name.
     * `project` - (Required) The project where the target logstore is delivered.
     * `logstore` - (Required) Delivery target logstore.
-    * `role_arn` - (Required) Sts role info.
+    * `role_arn` - (Optional) Sts role info under delivery target logstore. `role_arn` and `(access_key_id, access_key_secret)` fill in at most one. If you do not fill in both, then you must fill in `(kms_encrypted_access_key_id, kms_encrypted_access_key_secret, kms_encryption_access_key_id_context, kms_encryption_access_key_secret_context)` to use KMS to get the key pair.
     * `type` - (Optional)  ETL sinks type, the default value is AliyunLOG.
 
 ## Attributes Reference
