@@ -877,7 +877,6 @@ func setConstantParameters(d *schema.ResourceData, requestParameters []ApiGatewa
 
 			request := element.(map[string]interface{})
 			name := request["name"].(string)
-			paramType := request["type"].(string)
 			in := request["in"].(string)
 			value := request["value"].(string)
 
@@ -892,7 +891,6 @@ func setConstantParameters(d *schema.ResourceData, requestParameters []ApiGatewa
 			requestParam.DefualtValue = value
 			requestParameters = append(requestParameters, requestParam)
 
-			serviceParam.Type = paramType
 			serviceParam.In = in
 			serviceParam.Name = name
 			serviceParam.Catalog = CatalogConstant
