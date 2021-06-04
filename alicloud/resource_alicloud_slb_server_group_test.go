@@ -33,6 +33,22 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
+					"name":             name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
@@ -42,14 +58,10 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"servers.#": "1",
+					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -118,7 +130,7 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 func TestAccAlicloudSlbServerGroup_multi_vpc(t *testing.T) {
 	var v *slb.DescribeVServerGroupAttributeResponse
 	resourceId := "alicloud_slb_server_group.default.9"
-	ra := resourceAttrInit(resourceId, serverGroupMultiClassicMap)
+	ra := resourceAttrInit(resourceId, serverGroupMultiVpcMap)
 	rc := resourceCheckInit(resourceId, &v, func() interface{} {
 		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	})
@@ -185,6 +197,22 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
+					"name":             name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": "tf-testAccSlbServerGroupClassicUpdate",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
@@ -199,14 +227,10 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"servers.#": "2",
+					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -439,12 +463,18 @@ resource "alicloud_slb_load_balancer" "default" {
 }
 
 var serverGroupMap = map[string]string{
-	"name":      "tf-server-group",
-	"servers.#": "1",
+	"servers.#":        "0",
+	"load_balancer_id": CHECKSET,
+}
+
+var serverGroupMultiVpcMap = map[string]string{
+	"servers.#":        "2",
+	"load_balancer_id": CHECKSET,
 }
 
 var serverGroupMultiClassicMap = map[string]string{
-	"servers.#": "2",
+	"servers.#":        "0",
+	"load_balancer_id": CHECKSET,
 }
 
 var serversMap = []map[string]interface{}{
