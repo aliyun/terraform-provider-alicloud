@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud snat resource.
 ---
 
-# alicloud\_snat
+# alicloud\_snat\_entry
 
 Provides a snat resource.
 

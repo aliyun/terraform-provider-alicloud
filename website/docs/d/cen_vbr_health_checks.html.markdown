@@ -7,7 +7,7 @@ description: |-
     Provides a list of CEN VBR Health Checks owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cen\_vbr_health\_checks
+# alicloud\_cen\_vbr\_health\_checks
 
 This data source provides CEN VBR Health Checks available to the user.
 
