@@ -1,4 +1,24 @@
 ## 1.125.0 (Unreleased)
+## 1.124.1 (June 4, 2021)
+
+ENHANCEMENTS:
+
+- resource/alicloud_slb_server_group: Adds Computed for the attribute servers to meet scenario when using resource alicloud_ess_scalinggroup_vserver_groups ([#3607](https://github.com/aliyun/terraform-provider-alicloud/issues/3607)) 
+- resource/alicloud_kms_key: Adds limitation for pending_window_in_days when deprecating the deletion_window_in_days ([#3594](https://github.com/aliyun/terraform-provider-alicloud/issues/3594)) 
+- resource/alicloud_config_aggregate_config_rule: Adds DiffSuppressFunc for 'maximum_execution_frequency' ([#3592](https://github.com/aliyun/terraform-provider-alicloud/issues/3592)) 
+- resource/alicloud_cms_alarm: Adds statistics more valid values: Value, Sum, Count ([#3274](https://github.com/aliyun/terraform-provider-alicloud/issues/3274))
+- resource/alicloud_db_instance: Adds ssl related attributes, like ca_type, server_cert, server_key, client_ca_cert, client_crl_enabled, client_cert_revocation_list, acl, replication_acl ([#3573](https://github.com/aliyun/terraform-provider-alicloud/issues/3573))
+
+BUG FIXES:
+
+- resource/alicloud_network_acl: Fixes attributes diff caused by 'resources' ([#3597](https://github.com/aliyun/terraform-provider-alicloud/issues/3597)) 
+- resource/alicloud_api_gateway_api: Fixes the bug (issues #2276) when setting the attribute constant_parameters ([#3605](https://github.com/aliyun/terraform-provider-alicloud/issues/3605)) 
+- resource/alicloud_network_acl: Fixes destroy resource failed caused by 'resources' ([#3601](https://github.com/aliyun/terraform-provider-alicloud/issues/3601)) 
+- resource/alicloud_log_audit：Fixes log audit bug when setting multi_account; Adds missing domain when invoking the request ([#3595](https://github.com/aliyun/terraform-provider-alicloud/issues/3595))
+- resource/alicloud_slb_load_balancer: Fixes create the payasyougo instance failed caused by 'instance_charge_type' ([#3598](https://github.com/aliyun/terraform-provider-alicloud/issues/3598))
+- resource/alicloud_alidns_instance: Sets renew_period renew_status to state; Fixes force replacement bug because there is no API can return; Upgrades its dependence SDK ([#3599](https://github.com/aliyun/terraform-provider-alicloud/issues/3599))
+- resource/alicloud_kvstore_instance: Converts auto_renew attribute to bool before saving ([#3065](https://github.com/aliyun/terraform-provider-alicloud/issues/3065))
+
 ## 1.124.0 (May 29, 2021)
 
 - **New Resource:** `alicloud_config_aggregate_config_rule` ([#3561](https://github.com/aliyun/terraform-provider-alicloud/issues/3561)) 
