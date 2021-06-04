@@ -91,7 +91,7 @@ func testSweepOosTemplate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOOSTemplate_basic(t *testing.T) {
+func TestAccAlicloudOosTemplate_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_template.default"
 	ra := resourceAttrInit(resourceId, OosTemplateMap)

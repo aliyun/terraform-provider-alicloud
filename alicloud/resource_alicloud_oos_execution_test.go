@@ -92,7 +92,7 @@ func testSweepOosExecution(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOOSExecution_basic(t *testing.T) {
+func TestAccAlicloudOosExecution_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_execution.default"
 	ra := resourceAttrInit(resourceId, OosExecutionMap)
