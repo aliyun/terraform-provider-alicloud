@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudOOSTemplatesDataSource(t *testing.T) {
+func TestAccAlicloudOosTemplatesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_oos_templates.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccOosTemplate-%d", rand)
