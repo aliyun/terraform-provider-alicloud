@@ -7,7 +7,7 @@ description: |-
     Provides a collection of Cassandra Data Centers according to the specified filters.
 ---
 
-# alicloud\_cassandra\_data_centers
+# alicloud\_cassandra\_data\_centers
 
 The `alicloud_cassandra_data_centers` data source provides a collection of Cassandra Data Centers available in Alicloud account.
 Filters support regular expression for the cluster name or ids.
