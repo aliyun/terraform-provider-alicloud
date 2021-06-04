@@ -40,6 +40,7 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 			"servers": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Computed: true, // The Computed can not be removed and it used to meet scenario when using alicloud_ess_scalinggroup_vserver_groups
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"server_ids": {
