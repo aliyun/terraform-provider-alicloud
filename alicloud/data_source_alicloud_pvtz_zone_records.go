@@ -76,7 +76,7 @@ func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 							Computed: true,
 						},
 						"record_id": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"remark": {
@@ -182,7 +182,7 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[fmt.Sprint(formatInt(item["RecordId"]))]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["RecordId"])]; !ok {
 					continue
 				}
 			}
@@ -200,9 +200,9 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":              fmt.Sprint(formatInt(object["RecordId"]), ":", request["ZoneId"]),
+			"id":              fmt.Sprint(object["RecordId"], ":", request["ZoneId"]),
 			"priority":        formatInt(object["Priority"]),
-			"record_id":       formatInt(object["RecordId"]),
+			"record_id":       fmt.Sprint(object["RecordId"]),
 			"remark":          object["Remark"],
 			"rr":              object["Rr"],
 			"resource_record": object["Rr"],
@@ -211,7 +211,7 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 			"type":            object["Type"],
 			"value":           object["Value"],
 		}
-		ids = append(ids, fmt.Sprint(formatInt(object["RecordId"])))
+		ids = append(ids, fmt.Sprint(object["RecordId"]))
 		s = append(s, mapping)
 	}
 
