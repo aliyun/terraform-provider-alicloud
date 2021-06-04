@@ -1,8 +1,11 @@
 ## 1.125.0 (Unreleased)
-## 1.124.1 (June 4, 2021)
+## 1.124.1 (June 5, 2021)
 
 ENHANCEMENTS:
 
+- ci: Adds ci test for OOS and Eci resources and data sources ([#3611](https://github.com/aliyun/terraform-provider-alicloud/issues/3611))
+- resource/alicloud_pvtz_zone_record: Fixes the 'record_id' diff error caused by using the incorrect type ([#3610](https://github.com/aliyun/terraform-provider-alicloud/issues/3610))
+- docs: Improve the docs ([#3609](https://github.com/aliyun/terraform-provider-alicloud/issues/3609))
 - resource/alicloud_slb_server_group: Adds Computed for the attribute servers to meet scenario when using resource alicloud_ess_scalinggroup_vserver_groups ([#3607](https://github.com/aliyun/terraform-provider-alicloud/issues/3607)) 
 - resource/alicloud_kms_key: Adds limitation for pending_window_in_days when deprecating the deletion_window_in_days ([#3594](https://github.com/aliyun/terraform-provider-alicloud/issues/3594)) 
 - resource/alicloud_config_aggregate_config_rule: Adds DiffSuppressFunc for 'maximum_execution_frequency' ([#3592](https://github.com/aliyun/terraform-provider-alicloud/issues/3592)) 
