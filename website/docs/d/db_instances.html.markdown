@@ -117,3 +117,13 @@ The following attributes are exported in addition to the arguments listed above:
   * `server_ca_url` - (Available in 1.124.1+) The URL of the CA that issues the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
   * `server_cert` - (Available in 1.124.1+) The content of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
   * `server_key` - (Available in 1.124.1+) The private key of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
+  * `creator` - (Available in 1.125.0+) The creator of the encryption key.
+  * `delete_date` - (Available in 1.125.0+) The estimated time when the encryption key will be deleted. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+  * `description` - (Available in 1.125.0+) The description of the encryption key.
+  * `encryption_key` - (Available in 1.125.0+) The ID of the encryption key.
+  * `encryption_key_status` - (Available in 1.125.0+) The status of the encryption key. Valid values:
+      - Enabled
+      - Disabled
+  * `key_usage` - (Available in 1.125.0+) The purpose of the encryption key.
+  * `material_expire_time` - (Available in 1.125.0+) The time when the encryption key expires. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+  * `origin` - (Available in 1.125.0+) The source of the encryption key.
