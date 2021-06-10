@@ -840,6 +840,27 @@ func (s *RdsService) DescribeDBInstanceSSL(id string) (map[string]interface{}, e
 	return response, nil
 }
 
+func (s *RdsService) DescribeDBInstanceEncryptionKey(id string) (map[string]interface{}, error) {
+	action := "DescribeDBInstanceEncryptionKey"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": id,
+		"SourceIp":     s.client.SourceIp,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	return response, nil
+}
+
 func (s *RdsService) DescribeRdsTDEInfo(id string) (map[string]interface{}, error) {
 	action := "DescribeDBInstanceTDE"
 	request := map[string]interface{}{

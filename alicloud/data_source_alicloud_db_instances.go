@@ -264,6 +264,38 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"creator": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"delete_date": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"encryption_key": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"encryption_key_status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"key_usage": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"material_expire_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"origin": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -457,6 +489,34 @@ func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, dbi []rds
 				mapping["server_key"] = sslResponse["ServerKey"]
 			}
 
+		}
+
+		encResponse, encError := rdsService.DescribeDBInstanceEncryptionKey(item.DBInstanceId)
+		if encError == nil {
+			if v, ok := encResponse["Creator"]; ok && v != "" {
+				mapping["creator"] = encResponse["Creator"]
+			}
+			if v, ok := encResponse["DeleteDate"]; ok && v != "" {
+				mapping["delete_date"] = encResponse["DeleteDate"]
+			}
+			if v, ok := encResponse["Description"]; ok && v != "" {
+				mapping["description"] = encResponse["Description"]
+			}
+			if v, ok := encResponse["EncryptionKey"]; ok && v != "" {
+				mapping["encryption_key"] = encResponse["EncryptionKey"]
+			}
+			if v, ok := encResponse["EncryptionKeyStatus"]; ok && v != "" {
+				mapping["encryption_key_status"] = encResponse["EncryptionKeyStatus"]
+			}
+			if v, ok := encResponse["KeyUsage"]; ok && v != "" {
+				mapping["key_usage"] = encResponse["KeyUsage"]
+			}
+			if v, ok := encResponse["MaterialExpireTime"]; ok && v != "" {
+				mapping["material_expire_time"] = encResponse["MaterialExpireTime"]
+			}
+			if v, ok := encResponse["Origin"]; ok && v != "" {
+				mapping["origin"] = encResponse["Origin"]
+			}
 		}
 
 		slaveZones := instance["SlaveZones"].(map[string]interface{})["SlaveZone"].([]interface{})
