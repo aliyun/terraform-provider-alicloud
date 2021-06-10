@@ -77,8 +77,32 @@ The following arguments are supported:
 * `tags` - (Optional, Available in 1.68.0+) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-
-
+* `ssl_enabled` - (Optional, Available in v1.125.0+) Specifies whether to enable or disable SSL encryption. Valid values:
+  - 1: enables SSL encryption
+  - 0: disables SSL encryption
+* `ca_type` - (Optional, Available in 1.125.0+) The type of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the SSLEnabled parameter to 1, the default value of this parameter is aliyun. It is valid only when `ssl_enabled  = 1`. Value range:
+  - aliyun: a cloud certificate
+  - custom: a custom certificate
+* `server_cert` - (Optional, Available in 1.125.0+) The content of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter. It is valid only when `ssl_enabled  = 1`.
+* `server_key` - (Optional, Available in 1.125.0+) The private key of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter. It is valid only when `ssl_enabled  = 1`.
+* `client_ca_enabled` - (Optional, Available in 1.125.0+) Specifies whether to enable the public key of the CA that issues client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. It is valid only when `ssl_enabled  = 1`. Valid values:
+  - 1: enables the public key
+  - 0: disables the public key
+* `client_ca_cert` - (Optional, Available in 1.125.0+) The public key of the CA that issues client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the ClientCAEbabled parameter to 1, you must also specify this parameter. It is valid only when `ssl_enabled  = 1`.
+* `client_crl_enabled` - (Optional, Available in 1.125.0+) Specifies whether to enable a certificate revocation list (CRL) that contains revoked client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. In addition, this parameter is available only when the public key of the CA that issues client certificates is enabled. It is valid only when `ssl_enabled  = 1`. Valid values:
+  - 1: enables the CRL
+  - 0: disables the CRL
+* `client_cert_revocation_list` - (Optional, Available in 1.125.0+) The CRL that contains revoked client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the ClientCrlEnabled parameter to 1, you must also specify this parameter. It is valid only when `ssl_enabled  = 1`.
+* `acl` - (Optional, Available in 1.125.0+) The method that is used to verify the identities of clients. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. In addition, this parameter is available only when the public key of the CA that issues client certificates is enabled. It is valid only when `ssl_enabled  = 1`. Valid values:
+  - cert
+  - perfer
+  - verify-ca
+  - verify-full (supported only when the instance runs PostgreSQL 12 or later)
+* `replication_acl` - (Optional, Available in 1.125.0+) The method that is used to verify the replication permission. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. In addition, this parameter is available only when the public key of the CA that issues client certificates is enabled. It is valid only when `ssl_enabled  = 1`. Valid values:
+  - cert
+  - perfer
+  - verify-ca
+  - verify-full (supported only when the instance runs PostgreSQL 12 or later)
 -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
 ## Attributes Reference
