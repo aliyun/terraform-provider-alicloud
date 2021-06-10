@@ -40,7 +40,7 @@ The following arguments are supported:
 * `cluster_version` - (Required, ForceNew) The version of MSE Cluster.
 * `disk_type` - (Optional, ForceNew) The type of Disk.
 * `instance_count` - (Optional, ForceNew) The count of instance.
-* `net_type` - (Required, ForceNew) The type of network. Range limit: 1~5.
+* `net_type` - (Required, ForceNew) The type of network. Valid values: "privatenet" and "pubnet".
 * `private_slb_specification` - (Optional, ForceNew) The specification of private network SLB.
 * `pub_network_flow` - (Optional, ForceNew) The public network bandwidth. `0` means no access to the public network.
 * `pub_slb_specification` - (Optional, ForceNew) The specification of public network SLB.
