@@ -115,6 +115,66 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"ssl_enabled": {
+				Type:         schema.TypeInt,
+				ValidateFunc: validation.IntInSlice([]int{0, 1}),
+				Optional:     true,
+				Computed:     true,
+			},
+			"ca_type": {
+				Type:             schema.TypeString,
+				ValidateFunc:     validation.StringInSlice([]string{"aliyun", "custom"}, false),
+				Optional:         true,
+				DiffSuppressFunc: sslEnabledDiffSuppressFunc,
+			},
+			"server_cert": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: sslEnabledDiffSuppressFunc,
+			},
+			"server_key": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: sslEnabledDiffSuppressFunc,
+			},
+			"client_ca_enabled": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validation.IntInSlice([]int{0, 1}),
+				Optional:         true,
+				DiffSuppressFunc: sslEnabledDiffSuppressFunc,
+			},
+			"client_ca_cert": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: sslEnabledDiffSuppressFunc,
+			},
+			"client_crl_enabled": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validation.IntInSlice([]int{0, 1}),
+				Optional:         true,
+				DiffSuppressFunc: sslEnabledDiffSuppressFunc,
+			},
+			"client_cert_revocation_list": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: sslEnabledDiffSuppressFunc,
+			},
+			"acl": {
+				Type:             schema.TypeString,
+				ValidateFunc:     validation.StringInSlice([]string{"cert", "perfer", "verify-ca", "verify-full"}, false),
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: sslEnabledDiffSuppressFunc,
+			},
+			"replication_acl": {
+				Type:             schema.TypeString,
+				ValidateFunc:     validation.StringInSlice([]string{"cert", "perfer", "verify-ca", "verify-full"}, false),
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: sslEnabledDiffSuppressFunc,
+			},
 		},
 	}
 }
@@ -179,14 +239,112 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 
-	if d.IsNewResource() {
-		d.Partial(false)
-		return resourceAlicloudDBInstanceRead(d, meta)
-	}
 	conn, err := client.NewRdsClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	sslUpdate := false
+	sslAction := "ModifyDBInstanceSSL"
+	sslRequest := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+		"RegionId":     client.RegionId,
+		"SourceIp":     client.SourceIp,
+	}
+	if d.HasChange("ssl_enabled") {
+		sslRequest["SSLEnabled"] = d.Get("ssl_enabled").(int)
+		sslUpdate = true
+	}
+	if d.HasChange("ca_type") {
+		sslRequest["CAType"] = d.Get("ca_type")
+		sslUpdate = true
+	}
+	if d.HasChange("server_cert") {
+		sslRequest["ServerCert"] = d.Get("server_cert")
+		sslUpdate = true
+	}
+	if d.HasChange("server_key") {
+		sslRequest["ServerKey"] = d.Get("server_key")
+		sslUpdate = true
+	}
+	if d.HasChange("client_ca_enabled") {
+		sslRequest["ClientCAEnabled"] = d.Get("client_ca_enabled")
+		sslUpdate = true
+	}
+	if d.HasChange("client_ca_cert") {
+		sslRequest["ClientCACert"] = d.Get("client_ca_cert")
+		sslUpdate = true
+	}
+	if d.HasChange("client_crl_enabled") {
+		sslRequest["ClientCrlEnabled"] = d.Get("client_crl_enabled")
+		sslUpdate = true
+	}
+	if d.HasChange("client_cert_revocation_list") {
+		sslRequest["ClientCertRevocationList"] = d.Get("client_cert_revocation_list")
+		sslUpdate = true
+	}
+	if d.HasChange("acl") {
+		sslRequest["ACL"] = d.Get("acl")
+		sslUpdate = true
+	}
+	if d.HasChange("replication_acl") {
+		sslRequest["ReplicationACL"] = d.Get("replication_acl")
+		sslUpdate = true
+	}
+	if sslUpdate {
+		instance, err := rdsService.DescribeDBInstance(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				d.SetId("")
+				return nil
+			}
+			return WrapError(err)
+		}
+
+		sslRequest["ConnectionString"] = instance["ConnectionString"]
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(sslAction), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, sslRequest, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), sslAction, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(sslAction, response, sslRequest)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("ssl_enabled")
+		d.SetPartial("ca_type")
+		d.SetPartial("server_cert")
+		d.SetPartial("server_key")
+		d.SetPartial("client_ca_enabled")
+		d.SetPartial("client_ca_cert")
+		d.SetPartial("client_crl_enabled")
+		d.SetPartial("client_cert_revocation_list")
+		d.SetPartial("acl")
+		d.SetPartial("replication_acl")
+
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAlicloudDBInstanceRead(d, meta)
+	}
+
 	if d.HasChange("instance_name") {
 		action := "ModifyDBInstanceDescription"
 		request := map[string]interface{}{
@@ -308,6 +466,22 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("connection_string", instance["ConnectionString"])
 	d.Set("instance_name", instance["DBInstanceDescription"])
 	d.Set("resource_group_id", instance["ResourceGroupId"])
+
+	sslAction, err := rdsService.DescribeDBInstanceSSL(d.Id())
+	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
+		return WrapError(err)
+	}
+	d.Set("ssl_status", sslAction["RequireUpdate"])
+	d.Set("ssl_enabled", d.Get("ssl_enabled"))
+	d.Set("client_ca_enabled", d.Get("client_ca_enabled"))
+	d.Set("client_crl_enabled", d.Get("client_crl_enabled"))
+	d.Set("ca_type", sslAction["CAType"])
+	d.Set("server_cert", sslAction["ServerCert"])
+	d.Set("server_key", sslAction["ServerKey"])
+	d.Set("client_ca_cert", sslAction["ClientCACert"])
+	d.Set("client_cert_revocation_list", sslAction["ClientCertRevocationList"])
+	d.Set("acl", sslAction["ACL"])
+	d.Set("replication_acl", sslAction["ReplicationACL"])
 
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
 		return err

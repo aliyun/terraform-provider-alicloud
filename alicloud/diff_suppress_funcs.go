@@ -642,3 +642,10 @@ func whiteIpListDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 	}
 	return true
 }
+
+func sslEnabledDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("ssl_enabled"); ok && v.(int) == 1 {
+		return false
+	}
+	return true
+}
