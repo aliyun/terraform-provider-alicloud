@@ -1074,7 +1074,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	request.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))
 
 	if v, ok := d.GetOk("tags"); ok && len(v.(map[string]interface{})) > 0 {
-		tags := make([]ecs.RunInstancesTag, len(v.(map[string]interface{})))
+		tags := make([]ecs.RunInstancesTag, 0)
 		for key, value := range v.(map[string]interface{}) {
 			tags = append(tags, ecs.RunInstancesTag{
 				Key:   key,
