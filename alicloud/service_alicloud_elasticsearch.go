@@ -121,6 +121,9 @@ func (s *ElasticsearchService) TriggerNetwork(d *schema.ResourceData, content ma
 
 	addDebug(action, response, content)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"RepetitionOperationError"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
