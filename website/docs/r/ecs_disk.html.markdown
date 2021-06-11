@@ -22,7 +22,7 @@ Basic Usage
 ```terraform
 resource "alicloud_ecs_disk" "example" {
   zone_id           = "cn-beijing-b"
-  name              = "tf-test"
+  disk_name         = "tf-test"
   description       = "Hello ecs disk."
   category          = "cloud_efficiency"
   size              = "30"
@@ -39,7 +39,7 @@ resource "alicloud_ecs_disk" "example" {
 
 The following arguments are supported:
 
-* `zone_id` - (Optional, ForceNew) ID of the free zone to which the disk belongs.
+* `zone_id` - (Optional, ForceNew) ID of the free zone to which the disk belongs. One of the `zone_id` and `instance_id` must be set but can not be set at the same time.
 * `availability_zone` - (Optional, ForceNew) Field `availability_zone` has been deprecated from provider version 1.122.0. New field `zone_id` instead.
 * `category` - (Optional) Category of the disk. Valid values are `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`. Default is `cloud_efficiency`.
 * `delete_auto_snapshot` - (Optional) Indicates whether the automatic snapshot is deleted when the disk is released. Default value: `false`.
@@ -53,10 +53,10 @@ The following arguments are supported:
 * `encrypted` - (Optional, ForceNew) If true, the disk will be encrypted, conflict with `snapshot_id`.
 * `instance_id` - (Optional, ForceNew) The ID of the instance to which the created subscription disk is automatically attached.
     * After you specify the instance ID, the specified `resource_group_id`, `tags`, and `kms_key_id` parameters are ignored.
-    * You cannot specify both the `zone_id` and `instance_id` parameters.
+    * One of the `zone_id` and `instance_id` must be set but can not be set at the same time.
 * `kms_key_id` - (Optional, ForceNew) The ID of the KMS key corresponding to the data disk, The specified parameter `Encrypted` must be `true` when KmsKeyId is not empty.
 * `name` - (Optional, Computed, Deprecated in v1.122.0+) Field `name` has been deprecated from provider version 1.122.0. New field `disk_name` instead.
-* `payment_type` - (Optional) Payment method for disk. Valid values: `PayAsYouGo`, `Subscription`.
+* `payment_type` - (Optional) Payment method for disk. Valid values: `PayAsYouGo`, `Subscription`. Default to `PayAsYouGo`. If you want to change the disk payment type, the `instance_id` is required.
 * `performance_level` - (Optional) Specifies the performance level of an ESSD when you create the ESSD. Valid values:                                                       
     * `PL1`: A single ESSD delivers up to 50,000 random read/write IOPS.
     * `PL2`: A single ESSD delivers up to 100,000 random read/write IOPS.
