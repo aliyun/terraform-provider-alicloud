@@ -118,11 +118,12 @@ func TestAccAlicloudEcsDisk_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"disk_name":  name,
-					"zone_id":    "${data.alicloud_zones.default.zones.0.id}",
-					"encrypted":  "true",
-					"kms_key_id": "${alicloud_kms_key.key.id}",
-					"size":       "500",
+					"disk_name":    name,
+					"zone_id":      "${data.alicloud_zones.default.zones.0.id}",
+					"encrypted":    "true",
+					"kms_key_id":   "${alicloud_kms_key.key.id}",
+					"size":         "500",
+					"payment_type": "PayAsYouGo",
 					"timeouts": []map[string]interface{}{
 						{
 							"create": "1h",
@@ -147,12 +148,21 @@ func TestAccAlicloudEcsDisk_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"category":          "cloud_essd",
-					"performance_level": "PL2",
+					"category": "cloud_essd",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"category":          "cloud_essd",
+						"performance_level": "PL1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"performance_level": "PL2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
 						"performance_level": "PL2",
 					}),
 				),
@@ -265,7 +275,10 @@ func TestAccAlicloudEcsDisk_basic(t *testing.T) {
 	})
 }
 
-var AlicloudEcsDiskMap = map[string]string{}
+var AlicloudEcsDiskMap = map[string]string{
+	"payment_type":      "PayAsYouGo",
+	"performance_level": "",
+}
 
 func AlicloudEcsDiskBasicDependence(name string) string {
 	return fmt.Sprintf(`
