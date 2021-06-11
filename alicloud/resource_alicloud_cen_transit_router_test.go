@@ -12,7 +12,7 @@ import (
 func TestAccAlicloudCenTransitRouter_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMap0)
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCenTransitRouter")
@@ -20,7 +20,7 @@ func TestAccAlicloudCenTransitRouter_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%scentransitrouter%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -84,7 +84,7 @@ func TestAccAlicloudCenTransitRouter_basic(t *testing.T) {
 	})
 }
 
-var AlicloudCenTransitRouterMap0 = map[string]string{
+var AlicloudCenTransitRouterMap = map[string]string{
 	"cen_id":                     CHECKSET,
 	"dry_run":                    NOSET,
 	"status":                     CHECKSET,
@@ -92,7 +92,7 @@ var AlicloudCenTransitRouterMap0 = map[string]string{
 	"transit_router_name":        CHECKSET,
 }
 
-func AlicloudCenTransitRouterBasicDependence0(name string) string {
+func AlicloudCenTransitRouterBasicDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
 			default = "%s"
