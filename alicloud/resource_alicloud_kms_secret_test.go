@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -28,28 +29,38 @@ func testSweepKmsSecret(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
-	prefix := "tf_testacc"
+	prefixes := []string{
+		"tf-testacc",
+		"tf_testacc",
+	}
 
 	req := kms.CreateListSecretsRequest()
+	req.PageSize = requests.NewInteger(100)
 	raw, err := client.WithKmsClient(func(kmsclient *kms.Client) (interface{}, error) {
 		return kmsclient.ListSecrets(req)
 	})
-	log.Printf("[ERROR] %s got an error: %v\n.", req.GetActionName(), err)
+	if err != nil {
+		log.Printf("[ERROR] %s got an error: %v\n.", req.GetActionName(), err)
+	}
 	secrets := raw.(*kms.ListSecretsResponse)
 	swept := false
 
 	for _, v := range secrets.SecretList.Secret {
-
-		if strings.HasPrefix(strings.ToLower(v.SecretName), prefix) {
-			req := kms.CreateDeleteSecretRequest()
-			req.SecretName = v.SecretName
-			req.ForceDeleteWithoutRecovery = "true"
-			raw, err = client.WithKmsClient(func(kmsclient *kms.Client) (interface{}, error) {
-				return kmsclient.DeleteSecret(req)
-			})
-			swept = true
-			log.Printf("[ERROR] %s got an error: %v\n.", req.GetActionName(), err)
-			break
+		log.Printf("[DEBUG] Prepare to delete secret %s", v)
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(v.SecretName), prefix) {
+				req := kms.CreateDeleteSecretRequest()
+				req.SecretName = v.SecretName
+				req.ForceDeleteWithoutRecovery = "true"
+				raw, err = client.WithKmsClient(func(kmsclient *kms.Client) (interface{}, error) {
+					return kmsclient.DeleteSecret(req)
+				})
+				swept = true
+				if err != nil {
+					log.Printf("[ERROR] %s got an error: %v\n.", req.GetActionName(), err)
+				}
+				break
+			}
 		}
 	}
 	if swept {
