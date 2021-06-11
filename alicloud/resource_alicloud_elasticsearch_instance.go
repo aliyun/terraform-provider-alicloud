@@ -404,7 +404,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("public_whitelist")
 	}
 
-	if d.HasChange("enable_kibana_public_network") {
+	if d.HasChange("enable_kibana_public_network") || d.IsNewResource() {
 		content := make(map[string]interface{})
 		content["networkType"] = string(PUBLIC)
 		content["nodeType"] = string(KIBANA)
