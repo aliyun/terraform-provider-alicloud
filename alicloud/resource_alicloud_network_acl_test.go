@@ -305,7 +305,6 @@ func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
 							"protocol":               "tcp",
 						},
 					},
-					"resources": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -313,7 +312,6 @@ func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
 						"network_acl_name":      name,
 						"ingress_acl_entries.#": "1",
 						"egress_acl_entries.#":  "1",
-						"resources.#":           REMOVEKEY,
 					}),
 				),
 			},
