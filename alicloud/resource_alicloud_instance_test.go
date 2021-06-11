@@ -767,9 +767,11 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 
-						"tags.%":   "0",
-						"tags.Bar": REMOVEKEY,
-						"tags.foo": REMOVEKEY,
+						"tags.%":    "0",
+						"tags.Bar":  REMOVEKEY,
+						"tags.foo":  REMOVEKEY,
+						"tags.tag9": REMOVEKEY,
+						"tags.tagH": REMOVEKEY,
 
 						"instance_name": name,
 
