@@ -13,8 +13,6 @@ Provides a network acl resource to add network acls.
 
 -> **NOTE:** Available in 1.43.0+. Currently, the resource are only available in Hongkong(cn-hongkong), India(ap-south-1), and Indonesia(ap-southeast-1) regions.
 
--> **NOTE:** After version 1.124.0. If VSwitch is bound, when deleting this resource, you need to delete the attribute `resources` in the template and execute `terraform apply` to unbind it before deleting the resource.
-
 ## Example Usage
 
 Basic Usage

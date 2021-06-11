@@ -1827,3 +1827,62 @@ func (s *VpcService) NetworkAclStateRefreshFunc(id string, failStates []string) 
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
+func (s *VpcService) DeleteAclResources(id string) (object map[string]interface{}, err error) {
+	acl, err := s.DescribeNetworkAcl(id)
+	if err != nil {
+		return object, WrapError(err)
+	}
+	deleteResources := make([]map[string]interface{}, 0)
+	res, err := jsonpath.Get("$.Resources.Resource", acl)
+	if err != nil {
+		return object, WrapError(err)
+	}
+	resources, _ := res.([]interface{})
+	if resources != nil && len(resources) < 1 {
+		return object, nil
+	}
+	for _, val := range resources {
+		item, _ := val.(map[string]interface{})
+		deleteResources = append(deleteResources, map[string]interface{}{
+			"ResourceId":   item["ResourceId"],
+			"ResourceType": item["ResourceType"],
+		})
+	}
+
+	var response map[string]interface{}
+	request := map[string]interface{}{
+		"NetworkAclId": id,
+		"Resource":     deleteResources,
+		"RegionId":     s.client.RegionId,
+	}
+	action := "UnassociateNetworkAcl"
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	request["ClientToken"] = buildClientToken("UnassociateNetworkAcl")
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, 10*time.Minute, 5*time.Second, s.NetworkAclStateRefreshFunc(id, []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return response, WrapErrorf(err, IdMsg, id)
+	}
+	return object, nil
+}

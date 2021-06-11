@@ -503,6 +503,13 @@ func resourceAlicloudNetworkAclUpdate(d *schema.ResourceData, meta interface{}) 
 func resourceAlicloudNetworkAclDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
+
+	// Delete binging resources before delete the ACL
+	_, err := vpcService.DeleteAclResources(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
 	action := "DeleteNetworkAcl"
 	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
