@@ -1,17 +1,18 @@
-## 1.125.0 (Unreleased)
+## 1.124.3 (Unreleased)
+## 1.124.2 (June 12, 2021)
 
 ENHANCEMENTS:
 
-- docs: add note for alicloud_kvstore_instance ssl_enable and correct the alicloud_mse_cluster net_type valid values [GH-3619]
+- docs: add note for alicloud_kvstore_instance ssl_enable and correct the alicloud_mse_cluster net_type valid values ([#3619](https://github.com/aliyun/terraform-provider-alicloud/issues/3619))
 
 BUG FIXES:
 
-- resource/alicloud_network_acl: Fixes the entries sort error because of the sort means priority [GH-3627]
-- resource/alicloud_kms_secret: Fixes the Forbidden.ResourceNotFound error when deleting [GH-3626]
-- resource/alicloud_ecs_disk: Fixes the creating disk error cause by ModifyDiskChargeType; Fixes the diff bug when category is cloud_essd [GH-3625]
-- resource/alicloud_elasitcsearch_instance: Fixes the enable_kibana_private_network is not effect error when the first creation. [GH-3622]
-- resource/alicloud_network_acl: Fixes deleting the acl failed cause by there exists bound resources. [GH-3620]
-- resource/alicloud_instance: Fixes setting tags failed bug when the tag count is more than 10 [GH-3618]
+- resource/alicloud_network_acl: Fixes the entries sort error because of the sort means priority ([#3627](https://github.com/aliyun/terraform-provider-alicloud/issues/3627))
+- resource/alicloud_kms_secret: Fixes the Forbidden.ResourceNotFound error when deleting ([#3626](https://github.com/aliyun/terraform-provider-alicloud/issues/3626))
+- resource/alicloud_ecs_disk: Fixes the creating disk error cause by ModifyDiskChargeType; Fixes the diff bug when category is cloud_essd ([#3625](https://github.com/aliyun/terraform-provider-alicloud/issues/3625))
+- resource/alicloud_elasitcsearch_instance: Fixes the enable_kibana_private_network is not effect error when the first creation. ([#3622](https://github.com/aliyun/terraform-provider-alicloud/issues/3622))
+- resource/alicloud_network_acl: Fixes deleting the acl failed cause by there exists bound resources. ([#3620](https://github.com/aliyun/terraform-provider-alicloud/issues/3620))
+- resource/alicloud_instance: Fixes setting tags failed bug when the tag count is more than 10 ([#3618](https://github.com/aliyun/terraform-provider-alicloud/issues/3618))
 
 ## 1.124.1 (June 5, 2021)
 
