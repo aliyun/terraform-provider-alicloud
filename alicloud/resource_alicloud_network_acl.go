@@ -33,7 +33,7 @@ func resourceAlicloudNetworkAcl() *schema.Resource {
 				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 			"egress_acl_entries": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -68,7 +68,7 @@ func resourceAlicloudNetworkAcl() *schema.Resource {
 				},
 			},
 			"ingress_acl_entries": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -336,8 +336,8 @@ func resourceAlicloudNetworkAclUpdate(d *schema.ResourceData, meta interface{}) 
 	if d.HasChange("egress_acl_entries") {
 		updateNetworkAclEntriesReq["UpdateEgressAclEntries"] = true
 		update = true
-		EgressAclEntries := make([]map[string]interface{}, len(d.Get("egress_acl_entries").(*schema.Set).List()))
-		for i, EgressAclEntriesValue := range d.Get("egress_acl_entries").(*schema.Set).List() {
+		EgressAclEntries := make([]map[string]interface{}, len(d.Get("egress_acl_entries").([]interface{})))
+		for i, EgressAclEntriesValue := range d.Get("egress_acl_entries").([]interface{}) {
 			EgressAclEntriesMap := EgressAclEntriesValue.(map[string]interface{})
 			EgressAclEntries[i] = make(map[string]interface{})
 			EgressAclEntries[i]["Description"] = EgressAclEntriesMap["description"]
@@ -353,8 +353,8 @@ func resourceAlicloudNetworkAclUpdate(d *schema.ResourceData, meta interface{}) 
 	if d.HasChange("ingress_acl_entries") {
 		updateNetworkAclEntriesReq["UpdateIngressAclEntries"] = true
 		update = true
-		IngressAclEntries := make([]map[string]interface{}, len(d.Get("ingress_acl_entries").(*schema.Set).List()))
-		for i, IngressAclEntriesValue := range d.Get("ingress_acl_entries").(*schema.Set).List() {
+		IngressAclEntries := make([]map[string]interface{}, len(d.Get("ingress_acl_entries").([]interface{})))
+		for i, IngressAclEntriesValue := range d.Get("ingress_acl_entries").([]interface{}) {
 			IngressAclEntriesMap := IngressAclEntriesValue.(map[string]interface{})
 			IngressAclEntries[i] = make(map[string]interface{})
 			IngressAclEntries[i]["Description"] = IngressAclEntriesMap["description"]
