@@ -95,6 +95,10 @@ func dataSourceAlicloudEssScalingConfigurations() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"system_disk_performance_level": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"data_disks": {
 							Type: schema.TypeList,
 							Elem: &schema.Resource{
@@ -117,6 +121,10 @@ func dataSourceAlicloudEssScalingConfigurations() *schema.Resource {
 									},
 									"delete_with_instance": {
 										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"performance_level": {
+										Type:     schema.TypeString,
 										Optional: true,
 									},
 								},
@@ -221,21 +229,22 @@ func scalingConfigurationsDescriptionAttribute(d *schema.ResourceData, scalingCo
 	essService := EssService{client}
 	for _, scalingConfiguration := range scalingConfigurations {
 		mapping := map[string]interface{}{
-			"id":                         scalingConfiguration.ScalingConfigurationId,
-			"name":                       scalingConfiguration.ScalingConfigurationName,
-			"scaling_group_id":           scalingConfiguration.ScalingGroupId,
-			"image_id":                   scalingConfiguration.ImageId,
-			"instance_type":              scalingConfiguration.InstanceType,
-			"security_group_id":          scalingConfiguration.SecurityGroupId,
-			"internet_charge_type":       scalingConfiguration.InternetChargeType,
-			"internet_max_bandwidth_in":  scalingConfiguration.InternetMaxBandwidthIn,
-			"internet_max_bandwidth_out": scalingConfiguration.InternetMaxBandwidthOut,
-			"credit_specification":       scalingConfiguration.CreditSpecification,
-			"system_disk_category":       scalingConfiguration.SystemDiskCategory,
-			"system_disk_size":           scalingConfiguration.SystemDiskSize,
-			"data_disks":                 essService.flattenDataDiskMappings(scalingConfiguration.DataDisks.DataDisk),
-			"lifecycle_state":            scalingConfiguration.LifecycleState,
-			"creation_time":              scalingConfiguration.CreationTime,
+			"id":                            scalingConfiguration.ScalingConfigurationId,
+			"name":                          scalingConfiguration.ScalingConfigurationName,
+			"scaling_group_id":              scalingConfiguration.ScalingGroupId,
+			"image_id":                      scalingConfiguration.ImageId,
+			"instance_type":                 scalingConfiguration.InstanceType,
+			"security_group_id":             scalingConfiguration.SecurityGroupId,
+			"internet_charge_type":          scalingConfiguration.InternetChargeType,
+			"internet_max_bandwidth_in":     scalingConfiguration.InternetMaxBandwidthIn,
+			"internet_max_bandwidth_out":    scalingConfiguration.InternetMaxBandwidthOut,
+			"credit_specification":          scalingConfiguration.CreditSpecification,
+			"system_disk_category":          scalingConfiguration.SystemDiskCategory,
+			"system_disk_size":              scalingConfiguration.SystemDiskSize,
+			"system_disk_performance_level": scalingConfiguration.SystemDiskPerformanceLevel,
+			"data_disks":                    essService.flattenDataDiskMappings(scalingConfiguration.DataDisks.DataDisk),
+			"lifecycle_state":               scalingConfiguration.LifecycleState,
+			"creation_time":                 scalingConfiguration.CreationTime,
 		}
 		ids = append(ids, scalingConfiguration.ScalingConfigurationId)
 		names = append(names, scalingConfiguration.ScalingConfigurationName)
