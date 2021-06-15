@@ -270,11 +270,13 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tde_status": "Enabled",
+					"tde_status":         "Enabled",
+					"encrypt_new_tables": "ON",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tde_status": "Enabled",
+						"tde_status":         "Enabled",
+						"encrypt_new_tables": "ON",
 					}),
 				),
 			},
