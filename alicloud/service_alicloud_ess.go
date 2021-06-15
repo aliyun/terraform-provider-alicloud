@@ -250,6 +250,7 @@ func (s *EssService) flattenDataDiskMappings(list []ess.DataDisk) []map[string]i
 			"disk_name":               i.DiskName,
 			"description":             i.Description,
 			"auto_snapshot_policy_id": i.AutoSnapshotPolicyId,
+			"performance_level":       i.PerformanceLevel,
 		}
 		result = append(result, l)
 	}

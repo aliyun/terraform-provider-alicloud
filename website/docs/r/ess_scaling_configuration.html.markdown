@@ -112,6 +112,7 @@ The following arguments are supported:
 * `system_disk_name` - (Optional, Available in 1.92.0+) The name of the system disk. It must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-). Default value: null.
 * `system_disk_description` - (Optional, Available in 1.92.0+) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `system_disk_auto_snapshot_policy_id` - (Optional, Available in 1.92.0+) The id of auto snapshot policy for system disk.
+* `system_disk_performance_level` - (Optional, Available in 1.124.3+) The performance level of the ESSD used as the system disk.
 * `enable` - (Optional) Whether enable the specified scaling group(make it active) to which the current scaling configuration belongs.
 * `active` - (Optional) Whether active current scaling configuration in the specified scaling group. Default to `false`.
 * `substitute` - (Optional) The another scaling configuration which will be active automatically and replace current configuration when setting `active` to 'false'. It is invalid when `active` is 'true'.
@@ -159,6 +160,7 @@ The datadisk mapping supports the following:
 * `name` - (Optional, Available in 1.92.0+) The name of data disk N. Valid values of N: 1 to 16. It must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-). Default value: null.
 * `description` - (Optional, Available in 1.92.0+) The description of data disk N. Valid values of N: 1 to 16. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `auto_snapshot_policy_id` - (Optional, Available in 1.92.0+) The id of auto snapshot policy for data disk.
+* `performance_level` - (Optional, Available in 1.124.3+) The performance level of the ESSD used as data disk.
 
 ## Attributes Reference
 
