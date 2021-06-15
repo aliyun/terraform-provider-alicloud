@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"regexp"
 	"strings"
@@ -1195,22 +1196,22 @@ func (s *PolarDBService) WaitForPolarDBParameter(clusterId string, timeout int, 
 	return nil
 }
 
-func (s *PolarDBService) DescribeDBClusterTDE(id string) (clusterTDE *polardb.DescribeDBClusterTDEResponse, err error) {
-	request := polardb.CreateDescribeDBClusterTDERequest()
-	request.DBClusterId = id
-	raw, err := s.client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
-		return polardbClient.DescribeDBClusterTDE(request)
-	})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return clusterTDE, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
-		return clusterTDE, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+func (s *PolarDBService) DescribeDBClusterTDE(id string) (map[string]interface{}, error) {
+	action := "DescribeDBClusterTDE"
+	request := map[string]interface{}{
+		"DBClusterId": id,
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*polardb.DescribeDBClusterTDEResponse)
-
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	conn, err := s.client.NewPolarDBClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
 	return response, nil
 }
 
@@ -1221,7 +1222,7 @@ func (s *PolarDBService) WaitForPolarDBTDEStatus(id string, status string, timeo
 		if err != nil {
 			return WrapError(err)
 		}
-		if object.TDEStatus == status {
+		if object["TDEStatus"] == status {
 			break
 		}
 		if time.Now().After(deadline) {
