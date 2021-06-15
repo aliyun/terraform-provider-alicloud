@@ -155,6 +155,11 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:     true,
 				Default:      "Disabled",
 			},
+			"encrypt_new_tables": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
+				Optional:     true,
+			},
 			"tags": tagsSchema(),
 		},
 	}
@@ -202,6 +207,11 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
+	conn, err := client.NewPolarDBClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	payType := d.Get("pay_type").(string)
 	if !d.IsNewResource() && d.HasChange("pay_type") {
 		action := "TransformDBClusterPayType"
@@ -219,10 +229,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				request["Period"] = Year
 			}
 		}
-		conn, err := client.NewPolarDBClient()
-		if err != nil {
-			return WrapError(err)
-		}
+
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -388,24 +395,37 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
 		if d.HasChange("tde_status") {
 			if v, ok := d.GetOk("tde_status"); ok && v.(string) != "Disabled" {
-				// init modify TDE request
-				request := polardb.CreateModifyDBClusterTDERequest()
-				request.DBClusterId = d.Id()
-				request.TDEStatus = convertPolarDBTdeStatusUpdateRequest(v.(string))
-				// do handler
-				resp, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-					return polarDBClient.ModifyDBClusterTDE(request)
+				action := "ModifyDBClusterTDE"
+				request := map[string]interface{}{
+					"DBClusterId": d.Id(),
+					"TDEStatus":   convertPolarDBTdeStatusUpdateRequest(v.(string)),
+				}
+				if s, ok := d.GetOk("encrypt_new_tables"); ok && s.(string) != "" {
+					request["EncryptNewTables"] = s.(string)
+				}
+				//retry
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(action, response, request)
+					return nil
 				})
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), resp, request.RpcRequest, request)
-
+				//wait tde status 'Enabled'
 				if err := polarDBService.WaitForPolarDBTDEStatus(d.Id(), "Enabled", DefaultLongTimeout); err != nil {
 					return WrapError(err)
 				}
-
 				d.SetPartial("tde_status")
+				d.SetPartial("encrypt_new_tables")
 			}
 		}
 	}
@@ -561,7 +581,9 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("tde_status", clusterTDEStatus.TDEStatus)
+	d.Set("tde_status", clusterTDEStatus["TDEStatus"])
+	d.Set("encrypt_new_tables", clusterTDEStatus["EncryptNewTables"])
+
 	return nil
 }
 
