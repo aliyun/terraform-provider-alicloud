@@ -128,6 +128,7 @@ func resourceAlicloudDBReadonlyInstanceCreate(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 
+	var response map[string]interface{}
 	action := "CreateReadOnlyDBInstance"
 	conn, err := client.NewRdsClient()
 	if err != nil {
@@ -135,11 +136,23 @@ func resourceAlicloudDBReadonlyInstanceCreate(d *schema.ResourceData, meta inter
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+
+	wait := incrementalWait(2*time.Second, 0*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"OperationDenied.PrimaryDBInstanceStatus"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	d.SetId(response["DBInstanceId"].(string))
 
 	// wait instance status change from Creating to running
