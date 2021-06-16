@@ -311,9 +311,9 @@ func (e ComplexError) Error() string {
 		e.Cause = Error("<nil cause>")
 	}
 	if e.Err == nil {
-		return fmt.Sprintf("[ERROR] %s:%d:\n%s", e.Path, e.Line, e.Cause.Error())
+		return fmt.Sprintf("\u001B[31m[ERROR]\u001B[0m %s:%d:\n%s", e.Path, e.Line, e.Cause.Error())
 	}
-	return fmt.Sprintf("[ERROR] %s:%d: %s:\n%s", e.Path, e.Line, e.Err.Error(), e.Cause.Error())
+	return fmt.Sprintf("\u001B[31m[ERROR]\u001B[0m %s:%d: %s:\n%s", e.Path, e.Line, e.Err.Error(), e.Cause.Error())
 }
 
 func Error(msg string, args ...interface{}) error {
@@ -327,7 +327,7 @@ func WrapError(cause error) error {
 	}
 	_, filepath, line, ok := runtime.Caller(1)
 	if !ok {
-		log.Printf("[ERROR] runtime.Caller error in WrapError.")
+		log.Printf("\u001B[31m[ERROR]\u001B[0m runtime.Caller error in WrapError.")
 		return WrapComplexError(cause, nil, "", -1)
 	}
 	parts := strings.Split(filepath, "/")
@@ -344,7 +344,7 @@ func WrapErrorf(cause error, msg string, args ...interface{}) error {
 	}
 	_, filepath, line, ok := runtime.Caller(1)
 	if !ok {
-		log.Printf("[ERROR] runtime.Caller error in WrapErrorf.")
+		log.Printf("\u001B[31m[ERROR]\u001B[0m runtime.Caller error in WrapErrorf.")
 		return WrapComplexError(cause, Error(msg), "", -1)
 	}
 	parts := strings.Split(filepath, "/")

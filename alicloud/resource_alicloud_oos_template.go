@@ -157,7 +157,9 @@ func resourceAlicloudOosTemplateRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("description", object["Description"])
 	d.Set("has_trigger", object["HasTrigger"])
 	d.Set("share_type", object["ShareType"])
-	d.Set("tags", object["Tags"])
+	if v, ok := object["Tags"].(map[string]interface{}); ok {
+		d.Set("tags", tagsToMap(v))
+	}
 	d.Set("template_format", object["TemplateFormat"])
 	d.Set("template_id", object["TemplateId"])
 	d.Set("template_type", object["TemplateType"])
