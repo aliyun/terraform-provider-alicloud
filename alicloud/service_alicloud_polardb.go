@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"encoding/json"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"regexp"
 	"strings"
 	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 
