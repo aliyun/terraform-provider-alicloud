@@ -75,23 +75,37 @@ func parsingTags(d *schema.ResourceData) (map[string]interface{}, []string) {
 
 func tagsToMap(tags interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
-	if tags == nil || len(tags.([]interface{})) < 1 {
+	if tags == nil {
 		return result
 	}
-	for _, tag := range tags.([]interface{}) {
-		t := tag.(map[string]interface{})
-		var tagKey string
-		var tagValue interface{}
-		if v, ok := t["TagKey"]; ok {
-			tagKey = v.(string)
-			tagValue = t["TagValue"]
-		} else if v, ok := t["Key"]; ok {
-			tagKey = v.(string)
-			tagValue = t["Value"]
+	switch v := tags.(type) {
+	case map[string]interface{}:
+		for key, value := range tags.(map[string]interface{}) {
+			if !tagIgnored(key, value) {
+				result[key] = value
+			}
 		}
-		if !tagIgnored(tagKey, tagValue) {
-			result[tagKey] = tagValue
+	case []interface{}:
+		if len(tags.([]interface{})) < 1 {
+			return result
 		}
+		for _, tag := range tags.([]interface{}) {
+			t := tag.(map[string]interface{})
+			var tagKey string
+			var tagValue interface{}
+			if v, ok := t["TagKey"]; ok {
+				tagKey = v.(string)
+				tagValue = t["TagValue"]
+			} else if v, ok := t["Key"]; ok {
+				tagKey = v.(string)
+				tagValue = t["Value"]
+			}
+			if !tagIgnored(tagKey, tagValue) {
+				result[tagKey] = tagValue
+			}
+		}
+	default:
+		log.Printf("\u001B[31m[ERROR]\u001B[0m Unknown tags type %s. The tags value is: %v.", v, tags)
 	}
 	return result
 }
