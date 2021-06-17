@@ -127,6 +127,9 @@ func resourceAlicloudLogAuditRead(d *schema.ResourceData, meta interface{}) erro
 	}
 	d.Set("display_name", displayName)
 	d.Set("aliuid", initMap["aliuid"].(string))
+	if multiAccount, ok := initMap["multi_account"]; ok {
+		d.Set("multi_account", analyzeMultiAccount(multiAccount.(string)))
+	}
 	delete(initMap, "region")
 	delete(initMap, "aliuid")
 	delete(initMap, "project")
@@ -156,4 +159,14 @@ func getInitParameter(rep string) (displayName string, initMap map[string]interf
 		}
 	}
 	return displayName, initMap, err
+}
+
+func analyzeMultiAccount(s string) []string {
+	var m []map[string]string
+	json.Unmarshal([]byte(s), &m)
+	multiAccount := make([]string, len(m))
+	for i := range m {
+		multiAccount[i] = m[i]["uid"]
+	}
+	return multiAccount
 }
