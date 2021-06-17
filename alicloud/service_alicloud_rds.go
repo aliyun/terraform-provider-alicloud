@@ -367,6 +367,10 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 		if err := s.WaitForDBParameter(d.Id(), DefaultTimeoutMedium, allConfig); err != nil {
 			return WrapError(err)
 		}
+		// wait instance status is Normal after modifying
+		if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
+			return WrapError(err)
+		}
 	}
 	d.SetPartial(attribute)
 	return nil
