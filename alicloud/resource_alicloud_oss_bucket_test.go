@@ -673,7 +673,6 @@ func TestAccAlicloudOssBucketCheckSseRule(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.OssSseSupportedRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,

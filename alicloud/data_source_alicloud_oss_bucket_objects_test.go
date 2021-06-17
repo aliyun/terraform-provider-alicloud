@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -170,7 +169,7 @@ func TestAccAlicloudOssBucketObjectsDataSource_versioning(t *testing.T) {
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
+		testAccPreCheck(t)
 	}
 
 	ossBucketObjectsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, bucketNameConf, keyRegexConf, keyPrefixConf, allConf)
