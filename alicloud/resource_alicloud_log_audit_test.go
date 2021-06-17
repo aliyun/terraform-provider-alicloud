@@ -60,6 +60,11 @@ func TestAccAlicloudLogAudit_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"multi_account": []string{"1234567", "123123123213", "123141412"},
 				}),
