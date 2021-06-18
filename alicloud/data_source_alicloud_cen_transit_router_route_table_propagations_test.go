@@ -48,8 +48,8 @@ func TestAccAlicloudCenTransitRouterRouteTablePropagationsDataSource(t *testing.
 		return map[string]string{
 			"ids.#":          "1",
 			"propagations.#": "1",
-			"propagations.0.transit_router_attachment_id":  CHECKSET,
-			"propagations.0.transit_router_route_table_id": CHECKSET,
+			"propagations.0.transit_router_attachment_id": CHECKSET,
+			//"propagations.0.transit_router_route_table_id": CHECKSET,
 		}
 	}
 	var fakeAlicloudCenTransitRouterRouteTablePropagationsDataSourceNameMapFunc = func(rand int) map[string]string {
