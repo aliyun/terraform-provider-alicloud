@@ -43,7 +43,7 @@ func dataSourceAlicloudCenTransitRouterVpcAttachments() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"transit_router_attachments": {
+			"attachments": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -229,7 +229,7 @@ func dataSourceAlicloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData
 		return WrapError(err)
 	}
 
-	if err := d.Set("transit_router_attachments", s); err != nil {
+	if err := d.Set("attachments", s); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

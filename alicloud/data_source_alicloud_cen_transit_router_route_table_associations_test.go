@@ -25,7 +25,7 @@ func TestAccAlicloudCenTransitRouterRouteTableAssociationsDataSource(t *testing.
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterRouteTableAssociationsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_cen_transit_router_route_table_association.default.transit_router_attachment_id}"]`,
-			"status": `"${alicloud_cen_transit_router_route_table_association.default.status}_fake"`,
+			"status": `"${alicloud_cen_transit_router_route_table_association.default.status}"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
@@ -35,15 +35,15 @@ func TestAccAlicloudCenTransitRouterRouteTableAssociationsDataSource(t *testing.
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterRouteTableAssociationsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_cen_transit_router_route_table_association.default.transit_router_attachment_id}_fake"]`,
-			"status": `"${alicloud_cen_transit_router_route_table_association.default.status}_fake"`,
+			"status": `"${alicloud_cen_transit_router_route_table_association.default.status}"`,
 		}),
 	}
 	var existAlicloudCenTransitRouterRouteTableAssociationsDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                         "1",
-			"transit_router_associations.#": "1",
-			"transit_router_associations.0.transit_router_attachment_id":  CHECKSET,
-			"transit_router_associations.0.transit_router_route_table_id": CHECKSET,
+			"ids.#":          "1",
+			"associations.#": "1",
+			"associations.0.transit_router_attachment_id":  CHECKSET,
+			"associations.0.transit_router_route_table_id": CHECKSET,
 		}
 	}
 	var fakeAlicloudCenTransitRouterRouteTableAssociationsDataSourceNameMapFunc = func(rand int) map[string]string {

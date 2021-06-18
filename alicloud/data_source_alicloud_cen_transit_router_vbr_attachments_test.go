@@ -12,10 +12,12 @@ func TestAccAlicloudCenTransitRouterVbrAttachmentsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterVbrAttachmentsDataSourceName(rand, map[string]string{
-			"ids": `["${alicloud_cen_transit_router_vbr_attachment.default.id}"]`,
+			"ids":    `["${alicloud_cen_transit_router_vbr_attachment.default.id}"]`,
+			"cen_id": `"${alicloud_cen_instance.default.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterVbrAttachmentsDataSourceName(rand, map[string]string{
-			"ids": `["${alicloud_cen_transit_router_vbr_attachment.default.id}_fake"]`,
+			"ids":    `["${alicloud_cen_transit_router_vbr_attachment.default.id}_fake"]`,
+			"cen_id": `"${alicloud_cen_instance.default.id}_fake"`,
 		}),
 	}
 	cenIdConf := dataSourceTestAccConfig{
@@ -45,7 +47,7 @@ func TestAccAlicloudCenTransitRouterVbrAttachmentsDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterVbrAttachmentsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_cen_transit_router_vbr_attachment.default.id}"]`,
-			"status": `"${alicloud_cen_transit_router_vbr_attachment.default.status}_fake"`,
+			"status": `"${alicloud_cen_transit_router_vbr_attachment.default.status}"`,
 		}),
 	}*/
 	allConf := dataSourceTestAccConfig{
@@ -58,20 +60,18 @@ func TestAccAlicloudCenTransitRouterVbrAttachmentsDataSource(t *testing.T) {
 		fakeConfig: testAccCheckAlicloudCenTransitRouterVbrAttachmentsDataSourceName(rand, map[string]string{
 			"cen_id":            `"${alicloud_cen_instance.default.id}_fake"`,
 			"ids":               `["${alicloud_cen_transit_router_vbr_attachment.default.id}_fake"]`,
-			"status":            `"${alicloud_cen_transit_router_vbr_attachment.default.status}_fake"`,
+			"status":            `"${alicloud_cen_transit_router_vbr_attachment.default.status}"`,
 			"transit_router_id": `"${alicloud_cen_transit_router.default.id}_fake"`,
 		}),
 	}
 	var existAlicloudCenTransitRouterVbrAttachmentsDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                        "1",
-			"transit_router_attachments.#": "1",
-			"transit_router_attachments.0.auto_publish_route_enabled":            `true`,
-			"transit_router_attachments.0.cen_id":                                CHECKSET,
-			"transit_router_attachments.0.transit_router_attachment_description": `desp`,
-			"transit_router_attachments.0.transit_router_attachment_name":        `name`,
-			"transit_router_attachments.0.transit_router_id":                     CHECKSET,
-			"transit_router_attachments.0.vbr_id":                                `vbr-j6cd9pm9y6d6e20atoi6w`,
+			"ids.#":         "1",
+			"attachments.#": "1",
+			"attachments.0.auto_publish_route_enabled":            `true`,
+			"attachments.0.transit_router_attachment_description": `desp`,
+			"attachments.0.transit_router_attachment_name":        `name`,
+			"attachments.0.vbr_id":                                `vbr-j6cd9pm9y6d6e20atoi6w`,
 		}
 	}
 	var fakeAlicloudCenTransitRouterVbrAttachmentsDataSourceNameMapFunc = func(rand int) map[string]string {

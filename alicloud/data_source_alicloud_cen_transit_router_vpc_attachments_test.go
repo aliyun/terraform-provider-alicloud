@@ -45,7 +45,7 @@ func TestAccAlicloudCenTransitRouterVpcAttachmentsDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterVpcAttachmentsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_cen_transit_router_vpc_attachment.default.id}"]`,
-			"status": `"${alicloud_cen_transit_router_vpc_attachment.default.status}_fake"`,
+			"status": `"${alicloud_cen_transit_router_vpc_attachment.default.status}"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
@@ -58,21 +58,19 @@ func TestAccAlicloudCenTransitRouterVpcAttachmentsDataSource(t *testing.T) {
 		fakeConfig: testAccCheckAlicloudCenTransitRouterVpcAttachmentsDataSourceName(rand, map[string]string{
 			"cen_id":            `"${alicloud_cen_instance.default.id}_fake"`,
 			"ids":               `["${alicloud_cen_transit_router_vpc_attachment.default.id}_fake"]`,
-			"status":            `"${alicloud_cen_transit_router_vpc_attachment.default.status}_fake"`,
+			"status":            `"${alicloud_cen_transit_router_vpc_attachment.default.status}"`,
 			"transit_router_id": `"${alicloud_cen_transit_router.default.id}_fake"`,
 		}),
 	}
 	var existAlicloudCenTransitRouterVpcAttachmentsDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                "1",
-			"attachments.#":        "1",
-			"attachments.0.cen_id": `cen-123`,
+			"ids.#":         "1",
+			"attachments.#": "1",
 			"attachments.0.transit_router_attachment_description": `descp`,
 			"attachments.0.transit_router_attachment_name":        `name`,
-			"attachments.0.transit_router_id":                     CHECKSET,
 			"attachments.0.vpc_id":                                CHECKSET,
-			"attachments.0.vpc_owner_id":                          `test`,
-			"attachments.0.zone_mappings":                         `[{"ZoneId":"zone-1","VSwitchId":"vsw-1"},{"ZoneId":"zone-2","VSwitchId":"vsw-2"}]`,
+			"attachments.0.vpc_owner_id":                          CHECKSET,
+			//"attachments.0.zone_mappings":                         `[{"ZoneId":"cn-hangzhou-h","VSwitchId":""},{"ZoneId":"cn-hangzhou-i","VSwitchId":"vsw-2"}]`,
 		}
 	}
 	var fakeAlicloudCenTransitRouterVpcAttachmentsDataSourceNameMapFunc = func(rand int) map[string]string {
