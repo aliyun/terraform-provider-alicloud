@@ -1,4 +1,21 @@
-## 1.124.3 (Unreleased)
+## 1.124.3 (June 18, 2021)
+
+ENHANCEMENTS:
+
+- resource/alicloud_ess_scalingconfiguration: Adds new attributes performance_level and system_disk_performance_level to support performance level ([#3632](https://github.com/aliyun/terraform-provider-alicloud/issues/3632))
+- resource/alicloud_polardb_cluster: Adds new attribute encrypt_new_tables ([#3630](https://github.com/aliyun/terraform-provider-alicloud/issues/3630))
+- datasource/alicloiud_db_instances: Outputs more attributes, like creator, delete_date, description, encryption_key, encryption_key_status and so on ([#3623](https://github.com/aliyun/terraform-provider-alicloud/issues/3623))
+
+BUG FIXES:
+
+- resource/alicloud_mse_cluster: Corrects the attribute cluster_specification valid values ([#3644](https://github.com/aliyun/terraform-provider-alicloud/issues/3644))
+- resource/alicloud_resource_manager_account: Fixes import resoruce failed cause by 'payer_account_id' ([#3643](https://github.com/aliyun/terraform-provider-alicloud/issues/3643))
+- resource/alicloud_snat_entry: Fixes the UnknownError when creating a new snat entry by adding Idempotent and retry strategy ([#3639](https://github.com/aliyun/terraform-provider-alicloud/issues/3639))
+- resource/alicloud_db_instance: Fixes the OperationDenied.DBInstanceStatus error after modifying parameters; Improves some testcases ([#3638](https://github.com/aliyun/terraform-provider-alicloud/issues/3638))
+- resource/alicloud_db_readonly_instance: Fixes the OperationDenied.PrimaryDBInstanceStatus by adding retry when it happened ([#3635](https://github.com/aliyun/terraform-provider-alicloud/issues/3635))
+- resource/alicloud_oos_template: Fixes the tags diff bug caused by without ingore system tags ([#3634](https://github.com/aliyun/terraform-provider-alicloud/issues/3634))
+- docs: Corrects the mse_cluster docs error ([#3636](https://github.com/aliyun/terraform-provider-alicloud/issues/3636))
+
 ## 1.124.2 (June 12, 2021)
 
 ENHANCEMENTS:
