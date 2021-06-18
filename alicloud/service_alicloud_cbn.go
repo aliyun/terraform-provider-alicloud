@@ -575,7 +575,7 @@ func (s *CbnService) CenRouteServiceStateRefreshFunc(id string, failStates []str
 	}
 }
 
-func (s *CbnService) DescribeCenTransitRouter(id string) (object map[string]interface{}, err error) {
+func (s *CbnService) DescribeCenTransitRouter(id string, cenId string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
@@ -583,8 +583,8 @@ func (s *CbnService) DescribeCenTransitRouter(id string) (object map[string]inte
 	}
 	action := "ListTransitRouters"
 	request := map[string]interface{}{
-		"RegionId":        s.client.RegionId,
 		"TransitRouterId": id,
+		"CenId":           cenId,
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -619,9 +619,9 @@ func (s *CbnService) DescribeCenTransitRouter(id string) (object map[string]inte
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterStateRefreshFunc(id string, cenId string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouter(id)
+		object, err := s.DescribeCenTransitRouter(id, cenId)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -638,7 +638,7 @@ func (s *CbnService) CenTransitRouterStateRefreshFunc(id string, failStates []st
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
-func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string) (object map[string]interface{}, err error) {
+func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string, cenId string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
@@ -647,6 +647,7 @@ func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string) (object m
 	action := "ListTransitRouterPeerAttachments"
 	request := map[string]interface{}{
 		"RegionId":                  s.client.RegionId,
+		"CenId":                     cenId,
 		"TransitRouterAttachmentId": id,
 	}
 	runtime := util.RuntimeOptions{}
@@ -682,9 +683,9 @@ func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string) (object m
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterPeerAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterPeerAttachmentStateRefreshFunc(id string, cenId string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterPeerAttachment(id)
+		object, err := s.DescribeCenTransitRouterPeerAttachment(id, cenId)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -701,7 +702,7 @@ func (s *CbnService) CenTransitRouterPeerAttachmentStateRefreshFunc(id string, f
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
-func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string) (object map[string]interface{}, err error) {
+func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string, cenId string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
@@ -711,6 +712,7 @@ func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string) (object ma
 	request := map[string]interface{}{
 		"RegionId":                  s.client.RegionId,
 		"TransitRouterAttachmentId": id,
+		"CenId":                     cenId,
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -745,9 +747,9 @@ func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string) (object ma
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterVbrAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterVbrAttachmentStateRefreshFunc(id string, cenId string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterVbrAttachment(id)
+		object, err := s.DescribeCenTransitRouterVbrAttachment(id, cenId)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -764,7 +766,7 @@ func (s *CbnService) CenTransitRouterVbrAttachmentStateRefreshFunc(id string, fa
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
-func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string) (object map[string]interface{}, err error) {
+func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string, cenId string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
@@ -774,6 +776,7 @@ func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string) (object ma
 	request := map[string]interface{}{
 		"RegionId":                  s.client.RegionId,
 		"TransitRouterAttachmentId": id,
+		"CenId":                     cenId,
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -808,9 +811,9 @@ func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string) (object ma
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, cenId string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterVpcAttachment(id)
+		object, err := s.DescribeCenTransitRouterVpcAttachment(id, cenId)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -827,7 +830,7 @@ func (s *CbnService) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, fa
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
-func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string) (object map[string]interface{}, err error) {
+func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string, transitRouterRouteTableId string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
@@ -835,7 +838,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string) (object map[s
 	}
 	action := "ListTransitRouterRouteEntries"
 	request := map[string]interface{}{
-		"RegionId":                   s.client.RegionId,
+		"TransitRouterRoutetableId":  transitRouterRouteTableId,
 		"TransitRouterRouteEntryIds": []string{id},
 	}
 	runtime := util.RuntimeOptions{}
@@ -871,9 +874,9 @@ func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string) (object map[s
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterRouteEntryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterRouteEntryStateRefreshFunc(id string, transitRouterRoutetableId string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterRouteEntry(id)
+		object, err := s.DescribeCenTransitRouterRouteEntry(id, transitRouterRoutetableId)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -890,7 +893,7 @@ func (s *CbnService) CenTransitRouterRouteEntryStateRefreshFunc(id string, failS
 		return object, fmt.Sprint(object["TransitRouterRouteEntryStatus"]), nil
 	}
 }
-func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[string]interface{}, err error) {
+func (s *CbnService) DescribeCenTransitRouterRouteTable(id string, transitRouterId string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
@@ -898,7 +901,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[s
 	}
 	action := "ListTransitRouterRouteTables"
 	request := map[string]interface{}{
-		"RegionId":                   s.client.RegionId,
+		"TransitRouterId":            transitRouterId,
 		"TransitRouterRouteTableIds": []string{id},
 	}
 	runtime := util.RuntimeOptions{}
@@ -934,9 +937,9 @@ func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[s
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterRouteTableStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterRouteTableStateRefreshFunc(id string, transitRouterId string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterRouteTable(id)
+		object, err := s.DescribeCenTransitRouterRouteTable(id, transitRouterId)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -966,7 +969,6 @@ func (s *CbnService) DescribeCenTransitRouterRouteTableAssociation(id string) (o
 		return
 	}
 	request := map[string]interface{}{
-		"RegionId":                  s.client.RegionId,
 		"TransitRouterAttachmentId": parts[1],
 		"TransitRouterRouteTableId": parts[0],
 	}
@@ -1035,7 +1037,6 @@ func (s *CbnService) DescribeCenTransitRouterRouteTablePropagation(id string) (o
 		return
 	}
 	request := map[string]interface{}{
-		"RegionId":                  s.client.RegionId,
 		"TransitRouterAttachmentId": parts[1],
 		"TransitRouterRouteTableId": parts[0],
 	}

@@ -38,7 +38,7 @@ func dataSourceAlicloudCenTransitRouterRouteTableAssociations() *schema.Resource
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"associations": {
+			"transit_router_associations": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -155,7 +155,7 @@ func dataSourceAlicloudCenTransitRouterRouteTableAssociationsRead(d *schema.Reso
 		return WrapError(err)
 	}
 
-	if err := d.Set("associations", s); err != nil {
+	if err := d.Set("transit_router_associations", s); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

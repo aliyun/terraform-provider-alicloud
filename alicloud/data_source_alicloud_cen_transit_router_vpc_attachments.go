@@ -43,7 +43,7 @@ func dataSourceAlicloudCenTransitRouterVpcAttachments() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"attachments": {
+			"transit_router_attachments": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -116,6 +116,7 @@ func dataSourceAlicloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData
 	if v, ok := d.GetOk("cen_id"); ok {
 		request["CenId"] = v
 	}
+	cenId := d.Get("cen_id").(string)
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("transit_router_id"); ok {
 		request["TransitRouterId"] = v
@@ -214,7 +215,7 @@ func dataSourceAlicloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData
 
 		cbnService := CbnService{client}
 		id := fmt.Sprint(object["TransitRouterAttachmentId"])
-		getResp, err := cbnService.DescribeCenTransitRouterVpcAttachment(id)
+		getResp, err := cbnService.DescribeCenTransitRouterVpcAttachment(id, cenId)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -228,7 +229,7 @@ func dataSourceAlicloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData
 		return WrapError(err)
 	}
 
-	if err := d.Set("attachments", s); err != nil {
+	if err := d.Set("transit_router_attachments", s); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

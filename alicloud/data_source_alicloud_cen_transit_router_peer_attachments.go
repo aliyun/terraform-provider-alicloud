@@ -27,6 +27,10 @@ func dataSourceAlicloudCenTransitRouterPeerAttachments() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Attached", "Attaching", "Detaching"}, false),
 			},
+			"transit_router_attachment_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -43,7 +47,7 @@ func dataSourceAlicloudCenTransitRouterPeerAttachments() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"attachments": {
+			"transit_router_attachments": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -123,6 +127,9 @@ func dataSourceAlicloudCenTransitRouterPeerAttachmentsRead(d *schema.ResourceDat
 	if v, ok := d.GetOk("transit_router_id"); ok {
 		request["TransitRouterId"] = v
 	}
+	if v, ok := d.GetOk("transit_router_attachment_id"); ok {
+		request["TransitRouterAttachmentId"] = v
+	}
 	request["MaxResults"] = PageSizeLarge
 	var objects []map[string]interface{}
 
@@ -197,10 +204,10 @@ func dataSourceAlicloudCenTransitRouterPeerAttachmentsRead(d *schema.ResourceDat
 			"resource_type":                         object["ResourceType"],
 			"status":                                object["Status"],
 			"transit_router_attachment_description": object["TransitRouterAttachmentDescription"],
-			"id":                                    fmt.Sprint(object["TransitRouterAttachmentId"]),
-			"transit_router_attachment_id":          fmt.Sprint(object["TransitRouterAttachmentId"]),
-			"transit_router_attachment_name":        object["TransitRouterAttachmentName"],
-			"transit_router_id":                     object["TransitRouterId"],
+			//"id":                                    fmt.Sprint(object["TransitRouterAttachmentId"]),
+			"transit_router_attachment_id":   fmt.Sprint(object["TransitRouterAttachmentId"]),
+			"transit_router_attachment_name": object["TransitRouterAttachmentName"],
+			"transit_router_id":              object["TransitRouterId"],
 		}
 		ids = append(ids, fmt.Sprint(object["TransitRouterAttachmentId"]))
 		s = append(s, mapping)
@@ -211,7 +218,7 @@ func dataSourceAlicloudCenTransitRouterPeerAttachmentsRead(d *schema.ResourceDat
 		return WrapError(err)
 	}
 
-	if err := d.Set("attachments", s); err != nil {
+	if err := d.Set("transit_router_attachments", s); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

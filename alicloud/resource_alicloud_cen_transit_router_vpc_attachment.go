@@ -33,7 +33,7 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 			},
 			"cen_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"charge_type": {
@@ -123,10 +123,8 @@ func resourceAlicloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 	if v, ok := d.GetOkExists("auto_create_vpc_route"); ok {
 		request["AutoCreateVpcRoute"] = v
 	}
-
-	if v, ok := d.GetOk("cen_id"); ok {
-		request["CenId"] = v
-	}
+	request["CenId"] = d.Get("cen_id")
+	cenId := d.Get("cen_id").(string)
 
 	if v, ok := d.GetOk("charge_type"); ok {
 		request["ChargeType"] = v
@@ -174,7 +172,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 		zoneMappingsMap["ZoneId"] = zoneMappingsArg["zone_id"]
 		zoneMappingsMaps = append(zoneMappingsMaps, zoneMappingsMap)
 	}
-	request[""] = zoneMappingsMaps
+	request["ZoneMappings"] = zoneMappingsMaps
 
 	request["ClientToken"] = buildClientToken("CreateTransitRouterVpcAttachment")
 	runtime := util.RuntimeOptions{}
@@ -197,7 +195,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 	}
 
 	d.SetId(fmt.Sprint(response["TransitRouterAttachmentId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterVpcAttachmentStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterVpcAttachmentStateRefreshFunc(d.Id(), cenId, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -207,7 +205,8 @@ func resourceAlicloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 func resourceAlicloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
-	object, err := cbnService.DescribeCenTransitRouterVpcAttachment(d.Id())
+	cenId := d.Get("cen_id").(string)
+	object, err := cbnService.DescribeCenTransitRouterVpcAttachment(d.Id(), cenId)
 	if err != nil {
 		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cen_transit_router_vpc_attachment cbnService.DescribeCenTransitRouterVpcAttachment Failed!!! %s", err)
@@ -246,6 +245,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 	cbnService := CbnService{client}
 	var response map[string]interface{}
 	update := false
+	cenId := d.Get("cen_id").(string)
 	request := map[string]interface{}{
 		"TransitRouterAttachmentId": d.Id(),
 	}
@@ -286,7 +286,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cbnService.CenTransitRouterVpcAttachmentStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cbnService.CenTransitRouterVpcAttachmentStateRefreshFunc(d.Id(), cenId, []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -302,6 +302,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentDelete(d *schema.ResourceData,
 	if err != nil {
 		return WrapError(err)
 	}
+	cenId := d.Get("cen_id").(string)
 	request := map[string]interface{}{
 		"TransitRouterAttachmentId": d.Id(),
 	}
@@ -328,7 +329,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentDelete(d *schema.ResourceData,
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cbnService.CenTransitRouterVpcAttachmentStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cbnService.CenTransitRouterVpcAttachmentStateRefreshFunc(d.Id(), cenId, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

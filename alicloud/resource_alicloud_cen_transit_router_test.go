@@ -32,13 +32,17 @@ func TestAccAlicloudCenTransitRouter_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cen_id":              "${alicloud_cen_instance.default.id}",
-					"transit_router_name": "${var.name}",
+					"cen_id":                     "${alicloud_cen_instance.default.id}",
+					"region_id":                  "cn-hangzhou",
+					"transit_router_name":        "${var.name}",
+					"transit_router_description": "tf",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cen_id":              CHECKSET,
-						"transit_router_name": name,
+						"cen_id":                     CHECKSET,
+						"region_id":                  "cn-hangzhou",
+						"transit_router_name":        name,
+						"transit_router_description": "tf",
 					}),
 				),
 			},

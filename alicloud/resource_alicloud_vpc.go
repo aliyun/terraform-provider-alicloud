@@ -135,8 +135,12 @@ func resourceAlicloudVpcCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOkExists("enable_ipv6"); ok {
 		request["EnableIpv6"] = v
 	}
+	if v, ok := d.GetOkExists("region_id"); ok {
+		request["RegionId"] = v
+	} else {
+		request["RegionId"] = client.RegionId
+	}
 
-	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}

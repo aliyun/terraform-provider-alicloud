@@ -28,12 +28,15 @@ func dataSourceAlicloudCenTransitRouters() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Active", "Creating", "Deleting", "Updating"}, false),
 			},
-			"ids": {
+			"transit_router_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"transit_router_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -41,16 +44,16 @@ func dataSourceAlicloudCenTransitRouters() *schema.Resource {
 				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
 			},
-			"names": {
+			/*	"names": {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-			},
+			},*/
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"routers": {
+			"transit_routers": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -71,10 +74,10 @@ func dataSourceAlicloudCenTransitRouters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"id": {
+						/*	"id": {
 							Type:     schema.TypeString,
 							Computed: true,
-						},
+						},*/
 						"transit_router_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -107,6 +110,7 @@ func dataSourceAlicloudCenTransitRoutersRead(d *schema.ResourceData, meta interf
 	request["RegionId"] = client.RegionId
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
+	request["TransitRouterId"] = d.Get("transit_router_id")
 	var objects []map[string]interface{}
 	var transitRouterNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -118,7 +122,7 @@ func dataSourceAlicloudCenTransitRoutersRead(d *schema.ResourceData, meta interf
 	}
 
 	idsMap := make(map[string]string)
-	if v, ok := d.GetOk("ids"); ok {
+	if v, ok := d.GetOk("transit_router_ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			if vv == nil {
 				continue
@@ -126,6 +130,7 @@ func dataSourceAlicloudCenTransitRoutersRead(d *schema.ResourceData, meta interf
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+	request["TransitRouterIds"] = idsMap
 	status, statusOk := d.GetOk("status")
 	var response map[string]interface{}
 	conn, err := client.NewCbnClient()
@@ -187,11 +192,11 @@ func dataSourceAlicloudCenTransitRoutersRead(d *schema.ResourceData, meta interf
 			"cen_id":                     object["CenId"],
 			"status":                     object["Status"],
 			"transit_router_description": object["TransitRouterDescription"],
-			"id":                         fmt.Sprint(object["TransitRouterId"]),
-			"transit_router_id":          fmt.Sprint(object["TransitRouterId"]),
-			"transit_router_name":        object["TransitRouterName"],
-			"type":                       object["Type"],
-			"xgw_vip":                    object["XgwVip"],
+			//"id":                         fmt.Sprint(object["TransitRouterId"]),
+			"transit_router_id":   fmt.Sprint(object["TransitRouterId"]),
+			"transit_router_name": object["TransitRouterName"],
+			"type":                object["Type"],
+			"xgw_vip":             object["XgwVip"],
 		}
 		ids = append(ids, fmt.Sprint(object["TransitRouterId"]))
 		names = append(names, object["TransitRouterName"])
@@ -199,15 +204,15 @@ func dataSourceAlicloudCenTransitRoutersRead(d *schema.ResourceData, meta interf
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
-	}
+	/*	if err := d.Set("ids", ids); err != nil {
+			return WrapError(err)
+		}
 
-	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
-	}
+		if err := d.Set("names", names); err != nil {
+			return WrapError(err)
+		}*/
 
-	if err := d.Set("routers", s); err != nil {
+	if err := d.Set("transit_routers", s); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
