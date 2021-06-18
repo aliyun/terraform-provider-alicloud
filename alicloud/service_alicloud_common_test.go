@@ -598,6 +598,7 @@ func (s *VpcService) needSweepVpc(vpcId, vswitchId string) (bool, error) {
 		}
 		vpcId = fmt.Sprint(object["VpcId"])
 	}
+
 	if vpcId != "" {
 		object, err := s.DescribeVpc(vpcId)
 		if err != nil {

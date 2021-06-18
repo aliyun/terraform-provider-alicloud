@@ -43,7 +43,7 @@ func dataSourceAlicloudCenTransitRouterVbrAttachments() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"attachments": {
+			"transit_router_attachments": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
