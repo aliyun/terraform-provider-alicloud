@@ -343,16 +343,25 @@ func (s *VpcService) DescribeSnatEntry(id string) (object map[string]interface{}
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidRegionId.NotFound", "InvalidSnatEntryId.NotFound", "InvalidSnatTableId.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("SnatEntry", id)), NotFoundMsg, ProviderERROR)
-			return object, err
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
-	}
+		return nil
+	})
 	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidSnatEntryId.NotFound", "InvalidSnatTableId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("VPC:SnatEntry", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
 	v, err := jsonpath.Get("$.SnatTableEntries.SnatTableEntry", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SnatTableEntries.SnatTableEntry", response)
@@ -1590,11 +1599,11 @@ func (s *VpcService) SnatEntryStateRefreshFunc(id string, failStates []string) r
 		}
 
 		for _, failState := range failStates {
-			if object["Status"].(string) == failState {
-				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
-		return object, object["Status"].(string), nil
+		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
 

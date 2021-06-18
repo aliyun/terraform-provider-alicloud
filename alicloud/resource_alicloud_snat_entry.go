@@ -79,30 +79,30 @@ func resourceAlicloudSnatEntryCreate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("snat_entry_name"); ok {
 		request["SnatEntryName"] = v
 	}
-
 	request["SnatIp"] = d.Get("snat_ip")
 	request["SnatTableId"] = d.Get("snat_table_id")
 	if v, ok := d.GetOk("source_cidr"); ok {
 		request["SourceCIDR"] = v
 	}
-
 	if v, ok := d.GetOk("source_vswitch_id"); ok {
 		request["SourceVSwitchId"] = v
 	}
-
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 10*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		request["ClientToken"] = buildClientToken("CreateSnatEntry")
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EIP_NOT_IN_GATEWAY", "OperationUnsupported.EipInBinding", "OperationUnsupported.EipNatBWPCheck", "InternalError"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"EIP_NOT_IN_GATEWAY", "InternalError", "OperationUnsupported.EipInBinding", "OperationUnsupported.EipNatBWPCheck", "UnknownError"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_snat_entry", action, AlibabaCloudSdkGoERROR)
 	}
@@ -113,7 +113,7 @@ func resourceAlicloudSnatEntryCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudSnatEntryRead(d, meta)
+	return resourceAlicloudSnatEntryUpdate(d, meta)
 }
 func resourceAlicloudSnatEntryRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -159,25 +159,24 @@ func resourceAlicloudSnatEntryUpdate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapError(err)
 	}
-	update := false
-	request := map[string]interface{}{
-		"SnatEntryId": parts[1],
-		"SnatTableId": parts[0],
-	}
-	request["RegionId"] = client.RegionId
-	if d.HasChange("snat_entry_name") {
-		update = true
+	if !d.IsNewResource() && d.HasChange("snat_entry_name") {
+		request := map[string]interface{}{
+			"SnatEntryId": parts[1],
+			"SnatTableId": parts[0],
+		}
+		request["RegionId"] = client.RegionId
 		request["SnatEntryName"] = d.Get("snat_entry_name")
-	}
-	if update {
 		action := "ModifySnatEntry"
 		conn, err := client.NewVpcClient()
 		if err != nil {
 			return WrapError(err)
 		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			request["ClientToken"] = buildClientToken("ModifySnatEntry")
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -185,9 +184,9 @@ func resourceAlicloudSnatEntryUpdate(d *schema.ResourceData, meta interface{}) e
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -221,9 +220,12 @@ func resourceAlicloudSnatEntryDelete(d *schema.ResourceData, meta interface{}) e
 	}
 
 	request["RegionId"] = client.RegionId
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 10*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		request["ClientToken"] = buildClientToken("DeleteSnatEntry")
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorretSnatEntryStatus"}) || NeedRetry(err) {
 				wait()
@@ -231,11 +233,11 @@ func resourceAlicloudSnatEntryDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidRegionId.NotFound", "InvalidSnatEntryId.NotFound", "InvalidSnatTableId.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidSnatEntryId.NotFound", "InvalidSnatTableId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
