@@ -2,10 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -64,6 +66,10 @@ func dataSourceAlicloudResourceManagerAccounts() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"payer_account_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"resource_directory_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -78,6 +84,11 @@ func dataSourceAlicloudResourceManagerAccounts() *schema.Resource {
 						},
 					},
 				},
+			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -110,12 +121,22 @@ func dataSourceAlicloudResourceManagerAccountsRead(d *schema.ResourceData, meta 
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_accounts", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
-
 		resp, err := jsonpath.Get("$.Accounts.Account", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Accounts.Account", response)
@@ -153,7 +174,20 @@ func dataSourceAlicloudResourceManagerAccountsRead(d *schema.ResourceData, meta 
 			"status":                object["Status"],
 			"type":                  object["Type"],
 		}
-		ids = append(ids, fmt.Sprint(object["AccountId"]))
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			ids = append(ids, fmt.Sprint(object["AccountId"]))
+			s = append(s, mapping)
+			continue
+		}
+
+		resourcemanagerService := ResourcemanagerService{client}
+		id := fmt.Sprint(object["AccountId"])
+		getResp, err := resourcemanagerService.GetPayerForAccount(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		mapping["payer_account_id"] = getResp["PayerAccountId"]
+		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
 	}
 
