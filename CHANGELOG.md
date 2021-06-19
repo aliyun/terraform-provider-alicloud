@@ -3,6 +3,7 @@
 
 ENHANCEMENTS:
 
+- resource/alicloud_log_audit: Returns the multi accounts while setting it into state ([#3637](https://github.com/aliyun/terraform-provider-alicloud/issues/3637))
 - resource/alicloud_ess_scalingconfiguration: Adds new attributes performance_level and system_disk_performance_level to support performance level ([#3632](https://github.com/aliyun/terraform-provider-alicloud/issues/3632))
 - resource/alicloud_polardb_cluster: Adds new attribute encrypt_new_tables ([#3630](https://github.com/aliyun/terraform-provider-alicloud/issues/3630))
 - datasource/alicloiud_db_instances: Outputs more attributes, like creator, delete_date, description, encryption_key, encryption_key_status and so on ([#3623](https://github.com/aliyun/terraform-provider-alicloud/issues/3623))
