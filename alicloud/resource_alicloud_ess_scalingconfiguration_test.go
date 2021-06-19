@@ -448,7 +448,6 @@ func TestAccAlicloudEssScalingConfigurationPerformanceLevel(t *testing.T) {
 					}),
 				),
 			},
-
 		},
 	})
 }

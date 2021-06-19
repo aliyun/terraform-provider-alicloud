@@ -1,7 +1,8 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -34,35 +35,68 @@ func testSweepKmsSecret(region string) error {
 		"tf_testacc",
 	}
 
-	req := kms.CreateListSecretsRequest()
-	req.PageSize = requests.NewInteger(100)
-	raw, err := client.WithKmsClient(func(kmsclient *kms.Client) (interface{}, error) {
-		return kmsclient.ListSecrets(req)
-	})
-	if err != nil {
-		log.Printf("[ERROR] %s got an error: %v\n.", req.GetActionName(), err)
+	request := map[string]interface{}{
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+		"RegionId":   client.RegionId,
 	}
-	secrets := raw.(*kms.ListSecretsResponse)
+	action := "ListSecrets"
+
+	var response map[string]interface{}
+	conn, err := client.NewKmsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	swept := false
 
-	for _, v := range secrets.SecretList.Secret {
-		log.Printf("[DEBUG] Prepare to delete secret %s", v)
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(v.SecretName), prefix) {
-				req := kms.CreateDeleteSecretRequest()
-				req.SecretName = v.SecretName
-				req.ForceDeleteWithoutRecovery = "true"
-				raw, err = client.WithKmsClient(func(kmsclient *kms.Client) (interface{}, error) {
-					return kmsclient.DeleteSecret(req)
-				})
-				swept = true
-				if err != nil {
-					log.Printf("[ERROR] %s got an error: %v\n.", req.GetActionName(), err)
-				}
-				break
-			}
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, SweepDefaultErrorMsg, "alicloud_kms_secret", action)
 		}
+		addDebug(action, response, request)
+
+		resp, err := jsonpath.Get("$.SecretList.Secret", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.SecretList.Secret", response)
+		}
+
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			skip := true
+			if _, ok := item["SecretName"]; !ok {
+				continue
+			}
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(item["SecretName"].(string)), strings.ToLower(prefix)) {
+					skip = false
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Kms Secret: %s", item["SecretName"].(string))
+				continue
+			}
+			swept = true
+			action = "DeleteSecret"
+			request := map[string]interface{}{
+				"SecretName":                 item["SecretName"],
+				"ForceDeleteWithoutRecovery": true,
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Kms Secret (%s): %s", item["SecretName"].(string), err)
+			}
+			log.Printf("[INFO] Delete Kms Secret success: %s ", item["SecretName"].(string))
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
+
 	if swept {
 		time.Sleep(3 * time.Second)
 	}
