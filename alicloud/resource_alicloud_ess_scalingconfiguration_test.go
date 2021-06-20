@@ -550,7 +550,7 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 	resource "alicloud_kms_key" "key" {
-		description             = "Hello KMS"
+		description             = var.name
 		pending_window_in_days  = "7"
 		key_state               = "Enabled"
 	}
