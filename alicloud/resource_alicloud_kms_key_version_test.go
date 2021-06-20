@@ -12,9 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudKMSKeyVersion_basic(t *testing.T) {
-	var v kms.DescribeKeyVersionResponse
-	var l kms.KeyVersion
+func TestAccAlicloudKmsKeyVersion_basic(t *testing.T) {
+	var v map[string]interface{}
 	resourceId := "alicloud_kms_key_version.default"
 	ra := resourceAttrInit(resourceId, KmsKeyVersionMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -39,7 +38,7 @@ func TestAccAlicloudKMSKeyVersion_basic(t *testing.T) {
 					"key_id": os.Getenv("ALICLOUD_KMS_KEY_ID"),
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckKmsKeyVersionExists(resourceId, &l),
+					//testAccCheckKmsKeyVersionExists(resourceId, &l),
 					testAccCheck(KmsKeyVersionMap),
 				),
 			},
@@ -53,8 +52,8 @@ func TestAccAlicloudKMSKeyVersion_basic(t *testing.T) {
 }
 
 var KmsKeyVersionMap = map[string]string{
-	"creation_date": CHECKSET,
-	"key_id":        CHECKSET,
+	"key_version_id": CHECKSET,
+	"key_id":         CHECKSET,
 }
 
 func testAccCheckKmsKeyVersionExists(n string, kv *kms.KeyVersion) resource.TestCheckFunc {

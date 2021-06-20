@@ -215,27 +215,47 @@ func (s *KmsService) DescribeKmsAlias(id string) (object map[string]interface{},
 	return
 }
 
-func (s *KmsService) DescribeKmsKeyVersion(id string) (object kms.DescribeKeyVersionResponse, err error) {
+func (s *KmsService) DescribeKmsKeyVersion(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewKmsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeKeyVersion"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-	request := kms.CreateDescribeKeyVersionRequest()
-	request.RegionId = s.client.RegionId
-	request.KeyId = parts[0]
-	request.KeyVersionId = parts[1]
-
-	raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-		return kmsClient.DescribeKeyVersion(request)
-	})
-	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"KeyId":        parts[0],
+		"KeyVersionId": parts[1],
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*kms.DescribeKeyVersionResponse)
-	return *response, nil
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.KeyVersion", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.KeyVersion", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }
 
 func (s *KmsService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
