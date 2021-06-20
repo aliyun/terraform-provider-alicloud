@@ -39,6 +39,7 @@ func TestAccAlicloudKmsPlaintextDataSource(t *testing.T) {
 func dataSourceKmsPlaintextDependence(name string) string {
 	return `
 	resource "alicloud_kms_key" "default" {
+        description = "tf-testacckmskeyforplantexttest"
     	is_enabled = true
 		pending_window_in_days = 7
 	}
