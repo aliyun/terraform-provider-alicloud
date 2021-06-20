@@ -289,7 +289,7 @@ data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 resource "alicloud_kms_key" "key" {
-	description             = "Hello KMS"
+	description             = var.name
 	pending_window_in_days  = "7"
 	key_state               = "Enabled"
 }

@@ -49,6 +49,7 @@ func TestAccAlicloudKmsCiphertextDataSource(t *testing.T) {
 func dataSourceKmsCiphertextDependence(name string) string {
 	return `
 	resource "alicloud_kms_key" "default" {
+		description = "tf-testacckmskeyforCiphertest"
     	is_enabled = true
 		pending_window_in_days = 7
 	}

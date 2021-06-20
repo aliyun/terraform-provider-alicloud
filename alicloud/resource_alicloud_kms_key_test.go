@@ -19,6 +19,9 @@ func init() {
 	resource.AddTestSweepers("alicloud_kms_key", &resource.Sweeper{
 		Name: "alicloud_kms_key",
 		F:    testSweepKmsKey,
+		Dependencies: []string{
+			"alicloud_kms_alias",
+		},
 	})
 }
 
@@ -85,9 +88,9 @@ func testSweepKmsKey(region string) error {
 			}
 			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Kms Key (%s): %s", item["Description"].(string), err)
+				log.Printf("[ERROR] Failed to delete Kms Key (%s): %s", item["Description"], err)
 			}
-			log.Printf("[INFO] Delete Kms Key success: %s ", item["Description"].(string))
+			log.Printf("[INFO] Delete Kms Key success: %s ", item["Description"])
 		}
 		if len(result) < PageSizeLarge {
 			break

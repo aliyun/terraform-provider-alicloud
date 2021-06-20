@@ -30,7 +30,7 @@ func TestAccAlicloudKmsKeyVersionsDataSource(t *testing.T) {
 			"ids.#":                     "1",
 			"ids.0":                     CHECKSET,
 			"versions.#":                "1",
-			"versions.0.creation_date":  CHECKSET,
+			"versions.0.create_time":  CHECKSET,
 			"versions.0.key_version_id": CHECKSET,
 		}
 	}

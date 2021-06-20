@@ -11,7 +11,7 @@ func TestAccAlicloudKmsAliasesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_kms_aliases.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, fmt.Sprintf("alias/test_kms_ali%d", rand), dataSourceKmsAliasesDependence)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, fmt.Sprintf("alias/tf_testacc_%d", rand), dataSourceKmsAliasesDependence)
 
 	NameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -72,6 +72,7 @@ func TestAccAlicloudKmsAliasesDataSource(t *testing.T) {
 func dataSourceKmsAliasesDependence(name string) string {
 	return fmt.Sprintf(`
     resource "alicloud_kms_key" "this" {
+		description = "tf-testacckmskeyforaliasdatasource"
 		pending_window_in_days = 7
 	}
 
