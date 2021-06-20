@@ -3,7 +3,6 @@ package alicloud
 import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -104,7 +103,7 @@ func testSweepKmsSecret(region string) error {
 }
 
 func TestAccAlicloudKmsSecret_Basic(t *testing.T) {
-	var v kms.DescribeSecretResponse
+	var v map[string]interface{}
 
 	resourceId := "alicloud_kms_secret.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
@@ -234,7 +233,7 @@ func TestAccAlicloudKmsSecret_Basic(t *testing.T) {
 }
 
 func TestAccAlicloudKmsSecret_WithKey(t *testing.T) {
-	var v kms.DescribeSecretResponse
+	var v map[string]interface{}
 
 	resourceId := "alicloud_kms_secret.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
