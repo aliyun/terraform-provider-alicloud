@@ -100,7 +100,7 @@ func testSweepKmsKey(region string) error {
 	return nil
 }
 
-func TestAccAlicloudKMSKey_basic(t *testing.T) {
+func TestAccAlicloudKmsKey_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_key.default"
 	ra := resourceAttrInit(resourceId, KmsKeyMap)
