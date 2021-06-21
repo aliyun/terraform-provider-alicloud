@@ -41,6 +41,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` -  A list of KMS KeyVersion IDs.
 * `versions` - A list of KMS KeyVersions. Each element contains the following attributes:
+  * `creation_date` - (Removed from v1.125.0) It has been removed and using `create_time` instead.
   * `create_time` - Date and time when the key version was created (UTC time).
   * `key_id` - ID of the key.
   * `id` - ID of the KMS KeyVersion resource.
