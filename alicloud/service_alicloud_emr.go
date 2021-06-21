@@ -3,6 +3,9 @@ package alicloud
 import (
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
@@ -12,6 +15,28 @@ import (
 
 type EmrService struct {
 	client *connectivity.AliyunClient
+}
+
+// CreateClusterHostGroupRequest is the request struct for api CreateClusterHostGroup
+type CreateClusterHostGroupRequest struct {
+	*requests.RpcRequest
+	ResourceOwnerId requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	HostGroupParams string           `position:"Query" name:"HostGroupParams"`
+	SecurityGroupId string           `position:"Query" name:"SecurityGroupId"`
+	HostGroupName   string           `position:"Query" name:"HostGroupName"`
+	ClusterId       string           `position:"Query" name:"ClusterId"`
+	VswitchId       string           `position:"Query" name:"VswitchId"`
+	Comment         string           `position:"Query" name:"Comment"`
+	PayType         string           `position:"Query" name:"PayType"`
+	HostGroupType   string           `position:"Query" name:"HostGroupType"`
+}
+
+// CreateClusterHostGroupResponse is the response struct for api CreateClusterHostGroup
+type CreateClusterHostGroupResponse struct {
+	*responses.BaseResponse
+	RequestId   string `json:"RequestId" xml:"RequestId"`
+	ClusterId   string `json:"ClusterId" xml:"ClusterId"`
+	HostGroupId string `json:"HostGroupId" xml:"HostGroupId"`
 }
 
 func (s *EmrService) DescribeEmrCluster(id string) (*emr.DescribeClusterV2Response, error) {
@@ -186,4 +211,35 @@ func (s *EmrService) tagsToMap(tags []emr.TagResource) map[string]string {
 		result[t.TagKey] = t.TagValue
 	}
 	return result
+}
+
+func (s *EmrService) CreateClusterHostGroup(request *CreateClusterHostGroupRequest) (response *CreateClusterHostGroupResponse, err error) {
+	response = CreateCreateClusterHostGroupResponse()
+	_, err = s.client.WithEmrClient(func(client *emr.Client) (interface{}, error) {
+		return nil, client.DoAction(request, response)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, request.ClusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), response, request.RpcRequest, request)
+	return
+}
+
+// CreateCreateClusterHostGroupRequest creates a request to invoke CreateClusterHostGroup API
+func CreateCreateClusterHostGroupRequest() (request *CreateClusterHostGroupRequest) {
+	request = &CreateClusterHostGroupRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Emr", "2016-04-08", "CreateClusterHostGroup", "", "")
+	request.Method = requests.POST
+	return
+}
+
+// CreateCreateClusterHostGroupResponse creates a response to parse from CreateClusterHostGroup response
+func CreateCreateClusterHostGroupResponse() (response *CreateClusterHostGroupResponse) {
+	response = &CreateClusterHostGroupResponse{
+		BaseResponse: &responses.BaseResponse{},
+	}
+	return
 }

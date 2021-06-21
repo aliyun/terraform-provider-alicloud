@@ -572,6 +572,10 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 
 				resp := raw.(*emr.ListClusterHostGroupResponse)
+				if len(resp.HostGroupList.HostGroup) == 0 {
+					continue
+				}
+
 				hostGroupId := resp.HostGroupList.HostGroup[0].HostGroupId
 				oldNodeCount := resp.HostGroupList.HostGroup[0].NodeCount
 
@@ -584,6 +588,13 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 					resizeHostGroup.NodeCount = strconv.Itoa(count)
 					resizeHostGroup.InstanceType = v1["instance_type"].(string)
 					resizeHostGroup.HostGroupType = v1["host_group_type"].(string)
+					resizeHostGroup.HostGroupName = k
+					resizeHostGroup.ChargeType = v1["charge_type"].(string)
+					resizeHostGroup.SysDiskType = v1["sys_disk_type"].(string)
+					resizeHostGroup.SysDiskCapacity = v1["sys_disk_capacity"].(string)
+					resizeHostGroup.DiskType = v1["disk_type"].(string)
+					resizeHostGroup.DiskCount = v1["disk_count"].(string)
+					resizeHostGroup.DiskCapacity = v1["disk_capacity"].(string)
 
 					resizeHostGroups = append(resizeHostGroups, resizeHostGroup)
 				} else if oldNodeCount > newNodeCount { //scale down
@@ -598,6 +609,52 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 						return WrapErrorf(err, DefaultErrorMsg, "alicloud_emr_cluster", releaseRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 					}
 				}
+			} else { // 'Task' HostGroupType may not exist when create emr_cluster
+				clusterHostGroupRequest := CreateCreateClusterHostGroupRequest()
+				clusterHostGroupRequest.ClusterId = d.Id()
+				clusterHostGroupRequest.HostGroupType = v1["host_group_type"].(string)
+				clusterHostGroupRequest.HostGroupName = k
+				createClusterHostGroupResponse, err := emrService.CreateClusterHostGroup(clusterHostGroupRequest)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, "alicloud_emr_cluster", clusterHostGroupRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+				addDebug(clusterHostGroupRequest.GetActionName(), createClusterHostGroupResponse, clusterHostGroupRequest.RpcRequest, clusterHostGroupRequest)
+
+				listHostGroupRequest := emr.CreateListClusterHostGroupRequest()
+				listHostGroupRequest.ClusterId = d.Id()
+				listHostGroupRequest.HostGroupName = k
+
+				raw, err := client.WithEmrClient(func(emrClient *emr.Client) (interface{}, error) {
+					return emrClient.ListClusterHostGroup(listHostGroupRequest)
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, "alicloud_emr_cluster", listHostGroupRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+				listHostGroupResponse := raw.(*emr.ListClusterHostGroupResponse)
+				if len(listHostGroupResponse.HostGroupList.HostGroup) == 0 {
+					continue
+				}
+				hostGroupId := listHostGroupResponse.HostGroupList.HostGroup[0].HostGroupId
+
+				newNodeCount, _ := strconv.Atoi(v1["node_count"].(string))
+				if newNodeCount <= 0 {
+					return WrapError(Error("emr cluster can not resize with 0 Task node, must greater than 0."))
+				}
+				resizeHostGroup := emr.ResizeClusterV2HostGroup{}
+				resizeHostGroup.ClusterId = d.Id()
+				resizeHostGroup.HostGroupId = hostGroupId
+				resizeHostGroup.HostGroupName = k
+				resizeHostGroup.NodeCount = strconv.Itoa(newNodeCount)
+				resizeHostGroup.ChargeType = v1["charge_type"].(string)
+				resizeHostGroup.InstanceType = v1["instance_type"].(string)
+				resizeHostGroup.HostGroupType = v1["host_group_type"].(string)
+				resizeHostGroup.SysDiskType = v1["sys_disk_type"].(string)
+				resizeHostGroup.SysDiskCapacity = v1["sys_disk_capacity"].(string)
+				resizeHostGroup.DiskType = v1["disk_type"].(string)
+				resizeHostGroup.DiskCount = v1["disk_count"].(string)
+				resizeHostGroup.DiskCapacity = v1["disk_capacity"].(string)
+
+				resizeHostGroups = append(resizeHostGroups, resizeHostGroup)
 			}
 		}
 
