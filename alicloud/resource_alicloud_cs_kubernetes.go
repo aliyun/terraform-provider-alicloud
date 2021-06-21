@@ -867,7 +867,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 					if err != nil {
 						return WrapError(err)
 					}
-					password = decryptResp.Plaintext
+					password = decryptResp
 				}
 			}
 
@@ -1556,7 +1556,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			if err != nil {
 				return nil, WrapError(err)
 			}
-			password = decryptResp.Plaintext
+			password = decryptResp
 		}
 		creationArgs.LoginPassword = password
 	} else {

@@ -83,7 +83,7 @@ func resourceAlicloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapError(err)
 		}
-		request.Password = decryptResp.Plaintext
+		request.Password = decryptResp
 	}
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -170,7 +170,7 @@ func resourceAlicloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interfa
 			if err != nil {
 				return WrapError(err)
 			}
-			request.Password = decryptResp.Plaintext
+			request.Password = decryptResp
 		}
 
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {

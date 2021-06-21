@@ -194,7 +194,7 @@ func buildMongoDBShardingCreateRequest(d *schema.ResourceData, meta interface{})
 			if err != nil {
 				return request, WrapError(err)
 			}
-			request.AccountPassword = decryptResp.Plaintext
+			request.AccountPassword = decryptResp
 		}
 	}
 
@@ -491,7 +491,7 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			if err != nil {
 				return WrapError(err)
 			}
-			accountPassword = decryptResp.Plaintext
+			accountPassword = decryptResp
 			d.SetPartial("kms_encrypted_password")
 			d.SetPartial("kms_encryption_context")
 		}

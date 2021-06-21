@@ -74,7 +74,6 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/emr
 github.com/aliyun/alibaba-cloud-sdk-go/services/ess
 github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb
 github.com/aliyun/alibaba-cloud-sdk-go/services/hbase
-github.com/aliyun/alibaba-cloud-sdk-go/services/kms
 github.com/aliyun/alibaba-cloud-sdk-go/services/location
 github.com/aliyun/alibaba-cloud-sdk-go/services/market
 github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute

@@ -446,7 +446,7 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 			if err != nil {
 				return WrapError(err)
 			}
-			request.Password = decryptResp.Plaintext
+			request.Password = decryptResp
 		}
 	}
 	if v, ok := d.GetOk("payment_type"); ok {
@@ -921,7 +921,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			if err != nil {
 				return WrapError(err)
 			}
-			modifyInstanceAttributeReq.NewPassword = decryptResp.Plaintext
+			modifyInstanceAttributeReq.NewPassword = decryptResp
 		}
 	}
 	if update {
