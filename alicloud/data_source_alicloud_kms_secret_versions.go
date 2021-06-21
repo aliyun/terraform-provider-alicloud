@@ -1,9 +1,13 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
+	"fmt"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -78,8 +82,7 @@ func dataSourceAlicloudKmsSecretVersions() *schema.Resource {
 func dataSourceAlicloudKmsSecretVersionsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := kms.CreateListSecretVersionIdsRequest()
-
+	action := "ListSecretVersionIds"
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
 		for _, i := range v.([]interface{}) {
@@ -89,39 +92,57 @@ func dataSourceAlicloudKmsSecretVersionsRead(d *schema.ResourceData, meta interf
 			idsMap[i.(string)] = i.(string)
 		}
 	}
+	request := make(map[string]interface{})
 
 	if v, ok := d.GetOk("include_deprecated"); ok {
-		request.IncludeDeprecated = v.(string)
+		request["IncludeDeprecated"] = v.(string)
 	}
-
 	VersionStage, okStage := d.GetOk("version_stage")
 
-	request.SecretName = d.Get("secret_name").(string)
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
+	request["SecretName"] = d.Get("secret_name")
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
 
 	var ids []string
-	var objects []kms.VersionId
-	var response *kms.ListSecretVersionIdsResponse
-	for {
-		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-			return kmsClient.ListSecretVersionIds(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_secret_versions", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw)
-		response, _ = raw.(*kms.ListSecretVersionIdsResponse)
+	var objects []map[string]interface{}
 
-		for _, item := range response.VersionIds.VersionId {
+	var response map[string]interface{}
+	conn, err := client.NewKmsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_secret_versions", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.VersionIds.VersionId", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.VersionIds.VersionId", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.VersionId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["VersionId"])]; !ok {
 					continue
 				}
 			}
 			if okStage && VersionStage.(string) != "" {
 				hasVersionStage := false
-				for _, VStage := range item.VersionStages.VersionStage {
+				for _, VStage := range item["VersionStages"].(map[string]interface{})["VersionStage"].([]interface{}) {
 					if VStage == VersionStage {
 						hasVersionStage = true
 						break
@@ -134,46 +155,66 @@ func dataSourceAlicloudKmsSecretVersionsRead(d *schema.ResourceData, meta interf
 
 			objects = append(objects, item)
 		}
-		if len(response.VersionIds.VersionId) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
 
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
+
+	secretName, err := jsonpath.Get("$.SecretName", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.SecretName", response)
+	}
+
 	s := make([]map[string]interface{}, len(objects))
 	for i, object := range objects {
 		mapping := map[string]interface{}{
-			"secret_name":    response.SecretName,
-			"version_id":     object.VersionId,
-			"version_stages": object.VersionStages.VersionStage,
+			"secret_name":    secretName,
+			"version_id":     object["VersionId"],
+			"version_stages": object["VersionStages"].(map[string]interface{})["VersionStage"].([]interface{}),
 		}
 
-		ids = append(ids, object.VersionId)
+		ids = append(ids, fmt.Sprint(object["VersionId"]))
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			s[i] = mapping
 			continue
 		}
-		request := kms.CreateGetSecretValueRequest()
-		request.RegionId = client.RegionId
-		request.VersionId = object.VersionId
+		action := "GetSecretValue"
+		var response map[string]interface{}
+		request := make(map[string]interface{})
+		request["RegionId"] = client.RegionId
+		request["VersionId"] = object["VersionId"]
 		if okStage && VersionStage.(string) != "" {
-			request.VersionStage = VersionStage.(string)
+			request["VersionStage"] = VersionStage
 		}
-		request.SecretName = d.Get("secret_name").(string)
-		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-			return kmsClient.GetSecretValue(request)
+		request["SecretName"] = secretName
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_secret_versions", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_secret_versions", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		responseGet, _ := raw.(*kms.GetSecretValueResponse)
-		mapping["secret_data"] = responseGet.SecretData
-		mapping["secret_data_type"] = responseGet.SecretDataType
+		addDebug(action, response, request)
+		if v, err := jsonpath.Get("$.SecretData", response); err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.SecretData", response)
+		} else {
+			mapping["secret_data"] = v
+		}
+		if v, err := jsonpath.Get("$.SecretDataType", response); err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.SecretDataType", response)
+		} else {
+			mapping["secret_data_type"] = v
+		}
 		s[i] = mapping
 	}
 
