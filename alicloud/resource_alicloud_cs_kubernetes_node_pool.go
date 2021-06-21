@@ -808,7 +808,7 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 			if err != nil {
 				return nil, WrapError(err)
 			}
-			password = decryptResp.Plaintext
+			password = decryptResp
 		}
 	}
 

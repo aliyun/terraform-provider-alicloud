@@ -1017,7 +1017,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		if err != nil {
 			return request, WrapError(err)
 		}
-		request.Password = decryptResp.Plaintext
+		request.Password = decryptResp
 	}
 
 	vswitchValue := d.Get("subnet_id").(string)
@@ -1320,7 +1320,7 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 			if err != nil {
 				return reboot, WrapError(err)
 			}
-			request.Password = decryptResp.Plaintext
+			request.Password = decryptResp
 			d.SetPartial("kms_encrypted_password")
 			d.SetPartial("kms_encryption_context")
 			update = true

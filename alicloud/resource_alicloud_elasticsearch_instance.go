@@ -669,7 +669,7 @@ func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return content, WrapError(err)
 		}
-		content["esAdminPassword"] = decryptResp.Plaintext
+		content["esAdminPassword"] = decryptResp
 	}
 
 	// Data node configuration

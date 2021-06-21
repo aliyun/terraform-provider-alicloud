@@ -32,7 +32,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -103,7 +102,6 @@ type AliyunClient struct {
 	crconn                       *cr.Client
 	creeconn                     *cr_ee.Client
 	cdnconn                      *cdn.CdnClient
-	kmsconn                      *kms.Client
 	otsconn                      *ots.Client
 	cmsconn                      *cms.Client
 	logconn                      *sls.Client
@@ -135,7 +133,6 @@ type AliyunClient struct {
 	hbaseconn                    *hbase.Client
 	adbconn                      *adb.Client
 	cbnConn                      *cbn.Client
-	kmsConn                      *kms.Client
 	maxcomputeconn               *maxcompute.Client
 	dnsConn                      *alidns.Client
 	edasconn                     *edas.Client
@@ -808,29 +805,6 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 	}
 
 	return do(client.cdnconn_new)
-}
-
-func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the KMS client if necessary
-	if client.kmsconn == nil {
-
-		endpoint := client.config.KmsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, KMSCode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(KMSCode), endpoint)
-		}
-		kmsconn, err := kms.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the kms client: %#v", err)
-		}
-		kmsconn.AppendUserAgent(Terraform, terraformVersion)
-		kmsconn.AppendUserAgent(Provider, providerVersion)
-		kmsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.kmsconn = kmsconn
-	}
-	return do(client.kmsconn)
 }
 
 func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, error)) (interface{}, error) {

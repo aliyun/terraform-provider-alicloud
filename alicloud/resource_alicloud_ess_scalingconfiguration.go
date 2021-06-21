@@ -796,7 +796,7 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 		if err != nil {
 			return nil, WrapError(err)
 		}
-		request.Password = decryptResp.Plaintext
+		request.Password = decryptResp
 	}
 
 	if securityGroupId == "" && (securityGroupIds == nil || len(securityGroupIds) == 0) {
