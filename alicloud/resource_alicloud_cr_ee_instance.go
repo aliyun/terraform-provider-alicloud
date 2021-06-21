@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -129,7 +130,15 @@ func resourceAlicloudCrEEInstanceCreate(d *schema.ResourceData, meta interface{}
 	request.Parameter = &parameters
 
 	raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.CreateInstance(request)
+		resp, errCreate := bssopenapiClient.CreateInstance(request)
+		if errCreate != nil {
+			// if account site is international, should route to  ap-southeast-1
+			if serverErr, ok := errCreate.(*errors.ServerError); ok && serverErr.ErrorCode() == "NotApplicable" {
+				request.RegionId = "ap-southeast-1"
+				resp, errCreate = bssopenapiClient.CreateInstance(request)
+			}
+		}
+		return resp, errCreate
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_ee_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -168,7 +177,15 @@ func resourceAlicloudCrEEInstanceRead(d *schema.ResourceData, meta interface{}) 
 	request.ProductType = "acr_ee_public_cn"
 	request.InstanceIDs = resp.InstanceId
 	raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.QueryAvailableInstances(request)
+		resp, errQuery := bssopenapiClient.QueryAvailableInstances(request)
+		if errQuery != nil {
+			// if account site is international, should route to  ap-southeast-1
+			if serverErr, ok := errQuery.(*errors.ServerError); ok && serverErr.ErrorCode() == "NotApplicable" {
+				request.RegionId = "ap-southeast-1"
+				resp, errQuery = bssopenapiClient.QueryAvailableInstances(request)
+			}
+		}
+		return resp, errQuery
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_ee_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
