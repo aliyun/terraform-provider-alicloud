@@ -510,7 +510,7 @@ func permissionParameterCheck(v map[string]interface{}, client *connectivity.Ali
 			if akErr != nil {
 				return nil, akErr
 			}
-			return map[string]string{"akId": akIdResp.Plaintext, "ak": akResp.Plaintext}, nil
+			return map[string]string{"akId": akIdResp, "ak": akResp}, nil
 		}
 		return nil, Error("(access_key_id, access_key_secret),(kms_encrypted_access_key_id, kms_encrypted_access_key_secret, kms_encryption_access_key_id_context, kms_encryption_access_key_secret_context),(role_arn) must fill in one of them into sink")
 	} else {
@@ -538,7 +538,7 @@ func permissionParameterCheck(v map[string]interface{}, client *connectivity.Ali
 			if akErr != nil {
 				return nil, akErr
 			}
-			return map[string]string{"akId": akIdResp.Plaintext, "ak": akResp.Plaintext}, nil
+			return map[string]string{"akId": akIdResp, "ak": akResp}, nil
 		}
 		return nil, Error("(access_key_id, access_key_secret),(kms_encrypted_access_key_id, kms_encrypted_access_key_secret, kms_encryption_access_key_id_context, kms_encryption_access_key_secret_context),(role_arn) must fill in one of them into configuration")
 	}

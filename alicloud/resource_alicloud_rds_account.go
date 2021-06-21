@@ -162,7 +162,7 @@ func resourceAlicloudRdsAccountCreate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapError(err)
 		}
-		request["AccountPassword"] = decryptResp.Plaintext
+		request["AccountPassword"] = decryptResp
 	} else {
 		return WrapError(Error("One of the 'account_password' and 'password' and 'kms_encrypted_password' should be set."))
 	}
@@ -306,7 +306,7 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapError(err)
 		}
-		resetAccountPasswordReq["AccountPassword"] = decryptResp.Plaintext
+		resetAccountPasswordReq["AccountPassword"] = decryptResp
 	}
 	if update {
 

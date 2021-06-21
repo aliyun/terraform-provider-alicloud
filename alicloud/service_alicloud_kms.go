@@ -8,7 +8,6 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -62,23 +61,45 @@ func (s *KmsService) DescribeKmsKey(id string) (object map[string]interface{}, e
 	return object, nil
 }
 
-func (s *KmsService) Decrypt(ciphertextBlob string, encryptionContext map[string]interface{}) (*kms.DecryptResponse, error) {
+func (s *KmsService) Decrypt(ciphertextBlob string, encryptionContext map[string]interface{}) (plaintext string, err error) {
 	context, err := json.Marshal(encryptionContext)
 	if err != nil {
-		return nil, WrapError(err)
+		return plaintext, WrapError(err)
 	}
-	request := kms.CreateDecryptRequest()
-	request.RegionId = s.client.RegionId
-	request.CiphertextBlob = ciphertextBlob
-	request.EncryptionContext = string(context[:])
-	raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-		return kmsClient.Decrypt(request)
-	})
+
+	var response map[string]interface{}
+	conn, err := s.client.NewKmsClient()
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, context, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return plaintext, WrapError(err)
 	}
-	response, _ := raw.(*kms.DecryptResponse)
-	return response, err
+	action := "Decrypt"
+	request := map[string]interface{}{
+		"RegionId":          s.client.RegionId,
+		"CiphertextBlob":    ciphertextBlob,
+		"EncryptionContext": string(context[:]),
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return plaintext, WrapErrorf(err, DefaultErrorMsg, context, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Plaintext", response)
+	if err != nil {
+		return plaintext, WrapErrorf(err, FailedGetAttributeMsg, context, "$.Plaintext", response)
+	}
+
+	return fmt.Sprint(v), err
 }
 
 func (s *KmsService) DescribeKmsSecret(id string) (object map[string]interface{}, err error) {
@@ -279,47 +300,79 @@ func (s *KmsService) SetResourceTags(d *schema.ResourceData, resourceType string
 		}
 	}
 	if len(removedTagKeys) > 0 {
-		request := kms.CreateUntagResourceRequest()
-		request.RegionId = s.client.RegionId
+		var response map[string]interface{}
+		conn, err := s.client.NewKmsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "UntagResource"
+		request := map[string]interface{}{
+			"RegionId": s.client.RegionId,
+		}
 		if resourceType == "key" {
-			request.KeyId = d.Id()
+			request["KeyId"] = d.Id()
 		}
 		if resourceType == "secret" {
-			request.SecretName = d.Id()
+			request["SecretName"] = d.Id()
 		}
 		remove, err := json.Marshal(removed)
 		if err != nil {
 			return WrapError(err)
 		}
-		request.TagKeys = string(remove)
-		raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-			return kmsClient.UntagResource(request)
+		request["TagKeys"] = string(remove)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
-		addDebug(request.GetActionName(), raw)
+		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 	if len(added) > 0 {
-		request := kms.CreateTagResourceRequest()
-		request.RegionId = s.client.RegionId
+		var response map[string]interface{}
+		conn, err := s.client.NewKmsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "TagResource"
+		request := map[string]interface{}{
+			"RegionId": s.client.RegionId,
+		}
 		if resourceType == "key" {
-			request.KeyId = d.Id()
+			request["KeyId"] = d.Id()
 		}
 		if resourceType == "secret" {
-			request.SecretName = d.Id()
+			request["SecretName"] = d.Id()
 		}
 		add, err := json.Marshal(added)
 		if err != nil {
 			return WrapError(err)
 		}
-		request.Tags = string(add)
-		raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-			return kmsClient.TagResource(request)
+		request["Tags"] = string(add)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
-		addDebug(request.GetActionName(), raw)
+		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 	return nil

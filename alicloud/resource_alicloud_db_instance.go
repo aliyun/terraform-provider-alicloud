@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -14,7 +16,6 @@ import (
 
 	"strconv"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -1056,17 +1057,35 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 }
 
 func findKmsRoleArn(client *connectivity.AliyunClient, k string) (string, error) {
-	request := kms.CreateDescribeKeyRequest()
-	request.KeyId = k
+	action := "DescribeKey"
+	var response map[string]interface{}
 
-	raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-		return kmsClient.DescribeKey(request)
-	})
+	request := make(map[string]interface{})
+	request["KeyId"] = k
+
+	conn, err := client.NewKmsClient()
 	if err != nil {
-		return "", WrapErrorf(err, DataDefaultErrorMsg, k, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return "", WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	key, _ := raw.(*kms.DescribeKeyResponse)
-	return strings.Join([]string{"acs:ram::", key.KeyMetadata.Creator, ":role/aliyunrdsinstanceencryptiondefaultrole"}, ""), nil
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return "", WrapErrorf(err, DataDefaultErrorMsg, k, action, AlibabaCloudSdkGoERROR)
+	}
+	resp, err := jsonpath.Get("$.KeyMetadata.Creator", response)
+	if err != nil {
+		return "", WrapErrorf(err, FailedGetAttributeMsg, action, "$.VersionIds.VersionId", response)
+	}
+	return strings.Join([]string{"acs:ram::", fmt.Sprint(resp), ":role/aliyunrdsinstanceencryptiondefaultrole"}, ""), nil
 }

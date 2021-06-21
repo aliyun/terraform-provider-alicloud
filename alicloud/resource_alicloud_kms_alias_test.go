@@ -12,7 +12,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -102,7 +101,7 @@ func testSweepKmsAlias(region string) error {
 }
 
 func TestAccAlicloudKmsAlias_basic(t *testing.T) {
-	var v kms.KeyMetadata
+	var v map[string]interface{}
 
 	resourceId := "alicloud_kms_alias.default"
 	ra := resourceAttrInit(resourceId, kmsAliasBasicMap)
