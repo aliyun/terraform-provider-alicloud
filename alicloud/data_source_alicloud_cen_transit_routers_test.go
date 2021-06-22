@@ -66,18 +66,18 @@ func TestAccAlicloudCenTransitRoutersDataSource(t *testing.T) {
 	}
 	var existAlicloudCenTransitRoutersDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"transit_router_ids.#": "1",
-			//"names.#":                                    "1",
-			"transit_routers.#":                            "1",
-			"transit_routers.0.cen_id":                     CHECKSET,
+			"transit_router_ids.#":     "1",
+			"names.#":                  "1",
+			"transit_routers.#":        "1",
+			"transit_routers.0.cen_id": CHECKSET,
 			"transit_routers.0.transit_router_description": `desd`,
 			"transit_routers.0.transit_router_name":        CHECKSET,
 		}
 	}
 	var fakeAlicloudCenTransitRoutersDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"transit_router_ids.#": "0",
-			//"names.#": "0",
+			"ids.#":   "0",
+			"names.#": "0",
 		}
 	}
 	var alicloudCenTransitRoutersCheckInfo = dataSourceAttr{

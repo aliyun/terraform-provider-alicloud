@@ -52,18 +52,18 @@ func TestAccAlicloudCenTransitRouterRouteEntriesDataSource(t *testing.T) {
 	}*/
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterRouteEntriesDataSourceName(rand, map[string]string{
-			"transit_router_route_table_id": `"${alicloud_cen_transit_router_route_table.default.id}"`,
-			//"ids":                               `["${alicloud_cen_transit_router_route_entry.default.id}"]`,
-			//"name_regex":                        `"${alicloud_cen_transit_router_route_entry.default.name}"`,
-			//"status":                            `"${alicloud_cen_transit_router_route_entry.default.status}"`,
+			"transit_router_route_table_id":     `"${alicloud_cen_transit_router_route_table.default.id}"`,
+			"ids":                               `["${alicloud_cen_transit_router_route_entry.default.id}"]`,
+			"name_regex":                        `"${alicloud_cen_transit_router_route_entry.default.name}"`,
+			"status":                            `"${alicloud_cen_transit_router_route_entry.default.status}"`,
 			"transit_router_route_entry_ids":    `"${alicloud_cen_transit_router_route_entry.default.transit_router_route_entry_ids}"`,
 			"transit_router_route_entry_names":  `"${alicloud_cen_transit_router_route_entry.default.transit_router_route_entry_names}"`,
 			"transit_router_route_entry_status": `"${alicloud_cen_transit_router_route_entry.default.transit_router_route_entry_status}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterRouteEntriesDataSourceName(rand, map[string]string{
-			//"ids":                               `["${alicloud_cen_transit_router_route_entry.default.id}_fake"]`,
-			//"name_regex":                        `"${alicloud_cen_transit_router_route_entry.default.name}_fake"`,
-			//"status":                            `"${alicloud_cen_transit_router_route_entry.default.status}"`,
+			"ids":                               `["${alicloud_cen_transit_router_route_entry.default.id}_fake"]`,
+			"name_regex":                        `"${alicloud_cen_transit_router_route_entry.default.name}_fake"`,
+			"status":                            `"${alicloud_cen_transit_router_route_entry.default.status}"`,
 			"transit_router_route_table_id":     `"${alicloud_cen_transit_router_route_table.default.id}"`,
 			"transit_router_route_entry_ids":    `"${alicloud_cen_transit_router_route_entry.default.ids}_fake"`,
 			"transit_router_route_entry_names":  `"${alicloud_cen_transit_router_route_entry.default.names}_fake"`,
@@ -118,12 +118,19 @@ resource "alicloud_cen_transit_router_route_table" "default" {
 transit_router_id = "${alicloud_cen_transit_router.default.id}"
 transit_router_route_table_name = "${var.name}"
 }
-
+resource "alicloud_cen_transit_router_vbr_attachment" "default" {
+  cen_id = "${alicloud_cen_instance.default.id}"
+  transit_router_id = "${alicloud_cen_transit_router.default.id}"
+  vbr_id = "vbr-j6cd9pm9y6d6e20atoi6w"
+  auto_publish_route_enabled = true
+  transit_router_attachment_name = "name"
+  transit_router_attachment_description = "name"
+}
 resource "alicloud_cen_transit_router_route_entry" "default" {
 transit_router_route_entry_description = "desc"
 transit_router_route_entry_destination_cidr_block = "192.168.0.1/24"
 transit_router_route_entry_name = "${var.name}"
-transit_router_route_entry_next_hop_id = ""
+transit_router_route_entry_next_hop_id = "vbr-j6cd9pm9y6d6e20atoi6w"
 transit_router_route_entry_next_hop_type = "Attachment"
 transit_router_route_table_id = "${alicloud_cen_transit_router_route_table.default.id}"
 }

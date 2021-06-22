@@ -74,10 +74,13 @@ variable "name" {
 resource "alicloud_cen_instance" "default" {
   cen_instance_name = "${var.name}"
   protection_level = "REDUCED"
+  description = "testRouteTableAssociation"
 }
 resource "alicloud_cen_transit_router" "default" {
 cen_id= "${alicloud_cen_instance.default.id}"
 region_id = "cn-hongkong"
+transit_router_description = "testRouteTableAssociation"
+transit_router_name = "testRouteTableAssociation"
 }
 resource "alicloud_cen_transit_router_route_table" "default" {
   transit_router_id = "${alicloud_cen_transit_router.default.id}"
