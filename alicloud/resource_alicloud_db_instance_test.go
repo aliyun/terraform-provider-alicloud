@@ -995,6 +995,7 @@ func TestAccAlicloudDBInstancePostgreSQLSSL(t *testing.T) {
 						"instance_storage":         "30",
 						"instance_type":            CHECKSET,
 						"db_instance_storage_type": "cloud_ssd",
+						"private_ip_address":       CHECKSET,
 					}),
 				),
 			},
@@ -1053,6 +1054,16 @@ func TestAccAlicloudDBInstancePostgreSQLSSL(t *testing.T) {
 				),
 			},
 
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"private_ip_address": "172.19.96.98",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_ip_address": "172.19.96.98",
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"security_group_ids": "${alicloud_security_group.default.*.id}",
