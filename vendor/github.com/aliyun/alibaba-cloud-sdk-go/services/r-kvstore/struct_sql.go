@@ -25,4 +25,5 @@ type SQL struct {
 	TotalExecutionTimes string `json:"TotalExecutionTimes" xml:"TotalExecutionTimes"`
 	ExecuteTime         string `json:"ExecuteTime" xml:"ExecuteTime"`
 	AccountName         string `json:"AccountName" xml:"AccountName"`
+	NodeId              string `json:"NodeId" xml:"NodeId"`
 }

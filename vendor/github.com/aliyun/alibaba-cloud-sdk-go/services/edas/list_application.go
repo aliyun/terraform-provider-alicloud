@@ -71,10 +71,11 @@ func (client *Client) ListApplicationWithCallback(request *ListApplicationReques
 // ListApplicationRequest is the request struct for api ListApplication
 type ListApplicationRequest struct {
 	*requests.RoaRequest
-	ResourceGroupId string `position:"Query" name:"ResourceGroupId"`
-	AppName         string `position:"Query" name:"AppName"`
-	LogicalRegionId string `position:"Query" name:"LogicalRegionId"`
-	ClusterId       string `position:"Query" name:"ClusterId"`
+	ResourceGroupId       string `position:"Query" name:"ResourceGroupId"`
+	AppName               string `position:"Query" name:"AppName"`
+	LogicalRegionId       string `position:"Query" name:"LogicalRegionId"`
+	ClusterId             string `position:"Query" name:"ClusterId"`
+	LogicalRegionIdFilter string `position:"Query" name:"LogicalRegionIdFilter"`
 }
 
 // ListApplicationResponse is the response struct for api ListApplication

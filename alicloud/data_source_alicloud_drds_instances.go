@@ -121,7 +121,7 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 
-	for _, item := range response.Data.Instance {
+	for _, item := range response.Instances.Instance {
 		if regexString != nil {
 			if !regexString.MatchString(item.Description) {
 				continue

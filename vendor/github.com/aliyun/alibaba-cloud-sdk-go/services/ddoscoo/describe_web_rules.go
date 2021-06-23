@@ -83,9 +83,9 @@ type DescribeWebRulesRequest struct {
 // DescribeWebRulesResponse is the response struct for api DescribeWebRules
 type DescribeWebRulesResponse struct {
 	*responses.BaseResponse
-	RequestId  string    `json:"RequestId" xml:"RequestId"`
-	TotalCount int64     `json:"TotalCount" xml:"TotalCount"`
-	WebRules   []WebRule `json:"WebRules" xml:"WebRules"`
+	RequestId  string                      `json:"RequestId" xml:"RequestId"`
+	TotalCount int64                       `json:"TotalCount" xml:"TotalCount"`
+	WebRules   []WebRuleInDescribeWebRules `json:"WebRules" xml:"WebRules"`
 }
 
 // CreateDescribeWebRulesRequest creates a request to invoke DescribeWebRules API

@@ -25,15 +25,16 @@ type Instance struct {
 	Description                  string                       `json:"description" xml:"description"`
 	AdvancedDedicateMaster       bool                         `json:"advancedDedicateMaster" xml:"advancedDedicateMaster"`
 	EsVersion                    string                       `json:"esVersion" xml:"esVersion"`
+	PostpaidServiceStatus        string                       `json:"postpaidServiceStatus" xml:"postpaidServiceStatus"`
 	PaymentType                  string                       `json:"paymentType" xml:"paymentType"`
 	ResourceGroupId              string                       `json:"resourceGroupId" xml:"resourceGroupId"`
 	CreatedAt                    string                       `json:"createdAt" xml:"createdAt"`
 	ExtendConfigs                []map[string]interface{}     `json:"extendConfigs" xml:"extendConfigs"`
-	NetworkConfig                NetworkConfig                `json:"networkConfig" xml:"networkConfig"`
-	MasterConfiguration          MasterConfiguration          `json:"masterConfiguration" xml:"masterConfiguration"`
-	ElasticDataNodeConfiguration ElasticDataNodeConfiguration `json:"elasticDataNodeConfiguration" xml:"elasticDataNodeConfiguration"`
 	NodeSpec                     NodeSpec                     `json:"nodeSpec" xml:"nodeSpec"`
 	ClientNodeConfiguration      ClientNodeConfiguration      `json:"clientNodeConfiguration" xml:"clientNodeConfiguration"`
 	KibanaConfiguration          KibanaConfiguration          `json:"kibanaConfiguration" xml:"kibanaConfiguration"`
+	NetworkConfig                NetworkConfig                `json:"networkConfig" xml:"networkConfig"`
+	MasterConfiguration          MasterConfiguration          `json:"masterConfiguration" xml:"masterConfiguration"`
+	ElasticDataNodeConfiguration ElasticDataNodeConfiguration `json:"elasticDataNodeConfiguration" xml:"elasticDataNodeConfiguration"`
 	Tags                         []Tag                        `json:"tags" xml:"tags"`
 }
