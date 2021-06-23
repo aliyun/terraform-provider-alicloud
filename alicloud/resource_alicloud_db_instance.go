@@ -111,6 +111,11 @@ func resourceAlicloudDBInstance() *schema.Resource {
 					return len(strings.Split(new, ",")) > 1
 				},
 			},
+			"private_ip_address": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -751,6 +756,62 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	vpcService := VpcService{client}
+	netUpdate := false
+	netAction := "SwitchDBInstanceVpc"
+	netRequest := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+		"RegionId":     client.RegionId,
+		"SourceIp":     client.SourceIp,
+	}
+	if d.HasChanges("vswitch_id") {
+		netUpdate = true
+	}
+	if d.HasChange("private_ip_address") {
+		netUpdate = true
+	}
+	if netUpdate {
+		v := d.Get("vswitch_id").(string)
+		vsw, err := vpcService.DescribeVSwitch(v)
+		if err != nil {
+			return WrapError(err)
+		}
+		netRequest["VPCId"] = vsw.VpcId
+		netRequest["VSwitchId"] = v
+		if v, ok := d.GetOk("private_ip_address"); ok && v.(string) != "" {
+			netRequest["PrivateIpAddress"] = v
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(netAction), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, netRequest, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), netAction, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(netAction, response, netRequest)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("vswitch_id")
+		d.SetPartial("private_ip_address")
+
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	d.Partial(false)
 	return resourceAlicloudDBInstanceRead(d, meta)
 }
@@ -795,6 +856,20 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
+	netInfoResponse, err := rdsService.DescribeDBInstanceNetInfo(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	var privateIpAddress string
+
+	for _, item := range netInfoResponse {
+		ipType := item.(map[string]interface{})["IPType"]
+		if ipType == "Private" {
+			privateIpAddress = item.(map[string]interface{})["IPAddress"].(string)
+			break
+		}
+	}
 
 	d.Set("resource_group_id", instance["ResourceGroupId"])
 	d.Set("monitoring_period", monitoringPeriod)
@@ -812,6 +887,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_charge_type", instance["PayType"])
 	d.Set("period", d.Get("period"))
 	d.Set("vswitch_id", instance["VSwitchId"])
+	d.Set("private_ip_address", privateIpAddress)
 	d.Set("connection_string", instance["ConnectionString"])
 	d.Set("instance_name", instance["DBInstanceDescription"])
 	d.Set("maintain_time", instance["MaintainTime"])
