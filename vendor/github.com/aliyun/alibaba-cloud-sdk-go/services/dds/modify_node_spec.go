@@ -73,6 +73,7 @@ type ModifyNodeSpecRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ClientToken          string           `position:"Query" name:"ClientToken"`
+	ReadonlyReplicas     requests.Integer `position:"Query" name:"ReadonlyReplicas"`
 	NodeClass            string           `position:"Query" name:"NodeClass"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	EffectiveTime        string           `position:"Query" name:"EffectiveTime"`
@@ -99,7 +100,7 @@ func CreateModifyNodeSpecRequest() (request *ModifyNodeSpecRequest) {
 	request = &ModifyNodeSpecRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Dds", "2015-12-01", "ModifyNodeSpec", "Dds", "openAPI")
+	request.InitWithApiInfo("Dds", "2015-12-01", "ModifyNodeSpec", "", "")
 	request.Method = requests.POST
 	return
 }

@@ -17,7 +17,7 @@ package rds
 
 // Meta is a nested struct in rds response
 type Meta struct {
+	Size     string `json:"Size" xml:"Size"`
 	Database string `json:"Database" xml:"Database"`
 	Tables   string `json:"Tables" xml:"Tables"`
-	Size     string `json:"Size" xml:"Size"`
 }

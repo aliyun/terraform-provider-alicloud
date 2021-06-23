@@ -72,11 +72,13 @@ func (client *Client) ModifyHostAvailabilityWithCallback(request *ModifyHostAvai
 type ModifyHostAvailabilityRequest struct {
 	*requests.RpcRequest
 	TaskOptionHttpMethod               string                                             `position:"Query" name:"TaskOption.HttpMethod"`
+	TaskOptionHttpHeader               string                                             `position:"Query" name:"TaskOption.HttpHeader"`
 	AlertConfigEscalationList          *[]ModifyHostAvailabilityAlertConfigEscalationList `position:"Query" name:"AlertConfigEscalationList"  type:"Repeated"`
 	TaskName                           string                                             `position:"Query" name:"TaskName"`
 	AlertConfigSilenceTime             requests.Integer                                   `position:"Query" name:"AlertConfig.SilenceTime"`
 	TaskOptionHttpResponseCharset      string                                             `position:"Query" name:"TaskOption.HttpResponseCharset"`
 	TaskOptionHttpNegative             requests.Boolean                                   `position:"Query" name:"TaskOption.HttpNegative"`
+	TaskOptionInterval                 requests.Integer                                   `position:"Query" name:"TaskOption.Interval"`
 	AlertConfigNotifyType              requests.Integer                                   `position:"Query" name:"AlertConfig.NotifyType"`
 	TaskOptionTelnetOrPingHost         string                                             `position:"Query" name:"TaskOption.TelnetOrPingHost"`
 	TaskOptionHttpResponseMatchContent string                                             `position:"Query" name:"TaskOption.HttpResponseMatchContent"`

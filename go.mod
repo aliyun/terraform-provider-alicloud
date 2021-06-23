@@ -9,7 +9,7 @@ require (
 	github.com/alibabacloud-go/tea-roa v1.2.8
 	github.com/alibabacloud-go/tea-rpc v1.1.8
 	github.com/alibabacloud-go/tea-utils v1.3.9
-	github.com/aliyun/alibaba-cloud-sdk-go v1.61.890
+	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1154
 	github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
 	github.com/aliyun/aliyun-log-go-sdk v0.1.21
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58

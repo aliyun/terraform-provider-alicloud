@@ -205,9 +205,10 @@ func buildMongoDBShardingCreateRequest(d *schema.ResourceData, meta interface{})
 		replicaSets := []dds.CreateShardingDBInstanceReplicaSet{}
 		for _, rew := range shardList.([]interface{}) {
 			item := rew.(map[string]interface{})
+			readonlyReplicas := item["node_readonly_replicas"].(string)
 			class := item["node_class"].(string)
 			nodeStorage := item["node_storage"].(int)
-			replicaSets = append(replicaSets, dds.CreateShardingDBInstanceReplicaSet{strconv.Itoa(nodeStorage), class})
+			replicaSets = append(replicaSets, dds.CreateShardingDBInstanceReplicaSet{readonlyReplicas, strconv.Itoa(nodeStorage), class})
 		}
 		request.ReplicaSet = &replicaSets
 	}

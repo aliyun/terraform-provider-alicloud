@@ -353,7 +353,7 @@ func UpdateScalingGroupConfiguration(client *connectivity.AliyunClient, groupId,
 func GetScalingGroupSizeRange(client *connectivity.AliyunClient, groupId string) (min, max int, err error) {
 	describeScalingGroupRequest := ess.CreateDescribeScalingGroupsRequest()
 	describeScalingGroupRequest.RegionId = client.RegionId
-	describeScalingGroupRequest.ScalingGroupId1 = groupId
+	describeScalingGroupRequest.ScalingGroupId = &[]string{groupId}
 
 	describeScalingGroupResponse, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingGroups(describeScalingGroupRequest)

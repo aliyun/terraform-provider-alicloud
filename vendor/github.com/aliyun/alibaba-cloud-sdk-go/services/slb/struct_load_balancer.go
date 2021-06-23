@@ -38,5 +38,9 @@ type LoadBalancer struct {
 	BusinessStatus               string                      `json:"BusinessStatus" xml:"BusinessStatus"`
 	ModificationProtectionStatus string                      `json:"ModificationProtectionStatus" xml:"ModificationProtectionStatus"`
 	ModificationProtectionReason string                      `json:"ModificationProtectionReason" xml:"ModificationProtectionReason"`
+	Bandwidth                    int                         `json:"Bandwidth" xml:"Bandwidth"`
+	InternetChargeTypeAlias      string                      `json:"InternetChargeTypeAlias" xml:"InternetChargeTypeAlias"`
+	LoadBalancerSpec             string                      `json:"LoadBalancerSpec" xml:"LoadBalancerSpec"`
+	DeleteProtection             string                      `json:"DeleteProtection" xml:"DeleteProtection"`
 	Tags                         TagsInDescribeLoadBalancers `json:"Tags" xml:"Tags"`
 }

@@ -19,6 +19,7 @@ package cms
 type SiteMonitors struct {
 	TaskId     string     `json:"TaskId" xml:"TaskId"`
 	Interval   string     `json:"Interval" xml:"Interval"`
+	EndTime    string     `json:"EndTime" xml:"EndTime"`
 	TaskName   string     `json:"TaskName" xml:"TaskName"`
 	TaskState  string     `json:"TaskState" xml:"TaskState"`
 	TaskType   string     `json:"TaskType" xml:"TaskType"`

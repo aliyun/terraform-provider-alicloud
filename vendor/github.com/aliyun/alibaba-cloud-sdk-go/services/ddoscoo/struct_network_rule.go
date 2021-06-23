@@ -17,10 +17,11 @@ package ddoscoo
 
 // NetworkRule is a nested struct in ddoscoo response
 type NetworkRule struct {
-	InstanceId   string   `json:"InstanceId" xml:"InstanceId"`
-	Protocol     string   `json:"Protocol" xml:"Protocol"`
-	FrontendPort int      `json:"FrontendPort" xml:"FrontendPort"`
-	BackendPort  int      `json:"BackendPort" xml:"BackendPort"`
-	IsAutoCreate bool     `json:"IsAutoCreate" xml:"IsAutoCreate"`
-	RealServers  []string `json:"RealServers" xml:"RealServers"`
+	Protocol         string   `json:"Protocol" xml:"Protocol"`
+	IsAutoCreate     bool     `json:"IsAutoCreate" xml:"IsAutoCreate"`
+	InstanceId       string   `json:"InstanceId" xml:"InstanceId"`
+	BackendPort      int      `json:"BackendPort" xml:"BackendPort"`
+	FrontendPort     int      `json:"FrontendPort" xml:"FrontendPort"`
+	FrontendProtocol string   `json:"FrontendProtocol" xml:"FrontendProtocol"`
+	RealServers      []string `json:"RealServers" xml:"RealServers"`
 }
