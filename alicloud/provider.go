@@ -436,6 +436,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_log_stores":                                  dataSourceAlicloudLogStores(),
 			"alicloud_event_bridge_service":                        dataSourceAlicloudEventBridgeService(),
 			"alicloud_event_bridge_event_buses":                    dataSourceAlicloudEventBridgeEventBuses(),
+			"alicloud_event_bridge_schema_groups":                  dataSourceAlicloudEventBridgeSchemaGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -771,6 +772,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_direct_mail_receivers":                      resourceAlicloudDirectMailReceivers(),
 			"alicloud_eip_address":                                resourceAlicloudEipAddress(),
 			"alicloud_event_bridge_event_bus":                     resourceAlicloudEventBridgeEventBus(),
+			"alicloud_event_bridge_schema_group":                  resourceAlicloudEventBridgeSchemaGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
