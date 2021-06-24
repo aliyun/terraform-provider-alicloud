@@ -161,6 +161,11 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -294,6 +299,7 @@ func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 	d.Set("tags", tagsToMap(listTagResourcesObject))
+	d.Set("deletion_protection", object["DeletionProtection"])
 	return nil
 }
 func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -307,6 +313,42 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 		d.SetPartial("tags")
+	}
+	if d.HasChange("deletion_protection") {
+		var response map[string]interface{}
+		action := "DeletionProtection"
+		request := map[string]interface{}{
+			"RegionId":         client.RegionId,
+			"InstanceId":       d.Id(),
+			"ProtectionEnable": d.Get("deletion_protection"),
+			"Type":             "NATGW",
+		}
+		conn, err := client.NewVpcClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			request["ClientToken"] = buildClientToken(action)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("deletion_protection")
 	}
 	update := false
 	request := map[string]interface{}{

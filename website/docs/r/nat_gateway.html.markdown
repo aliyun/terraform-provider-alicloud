@@ -108,7 +108,10 @@ The following arguments are supported:
 * `vswitch_id` - (Optional, Available in 1.102.0+) The id of VSwitch.
 * `internet_charge_type` - (Optional, ForceNew, Available in 1.121.0+) The internet charge type. Valid values `PayByLcu` and `PayBySpec`, default value is `PayBySpec`. The `PayByLcu` is only support enhanced NAT.
 * `tags` - (Optional, Available in 1.121.0+) The tags of NAT gateway.
-
+* `deletion_protection` - (Optional, Available in v1.124.4+) Whether enable the deletion protection or not. Default value: `false`.
+  - true: Enable deletion protection.
+  - false: Disable deletion protection.
+  
 -> **NOTE:** The `Normal` Nat Gateway has been offline and please using `Enhanced` Nat Gateway to get the better performance. 
 
 ## Block bandwidth packages
