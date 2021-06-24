@@ -45,7 +45,10 @@ The following arguments are supported:
 * `isp` - (Optional, ForceNew, Available in 1.47.0+) The line type of the Elastic IP instance. Default to `BGP`. Other type of the isp need to open a whitelist.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional, Available in 1.58.0+, Modifiable in 1.115.0+) The Id of resource group which the eip belongs.
-
+* `deletion_protection` - (Optional, Available in v1.124.4+) Whether enable the deletion protection or not. Default value: `false`.
+  - true: Enable deletion protection.
+  - false: Disable deletion protection.
+  
 ## Attributes Reference
 
 The following attributes are exported:

@@ -121,7 +121,7 @@ func testAccCheckEIPDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudEipBasic_PayByBandwidth(t *testing.T) {
+func TestAccAlicloudEip_PayByBandwidth(t *testing.T) {
 	var v vpc.EipAddress
 	resourceId := "alicloud_eip.default"
 	ra := resourceAttrInit(resourceId, testAccCheckEipCheckMap)
@@ -192,14 +192,23 @@ func TestAccAlicloudEipBasic_PayByBandwidth(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccCheckEipConfig_deletion_protection(rand, "PayByBandwidth"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "true",
+					}),
+				),
+			},
+			{
 				Config: testAccCheckEipConfig_all(rand, "PayByBandwidth"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":         fmt.Sprintf("tf-testAcceEipName%d_all", rand),
-						"description":  fmt.Sprintf("tf-testAcceEipName%d_description_all", rand),
-						"tags.%":       REMOVEKEY,
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"name":                fmt.Sprintf("tf-testAcceEipName%d_all", rand),
+						"description":         fmt.Sprintf("tf-testAcceEipName%d_description_all", rand),
+						"tags.%":              REMOVEKEY,
+						"tags.Created":        REMOVEKEY,
+						"tags.For":            REMOVEKEY,
+						"deletion_protection": "false",
 					}),
 				),
 			},
@@ -208,7 +217,7 @@ func TestAccAlicloudEipBasic_PayByBandwidth(t *testing.T) {
 
 }
 
-func TestAccAlicloudEipBasic_PayByTraffic(t *testing.T) {
+func TestAccAlicloudEip_PayByTraffic(t *testing.T) {
 	var v vpc.EipAddress
 	resourceId := "alicloud_eip.default"
 	ra := resourceAttrInit(resourceId, testAccCheckEipCheckMap)
@@ -265,11 +274,33 @@ func TestAccAlicloudEipBasic_PayByTraffic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccCheckEipConfig_tags(rand, "PayByTraffic"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccCheckEipConfig_deletion_protection(rand, "PayByTraffic"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "true",
+					}),
+				),
+			},
+			{
 				Config: testAccCheckEipConfig_all(rand, "PayByTraffic"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcceEipName%d_all", rand),
-						"description": fmt.Sprintf("tf-testAcceEipName%d_description_all", rand),
+						"name":                fmt.Sprintf("tf-testAcceEipName%d_all", rand),
+						"description":         fmt.Sprintf("tf-testAcceEipName%d_description_all", rand),
+						"tags.%":              REMOVEKEY,
+						"tags.Created":        REMOVEKEY,
+						"tags.For":            REMOVEKEY,
+						"deletion_protection": "false",
 					}),
 				),
 			},
@@ -396,6 +427,29 @@ resource "alicloud_eip" "default" {
 `, rand, internet_charge_type, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
+func testAccCheckEipConfig_deletion_protection(rand int, internet_charge_type string) string {
+	return fmt.Sprintf(`
+variable "name"{
+	default = "tf-testAcceEipName%d"
+}
+
+resource "alicloud_eip" "default" {
+	instance_charge_type = "PostPaid"
+	internet_charge_type = "%s"
+	bandwidth = "10"
+	period = "1"
+	name = "${var.name}"
+    description = "${var.name}_description"
+	tags 		= {
+		Created = "TF"
+		For 	= "acceptance test"
+	}
+	resource_group_id = "%s"
+	deletion_protection = true
+}
+`, rand, internet_charge_type, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
+
 func testAccCheckEipConfig_all(rand int, internet_charge_type string) string {
 	return fmt.Sprintf(`
 variable "name"{
@@ -410,6 +464,7 @@ resource "alicloud_eip" "default" {
 	name = "${var.name}_all"
     description = "${var.name}_description_all"
 	resource_group_id = "%s"
+	deletion_protection = false
 }
 `, rand, internet_charge_type, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
@@ -435,7 +490,8 @@ var testAccCheckEipCheckMap = map[string]string{
 	"internet_charge_type": "PayByBandwidth",
 	// read method does't return a value for the period attribute, so it is not tested
 	// "period" : "1",
-	"ip_address": CHECKSET,
-	"status":     CHECKSET,
-	"isp":        "BGP",
+	"ip_address":          CHECKSET,
+	"status":              CHECKSET,
+	"isp":                 "BGP",
+	"deletion_protection": "false",
 }

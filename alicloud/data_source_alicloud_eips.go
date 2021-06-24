@@ -80,6 +80,10 @@ func dataSourceAlicloudEips() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"deletion_protection": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -186,6 +190,7 @@ func eipsDecriptionAttributes(d *schema.ResourceData, eipSetTypes []vpc.EipAddre
 			"instance_type":        eip.InstanceType,
 			"internet_charge_type": eip.InternetChargeType,
 			"creation_time":        eip.AllocationTime,
+			"deletion_protection":  eip.DeletionProtection,
 		}
 		ids = append(ids, eip.AllocationId)
 		names = append(names, eip.Name)
