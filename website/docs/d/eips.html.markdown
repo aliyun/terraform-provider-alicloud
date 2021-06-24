@@ -49,3 +49,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `instance_type` - The instance type of that the EIP is bound.
   * `creation_time` - Time of creation.
   * `resource_group_id` - The Id of resource group which the eips belongs.
+  * `deletion_protection` - (Optional, Available in v1.124.4+) Whether enable the deletion protection or not.

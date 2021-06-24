@@ -104,6 +104,7 @@ var existEipsMapFunc = func(rand int) map[string]string {
 		"eips.0.instance_type":        "",
 		"eips.0.internet_charge_type": string(PayByTraffic),
 		"eips.0.creation_time":        CHECKSET,
+		"eips.0.deletion_protection":  "false",
 	}
 }
 
