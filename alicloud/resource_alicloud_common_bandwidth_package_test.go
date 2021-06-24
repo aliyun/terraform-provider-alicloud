@@ -197,10 +197,21 @@ func TestAccAlicloudCommonBandwidthPackage_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"bandwidth":              `10`,
 					"description":            name,
 					"bandwidth_package_name": "${var.name}",
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"deletion_protection":    "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -208,6 +219,7 @@ func TestAccAlicloudCommonBandwidthPackage_basic(t *testing.T) {
 						"description":            name,
 						"bandwidth_package_name": name,
 						"resource_group_id":      CHECKSET,
+						"deletion_protection":    "false",
 					}),
 				),
 			},
@@ -219,6 +231,7 @@ var AlicloudCommonBandwidthPackageMap0 = map[string]string{
 	"isp":                  "BGP",
 	"internet_charge_type": "PayByBandwidth",
 	"ratio":                "100",
+	"deletion_protection":  "false",
 }
 
 func AlicloudCommonBandwidthPackageBasicDependence0(name string) string {

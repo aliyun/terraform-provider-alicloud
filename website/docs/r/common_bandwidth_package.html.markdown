@@ -42,7 +42,10 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, Available in 1.58.0+, Modifiable in 1.115.0+) The Id of resource group which the common bandwidth package belongs.
 * `isp` - (Optional, Available in 1.90.1+) The type of the Internet Service Provider. Valid values: `BGP` and `BGP_PRO`. Default to `BGP`.
 * `zone` - (Optional, ForceNew, Available in 1.120.0+) The zone of bandwidth package.
-
+* `deletion_protection` - (Optional, Available in v1.124.4+) Whether enable the deletion protection or not. Default value: `false`.
+  - true: Enable deletion protection.
+  - false: Disable deletion protection.
+  
 ## Attributes Reference
 
 The following attributes are exported:
