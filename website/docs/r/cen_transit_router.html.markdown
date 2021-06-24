@@ -27,14 +27,14 @@ variable "region" {
   default = "cn-hangzhou"
 }
 
-resource "alicloud_cen_instance" "cen" {
+resource "alicloud_cen_instance" "default" {
   name        = var.name
   description = "terraform01"
 }
 
-resource "alicloud_cen_transit_router" "tr" {
+resource "alicloud_cen_transit_router" "default" {
   name       = var.name
-  cen_id     = alicloud_cen_instance.cen.id
+  cen_id     = alicloud_cen_instance.default.id
   region_id  = var.region
 }
 ```
@@ -59,5 +59,5 @@ The following attributes are exported:
 CEN instance can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_cen_transit_router.tr tr-jshdy674ndsh
+$ terraform import alicloud_cen_transit_router.default tr-jshdy674ndsh
 ```

@@ -114,6 +114,7 @@ func resourceAlicloudCenTransitRouterCreate(d *schema.ResourceData, meta interfa
 
 	return resourceAlicloudCenTransitRouterRead(d, meta)
 }
+
 func resourceAlicloudCenTransitRouterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}

@@ -99,7 +99,7 @@ var AlicloudCenTransitRouterMap = map[string]string{
 func AlicloudCenTransitRouterBasicDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-			default = "%s"
+		default = "%s"
 	}
 
 	resource "alicloud_cen_instance" "default" {
