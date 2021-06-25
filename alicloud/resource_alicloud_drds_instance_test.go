@@ -50,7 +50,7 @@ func testSweepDRDSInstances(region string) error {
 
 	sweeped := false
 	vpcService := VpcService{client}
-	for _, v := range response.Data.Instance {
+	for _, v := range response.Instances.Instance {
 		name := v.Description
 		id := v.DrdsInstanceId
 		skip := true

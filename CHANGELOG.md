@@ -16,6 +16,7 @@ ENHANCEMENTS:
 
 BUG FIXES:
 
+- testcase: Fixes the incorrect data type [GH-3668]
 - resource/alicloud_snat_entry: Fixes the concurrence issue which throwing the error OperationFailed.Throttling [GH-3657]
 - resource/alicloud_cr_ee_instance: Fixes the NotApplicable error for international site account [GH-3651]
 - resource/alicloud_emr_cluster: Fix emr cluster task scale up [GH-3658]
