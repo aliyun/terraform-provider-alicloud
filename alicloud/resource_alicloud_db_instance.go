@@ -133,6 +133,33 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+			"db_instance_ip_array_name": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: securityIpsDiffSuppressFunc,
+			},
+			"db_instance_ip_array_attribute": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: securityIpsDiffSuppressFunc,
+			},
+			"security_ip_type": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: securityIpsDiffSuppressFunc,
+			},
+			"whitelist_network_type": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"Classic", "VPC", "MIX"}, false),
+				DiffSuppressFunc: securityIpsDiffSuppressFunc,
+			},
+			"modify_mode": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"Cover", "Append", "Delete"}, false),
+				DiffSuppressFunc: securityIpsDiffSuppressFunc,
+			},
 			"security_group_id": {
 				Type:          schema.TypeString,
 				Optional:      true,
@@ -678,11 +705,60 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if ipstr == "" {
 			ipstr = LOCAL_HOST_IP
 		}
+		action := "ModifySecurityIps"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+			"SecurityIps":  ipstr,
+			"SourceIp":     client.SourceIp,
+		}
+		if v, ok := d.GetOk("db_instance_ip_array_name"); ok && v.(string) != "" {
+			request["DBInstanceIPArrayName"] = v
+		}
+		if v, ok := d.GetOk("db_instance_ip_array_attribute"); ok && v.(string) != "" {
+			request["DBInstanceIPArrayAttribute"] = v
+		}
+		if v, ok := d.GetOk("security_ip_type"); ok && v.(string) != "" {
+			request["SecurityIPType"] = v
+		}
+		if v, ok := d.GetOk("whitelist_network_type"); ok && v.(string) != "" {
+			request["WhitelistNetworkType"] = v
+		}
+		if v, ok := d.GetOk("modify_mode"); ok && v.(string) != "" {
+			request["ModifyMode"] = v
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
 
-		if err := rdsService.ModifyDBSecurityIps(d.Id(), ipstr); err != nil {
-			return WrapError(err)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("security_ips")
+		d.SetPartial("db_instance_ip_array_name")
+		d.SetPartial("db_instance_ip_array_attribute")
+		d.SetPartial("security_ip_type")
+		d.SetPartial("whitelist_network_type")
+
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 	if !d.IsNewResource() && d.HasChange("resource_group_id") {
 		action := "ModifyResourceGroup"
@@ -800,8 +876,11 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("monitoring_period", monitoringPeriod)
 
 	d.Set("security_ips", ips)
+	d.Set("db_instance_ip_array_name", d.Get("db_instance_ip_array_name"))
+	d.Set("db_instance_ip_array_attribute", d.Get("db_instance_ip_array_attribute"))
+	d.Set("security_ip_type", d.Get("security_ip_type"))
+	d.Set("whitelist_network_type", d.Get("whitelist_network_type"))
 	d.Set("security_ip_mode", instance["SecurityIPMode"])
-
 	d.Set("engine", instance["Engine"])
 	d.Set("engine_version", instance["EngineVersion"])
 	d.Set("instance_type", instance["DBInstanceClass"])
