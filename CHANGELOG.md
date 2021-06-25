@@ -1,27 +1,28 @@
+## 1.124.5 (Unreleased)
 ## 1.124.4 (June 25, 2021)
 
 ENHANCEMENTS:
 
-- docs: Modify the docs attribute available version [GH-3670]
-- resource/alicloud_kms_alias: Upgrades its dependence SDK [GH-3647]
-- resource/alicloud_kms_key_version: Upgrades its dependence SDK; Removes the computed attribute creation_date [GH-3648]
-- resource/alicloud_kms_ciphertext: Upgrades its dependence sdk; Improves the kms key testcases [GH-3649]
-- datasource/alicloud_kms_plaintext: Upgrades its dependence sdk [GH-3650]
-- datasource/alicloud_kms_secret_versions: Upgredes its dependence sdk [GH-3653]
-- resource/alicloud_kms_ciphertext: Upgrades its dependence sdk [GH-3655]
-- service_kms/Decrypt: Upgrades its dependence sdk; kms_service/SetResourceTags: Upgrades its dependence sdk; Removes the KMS go sdk [GH-3656]
+- docs: Modify the docs attribute available version ([#3670](https://github.com/aliyun/terraform-provider-alicloud/issues/3670))
+- resource/alicloud_kms_alias: Upgrades its dependence SDK ([#3647](https://github.com/aliyun/terraform-provider-alicloud/issues/3647))
+- resource/alicloud_kms_key_version: Upgrades its dependence SDK; Removes the computed attribute creation_date ([#3648](https://github.com/aliyun/terraform-provider-alicloud/issues/3648))
+- resource/alicloud_kms_ciphertext: Upgrades its dependence sdk; Improves the kms key testcases ([#3649](https://github.com/aliyun/terraform-provider-alicloud/issues/3649))
+- datasource/alicloud_kms_plaintext: Upgrades its dependence sdk ([#3650](https://github.com/aliyun/terraform-provider-alicloud/issues/3650))
+- datasource/alicloud_kms_secret_versions: Upgredes its dependence sdk ([#3653](https://github.com/aliyun/terraform-provider-alicloud/issues/3653))
+- resource/alicloud_kms_ciphertext: Upgrades its dependence sdk ([#3655](https://github.com/aliyun/terraform-provider-alicloud/issues/3655))
+- service_kms/Decrypt: Upgrades its dependence sdk; kms_service/SetResourceTags: Upgrades its dependence sdk; Removes the KMS go sdk ([#3656](https://github.com/aliyun/terraform-provider-alicloud/issues/3656))
 - resource/alicloud_db_instance: Adds several attributes to enable ssl, like ssl_enabled, ca_type , server_cert, client_ca_cert and so on [GH_3615]
-- resource/alicloud_eip: Adds new attribute deletion_protection to support deletion protection feature [GH-3664]
-- resource/alicloud_nat_gateway: Adds new attribute deletion_protection to support deletion protection feature [GH-3665]
-- resource/alicloud_common_bandwidth_package: Adds new attribute deletion_protection to support deletion protection feature [GH-3666]
+- resource/alicloud_eip: Adds new attribute deletion_protection to support deletion protection feature ([#3664](https://github.com/aliyun/terraform-provider-alicloud/issues/3664))
+- resource/alicloud_nat_gateway: Adds new attribute deletion_protection to support deletion protection feature ([#3665](https://github.com/aliyun/terraform-provider-alicloud/issues/3665))
+- resource/alicloud_common_bandwidth_package: Adds new attribute deletion_protection to support deletion protection feature ([#3666](https://github.com/aliyun/terraform-provider-alicloud/issues/3666))
 
 BUG FIXES:
 
-- testcase: Fixes the incorrect data type [GH-3669]
-- resource/alicloud_snat_entry: Fixes the concurrence issue which throwing the error OperationFailed.Throttling [GH-3657]
-- resource/alicloud_cr_ee_instance: Fixes the NotApplicable error for international site account [GH-3651]
-- resource/alicloud_emr_cluster: Fix emr cluster task scale up [GH-3658]
-- docs: Corrects the spelling error [GH-3659]
+- testcase: Fixes the incorrect data type ([#3669](https://github.com/aliyun/terraform-provider-alicloud/issues/3669))
+- resource/alicloud_snat_entry: Fixes the concurrence issue which throwing the error OperationFailed.Throttling ([#3657](https://github.com/aliyun/terraform-provider-alicloud/issues/3657))
+- resource/alicloud_cr_ee_instance: Fixes the NotApplicable error for international site account ([#3651](https://github.com/aliyun/terraform-provider-alicloud/issues/3651))
+- resource/alicloud_emr_cluster: Fix emr cluster task scale up ([#3658](https://github.com/aliyun/terraform-provider-alicloud/issues/3658))
+- docs: Corrects the spelling error ([#3659](https://github.com/aliyun/terraform-provider-alicloud/issues/3659))
 
 ## 1.124.3 (June 18, 2021)
 
