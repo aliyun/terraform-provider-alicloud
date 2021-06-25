@@ -31,7 +31,7 @@ func testSweepDns(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	queryRequest := alidns.CreateDescribeDomainsRequest()
-	var allDomains []alidns.Domain
+	var allDomains []alidns.DomainInDescribeDomains
 	queryRequest.PageSize = requests.NewInteger(PageSizeLarge)
 	queryRequest.PageNumber = requests.NewInteger(1)
 	for {
