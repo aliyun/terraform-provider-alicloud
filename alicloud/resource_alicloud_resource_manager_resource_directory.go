@@ -40,8 +40,8 @@ func resourceAlicloudResourceManagerResourceDirectory() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Disabled", "Enabled"}, false),
-				Default:      "Disabled",
 			},
 		},
 	}
