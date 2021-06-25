@@ -1,4 +1,26 @@
-## 1.124.4 (Unreleased)
+## 1.124.4 (June 25, 2021)
+
+ENHANCEMENTS:
+
+- resource/alicloud_kms_alias: Upgrades its dependence SDK [GH-3647]
+- resource/alicloud_kms_key_version: Upgrades its dependence SDK; Removes the computed attribute creation_date [GH-3648]
+- resource/alicloud_kms_ciphertext: Upgrades its dependence sdk; Improves the kms key testcases [GH-3649]
+- datasource/alicloud_kms_plaintext: Upgrades its dependence sdk [GH-3650]
+- datasource/alicloud_kms_secret_versions: Upgredes its dependence sdk [GH-3653]
+- resource/alicloud_kms_ciphertext: Upgrades its dependence sdk [GH-3655]
+- service_kms/Decrypt: Upgrades its dependence sdk; kms_service/SetResourceTags: Upgrades its dependence sdk; Removes the KMS go sdk [GH-3656]
+- resource/alicloud_db_instance: Adds several attributes to enable ssl, like ssl_enabled, ca_type , server_cert, client_ca_cert and so on [GH_3615]
+- resource/alicloud_eip: Adds new attribute deletion_protection to support deletion protection feature [GH-3664]
+- resource/alicloud_nat_gateway: Adds new attribute deletion_protection to support deletion protection feature [GH-3665]
+- resource/alicloud_common_bandwidth_package: Adds new attribute deletion_protection to support deletion protection feature [GH-3666]
+
+BUG FIXES:
+
+- resource/alicloud_snat_entry: Fixes the concurrence issue which throwing the error OperationFailed.Throttling [GH-3657]
+- resource/alicloud_cr_ee_instance: Fixes the NotApplicable error for international site account [GH-3651]
+- resource/alicloud_emr_cluster: Fix emr cluster task scale up [GH-3658]
+- docs: Corrects the spelling error [GH-3659]
+
 ## 1.124.3 (June 18, 2021)
 
 ENHANCEMENTS:
