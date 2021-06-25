@@ -999,9 +999,10 @@ func TestAccAlicloudDBInstancePostgreSQLSSL(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1035,12 +1036,23 @@ func TestAccAlicloudDBInstancePostgreSQLSSL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_ips": []string{"10.168.1.12", "100.69.7.112"},
+					"security_ips":                   []string{"10.168.1.12", "100.69.7.112"},
+					"db_instance_ip_array_name":      "default",
+					"security_ip_type":               "IPv4",
+					"db_instance_ip_array_attribute": "",
+					"whitelist_network_type":         "MIX",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKeyValueInMaps(ips, "security ip", "security_ips", "10.168.1.12,100.69.7.112"),
+					testAccCheck(map[string]string{
+						"db_instance_ip_array_name":      "default",
+						"security_ip_type":               "IPv4",
+						"whitelist_network_type":         "MIX",
+						"db_instance_ip_array_attribute": "",
+					}),
 				),
 			},
+
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"security_group_ids": "${alicloud_security_group.default.*.id}",

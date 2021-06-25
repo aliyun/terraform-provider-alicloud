@@ -649,3 +649,10 @@ func sslEnabledDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool
 	}
 	return true
 }
+
+func securityIpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("security_ips"); ok && len(v.(*schema.Set).List()) > 0 {
+		return false
+	}
+	return true
+}
