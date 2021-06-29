@@ -230,6 +230,11 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"setting_config": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -340,6 +345,11 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	// Cross zone configuration
 	d.Set("zone_count", object["zoneCount"])
 	d.Set("resource_group_id", object["resourceGroupId"])
+
+	esConfig := object["esConfig"].(map[string]interface{})
+	if esConfig != nil {
+		d.Set("setting_config", esConfig)
+	}
 
 	// tags
 	tags, err := elasticsearchService.DescribeElasticsearchTags(d.Id())
@@ -495,6 +505,46 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		}
 
 		d.SetPartial("protocol")
+	}
+
+	if d.HasChange("setting_config") {
+		conn, err := client.NewElasticsearchClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "UpdateInstanceSettings"
+		content := make(map[string]interface{})
+		config := d.Get("setting_config").(map[string]interface{})
+		content["esConfig"] = config
+		requestQuery := map[string]*string{
+			"clientToken": StringPointer(buildClientToken(action)),
+		}
+
+		// retry
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"),
+				String(fmt.Sprintf("/openapi/instances/%s/instance-settings", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, content)
+			return nil
+		})
+
+		if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+		stateConf.PollInterval = 5 * time.Second
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("setting_config")
 	}
 
 	if d.IsNewResource() {
