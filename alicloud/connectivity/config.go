@@ -23,16 +23,18 @@ var securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-cred
 
 // Config of aliyun
 type Config struct {
-	SourceIp        string
-	AccessKey       string
-	SecretKey       string
-	EcsRoleName     string
-	Region          Region
-	RegionId        string
-	SecurityToken   string
-	OtsInstanceName string
-	AccountId       string
-	Protocol        string
+	SourceIp             string
+	AccessKey            string
+	SecretKey            string
+	EcsRoleName          string
+	Region               Region
+	RegionId             string
+	SecurityToken        string
+	OtsInstanceName      string
+	AccountId            string
+	Protocol             string
+	ClientReadTimeout    int
+	ClientConnectTimeout int
 
 	RamRoleArn               string
 	RamRoleSessionName       string
@@ -111,6 +113,7 @@ type Config struct {
 	ImsEndpoint             string
 	QuotasEndpoint          string
 	SgwEndpoint             string
+	ScdnEndpoint            string
 }
 
 func (c *Config) loadAndValidate() error {
@@ -244,8 +247,8 @@ func (c *Config) getTeaDslSdkConfig(stsSupported bool) (config rpc.Config, err e
 	config.SetCredential(credential).
 		SetRegionId(c.RegionId).
 		SetProtocol(c.Protocol).
-		SetReadTimeout(30000).
-		SetConnectTimeout(30000)
+		SetReadTimeout(c.ClientReadTimeout).
+		SetConnectTimeout(c.ClientConnectTimeout)
 	return
 }
 func (c *Config) getTeaRoaDslSdkConfig(stsSupported bool) (config roa.Config, err error) {
@@ -255,8 +258,8 @@ func (c *Config) getTeaRoaDslSdkConfig(stsSupported bool) (config roa.Config, er
 	config.SetCredential(credential).
 		SetRegionId(c.RegionId).
 		SetProtocol(c.Protocol).
-		SetReadTimeout(30000).
-		SetConnectTimeout(30000)
+		SetReadTimeout(c.ClientReadTimeout).
+		SetConnectTimeout(c.ClientConnectTimeout)
 	return
 }
 func (c *Config) getCredentialConfig(stsSupported bool) *credential.Config {

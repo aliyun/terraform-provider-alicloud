@@ -125,6 +125,18 @@ func Provider() terraform.ResourceProvider {
 				Description:  descriptions["protocol"],
 				ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS"}, false),
 			},
+			"client_read_timeout": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("CLIENT_READ_TIMEOUT", 30000),
+				Description: descriptions["client_read_timeout"],
+			},
+			"client_connect_timeout": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("CLIENT_CONNECT_TIMEOUT", 30000),
+				Description: descriptions["client_connect_timeout"],
+			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 
@@ -789,6 +801,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SkipRegionValidation: d.Get("skip_region_validation").(bool),
 		ConfigurationSource:  d.Get("configuration_source").(string),
 		Protocol:             d.Get("protocol").(string),
+		ClientReadTimeout:    d.Get("client_read_timeout").(int),
+		ClientConnectTimeout: d.Get("client_connect_timeout").(int),
 	}
 	token := getProviderConfig(d.Get("security_token").(string), "sts_token")
 	config.SecurityToken = strings.TrimSpace(token)
@@ -989,7 +1003,9 @@ func init() {
 
 		"configuration_source": "Use this to mark a terraform configuration file source.",
 
-		"ecs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.",
+		"client_read_timeout":    "The maximum timeout of the client read request.",
+		"client_connect_timeout": "The maximum timeout of the client connection server.",
+		"ecs_endpoint":           "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.",
 
 		"rds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom RDS endpoints.",
 
