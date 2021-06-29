@@ -21,7 +21,7 @@ type DdoscooService struct {
 
 func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance, err error) {
 	request := ddoscoo.CreateDescribeInstancesRequest()
-	request.RegionId = s.client.RegionId
+	request.RegionId = "cn-hangzhou"
 	request.InstanceIds = &[]string{id}
 	request.PageNumber = "1"
 	request.PageSize = "10"
@@ -47,9 +47,31 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance,
 	return
 }
 
-func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (v ddoscoo.InstanceSpec, err error) {
+// 创建实例后轮询查询直到创建成功
+func (s *DdoscooService) DdosStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeDdoscooInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		status := ""
+		if object.Status == 1 {
+			status = string(Available)
+		} else {
+			status = string(Unavailable)
+		}
+		return object, status, nil
+	}
+}
+
+func (s *DdoscooService) DescribeDdoscooInstanceSpec(d *schema.ResourceData) (v ddoscoo.InstanceSpec, err error) {
 	request := ddoscoo.CreateDescribeInstanceSpecsRequest()
-	request.RegionId = s.client.RegionId
+	request.RegionId = "cn-hangzhou"
+	id := d.Id()
 	request.InstanceIds = &[]string{id}
 
 	raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
@@ -75,7 +97,7 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (v ddoscoo.Insta
 
 func (s *DdoscooService) UpdateDdoscooInstanceName(instanceId string, name string) error {
 	request := ddoscoo.CreateModifyInstanceRemarkRequest()
-	request.RegionId = s.client.RegionId
+	request.RegionId = "cn-hangzhou"
 	request.InstanceId = instanceId
 	request.Remark = name
 
@@ -92,10 +114,15 @@ func (s *DdoscooService) UpdateDdoscooInstanceName(instanceId string, name strin
 func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, d *schema.ResourceData, meta interface{}) error {
 	request := bssopenapi.CreateModifyInstanceRequest()
 	request.RegionId = s.client.RegionId
+	if d.Get("product_type").(string) == "ddoscoo_intl" {
+		request.RegionId = "ap-southeast-1"
+	} else {
+		request.RegionId = "cn-hangzhou"
+	}
 	request.InstanceId = d.Id()
 
 	request.ProductCode = "ddos"
-	request.ProductType = "ddoscoo"
+	request.ProductType = d.Get("product_type").(string)
 	request.SubscriptionType = "Subscription"
 
 	o, n := d.GetChange(schemaName)
@@ -113,11 +140,9 @@ func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, 
 			Value: d.Get(schemaName).(string),
 		},
 	}
-
 	raw, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.ModifyInstance(request)
 	})
-
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}

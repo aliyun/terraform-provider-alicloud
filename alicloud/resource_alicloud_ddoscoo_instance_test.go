@@ -142,7 +142,7 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period"},
+				ImportStateVerifyIgnore: []string{"period", "product_type"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -226,6 +226,7 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 			},
 		},
 	})
+
 }
 func TestAccAlicloudDdoscooInstance_multi(t *testing.T) {
 	var v ddoscoo.Instance
@@ -274,13 +275,7 @@ func TestAccAlicloudDdoscooInstance_multi(t *testing.T) {
 	})
 }
 func resourceDdoscooInstanceDependence(name string) string {
-	return `
-    provider "alicloud" {
-        endpoints {
-            bssopenapi = "business.aliyuncs.com"
-        }
-    }
-`
+	return ""
 }
 
 var ddoscooInstanceBasicMap = map[string]string{
@@ -290,4 +285,141 @@ var ddoscooInstanceBasicMap = map[string]string{
 	"service_bandwidth": "100",
 	"port_count":        "50",
 	"domain_count":      "50",
+}
+
+func TestAccAlicloudDdoscooInstance_southeast(t *testing.T) {
+	var v ddoscoo.Instance
+
+	resourceId := "alicloud_ddoscoo_instance.default"
+	ra := resourceAttrInit(resourceId, ddoscooInstanceBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDdoscooInstanceDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithTime(t, []int{-1})
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":              name,
+					"bandwidth":         "30",
+					"base_bandwidth":    "30",
+					"service_bandwidth": "100",
+					"port_count":        "50",
+					"domain_count":      "50",
+					"product_type":      "ddoscoo_intl",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "product_type"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name + "-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"base_bandwidth": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"base_bandwidth": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_bandwidth": "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_bandwidth": "200",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port_count": "55",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port_count": "55",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_count": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_count": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":              name,
+					"bandwidth":         "60",
+					"base_bandwidth":    "60",
+					"service_bandwidth": "300",
+					"port_count":        "60",
+					"domain_count":      "60",
+					"product_type":      "ddoscoo_intl",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":              name,
+						"bandwidth":         "60",
+						"base_bandwidth":    "60",
+						"service_bandwidth": "300",
+						"port_count":        "60",
+						"domain_count":      "60",
+						"product_type":      "ddoscoo_intl",
+					}),
+				),
+			},
+		},
+	})
 }
