@@ -7,6 +7,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 type CrService struct {
@@ -234,5 +235,25 @@ func (c *CrService) WaitForCrRepo(id string, status Status, timeout int) error {
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, respId, id, ProviderERROR)
 		}
+	}
+}
+
+func (c *CrService) InstanceStatusRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		resp, err := c.DescribeCrEEInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if resp.InstanceStatus == failState {
+				return resp, resp.InstanceStatus, WrapError(Error(FailedToReachTargetStatus, resp.InstanceStatus))
+			}
+		}
+		return resp, resp.InstanceStatus, nil
 	}
 }
