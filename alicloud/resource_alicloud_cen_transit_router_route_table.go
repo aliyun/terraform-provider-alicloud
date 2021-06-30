@@ -20,11 +20,6 @@ func resourceAlicloudCenTransitRouterRouteTable() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(6 * time.Minute),
-			Delete: schema.DefaultTimeout(6 * time.Minute),
-			Update: schema.DefaultTimeout(6 * time.Minute),
-		},
 		Schema: map[string]*schema.Schema{
 			"dry_run": {
 				Type:     schema.TypeBool,
@@ -66,7 +61,6 @@ func resourceAlicloudCenTransitRouterRouteTableCreate(d *schema.ResourceData, me
 	}
 
 	request["TransitRouterId"] = d.Get("transit_router_id")
-	transitRouterId := d.Get("transit_router_id").(string)
 	if v, ok := d.GetOk("transit_router_route_table_description"); ok {
 		request["TransitRouterRouteTableDescription"] = v
 	}
@@ -85,15 +79,15 @@ func resourceAlicloudCenTransitRouterRouteTableCreate(d *schema.ResourceData, me
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_transit_router_route_table", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["TransitRouterRouteTableId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterRouteTableStateRefreshFunc(d.Id(), transitRouterId, []string{}))
+	d.SetId(fmt.Sprintf("%v:%v", request["TransitRouterId"], response["TransitRouterRouteTableId"]))
+	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterRouteTableStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -103,8 +97,7 @@ func resourceAlicloudCenTransitRouterRouteTableCreate(d *schema.ResourceData, me
 func resourceAlicloudCenTransitRouterRouteTableRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
-	transitRouterId := d.Get("transit_router_id").(string)
-	object, err := cbnService.DescribeCenTransitRouterRouteTable(d.Id(), transitRouterId)
+	object, err := cbnService.DescribeCenTransitRouterRouteTable(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cen_transit_router_route_table cbnService.DescribeCenTransitRouterRouteTable Failed!!! %s", err)
@@ -122,10 +115,13 @@ func resourceAlicloudCenTransitRouterRouteTableUpdate(d *schema.ResourceData, me
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	var response map[string]interface{}
-	transitRouterId := d.Get("transit_router_id").(string)
+	parts, err1 := ParseResourceId(d.Id(), 2)
+	if err1 != nil {
+		return WrapError(err1)
+	}
 	update := false
 	request := map[string]interface{}{
-		"TransitRouterRouteTableId": d.Id(),
+		"TransitRouterRouteTableId": parts[1],
 	}
 	if d.HasChange("transit_router_route_table_description") {
 		update = true
@@ -154,13 +150,13 @@ func resourceAlicloudCenTransitRouterRouteTableUpdate(d *schema.ResourceData, me
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cbnService.CenTransitRouterRouteTableStateRefreshFunc(d.Id(), transitRouterId, []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cbnService.CenTransitRouterRouteTableStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -175,8 +171,12 @@ func resourceAlicloudCenTransitRouterRouteTableDelete(d *schema.ResourceData, me
 	if err != nil {
 		return WrapError(err)
 	}
+	parts, err1 := ParseResourceId(d.Id(), 2)
+	if err1 != nil {
+		return WrapError(err1)
+	}
 	request := map[string]interface{}{
-		"TransitRouterRouteTableId": d.Id(),
+		"TransitRouterRouteTableId": parts[1],
 	}
 
 	if v, ok := d.GetOkExists("dry_run"); ok {

@@ -3,11 +3,40 @@ package alicloud
 import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func testAccCheckCenTransitRouterVbrAttachmentDestroy(s *terraform.State) error {
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	cbnService := CbnService{client}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_cen_transit_router_vbr_attachment" {
+			continue
+		}
+
+		if rs.Primary.ID == "" {
+			return WrapError(Error("No Cen TransitRouter VBR Attachment ID is set"))
+		}
+
+		// Try to find the TransitRouter
+		_, err := cbnService.DescribeCenTransitRouterVbrAttachment(rs.Primary.ID)
+
+		// Verify the error is what we want
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return WrapError(err)
+		}
+	}
+
+	return nil
+}
 
 func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 	var v map[string]interface{}
@@ -28,12 +57,12 @@ func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  testAccCheckCenTransitRouterVbrAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cen_id":            "${alicloud_cen_instance.default.id}",
-					"transit_router_id": "${alicloud_cen_transit_router.default.id}",
+					"transit_router_id": "${alicloud_cen_transit_router.default.transit_router_id}",
 					"vbr_id":            "vbr-j6cd9pm9y6d6e20atoi6w",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -63,7 +92,9 @@ func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 					"resource_type": "VBR",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"resource_type": "VBR",
+					}),
 				),
 			},
 			{
@@ -130,7 +161,6 @@ resource "alicloud_cen_instance" "default" {
 }
 resource "alicloud_cen_transit_router" "default" {
 cen_id= "${alicloud_cen_instance.default.id}"
-region_id = "cn-hongkong"
 }
 `, name)
 }

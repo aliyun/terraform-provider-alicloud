@@ -11,6 +11,8 @@ Provides a list of CEN Transit Router Route Table Association owned by an Alibab
 
 This data source provides CEN Transit Router Route Table Associations available to the user.
 
+-> **NOTE:** Available in 1.125.0+
+
 ## Example Usage
 
 ```

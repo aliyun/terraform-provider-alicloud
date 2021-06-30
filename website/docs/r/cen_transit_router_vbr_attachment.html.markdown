@@ -11,6 +11,7 @@ Provides a Alicloud CEN transit router VBR attachment resource.
 
 Provides a CEN transit router VBR attachment resource that associate the VBR with the CEN instance.
 
+-> **NOTE:** Available in 1.125.0+
 
 ## Example Usage
 

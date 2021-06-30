@@ -11,6 +11,8 @@ Provides a list of CEN Transit Router VPC Attachments owned by an Alibaba Cloud 
 
 This data source provides CEN Transit Router VPC Attachments available to the user.
 
+-> **NOTE:** Available in 1.125.0+
+
 ## Example Usage
 
 ```

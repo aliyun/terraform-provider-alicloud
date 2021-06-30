@@ -33,9 +33,9 @@ func TestAccAlicloudCenTransitRouterPeerAttachment_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cen_id":                        "${alicloud_cen_instance.default.id}",
-					"transit_router_id":             "${alicloud_cen_transit_router.default.id}",
+					"transit_router_id":             "${alicloud_cen_transit_router.default.transit_router_id}",
 					"peer_transit_router_region_id": "us-east-1",
-					"peer_transit_router_id":        "${alicloud_cen_transit_router.default_1.id}",
+					"peer_transit_router_id":        "${alicloud_cen_transit_router.default_1.transit_router_id}",
 					"cen_bandwidth_package_id":      "cenbwp-buw65zk0606xh0ukvd",
 					"bandwidth":                     "2",
 				}),
@@ -176,8 +176,8 @@ resource "alicloud_cen_transit_router" "default" {
 }
 
 resource "alicloud_cen_transit_router" "default_1" {
+  provider = alicloud.other_region_id
   cen_id = "${alicloud_cen_instance.default.id}"
-  region_id = "us-east-1"
   depends_on = [
     alicloud_cen_transit_router.default]
 }

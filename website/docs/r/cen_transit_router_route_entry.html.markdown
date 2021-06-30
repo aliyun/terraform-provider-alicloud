@@ -11,6 +11,8 @@ Provides a Alicloud CEN transit router route entry resource.
 
 Provides a CEN transit router route entry resource.
 
+-> **NOTE:** Available in 1.125.0+
+
 ## Example Usage
 
 Basic Usage

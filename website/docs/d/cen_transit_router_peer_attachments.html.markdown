@@ -11,6 +11,8 @@ Provides a list of CEN Transit Router peer attachments owned by an Alibaba Cloud
 
 This data source provides CEN Transit Router peer attachments available to the user.
 
+-> **NOTE:** Available in 1.125.0+
+
 ## Example Usage
 
 ```

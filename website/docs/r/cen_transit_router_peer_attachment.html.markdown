@@ -11,6 +11,7 @@ Provides a Alicloud CEN transit router peer attachment resource.
 
 Provides a CEN transit router peer attachment resource that associate the transit router with the CEN instance.
 
+-> **NOTE:** Available in 1.125.0+
 
 ## Example Usage
 

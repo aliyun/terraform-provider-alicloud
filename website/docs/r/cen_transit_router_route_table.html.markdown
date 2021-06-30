@@ -11,6 +11,8 @@ Provides a Alicloud CEN transit router route table resource.
 
 Provides a CEN transit router route table resource.
 
+-> **NOTE:** Available in 1.125.0+
+
 ## Example Usage
 
 Basic Usage

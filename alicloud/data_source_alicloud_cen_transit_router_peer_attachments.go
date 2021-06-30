@@ -18,7 +18,7 @@ func dataSourceAlicloudCenTransitRouterPeerAttachments() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"cen_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"status": {
@@ -120,9 +120,7 @@ func dataSourceAlicloudCenTransitRouterPeerAttachmentsRead(d *schema.ResourceDat
 
 	action := "ListTransitRouterPeerAttachments"
 	request := make(map[string]interface{})
-	if v, ok := d.GetOk("cen_id"); ok {
-		request["CenId"] = v
-	}
+	request["CenId"] = d.Get("cen_id")
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("transit_router_id"); ok {
 		request["TransitRouterId"] = v

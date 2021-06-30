@@ -110,14 +110,13 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 
 resource "alicloud_cen_transit_router" "default_0" {
   cen_id = "${alicloud_cen_instance.default.id}"
-  region_id = "cn-hangzhou"
   depends_on = [
     alicloud_cen_bandwidth_package_attachment.default]
 }
 
 resource "alicloud_cen_transit_router" "default_1" {
+  provider = alicloud.other_region_id
   cen_id = "${alicloud_cen_instance.default.id}"
-  region_id = "us-east-1"
   depends_on = [
     alicloud_cen_transit_router.default_0]
 }

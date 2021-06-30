@@ -11,6 +11,7 @@ Provides a Alicloud CEN transit router VPC attachment resource.
 
 Provides a CEN transit router VPC attachment resource that associate the VPC with the CEN instance.
 
+-> **NOTE:** Available in 1.125.0+
 
 ## Example Usage
 

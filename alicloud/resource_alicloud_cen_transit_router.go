@@ -20,11 +20,6 @@ func resourceAlicloudCenTransitRouter() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(6 * time.Minute),
-			Delete: schema.DefaultTimeout(6 * time.Minute),
-			Update: schema.DefaultTimeout(6 * time.Minute),
-		},
 		Schema: map[string]*schema.Schema{
 			"cen_id": {
 				Type:     schema.TypeString,
@@ -47,6 +42,10 @@ func resourceAlicloudCenTransitRouter() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"transit_router_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -62,16 +61,11 @@ func resourceAlicloudCenTransitRouterCreate(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 	request["CenId"] = d.Get("cen_id")
-	cenId := d.Get("cen_id").(string)
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
 
-	if v, ok := d.GetOk("region_id"); ok {
-		request["RegionId"] = v
-	} else {
-		request["RegionId"] = client.RegionId
-	}
+	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("transit_router_description"); ok {
 		request["TransitRouterDescription"] = v
@@ -94,15 +88,15 @@ func resourceAlicloudCenTransitRouterCreate(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_transit_router", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v", response["TransitRouterId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterStateRefreshFunc(d.Id(), cenId, []string{"Deleting"}))
+	d.SetId(fmt.Sprintf("%v:%v", request["CenId"], response["TransitRouterId"]))
+	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	time.Sleep(30 * time.Second)
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -114,21 +108,24 @@ func resourceAlicloudCenTransitRouterCreate(d *schema.ResourceData, meta interfa
 func resourceAlicloudCenTransitRouterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
-	cenId := d.Get("cen_id").(string)
-	object, err := cbnService.DescribeCenTransitRouter(d.Id(), cenId)
+	object, err := cbnService.DescribeCenTransitRouter(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cen_transit_router cbnService.DescribeCenTransitRouter Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "ParameterCenInstanceId"}) {
+			return nil
+		}
+		return nil
 	}
 	d.Set("cen_id", object["CenId"])
 	d.Set("status", object["Status"])
 	d.Set("transit_router_description", object["TransitRouterDescription"])
 	d.Set("transit_router_name", object["TransitRouterName"])
 	d.Set("type", object["Type"])
+	d.Set("transit_router_id", object["TransitRouterId"])
 	return nil
 }
 func resourceAlicloudCenTransitRouterUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -136,8 +133,12 @@ func resourceAlicloudCenTransitRouterUpdate(d *schema.ResourceData, meta interfa
 	cbnService := CbnService{client}
 	var response map[string]interface{}
 	update := false
+	parts, err1 := ParseResourceId(d.Id(), 2)
+	if err1 != nil {
+		return WrapError(err1)
+	}
 	request := map[string]interface{}{
-		"TransitRouterId": d.Id(),
+		"TransitRouterId": parts[1],
 	}
 	request["RegionId"] = client.RegionId
 	if d.HasChange("transit_router_description") {
@@ -148,7 +149,6 @@ func resourceAlicloudCenTransitRouterUpdate(d *schema.ResourceData, meta interfa
 		update = true
 		request["TransitRouterName"] = d.Get("transit_router_name")
 	}
-	cenId := d.Get("cen_id").(string)
 	if update {
 		if _, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = d.Get("dry_run")
@@ -168,13 +168,13 @@ func resourceAlicloudCenTransitRouterUpdate(d *schema.ResourceData, meta interfa
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cbnService.CenTransitRouterStateRefreshFunc(d.Id(), cenId, []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cbnService.CenTransitRouterStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -189,8 +189,12 @@ func resourceAlicloudCenTransitRouterDelete(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return WrapError(err)
 	}
+	parts, err1 := ParseResourceId(d.Id(), 2)
+	if err1 != nil {
+		return WrapError(err1)
+	}
 	request := map[string]interface{}{
-		"TransitRouterId": d.Id(),
+		"TransitRouterId": parts[1],
 	}
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
@@ -206,9 +210,10 @@ func resourceAlicloudCenTransitRouterDelete(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+	time.Sleep(30 * time.Second)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
