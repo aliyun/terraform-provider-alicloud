@@ -17,7 +17,7 @@ func TestAccAlicloudCenTransitRouterVbrAttachmentsDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterVbrAttachmentsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_cen_transit_router_vbr_attachment.default.id}_fake"]`,
-			"cen_id": `"${alicloud_cen_instance.default.id}_fake"`,
+			"cen_id": `"${alicloud_cen_instance.default.id}"`,
 		}),
 	}
 	cenIdConf := dataSourceTestAccConfig{
@@ -47,7 +47,7 @@ func TestAccAlicloudCenTransitRouterVbrAttachmentsDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterVbrAttachmentsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_cen_transit_router_vbr_attachment.default.id}"]`,
-			"status": `"${alicloud_cen_transit_router_vbr_attachment.default.status}"`,
+			"status": `"${alicloud_cen_transit_router_vbr_attachment.default.status}_fake"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
@@ -106,13 +106,12 @@ resource "alicloud_cen_instance" "default" {
 
 resource "alicloud_cen_transit_router" "default" {
 cen_id= "${alicloud_cen_instance.default.id}"
-region_id = "cn-hongkong"
 }
 
 resource "alicloud_cen_transit_router_vbr_attachment" "default" {
 auto_publish_route_enabled = true
 cen_id = "${alicloud_cen_instance.default.id}"
-transit_router_id = "${alicloud_cen_transit_router.default.id}"
+transit_router_id = "${alicloud_cen_transit_router.default.transit_router_id}"
 vbr_id = "vbr-j6cd9pm9y6d6e20atoi6w"
 transit_router_attachment_description = "desp"
 transit_router_attachment_name = "name"

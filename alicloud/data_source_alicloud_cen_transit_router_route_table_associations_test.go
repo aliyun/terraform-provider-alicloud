@@ -35,7 +35,7 @@ func TestAccAlicloudCenTransitRouterRouteTableAssociationsDataSource(t *testing.
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterRouteTableAssociationsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_cen_transit_router_route_table_association.default.transit_router_attachment_id}_fake"]`,
-			"status": `"${alicloud_cen_transit_router_route_table_association.default.status}"`,
+			"status": `"${alicloud_cen_transit_router_route_table_association.default.status}_fake"`,
 		}),
 	}
 	var existAlicloudCenTransitRouterRouteTableAssociationsDataSourceNameMapFunc = func(rand int) map[string]string {

@@ -18,7 +18,7 @@ func dataSourceAlicloudCenTransitRouterVpcAttachments() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"cen_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"status": {
@@ -113,10 +113,9 @@ func dataSourceAlicloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData
 
 	action := "ListTransitRouterVpcAttachments"
 	request := make(map[string]interface{})
-	if v, ok := d.GetOk("cen_id"); ok {
-		request["CenId"] = v
-	}
-	cenId := d.Get("cen_id").(string)
+
+	request["CenId"] = d.Get("cen_id")
+
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("transit_router_id"); ok {
 		request["TransitRouterId"] = v
@@ -214,8 +213,8 @@ func dataSourceAlicloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData
 		}
 
 		cbnService := CbnService{client}
-		id := fmt.Sprint(object["TransitRouterAttachmentId"])
-		getResp, err := cbnService.DescribeCenTransitRouterVpcAttachment(id, cenId)
+		id := fmt.Sprintf("%v:%v", object["TransitRouterAttachmentId"], request["CenId"])
+		getResp, err := cbnService.DescribeCenTransitRouterVpcAttachment(id)
 		if err != nil {
 			return WrapError(err)
 		}

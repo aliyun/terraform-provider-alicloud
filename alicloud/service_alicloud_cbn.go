@@ -575,16 +575,18 @@ func (s *CbnService) CenRouteServiceStateRefreshFunc(id string, failStates []str
 	}
 }
 
-func (s *CbnService) DescribeCenTransitRouter(id string, cenId string) (object map[string]interface{}, err error) {
+func (s *CbnService) DescribeCenTransitRouter(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCbnClient()
+	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return nil, WrapError(err)
 	}
 	action := "ListTransitRouters"
 	request := map[string]interface{}{
-		"TransitRouterId": id,
-		"CenId":           cenId,
+		"Region_id":       s.client.RegionId,
+		"CenId":           parts[0],
+		"TransitRouterId": parts[1],
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -598,9 +600,9 @@ func (s *CbnService) DescribeCenTransitRouter(id string, cenId string) (object m
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -611,7 +613,7 @@ func (s *CbnService) DescribeCenTransitRouter(id string, cenId string) (object m
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 	} else {
-		if v.([]interface{})[0].(map[string]interface{})["TransitRouterId"].(string) != id {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterId"].(string) != parts[1] {
 			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 		}
 	}
@@ -619,9 +621,10 @@ func (s *CbnService) DescribeCenTransitRouter(id string, cenId string) (object m
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterStateRefreshFunc(id string, cenId string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouter(id, cenId)
+
+		object, err := s.DescribeCenTransitRouter(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -638,17 +641,22 @@ func (s *CbnService) CenTransitRouterStateRefreshFunc(id string, cenId string, f
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
-func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string, cenId string) (object map[string]interface{}, err error) {
+
+func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
 		return nil, WrapError(err)
+	}
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
 	}
 	action := "ListTransitRouterPeerAttachments"
 	request := map[string]interface{}{
 		"RegionId":                  s.client.RegionId,
-		"CenId":                     cenId,
-		"TransitRouterAttachmentId": id,
+		"CenId":                     parts[0],
+		"TransitRouterAttachmentId": parts[1],
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -662,9 +670,9 @@ func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string, cenId str
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -683,9 +691,9 @@ func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string, cenId str
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterPeerAttachmentStateRefreshFunc(id string, cenId string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterPeerAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterPeerAttachment(id, cenId)
+		object, err := s.DescribeCenTransitRouterPeerAttachment(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -702,17 +710,21 @@ func (s *CbnService) CenTransitRouterPeerAttachmentStateRefreshFunc(id string, c
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
-func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string, cenId string) (object map[string]interface{}, err error) {
+func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
 		return nil, WrapError(err)
+	}
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
 	}
 	action := "ListTransitRouterVbrAttachments"
 	request := map[string]interface{}{
 		"RegionId":                  s.client.RegionId,
-		"TransitRouterAttachmentId": id,
-		"CenId":                     cenId,
+		"CenId":                     parts[0],
+		"TransitRouterAttachmentId": parts[1],
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -729,6 +741,7 @@ func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string, cenId stri
 		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -747,9 +760,9 @@ func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string, cenId stri
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterVbrAttachmentStateRefreshFunc(id string, cenId string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterVbrAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterVbrAttachment(id, cenId)
+		object, err := s.DescribeCenTransitRouterVbrAttachment(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -766,17 +779,21 @@ func (s *CbnService) CenTransitRouterVbrAttachmentStateRefreshFunc(id string, ce
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
-func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string, cenId string) (object map[string]interface{}, err error) {
+func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
 		return nil, WrapError(err)
+	}
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
 	}
 	action := "ListTransitRouterVpcAttachments"
 	request := map[string]interface{}{
 		"RegionId":                  s.client.RegionId,
-		"TransitRouterAttachmentId": id,
-		"CenId":                     cenId,
+		"CenId":                     parts[0],
+		"TransitRouterAttachmentId": parts[1],
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -790,9 +807,9 @@ func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string, cenId stri
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -811,9 +828,9 @@ func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string, cenId stri
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, cenId string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterVpcAttachment(id, cenId)
+		object, err := s.DescribeCenTransitRouterVpcAttachment(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -830,16 +847,20 @@ func (s *CbnService) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, ce
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
-func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string, transitRouterRouteTableId string) (object map[string]interface{}, err error) {
+func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
+	}
 	action := "ListTransitRouterRouteEntries"
 	request := map[string]interface{}{
-		"TransitRouterRoutetableId":  transitRouterRouteTableId,
-		"TransitRouterRouteEntryIds": []string{id},
+		"TransitRouterRouteTableId":  parts[0],
+		"TransitRouterRouteEntryIds": []string{parts[1]},
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -853,9 +874,9 @@ func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string, transitRouter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -874,9 +895,9 @@ func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string, transitRouter
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterRouteEntryStateRefreshFunc(id string, transitRouterRoutetableId string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterRouteEntryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterRouteEntry(id, transitRouterRoutetableId)
+		object, err := s.DescribeCenTransitRouterRouteEntry(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -893,16 +914,20 @@ func (s *CbnService) CenTransitRouterRouteEntryStateRefreshFunc(id string, trans
 		return object, fmt.Sprint(object["TransitRouterRouteEntryStatus"]), nil
 	}
 }
-func (s *CbnService) DescribeCenTransitRouterRouteTable(id string, transitRouterId string) (object map[string]interface{}, err error) {
+func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
+	}
 	action := "ListTransitRouterRouteTables"
 	request := map[string]interface{}{
-		"TransitRouterId":            transitRouterId,
-		"TransitRouterRouteTableIds": []string{id},
+		"TransitRouterId":            parts[0],
+		"TransitRouterRouteTableIds": []string{parts[1]},
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -916,9 +941,9 @@ func (s *CbnService) DescribeCenTransitRouterRouteTable(id string, transitRouter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -937,9 +962,9 @@ func (s *CbnService) DescribeCenTransitRouterRouteTable(id string, transitRouter
 	return object, nil
 }
 
-func (s *CbnService) CenTransitRouterRouteTableStateRefreshFunc(id string, transitRouterId string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenTransitRouterRouteTableStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenTransitRouterRouteTable(id, transitRouterId)
+		object, err := s.DescribeCenTransitRouterRouteTable(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -984,9 +1009,9 @@ func (s *CbnService) DescribeCenTransitRouterRouteTableAssociation(id string) (o
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1052,9 +1077,9 @@ func (s *CbnService) DescribeCenTransitRouterRouteTablePropagation(id string) (o
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}

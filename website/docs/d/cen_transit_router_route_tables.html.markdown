@@ -11,6 +11,8 @@ Provides a list of CEN Transit Router Route Tables owned by an Alibaba Cloud acc
 
 This data source provides CEN Transit Router Route Tables available to the user.
 
+-> **NOTE:** Available in 1.125.0+
+
 ## Example Usage
 
 ```

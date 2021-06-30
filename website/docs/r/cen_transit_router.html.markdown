@@ -11,7 +11,7 @@ Provides a Alicloud CEN transit router resource.
 
 Provides a CEN transit router resource that associate the transitRouter with the CEN instance.
 
-->**NOTE:** Available in 1.42.0+
+-> **NOTE:** Available in 1.125.0+
 
 ## Example Usage
 

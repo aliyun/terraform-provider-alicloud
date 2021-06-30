@@ -124,12 +124,11 @@ resource "alicloud_cen_instance" "default" {
 
 resource "alicloud_cen_transit_router" "default" {
 cen_id= "${alicloud_cen_instance.default.id}"
-region_id = "cn-hangzhou"
 }
 
 resource "alicloud_cen_transit_router_vpc_attachment" "default" {
   cen_id = "${alicloud_cen_instance.default.id}"
-  transit_router_id = "${alicloud_cen_transit_router.default.id}"
+  transit_router_id = "${alicloud_cen_transit_router.default.transit_router_id}"
   vpc_id = "${alicloud_vpc.default.id}"
   zone_mappings {
     zone_id = "cn-hangzhou-h"
@@ -145,6 +144,7 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
 
 data "alicloud_cen_transit_router_vpc_attachments" "default" {	
 	enable_details = true
+	cen_id = "${alicloud_cen_instance.default.id}"
 	%s	
 }
 `, rand, strings.Join(pairs, " \n "))

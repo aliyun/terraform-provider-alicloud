@@ -11,6 +11,8 @@ Provides a list of CEN Transit Router Route Table Propagation owned by an Alibab
 
 This data source provides CEN Transit Router Route Table Propagations available to the user.
 
+-> **NOTE:** Available in 1.125.0+
+
 ## Example Usage
 
 ```

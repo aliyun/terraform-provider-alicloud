@@ -2,12 +2,41 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func testAccCheckCenTransitRouterDestroy(s *terraform.State) error {
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	cbnService := CbnService{client}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_cen_transit_router" {
+			continue
+		}
+
+		if rs.Primary.ID == "" {
+			return WrapError(Error("No Cen TransitRouter ID is set"))
+		}
+
+		// Try to find the TransitRouter
+		_, err := cbnService.DescribeCenTransitRouter(rs.Primary.ID)
+
+		// Verify the error is what we want
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return WrapError(err)
+		}
+	}
+
+	return nil
+}
 
 func TestAccAlicloudCenTransitRouter_basic(t *testing.T) {
 	var v map[string]interface{}
@@ -28,19 +57,17 @@ func TestAccAlicloudCenTransitRouter_basic(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  testAccCheckCenTransitRouterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cen_id":                     "${alicloud_cen_instance.default.id}",
-					"region_id":                  "cn-hangzhou",
 					"transit_router_name":        "${var.name}",
 					"transit_router_description": "tf",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cen_id":                     CHECKSET,
-						"region_id":                  "cn-hangzhou",
 						"transit_router_name":        name,
 						"transit_router_description": "tf",
 					}),
@@ -103,7 +130,7 @@ func AlicloudCenTransitRouterBasicDependence(name string) string {
 	}
 
 	resource "alicloud_cen_instance" "default" {
-		cen_instance_name = var.name
+		cen_instance_name = "${var.name}"
 	}
 	`, name)
 }

@@ -11,6 +11,8 @@ Provides a list of CEN Transit Routers owned by an Alibaba Cloud account.
 
 This data source provides CEN Transit Routers available to the user.
 
+-> **NOTE:** Available in 1.125.0+
+
 ## Example Usage
 
 ```

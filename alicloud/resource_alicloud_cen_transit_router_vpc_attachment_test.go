@@ -33,7 +33,7 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cen_id":            "${alicloud_cen_instance.default.id}",
-					"transit_router_id": "${alicloud_cen_transit_router.default.id}",
+					"transit_router_id": "${alicloud_cen_transit_router.default.transit_router_id}",
 					"vpc_id":            "${alicloud_vpc.default.id}",
 					"zone_mappings": []map[string]interface{}{
 						{
@@ -159,7 +159,6 @@ resource "alicloud_cen_instance" "default" {
 
 resource "alicloud_cen_transit_router" "default" {
 cen_id= "${alicloud_cen_instance.default.id}"
-region_id = "cn-hangzhou"
 }
 `, name)
 }

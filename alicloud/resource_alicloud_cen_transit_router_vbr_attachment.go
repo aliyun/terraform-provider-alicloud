@@ -20,11 +20,6 @@ func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(6 * time.Minute),
-			Delete: schema.DefaultTimeout(6 * time.Minute),
-			Update: schema.DefaultTimeout(6 * time.Minute),
-		},
 		Schema: map[string]*schema.Schema{
 			"auto_publish_route_enabled": {
 				Type:     schema.TypeBool,
@@ -100,7 +95,6 @@ func resourceAlicloudCenTransitRouterVbrAttachmentCreate(d *schema.ResourceData,
 	}
 
 	request["CenId"] = d.Get("cen_id")
-	cenId := d.Get("cen_id").(string)
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
@@ -148,15 +142,15 @@ func resourceAlicloudCenTransitRouterVbrAttachmentCreate(d *schema.ResourceData,
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_transit_router_vbr_attachment", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["TransitRouterAttachmentId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterVbrAttachmentStateRefreshFunc(d.Id(), cenId, []string{}))
+	d.SetId(fmt.Sprintf("%v:%v", request["CenId"], response["TransitRouterAttachmentId"]))
+	stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterVbrAttachmentStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -166,8 +160,7 @@ func resourceAlicloudCenTransitRouterVbrAttachmentCreate(d *schema.ResourceData,
 func resourceAlicloudCenTransitRouterVbrAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
-	cenId := d.Get("cen_id").(string)
-	object, err := cbnService.DescribeCenTransitRouterVbrAttachment(d.Id(), cenId)
+	object, err := cbnService.DescribeCenTransitRouterVbrAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cen_transit_router_vbr_attachment cbnService.DescribeCenTransitRouterVbrAttachment Failed!!! %s", err)
@@ -187,11 +180,14 @@ func resourceAlicloudCenTransitRouterVbrAttachmentRead(d *schema.ResourceData, m
 func resourceAlicloudCenTransitRouterVbrAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
-	cenId := d.Get("cen_id").(string)
 	var response map[string]interface{}
+	parts, err1 := ParseResourceId(d.Id(), 2)
+	if err1 != nil {
+		return WrapError(err1)
+	}
 	update := false
 	request := map[string]interface{}{
-		"TransitRouterAttachmentId": d.Id(),
+		"TransitRouterAttachmentId": parts[1],
 	}
 	if d.HasChange("auto_publish_route_enabled") || d.IsNewResource() {
 		update = true
@@ -228,13 +224,13 @@ func resourceAlicloudCenTransitRouterVbrAttachmentUpdate(d *schema.ResourceData,
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cbnService.CenTransitRouterVbrAttachmentStateRefreshFunc(d.Id(), cenId, []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cbnService.CenTransitRouterVbrAttachmentStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -250,9 +246,12 @@ func resourceAlicloudCenTransitRouterVbrAttachmentDelete(d *schema.ResourceData,
 	if err != nil {
 		return WrapError(err)
 	}
-	cenId := d.Get("cen_id").(string)
+	parts, err1 := ParseResourceId(d.Id(), 2)
+	if err1 != nil {
+		return WrapError(err1)
+	}
 	request := map[string]interface{}{
-		"TransitRouterAttachmentId": d.Id(),
+		"TransitRouterAttachmentId": parts[1],
 	}
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
@@ -271,13 +270,13 @@ func resourceAlicloudCenTransitRouterVbrAttachmentDelete(d *schema.ResourceData,
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cbnService.CenTransitRouterVbrAttachmentStateRefreshFunc(d.Id(), cenId, []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cbnService.CenTransitRouterVbrAttachmentStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

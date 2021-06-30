@@ -20,10 +20,6 @@ func resourceAlicloudCenTransitRouterRouteTablePropagation() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(6 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
-		},
 		Schema: map[string]*schema.Schema{
 			"dry_run": {
 				Type:     schema.TypeBool,
@@ -73,9 +69,9 @@ func resourceAlicloudCenTransitRouterRouteTablePropagationCreate(d *schema.Resou
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_transit_router_route_table_propagation", action, AlibabaCloudSdkGoERROR)
 	}
@@ -144,9 +140,9 @@ func resourceAlicloudCenTransitRouterRouteTablePropagationDelete(d *schema.Resou
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
