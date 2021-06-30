@@ -604,6 +604,9 @@ func (s *CbnService) DescribeCenTransitRouter(id string) (object map[string]inte
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance Attachment", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.TransitRouters", response)

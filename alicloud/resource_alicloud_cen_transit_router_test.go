@@ -2,41 +2,12 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
-
-func testAccCheckCenTransitRouterDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	cbnService := CbnService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_cen_transit_router" {
-			continue
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No Cen TransitRouter ID is set"))
-		}
-
-		// Try to find the TransitRouter
-		_, err := cbnService.DescribeCenTransitRouter(rs.Primary.ID)
-
-		// Verify the error is what we want
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return WrapError(err)
-		}
-	}
-
-	return nil
-}
 
 func TestAccAlicloudCenTransitRouter_basic(t *testing.T) {
 	var v map[string]interface{}
@@ -57,7 +28,7 @@ func TestAccAlicloudCenTransitRouter_basic(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckCenTransitRouterDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
