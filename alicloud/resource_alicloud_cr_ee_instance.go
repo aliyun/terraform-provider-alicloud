@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -135,6 +136,7 @@ func resourceAlicloudCrEEInstanceCreate(d *schema.ResourceData, meta interface{}
 			// if account site is international, should route to  ap-southeast-1
 			if serverErr, ok := errCreate.(*errors.ServerError); ok && serverErr.ErrorCode() == "NotApplicable" {
 				request.RegionId = "ap-southeast-1"
+				request.Domain = ""
 				resp, errCreate = bssopenapiClient.CreateInstance(request)
 			}
 		}
@@ -148,7 +150,14 @@ func resourceAlicloudCrEEInstanceCreate(d *schema.ResourceData, meta interface{}
 	if !response.Success {
 		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_cr_ee_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
 	d.SetId(fmt.Sprintf("%v", response.Data.InstanceId))
+
+	crService := &CrService{client}
+	stateConf := BuildStateConf([]string{"PENDING", "STARTING"}, []string{"RUNNING"}, 3*time.Minute, 15*time.Second, crService.InstanceStatusRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return resourceAlicloudCrEEInstanceRead(d, meta)
 }
@@ -178,12 +187,17 @@ func resourceAlicloudCrEEInstanceRead(d *schema.ResourceData, meta interface{}) 
 	request.InstanceIDs = resp.InstanceId
 	raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		resp, errQuery := bssopenapiClient.QueryAvailableInstances(request)
-		if errQuery != nil {
+		regionRedirect := false
+		if serverErr, ok := errQuery.(*errors.ServerError); ok && serverErr.ErrorCode() == "NotApplicable" {
+			regionRedirect = true
+		} else if !resp.Success && strings.Contains(resp.Message, "code=40001") {
+			regionRedirect = true
+		}
+		if regionRedirect {
 			// if account site is international, should route to  ap-southeast-1
-			if serverErr, ok := errQuery.(*errors.ServerError); ok && serverErr.ErrorCode() == "NotApplicable" {
-				request.RegionId = "ap-southeast-1"
-				resp, errQuery = bssopenapiClient.QueryAvailableInstances(request)
-			}
+			request.RegionId = "ap-southeast-1"
+			request.Domain = ""
+			resp, errQuery = bssopenapiClient.QueryAvailableInstances(request)
 		}
 		return resp, errQuery
 	})
