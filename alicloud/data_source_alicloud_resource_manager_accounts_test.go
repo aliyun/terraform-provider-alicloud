@@ -38,6 +38,7 @@ func TestAccAlicloudResourceManagerAccountsDataSource(t *testing.T) {
 			"accounts.0.status":                CHECKSET,
 			"accounts.0.type":                  CHECKSET,
 			"accounts.0.payer_account_id":      "",
+			"accounts.0.account_name":          CHECKSET,
 		}
 	}
 

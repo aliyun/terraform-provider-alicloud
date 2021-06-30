@@ -46,6 +46,10 @@ func dataSourceAlicloudResourceManagerAccounts() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"account_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"display_name": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -182,11 +186,17 @@ func dataSourceAlicloudResourceManagerAccountsRead(d *schema.ResourceData, meta 
 
 		resourcemanagerService := ResourcemanagerService{client}
 		id := fmt.Sprint(object["AccountId"])
-		getResp, err := resourcemanagerService.GetPayerForAccount(id)
+		getResp, err := resourcemanagerService.DescribeResourceManagerAccount(id)
 		if err != nil {
 			return WrapError(err)
 		}
-		mapping["payer_account_id"] = getResp["PayerAccountId"]
+		mapping["account_name"] = getResp["AccountName"]
+		getResp1, err := resourcemanagerService.GetPayerForAccount(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		mapping["payer_account_id"] = getResp1["PayerAccountId"]
+
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
 	}

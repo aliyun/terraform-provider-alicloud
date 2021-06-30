@@ -49,4 +49,5 @@ The following attributes are exported in addition to the arguments listed above:
     * `status` - The status of the member account. 
     * `type` - The type of the member account. 
     * `payer_account_id` - (Available in v1.124.3+) Settlement account ID. If the value is empty, the current account will be used for settlement.
+    * `account_name` - (Available in v1.124.5+) The Alibaba Cloud account name of the member account.
     
