@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"strconv"
 	"strings"
 	"time"
 
@@ -154,7 +153,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				DiffSuppressFunc: whiteIpListDiffSuppressFunc,
 			},
 			"security_groups": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -333,40 +332,36 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	d.Set("name", instance.InstanceName)
-	d.Set("zone_id", instance.ZoneId)
-	d.Set("engine", instance.Engine)
-	d.Set("engine_version", instance.MajorVersion)
-	d.Set("master_instance_type", instance.MasterInstanceType)
-	d.Set("master_instance_quantity", instance.MasterNodeCount)
-	d.Set("core_instance_type", instance.CoreInstanceType)
-	d.Set("core_instance_quantity", instance.CoreNodeCount)
-	diskCount, err := strconv.Atoi(instance.CoreDiskCount)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("core_disk_size", diskCount*instance.CoreDiskSize)
-	d.Set("core_disk_type", instance.CoreDiskType)
+	d.Set("name", instance["InstanceName"])
+	d.Set("zone_id", instance["ZoneId"])
+	d.Set("engine", instance["Engine"])
+	d.Set("engine_version", instance["MajorVersion"])
+	d.Set("master_instance_type", instance["MasterInstanceType"])
+	d.Set("master_instance_quantity", instance["MasterNodeCount"])
+	d.Set("core_instance_type", instance["CoreInstanceType"])
+	d.Set("core_instance_quantity", instance["CoreNodeCount"])
+	d.Set("core_disk_size", formatInt(instance["CoreDiskCount"])*formatInt(instance["CoreDiskSize"]))
+	d.Set("core_disk_type", instance["CoreDiskType"])
 	// Postpaid -> PostPaid
-	if instance.PayType == string(Postpaid) {
+	if instance["PayType"] == string(Postpaid) {
 		d.Set("pay_type", string(PostPaid))
-	} else if instance.PayType == string(Prepaid) {
+	} else if instance["PayType"] == string(Prepaid) {
 		d.Set("pay_type", string(PrePaid))
-		period, err := computePeriodByUnit(instance.CreatedTimeUTC, instance.ExpireTimeUTC, d.Get("duration").(int), "Month")
+		period, err := computePeriodByUnit(instance["CreatedTimeUTC"], instance["ExpireTimeUTC"], d.Get("duration").(int), "Month")
 		if err != nil {
 			return WrapError(err)
 		}
 		d.Set("duration", period)
 	}
 	// now sdk can not get right value, "auto_renew", "is_cold_storage".
-	d.Set("auto_renew", instance.AutoRenewal)
-	d.Set("cold_storage_size", instance.ColdStorageSize)
-	d.Set("vpc_id", instance.VpcId)
-	d.Set("vswitch_id", instance.VswitchId)
-	d.Set("maintain_start_time", instance.MaintainStartTime)
-	d.Set("maintain_end_time", instance.MaintainEndTime)
-	d.Set("deletion_protection", instance.IsDeletionProtection)
-	d.Set("tags", hbaseService.tagsToMap(instance.Tags.Tag))
+	d.Set("auto_renew", instance["AutoRenewal"])
+	d.Set("cold_storage_size", instance["ColdStorageSize"])
+	d.Set("vpc_id", instance["VpcId"])
+	d.Set("vswitch_id", instance["VswitchId"])
+	d.Set("maintain_start_time", instance["MaintainStartTime"])
+	d.Set("maintain_end_time", instance["MaintainEndTime"])
+	d.Set("deletion_protection", instance["IsDeletionProtection"])
+	d.Set("tags", tagsToMap(instance["Tags"]))
 
 	ipWhitelist, err := hbaseService.DescribeIpWhitelist(d.Id())
 	if err != nil {
@@ -434,7 +429,7 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 		target := strings.ToLower(d.Get("pay_type").(string))
-		if strings.ToLower(object.PayType) != target {
+		if strings.ToLower(object["PayType"].(string)) != target {
 			request := hbase.CreateConvertInstanceRequest()
 			request.ClusterId = d.Id()
 			request.PayType = string(Postpaid)
@@ -483,7 +478,7 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("security_groups") {
 		request := hbase.CreateModifySecurityGroupsRequest()
 		request.ClusterId = d.Id()
-		securityGroups := d.Get("security_groups").([]interface{})
+		securityGroups := d.Get("security_groups").(*schema.Set).List()
 		if securityGroups != nil && len(securityGroups) > 0 {
 			request.SecurityGroupIds = strings.Join(expandStringList(securityGroups), ",")
 		} else {
