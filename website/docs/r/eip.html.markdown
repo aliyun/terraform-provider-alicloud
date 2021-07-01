@@ -11,6 +11,8 @@ description: |-
 
 Provides an elastic IP resource.
 
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.126.0`. Please use new resource [alicloud_eip_address](https://www.terraform.io/docs/providers/alicloud/r/eip_address.html).
+
 -> **NOTE:** The resource only supports to create `PostPaid PayByTraffic`  or `PrePaid PayByBandwidth` elastic IP for international account. Otherwise, you will happened error `COMMODITY.INVALID_COMPONENT`.
 Your account is international if you can use it to login in [International Web Console](https://account.alibabacloud.com/login/login.htm).
 
@@ -64,5 +66,5 @@ The following attributes are exported:
 Elastic IP address can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_eip.example eip-abc12345678
+$ terraform import alicloud_eip_address.example eip-abc12345678
 ```

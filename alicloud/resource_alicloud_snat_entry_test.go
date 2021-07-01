@@ -32,7 +32,7 @@ func TestAccAlicloudSnatEntry_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"snat_ip":           "${alicloud_eip.default.ip_address}",
+					"snat_ip":           "${alicloud_eip_address.default.ip_address}",
 					"snat_table_id":     "${alicloud_nat_gateway.default.snat_table_ids}",
 					"source_vswitch_id": "${alicloud_vswitch.default.id}",
 				}),
@@ -62,7 +62,7 @@ func TestAccAlicloudSnatEntry_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"snat_entry_name": "${var.name}",
-					"snat_ip":         "${alicloud_eip.default.ip_address}",
+					"snat_ip":         "${alicloud_eip_address.default.ip_address}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -142,13 +142,13 @@ resource "alicloud_nat_gateway" "default" {
   nat_type      = "Enhanced"
 }
 
-resource "alicloud_eip" "default" {
-  name = "${var.name}"
+resource "alicloud_eip_address" "default" {
+  address_name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "default" {
-  depends_on    = [alicloud_eip.default, alicloud_nat_gateway.default]
-  allocation_id = "${alicloud_eip.default.id}"
+  depends_on    = [alicloud_eip_address.default, alicloud_nat_gateway.default]
+  allocation_id = "${alicloud_eip_address.default.id}"
   instance_id   = "${alicloud_nat_gateway.default.id}"
 }
 
@@ -187,19 +187,19 @@ resource "alicloud_nat_gateway" "default" {
   nat_type      = "Enhanced"
 }
 
-resource "alicloud_eip" "default" {
-  name = "${var.name}"
+resource "alicloud_eip_address" "default" {
+  address_name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "default" {
-  depends_on    = [alicloud_eip.default, alicloud_nat_gateway.default]
-  allocation_id = "${alicloud_eip.default.id}"
+  depends_on    = [alicloud_eip_address.default, alicloud_nat_gateway.default]
+  allocation_id = "${alicloud_eip_address.default.id}"
   instance_id   = "${alicloud_nat_gateway.default.id}"
 }
 
 resource "alicloud_snat_entry" "default" {
 	count = 3
-	snat_ip = "${alicloud_eip.default.ip_address}"
+	snat_ip = "${alicloud_eip_address.default.ip_address}"
     snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
     source_vswitch_id = "${alicloud_vswitch.default[count.index].id}"
 	depends_on = [alicloud_eip_association.default]

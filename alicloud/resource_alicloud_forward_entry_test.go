@@ -33,7 +33,7 @@ func TestAccAlicloudForwardEntry_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"forward_table_id": "${alicloud_nat_gateway.default.forward_table_ids}",
-					"external_ip":      "${alicloud_eip.default.0.ip_address}",
+					"external_ip":      "${alicloud_eip_address.default.0.ip_address}",
 					"external_port":    `80`,
 					"internal_ip":      "172.16.0.3",
 					"internal_port":    `8080`,
@@ -58,7 +58,7 @@ func TestAccAlicloudForwardEntry_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"external_ip": "${alicloud_eip.default.1.ip_address}",
+					"external_ip": "${alicloud_eip_address.default.1.ip_address}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -118,7 +118,7 @@ func TestAccAlicloudForwardEntry_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"external_ip":        "${alicloud_eip.default.0.ip_address}",
+					"external_ip":        "${alicloud_eip_address.default.0.ip_address}",
 					"external_port":      `80`,
 					"forward_entry_name": "${var.name}",
 					"internal_ip":        "172.16.0.3",
@@ -176,14 +176,14 @@ resource "alicloud_nat_gateway" "default" {
 	name = "${var.name}"
 }
 
-resource "alicloud_eip" "default" {
+resource "alicloud_eip_address" "default" {
 	count = "${var.number}"
-	name = "${var.name}"
+	address_name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "default" {
 	count = "${var.number}"
-	allocation_id = "${element(alicloud_eip.default.*.id,count.index)}"
+	allocation_id = "${element(alicloud_eip_address.default.*.id,count.index)}"
 	instance_id = "${alicloud_nat_gateway.default.id}"
 }
 `, name)

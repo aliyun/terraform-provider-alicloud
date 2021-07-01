@@ -64,11 +64,11 @@ resource "alicloud_instance" "worker" {
   }
 }
 
-resource "alicloud_eip" "eip" {
+resource "alicloud_eip_address" "eip" {
 }
 
 resource "alicloud_eip_association" "attach" {
-  allocation_id = alicloud_eip.eip.id
+  allocation_id = alicloud_eip_address.eip.id
   instance_id   = alicloud_instance.nat.id
 }
 
