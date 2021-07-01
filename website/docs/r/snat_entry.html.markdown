@@ -42,14 +42,14 @@ resource "alicloud_nat_gateway" "default" {
   name          = var.name
 }
 
-resource "alicloud_eip" "default" {
+resource "alicloud_eip_address" "default" {
   count = 2
-  name  = var.name
+  address_name  = var.name
 }
 
 resource "alicloud_eip_association" "default" {
   count         = 2
-  allocation_id = element(alicloud_eip.default.*.id, count.index)
+  allocation_id = element(alicloud_eip_address.default.*.id, count.index)
   instance_id   = alicloud_nat_gateway.default.id
 }
 
@@ -63,14 +63,14 @@ resource "alicloud_common_bandwidth_package" "default" {
 resource "alicloud_common_bandwidth_package_attachment" "default" {
   count                = 2
   bandwidth_package_id = alicloud_common_bandwidth_package.default.id
-  instance_id          = element(alicloud_eip.default.*.id, count.index)
+  instance_id          = element(alicloud_eip_address.default.*.id, count.index)
 }
 
 resource "alicloud_snat_entry" "default" {
   depends_on        = [alicloud_eip_association.default]
   snat_table_id     = alicloud_nat_gateway.default.snat_table_ids
   source_vswitch_id = alicloud_vswitch.vswitch.id
-  snat_ip           = join(",", alicloud_eip.default.*.ip_address)
+  snat_ip           = join(",", alicloud_eip_address.default.*.ip_address)
 }
 ```
 
