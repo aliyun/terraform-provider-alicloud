@@ -764,7 +764,7 @@ func TestAccAlicloudElasticsearchInstance_setting_config(t *testing.T) {
 					"data_node_disk_size":  DataNodeDisk,
 					"data_node_disk_type":  DataNodeDiskType,
 					"instance_charge_type": string(PostPaid),
-					"setting_config": 		map[string]string{
+					"setting_config": map[string]string{
 						"\"action.auto_create_index\"":         "+.*,-*",
 						"\"action.destructive_requires_name\"": "false",
 						"\"xpack.security.audit.enabled\"":     "true",
@@ -815,7 +815,6 @@ var elasticsearchMap = map[string]string{
 	"kibana_port":                   CHECKSET,
 	"vswitch_id":                    CHECKSET,
 }
-
 
 var AlicloudElasticsearchMap = map[string]string{
 	"id":                   CHECKSET,
