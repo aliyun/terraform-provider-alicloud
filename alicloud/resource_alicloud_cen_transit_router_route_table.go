@@ -34,9 +34,18 @@ func resourceAlicloudCenTransitRouterRouteTable() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"transit_router_route_table_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"transit_router_route_table_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"transit_router_route_table_description": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"transit_router_route_table_name": {
 				Type:     schema.TypeString,
@@ -109,6 +118,8 @@ func resourceAlicloudCenTransitRouterRouteTableRead(d *schema.ResourceData, meta
 	d.Set("status", object["TransitRouterRouteTableStatus"])
 	d.Set("transit_router_route_table_description", object["TransitRouterRouteTableDescription"])
 	d.Set("transit_router_route_table_name", object["TransitRouterRouteTableName"])
+	d.Set("transit_router_route_table_id", object["TransitRouterRouteTableId"])
+	d.Set("transit_router_route_table_type", object["TransitRouterRouteTableType"])
 	return nil
 }
 func resourceAlicloudCenTransitRouterRouteTableUpdate(d *schema.ResourceData, meta interface{}) error {

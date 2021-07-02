@@ -76,7 +76,7 @@ func resourceAlicloudCenTransitRouterRouteTablePropagationCreate(d *schema.Resou
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_transit_router_route_table_propagation", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["TransitRouterRouteTableId"], ":", request["TransitRouterAttachmentId"]))
+	d.SetId(fmt.Sprint(request["TransitRouterAttachmentId"], ":", request["TransitRouterRouteTableId"]))
 	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterRouteTablePropagationStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -100,8 +100,8 @@ func resourceAlicloudCenTransitRouterRouteTablePropagationRead(d *schema.Resourc
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("transit_router_attachment_id", parts[1])
-	d.Set("transit_router_route_table_id", parts[0])
+	d.Set("transit_router_attachment_id", parts[0])
+	d.Set("transit_router_route_table_id", parts[1])
 	d.Set("status", object["Status"])
 	return nil
 }
@@ -123,8 +123,8 @@ func resourceAlicloudCenTransitRouterRouteTablePropagationDelete(d *schema.Resou
 		return WrapError(err)
 	}
 	request := map[string]interface{}{
-		"TransitRouterAttachmentId": parts[1],
-		"TransitRouterRouteTableId": parts[0],
+		"TransitRouterAttachmentId": parts[0],
+		"TransitRouterRouteTableId": parts[1],
 	}
 
 	if v, ok := d.GetOkExists("dry_run"); ok {

@@ -24,6 +24,7 @@ func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
 			"auto_publish_route_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"cen_id": {
 				Type:     schema.TypeString,
@@ -38,6 +39,10 @@ func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "VBR",
+			},
+			"transit_router_attachment_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"route_table_association_enabled": {
 				Type:     schema.TypeBool,
@@ -75,6 +80,7 @@ func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 		},
 	}
@@ -171,6 +177,7 @@ func resourceAlicloudCenTransitRouterVbrAttachmentRead(d *schema.ResourceData, m
 	}
 	d.Set("auto_publish_route_enabled", object["AutoPublishRouteEnabled"])
 	d.Set("status", object["Status"])
+	d.Set("transit_router_attachment_id", object["TransitRouterAttachmentId"])
 	d.Set("transit_router_attachment_description", object["TransitRouterAttachmentDescription"])
 	d.Set("transit_router_attachment_name", object["TransitRouterAttachmentName"])
 	d.Set("vbr_id", object["VbrId"])
