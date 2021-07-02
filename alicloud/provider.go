@@ -430,6 +430,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_aggregate_config_rules":               dataSourceAlicloudConfigAggregateConfigRules(),
 			"alicloud_config_aggregate_compliance_packs":           dataSourceAlicloudConfigAggregateCompliancePacks(),
 			"alicloud_config_compliance_packs":                     dataSourceAlicloudConfigCompliancePacks(),
+			"alicloud_direct_mail_receiverses":                     dataSourceAlicloudDirectMailReceiverses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -762,6 +763,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_aggregate_config_rule":               resourceAlicloudConfigAggregateConfigRule(),
 			"alicloud_config_aggregate_compliance_pack":           resourceAlicloudConfigAggregateCompliancePack(),
 			"alicloud_config_compliance_pack":                     resourceAlicloudConfigCompliancePack(),
+			"alicloud_direct_mail_receivers":                      resourceAlicloudDirectMailReceivers(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -917,6 +919,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ImsEndpoint = strings.TrimSpace(endpoints["ims"].(string))
 		config.QuotasEndpoint = strings.TrimSpace(endpoints["quotas"].(string))
 		config.SgwEndpoint = strings.TrimSpace(endpoints["sgw"].(string))
+		config.DmEndpoint = strings.TrimSpace(endpoints["dm"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1133,6 +1136,8 @@ func init() {
 		"quotas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom quotas endpoints.",
 
 		"sgw_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom sgw endpoints.",
+
+		"dm_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dm endpoints.",
 	}
 }
 
@@ -1177,6 +1182,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"dm": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["dm_endpoint"],
+				},
+
 				"sgw": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1662,6 +1674,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["ims"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["quotas"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["sgw"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["dm"].(string)))
 	return hashcode.String(buf.String())
 }
 
