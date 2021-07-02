@@ -32,9 +32,11 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cen_id":            "${alicloud_cen_instance.default.id}",
-					"transit_router_id": "${alicloud_cen_transit_router.default.transit_router_id}",
-					"vpc_id":            "${alicloud_vpc.default.id}",
+					"cen_id":                                "${alicloud_cen_instance.default.id}",
+					"transit_router_id":                     "${alicloud_cen_transit_router.default.transit_router_id}",
+					"transit_router_attachment_name":        "tf-test",
+					"transit_router_attachment_description": "tf-test",
+					"vpc_id":                                "${alicloud_vpc.default.id}",
 					"zone_mappings": []map[string]interface{}{
 						{
 							"vswitch_id": "${alicloud_vswitch.default_master.id}",
@@ -48,13 +50,15 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cen_id":                     CHECKSET,
-						"transit_router_id":          CHECKSET,
-						"vpc_id":                     CHECKSET,
-						"zone_mappings.1.vswitch_id": CHECKSET,
-						"zone_mappings.1.zone_id":    "cn-hangzhou-h",
-						"zone_mappings.2.vswitch_id": CHECKSET,
-						"zone_mappings.2.zone_id":    "cn-hangzhou-i",
+						"cen_id":                                CHECKSET,
+						"transit_router_id":                     CHECKSET,
+						"transit_router_attachment_name":        "tf-test",
+						"transit_router_attachment_description": "tf-test",
+						"vpc_id":                                CHECKSET,
+						"zone_mappings.0.vswitch_id":            CHECKSET,
+						"zone_mappings.0.zone_id":               "cn-hangzhou-h",
+						"zone_mappings.1.vswitch_id":            CHECKSET,
+						"zone_mappings.1.zone_id":               "cn-hangzhou-i",
 					}),
 				),
 			},
@@ -124,7 +128,7 @@ var AlicloudCenTransitRouterVpcAttachmentMap = map[string]string{
 	"transit_router_id":                     CHECKSET,
 	"vpc_id":                                CHECKSET,
 	"vpc_owner_id":                          CHECKSET,
-	"zone_mappings.#":                       "1",
+	"zone_mappings.#":                       "2",
 }
 
 func AlicloudCenTransitRouterVpcAttachmentBasicDependence(name string) string {

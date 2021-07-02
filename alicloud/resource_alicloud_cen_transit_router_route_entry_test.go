@@ -32,18 +32,21 @@ func TestAccAlicloudCenTransitRouterRouteEntry_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"transit_router_route_entry_destination_cidr_block": "192.168.0.1/24",
+					"transit_router_route_entry_destination_cidr_block": "192.168.1.0/24",
 					"transit_router_route_entry_name":                   "${var.name}",
+					"transit_router_route_entry_description":            "test",
 					"transit_router_route_entry_next_hop_type":          "Attachment",
-					"transit_router_route_entry_next_hop_id":            "vbr-j6cd9pm9y6d6e20atoi6w",
-					"transit_router_route_table_id":                     "${alicloud_cen_transit_router_route_table.default.id}",
+					"transit_router_route_entry_next_hop_id":            "${alicloud_cen_transit_router_vbr_attachment.default.transit_router_attachment_id}",
+					"transit_router_route_table_id":                     "${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"transit_router_route_entry_destination_cidr_block": "192.168.0.1/24",
+						"transit_router_route_entry_destination_cidr_block": "192.168.1.0/24",
 						"transit_router_route_entry_name":                   name,
+						"transit_router_route_entry_description":            "test",
 						"transit_router_route_entry_next_hop_type":          "Attachment",
-						"transit_router_route_entry_next_hop_id":            "vbr-j6cd9pm9y6d6e20atoi6w",
+						"transit_router_route_entry_next_hop_id":            CHECKSET,
+						"transit_router_route_table_id":                     CHECKSET,
 					}),
 				),
 			},
@@ -116,13 +119,13 @@ resource "alicloud_cen_transit_router" "default" {
 }
 
 resource "alicloud_cen_transit_router_route_table" "default" {
-transit_router_id = "${alicloud_cen_transit_router.default.id}"
+transit_router_id = "${alicloud_cen_transit_router.default.transit_router_id}"
 transit_router_route_table_name = "${var.name}"
 }
 
 resource "alicloud_cen_transit_router_vbr_attachment" "default" {
   cen_id = "${alicloud_cen_instance.default.id}"
-  transit_router_id = "${alicloud_cen_transit_router.default.id}"
+  transit_router_id = "${alicloud_cen_transit_router.default.transit_router_id}"
   vbr_id = "vbr-j6cd9pm9y6d6e20atoi6w"
   auto_publish_route_enabled = true
   transit_router_attachment_name = "name"

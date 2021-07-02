@@ -57,11 +57,16 @@ func resourceAlicloudCenTransitRouterRouteEntry() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"transit_router_route_entry_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
 
 func resourceAlicloudCenTransitRouterRouteEntryCreate(d *schema.ResourceData, meta interface{}) error {
+	time.Sleep(60 * time.Second)
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	var response map[string]interface{}
@@ -136,6 +141,7 @@ func resourceAlicloudCenTransitRouterRouteEntryRead(d *schema.ResourceData, meta
 	d.Set("transit_router_route_entry_name", object["TransitRouterRouteEntryName"])
 	d.Set("transit_router_route_entry_next_hop_id", object["TransitRouterRouteEntryNextHopId"])
 	d.Set("transit_router_route_entry_next_hop_type", object["TransitRouterRouteEntryNextHopType"])
+	d.Set("transit_router_route_entry_id", object["TransitRouterRouteEntryId"])
 	return nil
 }
 func resourceAlicloudCenTransitRouterRouteEntryUpdate(d *schema.ResourceData, meta interface{}) error {

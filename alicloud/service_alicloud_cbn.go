@@ -605,7 +605,7 @@ func (s *CbnService) DescribeCenTransitRouter(id string) (object map[string]inte
 	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance Attachment", id)), NotFoundMsg, ProviderERROR)
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -677,6 +677,9 @@ func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string) (object m
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.TransitRouterAttachments", response)
@@ -686,7 +689,7 @@ func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string) (object m
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 	} else {
-		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != id {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[1] {
 			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 		}
 	}
@@ -746,6 +749,9 @@ func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string) (object ma
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"IllegalParam.Region"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.TransitRouterAttachments", response)
@@ -755,7 +761,7 @@ func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string) (object ma
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 	} else {
-		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != id {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[1] {
 			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 		}
 	}
@@ -814,6 +820,9 @@ func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string) (object ma
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"IllegalParam.Region"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.TransitRouterAttachments", response)
@@ -823,7 +832,7 @@ func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string) (object ma
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 	} else {
-		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != id {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[1] {
 			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 		}
 	}
@@ -881,16 +890,22 @@ func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string) (object map[s
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidTransitRouterRouteTableId.NotFound"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN TransitRouter RouteTable ID", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.TransitRouterRouteEntries", response)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterRouteEntries", response)
 	}
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 	} else {
-		if v.([]interface{})[0].(map[string]interface{})["TransitRouterRouteEntryId"].(string) != id {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterRouteEntryId"].(string) != parts[1] {
 			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 		}
 	}
@@ -929,6 +944,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[s
 	}
 	action := "ListTransitRouterRouteTables"
 	request := map[string]interface{}{
+		"RegionId":                   s.client.RegionId,
 		"TransitRouterId":            parts[0],
 		"TransitRouterRouteTableIds": []string{parts[1]},
 	}
@@ -947,7 +963,11 @@ func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[s
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidTransitRouterId.NotFound"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN TransitRouter ID", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.TransitRouterRouteTables", response)
@@ -957,7 +977,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[s
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 	} else {
-		if v.([]interface{})[0].(map[string]interface{})["TransitRouterRouteTableId"].(string) != id {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterRouteTableId"].(string) != parts[1] {
 			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 		}
 	}
@@ -997,8 +1017,8 @@ func (s *CbnService) DescribeCenTransitRouterRouteTableAssociation(id string) (o
 		return
 	}
 	request := map[string]interface{}{
-		"TransitRouterAttachmentId": parts[1],
-		"TransitRouterRouteTableId": parts[0],
+		"TransitRouterAttachmentId": parts[0],
+		"TransitRouterRouteTableId": parts[1],
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -1016,6 +1036,9 @@ func (s *CbnService) DescribeCenTransitRouterRouteTableAssociation(id string) (o
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.TransitRouterAssociations", response)
@@ -1025,7 +1048,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteTableAssociation(id string) (o
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 	} else {
-		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[1] {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[0] {
 			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 		}
 	}
@@ -1065,8 +1088,8 @@ func (s *CbnService) DescribeCenTransitRouterRouteTablePropagation(id string) (o
 		return
 	}
 	request := map[string]interface{}{
-		"TransitRouterAttachmentId": parts[1],
-		"TransitRouterRouteTableId": parts[0],
+		"TransitRouterAttachmentId": parts[0],
+		"TransitRouterRouteTableId": parts[1],
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -1084,6 +1107,9 @@ func (s *CbnService) DescribeCenTransitRouterRouteTablePropagation(id string) (o
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.TransitRouterPropagations", response)
@@ -1093,7 +1119,7 @@ func (s *CbnService) DescribeCenTransitRouterRouteTablePropagation(id string) (o
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 	} else {
-		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[1] {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[0] {
 			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
 		}
 	}

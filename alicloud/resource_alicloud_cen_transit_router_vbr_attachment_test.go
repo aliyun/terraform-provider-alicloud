@@ -3,40 +3,11 @@ package alicloud
 import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
-
-func testAccCheckCenTransitRouterVbrAttachmentDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	cbnService := CbnService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_cen_transit_router_vbr_attachment" {
-			continue
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No Cen TransitRouter VBR Attachment ID is set"))
-		}
-
-		// Try to find the TransitRouter
-		_, err := cbnService.DescribeCenTransitRouterVbrAttachment(rs.Primary.ID)
-
-		// Verify the error is what we want
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return WrapError(err)
-		}
-	}
-
-	return nil
-}
 
 func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 	var v map[string]interface{}
@@ -57,17 +28,23 @@ func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckCenTransitRouterVbrAttachmentDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cen_id":            "${alicloud_cen_instance.default.id}",
-					"transit_router_id": "${alicloud_cen_transit_router.default.transit_router_id}",
-					"vbr_id":            "vbr-j6cd9pm9y6d6e20atoi6w",
+					"cen_id":                                "${alicloud_cen_instance.default.id}",
+					"transit_router_id":                     "${alicloud_cen_transit_router.default.transit_router_id}",
+					"transit_router_attachment_name":        "test",
+					"transit_router_attachment_description": "test",
+					"vbr_id":                                "vbr-j6cd9pm9y6d6e20atoi6w",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vbr_id": "vbr-j6cd9pm9y6d6e20atoi6w",
+						"cen_id":                                CHECKSET,
+						"transit_router_id":                     CHECKSET,
+						"transit_router_attachment_name":        "test",
+						"transit_router_attachment_description": "test",
+						"vbr_id":                                "vbr-j6cd9pm9y6d6e20atoi6w",
 					}),
 				),
 			},

@@ -49,6 +49,11 @@ func dataSourceAlicloudCenTransitRouters() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -74,10 +79,10 @@ func dataSourceAlicloudCenTransitRouters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						/*	"id": {
+						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
-						},*/
+						},
 						"transit_router_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -192,11 +197,11 @@ func dataSourceAlicloudCenTransitRoutersRead(d *schema.ResourceData, meta interf
 			"cen_id":                     object["CenId"],
 			"status":                     object["Status"],
 			"transit_router_description": object["TransitRouterDescription"],
-			//"id":                         fmt.Sprint(object["TransitRouterId"]),
-			"transit_router_id":   fmt.Sprint(object["TransitRouterId"]),
-			"transit_router_name": object["TransitRouterName"],
-			"type":                object["Type"],
-			"xgw_vip":             object["XgwVip"],
+			"id":                         fmt.Sprint(object["TransitRouterId"]),
+			"transit_router_id":          fmt.Sprint(object["TransitRouterId"]),
+			"transit_router_name":        object["TransitRouterName"],
+			"type":                       object["Type"],
+			"xgw_vip":                    object["XgwVip"],
 		}
 		ids = append(ids, fmt.Sprint(object["TransitRouterId"]))
 		names = append(names, object["TransitRouterName"])
