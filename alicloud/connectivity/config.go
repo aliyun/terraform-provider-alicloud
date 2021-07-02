@@ -114,6 +114,7 @@ type Config struct {
 	QuotasEndpoint          string
 	SgwEndpoint             string
 	ScdnEndpoint            string
+	DmEndpoint              string
 }
 
 func (c *Config) loadAndValidate() error {
