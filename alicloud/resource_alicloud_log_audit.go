@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
@@ -81,6 +82,9 @@ func resourceAlicloudLogAuditUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if tempMap, ok := d.GetOk("variable_map"); ok {
 		for k, v := range tempMap.(map[string]interface{}) {
+			if strings.HasSuffix(k, "_policy_setting") {
+				return Error("Does not support configuration %s in variable_map", k)
+			}
 			variableMap[k] = v
 		}
 	}
@@ -133,6 +137,11 @@ func resourceAlicloudLogAuditRead(d *schema.ResourceData, meta interface{}) erro
 			return WrapError(err)
 		}
 		d.Set("multi_account", account)
+	}
+	for k := range initMap {
+		if strings.HasSuffix(k, "_policy_setting") {
+			delete(initMap, k)
+		}
 	}
 	delete(initMap, "region")
 	delete(initMap, "aliuid")
