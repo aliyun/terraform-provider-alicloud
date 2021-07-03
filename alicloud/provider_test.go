@@ -91,6 +91,7 @@ func testAccClassicNetworkResources(t *testing.T) {
 // Skip automatically the testcases which does not support some known regions.
 // If supported is true, the regions should a list of supporting the service regions.
 // If supported is false, the regions should a list of unsupporting the service regions.
+// If the region is unsupported and has backend region, the backend region will instead
 func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connectivity.Region) {
 	if v := os.Getenv("ALICLOUD_ACCESS_KEY"); v == "" {
 		t.Fatal("ALICLOUD_ACCESS_KEY must be set for acceptance tests")
@@ -99,22 +100,37 @@ func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connecti
 		t.Fatal("ALICLOUD_SECRET_KEY must be set for acceptance tests")
 	}
 	if v := os.Getenv("ALICLOUD_REGION"); v == "" {
-		log.Println("[INFO] Test: Using cn-beijing as test region")
+		t.Logf("[WARNING] The region is not set and using cn-beijing as test region")
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
 	}
 	region := os.Getenv("ALICLOUD_REGION")
 	find := false
+	backupRegion := string(connectivity.APSouthEast1)
+	backupRegionFind := false
 	for _, r := range regions {
 		if region == string(r) {
 			find = true
 			break
 		}
+		if string(r) == backupRegion {
+			backupRegionFind = true
+		}
 	}
 
 	if (find && !supported) || (!find && supported) {
 		if supported {
+			if backupRegionFind {
+				t.Logf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, backupRegion)
+				os.Setenv("ALICLOUD_REGION", backupRegion)
+				return
+			}
 			t.Skipf("Skipping unsupported region %s. Supported regions: %s.", region, regions)
 		} else {
+			if !backupRegionFind {
+				t.Logf("Skipping unsupported region %s. Unsupported regions: %s. Using %s as this test region", region, regions, backupRegion)
+				os.Setenv("ALICLOUD_REGION", backupRegion)
+				return
+			}
 			t.Skipf("Skipping unsupported region %s. Unsupported regions: %s.", region, regions)
 		}
 		t.Skipped()

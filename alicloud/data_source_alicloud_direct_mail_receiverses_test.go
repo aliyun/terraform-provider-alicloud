@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -75,6 +76,7 @@ func TestAccAlicloudDirectMailReceiversesDataSource(t *testing.T) {
 	}
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.DmSupportRegions)
 	}
 	alicloudDirectMailReceiversesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, allConf)
 }

@@ -3,11 +3,12 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"log"
 	"strconv"
 	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
