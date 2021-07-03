@@ -1,13 +1,18 @@
 ## 1.124.5 (Unreleased)
-## 1.124.5 (July 2, 2021)
+
+- **New Resource:** `alicloud_direct_mail_receivers` [GH-3684]
+- **New Data Source:** `alicloud_direct_mail_receiverses` [GH-3684]
 
 ENHANCEMENTS:
 
+- resource/alicloud_log_audit: Adds a limitation that there does not allow the variable_map setting the key with suffix _policy_setting [GH-3685]
 - resource/alicloud_db_instance: Adds more attribute to support security_ips, including db_instance_ip_array_name, db_instance_ip_array_attribute , security_ip_type, whitelist_network_type, modify_mode [GH-3662]
 - resource/alicloud_db_instance: Adds new attribute private_ip_address and supports to change VPC or vSwitch [GH-3676]
+- resource/alicloud_ddoscoo_instance: Adds product_type to differ international and domestic accounts when managing instances [GH-3679]
 - provider: Adds new attribute client_read_timeout and client_connect_timeout to support setting self-define timeout [GH-3677]
 - resource/alicloud_elasticsearch_instance: Adds new attribute setting_config [GH-3675]
 - datasource/alicloud_resource_manager_accounts: Exports new attributes 'account_name'. [GH-3681]
+- testcase: Improves the direct mail receivers testcase [GH-3687]
 
 BUG FIXES:
 
