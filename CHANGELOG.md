@@ -1,24 +1,25 @@
-## 1.124.5 (Unreleased)
+## 1.126.0 (Unreleased)
+## 1.125.0 (July 03, 2021)
 
-- **New Resource:** `alicloud_direct_mail_receivers` [GH-3684]
-- **New Data Source:** `alicloud_direct_mail_receiverses` [GH-3684]
+- **New Resource:** `alicloud_direct_mail_receivers` ([#3684](https://github.com/aliyun/terraform-provider-alicloud/issues/3684))
+- **New Data Source:** `alicloud_direct_mail_receiverses` ([#3684](https://github.com/aliyun/terraform-provider-alicloud/issues/3684))
 
 ENHANCEMENTS:
 
-- resource/alicloud_log_audit: Adds a limitation that there does not allow the variable_map setting the key with suffix _policy_setting [GH-3685]
-- resource/alicloud_db_instance: Adds more attribute to support security_ips, including db_instance_ip_array_name, db_instance_ip_array_attribute , security_ip_type, whitelist_network_type, modify_mode [GH-3662]
-- resource/alicloud_db_instance: Adds new attribute private_ip_address and supports to change VPC or vSwitch [GH-3676]
-- resource/alicloud_ddoscoo_instance: Adds product_type to differ international and domestic accounts when managing instances [GH-3679]
-- provider: Adds new attribute client_read_timeout and client_connect_timeout to support setting self-define timeout [GH-3677]
-- resource/alicloud_elasticsearch_instance: Adds new attribute setting_config [GH-3675]
-- datasource/alicloud_resource_manager_accounts: Exports new attributes 'account_name'. [GH-3681]
-- testcase: Improves the direct mail receivers testcase [GH-3687]
+- resource/alicloud_log_audit: Adds a limitation that there does not allow the variable_map setting the key with suffix _policy_setting ([#3685](https://github.com/aliyun/terraform-provider-alicloud/issues/3685))
+- resource/alicloud_db_instance: Adds more attribute to support security_ips, including db_instance_ip_array_name, db_instance_ip_array_attribute , security_ip_type, whitelist_network_type, modify_mode ([#3662](https://github.com/aliyun/terraform-provider-alicloud/issues/3662))
+- resource/alicloud_db_instance: Adds new attribute private_ip_address and supports to change VPC or vSwitch ([#3676](https://github.com/aliyun/terraform-provider-alicloud/issues/3676))
+- resource/alicloud_ddoscoo_instance: Adds product_type to differ international and domestic accounts when managing instances ([#3679](https://github.com/aliyun/terraform-provider-alicloud/issues/3679))
+- provider: Adds new attribute client_read_timeout and client_connect_timeout to support setting self-define timeout ([#3677](https://github.com/aliyun/terraform-provider-alicloud/issues/3677))
+- resource/alicloud_elasticsearch_instance: Adds new attribute setting_config ([#3675](https://github.com/aliyun/terraform-provider-alicloud/issues/3675))
+- datasource/alicloud_resource_manager_accounts: Exports new attributes 'account_name'. ([#3681](https://github.com/aliyun/terraform-provider-alicloud/issues/3681))
+- testcase: Improves the direct mail receivers testcase ([#3687](https://github.com/aliyun/terraform-provider-alicloud/issues/3687))
 
 BUG FIXES:
 
-- resource/alicloud_log_audit: Fixes sls audit bug when setting the attribute multi_account [GH-3678]
-- resource/alicloud_cr_ee_instance: Fixes the error NotApplicable when creating and reading the resource [GH-3680]
-- resoure/alicloud_hbase_instance: Fixes the error "rpc error: code = Internal desc = grpc: error while marshaling: string field contains invalid UTF-8" when getting hbase instance [GH-3683]
+- resource/alicloud_log_audit: Fixes sls audit bug when setting the attribute multi_account ([#3678](https://github.com/aliyun/terraform-provider-alicloud/issues/3678))
+- resource/alicloud_cr_ee_instance: Fixes the error NotApplicable when creating and reading the resource ([#3680](https://github.com/aliyun/terraform-provider-alicloud/issues/3680))
+- resoure/alicloud_hbase_instance: Fixes the error "rpc error: code = Internal desc = grpc: error while marshaling: string field contains invalid UTF-8" when getting hbase instance ([#3683](https://github.com/aliyun/terraform-provider-alicloud/issues/3683))
 
 ## 1.124.4 (June 25, 2021)
 
@@ -32,7 +33,7 @@ ENHANCEMENTS:
 - datasource/alicloud_kms_secret_versions: Upgredes its dependence sdk ([#3653](https://github.com/aliyun/terraform-provider-alicloud/issues/3653))
 - resource/alicloud_kms_ciphertext: Upgrades its dependence sdk ([#3655](https://github.com/aliyun/terraform-provider-alicloud/issues/3655))
 - service_kms/Decrypt: Upgrades its dependence sdk; kms_service/SetResourceTags: Upgrades its dependence sdk; Removes the KMS go sdk ([#3656](https://github.com/aliyun/terraform-provider-alicloud/issues/3656))
-- resource/alicloud_db_instance: Adds several attributes to enable ssl, like ssl_enabled, ca_type , server_cert, client_ca_cert and so on [GH-3615]
+- resource/alicloud_db_instance: Adds several attributes to enable ssl, like ssl_enabled, ca_type , server_cert, client_ca_cert and so on ([#3615](https://github.com/aliyun/terraform-provider-alicloud/issues/3615))
 - resource/alicloud_eip: Adds new attribute deletion_protection to support deletion protection feature ([#3664](https://github.com/aliyun/terraform-provider-alicloud/issues/3664))
 - resource/alicloud_nat_gateway: Adds new attribute deletion_protection to support deletion protection feature ([#3665](https://github.com/aliyun/terraform-provider-alicloud/issues/3665))
 - resource/alicloud_common_bandwidth_package: Adds new attribute deletion_protection to support deletion protection feature ([#3666](https://github.com/aliyun/terraform-provider-alicloud/issues/3666))
