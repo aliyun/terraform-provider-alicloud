@@ -431,6 +431,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_aggregate_compliance_packs":           dataSourceAlicloudConfigAggregateCompliancePacks(),
 			"alicloud_config_compliance_packs":                     dataSourceAlicloudConfigCompliancePacks(),
 			"alicloud_direct_mail_receiverses":                     dataSourceAlicloudDirectMailReceiverses(),
+			"alicloud_log_projects":                                dataSourceAlicloudLogProjects(),
+			"alicloud_log_stores":                                  dataSourceAlicloudLogStores(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
