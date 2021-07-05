@@ -158,26 +158,22 @@ provider "alicloud" {
 }
 
 resource "alicloud_cen_instance" "default" {
-  cen_instance_name = "${var.name}"
+  cen_instance_name = var.name
   protection_level = "REDUCED"
 }
 
 resource "alicloud_cen_bandwidth_package_attachment" "default" {
-  instance_id        = "${alicloud_cen_instance.default.id}"
+  instance_id        = alicloud_cen_instance.default.id
   bandwidth_package_id = "cenbwp-buw65zk0606xh0ukvd"
-  depends_on = [
-    alicloud_cen_instance.default]
 }
 
 resource "alicloud_cen_transit_router" "default" {
-  cen_id = "${alicloud_cen_instance.default.id}"
-  depends_on = [
-    alicloud_cen_bandwidth_package_attachment.default]
+  cen_id = alicloud_cen_instance.default.id
 }
 
 resource "alicloud_cen_transit_router" "default_1" {
   provider = alicloud.other_region_id
-  cen_id = "${alicloud_cen_instance.default.id}"
+  cen_id = alicloud_cen_instance.default.id
   depends_on = [
     alicloud_cen_transit_router.default]
 }

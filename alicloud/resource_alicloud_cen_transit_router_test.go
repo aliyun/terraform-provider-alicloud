@@ -101,7 +101,7 @@ func AlicloudCenTransitRouterBasicDependence(name string) string {
 	}
 
 	resource "alicloud_cen_instance" "default" {
-		cen_instance_name = "${var.name}"
+		cen_instance_name = var.name
 	}
 	`, name)
 }

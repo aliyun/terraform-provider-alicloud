@@ -45,7 +45,7 @@ func TestAccAlicloudCenTransitRoutersDataSource(t *testing.T) {
 			"cen_id":             `"${alicloud_cen_instance.default.id}"`,
 			"transit_router_id":  `"${alicloud_cen_transit_router.default.transit_router_id}"`,
 			"transit_router_ids": `["${alicloud_cen_transit_router.default.transit_router_id}"]`,
-			"status":             `"${alicloud_cen_transit_router.default.status}_fake"`,
+			"status":             `"Creating"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
@@ -61,16 +61,16 @@ func TestAccAlicloudCenTransitRoutersDataSource(t *testing.T) {
 			"transit_router_id":  `"${alicloud_cen_transit_router.default.transit_router_id}"`,
 			"transit_router_ids": `["${alicloud_cen_transit_router.default.transit_router_id}_fake"]`,
 			"name_regex":         `"${alicloud_cen_transit_router.default.transit_router_name}_fake"`,
-			"status":             `"${alicloud_cen_transit_router.default.status}_fake"`,
+			"status":             `"Creating"`,
 		}),
 	}
 	var existAlicloudCenTransitRoutersDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"transit_router_ids.#":                         "1",
-			"names.#":                                      "1",
-			"transit_routers.#":                            "1",
-			"transit_routers.0.cen_id":                     CHECKSET,
-			"transit_routers.0.transit_router_id":          CHECKSET,
+			"ids.#":                               "1",
+			"names.#":                             "1",
+			"transit_routers.#":                   "1",
+			"transit_routers.0.cen_id":            CHECKSET,
+			"transit_routers.0.transit_router_id": CHECKSET,
 			"transit_routers.0.transit_router_description": `desd`,
 			"transit_routers.0.transit_router_name":        CHECKSET,
 		}
@@ -97,17 +97,17 @@ func testAccCheckAlicloudCenTransitRoutersDataSourceName(rand int, attrMap map[s
 	config := fmt.Sprintf(`
 
 	variable "name" {	
-		default = "tf-testAccTransitRouter-%d"
+		default = "tf-testAccDataTransitRouter-%d"
 	}
 
 	resource "alicloud_cen_instance" "default" {
-		cen_instance_name = "${var.name}"
+		cen_instance_name = var.name
 	}
 
 	resource "alicloud_cen_transit_router" "default" {
-		cen_id = "${alicloud_cen_instance.default.id}"
+		cen_id = alicloud_cen_instance.default.id
 		transit_router_description = "desd"
-		transit_router_name = "${var.name}"
+		transit_router_name = var.name
 	}
 
 	data "alicloud_cen_transit_routers" "default" {

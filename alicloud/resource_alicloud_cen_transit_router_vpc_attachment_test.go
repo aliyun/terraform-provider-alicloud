@@ -144,25 +144,25 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_vswitch" "default_master" {
   vswitch_name = "tf-test"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "192.168.1.0/24"
   zone_id = "cn-hangzhou-h"
 }
 
 resource "alicloud_vswitch" "default_slave" {
   vswitch_name = "tf-test"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "192.168.2.0/24"
   zone_id = "cn-hangzhou-i"
 }
 
 resource "alicloud_cen_instance" "default" {
-  cen_instance_name = "${var.name}"
+  cen_instance_name = var.name
   protection_level = "REDUCED"
 }
 
 resource "alicloud_cen_transit_router" "default" {
-cen_id= "${alicloud_cen_instance.default.id}"
+cen_id= alicloud_cen_instance.default.id
 }
 `, name)
 }
