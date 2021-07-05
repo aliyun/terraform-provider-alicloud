@@ -95,23 +95,23 @@ func testAccCheckAlicloudCenTransitRouterVpcAttachmentsDataSourceName(rand int, 
 	config := fmt.Sprintf(`
 
 variable "name" {	
-	default = "tf-testAccTransitRouterVpcAttachment-%d"
+	default = "tf-testAccDataTransitRouterVpcAttachment-%d"
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name = "sdk_rebot_cen_tr_yaochi"
+  vpc_name = var.name
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_vswitch" "default_master" {
-  vswitch_name = "sdk_rebot_cen_tr_yaochi"
+  vswitch_name = var.name
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "192.168.1.0/24"
   zone_id = "cn-hangzhou-h"
 }
 
 resource "alicloud_vswitch" "default_slave" {
-  vswitch_name = "sdk_rebot_cen_tr_yaochi"
+  vswitch_name = var.name
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "192.168.2.0/24"
   zone_id = "cn-hangzhou-i"

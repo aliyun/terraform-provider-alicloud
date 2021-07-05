@@ -110,22 +110,22 @@ variable "name" {
 }
 
 resource "alicloud_cen_instance" "default" {
-  cen_instance_name = "${var.name}"
+  cen_instance_name = var.name
   protection_level = "REDUCED"
 }
 
 resource "alicloud_cen_transit_router" "default" {
-  cen_id = "${alicloud_cen_instance.default.id}"
+  cen_id = alicloud_cen_instance.default.id
 }
 
 resource "alicloud_cen_transit_router_route_table" "default" {
-transit_router_id = "${alicloud_cen_transit_router.default.transit_router_id}"
-transit_router_route_table_name = "${var.name}"
+transit_router_id = alicloud_cen_transit_router.default.transit_router_id
+transit_router_route_table_name = var.name
 }
 
 resource "alicloud_cen_transit_router_vbr_attachment" "default" {
-  cen_id = "${alicloud_cen_instance.default.id}"
-  transit_router_id = "${alicloud_cen_transit_router.default.transit_router_id}"
+  cen_id = alicloud_cen_instance.default.id
+  transit_router_id = alicloud_cen_transit_router.default.transit_router_id
   vbr_id = "vbr-j6cd9pm9y6d6e20atoi6w"
   auto_publish_route_enabled = true
   transit_router_attachment_name = "name"

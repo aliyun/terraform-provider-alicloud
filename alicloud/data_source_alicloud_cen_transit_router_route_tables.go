@@ -157,9 +157,9 @@ func dataSourceAlicloudCenTransitRouterRouteTablesRead(d *schema.ResourceData, m
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_transit_router_route_tables", action, AlibabaCloudSdkGoERROR)
 		}
