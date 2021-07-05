@@ -656,3 +656,10 @@ func securityIpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 	}
 	return true
 }
+
+func kernelVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("upgrade_db_instance_kernel_version"); ok && v.(bool) == true {
+		return false
+	}
+	return true
+}

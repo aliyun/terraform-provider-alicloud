@@ -319,6 +319,28 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+
+			"upgrade_db_instance_kernel_version": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"upgrade_time": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"Immediate", "MaintainTime", "SpecifyTime"}, false),
+				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
+			},
+			"switch_time": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
+			},
+			"target_minor_version": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
+				Computed:         true,
+			},
 		},
 	}
 }
@@ -888,6 +910,51 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if d.HasChange("upgrade_db_instance_kernel_version") {
+		action := "UpgradeDBInstanceKernelVersion"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+			"SourceIp":     client.SourceIp,
+		}
+		if v, ok := d.GetOk("upgrade_time"); ok && v.(string) != "" {
+			request["UpgradeTime"] = v
+		}
+		if v, ok := d.GetOk("switch_time"); ok && v.(string) != "" {
+			request["SwitchTime"] = v
+		}
+		if v, ok := d.GetOk("target_minor_version"); ok && v.(string) != "" {
+			request["TargetMinorVersion"] = v
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("target_minor_version")
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	d.Partial(false)
 	return resourceAlicloudDBInstanceRead(d, meta)
 }
@@ -971,6 +1038,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_name", instance["DBInstanceDescription"])
 	d.Set("maintain_time", instance["MaintainTime"])
 	d.Set("auto_upgrade_minor_version", instance["AutoUpgradeMinorVersion"])
+	d.Set("target_minor_version", instance["CurrentKernelVersion"])
 	slaveZones := instance["SlaveZones"].(map[string]interface{})["SlaveZone"].([]interface{})
 	if len(slaveZones) == 2 {
 		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
