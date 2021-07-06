@@ -433,6 +433,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_direct_mail_receiverses":                     dataSourceAlicloudDirectMailReceiverses(),
 			"alicloud_log_projects":                                dataSourceAlicloudLogProjects(),
 			"alicloud_log_stores":                                  dataSourceAlicloudLogStores(),
+			"alicloud_event_bridge_service":                        dataSourceAlicloudEventBridgeService(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
