@@ -7,7 +7,7 @@ description: |-
   Provides a list of log projects to the user.
 ---
 
-# alicloud\_fnf\_flows
+# alicloud\_log\_projects
 
 This data source provides the Log Projects of the current Alibaba Cloud user.
 
