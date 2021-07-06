@@ -120,3 +120,4 @@ var EssdSupportRegions = []Region{Zhangjiakou, Huhehaote}
 var AdbReserverUnSupportRegions = []Region{EUCentral1}
 var KmsKeyUnSupportRegions = []Region{EUCentral1}
 var DmSupportRegions = []Region{Hangzhou, APSouthEast1, APSouthEast2}
+var BssOpenApiSupportRegions = []Region{Hangzhou, Shanghai, APSouthEast1}

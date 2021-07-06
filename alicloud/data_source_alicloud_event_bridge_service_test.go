@@ -3,6 +3,8 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
@@ -12,6 +14,7 @@ func TestAccAlicloudEventBridgeServiceDataSource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.BssOpenApiSupportRegions)
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{

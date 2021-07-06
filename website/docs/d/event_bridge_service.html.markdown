@@ -15,6 +15,8 @@ For information about Event Bridge and how to use it, see [What is Event Bridge]
 
 -> **NOTE:** Available in v1.126.0+
 
+-> **NOTE:** This data source support region is `cn-shanghai`, `cn-hangzhou` and `ap-southeast-1`.
+
 ## Example Usage
 
 ```
