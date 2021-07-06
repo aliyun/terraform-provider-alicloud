@@ -18,16 +18,6 @@ func TestAccAlicloudCenTransitRouterRouteTablesDataSource(t *testing.T) {
 			"ids": `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}_fake"]`,
 		}),
 	}
-	transitRouterRouteTableIdsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand, map[string]string{
-			"ids":                            `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}"]`,
-			"transit_router_route_table_ids": `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}"]`,
-		}),
-		fakeConfig: testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand, map[string]string{
-			"ids":                            `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}"]`,
-			"transit_router_route_table_ids": `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}_fake"]`,
-		}),
-	}
 	transitRouterRouteTableNamesConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand, map[string]string{
 			"ids":                              `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}"]`,
@@ -108,7 +98,7 @@ func TestAccAlicloudCenTransitRouterRouteTablesDataSource(t *testing.T) {
 		existMapFunc: existAlicloudCenTransitRouterRouteTablesDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudCenTransitRouterRouteTablesDataSourceNameMapFunc,
 	}
-	alicloudCenTransitRouterRouteTablesCheckInfo.dataSourceTestCheck(t, rand, idsConf, transitRouterRouteTableIdsConf, transitRouterRouteTableNamesConf, transitRouterRouteTableStatusConf, nameRegexConf, statusConf, allConf)
+	alicloudCenTransitRouterRouteTablesCheckInfo.dataSourceTestCheck(t, rand, idsConf, transitRouterRouteTableNamesConf, transitRouterRouteTableStatusConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -136,6 +126,7 @@ resource "alicloud_cen_transit_router_route_table" "default" {
 transit_router_id = "${alicloud_cen_transit_router.default.transit_router_id}"
 transit_router_route_table_description = "desp"
 transit_router_route_table_name = var.name
+depends_on = [alicloud_cen_transit_router.default]
 }
 
 data "alicloud_cen_transit_router_route_tables" "default" {	

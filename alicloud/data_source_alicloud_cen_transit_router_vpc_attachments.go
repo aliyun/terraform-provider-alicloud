@@ -213,7 +213,7 @@ func dataSourceAlicloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData
 		}
 
 		cbnService := CbnService{client}
-		id := fmt.Sprintf("%v:%v", object["TransitRouterAttachmentId"], request["CenId"])
+		id := fmt.Sprintf("%v:%v", request["CenId"], object["TransitRouterAttachmentId"])
 		getResp, err := cbnService.DescribeCenTransitRouterVpcAttachment(id)
 		if err != nil {
 			return WrapError(err)

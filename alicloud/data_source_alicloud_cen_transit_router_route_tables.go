@@ -110,10 +110,10 @@ func dataSourceAlicloudCenTransitRouterRouteTablesRead(d *schema.ResourceData, m
 	request := make(map[string]interface{})
 	request["TransitRouterId"] = d.Get("transit_router_id")
 	if v, ok := d.GetOk("transit_router_route_table_ids"); ok {
-		request["TransitRouterRouteTableIds"] = convertListToJsonString(v.(*schema.Set).List())
+		request["TransitRouterRouteTableIds"] = convertListToJsonString(v.([]interface{}))
 	}
 	if v, ok := d.GetOk("transit_router_route_table_names"); ok {
-		request["TransitRouterRouteTableNames"] = convertListToJsonString(v.(*schema.Set).List())
+		request["TransitRouterRouteTableNames"] = convertListToJsonString(v.([]interface{}))
 	}
 	if v, ok := d.GetOk("transit_router_route_table_status"); ok {
 		request["TransitRouterRouteTableStatus"] = v
