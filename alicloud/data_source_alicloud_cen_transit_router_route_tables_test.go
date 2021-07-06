@@ -18,19 +18,9 @@ func TestAccAlicloudCenTransitRouterRouteTablesDataSource(t *testing.T) {
 			"ids": `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}_fake"]`,
 		}),
 	}
-	transitRouterRouteTableNamesConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand, map[string]string{
-			"ids":                              `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}"]`,
-			"transit_router_route_table_names": `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_name}]"`,
-		}),
-		fakeConfig: testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand, map[string]string{
-			"ids":                              `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}"]`,
-			"transit_router_route_table_names": `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_name}_fake"]`,
-		}),
-	}
 	transitRouterRouteTableStatusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand, map[string]string{
-			"ids":                               `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_tid}"]`,
+			"ids":                               `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}"]`,
 			"transit_router_route_table_status": `"Active"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand, map[string]string{
@@ -98,7 +88,7 @@ func TestAccAlicloudCenTransitRouterRouteTablesDataSource(t *testing.T) {
 		existMapFunc: existAlicloudCenTransitRouterRouteTablesDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudCenTransitRouterRouteTablesDataSourceNameMapFunc,
 	}
-	alicloudCenTransitRouterRouteTablesCheckInfo.dataSourceTestCheck(t, rand, idsConf, transitRouterRouteTableNamesConf, transitRouterRouteTableStatusConf, nameRegexConf, statusConf, allConf)
+	alicloudCenTransitRouterRouteTablesCheckInfo.dataSourceTestCheck(t, rand, idsConf, transitRouterRouteTableStatusConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
