@@ -40,11 +40,11 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic(t *testing.T) {
 					"zone_mappings": []map[string]interface{}{
 						{
 							"vswitch_id": "${alicloud_vswitch.default_master.id}",
-							"zone_id":    "cn-hangzhou-h",
+							"zone_id":    "${alicloud_vswitch.default_master.zone_id}",
 						},
 						{
 							"vswitch_id": "${alicloud_vswitch.default_slave.id}",
-							"zone_id":    "cn-hangzhou-i",
+							"zone_id":    "${alicloud_vswitch.default_slave.zone_id}",
 						},
 					},
 				}),
