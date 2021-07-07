@@ -32,6 +32,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -102,6 +103,7 @@ type AliyunClient struct {
 	crconn                       *cr.Client
 	creeconn                     *cr_ee.Client
 	cdnconn                      *cdn.CdnClient
+	kmsconn                      *kms.Client
 	otsconn                      *ots.Client
 	cmsconn                      *cms.Client
 	logconn                      *sls.Client
@@ -133,6 +135,7 @@ type AliyunClient struct {
 	hbaseconn                    *hbase.Client
 	adbconn                      *adb.Client
 	cbnConn                      *cbn.Client
+	kmsConn                      *kms.Client
 	maxcomputeconn               *maxcompute.Client
 	dnsConn                      *alidns.Client
 	edasconn                     *edas.Client
@@ -175,7 +178,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.125.0"
+var providerVersion = "1.124.2"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Temporarily maintain map for old ecs client methods and store special endpoint information
@@ -265,8 +268,6 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		//if _, err := ecsconn.DescribeRegions(ecs.CreateDescribeRegionsRequest()); err != nil {
 		//	return nil, err
 		//}
-		ecsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		ecsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		ecsconn.AppendUserAgent(Terraform, terraformVersion)
 		ecsconn.AppendUserAgent(Provider, providerVersion)
 		ecsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -294,8 +295,6 @@ func (client *AliyunClient) WithOfficalCSClient(do func(*officalCS.Client) (inte
 			return nil, fmt.Errorf("unable to initialize the CS client: %#v", err)
 		}
 
-		csconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		csconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		csconn.AppendUserAgent(Terraform, terraformVersion)
 		csconn.AppendUserAgent(Provider, providerVersion)
 		csconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -320,8 +319,6 @@ func (client *AliyunClient) WithRdsClient(do func(*rds.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the RDS client: %#v", err)
 		}
 
-		rdsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		rdsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		rdsconn.AppendUserAgent(Terraform, terraformVersion)
 		rdsconn.AppendUserAgent(Provider, providerVersion)
 		rdsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -348,8 +345,6 @@ func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interfac
 
 		}
 
-		polarDBconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		polarDBconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		polarDBconn.AppendUserAgent(Terraform, terraformVersion)
 		polarDBconn.AppendUserAgent(Provider, providerVersion)
 		polarDBconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -374,8 +369,6 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the SLB client: %#v", err)
 		}
 
-		slbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		slbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		slbconn.AppendUserAgent(Terraform, terraformVersion)
 		slbconn.AppendUserAgent(Provider, providerVersion)
 		slbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -400,8 +393,6 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
 		}
 
-		vpcconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		vpcconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		vpcconn.AppendUserAgent(Terraform, terraformVersion)
 		vpcconn.AppendUserAgent(Provider, providerVersion)
 		vpcconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -533,8 +524,6 @@ func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the CEN client: %#v", err)
 		}
 
-		cenconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		cenconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		cenconn.AppendUserAgent(Terraform, terraformVersion)
 		cenconn.AppendUserAgent(Provider, providerVersion)
 		cenconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -559,8 +548,6 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the ESS client: %#v", err)
 		}
 
-		essconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		essconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		essconn.AppendUserAgent(Terraform, terraformVersion)
 		essconn.AppendUserAgent(Provider, providerVersion)
 		essconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -644,8 +631,6 @@ func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, 
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the DNS client: %#v", err)
 		}
-		dnsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		dnsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		dnsconn.AppendUserAgent(Terraform, terraformVersion)
 		dnsconn.AppendUserAgent(Provider, providerVersion)
 		dnsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -673,8 +658,6 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
 		}
-		ramconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		ramconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		ramconn.AppendUserAgent(Terraform, terraformVersion)
 		ramconn.AppendUserAgent(Provider, providerVersion)
 		ramconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -721,8 +704,6 @@ func (client *AliyunClient) NewRoaCsClient() (*roaCS.Client, error) {
 		RegionId:        tea.String(client.config.RegionId),
 		UserAgent:       tea.String(client.getUserAgent()),
 		Endpoint:        tea.String(endpoint),
-		ReadTimeout:     tea.Int(client.config.ClientReadTimeout),
-		ConnectTimeout:  tea.Int(client.config.ClientConnectTimeout),
 	})
 	if err != nil {
 		return nil, err
@@ -748,8 +729,6 @@ func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the CR client: %#v", err)
 		}
-		crconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		crconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		crconn.AppendUserAgent(Terraform, terraformVersion)
 		crconn.AppendUserAgent(Provider, providerVersion)
 		crconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -776,8 +755,6 @@ func (client *AliyunClient) WithCrEEClient(do func(*cr_ee.Client) (interface{}, 
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the CR EE client: %#v", err)
 		}
-		creeconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		creeconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		creeconn.AppendUserAgent(Terraform, terraformVersion)
 		creeconn.AppendUserAgent(Provider, providerVersion)
 		creeconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -823,8 +800,7 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the CDN client: %#v", err)
 		}
-		cdnconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		cdnconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+
 		cdnconn.AppendUserAgent(Terraform, terraformVersion)
 		cdnconn.AppendUserAgent(Provider, providerVersion)
 		cdnconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -832,6 +808,29 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 	}
 
 	return do(client.cdnconn_new)
+}
+
+func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, error)) (interface{}, error) {
+	// Initialize the KMS client if necessary
+	if client.kmsconn == nil {
+
+		endpoint := client.config.KmsEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, KMSCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(KMSCode), endpoint)
+		}
+		kmsconn, err := kms.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the kms client: %#v", err)
+		}
+		kmsconn.AppendUserAgent(Terraform, terraformVersion)
+		kmsconn.AppendUserAgent(Provider, providerVersion)
+		kmsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.kmsconn = kmsconn
+	}
+	return do(client.kmsconn)
 }
 
 func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, error)) (interface{}, error) {
@@ -849,8 +848,6 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the OTS client: %#v", err)
 		}
 
-		otsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		otsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		otsconn.AppendUserAgent(Terraform, terraformVersion)
 		otsconn.AppendUserAgent(Provider, providerVersion)
 		otsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -875,8 +872,6 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
 		}
 
-		cmsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		cmsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		cmsconn.AppendUserAgent(Terraform, terraformVersion)
 		cmsconn.AppendUserAgent(Provider, providerVersion)
 		cmsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -901,8 +896,6 @@ func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the STS client: %#v", err)
 		}
 
-		stsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		stsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		stsconn.AppendUserAgent(Terraform, terraformVersion)
 		stsconn.AppendUserAgent(Provider, providerVersion)
 		stsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -919,8 +912,6 @@ func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the sls client: %#v", err)
 		}
-		logpopconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		logpopconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		logpopconn.AppendUserAgent(Terraform, terraformVersion)
 		logpopconn.AppendUserAgent(Provider, providerVersion)
 		logpopconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -975,8 +966,7 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 			return nil, fmt.Errorf("unable to initialize the DRDS client: %#v", err)
 
 		}
-		drdsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		drdsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+
 		drdsconn.AppendUserAgent(Terraform, terraformVersion)
 		drdsconn.AppendUserAgent(Provider, providerVersion)
 		drdsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1001,8 +991,6 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the DDS client: %#v", err)
 		}
 
-		ddsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		ddsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		ddsconn.AppendUserAgent(Terraform, terraformVersion)
 		ddsconn.AppendUserAgent(Provider, providerVersion)
 		ddsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1026,8 +1014,7 @@ func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, e
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the GPDB client: %#v", err)
 		}
-		gpdbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		gpdbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+
 		gpdbconn.AppendUserAgent(Terraform, terraformVersion)
 		gpdbconn.AppendUserAgent(Provider, providerVersion)
 		gpdbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1051,8 +1038,7 @@ func (client *AliyunClient) WithRkvClient(do func(*r_kvstore.Client) (interface{
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the RKV client: %#v", err)
 		}
-		rkvconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		rkvconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+
 		rkvconn.AppendUserAgent(Terraform, terraformVersion)
 		rkvconn.AppendUserAgent(Provider, providerVersion)
 		rkvconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1113,8 +1099,7 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the CloudAPI client: %#v", err)
 		}
-		cloudapiconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		cloudapiconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+
 		cloudapiconn.AppendUserAgent(Terraform, terraformVersion)
 		cloudapiconn.AppendUserAgent(Provider, providerVersion)
 		cloudapiconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1233,8 +1218,7 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %#v", err)
 		}
-		elasticsearchconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		elasticsearchconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+
 		elasticsearchconn.AppendUserAgent(Terraform, terraformVersion)
 		elasticsearchconn.AppendUserAgent(Provider, providerVersion)
 		elasticsearchconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1359,8 +1343,6 @@ func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string
 	request.RegionId = client.RegionId
 	request.Product = product
 	request.Scheme = schema
-	request.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	request.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	request.AppendUserAgent(Terraform, terraformVersion)
 	request.AppendUserAgent(Provider, providerVersion)
 	request.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1466,8 +1448,6 @@ func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse,
 		return nil, fmt.Errorf("unable to initialize the STS client: %#v", err)
 	}
 
-	stsClient.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-	stsClient.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	stsClient.AppendUserAgent(Terraform, terraformVersion)
 	stsClient.AppendUserAgent(Provider, providerVersion)
 	stsClient.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1496,8 +1476,7 @@ func (client *AliyunClient) WithCasClient(do func(*cas.Client) (interface{}, err
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the CAS client: %#v", err)
 		}
-		casconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		casconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+
 		casconn.AppendUserAgent(Terraform, terraformVersion)
 		casconn.AppendUserAgent(Provider, providerVersion)
 		casconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1522,8 +1501,6 @@ func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interfac
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the DDOSCOO client: %#v", err)
 		}
-		ddoscooconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		ddoscooconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		ddoscooconn.AppendUserAgent(Terraform, terraformVersion)
 		ddoscooconn.AppendUserAgent(Provider, providerVersion)
 		ddoscooconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1549,8 +1526,7 @@ func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interfac
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the DDOSBGP client: %#v", err)
 		}
-		ddosbgpconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		ddosbgpconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+
 		ddosbgpconn.AppendUserAgent(Terraform, terraformVersion)
 		ddosbgpconn.AppendUserAgent(Provider, providerVersion)
 		ddosbgpconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1575,8 +1551,6 @@ func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (in
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the BSSOPENAPI client: %#v", err)
 		}
-		bssopenapiconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		bssopenapiconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		bssopenapiconn.AppendUserAgent(Terraform, terraformVersion)
 		bssopenapiconn.AppendUserAgent(Provider, providerVersion)
 		bssopenapiconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1600,8 +1574,6 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the ALIKAFKA client: %#v", err)
 		}
-		alikafkaconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		alikafkaconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		alikafkaconn.AppendUserAgent(Terraform, terraformVersion)
 		alikafkaconn.AppendUserAgent(Provider, providerVersion)
 		alikafkaconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1624,8 +1596,6 @@ func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, err
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %#v", err)
 		}
-		emrConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		emrConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		emrConn.AppendUserAgent(Terraform, terraformVersion)
 		emrConn.AppendUserAgent(Provider, providerVersion)
 		emrConn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1649,8 +1619,7 @@ func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{},
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the SAG client: %#v", err)
 		}
-		sagconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		sagconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+
 		sagconn.AppendUserAgent(Terraform, terraformVersion)
 		sagconn.AppendUserAgent(Provider, providerVersion)
 		sagconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1667,8 +1636,6 @@ func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (i
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the DBAUDIT client: %#v", err)
 		}
-		dbauditconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		dbauditconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		dbauditconn.AppendUserAgent(Terraform, terraformVersion)
 		dbauditconn.AppendUserAgent(Provider, providerVersion)
 		dbauditconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1684,8 +1651,6 @@ func (client *AliyunClient) WithBastionhostClient(do func(*yundun_bastionhost.Cl
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the BASTIONHOST client: %#v", err)
 		}
-		bastionhostconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		bastionhostconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		bastionhostconn.AppendUserAgent(Terraform, terraformVersion)
 		bastionhostconn.AppendUserAgent(Provider, providerVersion)
 		bastionhostconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1709,8 +1674,7 @@ func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the Market client: %#v", err)
 		}
-		marketconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		marketconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+
 		marketconn.AppendUserAgent(Terraform, terraformVersion)
 		marketconn.AppendUserAgent(Provider, providerVersion)
 		marketconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1734,8 +1698,7 @@ func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{},
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the hbase client: %#v", err)
 		}
-		hbaseconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		hbaseconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+
 		hbaseconn.AppendUserAgent(Terraform, terraformVersion)
 		hbaseconn.AppendUserAgent(Provider, providerVersion)
 		hbaseconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1787,8 +1750,7 @@ func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the adb client: %#v", err)
 
 		}
-		adbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		adbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+
 		adbconn.AppendUserAgent(Terraform, terraformVersion)
 		adbconn.AppendUserAgent(Provider, providerVersion)
 		adbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1819,8 +1781,6 @@ func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, err
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the Cbnclient: %#v", err)
 		}
-		cbnConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		cbnConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		cbnConn.AppendUserAgent(Terraform, terraformVersion)
 		cbnConn.AppendUserAgent(Provider, providerVersion)
 		cbnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1843,8 +1803,6 @@ func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, e
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the ALIKAFKA client: %#v", err)
 		}
-		edasconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		edasconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		edasconn.AppendUserAgent(Terraform, terraformVersion)
 		edasconn.AppendUserAgent(Provider, providerVersion)
 		edasconn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1871,8 +1829,6 @@ func (client *AliyunClient) WithAlidnsClient(do func(*alidns.Client) (interface{
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the Alidnsclient: %#v", err)
 		}
-		alidnsConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		alidnsConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		alidnsConn.AppendUserAgent(Terraform, terraformVersion)
 		alidnsConn.AppendUserAgent(Provider, providerVersion)
 		alidnsConn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1892,8 +1848,6 @@ func (client *AliyunClient) WithCassandraClient(do func(*cassandra.Client) (inte
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the Cassandraclient: %#v", err)
 		}
-		cassandraConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		cassandraConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		cassandraConn.AppendUserAgent(Terraform, terraformVersion)
 		cassandraConn.AppendUserAgent(Provider, providerVersion)
 		cassandraConn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1919,8 +1873,6 @@ func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, err
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the Eciclient: %#v", err)
 		}
-		eciConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		eciConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		eciConn.AppendUserAgent(Terraform, terraformVersion)
 		eciConn.AppendUserAgent(Provider, providerVersion)
 		eciConn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1946,8 +1898,6 @@ func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, e
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the Dcdnclient: %#v", err)
 		}
-		dcdnConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		dcdnConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		dcdnConn.AppendUserAgent(Terraform, terraformVersion)
 		dcdnConn.AppendUserAgent(Provider, providerVersion)
 		dcdnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -1973,8 +1923,6 @@ func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (inter
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the RKvstoreclient: %#v", err)
 		}
-		r_kvstoreConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		r_kvstoreConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		r_kvstoreConn.AppendUserAgent(Terraform, terraformVersion)
 		r_kvstoreConn.AppendUserAgent(Provider, providerVersion)
 		r_kvstoreConn.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -2690,6 +2638,29 @@ func (client *AliyunClient) NewSlbClient() (*rpc.Client, error) {
 	return conn, nil
 }
 
+func (client *AliyunClient) NewCbnClient() (*rpc.Client, error) {
+	productCode := "cbn"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
 func (client *AliyunClient) NewKmsClient() (*rpc.Client, error) {
 	productCode := "kms"
 	endpoint := ""
@@ -2723,52 +2694,6 @@ func (client *AliyunClient) NewAlidnsClient() (*rpc.Client, error) {
 			endpoint = "alidns.aliyuncs.com"
 			client.config.Endpoints[productCode] = endpoint
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
-
-func (client *AliyunClient) NewHbaseClient() (*rpc.Client, error) {
-	productCode := "hbase"
-	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
-		}
-	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
-
-func (client *AliyunClient) NewDmClient() (*rpc.Client, error) {
-	productCode := "dm"
-	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
 		}
 	}
 	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
