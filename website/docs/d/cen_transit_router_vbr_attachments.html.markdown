@@ -18,7 +18,6 @@ This data source provides CEN Transit Router VBR Attachments available to the us
 ```
 data "alicloud_cen_transit_router_vbr_attachments" "default" {
   cen_id    = "cen-id1"
-  region_id = "cn-****"
 }
 
 output "first_transit_router_vbr_attachments_vbr_id" {
@@ -31,7 +30,6 @@ output "first_transit_router_vbr_attachments_vbr_id" {
 The following arguments are supported:
 
 * `cen_id` - (Required) ID of the CEN instance.
-* `region_id` - (Optional) Region ID of the VBR.
 * `transit_router_id` - (Optional) ID of the transit router.
 * `resource_type` - (Optional) Type of the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
