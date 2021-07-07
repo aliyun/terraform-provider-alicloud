@@ -8,7 +8,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCenTransitRouterRouteTablePropagationsDataSource(t *testing.T) {
+/**
+This resource has buried point data.
+VBR is buried point data.
+*/
+func SkipTestAccAlicloudCenTransitRouterRouteTablePropagationsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterRouteTablePropagationsDataSourceName(rand, map[string]string{

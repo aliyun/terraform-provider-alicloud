@@ -9,7 +9,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
+/**
+This resource has buried point data.
+VBR is buried point data.
+*/
+func SkipTestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_vbr_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVbrAttachmentMap)
