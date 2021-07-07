@@ -233,6 +233,9 @@ The following arguments are supported:
 * `sql_collector_config_value` - (Optional, Available in 1.70.0+) The sql collector keep time of the instance. Valid values are `30`, `180`, `365`, `1095`, `1825`, Default to `30`.
     
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
+* `connection_string_prefix` - (Optional, Available in 1.126.0+) The private connection string prefix. If you want to update public connection string prefix, please use resource alicloud_db_connection [connection_prefix](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#connection_prefix). 
+-> **NOTE:** The prefix must be 8 to 64 characters in length and can contain letters, digits, and hyphens (-). It cannot contain Chinese characters and special characters ~!#%^&*=+\|{};:'",<>/?
+* `port` - (Optional, Available in 1.126.0+) The private port of the database service. If you want to update public port, please use resource alicloud_db_connection [port](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#port).
 * `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`. Currently, the resource only supports PostPaid to PrePaid.
 * `resource_group_id` (Optional, Computed, Available in 1.86.0+, Modifiable in 1.115.0+) The ID of resource group which the DB instance belongs.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36.
@@ -336,7 +339,6 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 The following attributes are exported:
 
 * `id` - The RDS instance ID.
-* `port` - RDS database connection port.
 * `connection_string` - RDS database connection string.
 * `ssl_status` - Status of the SSL feature. `Yes`: SSL is turned on; `No`: SSL is turned off.
 

@@ -127,8 +127,15 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 			},
 
+			"connection_string_prefix": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(8, 64),
+			},
+
 			"port": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 
@@ -905,6 +912,56 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("private_ip_address")
 
 		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	connectUpdate := false
+	connectAction := "ModifyDBInstanceConnectionString"
+	connectRequest := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+		"RegionId":     client.RegionId,
+		"SourceIp":     client.SourceIp,
+	}
+	if d.HasChange("port") {
+		connectUpdate = true
+	}
+	if d.HasChange("connection_string_prefix") {
+		connectUpdate = true
+	}
+	if connectUpdate {
+		if v, ok := d.GetOk("port"); ok && v.(string) != "" {
+			connectRequest["Port"] = v
+		}
+		if v, ok := d.GetOk("connection_string_prefix"); ok && v.(string) != "" {
+			connectRequest["ConnectionStringPrefix"] = v
+		} else {
+			connectRequest["ConnectionStringPrefix"] = strings.Split(d.Get("connection_string").(string), ".")[0]
+		}
+		connectRequest["CurrentConnectionString"] = d.Get("connection_string")
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(connectAction), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, connectRequest, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), netAction, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(connectAction, response, connectRequest)
+		d.SetPartial("port")
+		d.SetPartial("connection_string")
+		// wait instance status is running after modifying
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}

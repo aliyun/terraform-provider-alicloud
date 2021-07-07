@@ -1064,6 +1064,19 @@ func TestAccAlicloudDBInstancePostgreSQLSSL(t *testing.T) {
 					}),
 				),
 			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port":                     "3333",
+					"connection_string_prefix": "rm-ccccccc",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port":                     "3333",
+						"connection_string_prefix": "rm-ccccccc",
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"security_group_ids": "${alicloud_security_group.default.*.id}",
