@@ -102,8 +102,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 30 mins) Used when creating the polardb cluster (until it reaches the initial `Running` status).
-* `update` - (Defaults to 30 mins) Used when updating the polardb cluster (until it reaches the initial `Running` status).
+* `create` - (Defaults to 50 mins) Used when creating the polardb cluster (until it reaches the initial `Running` status).
+* `update` - (Defaults to 50 mins) Used when updating the polardb cluster (until it reaches the initial `Running` status).
 * `delete` - (Defaults to 10 mins) Used when terminating the polardb cluster.
 
 ## Import
