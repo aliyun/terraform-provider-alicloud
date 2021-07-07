@@ -10,6 +10,7 @@ import (
 
 /**
 This resource has buried point data.
+VBR is buried point data.
 */
 func SkipTestAccAlicloudCenTransitRouterVbrAttachmentsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
