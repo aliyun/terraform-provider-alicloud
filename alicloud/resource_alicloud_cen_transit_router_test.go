@@ -62,11 +62,11 @@ func TestAccAlicloudCenTransitRouter_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"transit_router_name": name + "1",
+					"transit_router_name": name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"transit_router_name": name + "1",
+						"transit_router_name": name + "update",
 					}),
 				),
 			},

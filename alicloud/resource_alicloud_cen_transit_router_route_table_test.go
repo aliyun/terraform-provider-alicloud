@@ -33,7 +33,7 @@ func TestAccAlicloudCenTransitRouterRouteTable_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"transit_router_id":                      "${alicloud_cen_transit_router.default.transit_router_id}",
-					"transit_router_route_table_name":        "${var.name}",
+					"transit_router_route_table_name":        name,
 					"transit_router_route_table_description": "description",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -62,18 +62,18 @@ func TestAccAlicloudCenTransitRouterRouteTable_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"transit_router_route_table_name": name + "1",
+					"transit_router_route_table_name": name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"transit_router_route_table_name": name + "1",
+						"transit_router_route_table_name": name + "update",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"transit_router_route_table_description": "desp",
-					"transit_router_route_table_name":        "${var.name}",
+					"transit_router_route_table_name":        name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

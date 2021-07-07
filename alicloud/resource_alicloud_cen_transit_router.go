@@ -186,7 +186,6 @@ func resourceAlicloudCenTransitRouterUpdate(d *schema.ResourceData, meta interfa
 	return resourceAlicloudCenTransitRouterRead(d, meta)
 }
 func resourceAlicloudCenTransitRouterDelete(d *schema.ResourceData, meta interface{}) error {
-	time.Sleep(30 * time.Second)
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteTransitRouter"
 	var response map[string]interface{}

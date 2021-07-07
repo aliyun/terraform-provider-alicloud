@@ -90,11 +90,11 @@ func SkipTestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"transit_router_attachment_name": "name1",
+					"transit_router_attachment_name": name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"transit_router_attachment_name": "name1",
+						"transit_router_attachment_name": name + "update",
 					}),
 				),
 			},
@@ -102,13 +102,13 @@ func SkipTestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"auto_publish_route_enabled":            `true`,
 					"transit_router_attachment_description": "desp",
-					"transit_router_attachment_name":        "name",
+					"transit_router_attachment_name":        name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"auto_publish_route_enabled":            "true",
 						"transit_router_attachment_description": "desp",
-						"transit_router_attachment_name":        "name",
+						"transit_router_attachment_name":        name,
 					}),
 				),
 			},
