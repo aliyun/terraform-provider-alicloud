@@ -9,9 +9,9 @@ Provides a list of CEN Transit Router VBR Attachments owned by an Alibaba Cloud 
 
 # alicloud\_cen\_transit\_router\_vbr\_attachments
 
-This data source provides CEN Transit Router VBR Attachments available to the user.
+This data source provides CEN Transit Router VBR Attachments available to the user.[What is Cen Transit Router VBR Attachments](https://help.aliyun.com/document_detail/261226.html)
 
--> **NOTE:** Available in 1.125.0+
+-> **NOTE:** Available in 1.126.0+
 
 ## Example Usage
 

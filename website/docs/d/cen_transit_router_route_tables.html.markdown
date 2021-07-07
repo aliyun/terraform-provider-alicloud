@@ -9,9 +9,9 @@ Provides a list of CEN Transit Router Route Tables owned by an Alibaba Cloud acc
 
 # alicloud\_cen\_transit\_router\_route\_tables
 
-This data source provides CEN Transit Router Route Tables available to the user.
+This data source provides CEN Transit Router Route Tables available to the user.[What is Cen Transit Router Route Tables](https://help.aliyun.com/document_detail/261237.html)
 
--> **NOTE:** Available in 1.125.0+
+-> **NOTE:** Available in 1.126.0+
 
 ## Example Usage
 

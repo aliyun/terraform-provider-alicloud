@@ -9,9 +9,9 @@ Provides a list of CEN Transit Routers owned by an Alibaba Cloud account.
 
 # alicloud\_cen\_transit\_routers
 
-This data source provides CEN Transit Routers available to the user.
+This data source provides CEN Transit Routers available to the user.[What is Cen Transit Routers](https://help.aliyun.com/document_detail/261219.html)
 
--> **NOTE:** Available in 1.125.0+
+-> **NOTE:** Available in 1.126.0+
 
 ## Example Usage
 

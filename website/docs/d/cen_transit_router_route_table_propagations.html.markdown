@@ -9,9 +9,9 @@ Provides a list of CEN Transit Router Route Table Propagation owned by an Alibab
 
 # alicloud\_cen\_transit\_router\_route\_table\_propagations
 
-This data source provides CEN Transit Router Route Table Propagations available to the user.
+This data source provides CEN Transit Router Route Table Propagations available to the user.[What is Cen Transit Router Route Table Propagations](https://help.aliyun.com/document_detail/261245.html)
 
--> **NOTE:** Available in 1.125.0+
+-> **NOTE:** Available in 1.126.0+
 
 ## Example Usage
 
