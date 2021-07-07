@@ -132,9 +132,9 @@ func dataSourceAlicloudCenTransitRouterVbrAttachmentsRead(d *schema.ResourceData
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_transit_router_vbr_attachments", action, AlibabaCloudSdkGoERROR)
 		}
@@ -173,7 +173,7 @@ func dataSourceAlicloudCenTransitRouterVbrAttachmentsRead(d *schema.ResourceData
 			"transit_router_attachment_id":          fmt.Sprint(object["TransitRouterAttachmentId"]),
 			"transit_router_attachment_name":        object["TransitRouterAttachmentName"],
 			"vbr_id":                                object["VbrId"],
-			"vbr_owner_id":                          formatInt(object["VbrOwnerId"]),
+			"vbr_owner_id":                          fmt.Sprint(object["VbrOwnerId"]),
 		}
 		ids = append(ids, fmt.Sprint(object["TransitRouterAttachmentId"]))
 		s = append(s, mapping)

@@ -37,7 +37,7 @@ func SkipTestAccAlicloudCenTransitRouterRouteEntry_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"transit_router_route_entry_destination_cidr_block": "192.168.1.0/24",
-					"transit_router_route_entry_name":                   "${var.name}",
+					"transit_router_route_entry_name":                   name,
 					"transit_router_route_entry_description":            "test",
 					"transit_router_route_entry_next_hop_type":          "Attachment",
 					"transit_router_route_entry_next_hop_id":            "${alicloud_cen_transit_router_vbr_attachment.default.transit_router_attachment_id}",
@@ -72,18 +72,18 @@ func SkipTestAccAlicloudCenTransitRouterRouteEntry_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"transit_router_route_entry_name": name + "1",
+					"transit_router_route_entry_name": name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"transit_router_route_entry_name": name + "1",
+						"transit_router_route_entry_name": name + "update",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"transit_router_route_entry_description": "desc",
-					"transit_router_route_entry_name":        "${var.name}",
+					"transit_router_route_entry_name":        name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -132,8 +132,8 @@ resource "alicloud_cen_transit_router_vbr_attachment" "default" {
   transit_router_id = alicloud_cen_transit_router.default.transit_router_id
   vbr_id = "vbr-j6cd9pm9y6d6e20atoi6w"
   auto_publish_route_enabled = true
-  transit_router_attachment_name = "name"
-  transit_router_attachment_description = "name"
+  transit_router_attachment_name = var.name
+  transit_router_attachment_description = var.name
 }
 `, name)
 }

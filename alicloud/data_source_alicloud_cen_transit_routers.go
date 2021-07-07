@@ -193,7 +193,7 @@ func dataSourceAlicloudCenTransitRoutersRead(d *schema.ResourceData, meta interf
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"ali_uid":                    formatInt(object["AliUid"]),
+			"ali_uid":                    fmt.Sprint(object["AliUid"]),
 			"cen_id":                     object["CenId"],
 			"status":                     object["Status"],
 			"transit_router_description": object["TransitRouterDescription"],
