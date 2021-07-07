@@ -81,7 +81,7 @@ func dataSourceAlicloudCenTransitRouterVbrAttachments() *schema.Resource {
 							Computed: true,
 						},
 						"vbr_owner_id": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},

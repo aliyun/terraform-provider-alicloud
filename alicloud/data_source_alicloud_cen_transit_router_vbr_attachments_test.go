@@ -8,7 +8,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCenTransitRouterVbrAttachmentsDataSource(t *testing.T) {
+/**
+This resource has buried point data.
+*/
+func SkipTestAccAlicloudCenTransitRouterVbrAttachmentsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterVbrAttachmentsDataSourceName(rand, map[string]string{
@@ -18,16 +21,6 @@ func TestAccAlicloudCenTransitRouterVbrAttachmentsDataSource(t *testing.T) {
 			"ids": `["${alicloud_cen_transit_router_vbr_attachment.default.transit_router_attachment_id}_fake"]`,
 		}),
 	}
-	/*	transitRouterIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCenTransitRouterVbrAttachmentsDataSourceName(rand, map[string]string{
-			"ids":               `["${alicloud_cen_transit_router_vbr_attachment.default.transit_router_attachment_id}"]`,
-			"transit_router_id": `"${alicloud_cen_transit_router.default.transit_router_id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudCenTransitRouterVbrAttachmentsDataSourceName(rand, map[string]string{
-			"ids":               `["${alicloud_cen_transit_router_vbr_attachment.default.transit_router_attachment_id}"]`,
-			"transit_router_id": `"${alicloud_cen_transit_router.default.transit_router_id}_fake"`,
-		}),
-	}*/
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterVbrAttachmentsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_cen_transit_router_vbr_attachment.default.transit_router_attachment_id}"]`,

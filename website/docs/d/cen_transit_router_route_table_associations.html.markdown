@@ -30,7 +30,7 @@ output "first_transit_router_peer_attachments_transit_router_attachment_resource
 The following arguments are supported:
 
 * `transit_router_route_table_id` - (Optional) ID of the route table of the VPC or VBR.
-* `status` - (Optional) The status of the route table, including "Active", "Creating", "Deleting", "Updating".
+* `status` - (Optional) The status of the route table, including `Active`, `Creating`, `Deleting`, `Updating`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -40,6 +40,6 @@ The following attributes are exported in addition to the arguments listed above:
 * `associations` - A list of CEN Transit Router Route Table Associations. Each element contains the following attributes:
     * `resource_id` - ID of the transit router route table association.
     * `resource_type` - Type of the resource.
-    * `status` - The status of the route table, including "Active", "Creating", "Deleting", "Updating".
+    * `status` - The status of the route table, including `Active`, `Creating`, `Deleting`, `Updating`.
     * `transit_router_attachment_id` - ID of the transit router attachment.
 

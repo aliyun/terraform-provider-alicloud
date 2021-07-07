@@ -58,12 +58,12 @@ resource "alicloud_cen_transit_router" "default" {
 }
 
 resource "alicloud_cen_transit_router_route_table" "default" {
-  transit_router_id = alicloud_cen_transit_router.default.id
+  transit_router_id = alicloud_cen_transit_router.default.transit_router_id
 }
 
 resource "alicloud_cen_transit_router_vpc_attachment" "default" {
   cen_id            = alicloud_cen_instance.default.id
-  transit_router_id = alicloud_cen_transit_router.default.id
+  transit_router_id = alicloud_cen_transit_router.default.transit_router_id
   vpc_id = alicloud_vpc.default.id
   zone_mapping {
     zone_id = data.alicloud_cen_transit_router_available_resource.default.zones.0.master_zones.0
@@ -78,8 +78,8 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
 }
 
 resource "alicloud_cen_transit_router_route_table_association" "default" {
-  transit_router_route_table_id = alicloud_cen_transit_router_route_table.default.id
-  transit_router_attachment_id = alicloud_cen_transit_router_vpc_attachment.default.id
+  transit_router_route_table_id = alicloud_cen_transit_router_route_table.default.transit_router_route_table_id
+  transit_router_attachment_id = alicloud_cen_transit_router_vpc_attachment.default.transit_router_attachment_id
 }
 ```
 ## Argument Reference

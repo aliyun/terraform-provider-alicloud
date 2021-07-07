@@ -64,7 +64,7 @@ func dataSourceAlicloudCenTransitRouters() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"ali_uid": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"cen_id": {

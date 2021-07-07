@@ -18,7 +18,6 @@ This data source provides CEN Transit Routers available to the user.
 ```
 data "alicloud_cen_transit_routers" "default" {
   cen_id    = "cen-id1"
-  region    = "cn-*****"
 }
 
 output "first_transit_routers_type" {
@@ -31,7 +30,6 @@ output "first_transit_routers_type" {
 The following arguments are supported:
 
 * `cen_id` - (Required) ID of the CEN instance.
-* `region_id` - (Optional) Region ID of the VBR.
 * `transit_router_id` - (Optional) ID of the transit router.
 * `transit_router_ids` - (Optional) A list of ID of the transit router.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).

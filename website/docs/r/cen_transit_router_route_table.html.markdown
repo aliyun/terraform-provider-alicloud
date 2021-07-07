@@ -22,10 +22,6 @@ variable "name" {
   default = "tf-testAccCenTransitRouter"
 }
 
-variable "region" {
-  default = "cn-hangzhou"
-}
-
 resource "alicloud_cen_instance" "cen" {
   name        = var.name
   description = "terraform01"
@@ -34,11 +30,10 @@ resource "alicloud_cen_instance" "cen" {
 resource "alicloud_cen_transit_router" "default" {
   name       = var.name
   cen_id     = alicloud_cen_instance.cen.id
-  region_id  = var.region
 }
 
 resource "alicloud_cen_transit_router_route_table" "default" {
-  transit_router_id = alicloud_cen_transit_router.default.id
+  transit_router_id = alicloud_cen_transit_router.default.transit_router_id
 }
 ```
 ## Argument Reference
@@ -46,7 +41,6 @@ resource "alicloud_cen_transit_router_route_table" "default" {
 The following arguments are supported:
 
 * `cen_id` - (Required, ForceNew) The ID of the CEN.
-* `region_id` - (Required, ForceNew) The Region ID of the Transit Router.
 * `type` - (Optional) The Type of the Transit Router. Valid values: `Enterprise`, `Basic`.
 * `transit_router_id` - (Required, ForceNew) The ID of the transit router.
 
