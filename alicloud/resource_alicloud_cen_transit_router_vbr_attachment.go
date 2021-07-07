@@ -77,7 +77,7 @@ func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
 				ForceNew: true,
 			},
 			"vbr_owner_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				Computed: true,

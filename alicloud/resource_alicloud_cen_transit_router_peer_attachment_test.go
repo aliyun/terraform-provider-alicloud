@@ -152,7 +152,6 @@ variable "name" {
 	default = "%s"
 }
 
-
 resource "alicloud_cen_transit_router" "default" {
   cen_id = "cen-f6rslz7pzbnj8sshxc"
 }

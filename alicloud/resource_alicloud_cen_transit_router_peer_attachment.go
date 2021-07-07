@@ -165,7 +165,6 @@ func resourceAlicloudCenTransitRouterPeerAttachmentCreate(d *schema.ResourceData
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_transit_router_peer_attachment", action, AlibabaCloudSdkGoERROR)
 	}
-
 	d.SetId(fmt.Sprintf("%v:%v", request["CenId"], response["TransitRouterAttachmentId"]))
 	stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterPeerAttachmentStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {

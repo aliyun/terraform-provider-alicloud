@@ -82,12 +82,12 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 				ForceNew: true,
 			},
 			"vpc_owner_id": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
 			"zone_mappings": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -163,7 +163,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 	}
 
 	zoneMappingsMaps := make([]map[string]interface{}, 0)
-	for _, zoneMappings := range d.Get("zone_mappings").(*schema.Set).List() {
+	for _, zoneMappings := range d.Get("zone_mappings").([]interface{}) {
 		zoneMappingsMap := make(map[string]interface{})
 		zoneMappingsArg := zoneMappings.(map[string]interface{})
 		zoneMappingsMap["VSwitchId"] = zoneMappingsArg["vswitch_id"]
