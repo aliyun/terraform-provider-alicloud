@@ -13,34 +13,28 @@ func TestAccAlicloudCenTransitRouterPeerAttachmentsDataSource(t *testing.T) {
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterPeerAttachmentsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id}"]`,
-			//"transit_router_attachment_id": `"${alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterPeerAttachmentsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id}"]`,
-			//"transit_router_attachment_id": `"${alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id}"`,
 		}),
 	}
 	transitRouterIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterPeerAttachmentsDataSourceName(rand, map[string]string{
-			"ids": `["${alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id}"]`,
-			//"transit_router_attachment_id": `"${alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id}"`,
+			"ids":               `["${alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id}"]`,
 			"transit_router_id": `"${alicloud_cen_transit_router.default.transit_router_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterPeerAttachmentsDataSourceName(rand, map[string]string{
-			"ids": `["${alicloud_cen_transit_router_peer_attachment.default.id}"]`,
-			//"transit_router_attachment_id": `"${alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id}"`,
+			"ids":               `["${alicloud_cen_transit_router_peer_attachment.default.id}"]`,
 			"transit_router_id": `"${alicloud_cen_transit_router.default.transit_router_id}_fake"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterPeerAttachmentsDataSourceName(rand, map[string]string{
-			//"transit_router_attachment_id": `"${alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id}"`,
 			"ids":               `["${alicloud_cen_transit_router_peer_attachment.default.id}"]`,
 			"status":            `"Attached"`,
 			"transit_router_id": `"${alicloud_cen_transit_router.default.transit_router_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterPeerAttachmentsDataSourceName(rand, map[string]string{
-			//"transit_router_attachment_id": `"${alicloud_cen_transit_router_peer_attachment.default.transit_router_attachment_id}_fake"`,
 			"ids":               `["${alicloud_cen_transit_router_peer_attachment.default.id}_fake"]`,
 			"status":            `"Attaching"`,
 			"transit_router_id": `"${alicloud_cen_transit_router.default.transit_router_id}_fake"`,
