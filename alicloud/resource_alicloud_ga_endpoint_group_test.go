@@ -38,7 +38,7 @@ func TestAccAlicloudGaEndpointGroup_basic(t *testing.T) {
 					"endpoint_group_region": defaultRegion,
 					"endpoint_configurations": []map[string]interface{}{
 						{
-							"endpoint": "${alicloud_eip.example.0.ip_address}",
+							"endpoint": "${alicloud_eip_address.example.0.ip_address}",
 							"type":     "PublicIp",
 							"weight":   "20",
 						},
@@ -64,12 +64,12 @@ func TestAccAlicloudGaEndpointGroup_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"endpoint_configurations": []map[string]interface{}{
 						{
-							"endpoint": "${alicloud_eip.example.0.ip_address}",
+							"endpoint": "${alicloud_eip_address.example.0.ip_address}",
 							"type":     "PublicIp",
 							"weight":   "20",
 						},
 						{
-							"endpoint": "${alicloud_eip.example.1.ip_address}",
+							"endpoint": "${alicloud_eip_address.example.1.ip_address}",
 							"type":     "PublicIp",
 							"weight":   "20",
 						},
@@ -181,7 +181,7 @@ func TestAccAlicloudGaEndpointGroup_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"endpoint_configurations": []map[string]interface{}{
 						{
-							"endpoint": "${alicloud_eip.example.0.ip_address}",
+							"endpoint": "${alicloud_eip_address.example.0.ip_address}",
 							"type":     "PublicIp",
 							"weight":   "20",
 						},
@@ -231,7 +231,7 @@ func AlicloudGaEndpointGroupBasicDependence(name string) string {
 data "alicloud_ga_accelerators" "default"{
   
 }
-resource "alicloud_eip" "example" {
+resource "alicloud_eip_address" "example" {
   count = 2
   bandwidth            = "10"
   internet_charge_type = "PayByBandwidth"

@@ -22,10 +22,10 @@ resource "alicloud_nat_gateway" "main" {
   name          = "from-tf-example"
 }
 
-resource "alicloud_eip" "foo" {
+resource "alicloud_eip_address" "foo" {
 }
 
 resource "alicloud_eip_association" "foo" {
-  allocation_id = alicloud_eip.foo.id
+  allocation_id = alicloud_eip_address.foo.id
   instance_id   = alicloud_nat_gateway.main.id
 }
