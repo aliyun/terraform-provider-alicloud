@@ -119,3 +119,4 @@ var VpcIpv6SupportRegions = []Region{Hangzhou, Shanghai, Shenzhen, Beijing, Huhe
 var EssdSupportRegions = []Region{Zhangjiakou, Huhehaote}
 var AdbReserverUnSupportRegions = []Region{EUCentral1}
 var KmsKeyUnSupportRegions = []Region{EUCentral1}
+var CenTransitRouterVpcAttachmentSupportRegions = []Region{Hangzhou}

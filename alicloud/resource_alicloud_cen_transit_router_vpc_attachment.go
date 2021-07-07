@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"log"
 	"time"
 
@@ -11,25 +12,32 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
+func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCenTransitRouterVbrAttachmentCreate,
-		Read:   resourceAlicloudCenTransitRouterVbrAttachmentRead,
-		Update: resourceAlicloudCenTransitRouterVbrAttachmentUpdate,
-		Delete: resourceAlicloudCenTransitRouterVbrAttachmentDelete,
+		Create: resourceAlicloudCenTransitRouterVpcAttachmentCreate,
+		Read:   resourceAlicloudCenTransitRouterVpcAttachmentRead,
+		Update: resourceAlicloudCenTransitRouterVpcAttachmentUpdate,
+		Delete: resourceAlicloudCenTransitRouterVpcAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"auto_publish_route_enabled": {
+			"auto_create_vpc_route": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Computed: true,
+				ForceNew: true,
 			},
 			"cen_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"payment_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo"}, false),
 			},
 			"dry_run": {
 				Type:     schema.TypeBool,
@@ -38,11 +46,7 @@ func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
 			"resource_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "VBR",
-			},
-			"transit_router_attachment_id": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Default:  "VPC",
 			},
 			"route_table_association_enabled": {
 				Type:     schema.TypeBool,
@@ -71,36 +75,63 @@ func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"vbr_id": {
+			"transit_router_attachment_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"vbr_owner_id": {
+			"vpc_owner_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
+				ForceNew: true,
+			},
+			"zone_mappings": {
+				Type:     schema.TypeList,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"zone_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+				ForceNew: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudCenTransitRouterVbrAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	var response map[string]interface{}
-	action := "CreateTransitRouterVbrAttachment"
+	action := "CreateTransitRouterVpcAttachment"
 	request := make(map[string]interface{})
 	conn, err := client.NewCbnClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	if v, ok := d.GetOkExists("auto_publish_route_enabled"); ok {
-		request["AutoPublishRouteEnabled"] = v
+	if v, ok := d.GetOkExists("auto_create_vpc_route"); ok {
+		request["AutoCreateVpcRoute"] = v
+	}
+	request["CenId"] = d.Get("cen_id")
+
+	if v, ok := d.GetOk("payment_type"); ok {
+		request["ChargeType"] = convertCenTransitRouterVpcAttachmentPaymentTypeRequest(v)
 	}
 
-	request["CenId"] = d.Get("cen_id")
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
@@ -130,12 +161,22 @@ func resourceAlicloudCenTransitRouterVbrAttachmentCreate(d *schema.ResourceData,
 		request["TransitRouterId"] = v
 	}
 
-	request["VbrId"] = d.Get("vbr_id")
-	if v, ok := d.GetOk("vbr_owner_id"); ok {
-		request["VbrOwnerId"] = v
+	request["VpcId"] = d.Get("vpc_id")
+	if v, ok := d.GetOk("vpc_owner_id"); ok {
+		request["VpcOwnerId"] = v
 	}
 
-	request["ClientToken"] = buildClientToken("CreateTransitRouterVbrAttachment")
+	zoneMappingsMaps := make([]map[string]interface{}, 0)
+	for _, zoneMappings := range d.Get("zone_mappings").([]interface{}) {
+		zoneMappingsMap := make(map[string]interface{})
+		zoneMappingsArg := zoneMappings.(map[string]interface{})
+		zoneMappingsMap["VSwitchId"] = zoneMappingsArg["vswitch_id"]
+		zoneMappingsMap["ZoneId"] = zoneMappingsArg["zone_id"]
+		zoneMappingsMaps = append(zoneMappingsMaps, zoneMappingsMap)
+	}
+	request["ZoneMappings"] = zoneMappingsMaps
+
+	request["ClientToken"] = buildClientToken("CreateTransitRouterVpcAttachment")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -152,53 +193,66 @@ func resourceAlicloudCenTransitRouterVbrAttachmentCreate(d *schema.ResourceData,
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_transit_router_vbr_attachment", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_transit_router_vpc_attachment", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["CenId"], response["TransitRouterAttachmentId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterVbrAttachmentStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterVpcAttachmentStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCenTransitRouterVbrAttachmentRead(d, meta)
+	return resourceAlicloudCenTransitRouterVpcAttachmentRead(d, meta)
 }
-func resourceAlicloudCenTransitRouterVbrAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
-	object, err := cbnService.DescribeCenTransitRouterVbrAttachment(d.Id())
+	object, err := cbnService.DescribeCenTransitRouterVpcAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cen_transit_router_vbr_attachment cbnService.DescribeCenTransitRouterVbrAttachment Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_cen_transit_router_vpc_attachment cbnService.DescribeCenTransitRouterVpcAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("auto_publish_route_enabled", object["AutoPublishRouteEnabled"])
+	d.Set("resource_type", object["ResourceType"])
 	d.Set("status", object["Status"])
-	d.Set("transit_router_attachment_id", object["TransitRouterAttachmentId"])
 	d.Set("transit_router_attachment_description", object["TransitRouterAttachmentDescription"])
 	d.Set("transit_router_attachment_name", object["TransitRouterAttachmentName"])
-	d.Set("vbr_id", object["VbrId"])
-	d.Set("vbr_owner_id", object["VbrOwnerId"])
+	d.Set("transit_router_attachment_id", object["TransitRouterAttachmentId"])
+	d.Set("vpc_id", object["VpcId"])
+	d.Set("vpc_owner_id", fmt.Sprint(object["VpcOwnerId"]))
+
+	zoneMappings := make([]map[string]interface{}, 0)
+	if zoneMappingsList, ok := object["ZoneMappings"].([]interface{}); ok {
+		for _, v := range zoneMappingsList {
+			if m1, ok := v.(map[string]interface{}); ok {
+				temp1 := map[string]interface{}{
+					"vswitch_id": m1["VSwitchId"],
+					"zone_id":    m1["ZoneId"],
+				}
+				zoneMappings = append(zoneMappings, temp1)
+
+			}
+		}
+	}
+	if err := d.Set("zone_mappings", zoneMappings); err != nil {
+		return WrapError(err)
+	}
 	return nil
 }
-func resourceAlicloudCenTransitRouterVbrAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	var response map[string]interface{}
+	update := false
 	parts, err1 := ParseResourceId(d.Id(), 2)
 	if err1 != nil {
 		return WrapError(err1)
 	}
-	update := false
 	request := map[string]interface{}{
 		"TransitRouterAttachmentId": parts[1],
-	}
-	if d.HasChange("auto_publish_route_enabled") || d.IsNewResource() {
-		update = true
-		request["AutoPublishRouteEnabled"] = d.Get("auto_publish_route_enabled")
 	}
 	if d.HasChange("resource_type") {
 		update = true
@@ -216,7 +270,7 @@ func resourceAlicloudCenTransitRouterVbrAttachmentUpdate(d *schema.ResourceData,
 		if _, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = d.Get("dry_run")
 		}
-		action := "UpdateTransitRouterVbrAttachmentAttribute"
+		action := "UpdateTransitRouterVpcAttachmentAttribute"
 		conn, err := client.NewCbnClient()
 		if err != nil {
 			return WrapError(err)
@@ -237,17 +291,17 @@ func resourceAlicloudCenTransitRouterVbrAttachmentUpdate(d *schema.ResourceData,
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cbnService.CenTransitRouterVbrAttachmentStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cbnService.CenTransitRouterVpcAttachmentStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
-	return resourceAlicloudCenTransitRouterVbrAttachmentRead(d, meta)
+	return resourceAlicloudCenTransitRouterVpcAttachmentRead(d, meta)
 }
-func resourceAlicloudCenTransitRouterVbrAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCenTransitRouterVpcAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
-	action := "DeleteTransitRouterVbrAttachment"
+	action := "DeleteTransitRouterVpcAttachment"
 	var response map[string]interface{}
 	conn, err := client.NewCbnClient()
 	if err != nil {
@@ -283,9 +337,17 @@ func resourceAlicloudCenTransitRouterVbrAttachmentDelete(d *schema.ResourceData,
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cbnService.CenTransitRouterVbrAttachmentStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cbnService.CenTransitRouterVpcAttachmentStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
+}
+
+func convertCenTransitRouterVpcAttachmentPaymentTypeRequest(source interface{}) interface{} {
+	switch source {
+	case "PayAsYouGo":
+		return "POSTPAY"
+	}
+	return source
 }

@@ -9,15 +9,15 @@ Provides a Alicloud CEN transit router route table resource.
 
 # alicloud\_cen_transit_router_route_table
 
-Provides a CEN transit router route table resource.
+Provides a CEN transit router route table resource.[What is Cen Transit Router Route Table](https://help.aliyun.com/document_detail/261233.html)
 
--> **NOTE:** Available in 1.125.0+
+-> **NOTE:** Available in 1.126.0+
 
 ## Example Usage
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "tf-testAccCenTransitRouter"
 }
@@ -40,9 +40,10 @@ resource "alicloud_cen_transit_router_route_table" "default" {
 
 The following arguments are supported:
 
-* `cen_id` - (Required, ForceNew) The ID of the CEN.
-* `type` - (Optional) The Type of the Transit Router. Valid values: `Enterprise`, `Basic`.
 * `transit_router_id` - (Required, ForceNew) The ID of the transit router.
+* `transit_router_route_table_name` - (Optional) The name of the transit router route table.
+* `transit_router_route_table_description` - (Optional) The description of the transit router route table.
+* `dry_run` - (Optional,ForceNew) The dry run.
 
 ## Attributes Reference
 
@@ -53,7 +54,7 @@ The following attributes are exported:
 
 ## Import
 
-CEN instance can be imported using the id, e.g.
+CEN transit router route table  can be imported using the id, e.g.
 
 ```
 $ terraform import alicloud_cen_transit_router_route_table.default tr-*********:vtb-********

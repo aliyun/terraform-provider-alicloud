@@ -9,15 +9,15 @@ Provides a Alicloud CEN transit router VBR attachment resource.
 
 # alicloud\_cen_transit_router_vbr_attachment
 
-Provides a CEN transit router VBR attachment resource that associate the VBR with the CEN instance.
+Provides a CEN transit router VBR attachment resource that associate the VBR with the CEN instance.[What is Cen Transit Router VBR Attachment](https://help.aliyun.com/document_detail/261361.html)
 
--> **NOTE:** Available in 1.125.0+
+-> **NOTE:** Available in 1.126.0+
 
 ## Example Usage
 
 Basic Usage
 
-```
+```terraform
 # Create a new instance-attachment and use it to attach one child instance to a new CEN
 variable "name" {
   default = "tf-testAccCenTransitRouterVbrAttachment"
@@ -64,6 +64,7 @@ The following arguments are supported:
 * `auto_publish_route_enabled` - (Optional) Auto publish route enabled.
 * `transit_router_attachment_name` - (Optional) The name of the transit router vbr attachment.
 * `transit_router_attachment_description` - (Optional) The description of the transit router vbr attachment.
+* `dry_run` - (Optional,ForceNew) The dry run.
 
 ->**NOTE:** Ensure that the vbr is not used in Express Connect.
 
@@ -76,7 +77,7 @@ The following attributes are exported:
 
 ## Import
 
-CEN instance can be imported using the id, e.g.
+CEN transit router VBR attachment can be imported using the id, e.g.
 
 ```
 $ terraform import alicloud_cen_transit_router_vbr_attachment.example tr-********:tr-attach-********

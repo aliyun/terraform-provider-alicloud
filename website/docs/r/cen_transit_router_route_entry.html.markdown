@@ -9,15 +9,15 @@ Provides a Alicloud CEN transit router route entry resource.
 
 # alicloud\_cen_transit_router_route_entry
 
-Provides a CEN transit router route entry resource.
+Provides a CEN transit router route entry resource.[What is Cen Transit Router Route Entry](https://help.aliyun.com/document_detail/261238.html)
 
--> **NOTE:** Available in 1.125.0+
+-> **NOTE:** Available in 1.126.0+
 
 ## Example Usage
 
 Basic Usage
 
-```
+```terraform
 # Create a new tr-attachment and use it to attach one transit router to a new CEN
 variable "name" {
   default = "tf-testAccCenTransitRouter"
@@ -56,18 +56,22 @@ resource "alicloud_cen_transit_router_route_entry" "default" {
   transit_router_route_entry_name = var.transit_router_route_entry_name
   transit_router_route_entry_description = var.transit_router_route_entry_description
   transit_router_route_entry_next_hop_id = alicloud_cen_transit_router_vpc_attachment.default.transit_router_attachment_id
-  delete_parms = "route_entry_id"
 }
 ```
 ## Argument Reference
 
 The following arguments are supported:
 
-* `cen_id` - (Required, ForceNew) The ID of the CEN.
-* `type` - (Optional) The Type of the Transit Router. Valid values: `Enterprise`, `Basic`.
 * `transit_router_route_table_id` - (Required, ForceNew) The ID of the transit router route table.
+* `transit_router_route_entry_destination_cidr_block` - (Required, ForceNew) The CIDR of the transit router route entry.
+* `transit_router_route_entry_next_hop_type` - (Required, ForceNew) The Type of the transit router route entry next hop,Valid values `Attachment` and `BlackHole`.
+* `transit_router_route_entry_name` - (Optional) The name of the transit router route entry.
+* `transit_router_route_entry_description` - (Optional) The description of the transit router route entry.
+* `transit_router_route_entry_next_hop_id` - (Required, ForceNew) The ID of the transit router route entry next hop.
+* `dry_run` - (Optional,ForceNew) The dry run.
 
-
+-> **NOTE:** If TransitRouterRouteEntryNextHopType is `Attachment`, TransitRouterRouteEntryNextHopId is required.
+             If TransitRouterRouteEntryNextHopType is `BlackHole`, TransitRouterRouteEntryNextHopId cannot be filled.
 
 ## Attributes Reference
 

@@ -9,15 +9,15 @@ Provides a Alicloud CEN transit router route table association resource.
 
 # alicloud\_cen_transit_router_route_table_association
 
-Provides a CEN transit router route table association resource.
+Provides a CEN transit router route table association resource.[What is Cen Transit Router Route Table Association](https://help.aliyun.com/document_detail/261242.html)
 
--> **NOTE:** Available in 1.125.0+
+-> **NOTE:** Available in 1.126.0+
 
 ## Example Usage
 
 Basic Usage
 
-```
+```terraform
 variable "transit_router_attachment_name" {
   default = "sdk_rebot_cen_tr_yaochi"
 }
@@ -94,6 +94,16 @@ The following arguments are supported:
 * `transit_router_attachment_description` - (Optional) The description of the transit router vbr attachment.
 * `transit_router_route_table_id` - (Required, ForceNew) The ID of the transit router route table.
 * `transit_router_attachment_id` - (Required, ForceNew) The ID the transit router attachment.
+* `dry_run` - (Optional,ForceNew) The dry run.
+
+-> **NOTE:** The Zone of CEN has MasterZone and SlaveZone, first zone_id of zone_mapping need be MasterZone. We have a API to describeZones[API](https://help.aliyun.com/document_detail/261356.html)
+
+#### ZoneMapping Block
+
+The `zone_mapping` supports the following:
+
+* `vswitch_id` - (Optional, ForceNew) The VSwitch id of attachment.
+* `zone_id` - (Optional, ForceNew) The zone Id of VSwitch.
 
 ## Attributes Reference
 
@@ -104,7 +114,7 @@ The following attributes are exported:
 
 ## Import
 
-CEN instance can be imported using the id, e.g.
+CEN transit router route table association can be imported using the id, e.g.
 
 ```
 $ terraform import alicloud_cen_transit_router_route_table_association.default tr-********:tr-attach-********

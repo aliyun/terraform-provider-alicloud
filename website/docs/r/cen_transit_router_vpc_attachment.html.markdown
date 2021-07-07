@@ -1,15 +1,15 @@
 ---
 subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_cen_transit_router_route_table_propagation"
-sidebar_current: "docs-alicloud-resource-cen-transit_router_route_table_propagation"
+page_title: "Alicloud: alicloud_cen_transit_router_vpc_attachment"
+sidebar_current: "docs-alicloud-resource-cen-transit_router_vpc_attachment"
 description: |-
-Provides a Alicloud CEN transit router route table propagation resource.
+Provides a Alicloud CEN transit router VPC attachment resource.
 ---
 
-# alicloud\_cen_transit_router_route_table_propagation
+# alicloud\_cen_transit_router_vpc_attachment
 
-Provides a CEN transit router route table propagation resource.[What is Cen Transit Router Route Table Propagation](https://help.aliyun.com/document_detail/261244.html)
+Provides a CEN transit router VPC attachment resource that associate the VPC with the CEN instance. [What is Cen Transit Router VPC Attachment](https://help.aliyun.com/document_detail/261358.html)
 
 -> **NOTE:** Available in 1.126.0+
 
@@ -57,13 +57,9 @@ resource "alicloud_cen_transit_router" "default" {
   cen_id = alicloud_cen_instance.default.id
 }
 
-resource "alicloud_cen_transit_router_route_table" "default" {
-  transit_router_id = alicloud_cen_transit_router.default.transit_router_id
-}
-
 resource "alicloud_cen_transit_router_vpc_attachment" "default" {
   cen_id            = alicloud_cen_instance.default.id
-  transit_router_id = alicloud_cen_transit_router.default.transit_router_id
+  transit_router_id = alicloud_cen_transit_router.default.id
   vpc_id = alicloud_vpc.default.id
   zone_mapping {
     zone_id = data.alicloud_cen_transit_router_available_resource.default.zones.0.master_zones.0
@@ -76,25 +72,24 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
   transit_router_attachment_name        = var.transit_router_attachment_name
   transit_router_attachment_description = var.transit_router_attachment_description
 }
-
-resource "alicloud_cen_transit_router_route_table_propagation" "default" {
-  transit_router_route_table_id = alicloud_cen_transit_router_route_table.default.transit_router_route_table_id
-  transit_router_attachment_id = alicloud_cen_transit_router_vpc_attachment.default.transit_router_attachmentid
-}
 ```
 ## Argument Reference
 
 The following arguments are supported:
 
-* `vpc_id` - (Required, ForceNew) The ID of the VPC.
+* `auto_create_vpc_route` - (Optional, ForceNew) Whether to create vpc route automatically. The system default value is `true`.
+* `dry_run` - (Optional,ForceNew) The dry run.
 * `cen_id` - (Optional, ForceNew) The ID of the CEN.
+* `vpc_id` - (Required, ForceNew) The ID of the VPC.
 * `transit_router_id` - (Optional, ForceNew) The ID of the transit router.
-* `zone_mapping` - (Required, ForceNew) The list of zone mapping of the VPC.
 * `transit_router_attachment_name` - (Optional) The name of the transit router vbr attachment.
 * `transit_router_attachment_description` - (Optional) The description of the transit router vbr attachment.
-* `transit_router_route_table_id` - (Required, ForceNew) The ID of the transit router route table.
-* `transit_router_attachment_id` - (Required, ForceNew) The ID the transit router attachment.
-* `dry_run` - (Optional,ForceNew) The dry run.
+* `payment_type` - (Optional, ForceNew) The payment type of transit router vpc attachment. Valid value `PayAsYouGo`. Default value is `PayAsYouGo`.
+* `resource_type` - (Optional,ForceNew) The resource type of transit router vpc attachment. Valid value `VPC`. Default value is `VPC`.
+* `route_table_association_enabled` - (Optional,ForceNew) Whether to enabled route table association. The system default value is `true`.
+* `route_table_propagation_enabled` - (Optional,ForceNew) Whether to enabled route table propagation. The system default value is `true`.
+* `vpc_owner_id` - (Optional,ForceNew) The owner id of vpc.
+* `zone_mapping` - (Required, ForceNew) The list of zone mapping of the VPC.
 
 -> **NOTE:** The Zone of CEN has MasterZone and SlaveZone, first zone_id of zone_mapping need be MasterZone. We have a API to describeZones[API](https://help.aliyun.com/document_detail/261356.html)
 
@@ -111,11 +106,12 @@ The following attributes are exported:
 
 * `id` - ID of the resource, It is formatted to `<transit_router_id>:<transit_router_attachment_id>`.
 * `status` - The associating status of the network.
+* `transit_router_attachment_id` - The ID of transit router attachment. 
 
 ## Import
 
-CEN transit router route table propagation can be imported using the id, e.g.
+CEN instance can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_cen_transit_router_route_table_propagation.default tr-********:tr-attach-********
+$ terraform import alicloud_cen_transit_router_vpc_attachment.example tr-********:tr-attach-********
 ```
