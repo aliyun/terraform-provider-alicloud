@@ -1,0 +1,15 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "u362anPD5duUTf1vRoG5zDicf54=",
+			"path": "github.com/aliyun/aliyun-datahub-sdk-go/datahub",
+			"revision": "e33d422bfb50576d12914c139e4e3498c69204b6",
+			"revisionTime": "2020-04-07T02:44:03Z",
+			"version": "=v0.1.2",
+			"versionExact": "v0.1.2"
+		}
+	],
+	"rootPath": "github.com/wanghx/terraform-provider-alicloud"
+}
