@@ -68,7 +68,7 @@ The following arguments are supported:
 * `transit_router_route_entry_name` - (Optional) The name of the transit router route entry.
 * `transit_router_route_entry_description` - (Optional) The description of the transit router route entry.
 * `transit_router_route_entry_next_hop_id` - (Required, ForceNew) The ID of the transit router route entry next hop.
-* `dry_run` - (Optional,ForceNew) The dry run.
+* `dry_run` - (Optional) The dry run.
 
 -> **NOTE:** If TransitRouterRouteEntryNextHopType is `Attachment`, TransitRouterRouteEntryNextHopId is required.
              If TransitRouterRouteEntryNextHopType is `BlackHole`, TransitRouterRouteEntryNextHopId cannot be filled.

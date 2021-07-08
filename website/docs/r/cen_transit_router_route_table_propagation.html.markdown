@@ -94,7 +94,7 @@ The following arguments are supported:
 * `transit_router_attachment_description` - (Optional) The description of the transit router vbr attachment.
 * `transit_router_route_table_id` - (Required, ForceNew) The ID of the transit router route table.
 * `transit_router_attachment_id` - (Required, ForceNew) The ID the transit router attachment.
-* `dry_run` - (Optional,ForceNew) The dry run.
+* `dry_run` - (Optional) The dry run.
 
 -> **NOTE:** The Zone of CEN has MasterZone and SlaveZone, first zone_id of zone_mapping need be MasterZone. We have a API to describeZones[API](https://help.aliyun.com/document_detail/261356.html)
 

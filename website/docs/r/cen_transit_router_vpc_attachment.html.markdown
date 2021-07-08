@@ -78,7 +78,7 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
 The following arguments are supported:
 
 * `auto_create_vpc_route` - (Optional, ForceNew) Whether to create vpc route automatically. The system default value is `true`.
-* `dry_run` - (Optional,ForceNew) The dry run.
+* `dry_run` - (Optional) The dry run.
 * `cen_id` - (Optional, ForceNew) The ID of the CEN.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC.
 * `transit_router_id` - (Optional, ForceNew) The ID of the transit router.

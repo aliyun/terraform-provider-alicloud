@@ -39,7 +39,6 @@ func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"resource_type": {
 				Type:     schema.TypeString,

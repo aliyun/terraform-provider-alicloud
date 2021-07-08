@@ -66,7 +66,7 @@ The following arguments are supported:
 * `transit_router_attachment_description` - (Optional) The description of the transit router vbr attachment.
 * `route_table_association_enabled` - (Optional,ForceNew) Whether to enabled route table association. The system default value is `true`.
 * `route_table_propagation_enabled` - (Optional,ForceNew) Whether to enabled route table propagation. The system default value is `true`.  
-* `dry_run` - (Optional,ForceNew) The dry run.
+* `dry_run` - (Optional) The dry run.
 
 ->**NOTE:** Ensure that the vbr is not used in Express Connect.
 
