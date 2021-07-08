@@ -43,7 +43,7 @@ The following arguments are supported:
 * `transit_router_id` - (Required, ForceNew) The ID of the transit router.
 * `transit_router_route_table_name` - (Optional) The name of the transit router route table.
 * `transit_router_route_table_description` - (Optional) The description of the transit router route table.
-* `dry_run` - (Optional,ForceNew) The dry run.
+* `dry_run` - (Optional) The dry run.
 
 ## Attributes Reference
 

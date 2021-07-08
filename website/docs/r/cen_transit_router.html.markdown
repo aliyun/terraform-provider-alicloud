@@ -41,7 +41,7 @@ The following arguments are supported:
 * `type` - (Optional) The Type of the Transit Router. Valid values: `Enterprise`, `Basic`.
 * `transit_router_name` - (Optional) The name of the transit router. 
 * `transit_router_description` - (Optional) The description of the transit router.
-* `dry_run` - (Optional,ForceNew) The dry run.
+* `dry_run` - (Optional) The dry run.
 
 
 ## Attributes Reference
