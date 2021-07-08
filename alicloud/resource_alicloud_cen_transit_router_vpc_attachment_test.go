@@ -137,19 +137,19 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name = "tf-test"
+  vpc_name = var.name
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_vswitch" "default_master" {
-  vswitch_name = "tf-test"
+  vswitch_name = var.name
   vpc_id = alicloud_vpc.default.id
   cidr_block = "192.168.1.0/24"
   zone_id = "cn-hangzhou-h"
 }
 
 resource "alicloud_vswitch" "default_slave" {
-  vswitch_name = "tf-test"
+  vswitch_name = var.name
   vpc_id = alicloud_vpc.default.id
   cidr_block = "192.168.2.0/24"
   zone_id = "cn-hangzhou-i"
