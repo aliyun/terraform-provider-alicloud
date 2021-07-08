@@ -54,9 +54,10 @@ func dataSourceAlicloudCenTransitRouterRouteEntries() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"transit_router_route_entry_status": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Active", "Creating", "Deleting", "Updating"}, false),
 			},
 			"transit_router_route_table_id": {
 				Type:     schema.TypeString,

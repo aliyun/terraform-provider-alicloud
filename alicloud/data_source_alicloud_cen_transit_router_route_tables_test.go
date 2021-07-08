@@ -103,24 +103,24 @@ variable "name" {
 }
 
 resource "alicloud_cen_instance" "default" {
-  cen_instance_name = "${var.name}"
+  cen_instance_name = var.name
   protection_level = "REDUCED"
 }
 
 resource "alicloud_cen_transit_router" "default" {
-cen_id= "${alicloud_cen_instance.default.id}"
+cen_id= alicloud_cen_instance.default.id
 transit_router_name = var.name
 }
 
 resource "alicloud_cen_transit_router_route_table" "default" {
-transit_router_id = "${alicloud_cen_transit_router.default.transit_router_id}"
+transit_router_id = alicloud_cen_transit_router.default.transit_router_id
 transit_router_route_table_description = "desp"
 transit_router_route_table_name = var.name
 depends_on = [alicloud_cen_transit_router.default]
 }
 
 data "alicloud_cen_transit_router_route_tables" "default" {	
-transit_router_id = "${alicloud_cen_transit_router.default.transit_router_id}"
+transit_router_id = alicloud_cen_transit_router.default.transit_router_id
 	%s
 }
 `, rand, strings.Join(pairs, " \n "))

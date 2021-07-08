@@ -84,7 +84,7 @@ resource "alicloud_cen_instance" "default" {
 resource "alicloud_cen_transit_router" "default" {
   cen_id= alicloud_cen_instance.default.id
   transit_router_description = "testRouteTableAssociation"
-  transit_router_name = "testRouteTableAssociation"
+  transit_router_name = var.name
 }
 
 resource "alicloud_cen_transit_router_vbr_attachment" "default" {
@@ -92,7 +92,7 @@ resource "alicloud_cen_transit_router_vbr_attachment" "default" {
   transit_router_id = alicloud_cen_transit_router.default.transit_router_id
   vbr_id = "vbr-j6cd9pm9y6d6e20atoi6w"
   auto_publish_route_enabled = true
-  transit_router_attachment_name = "tf-test"
+  transit_router_attachment_name = var.name
   transit_router_attachment_description = "tf-test"
 }
 resource "alicloud_cen_transit_router_route_table" "default" {
