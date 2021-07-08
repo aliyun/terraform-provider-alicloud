@@ -100,7 +100,7 @@ resource "alicloud_cen_transit_router_vbr_attachment" "default" {
   transit_router_id = alicloud_cen_transit_router.default.transit_router_id
   vbr_id = "vbr-j6cd9pm9y6d6e20atoi6w"
   transit_router_attachment_description = "desp"
-  transit_router_attachment_name = "name"
+  transit_router_attachment_name = var.name
 }
 
 resource "alicloud_cen_transit_router_route_table" "default" {
