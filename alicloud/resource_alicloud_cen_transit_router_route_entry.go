@@ -29,6 +29,7 @@ func resourceAlicloudCenTransitRouterRouteEntry() *schema.Resource {
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
