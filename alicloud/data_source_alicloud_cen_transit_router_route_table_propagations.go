@@ -20,7 +20,7 @@ func dataSourceAlicloudCenTransitRouterRouteTablePropagations() *schema.Resource
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Active", "Creating", "Deleting", "Updating"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Active", "Creating", "Deleting"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,

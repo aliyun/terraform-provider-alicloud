@@ -77,6 +77,14 @@ The following attributes are exported:
 * `id` - ID of the resource, It is formatted to `<transit_router_id>:<transit_router_attachment_id>`. 
 * `status` - The associating status of the network.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 3 mins) Used when creating the cen transit router vbr attachment (until it reaches the initial `Attached` status).
+* `update` - (Defaults to 3 mins) Used when update the cen transit router vbr attachment.
+* `delete` - (Defaults to 3 mins) Used when delete the cen transit router vbr attachment.
+
 ## Import
 
 CEN transit router VBR attachment can be imported using the id, e.g.

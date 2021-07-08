@@ -20,6 +20,11 @@ func resourceAlicloudCenTransitRouter() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(3 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Minute),
+			Update: schema.DefaultTimeout(3 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"cen_id": {
 				Type:     schema.TypeString,
@@ -29,6 +34,7 @@ func resourceAlicloudCenTransitRouter() *schema.Resource {
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -101,7 +107,6 @@ func resourceAlicloudCenTransitRouterCreate(d *schema.ResourceData, meta interfa
 
 	d.SetId(fmt.Sprintf("%v:%v", request["CenId"], response["TransitRouterId"]))
 	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenTransitRouterStateRefreshFunc(d.Id(), []string{"Deleting"}))
-	time.Sleep(30 * time.Second)
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -217,7 +222,6 @@ func resourceAlicloudCenTransitRouterDelete(d *schema.ResourceData, meta interfa
 		return nil
 	})
 	addDebug(action, response, request)
-	time.Sleep(30 * time.Second)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}

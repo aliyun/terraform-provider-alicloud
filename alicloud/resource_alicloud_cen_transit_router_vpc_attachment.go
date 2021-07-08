@@ -21,6 +21,11 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(3 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Minute),
+			Update: schema.DefaultTimeout(3 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"auto_create_vpc_route": {
 				Type:     schema.TypeBool,
@@ -42,6 +47,7 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				ForceNew: true,
 			},
 			"resource_type": {
 				Type:     schema.TypeString,
