@@ -51,7 +51,7 @@ func SkipTestAccAlicloudCenTransitRouterVbrAttachmentsDataSource(t *testing.T) {
 			"attachments.0.auto_publish_route_enabled":            `true`,
 			"attachments.0.transit_router_attachment_id":          CHECKSET,
 			"attachments.0.transit_router_attachment_description": `desp`,
-			"attachments.0.transit_router_attachment_name":        CHECKSET,
+			"attachments.0.transit_router_attachment_name":        fmt.Sprintf("tf-testAccDataTransitRouterVbrAttachment-%d", rand),
 			"attachments.0.vbr_id":                                `vbr-j6cd9pm9y6d6e20atoi6w`,
 			"attachments.0.resource_type":                         `VBR`,
 		}
