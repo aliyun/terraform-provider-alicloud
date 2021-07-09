@@ -113,8 +113,9 @@ func resourceAlicloudGpdbInstanceRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("security_ip_list", security_ips)
 	d.Set("create_time", instance.CreationTime)
-	d.Set("instance_charge_type", instance.PayType)
 	d.Set("tags", gpdbService.tagsToMap(instance.Tags.Tag))
+	paytype := convertPayTypeResponse(instance.PayType)
+	d.Set("instance_charge_type", paytype)
 
 	return nil
 }
@@ -238,7 +239,6 @@ func buildGpdbCreateRequest(d *schema.ResourceData, meta interface{}) (*gpdb.Cre
 	request := gpdb.CreateCreateDBInstanceRequest()
 	request.RegionId = string(client.Region)
 	request.ZoneId = Trim(d.Get("availability_zone").(string))
-	request.PayType = d.Get("instance_charge_type").(string)
 	request.VSwitchId = Trim(d.Get("vswitch_id").(string))
 	request.DBInstanceDescription = d.Get("description").(string)
 	request.DBInstanceClass = Trim(d.Get("instance_class").(string))
@@ -246,6 +246,8 @@ func buildGpdbCreateRequest(d *schema.ResourceData, meta interface{}) (*gpdb.Cre
 	request.Engine = Trim(d.Get("engine").(string))
 	request.EngineVersion = Trim(d.Get("engine_version").(string))
 
+	paytyp := d.Get("instance_charge_type").(string)
+	request.PayType = convertPayTypeRequest(paytyp)
 	// Instance NetWorkType
 	request.InstanceNetworkType = string(Classic)
 	if request.VSwitchId != "" {
@@ -282,3 +284,4 @@ func buildGpdbCreateRequest(d *schema.ResourceData, meta interface{}) (*gpdb.Cre
 
 	return request, nil
 }
+
