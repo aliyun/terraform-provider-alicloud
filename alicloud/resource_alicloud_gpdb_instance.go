@@ -114,7 +114,7 @@ func resourceAlicloudGpdbInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("security_ip_list", security_ips)
 	d.Set("create_time", instance.CreationTime)
 	d.Set("tags", gpdbService.tagsToMap(instance.Tags.Tag))
-	paytype := convertPayTypeResponse(instance.PayType)
+	paytype := convertGpdbPayTypeResponse(instance.PayType)
 	d.Set("instance_charge_type", paytype)
 
 	return nil
@@ -247,7 +247,7 @@ func buildGpdbCreateRequest(d *schema.ResourceData, meta interface{}) (*gpdb.Cre
 	request.EngineVersion = Trim(d.Get("engine_version").(string))
 
 	paytyp := d.Get("instance_charge_type").(string)
-	request.PayType = convertPayTypeRequest(paytyp)
+	request.PayType = convertGpdbPayTypeRequest(paytyp)
 	// Instance NetWorkType
 	request.InstanceNetworkType = string(Classic)
 	if request.VSwitchId != "" {
@@ -285,3 +285,22 @@ func buildGpdbCreateRequest(d *schema.ResourceData, meta interface{}) (*gpdb.Cre
 	return request, nil
 }
 
+func convertGpdbPayTypeRequest(source string) string {
+	switch source {
+	case string(PostPaid):
+		return string(Postpaid)
+	case string(PrePaid):
+		return string(Prepaid)
+	}
+	return source
+}
+
+func convertGpdbPayTypeResponse(source string) string {
+	switch source {
+	case string(Postpaid):
+		return string(PostPaid)
+	case string(Prepaid):
+		return string(PrePaid)
+	}
+	return source
+}
