@@ -1,4 +1,26 @@
 ## 1.126.0 (Unreleased)
+## 1.126.0 (July 09, 2021)
+
+ENHANCEMENTS:
+
+- testcase: Improves the direct mail receivers testcase [GH-3687]
+- testcase: Improves the sweeper test to avoid unsupported region [GH-3688]
+- NewDataSource alicloud_log_projects NewDataSource alicloud_log_stores [GH-3691]
+- docs/alicloud_actiontrail_trail: Adds 'is_organization_trail' attribute description in the docs [GH-3695]
+- NewDataSource alicloud_event_bridge_service [GH-3694]
+- resource/alicloud_db_instance：Adds new attributes such as upgrade_kernel_version_enabled, upgrade_time, switch_time and target_minor_version to support Update minor engine version. [GH-3692]
+- resource/alicloud_polardb_cluster: Enlarges the timeout after modifying the tde_status [GH-3699]
+- NewResource alicloud_eip_address NewDataSource alicloud_eip_addresses [GH-3682]
+- docs: Adds note for alicloud_polardb_cluster docs for ‘encrypt_new_tables’ [GH-3702]
+- resource/alicloud_db_instance: Adds new attributes connection_string_prefix and port to support Modify db instance connection_string_prefix or port. [GH-3703]
+- resource/alicloud_db_account: Modify attribute account_name limited length to 2-63 for PostgreSQL. [GH-3707]
+- New Resource alicloud_event_bridge_event_bus New DataSource alicloud_event_bridge_event_buses [GH-3705]
+- resource/alicloud_db_backup_policy: Adds instance status judgement, and call API ModifyBackupPolicy if the status is Running. [GH-3708]
+
+BUG FIXES:
+
+
+
 ## 1.125.0 (July 03, 2021)
 
 - **New Resource:** `alicloud_direct_mail_receivers` ([#3684](https://github.com/aliyun/terraform-provider-alicloud/issues/3684))
