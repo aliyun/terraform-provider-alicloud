@@ -134,10 +134,12 @@ func TestAccAlicloudGpdbInstance_classic(t *testing.T) {
 					"instance_class":       "gpdb.group.segsdx2",
 					"instance_group_count": "2",
 					"description":          "tf-testAccGpdbInstance_new",
+					"instance_charge_type": "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": fmt.Sprintf("tf-testAccGpdbInstance_new"),
+						"instance_charge_type":"PostPaid",
 					}),
 				),
 			},
