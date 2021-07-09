@@ -56,17 +56,16 @@ func TestAccAlicloudEipAddressesDataSource(t *testing.T) {
 			"resource_group_id": `"${alicloud_eip_address.default.resource_group_id}"`,
 		}),
 	}
-	// The isp config is invalid because of the DescribeEipAddresses api bug.
-	//ispConf := dataSourceTestAccConfig{
-	//	existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
-	//		"ids": `[alicloud_eip_address.default.id]`,
-	//		"isp": `"BGP"`,
-	//	}),
-	//	fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
-	//		"ids": `[alicloud_eip_address.default.id]`,
-	//		"isp": `"BGP_PRO"`,
-	//	}),
-	//}
+	ispConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+			"ids": `[alicloud_eip_address.default.id]`,
+			"isp": `"BGP"`,
+		}),
+		fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+			"ids": `[alicloud_eip_address.default.id]`,
+			"isp": `"BGP_PRO"`,
+		}),
+	}
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids": `[alicloud_eip_address.default.id]`,
@@ -116,7 +115,7 @@ func TestAccAlicloudEipAddressesDataSource(t *testing.T) {
 							Created = "tfTest"
 							For 	= "tfTest 123"
 					  }`,
-			//"isp":               `"BGP"`,
+			"isp": `"BGP"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":               `["fake"]`,
@@ -130,7 +129,7 @@ func TestAccAlicloudEipAddressesDataSource(t *testing.T) {
 							Created = "tfTest-fake"
 							For 	= "tfTest 123"
 					  }`,
-			//"isp":               `"BGP_PRO"`,
+			"isp": `"BGP_PRO"`,
 		}),
 	}
 	var existAlicloudEipAddressesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -172,7 +171,7 @@ func TestAccAlicloudEipAddressesDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheck(t)
 	}
-	alicloudEipAddressesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, paymentTypeConf, resourceGroupIdConf /*ispConf,*/, tagsConf, ipAddressConf, eipAddressConf, allConf)
+	alicloudEipAddressesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, paymentTypeConf, resourceGroupIdConf, ispConf, tagsConf, ipAddressConf, eipAddressConf, allConf)
 }
 func testAccCheckAlicloudEipAddressesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
