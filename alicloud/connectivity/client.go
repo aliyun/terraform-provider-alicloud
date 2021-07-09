@@ -175,7 +175,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.125.0"
+var providerVersion = "1.126.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Temporarily maintain map for old ecs client methods and store special endpoint information
@@ -2765,6 +2765,29 @@ func (client *AliyunClient) NewHbaseClient() (*rpc.Client, error) {
 
 func (client *AliyunClient) NewDmClient() (*rpc.Client, error) {
 	productCode := "dm"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewRedisaClient() (*rpc.Client, error) {
+	productCode := "redisa"
 	endpoint := ""
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {

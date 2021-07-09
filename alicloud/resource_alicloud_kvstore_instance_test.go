@@ -117,6 +117,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithNoDefaultVpc(t)
+			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -134,7 +135,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 					},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":        "${alicloud_vswitch.vswitch.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -242,7 +243,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"zone_id":    "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
-					"vswitch_id": "${data.alicloud_vswitches.update.ids.0}",
+					"vswitch_id": "${alicloud_vswitch.vswitch_two.id}",
 					"timeouts": []map[string]interface{}{
 						{
 							"update": "1h",
@@ -328,7 +329,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"For":     "acceptance test",
 					},
 					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
-					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":                "${alicloud_vswitch.vswitch.id}",
 					"maintain_start_time":       "04:00Z",
 					"maintain_end_time":         "06:00Z",
 					"backup_period":             []string{"Wednesday"},
@@ -387,6 +388,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithNoDefaultVpc(t)
+			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1027,6 +1029,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpcmulti(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithNoDefaultVpc(t)
+			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1125,6 +1128,22 @@ var RedisDbInstanceMap = map[string]string{
 
 func KvstoreInstanceVpcTestdependence(name string) string {
 	return fmt.Sprintf(`
+	resource "alicloud_vpc" "vpc" {
+  	cidr_block = "172.16.0.0/12"
+	}
+
+	resource "alicloud_vswitch" "vswitch" {
+  	vpc_id            = alicloud_vpc.vpc.id
+  	cidr_block        = cidrsubnets(alicloud_vpc.vpc.cidr_block, 4, 4)[0]
+  	zone_id           = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
+	}
+
+
+	resource "alicloud_vswitch" "vswitch_two" {
+  	vpc_id            = alicloud_vpc.vpc.id
+  	cidr_block        = cidrsubnets(alicloud_vpc.vpc.cidr_block, 4, 4)[1]
+  	zone_id           = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id
+	}
 	data "alicloud_kvstore_zones" "default"{
 		instance_charge_type = "PostPaid"
 	}

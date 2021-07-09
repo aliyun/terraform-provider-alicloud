@@ -89,7 +89,7 @@ resource "alicloud_kvstore_instance" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `instance_name` - (Optional) It has been deprecated from provider version 1.101.0 and `db_instance_name` instead.
+* `instance_name` - (Optional) It has been removed from provider version 1.126.0 and `db_instance_name` instead.
 * `db_instance_name` - (Optional, Available in 1.101.0+) The name of KVStore DBInstance. It is a string of 2 to 256 characters. 
 * `password`- (Optional, Sensitive) The password of the KVStore DBInstance. The password is a string of 8 to 30 characters and must contain uppercase letters, lowercase letters, and numbers.
 * `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to a instance. If the `password` is filled in, this field will be ignored.
@@ -97,9 +97,9 @@ The following arguments are supported:
 * `instance_class` - (Optional) Type of the applied ApsaraDB for Redis instance. It can be retrieved by data source [`alicloud_kvstore_instance_classes`](https://www.terraform.io/docs/providers/alicloud/d/kvstore_instance_classes.html)
 or referring to help-docs [Instance type table](https://www.alibabacloud.com/help/doc-detail/26350.htm).
 * `capacity` - (Optional, ForceNew, Available in 1.101.0+) The storage capacity of the KVStore DBInstance. Unit: MB.
-* `availability_zone` - (Optional) It has been deprecated from provider version 1.101.0 and `zone_id` instead.
+* `availability_zone` - (Optional) It has been removed from provider version 1.126.0 and `zone_id` instead.
 * `zone_id` - (Required, Available in 1.101.0+) The ID of the zone.
-* `instance_charge_type` - (Optional) It has been deprecated from provider version 1.101.0 and `payment_type` instead.
+* `instance_charge_type` - (Optional) It has been removed from provider version 1.126.0 and `payment_type` instead.
 * `payment_type` - (Optional, Available in 1.101.0+) The billing method of the KVStore DBInstance. Valid values: `PrePaid`, `PostPaid`. Default to `PostPaid`.
 * `period` - (Optional) The duration that you will buy KVStore DBInstance (in month). It is valid when payment_type is `PrePaid`. Valid values: `[1~9]`, `12`, `24`, `36`.
 * `auto_renew` - (Optional, Available in 1.36.0+) Whether to renewal a KVStore DBInstance automatically or not. It is valid when payment_type is `PrePaid`. Default to `false`.
@@ -118,16 +118,16 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `srcdb_instance_id`- (Optional, ForceNew, Available in 1.101.0+) The ID of the source instance.
 * `restore_time`- (Optional, ForceNew, Available in 1.101.0+) The point in time of a backup file.
 * `vpc_auth_mode`- (Optional) Only meaningful if instance_type is `Redis` and network type is VPC. Valid values: `Close`, `Open`. Defaults to `Open`.  `Close` means the redis instance can be accessed without authentication. `Open` means authentication is required.
-* `parameters` - (Optional) It has been deprecated from provider version 1.101.0 and `config` instead..
+* `parameters` - (Optional) It has been removed from provider version 1.126.0 and `config` instead..
 * `config` - (Optional, Available in 1.101.0+) The configuration of the KVStore DBInstance. Available parameters can refer to the latest docs [Instance configurations table](https://www.alibabacloud.com/help/doc-detail/61209.htm) .
 * `maintain_start_time` - (Optional, Available in v1.56.0+) The start time of the operation and maintenance time period of the KVStore DBInstance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available in v1.56.0+) The end time of the operation and maintenance time period of the KVStore DBInstance, in the format of HH:mmZ (UTC time).
 * `resource_group_id` - (Optional, Available in v1.86.0+) The ID of resource group which the resource belongs.
-* `enable_public` - (Optional, Available in v1.94.0+) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
-* `connection_string_prefix` - (Optional, Available in v1.94.0+) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
+* `enable_public` - (Optional, Available in v1.94.0+) It has been removed from provider version 1.126.0 and resource `alicloud_kvstore_connection` instead.
+* `connection_string_prefix` - (Optional, Available in v1.94.0+) It has been removed from provider version 1.126.0 and resource `alicloud_kvstore_connection` instead.
 * `port` - (Optional, Available in v1.94.0+) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
 * `order_type`- (Optional, Available in 1.101.0+) Specifies a change type when you change the configuration of a subscription instance. Valid values: `UPGRADE`, `DOWNGRADE`. Default to `UPGRADE`. `UPGRADE` means upgrades the configuration of a subscription instance. `DOWNGRADE` means downgrades the configuration of a subscription instance.
-* `node_type`- (Optional, Available in 1.101.0+) "Field 'node_type' has been deprecated from version 1.120.1". This parameter is determined by the `instance_class`.
+* `node_type`- (Optional, Available in 1.101.0+) "Field 'node_type' has been removed from version 1.126.0". This parameter is determined by the `instance_class`.
 * `ssl_enable`- (Optional, Available in 1.101.0+) Modifies the SSL status. Valid values: `Disable`, `Enable` and `Update`. 
   Note: This functionality is supported by Cluster mode (Redis 2.8, 4.0, 5.0) and Standard mode( Redis 2.8 only)
 * `force_upgrade`- (Optional, Available in 1.101.0+) Specifies whether to forcibly change the type. Default to: `true`.

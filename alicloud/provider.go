@@ -925,6 +925,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.QuotasEndpoint = strings.TrimSpace(endpoints["quotas"].(string))
 		config.SgwEndpoint = strings.TrimSpace(endpoints["sgw"].(string))
 		config.DmEndpoint = strings.TrimSpace(endpoints["dm"].(string))
+		config.RedisaEndpoint = strings.TrimSpace(endpoints["redisa"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1143,6 +1144,8 @@ func init() {
 		"sgw_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom sgw endpoints.",
 
 		"dm_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dm endpoints.",
+
+		"redisa_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom redisa endpoints.",
 	}
 }
 
@@ -1187,6 +1190,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"redisa": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["redisa_endpoint"],
+				},
+
 				"dm": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1680,6 +1690,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["quotas"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["sgw"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dm"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["redisa"].(string)))
 	return hashcode.String(buf.String())
 }
 
