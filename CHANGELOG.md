@@ -1,4 +1,46 @@
 ## 1.126.0 (Unreleased)
+## 1.126.0 (July 09, 2021)
+
+- **New Resource:** `alicloud_event_bridge_event_bus` [GH-3705]
+- **New Resource:** `alicloud_eip_address` [GH-3682]
+- **New Resource:** `alicloud_cen_transit_router` [GH-3706]
+- **New Resource:** `alicloud_cen_transit_router_route_table` [GH-3706]
+- **New Resource:** `alicloud_cen_transit_router_route_table_association` [GH-3706]
+- **New Resource:** `alicloud_cen_transit_router_route_table_propagation` [GH-3706]
+- **New Resource:** `alicloud_cen_transit_router_route_entry` [GH-3706]
+- **New Resource:** `alicloud_cen_transit_router_vbr_attachment` [GH-3706]
+- **New Resource:** `alicloud_cen_transit_router_vpc_attachment` [GH-3706]
+- **New Data Source:** `alicloud_cen_transit_routers` [GH-3706]  
+- **New Data Source:** `alicloud_cen_transit_router_route_tables` [GH-3706]
+- **New Data Source:** `alicloud_cen_transit_router_route_table_associations` [GH-3706]
+- **New Data Source:** `alicloud_cen_transit_router_route_table_propagations` [GH-3706]
+- **New Data Source:** `alicloud_cen_transit_router_route_entries` [GH-3706]
+- **New Data Source:** `alicloud_cen_transit_router_vbr_attachments` [GH-3706]
+- **New Data Source:** `alicloud_cen_transit_router_vpc_attachments` [GH-3706]
+- **New Data Source:** `alicloud_log_projects` [GH-3691]
+- **New Data Source:** `alicloud_log_stores` [GH-3691]
+- **New Data Source:** `alicloud_event_bridge_service` [GH-3691]
+- **New Data Source:** `alicloud_eip_addresses` [GH-3682]
+- **New Data Source:** `alicloud_event_bridge_event_buses` [GH-3705]
+
+ENHANCEMENTS:
+
+- resource/alicloud_db_instance：Adds new attributes such as upgrade_kernel_version_enabled, upgrade_time, switch_time and target_minor_version to support Update minor engine version. [GH-3692]
+- resource/alicloud_polardb_cluster: Enlarges the timeout after modifying the tde_status [GH-3699]
+- resource/alicloud_db_instance: Adds new attributes connection_string_prefix and port to support Modify db instance connection_string_prefix or port. [GH-3703]
+- resource/alicloud_db_account: Modify attribute account_name limited length to 2-63 for PostgreSQL. [GH-3707]
+- resource/alicloud_db_backup_policy: Adds instance status judgement, and call API ModifyBackupPolicy if the status is Running. [GH-3708]
+- resource/alicloud_gpdb_instance: Fixes the InvalidPayType error [GH-3709]
+- testcase: Improves the direct mail receivers testcase [GH-3687]
+- testcase: Improves the sweeper test to avoid unsupported region [GH-3688]
+- testcase: Limit test region with event bridge service. [GH-3697]
+- docs/alicloud_actiontrail_trail: Adds 'is_organization_trail' attribute description in the docs [GH-3695]
+- docs: Adds note for alicloud_polardb_cluster docs for ‘encrypt_new_tables’ [GH-3702]
+  
+BUG FIXES:
+
+- testcase: Fixed the 'isp' filter bug for Eip Address. [GH-3710]
+
 ## 1.125.0 (July 03, 2021)
 
 - **New Resource:** `alicloud_direct_mail_receivers` ([#3684](https://github.com/aliyun/terraform-provider-alicloud/issues/3684))
