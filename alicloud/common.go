@@ -981,24 +981,3 @@ func convertArrayObjectToJsonString(src interface{}) (string, error) {
 	}
 	return string(res), nil
 }
-
-
-func convertPayTypeRequest(source string) string {
-	switch source {
-	case string(PostPaid):
-		return string(Postpaid)
-	case string(PrePaid):
-		return string(Prepaid)
-	}
-	return source
-}
-
-func convertPayTypeResponse(source string) string {
-	switch source {
-	case string(Postpaid):
-		return string(PostPaid)
-	case string(Prepaid):
-		return string(PrePaid)
-	}
-	return source
-}
