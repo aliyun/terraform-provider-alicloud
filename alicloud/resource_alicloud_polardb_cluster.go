@@ -28,8 +28,8 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
-			Update: schema.DefaultTimeout(30 * time.Minute),
+			Create: schema.DefaultTimeout(50 * time.Minute),
+			Update: schema.DefaultTimeout(50 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 
@@ -421,8 +421,10 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 				//wait tde status 'Enabled'
-				if err := polarDBService.WaitForPolarDBTDEStatus(d.Id(), "Enabled", DefaultLongTimeout); err != nil {
-					return WrapError(err)
+
+				stateConf := BuildStateConf([]string{}, []string{"Enabled"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, polarDBService.PolarDBClusterTDEStateRefreshFunc(d.Id(), []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
 				}
 				d.SetPartial("tde_status")
 				d.SetPartial("encrypt_new_tables")

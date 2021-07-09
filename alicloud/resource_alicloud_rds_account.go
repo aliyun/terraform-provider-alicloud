@@ -46,7 +46,7 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ForceNew:      true,
-				ValidateFunc:  validation.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9_]{0,30}[a-z0-9]$`), "The name can consist of lowercase letters, numbers, underscores, and must begin with letters and end with letters or numbers"),
+				ValidateFunc:  validation.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9_]{0,61}[a-z0-9]$`), "The name can consist of lowercase letters, numbers, underscores, and must begin with letters and end with letters or numbers"),
 				ConflictsWith: []string{"name"},
 			},
 			"name": {
@@ -54,7 +54,7 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ForceNew:      true,
-				ValidateFunc:  validation.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9_]{0,30}[a-z0-9]$`), "The name can consist of lowercase letters, numbers, underscores, and must begin with letters and end with letters or numbers"),
+				ValidateFunc:  validation.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9_]{0,61}[a-z0-9]$`), "The name can consist of lowercase letters, numbers, underscores, and must begin with letters and end with letters or numbers"),
 				Deprecated:    "Field 'name' has been deprecated from provider version 1.120.0. New field 'account_name' instead.",
 				ConflictsWith: []string{"account_name"},
 			},

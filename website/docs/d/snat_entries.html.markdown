@@ -41,19 +41,19 @@ resource "alicloud_nat_gateway" "foo" {
   name          = "${var.name}"
 }
 
-resource "alicloud_eip" "foo" {
-  name = "${var.name}"
+resource "alicloud_eip_address" "foo" {
+  address_name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "foo" {
-  allocation_id = "${alicloud_eip.foo.id}"
+  allocation_id = "${alicloud_eip_address.foo.id}"
   instance_id   = "${alicloud_nat_gateway.foo.id}"
 }
 
 resource "alicloud_snat_entry" "foo" {
   snat_table_id     = "${alicloud_nat_gateway.foo.snat_table_ids}"
   source_vswitch_id = "${alicloud_vswitch.foo.id}"
-  snat_ip           = "${alicloud_eip.foo.ip_address}"
+  snat_ip           = "${alicloud_eip_address.foo.ip_address}"
 }
 
 data "alicloud_snat_entries" "foo" {

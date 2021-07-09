@@ -26,14 +26,14 @@ resource "alicloud_common_bandwidth_package" "foo" {
   description = "test_common_bandwidth_package"
 }
 
-resource "alicloud_eip" "foo" {
+resource "alicloud_eip_address" "foo" {
   bandwidth            = "2"
   internet_charge_type = "PayByBandwidth"
 }
 
 resource "alicloud_common_bandwidth_package_attachment" "foo" {
   bandwidth_package_id = alicloud_common_bandwidth_package.foo.id
-  instance_id          = alicloud_eip.foo.id
+  instance_id          = alicloud_eip_address.foo.id
 }
 ```
 ## Argument Reference

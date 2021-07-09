@@ -1217,7 +1217,7 @@ func (s *PolarDBService) DescribeDBClusterTDE(id string) (map[string]interface{}
 }
 
 func (s *PolarDBService) WaitForPolarDBTDEStatus(id string, status string, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	deadline := time.Now().Add(time.Duration(timeout) * time.Minute)
 	for {
 		object, err := s.DescribeDBClusterTDE(id)
 		if err != nil {
@@ -1272,4 +1272,25 @@ func (s *PolarDBService) WaitForPolarDBPayType(id string, status string, timeout
 		time.Sleep(DefaultIntervalMedium * time.Second)
 	}
 	return nil
+}
+
+func (s *PolarDBService) PolarDBClusterTDEStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+
+		object, err := s.DescribeDBClusterTDE(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["TDEStatus"].(string) == failState {
+				return object, object["TDEStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["TDEStatus"].(string)))
+			}
+		}
+		return object, object["TDEStatus"].(string), nil
+	}
 }

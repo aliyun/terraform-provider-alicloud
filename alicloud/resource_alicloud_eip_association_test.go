@@ -200,12 +200,12 @@ resource "alicloud_instance" "default" {
   }
 }
 
-resource "alicloud_eip" "default" {
-	name = "${var.name}"
+resource "alicloud_eip_address" "default" {
+	address_name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "default" {
-  allocation_id = "${alicloud_eip.default.id}"
+  allocation_id = "${alicloud_eip_address.default.id}"
   instance_id = "${alicloud_instance.default.id}"
   force = true
 }
@@ -272,14 +272,14 @@ resource "alicloud_instance" "default" {
   }
 }
 
-resource "alicloud_eip" "default" {
+resource "alicloud_eip_address" "default" {
 	count = "${var.number}"
-	name = "${var.name}"
+	address_name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "default" {
   count = "${var.number}"
-  allocation_id = "${element(alicloud_eip.default.*.id,count.index)}"
+  allocation_id = "${element(alicloud_eip_address.default.*.id,count.index)}"
   instance_id = "${element(alicloud_instance.default.*.id,count.index)}"
 }
 `, rand)
@@ -319,12 +319,12 @@ resource "alicloud_network_interface" "default" {
 	private_ip = "192.168.0.2"
 }
 
-resource "alicloud_eip" "default" {
-	name = "${var.name}"
+resource "alicloud_eip_address" "default" {
+	address_name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "default" {
-  allocation_id = "${alicloud_eip.default.id}"
+  allocation_id = "${alicloud_eip_address.default.id}"
   instance_id = "${alicloud_network_interface.default.id}"
   instance_type = "NetworkInterface"
   private_ip_address = "192.168.0.2"

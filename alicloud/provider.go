@@ -154,7 +154,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_snapshots":              dataSourceAlicloudEcsSnapshots(),
 			"alicloud_vpcs":                   dataSourceAlicloudVpcs(),
 			"alicloud_vswitches":              dataSourceAlicloudVswitches(),
-			"alicloud_eips":                   dataSourceAlicloudEips(),
+			"alicloud_eips":                   dataSourceAlicloudEipAddresses(),
 			"alicloud_key_pairs":              dataSourceAlicloudEcsKeyPairs(),
 			"alicloud_kms_keys":               dataSourceAlicloudKmsKeys(),
 			"alicloud_kms_ciphertext":         dataSourceAlicloudKmsCiphertext(),
@@ -229,6 +229,13 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_bandwidth_limits":                        dataSourceAlicloudCenBandwidthLimits(),
 			"alicloud_cen_route_entries":                           dataSourceAlicloudCenRouteEntries(),
 			"alicloud_cen_region_route_entries":                    dataSourceAlicloudCenRegionRouteEntries(),
+			"alicloud_cen_transit_router_route_entries":            dataSourceAlicloudCenTransitRouterRouteEntries(),
+			"alicloud_cen_transit_router_route_table_associations": dataSourceAlicloudCenTransitRouterRouteTableAssociations(),
+			"alicloud_cen_transit_router_route_table_propagations": dataSourceAlicloudCenTransitRouterRouteTablePropagations(),
+			"alicloud_cen_transit_router_route_tables":             dataSourceAlicloudCenTransitRouterRouteTables(),
+			"alicloud_cen_transit_router_vbr_attachments":          dataSourceAlicloudCenTransitRouterVbrAttachments(),
+			"alicloud_cen_transit_router_vpc_attachments":          dataSourceAlicloudCenTransitRouterVpcAttachments(),
+			"alicloud_cen_transit_routers":                         dataSourceAlicloudCenTransitRouters(),
 			"alicloud_cs_kubernetes_clusters":                      dataSourceAlicloudCSKubernetesClusters(),
 			"alicloud_cs_managed_kubernetes_clusters":              dataSourceAlicloudCSManagerKubernetesClusters(),
 			"alicloud_cs_edge_kubernetes_clusters":                 dataSourceAlicloudCSEdgeKubernetesClusters(),
@@ -430,10 +437,12 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_aggregate_config_rules":               dataSourceAlicloudConfigAggregateConfigRules(),
 			"alicloud_config_aggregate_compliance_packs":           dataSourceAlicloudConfigAggregateCompliancePacks(),
 			"alicloud_config_compliance_packs":                     dataSourceAlicloudConfigCompliancePacks(),
+			"alicloud_eip_addresses":                               dataSourceAlicloudEipAddresses(),
 			"alicloud_direct_mail_receiverses":                     dataSourceAlicloudDirectMailReceiverses(),
 			"alicloud_log_projects":                                dataSourceAlicloudLogProjects(),
 			"alicloud_log_stores":                                  dataSourceAlicloudLogStores(),
 			"alicloud_event_bridge_service":                        dataSourceAlicloudEventBridgeService(),
+			"alicloud_event_bridge_event_buses":                    dataSourceAlicloudEventBridgeEventBuses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -491,7 +500,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_route_table_attachment":        resourceAliyunRouteTableAttachment(),
 			"alicloud_snat_entry":                    resourceAlicloudSnatEntry(),
 			"alicloud_forward_entry":                 resourceAlicloudForwardEntry(),
-			"alicloud_eip":                           resourceAliyunEip(),
+			"alicloud_eip":                           resourceAlicloudEipAddress(),
 			"alicloud_eip_association":               resourceAliyunEipAssociation(),
 			"alicloud_slb":                           resourceAlicloudSlbLoadBalancer(),
 			"alicloud_slb_listener":                  resourceAliyunSlbListener(),
@@ -594,6 +603,13 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_bandwidth_limit":                        resourceAlicloudCenBandwidthLimit(),
 			"alicloud_cen_route_entry":                            resourceAlicloudCenRouteEntry(),
 			"alicloud_cen_instance_grant":                         resourceAlicloudCenInstanceGrant(),
+			"alicloud_cen_transit_router":                         resourceAlicloudCenTransitRouter(),
+			"alicloud_cen_transit_router_route_entry":             resourceAlicloudCenTransitRouterRouteEntry(),
+			"alicloud_cen_transit_router_route_table":             resourceAlicloudCenTransitRouterRouteTable(),
+			"alicloud_cen_transit_router_route_table_association": resourceAlicloudCenTransitRouterRouteTableAssociation(),
+			"alicloud_cen_transit_router_route_table_propagation": resourceAlicloudCenTransitRouterRouteTablePropagation(),
+			"alicloud_cen_transit_router_vbr_attachment":          resourceAlicloudCenTransitRouterVbrAttachment(),
+			"alicloud_cen_transit_router_vpc_attachment":          resourceAlicloudCenTransitRouterVpcAttachment(),
 			"alicloud_kvstore_instance":                           resourceAlicloudKvstoreInstance(),
 			"alicloud_kvstore_backup_policy":                      resourceAlicloudKVStoreBackupPolicy(),
 			"alicloud_kvstore_account":                            resourceAlicloudKvstoreAccount(),
@@ -767,6 +783,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_aggregate_compliance_pack":           resourceAlicloudConfigAggregateCompliancePack(),
 			"alicloud_config_compliance_pack":                     resourceAlicloudConfigCompliancePack(),
 			"alicloud_direct_mail_receivers":                      resourceAlicloudDirectMailReceivers(),
+			"alicloud_eip_address":                                resourceAlicloudEipAddress(),
+			"alicloud_event_bridge_event_bus":                     resourceAlicloudEventBridgeEventBus(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -923,6 +941,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.QuotasEndpoint = strings.TrimSpace(endpoints["quotas"].(string))
 		config.SgwEndpoint = strings.TrimSpace(endpoints["sgw"].(string))
 		config.DmEndpoint = strings.TrimSpace(endpoints["dm"].(string))
+		config.EventbridgeEndpoint = strings.TrimSpace(endpoints["eventbridge"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1141,6 +1160,8 @@ func init() {
 		"sgw_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom sgw endpoints.",
 
 		"dm_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dm endpoints.",
+
+		"eventbridge_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eventbridge_share endpoints.",
 	}
 }
 
@@ -1190,6 +1211,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["dm_endpoint"],
+				},
+
+				"eventbridge": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["eventbridge_endpoint"],
 				},
 
 				"sgw": {
@@ -1678,6 +1706,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["quotas"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["sgw"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dm"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["eventbridge"].(string)))
 	return hashcode.String(buf.String())
 }
 
