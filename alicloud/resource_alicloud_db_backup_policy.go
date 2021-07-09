@@ -266,6 +266,12 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
+
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	conn, err := client.NewRdsClient()
 	if err != nil {
 		return err
