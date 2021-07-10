@@ -122,6 +122,10 @@ func resourceAlicloudAlidnsInstanceCreate(d *schema.ResourceData, meta interface
 				wait()
 				return resource.RetryableError(err)
 			}
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				return resource.RetryableError(err)
+			}
 			return resource.NonRetryableError(err)
 		}
 		return nil
@@ -152,7 +156,7 @@ func resourceAlicloudAlidnsInstanceRead(d *schema.ResourceData, meta interface{}
 	}
 
 	d.Set("dns_security", convertDnsSecurityResponse(object["DnsSecurity"]))
-	d.Set("domain_numbers", formatInt(object["BindDomainCount"]))
+	d.Set("domain_numbers", object["BindDomainCount"])
 	d.Set("version_code", object["VersionCode"])
 	d.Set("version_name", object["VersionName"])
 

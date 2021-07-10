@@ -54,6 +54,10 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 				wait()
 				return resource.RetryableError(err)
 			}
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				return resource.RetryableError(err)
+			}
 			return resource.NonRetryableError(err)
 		}
 		return nil

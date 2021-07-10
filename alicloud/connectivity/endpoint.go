@@ -305,3 +305,8 @@ const (
 	OpenCloudStorageGatewayService = "sgw.cn-shanghai.aliyuncs.com"
 	DataWorksService               = "dataworks.aliyuncs.com"
 )
+
+const (
+	BssOpenAPIEndpointDomestic      = "business.aliyuncs.com"
+	BssOpenAPIEndpointInternational = "business.ap-southeast-1.aliyuncs.com"
+)

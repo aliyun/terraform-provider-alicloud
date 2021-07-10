@@ -138,8 +138,8 @@ func TestAccAlicloudGpdbInstance_classic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": fmt.Sprintf("tf-testAccGpdbInstance_new"),
-						"instance_charge_type":"PostPaid",
+						"description":          fmt.Sprintf("tf-testAccGpdbInstance_new"),
+						"instance_charge_type": "PostPaid",
 					}),
 				),
 			},

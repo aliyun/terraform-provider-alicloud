@@ -1,5 +1,4 @@
 ## 1.126.0 (Unreleased)
-## 1.126.0 (July 09, 2021)
 
 - **New Resource:** `alicloud_event_bridge_event_bus` [GH-3705]
 - **New Resource:** `alicloud_eip_address` [GH-3682]
@@ -10,6 +9,7 @@
 - **New Resource:** `alicloud_cen_transit_router_route_entry` [GH-3706]
 - **New Resource:** `alicloud_cen_transit_router_vbr_attachment` [GH-3706]
 - **New Resource:** `alicloud_cen_transit_router_vpc_attachment` [GH-3706]
+- **New Resource:** `alicloud_event_bridge_schema_group` [GH-3641]
 - **New Data Source:** `alicloud_cen_transit_routers` [GH-3706]  
 - **New Data Source:** `alicloud_cen_transit_router_route_tables` [GH-3706]
 - **New Data Source:** `alicloud_cen_transit_router_route_table_associations` [GH-3706]
@@ -22,6 +22,7 @@
 - **New Data Source:** `alicloud_event_bridge_service` [GH-3691]
 - **New Data Source:** `alicloud_eip_addresses` [GH-3682]
 - **New Data Source:** `alicloud_event_bridge_event_buses` [GH-3705]
+- **New Data Source:** `alicloud_event_bridge_schema_groups` [GH-3641]
 
 ENHANCEMENTS:
 
@@ -36,7 +37,8 @@ ENHANCEMENTS:
 - testcase: Limit test region with event bridge service. [GH-3697]
 - docs/alicloud_actiontrail_trail: Adds 'is_organization_trail' attribute description in the docs [GH-3695]
 - docs: Adds note for alicloud_polardb_cluster docs for ‘encrypt_new_tables’ [GH-3702]
-  
+- client/bssopenapiClient: Improves the bss openapi endpoint to avoid the NotApplicable error; Fixes the alidns_instance setting domain_numbers failed issue [GH-3713]
+
 BUG FIXES:
 
 - testcase: Fixed the 'isp' filter bug for Eip Address. [GH-3710]

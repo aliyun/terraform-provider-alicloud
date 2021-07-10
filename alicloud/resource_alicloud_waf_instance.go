@@ -167,6 +167,10 @@ func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{})
 				wait()
 				return resource.RetryableError(err)
 			}
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				return resource.RetryableError(err)
+			}
 			return resource.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
@@ -263,6 +267,10 @@ func resourceAlicloudWafInstanceUpdate(d *schema.ResourceData, meta interface{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
+					return resource.RetryableError(err)
+				}
+				if IsExpectedErrors(err, []string{"NotApplicable"}) {
+					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

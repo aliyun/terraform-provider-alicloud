@@ -247,22 +247,22 @@ The following arguments are supported:
 If it is a multi-zone and `vswitch_id` is specified, the vswitch must in the one of them.
 The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
 * `vswitch_id` - (ForceNew) The virtual switch ID to launch DB instances in one VPC. If there are multiple vswitches, separate them with commas.
-* `private_ip_address` - (Optional, Available in v1.124.5+) The private IP address of the instance. The private IP address must be within the Classless Inter-Domain Routing (CIDR) block of the vSwitch that is specified by the VSwitchId parameter.
+* `private_ip_address` - (Optional, Available in v1.125.0+) The private IP address of the instance. The private IP address must be within the Classless Inter-Domain Routing (CIDR) block of the vSwitch that is specified by the VSwitchId parameter.
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
-* `db_instance_ip_array_name` - (Optional, Available in 1.124.5+) The name of the IP address whitelist. Default value: Default.
+* `db_instance_ip_array_name` - (Optional, Available in 1.125.0+) The name of the IP address whitelist. Default value: Default.
 
 -> **NOTE:** A maximum of 200 IP address whitelists can be configured for each instance.
-* `db_instance_ip_array_attribute` - (Optional, Available in 1.124.5+) The attribute of the IP address whitelist. By default, this parameter is empty.
+* `db_instance_ip_array_attribute` - (Optional, Available in 1.125.0+) The attribute of the IP address whitelist. By default, this parameter is empty.
 
 -> **NOTE:** The IP address whitelists that have the hidden attribute are not displayed in the ApsaraDB RDS console. These IP address whitelists are used to access Alibaba Cloud services, such as Data Transmission Service (DTS).
-* `security_ip_type` - (Optional, Available in 1.124.5+) The type of IP address in the IP address whitelist.
-* `whitelist_network_type` - (Optional, Available in 1.124.5+) The network type of the IP address whitelist. Default value: MIX. Valid values:
+* `security_ip_type` - (Optional, Available in 1.125.0+) The type of IP address in the IP address whitelist.
+* `whitelist_network_type` - (Optional, Available in 1.125.0+) The network type of the IP address whitelist. Default value: MIX. Valid values:
     - Classic: classic network in enhanced whitelist mode
     - VPC: virtual private cloud (VPC) in enhanced whitelist mode
     - MIX: standard whitelist mode
 
 -> **NOTE:** In standard whitelist mode, IP addresses and CIDR blocks can be added only to the default IP address whitelist. In enhanced whitelist mode, IP addresses and CIDR blocks can be added to both IP address whitelists of the classic network type and those of the VPC network type.
-* `modify_mode` - (Optional, Available in 1.124.5+) The method that is used to modify the IP address whitelist. Default value: Cover. Valid values:
+* `modify_mode` - (Optional, Available in 1.125.0+) The method that is used to modify the IP address whitelist. Default value: Cover. Valid values:
     - Cover: Use the value of the SecurityIps parameter to overwrite the existing entries in the IP address whitelist.
     - Append: Add the IP addresses and CIDR blocks that are specified in the SecurityIps parameter to the IP address whitelist.
     - Delete: Delete IP addresses and CIDR blocks that are specified in the SecurityIps parameter from the IP address whitelist. You must retain at least one IP address or CIDR block.
