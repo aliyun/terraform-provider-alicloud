@@ -190,9 +190,9 @@ The length should not more than 64.
 
 * `protocol` - (Optional, Available in 1.72.0+) The Protocol of used by API request. Valid values: `HTTP` and `HTTPS`. Default to `HTTPS`. 
 
-* `client_read_timeout` - (Optional, Available in 1.124.5+) The maximum timeout of the client read request.
+* `client_read_timeout` - (Optional, Available in 1.125.0+) The maximum timeout of the client read request.
 
-* `client_connect_timeout` - (Optional, Available in 1.124.5+) The maximum timeout of the client connection server.
+* `client_connect_timeout` - (Optional, Available in 1.125.0+) The maximum timeout of the client connection server.
 
 The nested `assume_role` block supports the following:
 

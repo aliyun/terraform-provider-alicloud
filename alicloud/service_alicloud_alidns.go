@@ -228,6 +228,10 @@ func (s *AlidnsService) QueryAvailableInstances(id string) (object map[string]in
 				wait()
 				return resource.RetryableError(err)
 			}
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				return resource.RetryableError(err)
+			}
 			return resource.NonRetryableError(err)
 		}
 		return nil

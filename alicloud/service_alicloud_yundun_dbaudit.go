@@ -144,17 +144,31 @@ func (s *DbauditService) UpdateInstanceSpec(schemaName string, specName string, 
 		},
 	}
 
-	raw, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.ModifyInstance(request)
+	request.RegionId = string(connectivity.Hangzhou)
+	var response *bssopenapi.ModifyInstanceResponse
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+			return bssopenapiClient.ModifyInstance(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request.RegionId = string(connectivity.APSouthEast1)
+				request.Domain = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response = raw.(*bssopenapi.ModifyInstanceResponse)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	if response, _ := raw.(*bssopenapi.ModifyInstanceResponse); !response.Success {
+	if !response.Success {
 		return WrapError(Error(response.Message))
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 

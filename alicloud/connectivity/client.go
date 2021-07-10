@@ -1571,7 +1571,9 @@ func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (in
 			endpoints.AddEndpointMapping(client.config.RegionId, string(BSSOPENAPICode), endpoint)
 		}
 
-		bssopenapiconn, err := bssopenapi.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		// bss endpoint depends on the account type.
+		// Domestic account is business.aliyuncs.com (region is cn-hangzhou) and International account is business.ap-southeast-1.aliyuncs.com (region is ap-southeast-1)
+		bssopenapiconn, err := bssopenapi.NewClientWithOptions(string(Hangzhou), client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the BSSOPENAPI client: %#v", err)
 		}
@@ -2101,18 +2103,9 @@ func (client *AliyunClient) NewWafClient() (*rpc.Client, error) {
 }
 func (client *AliyunClient) NewBssopenapiClient() (*rpc.Client, error) {
 	productCode := "bssopenapi"
-	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
-		}
-	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
+	// bss endpoint depends on the account type.
+	// Domestic account is business.aliyuncs.com and International account is business.ap-southeast-1.aliyuncs.com
+	endpoint := BssOpenAPIEndpointDomestic
 	sdkConfig := client.teaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
