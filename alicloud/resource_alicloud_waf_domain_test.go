@@ -124,7 +124,7 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithWafInstanceSetting(t)
+			testAccPreCheckWithEnvVariable(t, "ALICLOUD_WAF_INSTANCE_ID")
 		},
 		// module name
 		IDRefreshName: resourceId,

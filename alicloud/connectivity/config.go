@@ -116,6 +116,7 @@ type Config struct {
 	ScdnEndpoint            string
 	DmEndpoint              string
 	EventbridgeEndpoint     string
+	OnsproxyEndpoint        string
 }
 
 func (c *Config) loadAndValidate() error {
