@@ -215,9 +215,9 @@ func testAccPreCheckWithResourceManagerFloderIdSetting(t *testing.T) {
 	}
 }
 
-func testAccPreCheckWithWafInstanceSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_WAF_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no WAF instance id setting")
+func testAccPreCheckWithEnvVariable(t *testing.T, envVariableName string) {
+	if v := strings.TrimSpace(os.Getenv(envVariableName)); v == "" {
+		t.Skipf("Skipping the test case with no env variable %s", envVariableName)
 		t.Skipped()
 	}
 }

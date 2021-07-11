@@ -444,6 +444,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_event_bridge_service":                        dataSourceAlicloudEventBridgeService(),
 			"alicloud_event_bridge_event_buses":                    dataSourceAlicloudEventBridgeEventBuses(),
 			"alicloud_event_bridge_schema_groups":                  dataSourceAlicloudEventBridgeSchemaGroups(),
+			"alicloud_amqp_virtual_hosts":                          dataSourceAlicloudAmqpVirtualHosts(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -787,6 +788,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eip_address":                                resourceAlicloudEipAddress(),
 			"alicloud_event_bridge_event_bus":                     resourceAlicloudEventBridgeEventBus(),
 			"alicloud_event_bridge_schema_group":                  resourceAlicloudEventBridgeSchemaGroup(),
+			"alicloud_amqp_virtual_host":                          resourceAlicloudAmqpVirtualHost(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -944,6 +946,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.SgwEndpoint = strings.TrimSpace(endpoints["sgw"].(string))
 		config.DmEndpoint = strings.TrimSpace(endpoints["dm"].(string))
 		config.EventbridgeEndpoint = strings.TrimSpace(endpoints["eventbridge"].(string))
+		config.OnsproxyEndpoint = strings.TrimSpace(endpoints["onsproxy"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1164,6 +1167,8 @@ func init() {
 		"dm_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dm endpoints.",
 
 		"eventbridge_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eventbridge_share endpoints.",
+
+		"onsproxy_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom onsproxy endpoints.",
 	}
 }
 
@@ -1208,6 +1213,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"onsproxy": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["onsproxy_endpoint"],
+				},
+
 				"dm": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1709,6 +1721,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["sgw"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dm"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["eventbridge"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["onsproxy"].(string)))
 	return hashcode.String(buf.String())
 }
 
