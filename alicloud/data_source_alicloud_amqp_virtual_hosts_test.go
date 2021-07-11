@@ -30,22 +30,22 @@ func TestAccAlicloudAmqpVirtualHostsDataSource(t *testing.T) {
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"instance_id": "${alicloud_amqp_virtual_host.default.instance_id}",
-			"ids":  []string{"${alicloud_amqp_virtual_host.default.virtual_host_name}"},
+			"ids":         []string{"${alicloud_amqp_virtual_host.default.virtual_host_name}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"instance_id": os.Getenv("ALICLOUD_AMQP_INSTANCE_ID"),
-			"ids":  []string{"${alicloud_amqp_virtual_host.default.virtual_host_name}_fake"},
+			"ids":         []string{"${alicloud_amqp_virtual_host.default.virtual_host_name}_fake"},
 		}),
 	}
 
 	var existAmqpVirtualHostsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#": "1",
+			"ids.#":                     "1",
 			"names.#":                   "1",
 			"hosts.#":                   "1",
 			"hosts.0.virtual_host_name": name,
 			"hosts.0.instance_id":       CHECKSET,
-			"hosts.0.id": name,
+			"hosts.0.id":                name,
 		}
 	}
 
@@ -53,7 +53,7 @@ func TestAccAlicloudAmqpVirtualHostsDataSource(t *testing.T) {
 		return map[string]string{
 			"hosts.#": "0",
 			"names.#": "0",
-			"ids.#": "0",
+			"ids.#":   "0",
 		}
 	}
 
