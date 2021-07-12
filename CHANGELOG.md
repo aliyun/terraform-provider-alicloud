@@ -1,48 +1,49 @@
-## 1.126.0 (Unreleased)
+## 1.127.0 (Unreleased)
+## 1.126.0 (July 12, 2021)
 
-- **New Resource:** `alicloud_amqp_virtual_host` [GH-3714]
-- **New Resource:** `alicloud_eip_address` [GH-3682]
-- **New Resource:** `alicloud_cen_transit_router` [GH-3706]
-- **New Resource:** `alicloud_cen_transit_router_route_table` [GH-3706]
-- **New Resource:** `alicloud_cen_transit_router_route_table_association` [GH-3706]
-- **New Resource:** `alicloud_cen_transit_router_route_table_propagation` [GH-3706]
-- **New Resource:** `alicloud_cen_transit_router_route_entry` [GH-3706]
-- **New Resource:** `alicloud_cen_transit_router_vbr_attachment` [GH-3706]
-- **New Resource:** `alicloud_cen_transit_router_vpc_attachment` [GH-3706]
-- **New Data Source:** `alicloud_amqp_virtual_hosts` [GH-3714]
-- **New Data Source:** `alicloud_cen_transit_routers` [GH-3706]  
-- **New Data Source:** `alicloud_cen_transit_router_route_tables` [GH-3706]
-- **New Data Source:** `alicloud_cen_transit_router_route_table_associations` [GH-3706]
-- **New Data Source:** `alicloud_cen_transit_router_route_table_propagations` [GH-3706]
-- **New Data Source:** `alicloud_cen_transit_router_route_entries` [GH-3706]
-- **New Data Source:** `alicloud_cen_transit_router_vbr_attachments` [GH-3706]
-- **New Data Source:** `alicloud_cen_transit_router_vpc_attachments` [GH-3706]
-- **New Data Source:** `alicloud_log_projects` [GH-3691]
-- **New Data Source:** `alicloud_log_stores` [GH-3691]
-- **New Data Source:** `alicloud_event_bridge_service` [GH-3691]
-- **New Data Source:** `alicloud_eip_addresses` [GH-3682]
+- **New Resource:** `alicloud_amqp_virtual_host` ([#3714](https://github.com/aliyun/terraform-provider-alicloud/issues/3714))
+- **New Resource:** `alicloud_eip_address` ([#3682](https://github.com/aliyun/terraform-provider-alicloud/issues/3682))
+- **New Resource:** `alicloud_cen_transit_router` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Resource:** `alicloud_cen_transit_router_route_table` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Resource:** `alicloud_cen_transit_router_route_table_association` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Resource:** `alicloud_cen_transit_router_route_table_propagation` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Resource:** `alicloud_cen_transit_router_route_entry` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Resource:** `alicloud_cen_transit_router_vbr_attachment` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Resource:** `alicloud_cen_transit_router_vpc_attachment` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Data Source:** `alicloud_amqp_virtual_hosts` ([#3714](https://github.com/aliyun/terraform-provider-alicloud/issues/3714))
+- **New Data Source:** `alicloud_cen_transit_routers` [[#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706)]  
+- **New Data Source:** `alicloud_cen_transit_router_route_tables` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Data Source:** `alicloud_cen_transit_router_route_table_associations` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Data Source:** `alicloud_cen_transit_router_route_table_propagations` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Data Source:** `alicloud_cen_transit_router_route_entries` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Data Source:** `alicloud_cen_transit_router_vbr_attachments` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Data Source:** `alicloud_cen_transit_router_vpc_attachments` ([#3706](https://github.com/aliyun/terraform-provider-alicloud/issues/3706))
+- **New Data Source:** `alicloud_log_projects` ([#3691](https://github.com/aliyun/terraform-provider-alicloud/issues/3691))
+- **New Data Source:** `alicloud_log_stores` ([#3691](https://github.com/aliyun/terraform-provider-alicloud/issues/3691))
+- **New Data Source:** `alicloud_event_bridge_service` ([#3691](https://github.com/aliyun/terraform-provider-alicloud/issues/3691))
+- **New Data Source:** `alicloud_eip_addresses` ([#3682](https://github.com/aliyun/terraform-provider-alicloud/issues/3682))
 
 ENHANCEMENTS:
 
-- resource/alicloud_mongodb_sharding_instance: The attribute shard_list supports to set readonly_replicas; Supports setting self-timeout [GH-3718]
-- resource/alicloud_db_instance：Adds new attributes such as upgrade_kernel_version_enabled, upgrade_time, switch_time and target_minor_version to support Update minor engine version. [GH-3692]
-- resource/alicloud_polardb_cluster: Enlarges the timeout after modifying the tde_status [GH-3699]
-- resource/alicloud_db_instance: Adds new attributes connection_string_prefix and port to support Modify db instance connection_string_prefix or port. [GH-3703]
-- resource/alicloud_db_account: Modify attribute account_name limited length to 2-63 for PostgreSQL. [GH-3707]
-- resource/alicloud_db_backup_policy: Adds instance status judgement, and call API ModifyBackupPolicy if the status is Running. [GH-3708]
-- resource/alicloud_gpdb_instance: Fixes the InvalidPayType error [GH-3709]
-- testcase: Improves the direct mail receivers testcase [GH-3687]
-- testcase: Improves the sweeper test to avoid unsupported region [GH-3688]
-- testcase: Limit test region with event bridge service. [GH-3697]
-- docs/alicloud_actiontrail_trail: Adds 'is_organization_trail' attribute description in the docs [GH-3695]
-- docs: Adds note for alicloud_polardb_cluster docs for ‘encrypt_new_tables’ [GH-3702]
-- client/bssopenapiClient: Improves the bss openapi endpoint to avoid the NotApplicable error; Fixes the alidns_instance setting domain_numbers failed issue [GH-3713]
+- resource/alicloud_mongodb_sharding_instance: The attribute shard_list supports to set readonly_replicas; Supports setting self-timeout ([#3718](https://github.com/aliyun/terraform-provider-alicloud/issues/3718))
+- resource/alicloud_db_instance：Adds new attributes such as upgrade_kernel_version_enabled, upgrade_time, switch_time and target_minor_version to support Update minor engine version. ([#3692](https://github.com/aliyun/terraform-provider-alicloud/issues/3692))
+- resource/alicloud_polardb_cluster: Enlarges the timeout after modifying the tde_status ([#3699](https://github.com/aliyun/terraform-provider-alicloud/issues/3699))
+- resource/alicloud_db_instance: Adds new attributes connection_string_prefix and port to support Modify db instance connection_string_prefix or port. ([#3703](https://github.com/aliyun/terraform-provider-alicloud/issues/3703))
+- resource/alicloud_db_account: Modify attribute account_name limited length to 2-63 for PostgreSQL. ([#3707](https://github.com/aliyun/terraform-provider-alicloud/issues/3707))
+- resource/alicloud_db_backup_policy: Adds instance status judgement, and call API ModifyBackupPolicy if the status is Running. ([#3708](https://github.com/aliyun/terraform-provider-alicloud/issues/3708))
+- resource/alicloud_gpdb_instance: Fixes the InvalidPayType error ([#3709](https://github.com/aliyun/terraform-provider-alicloud/issues/3709))
+- testcase: Improves the direct mail receivers testcase ([#3687](https://github.com/aliyun/terraform-provider-alicloud/issues/3687))
+- testcase: Improves the sweeper test to avoid unsupported region ([#3688](https://github.com/aliyun/terraform-provider-alicloud/issues/3688))
+- testcase: Limit test region with event bridge service. ([#3697](https://github.com/aliyun/terraform-provider-alicloud/issues/3697))
+- docs/alicloud_actiontrail_trail: Adds 'is_organization_trail' attribute description in the docs ([#3695](https://github.com/aliyun/terraform-provider-alicloud/issues/3695))
+- docs: Adds note for alicloud_polardb_cluster docs for ‘encrypt_new_tables’ ([#3702](https://github.com/aliyun/terraform-provider-alicloud/issues/3702))
+- client/bssopenapiClient: Improves the bss openapi endpoint to avoid the NotApplicable error; Fixes the alidns_instance setting domain_numbers failed issue ([#3713](https://github.com/aliyun/terraform-provider-alicloud/issues/3713))
 
 BUG FIXES:
 
-- resource/alicloud_mongodb_instance: Fixes the setting replication_factor failed error [GH-3717]
-- resource/alicloud_mongodb_instance: Fixes the ProxyError issue when invoking the DescribeMongoDBTDEInfo API [GH-3716]
-- testcase: Fixed the 'isp' filter bug for Eip Address. [GH-3710]
+- resource/alicloud_mongodb_instance: Fixes the setting replication_factor failed error ([#3717](https://github.com/aliyun/terraform-provider-alicloud/issues/3717))
+- resource/alicloud_mongodb_instance: Fixes the ProxyError issue when invoking the DescribeMongoDBTDEInfo API ([#3716](https://github.com/aliyun/terraform-provider-alicloud/issues/3716))
+- testcase: Fixed the 'isp' filter bug for Eip Address. ([#3710](https://github.com/aliyun/terraform-provider-alicloud/issues/3710))
 
 ## 1.125.0 (July 03, 2021)
 
