@@ -142,6 +142,7 @@ If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of 
     * `node_storage` - (Required)
         - Custom storage space; value range: [10, 1,000]
         - 10-GB increments. Unit: GB.
+    * `readonly_replicas` - (Optional, Available in 1.126.0+) The number of read-only nodes in shard node. Valid values: 0 to 5. Default value: 0.
 * `backup_period` - (Optional, Available in 1.42.0+) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
 * `backup_time` - (Optional, Available in 1.42.0+) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
 
@@ -157,6 +158,16 @@ The following attributes are exported:
 * `shard_list`
     * `node_id` - The ID of the shard-node.
 * `retention_period` - Instance log backup retention days. Available in 1.42.0+.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.126.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 30 mins) Used when creating the MongoDB instance (until it reaches the initial `Running` status).
+* `update` - (Defaults to 30 mins) Used when updating the MongoDB instance (until it reaches the initial `Running` status).
+* `delete` - (Defaults to 30 mins) Used when terminating the MongoDB instance.
 
 ## Import
 

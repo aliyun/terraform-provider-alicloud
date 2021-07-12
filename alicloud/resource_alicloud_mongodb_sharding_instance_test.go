@@ -157,20 +157,22 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				Config: testMongoDBShardingInstance_classic_base,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_id":                   CHECKSET,
-						"engine_version":            "3.4",
-						"shard_list.#":              "2",
-						"shard_list.0.node_class":   "dds.shard.mid",
-						"shard_list.0.node_storage": "10",
-						"shard_list.1.node_class":   "dds.shard.standard",
-						"shard_list.1.node_storage": "20",
-						"mongo_list.#":              "2",
-						"mongo_list.0.node_class":   "dds.mongos.mid",
-						"mongo_list.1.node_class":   "dds.mongos.mid",
-						"name":                      "",
-						"storage_engine":            "WiredTiger",
-						"instance_charge_type":      "PostPaid",
-						"tags.%":                    "0",
+						"zone_id":                        CHECKSET,
+						"engine_version":                 "3.4",
+						"shard_list.#":                   "2",
+						"shard_list.0.node_class":        "dds.shard.mid",
+						"shard_list.0.node_storage":      "10",
+						"shard_list.0.readonly_replicas": "0",
+						"shard_list.1.node_class":        "dds.shard.standard",
+						"shard_list.1.node_storage":      "20",
+						"shard_list.1.readonly_replicas": "1",
+						"mongo_list.#":                   "2",
+						"mongo_list.0.node_class":        "dds.mongos.mid",
+						"mongo_list.1.node_class":        "dds.mongos.mid",
+						"name":                           "",
+						"storage_engine":                 "WiredTiger",
+						"instance_charge_type":           "PostPaid",
+						"tags.%":                         "0",
 					}),
 				),
 			},
@@ -210,13 +212,16 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				Config: testMongoDBShardingInstance_classic_shard,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"shard_list.#":              "3",
-						"shard_list.0.node_class":   "dds.shard.mid",
-						"shard_list.0.node_storage": "10",
-						"shard_list.1.node_class":   "dds.shard.standard",
-						"shard_list.1.node_storage": "20",
-						"shard_list.2.node_class":   "dds.shard.standard",
-						"shard_list.2.node_storage": "20",
+						"shard_list.#":                   "3",
+						"shard_list.0.node_class":        "dds.shard.mid",
+						"shard_list.0.node_storage":      "10",
+						"shard_list.0.readonly_replicas": "0",
+						"shard_list.1.node_class":        "dds.shard.standard",
+						"shard_list.1.node_storage":      "20",
+						"shard_list.1.readonly_replicas": "1",
+						"shard_list.2.node_class":        "dds.shard.standard",
+						"shard_list.2.node_storage":      "20",
+						"shard_list.2.readonly_replicas": "2",
 					}),
 				),
 			},
@@ -347,20 +352,22 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 				Config: testMongoDBShardingInstance_vpc_base,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vswitch_id":                CHECKSET,
-						"zone_id":                   CHECKSET,
-						"engine_version":            "3.4",
-						"shard_list.#":              "2",
-						"shard_list.0.node_class":   "dds.shard.mid",
-						"shard_list.0.node_storage": "10",
-						"shard_list.1.node_class":   "dds.shard.standard",
-						"shard_list.1.node_storage": "20",
-						"mongo_list.#":              "2",
-						"mongo_list.0.node_class":   "dds.mongos.mid",
-						"mongo_list.1.node_class":   "dds.mongos.mid",
-						"name":                      "",
-						"storage_engine":            "WiredTiger",
-						"instance_charge_type":      "PostPaid",
+						"vswitch_id":                     CHECKSET,
+						"zone_id":                        CHECKSET,
+						"engine_version":                 "3.4",
+						"shard_list.#":                   "2",
+						"shard_list.0.node_class":        "dds.shard.mid",
+						"shard_list.0.node_storage":      "10",
+						"shard_list.0.readonly_replicas": "0",
+						"shard_list.1.node_class":        "dds.shard.standard",
+						"shard_list.1.node_storage":      "20",
+						"shard_list.1.readonly_replicas": "1",
+						"mongo_list.#":                   "2",
+						"mongo_list.0.node_class":        "dds.mongos.mid",
+						"mongo_list.1.node_class":        "dds.mongos.mid",
+						"name":                           "",
+						"storage_engine":                 "WiredTiger",
+						"instance_charge_type":           "PostPaid",
 					}),
 				),
 			},
@@ -400,13 +407,16 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 				Config: testMongoDBShardingInstance_vpc_shard,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"shard_list.#":              "3",
-						"shard_list.0.node_class":   "dds.shard.mid",
-						"shard_list.0.node_storage": "10",
-						"shard_list.1.node_class":   "dds.shard.standard",
-						"shard_list.1.node_storage": "20",
-						"shard_list.2.node_class":   "dds.shard.standard",
-						"shard_list.2.node_storage": "20",
+						"shard_list.#":                   "3",
+						"shard_list.0.node_class":        "dds.shard.mid",
+						"shard_list.0.node_storage":      "10",
+						"shard_list.0.readonly_replicas": "0",
+						"shard_list.1.node_class":        "dds.shard.standard",
+						"shard_list.1.node_storage":      "20",
+						"shard_list.1.readonly_replicas": "1",
+						"shard_list.2.node_class":        "dds.shard.standard",
+						"shard_list.2.node_storage":      "20",
+						"shard_list.2.readonly_replicas": "2",
 					}),
 				),
 			},
@@ -559,6 +569,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
   shard_list {
     node_class   = "dds.shard.standard"
     node_storage = 20
+	readonly_replicas = 1
   }
   mongo_list {
     node_class = "dds.mongos.mid"
@@ -724,6 +735,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
   shard_list {
     node_class   = "dds.shard.standard"
     node_storage = 20
+	readonly_replicas = 2
   }
   mongo_list {
     node_class = "dds.mongos.mid"
@@ -863,6 +875,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
   shard_list {
     node_class   = "dds.shard.standard"
     node_storage = 20
+	readonly_replicas = 1
   }
   mongo_list {
     node_class = "dds.mongos.mid"
@@ -1003,10 +1016,12 @@ resource "alicloud_mongodb_sharding_instance" "default" {
   shard_list {
     node_class   = "dds.shard.standard"
     node_storage = 20
+	readonly_replicas = 1
     }
   shard_list {
     node_class   = "dds.shard.standard"
     node_storage = 20
+    readonly_replicas = 2
   }
   mongo_list {
     node_class = "dds.mongos.mid"

@@ -478,7 +478,7 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 			ipstr = LOCAL_HOST_IP
 		}
 
-		if err := ddsService.ModifyMongoDBSecurityIps(d.Id(), ipstr); err != nil {
+		if err := ddsService.ModifyMongoDBSecurityIps(d, ipstr); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("security_ip_list")
