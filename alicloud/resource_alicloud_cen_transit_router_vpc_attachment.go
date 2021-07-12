@@ -29,7 +29,6 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 			"auto_create_vpc_route": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"cen_id": {
 				Type:     schema.TypeString,
@@ -48,12 +47,10 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 			"route_table_association_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"route_table_propagation_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -70,7 +67,6 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 			"transit_router_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"transit_router_attachment_id": {
 				Type:     schema.TypeString,
