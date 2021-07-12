@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -46,7 +47,7 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 			},
 			"replication_factor": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{3, 5, 7}),
+				ValidateFunc: validation.IntInSlice([]int{1, 3, 5, 7}),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -330,8 +331,12 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	d.Set("ssl_status", sslAction.SSLStatus)
-	d.Set("replication_factor", instance.ReplicationFactor)
-	if instance.ReplicationFactor != "1" {
+	if v, err := strconv.Atoi(instance.ReplicationFactor); err != nil {
+		log.Println(WrapError(err))
+	} else {
+		d.Set("replication_factor", v)
+	}
+	if instance.ReplicationFactor != "" && instance.ReplicationFactor != "1" {
 		tdeInfo, err := ddsService.DescribeMongoDBTDEInfo(d.Id())
 		if err != nil {
 			return WrapError(err)
