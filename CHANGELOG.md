@@ -43,7 +43,7 @@ ENHANCEMENTS:
 
 BUG FIXES:
 
-- resource/alicloud_mongodb_instance: Fixes the ProxyError issue when invoking the DescribeMongoDBTDEInfo API [GH-3715]
+- resource/alicloud_mongodb_instance: Fixes the ProxyError issue when invoking the DescribeMongoDBTDEInfo API [GH-3716]
 - testcase: Fixed the 'isp' filter bug for Eip Address. [GH-3710]
 
 ## 1.125.0 (July 03, 2021)
