@@ -1,7 +1,6 @@
 ## 1.126.0 (Unreleased)
 
 - **New Resource:** `alicloud_amqp_virtual_host` [GH-3714]
-- **New Resource:** `alicloud_event_bridge_event_bus` [GH-3705]
 - **New Resource:** `alicloud_eip_address` [GH-3682]
 - **New Resource:** `alicloud_cen_transit_router` [GH-3706]
 - **New Resource:** `alicloud_cen_transit_router_route_table` [GH-3706]
@@ -10,7 +9,6 @@
 - **New Resource:** `alicloud_cen_transit_router_route_entry` [GH-3706]
 - **New Resource:** `alicloud_cen_transit_router_vbr_attachment` [GH-3706]
 - **New Resource:** `alicloud_cen_transit_router_vpc_attachment` [GH-3706]
-- **New Resource:** `alicloud_event_bridge_schema_group` [GH-3641]
 - **New Data Source:** `alicloud_amqp_virtual_hosts` [GH-3714]
 - **New Data Source:** `alicloud_cen_transit_routers` [GH-3706]  
 - **New Data Source:** `alicloud_cen_transit_router_route_tables` [GH-3706]
@@ -23,8 +21,6 @@
 - **New Data Source:** `alicloud_log_stores` [GH-3691]
 - **New Data Source:** `alicloud_event_bridge_service` [GH-3691]
 - **New Data Source:** `alicloud_eip_addresses` [GH-3682]
-- **New Data Source:** `alicloud_event_bridge_event_buses` [GH-3705]
-- **New Data Source:** `alicloud_event_bridge_schema_groups` [GH-3641]
 
 ENHANCEMENTS:
 
