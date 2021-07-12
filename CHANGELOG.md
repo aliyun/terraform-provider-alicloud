@@ -43,6 +43,7 @@ ENHANCEMENTS:
 
 BUG FIXES:
 
+- resource/alicloud_mongodb_instance: Fixes the setting replication_factor failed error [GH-3717]
 - resource/alicloud_mongodb_instance: Fixes the ProxyError issue when invoking the DescribeMongoDBTDEInfo API [GH-3716]
 - testcase: Fixed the 'isp' filter bug for Eip Address. [GH-3710]
 
