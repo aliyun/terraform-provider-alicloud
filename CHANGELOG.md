@@ -28,6 +28,7 @@
 
 ENHANCEMENTS:
 
+- resource/alicloud_mongodb_sharding_instance: The attribute shard_list supports to set readonly_replicas; Supports setting self-timeout [GH-3718]
 - resource/alicloud_db_instance：Adds new attributes such as upgrade_kernel_version_enabled, upgrade_time, switch_time and target_minor_version to support Update minor engine version. [GH-3692]
 - resource/alicloud_polardb_cluster: Enlarges the timeout after modifying the tde_status [GH-3699]
 - resource/alicloud_db_instance: Adds new attributes connection_string_prefix and port to support Modify db instance connection_string_prefix or port. [GH-3703]

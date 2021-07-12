@@ -24,6 +24,12 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"engine_version": {
 				Type:     schema.TypeString,
@@ -133,6 +139,12 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 							Type:     schema.TypeInt,
 							Required: true,
 						},
+						"readonly_replicas": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntBetween(0, 5),
+							Computed:     true,
+						},
 						//Computed
 						"node_id": {
 							Type:     schema.TypeString,
@@ -205,10 +217,13 @@ func buildMongoDBShardingCreateRequest(d *schema.ResourceData, meta interface{})
 		replicaSets := []dds.CreateShardingDBInstanceReplicaSet{}
 		for _, rew := range shardList.([]interface{}) {
 			item := rew.(map[string]interface{})
-			readonlyReplicas := item["node_readonly_replicas"].(string)
+			readonlyReplicas := 0
+			if item["readonly_replicas"] != nil {
+				readonlyReplicas = item["readonly_replicas"].(int)
+			}
 			class := item["node_class"].(string)
 			nodeStorage := item["node_storage"].(int)
-			replicaSets = append(replicaSets, dds.CreateShardingDBInstanceReplicaSet{readonlyReplicas, strconv.Itoa(nodeStorage), class})
+			replicaSets = append(replicaSets, dds.CreateShardingDBInstanceReplicaSet{strconv.Itoa(readonlyReplicas), strconv.Itoa(nodeStorage), class})
 		}
 		request.ReplicaSet = &replicaSets
 	}
@@ -288,7 +303,8 @@ func resourceAlicloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 
 	d.SetId(response.DBInstanceId)
 
-	if err := ddsService.WaitForMongoDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
+	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
 
@@ -348,9 +364,10 @@ func resourceAlicloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	shardList := []map[string]interface{}{}
 	for _, item := range instance.ShardList.ShardAttribute {
 		shard := map[string]interface{}{
-			"node_id":      item.NodeId,
-			"node_storage": item.NodeStorage,
-			"node_class":   item.NodeClass,
+			"node_id":           item.NodeId,
+			"node_storage":      item.NodeStorage,
+			"node_class":        item.NodeClass,
+			"readonly_replicas": item.ReadonlyReplicas,
 		}
 		shardList = append(shardList, shard)
 	}
@@ -449,7 +466,7 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if d.HasChange("shard_list") {
 		state, diff := d.GetChange("shard_list")
-		err := ddsService.ModifyMongodbShardingInstanceNode(d.Id(), MongoDBShardingNodeShard, state.([]interface{}), diff.([]interface{}))
+		err := ddsService.ModifyMongodbShardingInstanceNode(d, MongoDBShardingNodeShard, state.([]interface{}), diff.([]interface{}))
 		if err != nil {
 			return WrapError(err)
 		}
@@ -458,7 +475,7 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if d.HasChange("mongo_list") {
 		state, diff := d.GetChange("mongo_list")
-		err := ddsService.ModifyMongodbShardingInstanceNode(d.Id(), MongoDBShardingNodeMongos, state.([]interface{}), diff.([]interface{}))
+		err := ddsService.ModifyMongodbShardingInstanceNode(d, MongoDBShardingNodeMongos, state.([]interface{}), diff.([]interface{}))
 		if err != nil {
 			return WrapError(err)
 		}
@@ -512,7 +529,7 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			ipstr = LOCAL_HOST_IP
 		}
 
-		if err := ddsService.ModifyMongoDBSecurityIps(d.Id(), ipstr); err != nil {
+		if err := ddsService.ModifyMongoDBSecurityIps(d, ipstr); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("security_ip_list")
@@ -550,5 +567,7 @@ func resourceAlicloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta 
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(ddsService.WaitForMongoDBInstance(d.Id(), Deleted, DefaultTimeout))
+	stateConf := BuildStateConf([]string{"Creating", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{}))
+	_, err = stateConf.WaitForState()
+	return nil
 }
