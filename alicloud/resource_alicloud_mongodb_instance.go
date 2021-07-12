@@ -331,7 +331,7 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("ssl_status", sslAction.SSLStatus)
 	d.Set("replication_factor", instance.ReplicationFactor)
-	if (instance.DBInstanceType == "replicate" || instance.DBInstanceType == "sharding") && instance.StorageEngine == "WiredTiger" {
+	if instance.ReplicationFactor != "1" {
 		tdeInfo, err := ddsService.DescribeMongoDBTDEInfo(d.Id())
 		if err != nil {
 			return WrapError(err)
