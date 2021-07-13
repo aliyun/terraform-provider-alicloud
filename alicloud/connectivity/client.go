@@ -113,7 +113,7 @@ type AliyunClient struct {
 	stsconn                      *sts.Client
 	rkvconn                      *r_kvstore.Client
 	polarDBconn                  *polardb.Client
-	dhconn                       *datahub.DataHub
+	dhconn                       datahub.DataHubApi
 	mnsconn                      *ali_mns.MNSClient
 	cloudapiconn                 *cloudapi.Client
 	teaConn                      *rpc.Client
@@ -1147,7 +1147,7 @@ func (client *AliyunClient) NewTeaRoaCommonClient(endpoint string) (*roa.Client,
 	return conn, nil
 }
 
-func (client *AliyunClient) WithDataHubClient(do func(*datahub.DataHub) (interface{}, error)) (interface{}, error) {
+func (client *AliyunClient) WithDataHubClient(do func(api datahub.DataHubApi) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 

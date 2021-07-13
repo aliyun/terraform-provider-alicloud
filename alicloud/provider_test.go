@@ -542,7 +542,7 @@ func TestAccAlicloudProviderLog(t *testing.T) {
 }
 
 func TestAccAlicloudProviderDatahub(t *testing.T) {
-	var v *datahub.Project
+	var v *datahub.GetProjectResult
 
 	resourceId := "alicloud_datahub_project.default"
 	ra := resourceAttrInit(resourceId, datahubProjectBasicMap)

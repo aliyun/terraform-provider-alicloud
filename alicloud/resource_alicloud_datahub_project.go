@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -62,9 +63,10 @@ func resourceAliyunDatahubProjectCreate(d *schema.ResourceData, meta interface{}
 
 	var requestInfo *datahub.DataHub
 
-	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-		requestInfo = dataHubClient
-		return nil, dataHubClient.CreateProject(projectName, projectComment)
+	raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
+		requestInfo = dataHubClient.(*datahub.DataHub)
+
+		return dataHubClient.CreateProject(projectName, projectComment)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_datahub_project", "CreateProject", AliyunDatahubSdkGo)
@@ -96,8 +98,8 @@ func resourceAliyunDatahubProjectRead(d *schema.ResourceData, meta interface{}) 
 
 	d.Set("name", d.Id())
 	d.Set("comment", object.Comment)
-	d.Set("create_time", datahub.Uint64ToTimeString(object.CreateTime))
-	d.Set("last_modify_time", datahub.Uint64ToTimeString(object.LastModifyTime))
+	d.Set("create_time",strconv.FormatInt(object.CreateTime,10))
+	d.Set("last_modify_time",strconv.FormatInt(object.LastModifyTime,10))
 	return nil
 }
 
@@ -111,9 +113,9 @@ func resourceAliyunDatahubProjectUpdate(d *schema.ResourceData, meta interface{}
 
 		var requestInfo *datahub.DataHub
 
-		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-			requestInfo = dataHubClient
-			return nil, dataHubClient.UpdateProject(projectName, projectComment)
+		raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
+			requestInfo = dataHubClient.(*datahub.DataHub)
+			return dataHubClient.UpdateProject(projectName, projectComment)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateProject", AliyunDatahubSdkGo)
@@ -138,9 +140,9 @@ func resourceAliyunDatahubProjectDelete(d *schema.ResourceData, meta interface{}
 	var requestInfo *datahub.DataHub
 
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-			requestInfo = dataHubClient
-			return nil, dataHubClient.DeleteProject(projectName)
+		raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
+			requestInfo = dataHubClient.(*datahub.DataHub)
+			return dataHubClient.DeleteProject(projectName)
 		})
 		if err != nil {
 			if isRetryableDatahubError(err) {
