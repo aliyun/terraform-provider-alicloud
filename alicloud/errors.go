@@ -181,7 +181,7 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 		return false
 	}
 
-	if e, ok := err.(datahub.DatahubError); ok {
+	if e, ok := err.(*datahub.DatahubClientError); ok {
 		for _, code := range expectCodes {
 			if e.Code == code || strings.Contains(e.Message, code) {
 				return true
