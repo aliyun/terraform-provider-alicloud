@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_routers"
 sidebar_current: "docs-alicloud-datasource-cen-transit-routers"
 description: |-
-Provides a list of CEN Transit Routers owned by an Alibaba Cloud account.
+  Provides a list of CEN Transit Routers owned by an Alibaba Cloud account.
 ---
 
 # alicloud\_cen\_transit\_routers

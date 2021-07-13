@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_vbr_attachment"
 sidebar_current: "docs-alicloud-resource-cen-transit_router_vbr_attachment"
 description: |-
-Provides a Alicloud CEN transit router VBR attachment resource.
+  Provides a Alicloud CEN transit router VBR attachment resource.
 ---
 
 # alicloud\_cen_transit_router_vbr_attachment

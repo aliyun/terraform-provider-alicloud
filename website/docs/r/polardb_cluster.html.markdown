@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_polardb_cluster"
 sidebar_current: "docs-alicloud-resource-polardb-cluster"
 description: |-
-Provides a PolarDB cluster resource.
+  Provides a PolarDB cluster resource.
 ---
 
 # alicloud\_polardb\_cluster

@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_route_table_propagation"
 sidebar_current: "docs-alicloud-resource-cen-transit_router_route_table_propagation"
 description: |-
-Provides a Alicloud CEN transit router route table propagation resource.
+  Provides a Alicloud CEN transit router route table propagation resource.
 ---
 
 # alicloud\_cen_transit_router_route_table_propagation
