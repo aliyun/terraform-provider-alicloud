@@ -22,7 +22,7 @@ func TestAccAlicloudAmqpVirtualHostsDataSource(t *testing.T) {
 			"name_regex":  "${alicloud_amqp_virtual_host.default.virtual_host_name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": os.Getenv("ALICLOUD_AMQP_INSTANCE_ID"),
+			"instance_id": "${alicloud_amqp_virtual_host.default.instance_id}",
 			"name_regex":  "fake_tf-testacc*",
 		}),
 	}
@@ -33,7 +33,7 @@ func TestAccAlicloudAmqpVirtualHostsDataSource(t *testing.T) {
 			"ids":         []string{"${alicloud_amqp_virtual_host.default.virtual_host_name}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": os.Getenv("ALICLOUD_AMQP_INSTANCE_ID"),
+			"instance_id": "${alicloud_amqp_virtual_host.default.instance_id}",
 			"ids":         []string{"${alicloud_amqp_virtual_host.default.virtual_host_name}_fake"},
 		}),
 	}

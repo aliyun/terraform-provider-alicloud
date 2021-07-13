@@ -17,13 +17,13 @@ import (
 )
 
 func init() {
-	resource.AddTestSweepers("alicloud_amqp_virtual_host", &resource.Sweeper{
-		Name: "alicloud_amqp_virtual_host",
-		F:    testSweepAmqpVirtualHost,
+	resource.AddTestSweepers("alicloud_amqp_queue", &resource.Sweeper{
+		Name: "alicloud_amqp_queue",
+		F:    testSweepAmqpQueue,
 	})
 }
 
-func testSweepAmqpVirtualHost(region string) error {
+func testSweepAmqpQueue(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return WrapErrorf(err, "error getting Alicloud client.")
@@ -35,7 +35,7 @@ func testSweepAmqpVirtualHost(region string) error {
 	}
 
 	instanceId := os.Getenv("ALICLOUD_AMQP_INSTANCE_ID")
-	action := "ListVirtualHosts"
+	action := "ListQueues"
 	request := make(map[string]interface{})
 	request["InstanceId"] = instanceId
 	request["MaxResults"] = PageSizeLarge
@@ -62,12 +62,12 @@ func testSweepAmqpVirtualHost(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			log.Println(WrapErrorf(err, DataDefaultErrorMsg, "alicloud_amqp_virtual_hosts", action, AlibabaCloudSdkGoERROR))
+			log.Println(WrapErrorf(err, DataDefaultErrorMsg, "alicloud_amqp_queues", action, AlibabaCloudSdkGoERROR))
 			return nil
 		}
-		resp, err := jsonpath.Get("$.Data.VirtualHosts", response)
+		resp, err := jsonpath.Get("$.Data.Queues", response)
 		if err != nil {
-			log.Println(WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.VirtualHosts", response))
+			log.Println(WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Queues", response))
 			return nil
 		}
 		result, _ := resp.([]interface{})
@@ -84,10 +84,10 @@ func testSweepAmqpVirtualHost(region string) error {
 				log.Printf("[DEBUG] Skipping the resource %s", item["Name"])
 			}
 
-			action := "DeleteVirtualHost"
+			action := "DeleteQueue"
 			request := map[string]interface{}{
-				"InstanceId":  instanceId,
-				"VirtualHost": item["Name"],
+				"InstanceId": instanceId,
+				"Queue":      item["Name"],
 			}
 
 			wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -114,11 +114,11 @@ func testSweepAmqpVirtualHost(region string) error {
 	return nil
 }
 
-func TestAccAlicloudAmqpVirtualHost_basic(t *testing.T) {
+func TestAccAlicloudAmqpQueue_basic(t *testing.T) {
 
 	var v map[string]interface{}
-	resourceId := "alicloud_amqp_virtual_host.default"
-	ra := resourceAttrInit(resourceId, AmqpVirtualHostBasicMap)
+	resourceId := "alicloud_amqp_queue.default"
+	ra := resourceAttrInit(resourceId, AmqpQueueBasicMap)
 	serviceFunc := func() interface{} {
 		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
@@ -127,8 +127,8 @@ func TestAccAlicloudAmqpVirtualHost_basic(t *testing.T) {
 
 	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-AmqpVirtualHostbasic%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpVirtualHostConfigDependence)
+	name := fmt.Sprintf("tf-testacc-AmqpQueuebasic%v", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpQueueConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -141,33 +141,56 @@ func TestAccAlicloudAmqpVirtualHost_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       os.Getenv("ALICLOUD_AMQP_INSTANCE_ID"),
-					"virtual_host_name": "${var.name}",
+					"instance_id":             "${alicloud_amqp_virtual_host.default.instance_id}",
+					"virtual_host_name":       "${alicloud_amqp_virtual_host.default.virtual_host_name}",
+					"auto_delete_state":       "true",
+					"auto_expire_state":       "10000",
+					"dead_letter_exchange":    "",
+					"dead_letter_routing_key": "",
+					"exclusive_state":         "false",
+					"max_length":              "100",
+					"maximum_priority":        "10",
+					"message_ttl":             "100",
+					"queue_name":              name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":       os.Getenv("ALICLOUD_AMQP_INSTANCE_ID"),
-						"virtual_host_name": name,
+						"instance_id":             os.Getenv("ALICLOUD_AMQP_INSTANCE_ID"),
+						"virtual_host_name":       name,
+						"auto_delete_state":       "true",
+						"auto_expire_state":       "10000",
+						"dead_letter_exchange":    "",
+						"dead_letter_routing_key": "",
+						"exclusive_state":         "false",
+						"max_length":              "100",
+						"maximum_priority":        "10",
+						"message_ttl":             "100",
+						"queue_name":              name,
 					}),
 				),
 			},
 
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_expire_state", "dead_letter_exchange", "dead_letter_routing_key", "max_length", "maximum_priority", "message_ttl"},
 			},
 		},
 	})
 
 }
 
-func resourceAmqpVirtualHostConfigDependence(name string) string {
+func resourceAmqpQueueConfigDependence(name string) string {
 	return fmt.Sprintf(`
 		variable "name" {
  			default = "%v"
 		}
-		`, name)
+		resource "alicloud_amqp_virtual_host" "default" {
+		  instance_id       = "%s"
+		  virtual_host_name = var.name
+		}
+		`, name, os.Getenv("ALICLOUD_AMQP_INSTANCE_ID"))
 }
 
-var AmqpVirtualHostBasicMap = map[string]string{}
+var AmqpQueueBasicMap = map[string]string{}
