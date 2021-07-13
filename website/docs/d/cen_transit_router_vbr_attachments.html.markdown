@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_vbr_attachments"
 sidebar_current: "docs-alicloud-datasource-cen-transit-router-vbr-attachments"
 description: |-
-Provides a list of CEN Transit Router VBR Attachments owned by an Alibaba Cloud account.
+  Provides a list of CEN Transit Router VBR Attachments owned by an Alibaba Cloud account.
 ---
 
 # alicloud\_cen\_transit\_router\_vbr\_attachments

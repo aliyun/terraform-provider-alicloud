@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_route_entry"
 sidebar_current: "docs-alicloud-resource-cen-transit_router_route_entry"
 description: |-
-Provides a Alicloud CEN transit router route entry resource.
+  Provides a Alicloud CEN transit router route entry resource.
 ---
 
 # alicloud\_cen_transit_router_route_entry
