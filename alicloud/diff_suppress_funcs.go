@@ -301,7 +301,7 @@ func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 }
 
 func redisPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.ToLower(d.Get("payment_type").(string)) == "postpaid"
+	return strings.ToLower(d.Get("payment_type").(string)) != "prepaid"
 }
 
 func redisPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {

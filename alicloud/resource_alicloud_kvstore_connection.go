@@ -86,9 +86,10 @@ func resourceAlicloudKvstoreConnectionRead(d *schema.ResourceData, meta interfac
 
 	d.Set("instance_id", d.Id())
 	for _, instanceNetInfo := range object {
-		if instanceNetInfo.DBInstanceNetType == "0" {
-			d.Set("connection_string", instanceNetInfo.ConnectionString)
-			d.Set("port", instanceNetInfo.Port)
+		instanceData := instanceNetInfo.(map[string]interface{})
+		if instanceData["DBInstanceNetType"].(string) == "0" {
+			d.Set("connection_string", instanceData["ConnectionString"])
+			d.Set("port", instanceData["Port"])
 		}
 	}
 	return nil
