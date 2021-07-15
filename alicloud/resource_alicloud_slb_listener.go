@@ -663,11 +663,12 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 
 	// http https tcp
 	if d.HasChange("health_check_domain") {
-		if domain, ok := d.GetOk("health_check_domain"); ok {
-			httpArgs.QueryParams["HealthCheckDomain"] = domain.(string)
-			tcpArgs.QueryParams["HealthCheckDomain"] = domain.(string)
-			update = true
-		}
+		update = true
+	}
+	// todo: depends on Api fixing the default value
+	if domain, ok := d.GetOk("health_check_domain"); ok {
+		httpArgs.QueryParams["HealthCheckDomain"] = domain.(string)
+		tcpArgs.QueryParams["HealthCheckDomain"] = domain.(string)
 	}
 	if d.HasChange("health_check_uri") {
 		tcpArgs.QueryParams["HealthCheckURI"] = d.Get("health_check_uri").(string)
