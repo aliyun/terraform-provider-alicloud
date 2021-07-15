@@ -23,11 +23,15 @@ variable "data_node_disk_size" {
 }
 
 variable "data_node_disk_type" {
-  default = "cloud_ssd"
+  default = "cloud_essd"
 }
 
 variable "data_node_disk_encrypted" {
   default = false
+}
+
+variable "data_node_disk_performance_level" {
+  default = "PL1"
 }
 
 variable "es_version" {
@@ -81,4 +85,36 @@ variable "setting_config" {
     "xpack.security.audit.outputs": "index",
     "xpack.watcher.enabled": "false"
   }
+}
+
+variable "master_node_disk_type"{
+  default = "cloud_ssd"
+}
+
+variable "warm_data_node_amount" {
+  default = "3"
+}
+
+variable "warm_data_node_spec" {
+  default = "elasticsearch.sn1ne.large"
+}
+
+variable "warm_data_node_disk_size" {
+  default = "20"
+}
+
+variable "warm_data_node_disk_encrypted" {
+  default = false
+}
+
+variable "kibana_node_spec" {
+  default = "elasticsearch.sn1ne.large"
+}
+
+variable "cpfs_shared_disk" {
+  default = "2048"
+}
+
+variable "instance_category" {
+  default = "x-pack"
 }
