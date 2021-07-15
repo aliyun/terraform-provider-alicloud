@@ -1,10 +1,14 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -293,4 +297,61 @@ func (s *CassandraService) DescribeAccounts(id string) (object cassandra.Describ
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cassandra.DescribeAccountsResponse)
 	return *response, nil
+}
+
+func (s *CassandraService) DescribeCassandraBackupPlan(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeBackupPlans"
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"RegionId":  s.client.RegionId,
+		"ClusterId": parts[0],
+	}
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Cassandra:BackupPlan", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.BackupPlans.BackupPlan", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BackupPlans.BackupPlan", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cassandra", id)), NotFoundWithResponse, response)
+	}
+	for _, v := range v.([]interface{}) {
+		if v.(map[string]interface{})["DataCenterId"].(string) == parts[1] {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cassandra", id)), NotFoundWithResponse, response)
+	}
+	return object, nil
 }

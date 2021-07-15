@@ -447,6 +447,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_virtual_hosts":                          dataSourceAlicloudAmqpVirtualHosts(),
 			"alicloud_amqp_queues":                                 dataSourceAlicloudAmqpQueues(),
 			"alicloud_amqp_exchanges":                              dataSourceAlicloudAmqpExchanges(),
+			"alicloud_cassandra_backup_plans":                      dataSourceAlicloudCassandraBackupPlans(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -795,6 +796,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_virtual_host":                          resourceAlicloudAmqpVirtualHost(),
 			"alicloud_amqp_queue":                                 resourceAlicloudAmqpQueue(),
 			"alicloud_amqp_exchange":                              resourceAlicloudAmqpExchange(),
+			"alicloud_cassandra_backup_plan":                      resourceAlicloudCassandraBackupPlan(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -953,6 +955,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DmEndpoint = strings.TrimSpace(endpoints["dm"].(string))
 		config.EventbridgeEndpoint = strings.TrimSpace(endpoints["eventbridge"].(string))
 		config.OnsproxyEndpoint = strings.TrimSpace(endpoints["onsproxy"].(string))
+		config.CdsEndpoint = strings.TrimSpace(endpoints["cds"].(string))
+
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1175,6 +1179,8 @@ func init() {
 		"eventbridge_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eventbridge_share endpoints.",
 
 		"onsproxy_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom onsproxy endpoints.",
+
+		"cds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cds endpoints.",
 	}
 }
 
@@ -1224,6 +1230,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["onsproxy_endpoint"],
+				},
+				"cds": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cds_endpoint"],
 				},
 
 				"dm": {
@@ -1728,6 +1740,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["dm"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["eventbridge"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["onsproxy"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cds"].(string)))
 	return hashcode.String(buf.String())
 }
 
