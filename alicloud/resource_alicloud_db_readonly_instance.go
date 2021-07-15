@@ -125,6 +125,7 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Type:             schema.TypeString,
 				ValidateFunc:     validation.StringInSlice([]string{"aliyun", "custom"}, false),
 				Optional:         true,
+				Computed:         true,
 				DiffSuppressFunc: sslEnabledDiffSuppressFunc,
 			},
 			"server_cert": {

@@ -291,6 +291,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"ca_type": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"server_cert": {
 				Type:     schema.TypeString,
@@ -321,10 +322,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"acl": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"replication_acl": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 
 			"upgrade_db_instance_kernel_version": {
