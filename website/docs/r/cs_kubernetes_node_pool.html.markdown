@@ -27,6 +27,8 @@ This resource will help you to manager node pool in Kubernetes Cluster.
 
 -> **NOTE:** It is recommended to create a cluster with zero worker nodes, and then use a node pool to manage the cluster nodes. 
 
+-> **NOTE:** From version 1.127.0, support for adding existing nodes to the node pool. In order to distinguish automatically created nodes, it is recommended that existing nodes be placed separately in a node pool for management. 
+
 ## Example Usage
 
 The managed cluster configuration,
@@ -245,6 +247,47 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 }
 ```
 
+Create a node pool with platform as Windows 
+```terraform
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  name                         = "windows-np"
+  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids                  = [alicloud_vswitch.default.id]
+  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category         = "cloud_efficiency"
+  system_disk_size             = 40
+  instance_charge_type         = "PostPaid"
+  node_count                   = 1
+
+  // if the instance platform is windows, the password is requered.
+  password                     = "Hello1234"
+  platform = "Windows"
+  image_id = "${window_image_id}"
+```
+
+Add an existing node to the node pool
+
+In order to distinguish automatically created nodes, it is recommended that existing nodes be placed separately in a node pool for management. 
+
+```terraform
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  name                         = "existing-node"
+  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids                  = [alicloud_vswitch.default.id]
+  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category         = "cloud_efficiency"
+  system_disk_size             = 40
+  instance_charge_type         = "PostPaid"
+
+  # add existing node to nodepool
+  instances          = ["instance_id_01","instance_id_02", "instance_id_03"]
+  # default is false
+  format_disk        = false
+  # default is true
+  keep_instance_name = true
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -265,6 +308,7 @@ The following arguments are supported:
   * `encrypted` - Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
   * `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
 * `security_group_id` - (Optional) The security group id for worker node. 
+* `platform` - (Optional, Available in 1.127.0+) The platform. One of `AliyunLinux`, `Windows`, `CentOS`, `WindowsCore`. If you select `Windows` or `WindowsCore`, the `passord` is required.
 * `image_id` - (Optional) Custom Image support. Must based on CentOS7 or AliyunLinux2.
 * `node_name_mode` - (Optional) Each node name consists of a prefix, an IP substring, and a suffix. For example "customized,aliyun.com,5,test", if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test.
 * `user_data` - (Optional) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
@@ -274,6 +318,7 @@ The following arguments are supported:
   * `value` - The label value.
 * `taints` - (Optional) A List of Kubernetes taints to assign to the nodes.
 * `management` - (Optional, Available in 1.109.1+) Managed node pool configuration. When using a managed node pool, the node key must use `key_name`. Detailed below.
+* `scaling_policy` - (Optional, Available in 1.127.0+) The scaling mode. Valid values: `release`, `recycle`, default is `release`. Standard mode(release): Create and release ECS instances based on requests.Swift mode(recycle): Create, stop, adn restart ECS instances based on needs. New ECS instances are only created when no stopped ECS instance is avalible. This mode further accelerates the scaling process. Apart from ECS instances that use local storage, when an ECS instance is stopped, you are only chatged for storage space.
 * `scaling_config` - (Optional, Available in 1.111.0+) Auto scaling node pool configuration. For more details, see `scaling_config`.
 * `instance_charge_type`- (Optional, Available in 1.119.0+) Node payment type. Valid values: `PostPaid`, `PrePaid`, default is `PostPaid`. If value is `PrePaid`, the arguments `period`, `period_unit`, `auto_renew` and `auto_renew_period` are required.
 * `period`- (Optional, Available in 1.119.0+) Node payment period. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
@@ -289,6 +334,9 @@ The following arguments are supported:
 * `spot_price_limit` - (Optional, Available in 1.123.1+) The maximum hourly price of the instance. This parameter takes effect only when `spot_strategy` is set to `SpotWithPriceLimit`. A maximum of three decimal places are allowed.
   * `instance_type` - (Optional, Available in 1.123.1+) Spot instance type.
   * `price_limit` - (Optional, Available in 1.123.1+) The maximum hourly price of the spot instance.
+* `instances` - (Optional, Available in 1.127.0+) The instance list. Add existing nodes under the same cluster VPC to the node pool. 
+* `keep_instance_name` - (Optional, Available in 1.127.0+) Add an existing instance to the node pool, whether to keep the original instance name. It is recommended to set to `true`.
+* `format_disk` - (Optional, Available in 1.127.0+) After you select this check box, if data disks have been attached to the specified ECS instances and the file system of the last data disk is uninitialized, the system automatically formats the last data disk to ext4 and mounts the data disk to /var/lib/docker and /var/lib/kubelet. The original data on the disk will be cleared. Make sure that you back up data in advance. If no data disk is mounted on the ECS instance, no new data disk will be purchased. Default is `false`.
 
 #### tags
 

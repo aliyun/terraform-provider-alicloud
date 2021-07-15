@@ -6,8 +6,11 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
+	roacs "github.com/alibabacloud-go/cs-20151215/v2/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
@@ -42,9 +45,10 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Required: true,
 			},
 			"node_count": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"instances"},
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -106,6 +110,11 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Optional:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 				DiffSuppressFunc: csNodepoolDiskPerformanceLevelDiffSuppressFunc,
+			},
+			"platform": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"image_id": {
 				Type:     schema.TypeString,
@@ -327,6 +336,14 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 						},
 					},
 				},
+				ConflictsWith: []string{"instances"},
+			},
+			"scaling_policy": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"release", "recycle"}, false),
+				DiffSuppressFunc: csNodepoolScalingPolicyDiffSuppressFunc,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -368,6 +385,26 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 					},
 				},
 				DiffSuppressFunc: csNodepoolSpotInstanceSettingDiffSuppressFunc,
+			},
+			"instances": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				MinItems:      1,
+				MaxItems:      100,
+				ConflictsWith: []string{"node_count", "scaling_config"},
+			},
+			"keep_instance_name": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"format_disk": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -417,6 +454,11 @@ func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta int
 		return WrapErrorf(err, "ResourceID:%s , TaskID:%s ", d.Id(), nodePool.TaskID)
 	}
 
+	// attach existing node
+	if v, ok := d.GetOk("instances"); ok && v != nil {
+		attachExistingInstance(d, meta)
+	}
+
 	return resourceAlicloudCSNodePoolRead(d, meta)
 }
 
@@ -453,7 +495,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 
 		if newValue < oldValue {
-			_ = removeNodePoolNodes(d, meta, parts)
+			removeNodePoolNodes(d, meta, parts, nil, nil)
 			// The removal of a node is logically independent.
 			// The removal of a node should not involve parameter changes.
 			return resourceAlicloudCSNodePoolRead(d, meta)
@@ -606,6 +648,15 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.InternetMaxBandwidthOut = v.(int)
 	}
 
+	if v, ok := d.GetOk("platform"); ok {
+		args.ScalingPolicy = v.(string)
+	}
+
+	if d.HasChange("scaling_policy") {
+		update = true
+		args.ScalingPolicy = d.Get("scaling_policy").(string)
+	}
+
 	// spot
 	if d.HasChange("spot_strategy") {
 		update = true
@@ -644,6 +695,25 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	// attach or remove existing node
+	if d.HasChange("instances") {
+		rawOldValue, rawNewValue := d.GetChange("instances")
+		oldValue, ok := rawOldValue.([]interface{})
+		if ok != true {
+			return WrapErrorf(fmt.Errorf("instances old value can not be parsed"), "parseError %d", oldValue)
+		}
+		newValue, ok := rawNewValue.([]interface{})
+		if ok != true {
+			return WrapErrorf(fmt.Errorf("instances new value can not be parsed"), "parseError %d", oldValue)
+		}
+
+		if len(newValue) > len(oldValue) {
+			attachExistingInstance(d, meta)
+		} else {
+			removeNodePoolNodes(d, meta, parts, oldValue, newValue)
+		}
+	}
+
 	update = false
 	d.Partial(false)
 	return resourceAlicloudCSNodePoolRead(d, meta)
@@ -673,6 +743,8 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("system_disk_size", object.SystemDiskSize)
 	d.Set("system_disk_performance_level", object.SystemDiskPerformanceLevel)
 	d.Set("image_id", object.ImageId)
+	d.Set("platform", object.Platform)
+	d.Set("scaling_policy", object.ScalingPolicy)
 	d.Set("node_name_mode", object.NodeNameMode)
 	d.Set("user_data", object.UserData)
 	d.Set("scaling_group_id", object.ScalingGroupId)
@@ -744,7 +816,7 @@ func resourceAlicloudCSNodePoolDelete(d *schema.ResourceData, meta interface{}) 
 	}
 
 	// delete all nodes
-	_ = removeNodePoolNodes(d, meta, parts)
+	removeNodePoolNodes(d, meta, parts, nil, nil)
 
 	var response interface{}
 	err = resource.Retry(30*time.Minute, func() *resource.RetryError {
@@ -829,6 +901,7 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 			SystemDiskSize:     int64(d.Get("system_disk_size").(int)),
 			SecurityGroupId:    d.Get("security_group_id").(string),
 			ImageId:            d.Get("image_id").(string),
+			Platform:           d.Get("platform").(string),
 		},
 		KubernetesConfig: cs.KubernetesConfig{
 			NodeNameMode: d.Get("node_name_mode").(string),
@@ -868,6 +941,10 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 	}
 
 	// set auto scaling config
+	if v, ok := d.GetOk("scaling_policy"); ok {
+		creationArgs.ScalingPolicy = v.(string)
+	}
+
 	if v, ok := d.GetOk("scaling_config"); ok {
 		if sc, ok := v.([]interface{}); len(sc) > 0 && ok {
 			creationArgs.AutoScaling = setAutoScalingConfig(sc)
@@ -1185,7 +1262,7 @@ func flattenTagsConfig(config []cs.Tag) map[string]string {
 	return m
 }
 
-func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []string) error {
+func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []string, oldNodes []interface{}, newNodes []interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	csService := CsService{client}
 	invoker := NewInvoker()
@@ -1204,18 +1281,36 @@ func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []str
 	}
 
 	ret := response.([]cs.KubernetesNodeType)
-	// filter out nodes
+	// fetch the NodeName of all nodes
 	var allNodeName []string
 	for _, value := range ret {
 		allNodeName = append(allNodeName, value.NodeName)
 	}
 
-	// remove nodes
 	removeNodesName := allNodeName
+
+	// remove automatically created nodes
 	if d.HasChange("node_count") {
 		o, n := d.GetChange("node_count")
 		count := o.(int) - n.(int)
 		removeNodesName = allNodeName[:count]
+	}
+
+	// remove manually added nodes
+	if d.HasChange("instances") {
+		var removeInstanceList []string
+		var attachNodeList []string
+		if oldNodes != nil && newNodes != nil {
+			attachNodeList = difference(expandStringList(oldNodes), expandStringList(newNodes))
+		}
+		for _, v := range ret {
+			for _, name := range attachNodeList {
+				if name == v.InstanceId {
+					removeInstanceList = append(removeInstanceList, v.NodeName)
+				}
+			}
+		}
+		removeNodesName = removeInstanceList
 	}
 
 	removeNodesArgs := &cs.DeleteKubernetesClusterNodesRequest{
@@ -1240,6 +1335,63 @@ func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []str
 	}
 
 	d.SetPartial("node_count")
+
+	return nil
+}
+
+func attachExistingInstance(d *schema.ResourceData, meta interface{}) error {
+	csService := CsService{meta.(*connectivity.AliyunClient)}
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+	}
+
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	clusterId := parts[0]
+	nodePoolId := parts[1]
+
+	args := &roacs.AttachInstancesRequest{
+		NodepoolId:       tea.String(nodePoolId),
+		FormatDisk:       tea.Bool(false),
+		KeepInstanceName: tea.Bool(true),
+	}
+
+	if v, ok := d.GetOk("password"); ok {
+		args.Password = tea.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("key_name"); ok {
+		args.KeyPair = tea.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("format_disk"); ok {
+		args.FormatDisk = tea.Bool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("keep_instance_name"); ok {
+		args.KeepInstanceName = tea.Bool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("image_id"); ok {
+		args.ImageId = tea.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("instances"); ok {
+		args.Instances = tea.StringSlice(expandStringList(v.([]interface{})))
+	}
+
+	_, err = client.AttachInstances(tea.String(clusterId), args)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "AttachInstances", AliyunTablestoreGoSdk)
+	}
+
+	stateConf := BuildStateConf([]string{"scaling"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return nil
 }
