@@ -213,6 +213,13 @@ func csNodepoolSpotInstanceSettingDiffSuppressFunc(k, old, new string, d *schema
 	return true
 }
 
+func csNodepoolScalingPolicyDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if _, ok := d.GetOk("scaling_config"); ok {
+		return false
+	}
+	return true
+}
+
 func csForceUpdate(k, old, new string, d *schema.ResourceData) bool {
 	if d.Id() == "" {
 		return false

@@ -2029,6 +2029,10 @@ type ModifyClusterNodePoolRequestScalingGroup struct {
 	SpotInstanceRemedy *bool `json:"spot_instance_remedy,omitempty" xml:"spot_instance_remedy,omitempty"`
 	// 当MultiAZPolicy取值为COST_OPTIMIZED时，如果因价格、库存等原因无法创建足够的抢占式实例，是否允许自动尝试创建按量实例满足ECS实例数量要求。取值范围：true：允许。false：不允许。默认值：true
 	CompensateWithOnDemand *bool `json:"compensate_with_on_demand,omitempty" xml:"compensate_with_on_demand,omitempty"`
+	// 节点公网IP网络计费类型
+	InternetChargeType *string `json:"internet_charge_type,omitempty" xml:"internet_charge_type,omitempty"`
+	// 节点公网IP出带宽最大值，单位为Mbps（Mega bit per second），取值范围：1~100
+	InternetMaxBandwidthOut *int64 `json:"internet_max_bandwidth_out,omitempty" xml:"internet_max_bandwidth_out,omitempty"`
 }
 
 func (s ModifyClusterNodePoolRequestScalingGroup) String() string {
@@ -2161,6 +2165,16 @@ func (s *ModifyClusterNodePoolRequestScalingGroup) SetSpotInstanceRemedy(v bool)
 
 func (s *ModifyClusterNodePoolRequestScalingGroup) SetCompensateWithOnDemand(v bool) *ModifyClusterNodePoolRequestScalingGroup {
 	s.CompensateWithOnDemand = &v
+	return s
+}
+
+func (s *ModifyClusterNodePoolRequestScalingGroup) SetInternetChargeType(v string) *ModifyClusterNodePoolRequestScalingGroup {
+	s.InternetChargeType = &v
+	return s
+}
+
+func (s *ModifyClusterNodePoolRequestScalingGroup) SetInternetMaxBandwidthOut(v int64) *ModifyClusterNodePoolRequestScalingGroup {
+	s.InternetMaxBandwidthOut = &v
 	return s
 }
 
@@ -2772,6 +2786,10 @@ type DescribeClusterNodePoolDetailResponseBodyScalingGroup struct {
 	LoginPassword *string `json:"login_password,omitempty" xml:"login_password,omitempty"`
 	// 密钥对名称
 	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
+	// 节点公网IP网络计费类型
+	InternetChargeType *string `json:"internet_charge_type,omitempty" xml:"internet_charge_type,omitempty"`
+	// 节点公网IP出带宽最大值，单位为Mbps（Mega bit per second），取值范围：1~100
+	InternetMaxBandwidthOut *int64 `json:"internet_max_bandwidth_out,omitempty" xml:"internet_max_bandwidth_out,omitempty"`
 }
 
 func (s DescribeClusterNodePoolDetailResponseBodyScalingGroup) String() string {
@@ -2919,6 +2937,16 @@ func (s *DescribeClusterNodePoolDetailResponseBodyScalingGroup) SetLoginPassword
 
 func (s *DescribeClusterNodePoolDetailResponseBodyScalingGroup) SetKeyPair(v string) *DescribeClusterNodePoolDetailResponseBodyScalingGroup {
 	s.KeyPair = &v
+	return s
+}
+
+func (s *DescribeClusterNodePoolDetailResponseBodyScalingGroup) SetInternetChargeType(v string) *DescribeClusterNodePoolDetailResponseBodyScalingGroup {
+	s.InternetChargeType = &v
+	return s
+}
+
+func (s *DescribeClusterNodePoolDetailResponseBodyScalingGroup) SetInternetMaxBandwidthOut(v int64) *DescribeClusterNodePoolDetailResponseBodyScalingGroup {
+	s.InternetMaxBandwidthOut = &v
 	return s
 }
 
@@ -3384,6 +3412,10 @@ type CreateClusterNodePoolRequestScalingGroup struct {
 	SpotInstanceRemedy *bool `json:"spot_instance_remedy,omitempty" xml:"spot_instance_remedy,omitempty"`
 	// 当MultiAZPolicy取值为COST_OPTIMIZED时，如果因价格、库存等原因无法创建足够的抢占式实例，是否允许自动尝试创建按量实例满足ECS实例数量要求。取值范围：true：允许。false：不允许。默认值：true
 	CompensateWithOnDemand *bool `json:"compensate_with_on_demand,omitempty" xml:"compensate_with_on_demand,omitempty"`
+	// 节点公网IP网络计费类型
+	InternetChargeType *string `json:"internet_charge_type,omitempty" xml:"internet_charge_type,omitempty"`
+	// 节点公网IP出带宽最大值，单位为Mbps（Mega bit per second），取值范围：1~100
+	InternetMaxBandwidthOut *int64 `json:"internet_max_bandwidth_out,omitempty" xml:"internet_max_bandwidth_out,omitempty"`
 }
 
 func (s CreateClusterNodePoolRequestScalingGroup) String() string {
@@ -3521,6 +3553,16 @@ func (s *CreateClusterNodePoolRequestScalingGroup) SetSpotInstanceRemedy(v bool)
 
 func (s *CreateClusterNodePoolRequestScalingGroup) SetCompensateWithOnDemand(v bool) *CreateClusterNodePoolRequestScalingGroup {
 	s.CompensateWithOnDemand = &v
+	return s
+}
+
+func (s *CreateClusterNodePoolRequestScalingGroup) SetInternetChargeType(v string) *CreateClusterNodePoolRequestScalingGroup {
+	s.InternetChargeType = &v
+	return s
+}
+
+func (s *CreateClusterNodePoolRequestScalingGroup) SetInternetMaxBandwidthOut(v int64) *CreateClusterNodePoolRequestScalingGroup {
+	s.InternetMaxBandwidthOut = &v
 	return s
 }
 
@@ -3707,6 +3749,8 @@ func (s *CreateClusterNodePoolResponse) SetBody(v *CreateClusterNodePoolResponse
 type DescribeClusterUserKubeconfigRequest struct {
 	// ApiServer是否为内网地址。
 	PrivateIpAddress *bool `json:"PrivateIpAddress,omitempty" xml:"PrivateIpAddress,omitempty"`
+	// 临时kubeconfig有效期，单位：分钟。  最小值：15（15分钟）  最大值：4320（3天）。
+	TemporaryDurationMinutes *int64 `json:"TemporaryDurationMinutes,omitempty" xml:"TemporaryDurationMinutes,omitempty"`
 }
 
 func (s DescribeClusterUserKubeconfigRequest) String() string {
@@ -3722,9 +3766,16 @@ func (s *DescribeClusterUserKubeconfigRequest) SetPrivateIpAddress(v bool) *Desc
 	return s
 }
 
+func (s *DescribeClusterUserKubeconfigRequest) SetTemporaryDurationMinutes(v int64) *DescribeClusterUserKubeconfigRequest {
+	s.TemporaryDurationMinutes = &v
+	return s
+}
+
 type DescribeClusterUserKubeconfigResponseBody struct {
 	// kubeconfig内容。
 	Config *string `json:"config,omitempty" xml:"config,omitempty"`
+	// kubeconfig过期时间。格式：RFC3339 格式的 UTC 时间。
+	Expiration *string `json:"expiration,omitempty" xml:"expiration,omitempty"`
 }
 
 func (s DescribeClusterUserKubeconfigResponseBody) String() string {
@@ -3737,6 +3788,11 @@ func (s DescribeClusterUserKubeconfigResponseBody) GoString() string {
 
 func (s *DescribeClusterUserKubeconfigResponseBody) SetConfig(v string) *DescribeClusterUserKubeconfigResponseBody {
 	s.Config = &v
+	return s
+}
+
+func (s *DescribeClusterUserKubeconfigResponseBody) SetExpiration(v string) *DescribeClusterUserKubeconfigResponseBody {
+	s.Expiration = &v
 	return s
 }
 
@@ -4180,6 +4236,69 @@ func (s *DescribeAddonsResponse) SetHeaders(v map[string]*string) *DescribeAddon
 
 func (s *DescribeAddonsResponse) SetBody(v *DescribeAddonsResponseBody) *DescribeAddonsResponse {
 	s.Body = v
+	return s
+}
+
+type CreateAutoscalingConfigRequest struct {
+	// 静默时间，扩容出的节点，在静默时间过后，方可进入缩容判断
+	CoolDownDuration *string `json:"cool_down_duration,omitempty" xml:"cool_down_duration,omitempty"`
+	// 缩容触发时延，节点缩容时需要连续满足触发时延所设定的时间，方可进行缩容
+	UnneededDuration *string `json:"unneeded_duration,omitempty" xml:"unneeded_duration,omitempty"`
+	// 缩容阈值，节点上 Request 的资源与总资源量的比值
+	UtilizationThreshold *string `json:"utilization_threshold,omitempty" xml:"utilization_threshold,omitempty"`
+	// GPU缩容阈值，节点上 Request 的资源与总资源量的比值
+	GpuUtilizationThreshold *string `json:"gpu_utilization_threshold,omitempty" xml:"gpu_utilization_threshold,omitempty"`
+	// 弹性灵敏度，判断伸缩的间隔时间
+	ScanInterval *string `json:"scan_interval,omitempty" xml:"scan_interval,omitempty"`
+}
+
+func (s CreateAutoscalingConfigRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateAutoscalingConfigRequest) GoString() string {
+	return s.String()
+}
+
+func (s *CreateAutoscalingConfigRequest) SetCoolDownDuration(v string) *CreateAutoscalingConfigRequest {
+	s.CoolDownDuration = &v
+	return s
+}
+
+func (s *CreateAutoscalingConfigRequest) SetUnneededDuration(v string) *CreateAutoscalingConfigRequest {
+	s.UnneededDuration = &v
+	return s
+}
+
+func (s *CreateAutoscalingConfigRequest) SetUtilizationThreshold(v string) *CreateAutoscalingConfigRequest {
+	s.UtilizationThreshold = &v
+	return s
+}
+
+func (s *CreateAutoscalingConfigRequest) SetGpuUtilizationThreshold(v string) *CreateAutoscalingConfigRequest {
+	s.GpuUtilizationThreshold = &v
+	return s
+}
+
+func (s *CreateAutoscalingConfigRequest) SetScanInterval(v string) *CreateAutoscalingConfigRequest {
+	s.ScanInterval = &v
+	return s
+}
+
+type CreateAutoscalingConfigResponse struct {
+	Headers map[string]*string `json:"headers,omitempty" xml:"headers,omitempty" require:"true"`
+}
+
+func (s CreateAutoscalingConfigResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateAutoscalingConfigResponse) GoString() string {
+	return s.String()
+}
+
+func (s *CreateAutoscalingConfigResponse) SetHeaders(v map[string]*string) *CreateAutoscalingConfigResponse {
+	s.Headers = v
 	return s
 }
 
@@ -7444,6 +7563,10 @@ type DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup struct {
 	LoginPassword *string `json:"login_password,omitempty" xml:"login_password,omitempty"`
 	// 密钥对名称，和login_password二选一。
 	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
+	// 节点公网IP网络计费类型
+	InternetChargeType *string `json:"internet_charge_type,omitempty" xml:"internet_charge_type,omitempty"`
+	// 节点公网IP出带宽最大值，单位为Mbps（Mega bit per second），取值范围：1~100
+	InternetMaxBandwidthOut *int64 `json:"internet_max_bandwidth_out,omitempty" xml:"internet_max_bandwidth_out,omitempty"`
 }
 
 func (s DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup) String() string {
@@ -7591,6 +7714,16 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup) SetLoginPass
 
 func (s *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup) SetKeyPair(v string) *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup {
 	s.KeyPair = &v
+	return s
+}
+
+func (s *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup) SetInternetChargeType(v string) *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup {
+	s.InternetChargeType = &v
+	return s
+}
+
+func (s *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup) SetInternetMaxBandwidthOut(v int64) *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup {
+	s.InternetMaxBandwidthOut = &v
 	return s
 }
 
@@ -8068,7 +8201,7 @@ type ScaleOutClusterRequest struct {
 	// Worker节点系统盘大小
 	WorkerSystemDiskSize *int64 `json:"worker_system_disk_size,omitempty" xml:"worker_system_disk_size,omitempty"`
 	// Worker节点数据盘配置
-	WorkerDataDisks []*DataDisk `json:"worker_data_disks,omitempty" xml:"worker_data_disks,omitempty" type:"Repeated"`
+	WorkerDataDisks []*ScaleOutClusterRequestWorkerDataDisks `json:"worker_data_disks,omitempty" xml:"worker_data_disks,omitempty" type:"Repeated"`
 	// 在节点上安装云监控
 	CloudMonitorFlags *bool `json:"cloud_monitor_flags,omitempty" xml:"cloud_monitor_flags,omitempty"`
 	// CPU亲和性策略
@@ -8154,7 +8287,7 @@ func (s *ScaleOutClusterRequest) SetWorkerSystemDiskSize(v int64) *ScaleOutClust
 	return s
 }
 
-func (s *ScaleOutClusterRequest) SetWorkerDataDisks(v []*DataDisk) *ScaleOutClusterRequest {
+func (s *ScaleOutClusterRequest) SetWorkerDataDisks(v []*ScaleOutClusterRequestWorkerDataDisks) *ScaleOutClusterRequest {
 	s.WorkerDataDisks = v
 	return s
 }
@@ -8196,6 +8329,45 @@ func (s *ScaleOutClusterRequest) SetTaints(v []*Taint) *ScaleOutClusterRequest {
 
 func (s *ScaleOutClusterRequest) SetRuntime(v *Runtime) *ScaleOutClusterRequest {
 	s.Runtime = v
+	return s
+}
+
+type ScaleOutClusterRequestWorkerDataDisks struct {
+	// 数据盘类型,默认值：cloud_efficiency
+	Category *string `json:"category,omitempty" xml:"category,omitempty"`
+	// 数据盘大小，单位为GiB。  取值范围：[40,32768]
+	Size *string `json:"size,omitempty" xml:"size,omitempty"`
+	// 是否对数据盘加密
+	Encrypted *string `json:"encrypted,omitempty" xml:"encrypted,omitempty"`
+	// 自动快照策略ID，云盘会按照快照策略自动备份。
+	AutoSnapshotPolicyId *string `json:"auto_snapshot_policy_id,omitempty" xml:"auto_snapshot_policy_id,omitempty"`
+}
+
+func (s ScaleOutClusterRequestWorkerDataDisks) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ScaleOutClusterRequestWorkerDataDisks) GoString() string {
+	return s.String()
+}
+
+func (s *ScaleOutClusterRequestWorkerDataDisks) SetCategory(v string) *ScaleOutClusterRequestWorkerDataDisks {
+	s.Category = &v
+	return s
+}
+
+func (s *ScaleOutClusterRequestWorkerDataDisks) SetSize(v string) *ScaleOutClusterRequestWorkerDataDisks {
+	s.Size = &v
+	return s
+}
+
+func (s *ScaleOutClusterRequestWorkerDataDisks) SetEncrypted(v string) *ScaleOutClusterRequestWorkerDataDisks {
+	s.Encrypted = &v
+	return s
+}
+
+func (s *ScaleOutClusterRequestWorkerDataDisks) SetAutoSnapshotPolicyId(v string) *ScaleOutClusterRequestWorkerDataDisks {
+	s.AutoSnapshotPolicyId = &v
 	return s
 }
 
@@ -9834,6 +10006,10 @@ func (client *Client) DescribeClusterUserKubeconfigWithOptions(ClusterId *string
 		query["PrivateIpAddress"] = request.PrivateIpAddress
 	}
 
+	if !tea.BoolValue(util.IsUnset(request.TemporaryDurationMinutes)) {
+		query["TemporaryDurationMinutes"] = request.TemporaryDurationMinutes
+	}
+
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
 		Query:   openapiutil.Query(query),
@@ -10011,6 +10187,57 @@ func (client *Client) DescribeAddonsWithOptions(request *DescribeAddonsRequest, 
 	}
 	_result = &DescribeAddonsResponse{}
 	_body, _err := client.DoROARequest(tea.String("DescribeAddons"), tea.String("2015-12-15"), tea.String("HTTPS"), tea.String("GET"), tea.String("AK"), tea.String("/clusters/components/metadata"), tea.String("json"), req, runtime)
+	if _err != nil {
+		return _result, _err
+	}
+	_err = tea.Convert(_body, &_result)
+	return _result, _err
+}
+
+func (client *Client) CreateAutoscalingConfig(ClusterId *string, request *CreateAutoscalingConfigRequest) (_result *CreateAutoscalingConfigResponse, _err error) {
+	runtime := &util.RuntimeOptions{}
+	headers := make(map[string]*string)
+	_result = &CreateAutoscalingConfigResponse{}
+	_body, _err := client.CreateAutoscalingConfigWithOptions(ClusterId, request, headers, runtime)
+	if _err != nil {
+		return _result, _err
+	}
+	_result = _body
+	return _result, _err
+}
+
+func (client *Client) CreateAutoscalingConfigWithOptions(ClusterId *string, request *CreateAutoscalingConfigRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CreateAutoscalingConfigResponse, _err error) {
+	_err = util.ValidateModel(request)
+	if _err != nil {
+		return _result, _err
+	}
+	body := map[string]interface{}{}
+	if !tea.BoolValue(util.IsUnset(request.CoolDownDuration)) {
+		body["cool_down_duration"] = request.CoolDownDuration
+	}
+
+	if !tea.BoolValue(util.IsUnset(request.UnneededDuration)) {
+		body["unneeded_duration"] = request.UnneededDuration
+	}
+
+	if !tea.BoolValue(util.IsUnset(request.UtilizationThreshold)) {
+		body["utilization_threshold"] = request.UtilizationThreshold
+	}
+
+	if !tea.BoolValue(util.IsUnset(request.GpuUtilizationThreshold)) {
+		body["gpu_utilization_threshold"] = request.GpuUtilizationThreshold
+	}
+
+	if !tea.BoolValue(util.IsUnset(request.ScanInterval)) {
+		body["scan_interval"] = request.ScanInterval
+	}
+
+	req := &openapi.OpenApiRequest{
+		Headers: headers,
+		Body:    openapiutil.ParseToMap(body),
+	}
+	_result = &CreateAutoscalingConfigResponse{}
+	_body, _err := client.DoROARequest(tea.String("CreateAutoscalingConfig"), tea.String("2015-12-15"), tea.String("HTTPS"), tea.String("POST"), tea.String("AK"), tea.String("/cluster/"+tea.StringValue(ClusterId)+"/autoscale/config/"), tea.String("none"), req, runtime)
 	if _err != nil {
 		return _result, _err
 	}
