@@ -126,7 +126,7 @@ func resourceAliyunDatahubTopicCreate(d *schema.ResourceData, meta interface{}) 
 
 	raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
 		requestInfo = dataHubClient.(*datahub.DataHub)
-		return dataHubClient.CreateTopicWithPara(t.ProjectName,t.TopicName,&datahub.CreateTopicParameter{
+		return dataHubClient.CreateTopicWithPara(t.ProjectName, t.TopicName, &datahub.CreateTopicParameter{
 			ShardCount:   t.ShardCount,
 			LifeCycle:    t.LifeCycle,
 			Comment:      t.Comment,
@@ -166,8 +166,8 @@ func resourceAliyunDatahubTopicRead(d *schema.ResourceData, meta interface{}) er
 	if object.RecordSchema != nil {
 		d.Set("record_schema", recordSchemaToMap(object.RecordSchema.Fields))
 	}
-	d.Set("create_time", strconv.FormatInt(object.CreateTime,10))
-	d.Set("last_modify_time", strconv.FormatInt(object.LastModifyTime,10))
+	d.Set("create_time", strconv.FormatInt(object.CreateTime, 10))
+	d.Set("last_modify_time", strconv.FormatInt(object.LastModifyTime, 10))
 	return nil
 }
 

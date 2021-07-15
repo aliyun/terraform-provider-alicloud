@@ -55,8 +55,8 @@ func (s *DatahubService) WaitForDatahubProject(id string, status Status, timeout
 		}
 
 		if time.Now().After(deadline) {
-			objstringfy,err := convertArrayObjectToJsonString(object)
-			if err != nil{
+			objstringfy, err := convertArrayObjectToJsonString(object)
+			if err != nil {
 				return WrapError(err)
 			}
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, objstringfy, id, ProviderERROR)

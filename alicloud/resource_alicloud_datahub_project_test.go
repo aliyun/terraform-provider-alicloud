@@ -65,7 +65,7 @@ func testSweepDatahubProject(region string) error {
 
 			// List subscriptions
 			raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
-				return dataHubClient.ListSubscription(projectName, topicName,1,100)
+				return dataHubClient.ListSubscription(projectName, topicName, 1, 100)
 			})
 
 			if err != nil {
