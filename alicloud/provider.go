@@ -454,6 +454,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ssl_certificates_service_certificates":       dataSourceAlicloudSslCertificatesServiceCertificates(),
 			"alicloud_arms_alert_contacts":                         dataSourceAlicloudArmsAlertContacts(),
 			"alicloud_event_bridge_rules":                          dataSourceAlicloudEventBridgeRules(),
+			"alicloud_cloud_firewall_control_policies":             dataSourceAlicloudCloudFirewallControlPolicies(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -807,7 +808,6 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_vault":                                  resourceAlicloudHbrVault(),
 			"alicloud_ssl_certificates_service_certificate":       resourceAlicloudSslCertificatesServiceCertificate(),
 			"alicloud_arms_alert_contact":                         resourceAlicloudArmsAlertContact(),
-			"alicloud_event_bridge_rule":                          resourceAlicloudEventBridgeRule(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -966,9 +966,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EventbridgeEndpoint = strings.TrimSpace(endpoints["eventbridge"].(string))
 		config.OnsproxyEndpoint = strings.TrimSpace(endpoints["onsproxy"].(string))
 		config.CdsEndpoint = strings.TrimSpace(endpoints["cds"].(string))
-
 		config.HbrEndpoint = strings.TrimSpace(endpoints["hbr"].(string))
 		config.ArmsEndpoint = strings.TrimSpace(endpoints["arms"].(string))
+
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1195,6 +1195,7 @@ func init() {
 		"hbr_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom hbr endpoints.",
 
 		"arms_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom arms endpoints.",
+
 	}
 }
 
@@ -1764,6 +1765,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cds"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["hbr"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["arms"].(string)))
+
 	return hashcode.String(buf.String())
 }
 
