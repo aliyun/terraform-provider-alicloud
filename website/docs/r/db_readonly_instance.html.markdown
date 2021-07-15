@@ -77,6 +77,25 @@ The following arguments are supported:
 * `tags` - (Optional, Available in 1.68.0+) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+* `upgrade_db_instance_kernel_version` - (Optional, Available in 1.128.0+) Whether to upgrade a minor version of the kernel. Valid values:
+  - true: upgrade
+  - false: not to upgrade
+* `upgrade_time` - (Optional, Available in 1.128.0+) The method to update the minor engine version. Default value: Immediate. It is valid only when `upgrade_db_instance_kernel_version = true`. Valid values:
+  - Immediate: The minor engine version is immediately updated.
+  - MaintainTime: The minor engine version is updated during the maintenance window. For more information about how to change the maintenance window, see ModifyDBInstanceMaintainTime.
+  - SpecifyTime: The minor engine version is updated at the point in time you specify.
+* `switch_time` - (Optional, Available in 1.128.0+) The specific point in time when you want to perform the update. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. It is valid only when `upgrade_db_instance_kernel_version = true`. The time must be in UTC.
+
+-> **NOTE:** This parameter takes effect only when you set the UpgradeTime parameter to SpecifyTime.
+* `target_minor_version` - (Optional, Available in 1.128.0+) The minor engine version to which you want to update the instance. If you do not specify this parameter, the instance is updated to the latest minor engine version. It is valid only when `upgrade_db_instance_kernel_version = true`. You must specify the minor engine version in one of the following formats:
+  - PostgreSQL: rds_postgres_<Major engine version>00_<Minor engine version>. Example: rds_postgres_1200_20200830.
+  - MySQL: <RDS edition>_<Minor engine version>. Examples: rds_20200229, xcluster_20200229, and xcluster80_20200229. The following RDS editions are supported:
+    - rds: The instance runs RDS Basic or High-availability Edition.
+    - xcluster: The instance runs MySQL 5.7 on RDS Enterprise Edition.
+    - xcluster80: The instance runs MySQL 8.0 on RDS Enterprise Edition.
+  - SQLServer: <Minor engine version>. Example: 15.0.4073.23.
+  
+-> **NOTE:** For more information about minor engine versions, see Release notes of minor AliPG versions, Release notes of minor AliSQL versions, and Release notes of minor engine versions of ApsaraDB RDS for SQL Server.
 * `ssl_enabled` - (Optional, Available in v1.124.4+) Specifies whether to enable or disable SSL encryption. Valid values:
   - 1: enables SSL encryption
   - 0: disables SSL encryption
