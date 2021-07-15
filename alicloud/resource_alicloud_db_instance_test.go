@@ -1090,6 +1090,32 @@ func TestAccAlicloudDBInstancePostgreSQLSSL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action":      "Open",
+						"ca_type":         "aliyun",
+						"acl":             "perfer",
+						"replication_acl": "perfer",
+						"server_cert":     CHECKSET,
+						"server_key":      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Close",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action": "Close",
+						"ca_type":    "",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"engine":                      "PostgreSQL",
 					"engine_version":              "13.0",
 					"instance_type":               "pg.n2.small.1",
