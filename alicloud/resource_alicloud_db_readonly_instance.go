@@ -175,6 +175,27 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Computed:         true,
 				DiffSuppressFunc: sslEnabledDiffSuppressFunc,
 			},
+			"upgrade_db_instance_kernel_version": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"upgrade_time": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"Immediate", "MaintainTime", "SpecifyTime"}, false),
+				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
+			},
+			"switch_time": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
+			},
+			"target_minor_version": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
+				Computed:         true,
+			},
 		},
 	}
 }
@@ -438,6 +459,51 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		}
 	}
 
+	if d.HasChange("upgrade_db_instance_kernel_version") {
+		action := "UpgradeDBInstanceKernelVersion"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+			"SourceIp":     client.SourceIp,
+		}
+		if v, ok := d.GetOk("upgrade_time"); ok && v.(string) != "" {
+			request["UpgradeTime"] = v
+		}
+		if v, ok := d.GetOk("switch_time"); ok && v.(string) != "" {
+			request["SwitchTime"] = v
+		}
+		if v, ok := d.GetOk("target_minor_version"); ok && v.(string) != "" {
+			request["TargetMinorVersion"] = v
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("target_minor_version")
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	d.Partial(false)
 	return resourceAlicloudDBReadonlyInstanceRead(d, meta)
 }
@@ -466,6 +532,7 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("connection_string", instance["ConnectionString"])
 	d.Set("instance_name", instance["DBInstanceDescription"])
 	d.Set("resource_group_id", instance["ResourceGroupId"])
+	d.Set("target_minor_version", instance["CurrentKernelVersion"])
 
 	sslAction, err := rdsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
