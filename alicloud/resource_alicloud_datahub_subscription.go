@@ -119,8 +119,8 @@ func resourceAliyunDatahubSubscriptionRead(d *schema.ResourceData, meta interfac
 	d.Set("topic_name", object.TopicName)
 	d.Set("sub_id", object.SubId)
 	d.Set("comment", object.Comment)
-	d.Set("create_time", strconv.FormatInt(object.CreateTime,10))
-	d.Set("last_modify_time",strconv.FormatInt(object.LastModifyTime,10))
+	d.Set("create_time", strconv.FormatInt(object.CreateTime, 10))
+	d.Set("last_modify_time", strconv.FormatInt(object.LastModifyTime, 10))
 	return nil
 }
 
