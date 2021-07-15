@@ -117,6 +117,7 @@ type Config struct {
 	DmEndpoint              string
 	EventbridgeEndpoint     string
 	OnsproxyEndpoint        string
+	CdsEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {
