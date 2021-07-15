@@ -110,7 +110,6 @@ func resourceAlicloudCSAutoscalingConfigUpdate(d *schema.ResourceData, meta inte
 	}
 
 	addDebug("CreateAutoscalingConfig", updateAutoscalingConfigRequest, err)
-	//d.SetId(dataResourceIdHash([]string{clusterId}))
 	d.SetId(clusterId)
 	d.Partial(false)
 
