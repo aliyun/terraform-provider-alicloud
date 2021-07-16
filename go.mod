@@ -2,7 +2,6 @@ module github.com/aliyun/terraform-provider-alicloud
 
 require (
 	github.com/PaesslerAG/jsonpath v0.1.1
-	github.com/Sirupsen/logrus v0.0.0-20181010200618-458213699411 // indirect
 	github.com/alibabacloud-go/cs-20151215/v2 v2.4.4
 	github.com/alibabacloud-go/darabonba-openapi v0.1.5
 	github.com/alibabacloud-go/tea v1.1.15

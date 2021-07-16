@@ -1,27 +1,28 @@
-## 1.127.0 (Unreleased)
+## 1.128.0 (Unreleased)
+## 1.127.0 (July 16, 2021)
 
-- **New Resource:** `alicloud_cs_autoscaling_config` [GH-3734]
-- **New Resource:** `alicloud_gpdb_elastic_instance` [GH-3727]
-- **New Resource:** `alicloud_amqp_queue` [GH-3720]
-- **New Data Source:** `alicloud_amqp_queues` [GH-3720]
+- **New Resource:** `alicloud_cs_autoscaling_config` ([#3734](https://github.com/aliyun/terraform-provider-alicloud/issues/3734))
+- **New Resource:** `alicloud_gpdb_elastic_instance` ([#3727](https://github.com/aliyun/terraform-provider-alicloud/issues/3727))
+- **New Resource:** `alicloud_amqp_queue` ([#3720](https://github.com/aliyun/terraform-provider-alicloud/issues/3720))
+- **New Data Source:** `alicloud_amqp_queues` ([#3720](https://github.com/aliyun/terraform-provider-alicloud/issues/3720))
 
 ENHANCEMENTS:
 
-- resource/alicloud_cs_kubernetes_node_pool: Adds new attributes platform, scaling_policy, instances, keep_instance_name and format_disk [GH-3734]
-- client/bssopenapiClient: Improves the bss openapi endpoint to avoid the NotApplicable error; Fixes the alidns_instance setting domain_numbers failed issue [GH-3713]
-- resource/alicloud_datahub_project: Upgrades it dependence sdk [GH-3723]
-- resource/alicloud_datahub_project: Improves its dependece [GH-3725]
-- Reset the resource event_bus and schema_group and its datasource [GH-3721]
-- provider: Sets the max idle conns to 500 in the client; Adds docs unit statement for the provider attribute client_read_timeout and client_connect_timeout [GH-3728]
-- ci: Upgrades the ci go version to 1.15.10 [GH-3732]
-- docs: Improves the docs parsing subcategory faild error [GH-3722]
-- docs/alicloud_db_instance: Improves its docs by adding a blank line to fix it error formate [GH-3730]
+- resource/alicloud_cs_kubernetes_node_pool: Adds new attributes platform, scaling_policy, instances, keep_instance_name and format_disk ([#3734](https://github.com/aliyun/terraform-provider-alicloud/issues/3734))
+- client/bssopenapiClient: Improves the bss openapi endpoint to avoid the NotApplicable error; Fixes the alidns_instance setting domain_numbers failed issue ([#3713](https://github.com/aliyun/terraform-provider-alicloud/issues/3713))
+- resource/alicloud_datahub_project: Upgrades it dependence sdk ([#3723](https://github.com/aliyun/terraform-provider-alicloud/issues/3723))
+- resource/alicloud_datahub_project: Improves its dependece ([#3725](https://github.com/aliyun/terraform-provider-alicloud/issues/3725))
+- Reset the resource event_bus and schema_group and its datasource ([#3721](https://github.com/aliyun/terraform-provider-alicloud/issues/3721))
+- provider: Sets the max idle conns to 500 in the client; Adds docs unit statement for the provider attribute client_read_timeout and client_connect_timeout ([#3728](https://github.com/aliyun/terraform-provider-alicloud/issues/3728))
+- ci: Upgrades the ci go version to 1.15.10 ([#3732](https://github.com/aliyun/terraform-provider-alicloud/issues/3732))
+- docs: Improves the docs parsing subcategory faild error ([#3722](https://github.com/aliyun/terraform-provider-alicloud/issues/3722))
+- docs/alicloud_db_instance: Improves its docs by adding a blank line to fix it error formate ([#3730](https://github.com/aliyun/terraform-provider-alicloud/issues/3730))
 
 BUG FIXES:
 
-- resource/alicloud_slb_listener: Fixes the default parameter when updating the specified parameter with SetLoadBalancerHTTPSListenerAttribute Method [GH-3735]
-- resource/alicloud_db_readonly_instance and alicloud_db_instance: Fixes the diff error caused by ca_type, acl, and replication_acl [GH-3731]
-- testcase: Fixed cen ci test. [GH-3719]
+- resource/alicloud_slb_listener: Fixes the default parameter when updating the specified parameter with SetLoadBalancerHTTPSListenerAttribute Method ([#3735](https://github.com/aliyun/terraform-provider-alicloud/issues/3735))
+- resource/alicloud_db_readonly_instance and alicloud_db_instance: Fixes the diff error caused by ca_type, acl, and replication_acl ([#3731](https://github.com/aliyun/terraform-provider-alicloud/issues/3731))
+- testcase: Fixed cen ci test. ([#3719](https://github.com/aliyun/terraform-provider-alicloud/issues/3719))
 
 ## 1.126.0 (July 12, 2021)
 
