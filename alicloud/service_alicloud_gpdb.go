@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 type GpdbService struct {
@@ -43,6 +43,51 @@ func (s *GpdbService) DescribeGpdbInstance(id string) (instanceAttribute gpdb.DB
 	}
 
 	return response.Items.DBInstanceAttribute[0], nil
+}
+
+func (s *GpdbService) DescribeGpdbElasticInstance(id string) (map[string]interface{}, error) {
+	conn, err := s.client.NewGpdbClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDBInstanceOnECSAttribute"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": id,
+		"SourceIp":     s.client.SourceIp,
+	}
+	var response map[string]interface{}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound", ServiceUnavailable}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Items.DBInstanceAttribute", response)
+	if err != nil {
+		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("Gpdb elastic instance", id)), NotFoundMsg, ProviderERROR)
+	}
+	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
 func (s *GpdbService) DescribeGpdbSecurityIps(id string) (ips []string, err error) {
@@ -152,6 +197,26 @@ func (s *GpdbService) GpdbInstanceStateRefreshFunc(id string, failStates []strin
 			}
 		}
 		return object, object.DBInstanceStatus, nil
+	}
+}
+
+func (s *GpdbService) GpdbElasticInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		instance, err := s.DescribeGpdbElasticInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if instance["DBInstanceStatus"] == failState {
+				return instance, instance["DBInstanceStatus"].(string), WrapError(Error(FailedToReachTargetStatus, instance["DBInstanceStatus"]))
+			}
+		}
+		return instance, instance["DBInstanceStatus"].(string), nil
 	}
 }
 
