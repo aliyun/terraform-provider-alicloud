@@ -69,7 +69,6 @@ func resourceAlicloudCSAutoscalingConfigCreate(d *schema.ResourceData, meta inte
 }
 
 func resourceAlicloudCSAutoscalingConfigRead(d *schema.ResourceData, meta interface{}) error {
-	d.Set("id", d.Id())
 	return nil
 }
 

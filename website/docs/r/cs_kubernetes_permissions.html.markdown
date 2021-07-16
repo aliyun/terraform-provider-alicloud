@@ -131,6 +131,9 @@ resource "alicloud_cs_kubernetes_permissions" "default" {
   #    is_custom   = false
   #    is_ram_role = false
   #  }
+  depends_on = [
+    alicloud_ram_user_policy_attachment.attach
+  ]
 }
 ```
 If you already have users and clusters, to complete RBAC authorization, you only need to run the following code to use Terraform. 
@@ -187,6 +190,9 @@ resource "alicloud_cs_kubernetes_permissions" "default" {
     is_ram_role = false
     namespace =  ""
   }
+  depends_on = [
+    alicloud_ram_user_policy_attachment.attach
+  ]
 }
 ```
 ### Remove user permissions
