@@ -1,12 +1,13 @@
 ## 1.126.0 (Unreleased)
 
-- **New Resource:** `alicloud_amqp_virtual_host` [GH-3714]
+- **New Resource:** `alicloud_cs_autoscaling_config` [GH-3734]
+- **New Resource:** `alicloud_gpdb_elastic_instance` [GH-3727]
 - **New Resource:** `alicloud_amqp_queue` [GH-3720]
-- **New Data Source:** `alicloud_amqp_virtual_hosts` [GH-3714]
 - **New Data Source:** `alicloud_amqp_queues` [GH-3720]
 
 ENHANCEMENTS:
 
+- resource/alicloud_cs_kubernetes_node_pool: Adds new attributes platform, scaling_policy, instances, keep_instance_name and format_disk [GH-3734]
 - client/bssopenapiClient: Improves the bss openapi endpoint to avoid the NotApplicable error; Fixes the alidns_instance setting domain_numbers failed issue [GH-3713]
 - resource/alicloud_mongodb_sharding_instance: The attribute shard_list supports to set readonly_replica [GH-3718]
 - resource/alicloud_datahub_project: Upgrades it dependence sdk [GH-3723]
@@ -17,8 +18,10 @@ ENHANCEMENTS:
 - docs: Improves the docs parsing subcategory faild error [GH-3722]
 - docs/alicloud_db_instance: Improves its docs by adding a blank line to fix it error formate [GH-3730]
 
-BUG FIXES:BUG FIXES:
+BUG FIXES:
 
+- resource/alicloud_slb_listener: Fixes the default parameter when updating the specified parameter with SetLoadBalancerHTTPSListenerAttribute Method [GH-3735]
+- resource/alicloud_db_readonly_instance and alicloud_db_instance: Fixes the diff error caused by ca_type, acl, and replication_acl [GH-3731]
 - resource/alicloud_mongodb_instance: Fixes the ProxyError issue when invoking the DescribeMongoDBTDEInfo API [GH-3715]
 - resource/alicloud_mongodb_instance: Fixes the ProxyError issue when invoking the DescribeMongoDBTDEInfo API [GH-3716]
 - resource/alicloud_mongodb_instance: Fixes the setting replication_factor failed error [GH-3717]
