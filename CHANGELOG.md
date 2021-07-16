@@ -1,4 +1,4 @@
-## 1.126.0 (Unreleased)
+## 1.127.0 (Unreleased)
 
 - **New Resource:** `alicloud_cs_autoscaling_config` [GH-3734]
 - **New Resource:** `alicloud_gpdb_elastic_instance` [GH-3727]
