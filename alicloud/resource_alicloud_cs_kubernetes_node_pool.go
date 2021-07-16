@@ -112,9 +112,10 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				DiffSuppressFunc: csNodepoolDiskPerformanceLevelDiffSuppressFunc,
 			},
 			"platform": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"AliyunLinux", "Windows", "CentOS", "WindowsCore"}, false),
 			},
 			"image_id": {
 				Type:     schema.TypeString,

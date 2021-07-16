@@ -151,16 +151,17 @@ func TestAccAlicloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                 name,
-					"cluster_id":           "${alicloud_cs_managed_kubernetes.default.0.id}",
-					"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
-					"instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"key_name":             "${alicloud_key_pair.default.key_name}",
-					"system_disk_category": "cloud_efficiency",
-					"system_disk_size":     "40",
-					"platform":             "AliyunLinux",
-					"scaling_policy":       "release",
-					"scaling_config":       []map[string]string{{"min_size": "1", "max_size": "10", "type": "cpu", "is_bond_eip": "true", "eip_internet_charge_type": "PayByBandwidth", "eip_bandwidth": "5"}},
+					"name":                  name,
+					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
+					"vswitch_ids":           []string{"${alicloud_vswitch.default.id}"},
+					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"key_name":              "${alicloud_key_pair.default.key_name}",
+					"system_disk_category":  "cloud_efficiency",
+					"system_disk_size":      "40",
+					"install_cloud_monitor": "false",
+					"platform":              "AliyunLinux",
+					"scaling_policy":        "release",
+					"scaling_config":        []map[string]string{{"min_size": "1", "max_size": "10", "type": "cpu", "is_bond_eip": "true", "eip_internet_charge_type": "PayByBandwidth", "eip_bandwidth": "5"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -171,6 +172,7 @@ func TestAccAlicloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 						"key_name":                     CHECKSET,
 						"system_disk_category":         "cloud_efficiency",
 						"system_disk_size":             "40",
+						"install_cloud_monitor":        "false",
 						"platform":                     "AliyunLinux",
 						"scaling_policy":               "release",
 						"scaling_config.#":             "1",
