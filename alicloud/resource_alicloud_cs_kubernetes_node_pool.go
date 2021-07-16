@@ -393,7 +393,6 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				MinItems:      1,
 				MaxItems:      100,
 				ConflictsWith: []string{"node_count", "scaling_config"},
 			},
@@ -650,7 +649,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if v, ok := d.GetOk("platform"); ok {
-		args.ScalingPolicy = v.(string)
+		args.Platform = v.(string)
 	}
 
 	if d.HasChange("scaling_policy") {
@@ -1303,6 +1302,9 @@ func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []str
 		var attachNodeList []string
 		if oldNodes != nil && newNodes != nil {
 			attachNodeList = difference(expandStringList(oldNodes), expandStringList(newNodes))
+		}
+		if len(newNodes) == 0 {
+			attachNodeList = expandStringList(oldNodes)
 		}
 		for _, v := range ret {
 			for _, name := range attachNodeList {

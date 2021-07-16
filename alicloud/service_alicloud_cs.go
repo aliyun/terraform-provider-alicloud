@@ -662,11 +662,11 @@ func (s *CsClient) DescribeUserPermission(uid string) ([]*client.DescribeUserPer
 func (s *CsClient) DescribeCsAutoscalingConfig(id string) (*client.CreateAutoscalingConfigRequest, error) {
 
 	request := &client.CreateAutoscalingConfigRequest{
-		CoolDownDuration: tea.String("10m"),
-		UnneededDuration: tea.String("10m"),
-		UtilizationThreshold: tea.String("0.5"),
+		CoolDownDuration:        tea.String("10m"),
+		UnneededDuration:        tea.String("10m"),
+		UtilizationThreshold:    tea.String("0.5"),
 		GpuUtilizationThreshold: tea.String("0.5"),
-		ScanInterval: tea.String("30s"),
+		ScanInterval:            tea.String("30s"),
 	}
 
 	return request, nil
