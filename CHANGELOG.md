@@ -1,4 +1,29 @@
-## 1.127.0 (Unreleased)
+## 1.126.0 (Unreleased)
+
+- **New Resource:** `alicloud_amqp_virtual_host` [GH-3714]
+- **New Resource:** `alicloud_amqp_queue` [GH-3720]
+- **New Data Source:** `alicloud_amqp_virtual_hosts` [GH-3714]
+- **New Data Source:** `alicloud_amqp_queues` [GH-3720]
+
+ENHANCEMENTS:
+
+- client/bssopenapiClient: Improves the bss openapi endpoint to avoid the NotApplicable error; Fixes the alidns_instance setting domain_numbers failed issue [GH-3713]
+- resource/alicloud_mongodb_sharding_instance: The attribute shard_list supports to set readonly_replica [GH-3718]
+- resource/alicloud_datahub_project: Upgrades it dependence sdk [GH-3723]
+- resource/alicloud_datahub_project: Improves its dependece [GH-3725]
+- Reset the resource event_bus and schema_group and its datasource [GH-3721]
+- provider: Sets the max idle conns to 500 in the client; Adds docs unit statement for the provider attribute client_read_timeout and client_connect_timeout [GH-3728]
+- ci: Upgrades the ci go version to 1.15.10 [GH-3732]
+- docs: Improves the docs parsing subcategory faild error [GH-3722]
+- docs/alicloud_db_instance: Improves its docs by adding a blank line to fix it error formate [GH-3730]
+
+BUG FIXES:BUG FIXES:
+
+- resource/alicloud_mongodb_instance: Fixes the ProxyError issue when invoking the DescribeMongoDBTDEInfo API [GH-3715]
+- resource/alicloud_mongodb_instance: Fixes the ProxyError issue when invoking the DescribeMongoDBTDEInfo API [GH-3716]
+- resource/alicloud_mongodb_instance: Fixes the setting replication_factor failed error [GH-3717]
+- testcase: Fixed cen ci test. [GH-3719]
+
 ## 1.126.0 (July 12, 2021)
 
 - **New Resource:** `alicloud_amqp_virtual_host` ([#3714](https://github.com/aliyun/terraform-provider-alicloud/issues/3714))
