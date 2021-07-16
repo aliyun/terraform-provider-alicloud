@@ -38,27 +38,27 @@ func resourceAlicloudCSAutoscalingConfig() *schema.Resource {
 			"cool_down_duration": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  String("10m"),
+				Default:  "10m",
 			},
 			"unneeded_duration": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  String("10m"),
+				Default:  "10m",
 			},
 			"utilization_threshold": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  String("0.5"),
+				Default:  "0.5",
 			},
 			"gpu_utilization_threshold": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  String("0.5"),
+				Default:  "0.5",
 			},
 			"scan_interval": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  String("30s"),
+				Default:  "30s",
 			},
 		},
 	}
