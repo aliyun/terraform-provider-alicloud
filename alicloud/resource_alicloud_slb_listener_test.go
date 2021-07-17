@@ -420,7 +420,7 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 					"cookie":                    "testslblistenercookie",
 					"health_check":              "on",
 					"health_check_uri":          "/cons",
-					"health_check_domain": "internal-health-check",
+					"health_check_domain":       "internal-health-check",
 					"health_check_connect_port": "20",
 					"healthy_threshold":         "8",
 					"unhealthy_threshold":       "8",
@@ -457,7 +457,7 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 						"cookie_timeout":            "86400",
 						"health_check":              "on",
 						"health_check_connect_port": "20",
-						"health_check_domain": "internal-health-check",
+						"health_check_domain":       "internal-health-check",
 						"healthy_threshold":         "8",
 						"unhealthy_threshold":       "8",
 						"health_check_timeout":      "8",
@@ -640,7 +640,7 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"acl_status": "off",
+						"acl_status":          "off",
 						"health_check_domain": "internal-health-check",
 					}),
 				),
