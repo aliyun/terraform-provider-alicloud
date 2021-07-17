@@ -446,6 +446,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_event_bridge_schema_groups":                  dataSourceAlicloudEventBridgeSchemaGroups(),
 			"alicloud_amqp_virtual_hosts":                          dataSourceAlicloudAmqpVirtualHosts(),
 			"alicloud_amqp_queues":                                 dataSourceAlicloudAmqpQueues(),
+			"alicloud_amqp_exchanges":                              dataSourceAlicloudAmqpExchanges(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -793,6 +794,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_event_bridge_schema_group":                  resourceAlicloudEventBridgeSchemaGroup(),
 			"alicloud_amqp_virtual_host":                          resourceAlicloudAmqpVirtualHost(),
 			"alicloud_amqp_queue":                                 resourceAlicloudAmqpQueue(),
+			"alicloud_amqp_exchange":                              resourceAlicloudAmqpExchange(),
 		},
 
 		ConfigureFunc: providerConfigure,
