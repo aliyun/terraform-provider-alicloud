@@ -423,6 +423,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapError(err)
 	}
+
 	payType := PayType(d.Get("instance_charge_type").(string))
 	if !d.IsNewResource() && d.HasChange("instance_charge_type") && payType == Prepaid {
 		action := "ModifyDBInstancePayType"
@@ -727,62 +728,15 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if d.HasChanges("storage_auto_scale", "storage_threshold", "storage_upper_bound") {
-		fmt.Printf("add automatic expansion..........................")
-
-		action := "ModifyDasInstanceConfig"
-		request := map[string]interface{}{
-			"RegionId":     client.RegionId,
-			"DBInstanceId": d.Id(),
-			"SourceIp":     client.SourceIp,
-		}
-
-		if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) != "" {
-			request["StorageAutoScale"] = v
-		}
-		if v, ok := d.GetOk("storage_threshold"); ok {
-			request["StorageThreshold"] = v.(int)
-		}
-		if v, ok := d.GetOk("storage_upper_bound"); ok {
-			request["StorageUpperBound"] = v.(int)
-		}
-
-		var response map[string]interface{}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		addDebug(action, response, request)
-
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-		d.SetPartial("storage_auto_scale")
-		d.SetPartial("storage_threshold")
-		d.SetPartial("storage_upper_bound")
-		// wait instance status is running after modifying
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-	}
-
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudDBInstanceRead(d, meta)
 	}
+
+	//stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	//if _, err := stateConf.WaitForState(); err != nil {
+	//	return WrapErrorf(err, IdMsg, d.Id())
+	//}
 
 	if d.HasChange("instance_name") {
 		action := "ModifyDBInstanceDescription"
@@ -1082,8 +1036,54 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	//add automatic expansion
-	//if d.HasChange("storage_auto_scale") || d.HasChange("storage_threshold") || d.HasChange("storage_upper_bound"){
-	//if d.HasChange("storage_auto_scale") || d.Get("storage_auto_scale").(string) == "Enable"{
+	if d.HasChanges("storage_auto_scale", "storage_threshold", "storage_upper_bound") {
+		fmt.Println("ModifyDasInstanceConfig....................")
+		action := "ModifyDasInstanceConfig"
+		request := map[string]interface{}{
+			"DBInstanceId": d.Id(),
+		}
+
+		if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) != "" {
+			request["StorageAutoScale"] = v
+		}
+		if v, ok := d.GetOk("storage_threshold"); ok {
+			request["StorageThreshold"] = v.(int)
+		}
+		if v, ok := d.GetOk("storage_upper_bound"); ok {
+			request["StorageUpperBound"] = v.(int)
+		}
+
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("storage_auto_scale")
+		d.SetPartial("storage_threshold")
+		d.SetPartial("storage_upper_bound")
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
 
 	d.Partial(false)
 	return resourceAlicloudDBInstanceRead(d, meta)
@@ -1144,9 +1144,9 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
-	d.Set("storage_auto_scale", d.Get("storage_auto_scale"))
-	d.Set("storage_threshold", d.Get("storage_threshold"))
-	d.Set("storage_upper_bound", d.Get("storage_upper_bound"))
+	//d.Set("storage_auto_scale", d.Get("storage_auto_scale"))
+	//d.Set("storage_threshold", d.Get("storage_threshold"))
+	//d.Set("storage_upper_bound", d.Get("storage_upper_bound"))
 
 	d.Set("resource_group_id", instance["ResourceGroupId"])
 	d.Set("monitoring_period", monitoringPeriod)
@@ -1409,6 +1409,16 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		uuid = resource.UniqueId()
 	}
 	request["ClientToken"] = fmt.Sprintf("Terraform-Alicloud-%d-%s", time.Now().Unix(), uuid)
+
+	if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) != "" {
+		request["StorageAutoScale"] = v
+	}
+	if v, ok := d.GetOk("storage_threshold"); ok {
+		request["StorageThreshold"] = v.(int)
+	}
+	if v, ok := d.GetOk("storage_upper_bound"); ok {
+		request["StorageUpperBound"] = v.(int)
+	}
 
 	return request, nil
 }
