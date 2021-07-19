@@ -151,15 +151,17 @@ func TestAccAlicloudVSwitch_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":    "${data.alicloud_zones.default.zones.0.id}",
-					"vpc_id":     "${data.alicloud_vpcs.default.ids.0}",
-					"cidr_block": "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 4, 2)}",
+					"zone_id":         "${data.alicloud_zones.default.zones.0.id}",
+					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
+					"cidr_block":      "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 4, 2)}",
+					"ipv6_cidr_block": "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_id":    CHECKSET,
-						"vpc_id":     CHECKSET,
-						"cidr_block": CHECKSET,
+						"zone_id":         CHECKSET,
+						"vpc_id":          CHECKSET,
+						"cidr_block":      CHECKSET,
+						"ipv6_cidr_block": CHECKSET,
 					}),
 				),
 			},

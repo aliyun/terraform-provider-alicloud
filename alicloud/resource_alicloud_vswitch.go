@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudVswitch() *schema.Resource {
@@ -29,6 +30,13 @@ func resourceAlicloudVswitch() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"ipv6_cidr_block": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(0, 255),
+				Default:      0,
+				ForceNew:     true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -87,6 +95,9 @@ func resourceAlicloudVswitchCreate(d *schema.ResourceData, meta interface{}) err
 		return WrapError(err)
 	}
 	request["CidrBlock"] = d.Get("cidr_block")
+	if v, ok := d.GetOk("ipv6_cidr_block"); ok && v.(int) >= 0 {
+		request["Ipv6CidrBlock"] = v.(int)
+	}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -148,6 +159,7 @@ func resourceAlicloudVswitchRead(d *schema.ResourceData, meta interface{}) error
 		return WrapError(err)
 	}
 	d.Set("cidr_block", object["CidrBlock"])
+	d.Set("ipv6_cidr_block", object["Ipv6CidrBlock"])
 	d.Set("description", object["Description"])
 	d.Set("status", object["Status"])
 	d.Set("vswitch_name", object["VSwitchName"])
