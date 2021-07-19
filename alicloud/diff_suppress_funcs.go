@@ -663,3 +663,10 @@ func kernelVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) b
 	}
 	return true
 }
+
+func StorageAutoScaleDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("storage_auto_scale"); ok && strings.ToLower(v.(string)) == "enable" {
+		return false
+	}
+	return true
+}
