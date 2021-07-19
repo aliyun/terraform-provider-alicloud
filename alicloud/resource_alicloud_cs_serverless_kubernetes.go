@@ -89,7 +89,6 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Type:          schema.TypeBool,
 				Optional:      true,
 				ForceNew:      true,
-				Default:       false,
 				ConflictsWith: []string{"service_discovery_types"},
 				Deprecated:    "Field 'private_zone' has been deprecated from provider version 1.123.1. New field 'service_discovery_types' replace it.",
 			},
@@ -295,10 +294,9 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 	}
 
 	if v, ok := d.GetOkExists("private_zone"); ok {
+		args.ServiceDiscoveryTypes = []string{}
 		if v.(bool) == true {
 			args.ServiceDiscoveryTypes = []string{"PrivateZone"}
-		} else {
-			args.ServiceDiscoveryTypes = []string{}
 		}
 	}
 
