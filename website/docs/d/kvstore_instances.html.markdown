@@ -93,5 +93,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `create_time` - Creation time of the instance.
   * `user_name` - The username of the instance.
   * `connection_domain` - Instance connection domain (only Intranet access supported).
-    
+  * `backup_period`- (Available in 1.127.0) Backup period. 
+  
     
