@@ -28,9 +28,9 @@ func resourceAlicloudCassandraBackupPlan() *schema.Resource {
 				Optional: true,
 			},
 			"backup_period": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"backup_time": {
 				Type:     schema.TypeString,
