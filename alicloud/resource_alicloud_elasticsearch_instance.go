@@ -92,23 +92,23 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			// Data node configuration
 			"data_node_amount": {
 				Type:         schema.TypeInt,
-				Required:     true,
+				Optional:     true,
 				ValidateFunc: validation.IntBetween(2, 50),
 			},
 
 			"data_node_spec": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 
 			"data_node_disk_size": {
 				Type:     schema.TypeInt,
-				Required: true,
+				Optional: true,
 			},
 
 			"data_node_disk_type": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 
 			"data_node_disk_encrypted": {
@@ -116,6 +116,11 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Default:  false,
+			},
+			"data_node_disk_performance_level": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PL1", "PL2", "PL3"}, true),
 			},
 
 			"private_whitelist": {
@@ -143,6 +148,32 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"master_node_disk_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"cloud_essd", "cloud_ssd"}, true),
+			},
+
+			"warm_data_node_amount": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(2, 50),
+			},
+			"warm_data_node_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"warm_data_node_disk_size": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(500, 20480),
+			},
+			"warm_data_node_disk_encrypted": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  false,
+			},
 
 			// Client node configuration
 			"client_node_amount": {
@@ -154,6 +185,14 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"client_node_spec": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+
+			//Kibana node configuration
+			"kibana_node_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+				// This spec is for free
+				Default: "elasticsearch.n4.small",
 			},
 
 			"protocol": {
@@ -235,6 +274,18 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"cpfs_shared_disk": {
+				Type:         schema.TypeInt,
+				ForceNew:     true,
+				Optional:     true,
+				ValidateFunc: validation.IntInSlice([]int{2048, 5120, 10240, 20480, 30720, 40960, 51200, 61440, 71680, 81920, 92160, 102400}),
+			},
+			"instance_category": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "x-pack",
+				ValidateFunc: validation.StringInSlice([]string{"x-pack", "advanced", "IS"}, false),
+			},
 		},
 	}
 }
@@ -312,6 +363,7 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	d.Set("enable_public", object["enablePublic"])
 	d.Set("version", object["esVersion"])
 	d.Set("instance_charge_type", getChargeType(object["paymentType"].(string)))
+	d.Set("instance_category", object["instanceCategory"].(string))
 
 	d.Set("domain", object["domain"])
 	d.Set("port", object["port"])
@@ -328,6 +380,7 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	d.Set("enable_kibana_private_network", object["enableKibanaPrivateNetwork"])
 	kibanaPrivateIPWhitelist := object["kibanaPrivateIPWhitelist"].([]interface{})
 	d.Set("kibana_private_whitelist", filterWhitelist(convertArrayInterfaceToArrayString(kibanaPrivateIPWhitelist), d.Get("kibana_private_whitelist").(*schema.Set)))
+	d.Set("kibana_node_spec", object["kibanaConfiguration"].(map[string]interface{})["spec"])
 
 	// Data node configuration
 	d.Set("data_node_amount", object["nodeAmount"])
@@ -335,12 +388,32 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	d.Set("data_node_disk_size", object["nodeSpec"].(map[string]interface{})["disk"])
 	d.Set("data_node_disk_type", object["nodeSpec"].(map[string]interface{})["diskType"])
 	d.Set("data_node_disk_encrypted", object["nodeSpec"].(map[string]interface{})["diskEncryption"])
+	d.Set("data_node_disk_performance_level", object["nodeSpec"].(map[string]interface{})["performanceLevel"])
+
+	//Master node configuration
 	d.Set("master_node_spec", object["masterConfiguration"].(map[string]interface{})["spec"])
+	d.Set("master_node_disk_type", object["masterConfiguration"].(map[string]interface{})["diskType"])
+
 	// Client node configuration
 	d.Set("client_node_amount", object["clientNodeConfiguration"].(map[string]interface{})["amount"])
 	d.Set("client_node_spec", object["clientNodeConfiguration"].(map[string]interface{})["spec"])
+
+	// Warm data node configuration
+	d.Set("warm_data_node_spec", object["warmNodeConfiguration"].(map[string]interface{})["spec"])
+	d.Set("warm_data_node_amount", object["warmNodeConfiguration"].(map[string]interface{})["amount"])
+	d.Set("warm_data_node_disk_size", object["warmNodeConfiguration"].(map[string]interface{})["disk"])
+	d.Set("warm_data_node_disk_encrypted", object["warmNodeConfiguration"].(map[string]interface{})["diskEncryption"])
 	// Protocol: HTTP/HTTPS
 	d.Set("protocol", object["protocol"])
+
+	extendConfigs := object["extendConfigs"].([]interface{})
+	for _, item := range extendConfigs {
+		v := item.(map[string]interface{})
+		// set cpfs disk
+		if v["configType"] != nil && v["configType"] == "sharedDisk" && v["diskType"] == "CPFS_PREMIUM" {
+			d.Set("cpfs_shared_disk", v["disk"])
+		}
+	}
 
 	// Cross zone configuration
 	d.Set("zone_count", object["zoneCount"])
@@ -567,53 +640,203 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("period")
 	}
 
-	if d.HasChange("data_node_amount") {
+	//Data node configuration change
+	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_type") || d.HasChange("data_node_disk_performance_level") || d.HasChange("data_node_amount") {
+		conn, err := client.NewElasticsearchClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "UpdateInstance"
 
+		content := make(map[string]interface{})
+		spec := make(map[string]interface{})
+		spec["spec"] = d.Get("data_node_spec")
+		spec["disk"] = d.Get("data_node_disk_size")
+		spec["diskType"] = d.Get("data_node_disk_type")
+		if d.Get("data_node_disk_performance_level") != nil && d.Get("data_node_disk_performance_level") != "" {
+			spec["performanceLevel"] = d.Get("data_node_disk_performance_level")
+		}
+		content["nodeSpec"] = spec
+		content["nodeAmount"] = d.Get("data_node_amount").(int)
+		requestQuery := map[string]*string{
+			"clientToken": StringPointer(buildClientToken(action)),
+		}
+
+		// retry
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("PUT"), StringPointer("AK"),
+				String(fmt.Sprintf("/openapi/instances/%s", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, content)
+			return nil
+		})
+
+		if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+		stateConf.PollInterval = 5 * time.Second
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-
-		if err := updateDataNodeAmount(d, meta); err != nil {
-			return WrapError(err)
-		}
-
-		d.SetPartial("data_node_amount")
-	}
-
-	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_type") {
-
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-
-		if err := updateDataNodeSpec(d, meta); err != nil {
-			return WrapError(err)
-		}
-
 		d.SetPartial("data_node_spec")
 		d.SetPartial("data_node_disk_size")
 		d.SetPartial("data_node_disk_type")
-		d.SetPartial("data_node_disk_encrypted")
+		d.SetPartial("data_node_disk_performance_level")
+		d.SetPartial("data_node_amount")
 	}
 
-	if d.HasChange("master_node_spec") {
+	//Master node configuration change
+	if d.HasChange("master_node_spec") || d.HasChange("master_node_disk_type") {
+		conn, err := client.NewElasticsearchClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "UpdateInstance"
 
+		content := make(map[string]interface{})
+		master := make(map[string]interface{})
+		master["spec"] = d.Get("master_node_spec")
+		master["amount"] = "3"
+		master["diskType"] = d.Get("master_node_disk_type")
+		master["disk"] = "20"
+		content["masterConfiguration"] = master
+		content["advancedDedicateMaster"] = true
+		requestQuery := map[string]*string{
+			"clientToken": StringPointer(buildClientToken(action)),
+		}
+
+		// retry
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("PUT"), StringPointer("AK"),
+				String(fmt.Sprintf("/openapi/instances/%s", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, content)
+			return nil
+		})
+
+		if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+		stateConf.PollInterval = 5 * time.Second
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+		d.SetPartial("master_node_spec")
+		d.SetPartial("master_node_disk_type")
+	}
 
-		if err := updateMasterNode(d, meta); err != nil {
+	//Warm node configuration change
+	if d.HasChange("warm_data_node_amount") || d.HasChange("warm_data_node_spec") || d.HasChange("warm_data_node_disk_size") {
+		conn, err := client.NewElasticsearchClient()
+		if err != nil {
 			return WrapError(err)
 		}
+		action := "UpdateInstance"
 
-		d.SetPartial("master_node_spec")
+		content := make(map[string]interface{})
+		warmNodeConfig := make(map[string]interface{})
+		warmNodeConfig["amount"] = d.Get("warm_data_node_amount")
+		warmNodeConfig["spec"] = d.Get("warm_data_node_spec")
+		if d.Get("instance_category") != "IS" {
+			warmNodeConfig["diskType"] = "cloud_efficiency"
+			warmNodeConfig["disk"] = d.Get("warm_data_node_disk_size")
+			warmNodeConfig["diskEncryption"] = d.Get("warm_data_node_disk_encrypted")
+		}
+		content["warmNodeConfiguration"] = warmNodeConfig
+		requestQuery := map[string]*string{
+			"clientToken": StringPointer(buildClientToken(action)),
+		}
+
+		// retry
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("PUT"), StringPointer("AK"),
+				String(fmt.Sprintf("/openapi/instances/%s", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, content)
+			return nil
+		})
+
+		if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+		stateConf.PollInterval = 5 * time.Second
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("warm_data_node_spec")
+		d.SetPartial("warm_data_node_disk_size")
+		d.SetPartial("warm_data_node_amount")
+	}
+
+	//Kibana node configuration change
+	if d.HasChange("kibana_node_spec") {
+		conn, err := client.NewElasticsearchClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "UpdateInstance"
+
+		content := make(map[string]interface{})
+		kibanaNodeConfig := make(map[string]interface{})
+		kibanaNodeConfig["spec"] = d.Get("kibana_node_spec")
+		content["kibanaConfiguration"] = kibanaNodeConfig
+
+		requestQuery := map[string]*string{
+			"clientToken": StringPointer(buildClientToken(action)),
+		}
+
+		// retry
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("PUT"), StringPointer("AK"),
+				String(fmt.Sprintf("/openapi/instances/%s", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, content)
+			return nil
+		})
+
+		if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+		stateConf.PollInterval = 5 * time.Second
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("kibana_node_spec")
 	}
 
 	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
-
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
 
 		if err := updatePassword(d, meta); err != nil {
 			return WrapError(err)
@@ -700,7 +923,6 @@ func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{
 		content["paymentInfo"] = paymentInfo
 	}
 
-	content["nodeAmount"] = d.Get("data_node_amount")
 	content["esVersion"] = d.Get("version")
 	content["description"] = d.Get("description")
 
@@ -723,12 +945,18 @@ func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{
 	}
 
 	// Data node configuration
-	dataNodeSpec := make(map[string]interface{})
-	dataNodeSpec["spec"] = d.Get("data_node_spec")
-	dataNodeSpec["disk"] = d.Get("data_node_disk_size")
-	dataNodeSpec["diskType"] = d.Get("data_node_disk_type")
-	dataNodeSpec["diskEncryption"] = d.Get("data_node_disk_encrypted")
-	content["nodeSpec"] = dataNodeSpec
+	if d.Get("data_node_spec") != nil && d.Get("data_node_spec") != "" {
+		content["nodeAmount"] = d.Get("data_node_amount")
+		dataNodeSpec := make(map[string]interface{})
+		dataNodeSpec["spec"] = d.Get("data_node_spec")
+		dataNodeSpec["disk"] = d.Get("data_node_disk_size")
+		dataNodeSpec["diskType"] = d.Get("data_node_disk_type")
+		dataNodeSpec["diskEncryption"] = d.Get("data_node_disk_encrypted")
+		if d.Get("data_node_disk_performance_level") != nil && d.Get("data_node_disk_performance_level") != "" {
+			dataNodeSpec["performanceLevel"] = d.Get("data_node_disk_performance_level")
+		}
+		content["nodeSpec"] = dataNodeSpec
+	}
 
 	// Master node configuration
 	if d.Get("master_node_spec") != nil && d.Get("master_node_spec") != "" {
@@ -736,7 +964,11 @@ func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{
 		masterNode["spec"] = d.Get("master_node_spec")
 		masterNode["amount"] = "3"
 		masterNode["disk"] = "20"
-		masterNode["diskType"] = "cloud_ssd"
+		if d.Get("master_node_disk_type") == nil || d.Get("master_node_disk_type") == "" {
+			masterNode["diskType"] = "cloud_ssd"
+		} else {
+			masterNode["diskType"] = d.Get("master_node_disk_type")
+		}
 		content["advancedDedicateMaster"] = true
 		content["masterConfiguration"] = masterNode
 	}
@@ -755,6 +987,48 @@ func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{
 
 		content["haveClientNode"] = true
 		content["clientNodeConfiguration"] = clientNode
+	}
+
+	// Warm data node configuration
+	if d.Get("warm_data_node_spec") != nil && d.Get("warm_data_node_spec") != "" {
+		warmNode := make(map[string]interface{})
+		warmNode["spec"] = d.Get("warm_data_node_spec")
+		warmNode["amount"] = d.Get("warm_data_node_amount")
+		if d.Get("instance_category") != "IS" {
+			warmNode["diskType"] = "cloud_efficiency"
+			warmNode["disk"] = d.Get("warm_data_node_disk_size")
+			warmNode["diskEncryption"] = d.Get("warm_data_node_disk_encrypted")
+		}
+		content["warmNodeConfiguration"] = warmNode
+	}
+
+	// Kibana node configuration
+	if d.Get("kibana_node_spec") != nil && d.Get("kibana_node_spec") != "" {
+		kibanaConfig := make(map[string]interface{})
+		kibanaConfig["spec"] = d.Get("kibana_node_spec")
+		kibanaConfig["amount"] = 1
+		content["kibanaConfiguration"] = kibanaConfig
+	}
+
+	//Extend config struct array
+	var extendConfig []map[string]interface{}
+	if d.Get("cpfs_shared_disk") != nil && d.Get("cpfs_shared_disk").(int) > 0 {
+		if d.Get("instance_category") != "advanced" {
+			return nil, WrapError(Error("You must set 'instace_category' to 'advaced' before you can define cpfs_shared_disk"))
+		}
+		sharedDisk := make(map[string]interface{})
+		sharedDisk["configType"] = "sharedDisk"
+		sharedDisk["diskType"] = "CPFS_PREMIUM"
+		sharedDisk["disk"] = d.Get("cpfs_shared_disk")
+		extendConfig = append(extendConfig, sharedDisk)
+
+	}
+	if len(extendConfig) > 0 {
+		content["extendConfigs"] = extendConfig
+	}
+
+	if d.Get("instance_category") != nil && d.Get("instance_category") != "" {
+		content["instanceCategory"] = d.Get("instance_category")
 	}
 
 	// Network configuration
