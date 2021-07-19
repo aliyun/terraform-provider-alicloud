@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -73,8 +74,10 @@ func TestAccAlicloudLogProjectsDataSource(t *testing.T) {
 		existMapFunc: existAlicloudLogProjectsDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudLogProjectsDataSourceNameMapFunc,
 	}
+	// After the project is successfully created, ListProject may not be able to query the newly created project, so here only the projects existing under the account are tested
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.LogProjectsRegions)
 	}
 	alicloudLogProjectsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, allConf)
 }
