@@ -402,6 +402,37 @@ variable "cluster_addons" {
     }
   ]
 }
+
+# Event Center,Optional.
+variable "cluster_addons" {
+  type = list(object({
+      name      = string
+      config    = string
+      disabled  = bool
+  }))
+  default = [
+    {
+      "name"     = "ack-node-problem-detector",
+      "config"   = "{\"sls_project_name\":\"\"}",
+      "disabled": true,
+    }
+  ]
+}
+# ACK default alert, Optional.
+variable "cluster_addons" {
+  type = list(object({
+      name      = string
+      config    = string
+      disabled  = bool
+  }))
+  default = [
+    {
+      "name"     = "alicloud-monitor-controller",
+      "config"   = "{\"group_contact_ids\":\"[159]\"}",
+      "disabled": true,
+    }
+  ]
+}
 ```
 
 ### Computed params (No need to configure)
