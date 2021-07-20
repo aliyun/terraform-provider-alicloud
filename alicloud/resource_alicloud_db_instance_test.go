@@ -370,6 +370,20 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_auto_scale":  "Enable",
+					"storage_threshold":   "40",
+					"storage_upper_bound": "1000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":  "Enable",
+						"storage_threshold":   "40",
+						"storage_upper_bound": "1000",
+					}),
+				),
+			},
 		},
 	})
 }
@@ -1085,32 +1099,6 @@ func TestAccAlicloudDBInstancePostgreSQLSSL(t *testing.T) {
 					testAccCheck(map[string]string{
 						"security_group_id":    CHECKSET,
 						"security_group_ids.#": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ssl_action": "Open",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ssl_action":      "Open",
-						"ca_type":         "aliyun",
-						"acl":             "perfer",
-						"replication_acl": "perfer",
-						"server_cert":     CHECKSET,
-						"server_key":      CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ssl_action": "Close",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ssl_action": "Close",
-						"ca_type":    "",
 					}),
 				),
 			},
