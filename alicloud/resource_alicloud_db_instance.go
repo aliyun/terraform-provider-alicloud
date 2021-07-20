@@ -733,11 +733,6 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		return resourceAlicloudDBInstanceRead(d, meta)
 	}
 
-	//stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-	//if _, err := stateConf.WaitForState(); err != nil {
-	//	return WrapErrorf(err, IdMsg, d.Id())
-	//}
-
 	if d.HasChange("instance_name") {
 		action := "ModifyDBInstanceDescription"
 		request := map[string]interface{}{
@@ -1144,9 +1139,9 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
-	//d.Set("storage_auto_scale", d.Get("storage_auto_scale"))
-	//d.Set("storage_threshold", d.Get("storage_threshold"))
-	//d.Set("storage_upper_bound", d.Get("storage_upper_bound"))
+	d.Set("storage_auto_scale", d.Get("storage_auto_scale"))
+	d.Set("storage_threshold", d.Get("storage_threshold"))
+	d.Set("storage_upper_bound", d.Get("storage_upper_bound"))
 
 	d.Set("resource_group_id", instance["ResourceGroupId"])
 	d.Set("monitoring_period", monitoringPeriod)
