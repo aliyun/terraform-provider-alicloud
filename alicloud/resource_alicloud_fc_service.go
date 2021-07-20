@@ -397,6 +397,7 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 						return resource.RetryableError(err)
 					}
 				}
+				return resource.NonRetryableError(err)
 			}
 			addDebug("UpdateService", raw, requestInfo, request)
 			response, _ = raw.(*fc.UpdateServiceOutput)
