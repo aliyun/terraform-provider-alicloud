@@ -328,7 +328,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
     - perfer
     - verify-ca
     - verify-full (supported only when the instance runs PostgreSQL 12 or later)
-* `replication_acl` - (Optional, Available in 1.127.0+)Automatic storage space expansion switch. Valid values:
+* `storage_auto_scale` - (Optional, Available in 1.127.0+)Automatic storage space expansion switch. Valid values:
     - Enable
     - Disable
 -> **NOTE:** This parameter only takes effect when the StorageAutoScale parameter is set to Enable.
@@ -338,8 +338,8 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
   - 30
   - 40
   - 50
--> **NOTE:** This parameter only takes effect when the StorageAutoScale parameter is set to Enable.
-* `storage_threshold` - (Optional, Available in 1.127.0+) The upper limit of the total storage space for automatic expansion of the storage space, that is, automatic expansion will not cause the total storage space of the instance to exceed this value. Unit: GB. The value must be greater than or equal to the total size of the current storage space of the instance. The value must be ≥0.
+-> **NOTE:** This parameter only takes effect when the StorageAutoScale parameter is set to Enable. The value must be greater than or equal to the total size of the current storage space of the instance.
+* `storage_upper_bound` - (Optional, Available in 1.127.0+) The upper limit of the total storage space for automatic expansion of the storage space, that is, automatic expansion will not cause the total storage space of the instance to exceed this value. Unit: GB. The value must be ≥0.
 
 -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
