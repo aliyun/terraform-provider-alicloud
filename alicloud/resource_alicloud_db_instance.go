@@ -424,6 +424,60 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
+	//add automatic expansion
+	if d.HasChanges("storage_auto_scale", "storage_threshold", "storage_upper_bound") {
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		fmt.Println("ModifyDasInstanceConfig....................")
+		action := "ModifyDasInstanceConfig"
+		request := map[string]interface{}{
+			"DBInstanceId": d.Id(),
+		}
+
+		if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) != "" {
+			request["StorageAutoScale"] = v
+		}
+		if v, ok := d.GetOk("storage_threshold"); ok {
+			request["StorageThreshold"] = v.(int)
+		}
+		if v, ok := d.GetOk("storage_upper_bound"); ok {
+			request["StorageUpperBound"] = v.(int)
+		}
+
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+
+		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("storage_auto_scale")
+		d.SetPartial("storage_threshold")
+		d.SetPartial("storage_upper_bound")
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	payType := PayType(d.Get("instance_charge_type").(string))
 	if !d.IsNewResource() && d.HasChange("instance_charge_type") && payType == Prepaid {
 		action := "ModifyDBInstancePayType"
@@ -1030,56 +1084,6 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	//add automatic expansion
-	if d.HasChanges("storage_auto_scale", "storage_threshold", "storage_upper_bound") {
-		fmt.Println("ModifyDasInstanceConfig....................")
-		action := "ModifyDasInstanceConfig"
-		request := map[string]interface{}{
-			"DBInstanceId": d.Id(),
-		}
-
-		if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) != "" {
-			request["StorageAutoScale"] = v
-		}
-		if v, ok := d.GetOk("storage_threshold"); ok {
-			request["StorageThreshold"] = v.(int)
-		}
-		if v, ok := d.GetOk("storage_upper_bound"); ok {
-			request["StorageUpperBound"] = v.(int)
-		}
-
-		var response map[string]interface{}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		addDebug(action, response, request)
-
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-		d.SetPartial("storage_auto_scale")
-		d.SetPartial("storage_threshold")
-		d.SetPartial("storage_upper_bound")
-		// wait instance status is running after modifying
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-	}
-
 	d.Partial(false)
 	return resourceAlicloudDBInstanceRead(d, meta)
 }
@@ -1404,16 +1408,6 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		uuid = resource.UniqueId()
 	}
 	request["ClientToken"] = fmt.Sprintf("Terraform-Alicloud-%d-%s", time.Now().Unix(), uuid)
-
-	if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) != "" {
-		request["StorageAutoScale"] = v
-	}
-	if v, ok := d.GetOk("storage_threshold"); ok {
-		request["StorageThreshold"] = v.(int)
-	}
-	if v, ok := d.GetOk("storage_upper_bound"); ok {
-		request["StorageUpperBound"] = v.(int)
-	}
 
 	return request, nil
 }
