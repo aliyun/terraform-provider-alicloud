@@ -424,16 +424,17 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
-	//add automatic expansion
 	if d.HasChanges("storage_auto_scale", "storage_threshold", "storage_upper_bound") {
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		fmt.Println("ModifyDasInstanceConfig....................")
+
 		action := "ModifyDasInstanceConfig"
 		request := map[string]interface{}{
 			"DBInstanceId": d.Id(),
+			"RegionId":     client.RegionId,
+			"SourceIp":     client.SourceIp,
 		}
 
 		if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) != "" {
@@ -466,9 +467,6 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		addDebug(action, response, request)
 
 		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
 		d.SetPartial("storage_auto_scale")
 		d.SetPartial("storage_threshold")
 		d.SetPartial("storage_upper_bound")

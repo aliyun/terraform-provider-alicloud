@@ -331,6 +331,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `storage_auto_scale` - (Optional, Available in 1.127.0+)Automatic storage space expansion switch. Valid values:
     - Enable
     - Disable
+  
 -> **NOTE:** This parameter only takes effect when the StorageAutoScale parameter is set to Enable.
 * `storage_threshold` - (Optional, Available in 1.127.0+)The trigger threshold (percentage) for automatic storage space expansion. Valid values:
   - 10
@@ -338,12 +339,13 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
   - 30
   - 40
   - 50
+  
 -> **NOTE:** This parameter only takes effect when the StorageAutoScale parameter is set to Enable. The value must be greater than or equal to the total size of the current storage space of the instance.
 * `storage_upper_bound` - (Optional, Available in 1.127.0+) The upper limit of the total storage space for automatic expansion of the storage space, that is, automatic expansion will not cause the total storage space of the instance to exceed this value. Unit: GB. The value must be ≥0.
 
 -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
--> **NOTE:** `zone_id_slave_a` and `zone_id_slave_b` can specify slave zone ids when creating the high-availability or enterprise edition instances. Meanwhile, `vswitch_id` needs to pass in the corresponding vswitch id to the slave zone by order (If the `vswitch_id` is not specified, the classic network version will be created). For example, `zone_id` = "zone-a" and `zone_id_slave_a` = "zone-c", `zone_id_slave_b` = "zone-b ", then the `vswitch_id` must be "vsw-zone-a,vsw-zone-c,vsw-zone-b". Of course, you can also choose automatic allocation, for example, `zone_id` = "zone-a "and `zone_id_slave_a` = "Auto",`zone_id_slave_b` = "Auto", then the `vswitch_id` must be "vsw-zone-a,Auto,Auto". The list contains up to 2 slave zone ids, separated by commas .
+-> **NOTE:** `zone_id_slave_a` and `zone_id_slave_b` can specify slave zone ids when creating the high-availability or enterprise edition instances. Meanwhile, `vswitch_id` needs to pass in the corresponding vswitch id to the slave zone by order (If the `vswitch_id` is not specified, the classic network version will be created). For example, `zone_id` = "zone-a" and `zone_id_slave_a` = "zone-c", `zone_id_slave_b` = "zone-b ", then the `vswitch_id` must be "vsw-zone-a,vsw-zone-c,vsw-zone-b". Of course, you can also choose automatic allocation, for example, `zone_id` = "zone-a "and `zone_id_slave_a` = "Auto",`zone_id_slave_b` = "Auto", then the `vswitch_id` must be "vsw-zone-a,Auto,Auto". The list contains up to 2 slave zone ids, separated by commas.
 
 ## Attributes Reference
 
