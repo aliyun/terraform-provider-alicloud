@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"log"
 	"strings"
 	"testing"
@@ -13,7 +14,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -151,13 +151,13 @@ func TestAccAlicloudCenInstance_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
+			testAccPreCheckWithRegions(t, false, connectivity.CenNoSkipRegions)
 		},
 
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckCenInstanceDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -242,7 +242,7 @@ func TestAccAlicloudCenInstance_multi(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
+			testAccPreCheckWithRegions(t, false, connectivity.CenNoSkipRegions)
 		},
 
 		// module name
@@ -302,8 +302,8 @@ func testAccCheckCenInstanceDestroy(s *terraform.State) error {
 			return err
 		}
 
-		if instance.CenId != "" {
-			return fmt.Errorf("CEN %s still exist", instance.CenId)
+		if fmt.Sprint(instance["CenId"]) != "" {
+			return fmt.Errorf("CEN %s still exist", fmt.Sprint(instance["CenId"]))
 		}
 	}
 

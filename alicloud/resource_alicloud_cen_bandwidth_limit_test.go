@@ -75,8 +75,8 @@ func testSweepCenBandwidthLimit(region string) error {
 			log.Printf("[ERROR] Failed to describe cen instance, error: %#v", err)
 			continue
 		}
-		name := cen.Name
-		id := cen.CenId
+		name := fmt.Sprint(cen["Name"])
+		id := fmt.Sprint(cen["CenId"])
 		skip := true
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
