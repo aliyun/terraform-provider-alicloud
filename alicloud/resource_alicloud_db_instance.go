@@ -291,7 +291,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"ca_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 			"server_cert": {
 				Type:     schema.TypeString,
@@ -322,12 +321,10 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"acl": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 			"replication_acl": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 
 			"upgrade_db_instance_kernel_version": {
@@ -350,6 +347,23 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
 				Computed:         true,
+			},
+			"storage_auto_scale": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Enable", "Disable"}, false),
+				Optional:     true,
+			},
+			"storage_threshold": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validation.IntInSlice([]int{10, 20, 30, 40, 50}),
+				DiffSuppressFunc: StorageAutoScaleDiffSuppressFunc,
+				Optional:         true,
+			},
+			"storage_upper_bound": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validation.IntAtLeast(0),
+				DiffSuppressFunc: StorageAutoScaleDiffSuppressFunc,
+				Optional:         true,
 			},
 		},
 	}
@@ -409,6 +423,59 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapError(err)
 	}
+
+	if d.HasChanges("storage_auto_scale", "storage_threshold", "storage_upper_bound") {
+		action := "ModifyDasInstanceConfig"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+			"SourceIp":     client.SourceIp,
+		}
+
+		if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) != "" {
+			request["StorageAutoScale"] = v
+		}
+		if v, ok := d.GetOk("storage_threshold"); ok {
+			request["StorageThreshold"] = v.(int)
+		}
+		if v, ok := d.GetOk("storage_upper_bound"); ok {
+			request["StorageUpperBound"] = v.(int)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+
+		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		d.SetPartial("storage_auto_scale")
+		d.SetPartial("storage_threshold")
+		d.SetPartial("storage_upper_bound")
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	payType := PayType(d.Get("instance_charge_type").(string))
 	if !d.IsNewResource() && d.HasChange("instance_charge_type") && payType == Prepaid {
 		action := "ModifyDBInstancePayType"
@@ -1073,6 +1140,10 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 			break
 		}
 	}
+
+	d.Set("storage_auto_scale", d.Get("storage_auto_scale"))
+	d.Set("storage_threshold", d.Get("storage_threshold"))
+	d.Set("storage_upper_bound", d.Get("storage_upper_bound"))
 
 	d.Set("resource_group_id", instance["ResourceGroupId"])
 	d.Set("monitoring_period", monitoringPeriod)

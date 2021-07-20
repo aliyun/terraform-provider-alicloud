@@ -370,6 +370,20 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_auto_scale":  "Enable",
+					"storage_threshold":   "40",
+					"storage_upper_bound": "1000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":  "Enable",
+						"storage_threshold":   "40",
+						"storage_upper_bound": "1000",
+					}),
+				),
+			},
 		},
 	})
 }
