@@ -53,6 +53,4 @@ require (
 	k8s.io/utils v0.0.0-20190221042446-c2654d5206da // indirect
 )
 
-replace github.com/Sirupsen/logrus v0.0.0-20181010200618-458213699411 => github.com/sirupsen/logrus v0.0.0-20181010200618-458213699411
-
 go 1.13
