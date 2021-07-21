@@ -38,16 +38,16 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_gpdb_elastic_instance" "adb_pg_instance" {
-  engine               = "gpdb"
-  engine_version       = "6.0"
-  storage_type         = "cloud_essd"
-  seg_node_num         = 4
-  storage_size         = 50
-  instance_spec        = "2C16G"
-  description          = "Created by terraform"
-  instance_network_type = "VPC"
-  payment_type         = "PayAsYouGo"
-  vswitch_id           = alicloud_vswitch.default.id
+  engine                  = "gpdb"
+  engine_version          = "6.0"
+  seg_storage_type        = "cloud_essd"
+  seg_node_num            = 4
+  storage_size            = 50
+  instance_spec           = "2C16G"
+  db_instance_description = "Created by terraform"
+  instance_network_type   = "VPC"
+  payment_type            = "PayAsYouGo"
+  vswitch_id              = alicloud_vswitch.default.id
 }
 
 ```

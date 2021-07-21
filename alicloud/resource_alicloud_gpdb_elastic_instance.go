@@ -158,6 +158,9 @@ func resourceAlicloudGpdbElasticInstanceCreate(d *schema.ResourceData, meta inte
 		paymentDuration := d.Get("payment_duration").(int)
 		request["UsedTime"] = strconv.Itoa(paymentDuration)
 	}
+	if v, ok := d.GetOk("instance_network_type"); ok {
+		request["InstanceNetworkType"] = v.(string)
+	}
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
