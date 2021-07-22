@@ -1078,7 +1078,6 @@ func TestAccAlicloudDBInstancePostgreSQLSSL(t *testing.T) {
 					}),
 				),
 			},
-
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"port":                     "3333",
@@ -1088,6 +1087,18 @@ func TestAccAlicloudDBInstancePostgreSQLSSL(t *testing.T) {
 					testAccCheck(map[string]string{
 						"port":                     "3333",
 						"connection_string_prefix": "rm-ccccccc",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ha_config":      "Manual",
+					"manual_ha_time": "2021-07-27T15:00:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ha_config":      "Manual",
+						"manual_ha_time": "2021-07-27T15:00:00Z",
 					}),
 				),
 			},
