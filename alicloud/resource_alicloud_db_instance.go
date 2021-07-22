@@ -348,6 +348,21 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
 				Computed:         true,
 			},
+			"ha_config": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Auto", "Manual"}, false),
+			},
+			"manual_ha_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("ha_config"); ok && v.(string) == "Manual" {
+						return false
+					}
+					return true
+				},
+			},
 		},
 	}
 }
@@ -704,6 +719,46 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		addDebug(action, response, request)
 		d.SetPartial("tde_status")
 
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	if d.HasChanges("ha_config", "manual_ha_time") {
+		action := "ModifyHASwitchConfig"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+			"SourceIp":     client.SourceIp,
+		}
+		if v, ok := d.GetOk("ha_config"); ok && v.(string) != "" {
+			request["HAConfig"] = v
+		}
+		if v, ok := d.GetOk("manual_ha_time"); ok && v.(string) != "" {
+			request["ManualHATime"] = v
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		d.SetPartial("ha_config")
+		d.SetPartial("manual_ha_time")
 		// wait instance status is running after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -1177,6 +1232,12 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("tde_Status", tdeInfo["TDEStatus"])
 
+	res, err := rdsService.DescribeHASwitchConfig(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("ha_config", res["HAConfig"])
+	d.Set("manual_ha_time", res["ManualHATime"])
 	return nil
 }
 
