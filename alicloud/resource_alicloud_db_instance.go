@@ -568,7 +568,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("sql_collector_status")
 	}
 
-	if d.Get("sql_collector_status").(string) == "Enabled" && d.HasChange("sql_collector_config_value") {
+	if d.Get("sql_collector_status").(string) == "Enabled" && d.HasChange("sql_collector_config_value") && d.Get("engine").(string) == string(MySQL) {
 		action := "ModifySQLCollectorRetention"
 		request := map[string]interface{}{
 			"RegionId":     client.RegionId,
