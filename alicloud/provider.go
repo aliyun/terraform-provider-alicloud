@@ -896,7 +896,6 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.RdsEndpoint = strings.TrimSpace(endpoints["rds"].(string))
 		config.SlbEndpoint = strings.TrimSpace(endpoints["slb"].(string))
 		config.VpcEndpoint = strings.TrimSpace(endpoints["vpc"].(string))
-		config.CenEndpoint = strings.TrimSpace(endpoints["cen"].(string))
 		config.EssEndpoint = strings.TrimSpace(endpoints["ess"].(string))
 		config.OssEndpoint = strings.TrimSpace(endpoints["oss"].(string))
 		config.OnsEndpoint = strings.TrimSpace(endpoints["ons"].(string))
@@ -1053,8 +1052,6 @@ func init() {
 		"slb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom SLB endpoints.",
 
 		"vpc_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom VPC and VPN endpoints.",
-
-		"cen_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CEN endpoints.",
 
 		"ess_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Autoscaling endpoints.",
 
@@ -1437,12 +1434,6 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["vpc_endpoint"],
 				},
-				"cen": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Default:     "",
-					Description: descriptions["cen_endpoint"],
-				},
 				"ess": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1678,7 +1669,6 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["rds"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["slb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["vpc"].(string)))
-	buf.WriteString(fmt.Sprintf("%s-", m["cen"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ess"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["oss"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ons"].(string)))
