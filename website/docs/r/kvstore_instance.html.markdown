@@ -148,7 +148,10 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `enable_backup_log`- (Optional, Available in 1.104.0+) Turn on or off incremental backup. Valid values: `1`, `0`. Default to `0`
 * `private_connection_prefix`- (Optional, Available in 1.105.0+) Private network connection prefix, used to modify the private network connection address. Only supports updating private network connections for existing instance.
 * `private_connection_port`- (Optional, Available in 1.124.0+) Private network connection port, used to modify the private network connection port.
-
+* `dry_run` - (Optional, Available in 1.128.0+) Specifies whether to precheck the request. Valid values:
+  * true: prechecks the request without creating an instance. The system prechecks the required parameters, request format, service limits, and available resources. If the request fails the precheck, the corresponding error message is returned. If the request passes the precheck, the DryRunOperation error code is returned.
+  * false: checks the request. After the request passes the check, an instance is created.
+  
 -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
 -> **NOTE:** You must specify at least one of the `capacity` and `instance_class` parameters when you call create instance operation.
