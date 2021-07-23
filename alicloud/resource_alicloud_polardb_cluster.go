@@ -160,6 +160,13 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
 				Optional:     true,
 			},
+			"security_group_ids": {
+				Type:     schema.TypeSet,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+				Optional: true,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -432,6 +439,25 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 	}
 
+	if d.HasChange("security_group_ids") {
+		securityGroupsList := expandStringList(d.Get("security_group_ids").(*schema.Set).List())
+		securityGroupsStr := strings.Join(securityGroupsList[:], COMMA_SEPARATED)
+
+		request := polardb.CreateModifyDBClusterAccessWhitelistRequest()
+		request.RegionId = client.RegionId
+		request.DBClusterId = d.Id()
+		request.WhiteListType = "SecurityGroup"
+		request.SecurityGroupIds = securityGroupsStr
+		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.ModifyDBClusterAccessWhitelist(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("security_group_ids")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudPolarDBClusterRead(d, meta)
@@ -585,6 +611,13 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 	d.Set("tde_status", clusterTDEStatus["TDEStatus"])
 	d.Set("encrypt_new_tables", clusterTDEStatus["EncryptNewTables"])
+
+	securityGroups, err := polarDBService.DescribeDBSecurityGroups(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("security_group_ids", securityGroups)
 
 	return nil
 }
