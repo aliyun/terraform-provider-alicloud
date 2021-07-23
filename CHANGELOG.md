@@ -3,10 +3,10 @@
 - **New Resource:** `alicloud_amqp_exchange` [GH-3737]
 - **New Resource:** `alicloud_cassandra_backup_plan` [GH-3733]
 - **New Resource:** `alicloud_cen_transit_router_peer_attachment` [GH-3753]
-- **New Data Source:** `data_source_alicloud_amqp_exchanges` [GH-3737]
-- **New Data Source:** `data_source_alicloud_cassandra_backup_plans` [GH-3733]
-- **New Data Source:** `data_source_alicloud_cen_transit_router_peer_attachments` [GH-3753]
-- **New Data Source:** `data_source_alicloud_kvstore_permission` [GH-3759]
+- **New Data Source:** `alicloud_amqp_exchanges` [GH-3737]
+- **New Data Source:** `alicloud_cassandra_backup_plans` [GH-3733]
+- **New Data Source:** `alicloud_cen_transit_router_peer_attachments` [GH-3753]
+- **New Data Source:** `alicloud_kvstore_permission` [GH-3759]
 
 ENHANCEMENTS:
 
