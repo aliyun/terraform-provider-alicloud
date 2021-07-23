@@ -117,6 +117,10 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"dry_run": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"enable_backup_log": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -415,6 +419,10 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 
 	if v, ok := d.GetOk("dedicated_host_group_id"); ok {
 		request.DedicatedHostGroupId = v.(string)
+	}
+
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request.DryRun = requests.NewBoolean(v.(bool))
 	}
 
 	if v, ok := d.GetOk("engine_version"); ok {
