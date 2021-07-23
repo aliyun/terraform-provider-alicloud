@@ -364,8 +364,6 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 			value := i.(map[string]interface{})["value"].(string)
 			allConfig[key] = value
 		}
-		// ModifyParameter Method are processed asynchronously, Increase sleep time to avoid state update delay
-		time.Sleep(DefaultIntervalLong * time.Second)
 		if err := s.WaitForDBParameter(d.Id(), DefaultTimeoutMedium, allConfig); err != nil {
 			return WrapError(err)
 		}
