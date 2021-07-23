@@ -222,6 +222,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gpdb_zones":                                  dataSourceAlicloudGpdbZones(),
 			"alicloud_kvstore_instances":                           dataSourceAlicloudKvstoreInstances(),
 			"alicloud_kvstore_zones":                               dataSourceAlicloudKVStoreZones(),
+			"alicloud_kvstore_permission":                          dataSourceAlicloudKVStorePermission(),
 			"alicloud_kvstore_instance_classes":                    dataSourceAlicloudKVStoreInstanceClasses(),
 			"alicloud_kvstore_instance_engines":                    dataSourceAlicloudKVStoreInstanceEngines(),
 			"alicloud_cen_instances":                               dataSourceAlicloudCenInstances(),
