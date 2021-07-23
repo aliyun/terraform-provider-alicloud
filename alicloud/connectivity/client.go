@@ -523,10 +523,10 @@ func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, err
 	if client.cenconn == nil {
 		endpoint := client.config.CenEndpoint
 		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CENCode)
+			endpoint = loadEndpoint(client.config.RegionId, CbnCode)
 		}
 		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(CENCode), endpoint)
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CbnCode), endpoint)
 		}
 		cenconn, err := cbn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
@@ -1415,7 +1415,7 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 	return sdk.NewConfig().
 		WithMaxRetryTime(DefaultClientRetryCountSmall).
 		WithTimeout(time.Duration(30) * time.Second).
-		WithEnableAsync(true).
+		WithEnableAsync(false).
 		WithGoRoutinePoolSize(100).
 		WithMaxTaskQueueSize(10000).
 		WithDebug(false).
@@ -1856,7 +1856,7 @@ func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, err
 			endpoint = loadEndpoint(client.config.RegionId, CbnCode)
 			// compatible with cen
 			if endpoint == "" {
-				endpoint = loadEndpoint(client.config.RegionId, CENCode)
+				endpoint = "cbn.aliyuncs.com"
 			}
 		}
 		if strings.HasPrefix(endpoint, "http") {

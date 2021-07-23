@@ -60,7 +60,6 @@ const (
 	DDSCode             = ServiceCode("DDS")
 	GPDBCode            = ServiceCode("GPDB")
 	STSCode             = ServiceCode("STS")
-	CENCode             = ServiceCode("CEN")
 	KVSTORECode         = ServiceCode("KVSTORE")
 	POLARDBCode         = ServiceCode("POLARDB")
 	DATAHUBCode         = ServiceCode("DATAHUB")
@@ -241,6 +240,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 		return "", fmt.Errorf("Unable to initialize the location client: %#v", err)
 
 	}
+	defer locationClient.Shutdown()
 	locationClient.AppendUserAgent(Terraform, terraformVersion)
 	locationClient.AppendUserAgent(Provider, providerVersion)
 	locationClient.AppendUserAgent(Module, client.config.ConfigurationSource)
