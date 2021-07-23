@@ -1,35 +1,36 @@
-## 1.128.0 (Unreleased)
+## 1.129.0 (Unreleased)
+## 1.128.0 (July 24, 2021)
 
-- **New Resource:** `alicloud_amqp_exchange` [GH-3737]
-- **New Resource:** `alicloud_cassandra_backup_plan` [GH-3733]
-- **New Resource:** `alicloud_cen_transit_router_peer_attachment` [GH-3753]
-- **New Data Source:** `alicloud_amqp_exchanges` [GH-3737]
-- **New Data Source:** `alicloud_cassandra_backup_plans` [GH-3733]
-- **New Data Source:** `alicloud_cen_transit_router_peer_attachments` [GH-3753]
-- **New Data Source:** `alicloud_kvstore_permission` [GH-3759]
+- **New Resource:** `alicloud_amqp_exchange` ([#3737](https://github.com/aliyun/terraform-provider-alicloud/issues/3737))
+- **New Resource:** `alicloud_cassandra_backup_plan` ([#3733](https://github.com/aliyun/terraform-provider-alicloud/issues/3733))
+- **New Resource:** `alicloud_cen_transit_router_peer_attachment` ([#3753](https://github.com/aliyun/terraform-provider-alicloud/issues/3753))
+- **New Data Source:** `alicloud_amqp_exchanges` ([#3737](https://github.com/aliyun/terraform-provider-alicloud/issues/3737))
+- **New Data Source:** `alicloud_cassandra_backup_plans` ([#3733](https://github.com/aliyun/terraform-provider-alicloud/issues/3733))
+- **New Data Source:** `alicloud_cen_transit_router_peer_attachments` ([#3753](https://github.com/aliyun/terraform-provider-alicloud/issues/3753))
+- **New Data Source:** `alicloud_kvstore_permission` ([#3759](https://github.com/aliyun/terraform-provider-alicloud/issues/3759))
 
 ENHANCEMENTS:
 
-- resource/alicloud_db_readonly_instance：Adds new attributes such as upgrade_kernel_version_enabled, upgrade_time, switch_time and target_minor_version to support Update minor engine version. [GH-3729]
-- resource/alicloud_serverless_kubernetes: Removes the deprecated attribute private_zone default value to fix an issue where the ASK cluster service discovery was not working [GH-3738]
-- resource/alicloud_disk: delete and recreate disk if snapshot_id changed [GH-3361]
-- resource/alicloud_cen_instance: Upgrades its dependence sdk [GH-3742]
-- resource/alicloud_route_table: Removes the specified expectedError into Retry Process with Delete Method [GH-3746]
-- resource/alicloud_db_instance: Adds engine limitation before invoking ModifySQLCollectorRetention [GH-3754] 
-- resource/alicloud_db_instance: Adds attributes ha_config and manual_ha_time to support ModifyHASwitchConfig(enable or disable automatic primary/secondary switchover). [GH-3755]
-- resource/alicloud_kvstore_instance: Adds parameter dry_run [GH-3761]
-- resource/alicloud_db_instance: Checks db_instance's status before updating sql_collector_status attribute [GH-3760]  
-- resource/alicloud_kvstore_instance: Adds new attribute secondary_zone_id to support secondary zone [GH-3757]
-- resource/alicloud_polardb_cluster: Adds new attribute security_group_ids to support setting security group [GH-3752]  
-- provider: Sets old sdk config EnableAsync to false; Close the location client after it invoked [GH-3756]
-- vendor: Improves the vendor dependence github.com/sirupsen/logrus [GH-3747]
+- resource/alicloud_db_readonly_instance：Adds new attributes such as upgrade_kernel_version_enabled, upgrade_time, switch_time and target_minor_version to support Update minor engine version. ([#3729](https://github.com/aliyun/terraform-provider-alicloud/issues/3729))
+- resource/alicloud_serverless_kubernetes: Removes the deprecated attribute private_zone default value to fix an issue where the ASK cluster service discovery was not working ([#3738](https://github.com/aliyun/terraform-provider-alicloud/issues/3738))
+- resource/alicloud_disk: delete and recreate disk if snapshot_id changed ([#3361](https://github.com/aliyun/terraform-provider-alicloud/issues/3361))
+- resource/alicloud_cen_instance: Upgrades its dependence sdk ([#3742](https://github.com/aliyun/terraform-provider-alicloud/issues/3742))
+- resource/alicloud_route_table: Removes the specified expectedError into Retry Process with Delete Method ([#3746](https://github.com/aliyun/terraform-provider-alicloud/issues/3746))
+- resource/alicloud_db_instance: Adds engine limitation before invoking ModifySQLCollectorRetention [[#3754](https://github.com/aliyun/terraform-provider-alicloud/issues/3754)] 
+- resource/alicloud_db_instance: Adds attributes ha_config and manual_ha_time to support ModifyHASwitchConfig(enable or disable automatic primary/secondary switchover). ([#3755](https://github.com/aliyun/terraform-provider-alicloud/issues/3755))
+- resource/alicloud_kvstore_instance: Adds parameter dry_run ([#3761](https://github.com/aliyun/terraform-provider-alicloud/issues/3761))
+- resource/alicloud_db_instance: Checks db_instance's status before updating sql_collector_status attribute [[#3760](https://github.com/aliyun/terraform-provider-alicloud/issues/3760)]  
+- resource/alicloud_kvstore_instance: Adds new attribute secondary_zone_id to support secondary zone ([#3757](https://github.com/aliyun/terraform-provider-alicloud/issues/3757))
+- resource/alicloud_polardb_cluster: Adds new attribute security_group_ids to support setting security group [[#3752](https://github.com/aliyun/terraform-provider-alicloud/issues/3752)]  
+- provider: Sets old sdk config EnableAsync to false; Close the location client after it invoked ([#3756](https://github.com/aliyun/terraform-provider-alicloud/issues/3756))
+- vendor: Improves the vendor dependence github.com/sirupsen/logrus ([#3747](https://github.com/aliyun/terraform-provider-alicloud/issues/3747))
 
 
 
 BUG FIXES:
 
-- resource/alicloud_fc_service: Fixes the bug when there is no need to retry [GH-3741]
-- doc/alicloud_gpdb_elastic_instance: Fixes some Example Usage Parameter [GH-3749]
+- resource/alicloud_fc_service: Fixes the bug when there is no need to retry ([#3741](https://github.com/aliyun/terraform-provider-alicloud/issues/3741))
+- doc/alicloud_gpdb_elastic_instance: Fixes some Example Usage Parameter ([#3749](https://github.com/aliyun/terraform-provider-alicloud/issues/3749))
 
 
 ## 1.127.0 (July 16, 2021)
