@@ -135,6 +135,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -148,6 +149,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"resource_group_id": CHECKSET,
 						"zone_id":           CHECKSET,
 						"vswitch_id":        CHECKSET,
+						"secondary_zone_id": CHECKSET,
 					}),
 				),
 			},
@@ -241,8 +243,9 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":    "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
-					"vswitch_id": "${data.alicloud_vswitches.update.ids.0}",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
+					"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
 					"timeouts": []map[string]interface{}{
 						{
 							"update": "1h",
@@ -251,8 +254,9 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_id":    CHECKSET,
-						"vswitch_id": CHECKSET,
+						"zone_id":           CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"secondary_zone_id": CHECKSET,
 					}),
 				),
 			},
@@ -405,6 +409,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -418,6 +423,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 						"resource_group_id": CHECKSET,
 						"zone_id":           CHECKSET,
 						"vswitch_id":        CHECKSET,
+						"secondary_zone_id": CHECKSET,
 					}),
 				),
 			},
@@ -495,8 +501,9 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":    "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
-					"vswitch_id": "${data.alicloud_vswitches.update.ids.0}",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
+					"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
 					"timeouts": []map[string]interface{}{
 						{
 							"update": "1h",
@@ -505,8 +512,9 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_id":    CHECKSET,
-						"vswitch_id": CHECKSET,
+						"zone_id":           CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"secondary_zone_id": CHECKSET,
 					}),
 				),
 			},

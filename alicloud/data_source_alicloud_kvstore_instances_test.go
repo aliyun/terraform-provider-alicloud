@@ -158,6 +158,7 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 			"instances.0.security_ip_group_attribute": "",
 			"instances.0.security_ip_group_name":      CHECKSET,
 			"instances.0.security_ips.#":              "1",
+			"instances.0.secondary_zone_id":           "",
 		}
 	}
 
