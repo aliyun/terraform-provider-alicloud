@@ -282,6 +282,10 @@ func dataSourceAlicloudKvstoreInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"secondary_zone_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"security_ips": {
 							Type:     schema.TypeList,
 							Computed: true,
@@ -539,6 +543,7 @@ func dataSourceAlicloudKvstoreInstancesRead(d *schema.ResourceData, meta interfa
 			mapping["maintain_end_time"] = responseGet.Instances.DBInstanceAttribute[0].MaintainEndTime
 			mapping["maintain_start_time"] = responseGet.Instances.DBInstanceAttribute[0].MaintainStartTime
 			mapping["vpc_auth_mode"] = responseGet.Instances.DBInstanceAttribute[0].VpcAuthMode
+			mapping["secondary_zone_id"] = responseGet.Instances.DBInstanceAttribute[0].SecondaryZoneId
 		}
 
 		request1 := r_kvstore.CreateDescribeInstanceAutoRenewalAttributeRequest()

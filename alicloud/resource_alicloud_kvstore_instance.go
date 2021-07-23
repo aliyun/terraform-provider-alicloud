@@ -259,6 +259,10 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Disable", "Enable", "Update"}, false),
 			},
+			"secondary_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"security_group_id": {
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -481,6 +485,10 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request.ZoneId = v.(string)
 	}
 
+	if v, ok := d.GetOk("secondary_zone_id"); ok {
+		request.SecondaryZoneId = v.(string)
+	}
+
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
 		vpcService := VpcService{client}
@@ -569,6 +577,7 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("vpc_auth_mode", object.VpcAuthMode)
 	d.Set("zone_id", object.ZoneId)
 	d.Set("availability_zone", object.ZoneId)
+	d.Set("secondary_zone_id", object.SecondaryZoneId)
 	describeBackupPolicyObject, err := r_kvstoreService.DescribeBackupPolicy(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -843,6 +852,10 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	if !d.IsNewResource() && d.HasChange("vswitch_id") {
 		update = true
 		migrateToOtherZoneReq.VSwitchId = d.Get("vswitch_id").(string)
+	}
+	if !d.IsNewResource() && d.HasChange("secondary_zone_id") {
+		update = true
+		migrateToOtherZoneReq.SecondaryZoneId = d.Get("secondary_zone_id").(string)
 	}
 	if update {
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {

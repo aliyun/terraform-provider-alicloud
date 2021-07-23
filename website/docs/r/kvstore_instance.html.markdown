@@ -99,6 +99,10 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `capacity` - (Optional, ForceNew, Available in 1.101.0+) The storage capacity of the KVStore DBInstance. Unit: MB.
 * `availability_zone` - (Optional) It has been deprecated from provider version 1.101.0 and `zone_id` instead.
 * `zone_id` - (Required, Available in 1.101.0+) The ID of the zone.
+* `secondary_zone_id` - (Optional, Available in 1.128.0+) The ID of the secondary zone to which you want to migrate the ApsaraDB for Redis instance.
+
+-> **NOTE:** If you specify this parameter, the master node and replica node of the instance can be deployed in different zones and disaster recovery is implemented across zones. The instance can withstand failures in data centers.
+
 * `instance_charge_type` - (Optional) It has been deprecated from provider version 1.101.0 and `payment_type` instead.
 * `payment_type` - (Optional, Available in 1.101.0+) The billing method of the KVStore DBInstance. Valid values: `PrePaid`, `PostPaid`. Default to `PostPaid`.
 * `period` - (Optional) The duration that you will buy KVStore DBInstance (in month). It is valid when payment_type is `PrePaid`. Valid values: `[1~9]`, `12`, `24`, `36`.
