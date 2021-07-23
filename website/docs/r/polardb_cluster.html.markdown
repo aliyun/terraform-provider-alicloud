@@ -86,7 +86,7 @@ The following arguments are supported:
 -> **NOTE:** `tde_status` Cannot modify after created when `db_type` is `PostgreSQL` or `Oracle`.`tde_status` only support modification from `Disabled` to `Enabled` when `db_type` is `MySQL`.
 * `encrypt_new_tables` - (Optional, Available in 1.124.1+) turn on table auto encryption. Valid values are `ON`, `OFF`. Only MySQL 8.0 supports. 
 -> **NOTE:** `encrypt_new_tables` Polardb MySQL 8.0 cluster, after TDE and Automatic Encryption are enabled, all newly created tables are automatically encrypted in the cluster.
-
+* `security_group_ids` - (Optional, Available in 1.128.0+) The ID of the security group. Separate multiple security groups with commas (,). You can add a maximum of three security groups to a cluster.
 -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~20 minutes. Please make full preparation before changing them.
   
 ### Removing alicloud_polardb_cluster from your configuration

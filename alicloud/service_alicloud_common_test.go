@@ -852,15 +852,20 @@ data "alicloud_vswitches" "default" {
 }
 resource "alicloud_vswitch" "this" {
  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
- name = "tf_testAccPolarDB"
+ vswitch_name = "tf_testAccPolarDB"
  vpc_id = data.alicloud_vpcs.default.ids.0
- availability_zone = data.alicloud_polardb_zones.default.ids.0
+ zone_id = data.alicloud_polardb_zones.default.ids.0
  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
   zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
 }
+resource "alicloud_vpc" "default" {
+  vpc_name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+
 `
 const AdbCommonTestCase = `
 data "alicloud_adb_zones" "default" {}

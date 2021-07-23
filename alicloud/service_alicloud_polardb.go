@@ -1294,3 +1294,28 @@ func (s *PolarDBService) PolarDBClusterTDEStateRefreshFunc(id string, failStates
 		return object, object["TDEStatus"].(string), nil
 	}
 }
+
+func (s *PolarDBService) DescribeDBSecurityGroups(clusterId string) ([]string, error) {
+
+	request := polardb.CreateDescribeDBClusterAccessWhitelistRequest()
+	request.RegionId = s.client.RegionId
+	request.DBClusterId = clusterId
+
+	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+		return polarDBClient.DescribeDBClusterAccessWhitelist(request)
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, clusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	resp, _ := raw.(*polardb.DescribeDBClusterAccessWhitelistResponse)
+
+	groups := make([]string, 0)
+	dbClusterSecurityGroups := resp.DBClusterSecurityGroups.DBClusterSecurityGroup
+	for _, group := range dbClusterSecurityGroups {
+
+		groups = append(groups, group.SecurityGroupId)
+	}
+	return groups, nil
+}
