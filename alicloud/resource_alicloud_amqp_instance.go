@@ -203,7 +203,7 @@ func resourceAlicloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseData["InstanceId"]))
 	amqpOpenService := AmqpOpenService{client}
-	stateConf := BuildStateConf([]string{}, []string{"SERVING"}, d.Timeout(schema.TimeoutCreate), 30*time.Minute, amqpOpenService.AmqpInstanceStateRefreshFunc(d.Id(), []string{"Failed"}))
+	stateConf := BuildStateConf([]string{}, []string{"SERVING"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, amqpOpenService.AmqpInstanceStateRefreshFunc(d.Id(), []string{"Failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -312,6 +312,8 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 			"Code":  "MaxEipTps",
 			"Value": v,
 		})
+	} else if v, ok := d.GetOkExists("support_eip"); !ok || v.(bool) {
+		return WrapError(fmt.Errorf(RequiredWhenMsg, "max_eip_tps", "support_eip", v))
 	}
 	if d.HasChange("max_tps") {
 		update = true

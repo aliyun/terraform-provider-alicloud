@@ -21,8 +21,7 @@ for (( i=0;i<${#domestic_regions[@]};i++)) do
     -v time_location=${domestic_time_location[i]} \
     -v alicloud_access_key=$ALICLOUD_ACCESS_KEY \
     -v alicloud_secret_key=$ALICLOUD_SECRET_KEY \
-    -v alicloud_region=${domestic_regions[i]} \
-    -v alicloud_amqp_instance_id=${ALICLOUD_AMQP_INSTANCE_ID}
+    -v alicloud_region=${domestic_regions[i]}
 
 done
 
@@ -49,8 +48,7 @@ for (( i=0;i<${#international_regions[@]};i++)) do
     -v alicloud_concourse_target_url=$CHINA_ACCESS_CI_URL \
     -v alicloud_concourse_target_user=$CHINA_ACCESS_CI_USER_NAME \
     -v alicloud_concourse_target_password=$CHINA_ACCESS_CI_PASSWORD \
-    -v alicloud_concourse_target_pipeline_name="cn-hangzhou" \
-    -v alicloud_amqp_instance_id=${ALICLOUD_AMQP_INSTANCE_ID}
+    -v alicloud_concourse_target_pipeline_name="cn-hangzhou"
 done
 
 
@@ -75,8 +73,7 @@ for (( i=0;i<${#domestic_regions[@]};i++)) do
     -v time_location=${domestic_time_location[i]} \
     -v alicloud_access_key=$ALICLOUD_ACCESS_KEY_INTL \
     -v alicloud_secret_key=$ALICLOUD_SECRET_KEY_INTL \
-    -v alicloud_region=${domestic_regions[i]} \
-    -v alicloud_amqp_instance_id=${ALICLOUD_AMQP_INSTANCE_ID}
+    -v alicloud_region=${domestic_regions[i]}
 done
 
 for (( i=0;i<${#international_regions[@]};i++)) do
@@ -101,8 +98,7 @@ for (( i=0;i<${#international_regions[@]};i++)) do
     -v alicloud_concourse_target_url=$CHINA_ACCESS_CI_URL \
     -v alicloud_concourse_target_user=$CHINA_ACCESS_CI_USER_NAME \
     -v alicloud_concourse_target_password=$CHINA_ACCESS_CI_PASSWORD \
-    -v alicloud_concourse_target_pipeline_name="cn-hangzhou" \
-    -v alicloud_amqp_instance_id=${ALICLOUD_AMQP_INSTANCE_ID}
+    -v alicloud_concourse_target_pipeline_name="cn-hangzhou"
 done
 
 
@@ -147,8 +143,7 @@ fly -t terraform-intl sp -p auto-trigger \
   -v alicloud_concourse_target=terraform-china \
   -v alicloud_concourse_target_url=$CHINA_ACCESS_CI_URL \
   -v alicloud_concourse_target_user=$CHINA_ACCESS_CI_USER_NAME \
-  -v alicloud_concourse_target_password=$CHINA_ACCESS_CI_PASSWORD \
-  -v alicloud_amqp_instance_id=${ALICLOUD_AMQP_INSTANCE_ID}
+  -v alicloud_concourse_target_password=$CHINA_ACCESS_CI_PASSWORD
 
 # 在杭州 Region 自动触发
 fly -t terraform-china sp -p auto-trigger \
@@ -165,8 +160,7 @@ fly -t terraform-china sp -p auto-trigger \
   -v ding_talk_token=$DING_TALK_TOKEN \
   -v alicloud_accound_id=$ALICLOUD_ACCOUNT_ID \
   -v alicloud_resource_group_id=$ALICLOUD_RESOURCE_GROUP_ID \
-  -v alicloud_waf_instance_id=$ALICLOUD_WAF_INSTANCE_ID \
-  -v alicloud_amqp_instance_id=${ALICLOUD_AMQP_INSTANCE_ID}
+  -v alicloud_waf_instance_id=$ALICLOUD_WAF_INSTANCE_ID
 
 # 兼容性测试
 fly -t terraform-intl sp -p certify \
@@ -185,5 +179,4 @@ fly -t terraform-intl sp -p certify \
   -v terraform_backend_tablestore_endpoint="https://tf-oss-remote.cn-hangzhou.ots.aliyuncs.com" \
   -v terraform_backend_tablestore_table="terraform_state" \
   -v terraform_configuration_names="vpc-flow-log" \
-  -v terraform_configuration_ignore_names="ddosbgp,ddoscoo" \
-  -v alicloud_amqp_instance_id=${ALICLOUD_AMQP_INSTANCE_ID}
+  -v terraform_configuration_ignore_names="ddosbgp,ddoscoo"
