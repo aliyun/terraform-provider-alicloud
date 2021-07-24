@@ -307,6 +307,16 @@ func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 	return true
 }
 
+func PostPaidAndRenewalDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if PostPaidDiffSuppressFunc(k, old, new, d) {
+		return true
+	}
+	if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+		return false
+	}
+	return true
+}
+
 func redisPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return strings.ToLower(d.Get("payment_type").(string)) == "postpaid"
 }
