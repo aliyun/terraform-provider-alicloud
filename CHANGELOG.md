@@ -1,9 +1,11 @@
 ## 1.129.0 (Unreleased)
 ## 1.128.0 (July 24, 2021)
 
+- **New Resource:** `alicloud_amqp_instance` ([#3764](https://github.com/aliyun/terraform-provider-alicloud/issues/3764))
 - **New Resource:** `alicloud_amqp_exchange` ([#3737](https://github.com/aliyun/terraform-provider-alicloud/issues/3737))
 - **New Resource:** `alicloud_cassandra_backup_plan` ([#3733](https://github.com/aliyun/terraform-provider-alicloud/issues/3733))
 - **New Resource:** `alicloud_cen_transit_router_peer_attachment` ([#3753](https://github.com/aliyun/terraform-provider-alicloud/issues/3753))
+- **New Data Source:** `alicloud_amqp_instances` ([#3764](https://github.com/aliyun/terraform-provider-alicloud/issues/3764))
 - **New Data Source:** `alicloud_amqp_exchanges` ([#3737](https://github.com/aliyun/terraform-provider-alicloud/issues/3737))
 - **New Data Source:** `alicloud_cassandra_backup_plans` ([#3733](https://github.com/aliyun/terraform-provider-alicloud/issues/3733))
 - **New Data Source:** `alicloud_cen_transit_router_peer_attachments` ([#3753](https://github.com/aliyun/terraform-provider-alicloud/issues/3753))
@@ -24,6 +26,7 @@ ENHANCEMENTS:
 - resource/alicloud_polardb_cluster: Adds new attribute security_group_ids to support setting security group [[#3752](https://github.com/aliyun/terraform-provider-alicloud/issues/3752)]  
 - provider: Sets old sdk config EnableAsync to false; Close the location client after it invoked ([#3756](https://github.com/aliyun/terraform-provider-alicloud/issues/3756))
 - vendor: Improves the vendor dependence github.com/sirupsen/logrus ([#3747](https://github.com/aliyun/terraform-provider-alicloud/issues/3747))
+- testcase: Improves the amqp resources testcase ([#3765](https://github.com/aliyun/terraform-provider-alicloud/issues/3765))
 
 
 
