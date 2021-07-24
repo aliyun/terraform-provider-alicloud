@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -72,10 +71,7 @@ func TestAccAlicloudAmqpQueuesDataSource(t *testing.T) {
 		existMapFunc: existAmqpQueuesMapFunc,
 		fakeMapFunc:  fakeAmqpQueuesMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithEnvVariable(t, "ALICLOUD_AMQP_INSTANCE_ID")
-	}
-	AmqpQueuesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf)
+	AmqpQueuesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf)
 }
 
 func dataSourceAmqpQueuesConfigDependence(name string) string {
@@ -83,9 +79,11 @@ func dataSourceAmqpQueuesConfigDependence(name string) string {
 		variable "name" {
 		 default = "%v"
 		}
-		
+		data "alicloud_amqp_instances" "default" {
+			status = "SERVING"
+		}
 		resource "alicloud_amqp_virtual_host" "default" {
-		  instance_id = "%v"
+		  instance_id       = data.alicloud_amqp_instances.default.ids.0
 		  virtual_host_name = "${var.name}"
 		}
 
@@ -95,5 +93,5 @@ func dataSourceAmqpQueuesConfigDependence(name string) string {
 		  queue_name = var.name
 		  auto_delete_state = true
 		}
-		`, name, os.Getenv("ALICLOUD_AMQP_INSTANCE_ID"))
+		`, name)
 }

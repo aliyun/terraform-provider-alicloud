@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -34,10 +33,8 @@ func testSweepAmqpVirtualHost(region string) error {
 		"tf_testacc",
 	}
 
-	instanceId := os.Getenv("ALICLOUD_AMQP_INSTANCE_ID")
-	action := "ListVirtualHosts"
+	action := "ListInstances"
 	request := make(map[string]interface{})
-	request["InstanceId"] = instanceId
 	request["MaxResults"] = PageSizeLarge
 	var response map[string]interface{}
 	conn, err := client.NewOnsproxyClient()
@@ -65,49 +62,90 @@ func testSweepAmqpVirtualHost(region string) error {
 			log.Println(WrapErrorf(err, DataDefaultErrorMsg, "alicloud_amqp_virtual_hosts", action, AlibabaCloudSdkGoERROR))
 			return nil
 		}
-		resp, err := jsonpath.Get("$.Data.VirtualHosts", response)
+		resp, err := jsonpath.Get("$.Data.Instances", response)
 		if err != nil {
-			log.Println(WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.VirtualHosts", response))
+			log.Println(WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Instances", response))
 			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			skip := true
-			for _, prefixe := range prefixes {
-				if strings.HasPrefix(fmt.Sprint(item["Name"]), prefixe) {
-					skip = false
+			instanceId := fmt.Sprint(item["InstanceId"])
+			action := "ListVirtualHosts"
+			request := make(map[string]interface{})
+			request["InstanceId"] = instanceId
+			request["MaxResults"] = PageSizeLarge
+			var response map[string]interface{}
+			conn, err := client.NewOnsproxyClient()
+			if err != nil {
+				log.Println(WrapError(err))
+				return nil
+			}
+			for {
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-12-12"), StringPointer("AK"), request, nil, &runtime)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					log.Println(WrapErrorf(err, DataDefaultErrorMsg, "alicloud_amqp_virtual_hosts", action, AlibabaCloudSdkGoERROR))
+					return nil
+				}
+				resp, err := jsonpath.Get("$.Data.VirtualHosts", response)
+				if err != nil {
+					log.Println(WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.VirtualHosts", response))
+					return nil
+				}
+				result, _ := resp.([]interface{})
+				for _, v := range result {
+					item := v.(map[string]interface{})
+					skip := true
+					for _, prefixe := range prefixes {
+						if strings.HasPrefix(fmt.Sprint(item["Name"]), prefixe) {
+							skip = false
+							break
+						}
+					}
+					if skip {
+						log.Printf("[DEBUG] Skipping the resource %s", item["Name"])
+					}
+
+					action := "DeleteVirtualHost"
+					request := map[string]interface{}{
+						"InstanceId":  instanceId,
+						"VirtualHost": item["Name"],
+					}
+
+					wait := incrementalWait(3*time.Second, 3*time.Second)
+					err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+						if err != nil {
+							if NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					log.Println(WrapError(err))
+				}
+				if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+					request["NextToken"] = nextToken
+				} else {
 					break
 				}
 			}
-			if skip {
-				log.Printf("[DEBUG] Skipping the resource %s", item["Name"])
-			}
-
-			action := "DeleteVirtualHost"
-			request := map[string]interface{}{
-				"InstanceId":  instanceId,
-				"VirtualHost": item["Name"],
-			}
-
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
-			log.Println(WrapError(err))
-		}
-		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
-			request["NextToken"] = nextToken
-		} else {
-			break
 		}
 	}
 
@@ -141,12 +179,12 @@ func TestAccAlicloudAmqpVirtualHost_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       os.Getenv("ALICLOUD_AMQP_INSTANCE_ID"),
+					"instance_id":       "${data.alicloud_amqp_instances.default.ids.0}",
 					"virtual_host_name": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":       os.Getenv("ALICLOUD_AMQP_INSTANCE_ID"),
+						"instance_id":       CHECKSET,
 						"virtual_host_name": name,
 					}),
 				),
@@ -166,6 +204,9 @@ func resourceAmqpVirtualHostConfigDependence(name string) string {
 	return fmt.Sprintf(`
 		variable "name" {
  			default = "%v"
+		}
+		data "alicloud_amqp_instances" "default" {
+			status = "SERVING"
 		}
 		`, name)
 }
