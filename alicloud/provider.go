@@ -450,6 +450,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_exchanges":                              dataSourceAlicloudAmqpExchanges(),
 			"alicloud_cassandra_backup_plans":                      dataSourceAlicloudCassandraBackupPlans(),
 			"alicloud_cen_transit_router_peer_attachments":         dataSourceAlicloudCenTransitRouterPeerAttachments(),
+			"alicloud_amqp_instances":                              dataSourceAlicloudAmqpInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -800,6 +801,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_exchange":                              resourceAlicloudAmqpExchange(),
 			"alicloud_cassandra_backup_plan":                      resourceAlicloudCassandraBackupPlan(),
 			"alicloud_cen_transit_router_peer_attachment":         resourceAlicloudCenTransitRouterPeerAttachment(),
+			"alicloud_amqp_instance":                              resourceAlicloudAmqpInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -958,6 +960,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EventbridgeEndpoint = strings.TrimSpace(endpoints["eventbridge"].(string))
 		config.OnsproxyEndpoint = strings.TrimSpace(endpoints["onsproxy"].(string))
 		config.CdsEndpoint = strings.TrimSpace(endpoints["cds"].(string))
+
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
