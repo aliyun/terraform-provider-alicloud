@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -62,10 +61,8 @@ func TestAccAlicloudAmqpVirtualHostsDataSource(t *testing.T) {
 		existMapFunc: existAmqpVirtualHostsMapFunc,
 		fakeMapFunc:  fakeAmqpVirtualHostsMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithEnvVariable(t, "ALICLOUD_AMQP_INSTANCE_ID")
-	}
-	AmqpVirtualHostsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf)
+
+	AmqpVirtualHostsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf)
 }
 
 func dataSourceAmqpVirtualHostsConfigDependence(name string) string {
@@ -74,9 +71,12 @@ func dataSourceAmqpVirtualHostsConfigDependence(name string) string {
 		 default = "%v"
 		}
 		
+		data "alicloud_amqp_instances" "default" {
+			status = "SERVING"
+		}
 		resource "alicloud_amqp_virtual_host" "default" {
-		  instance_id = "%v"
+		  instance_id       = data.alicloud_amqp_instances.default.ids.0
 		  virtual_host_name = "${var.name}"
 		}
-		`, name, os.Getenv("ALICLOUD_AMQP_INSTANCE_ID"))
+		`, name)
 }
