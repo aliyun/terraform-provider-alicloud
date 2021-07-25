@@ -232,7 +232,11 @@ func csForceUpdateSuppressFunc(k, old, new string, d *schema.ResourceData) bool 
 	// if this is a new resource, allow the diff
 	// args with this suppress func will always suppress the diff, unless user specified force_update
 	log.Printf("key %s, old %s, new %s, isnew %v, id %s", k, old, new, d.IsNewResource(), d.Id())
-	return !(d.Id() == "") && !d.Get("force_update").(bool)
+	// compatible with older versions
+	if v, ok := d.GetOk("force_update"); ok {
+		return !(d.Id() == "") && !v.(bool)
+	}
+	return !(d.Id() == "")
 }
 
 func zoneIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {

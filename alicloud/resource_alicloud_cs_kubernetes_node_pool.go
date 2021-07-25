@@ -76,13 +76,11 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Optional:         true,
 				Sensitive:        true,
 				ConflictsWith:    []string{"key_name", "kms_encrypted_password"},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"key_name": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ConflictsWith:    []string{"password", "kms_encrypted_password"},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"kms_encrypted_password": {
 				Type:          schema.TypeString,
