@@ -118,6 +118,7 @@ type Config struct {
 	EventbridgeEndpoint     string
 	OnsproxyEndpoint        string
 	CdsEndpoint             string
+	HbrEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {
