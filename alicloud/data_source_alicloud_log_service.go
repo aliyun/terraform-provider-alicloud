@@ -34,8 +34,7 @@ func dataSourceAlicloudLogServiceRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("status", "")
 		return nil
 	}
-
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenSlsService)
+	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(fmt.Sprintf("%s.log.aliyuncs.com/open-api", meta.(*connectivity.AliyunClient).RegionId))
 	if err != nil {
 		return WrapError(err)
 	}
