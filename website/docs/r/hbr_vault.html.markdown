@@ -1,5 +1,5 @@
 ---
-subcategory: "HBR"
+subcategory: "Hybrid Backup Recovery (HBR)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_hbr_vault"
 sidebar_current: "docs-alicloud-resource-hbr-vault"
@@ -11,7 +11,7 @@ description: |-
 
 Provides a HBR Vault resource.
 
-For information about HBR Vault and how to use it, see [What is Vault](https://help.aliyun.com/).
+For information about HBR Vault and how to use it, see [What is Vault](https://www.alibabacloud.com/help/zh/doc-detail/62362.htm).
 
 -> **NOTE:** Available in v1.129.0+.
 

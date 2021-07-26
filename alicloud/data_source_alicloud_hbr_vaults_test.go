@@ -13,21 +13,21 @@ func TestAccAlicloudHbrVaultsDataSource(t *testing.T) {
 
 	vaultIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrVaultSourceConfig(rand, map[string]string{
-			"ids":          `["${alicloud_hbr_vault.default.id}"]`,
+			"ids": `["${alicloud_hbr_vault.default.id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrVaultSourceConfig(rand, map[string]string{
-			"ids":          `["${alicloud_hbr_vault.default.id}_fake"]`,
+			"ids": `["${alicloud_hbr_vault.default.id}_fake"]`,
 		}),
 	}
 
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrVaultSourceConfig(rand, map[string]string{
-			"ids":          `["${alicloud_hbr_vault.default.id}"]`,
-			"status":     	`"CREATED"`,
+			"ids":    `["${alicloud_hbr_vault.default.id}"]`,
+			"status": `"CREATED"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrVaultSourceConfig(rand, map[string]string{
-			"ids":          `["${alicloud_hbr_vault.default.id}"]`,
-			"status":     	`"ERROR"`,
+			"ids":    `["${alicloud_hbr_vault.default.id}"]`,
+			"status": `"ERROR"`,
 		}),
 	}
 
@@ -42,23 +42,23 @@ func TestAccAlicloudHbrVaultsDataSource(t *testing.T) {
 
 	vaultTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrVaultSourceConfig(rand, map[string]string{
-			"ids":          `["${alicloud_hbr_vault.default.id}"]`,
-			"vault_type": 	`"STANDARD"`,
+			"ids":        `["${alicloud_hbr_vault.default.id}"]`,
+			"vault_type": `"STANDARD"`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrVaultSourceConfig(rand, map[string]string{
-			"ids":                	`["${alicloud_hbr_vault.default.id}"]`,
+			"ids":        `["${alicloud_hbr_vault.default.id}"]`,
 			"name_regex": `"${alicloud_hbr_vault.default.vault_name}"`,
-			"status": 				`"CREATED"`,
-			"vault_type": 			`"STANDARD"`,
+			"status":     `"CREATED"`,
+			"vault_type": `"STANDARD"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrVaultSourceConfig(rand, map[string]string{
-			"ids":                	`["${alicloud_hbr_vault.default.id}"]`,
-			"name_regex": 			`"${alicloud_hbr_vault.default.vault_name}_fake"`,
-			"status": 				`"ERROR"`,
-			"vault_type": 			`"STANDARD"`,
+			"ids":        `["${alicloud_hbr_vault.default.id}"]`,
+			"name_regex": `"${alicloud_hbr_vault.default.vault_name}_fake"`,
+			"status":     `"ERROR"`,
+			"vault_type": `"STANDARD"`,
 		}),
 	}
 
@@ -82,26 +82,26 @@ resource "alicloud_hbr_vault" "default" {
 data "alicloud_hbr_vaults" "default" {
 %s
 }
-`, rand,  strings.Join(pairs, "\n   "))
+`, rand, strings.Join(pairs, "\n   "))
 	return config
 }
 
 var existHbrVaultMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"vaults.#": 				  "1",
-		"vaults.0.vault_id":          CHECKSET,
-		"vaults.0.vault_type":		  "STANDARD",
-		"vaults.0.description":       "",
-		"vaults.0.status":            "CREATED",
+		"vaults.#":             "1",
+		"vaults.0.vault_id":    CHECKSET,
+		"vaults.0.vault_type":  "STANDARD",
+		"vaults.0.description": "",
+		"vaults.0.status":      "CREATED",
 	}
 }
 
 var fakeHbrVaultMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"vaults.#": 				  "0",
-		"vaults.0.vault_id":          NOSET,
-		"vaults.0.description":       NOSET,
-		"vaults.0.status":            NOSET,
+		"vaults.#":             "0",
+		"vaults.0.vault_id":    NOSET,
+		"vaults.0.description": NOSET,
+		"vaults.0.status":      NOSET,
 	}
 }
 
