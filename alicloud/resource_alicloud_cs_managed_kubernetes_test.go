@@ -443,7 +443,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 					"worker_data_disk_category":   "cloud_ssd",
 					"worker_instance_charge_type": "PostPaid",
 					"slb_internet_enabled":        "true",
-					"version":                     "1.14.8-aliyun.1",
+					"version":                     "1.18.8-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -456,7 +456,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 						"worker_data_disk_size":     "20",
 						"worker_data_disk_category": "cloud_ssd",
 						"slb_internet_enabled":      "true",
-						"version":                   "1.14.8-aliyun.1",
+						"version":                   "1.18.8-aliyun.1",
 					}),
 				),
 			},
@@ -473,11 +473,11 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"version": "1.16.9-aliyun.1",
+					"version": "1.120.4-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": "1.16.9-aliyun.1",
+						"version": "1.120.4-aliyun.1",
 					}),
 				),
 			},
