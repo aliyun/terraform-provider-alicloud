@@ -451,6 +451,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cassandra_backup_plans":                      dataSourceAlicloudCassandraBackupPlans(),
 			"alicloud_cen_transit_router_peer_attachments":         dataSourceAlicloudCenTransitRouterPeerAttachments(),
 			"alicloud_amqp_instances":                              dataSourceAlicloudAmqpInstances(),
+			"alicloud_hbr_vaults":                                  dataSourceAlicloudHbrVaults(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -802,6 +803,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cassandra_backup_plan":                      resourceAlicloudCassandraBackupPlan(),
 			"alicloud_cen_transit_router_peer_attachment":         resourceAlicloudCenTransitRouterPeerAttachment(),
 			"alicloud_amqp_instance":                              resourceAlicloudAmqpInstance(),
+			"alicloud_hbr_vault":                                  resourceAlicloudHbrVault(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -961,6 +963,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.OnsproxyEndpoint = strings.TrimSpace(endpoints["onsproxy"].(string))
 		config.CdsEndpoint = strings.TrimSpace(endpoints["cds"].(string))
 
+		config.HbrEndpoint = strings.TrimSpace(endpoints["hbr"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1183,6 +1186,8 @@ func init() {
 		"onsproxy_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom onsproxy endpoints.",
 
 		"cds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cds endpoints.",
+
+		"hbr_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom hbr endpoints.",
 	}
 }
 
@@ -1227,6 +1232,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"hbr": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["hbr_endpoint"],
+				},
+
 				"onsproxy": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1736,6 +1748,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["eventbridge"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["onsproxy"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cds"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["hbr"].(string)))
 	return hashcode.String(buf.String())
 }
 
