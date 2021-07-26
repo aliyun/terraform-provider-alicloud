@@ -1,5 +1,5 @@
 ---
-subcategory: "HBR"
+subcategory: "Hybrid Backup Recovery (HBR)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_hbr_vaults"
 sidebar_current: "docs-alicloud-datasource-hbr-vaults"
@@ -18,18 +18,13 @@ This data source provides the Hbr Vaults of the current Alibaba Cloud user.
 Basic Usage
 
 ```terraform
-data "alicloud_hbr_vaults" "ids" {}
-output "hbr_vault_id_1" {
-  value = data.alicloud_hbr_vaults.ids.vaults.0.id
-}
-
-data "alicloud_hbr_vaults" "nameRegex" {
+data "alicloud_hbr_vaults" "ids" {
   name_regex = "^my-Vault"
 }
-output "hbr_vault_id_2" {
-  value = data.alicloud_hbr_vaults.nameRegex.vaults.0.id
-}
-            
+
+output "hbr_vault_id_1" {
+  value = data.alicloud_hbr_vaults.ids.vaults.0.id
+}           
 ```
 
 ## Argument Reference
@@ -40,7 +35,7 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Vault name.
 * `vault_type` - (Optional, ForceNew) VaultType. Valid values: `STANDARD`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew, Computed) Status.
+* `status` - (Optional, ForceNew, Computed) The status of Vault. Valid values: `INITIALIZING`, `CREATED`, `ERROR`, `UNKNOWN`.
 
 ## Argument Reference
 
@@ -61,7 +56,7 @@ The following attributes are exported in addition to the arguments listed above:
 	* `create_time` - The creation time of the Vault. UNIX time in seconds.
 	* `updated_time` - The update time of the Vault. UNIX time in seconds.
 	* `latest_replication_time` - The time of the last remote backup synchronization.
-	* `status` - The status of Vault.
+	* `status` - The status of Vault. Valid values: `INITIALIZING`, `CREATED`, `ERROR`, `UNKNOWN`.
 	* `payment_type` - Billing model, possible values:
 		* `FREE` is not billed
 		* `V1` common vault billing model, including back-end storage capacity, client licenses and other billing items
