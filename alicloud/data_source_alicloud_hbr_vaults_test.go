@@ -72,11 +72,11 @@ func testAccCheckAlicloudHbrVaultSourceConfig(rand int, attrMap map[string]strin
 	}
 	config := fmt.Sprintf(`
 variable "name" {
-	default = "testAccHbrVaultsDataSource%d"
+	default = "tf-testAccHbrVaultsDataSource%d"
 }
 
 resource "alicloud_hbr_vault" "default" {
-  vault_name = "${var.name}"
+  vault_name = var.name
 }
 
 data "alicloud_hbr_vaults" "default" {
@@ -90,6 +90,7 @@ var existHbrVaultMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"vaults.#":             "1",
 		"vaults.0.vault_id":    CHECKSET,
+		"vaults.0.vault_name":  fmt.Sprintf("tf-testAccHbrVaultsDataSource%d", rand),
 		"vaults.0.vault_type":  "STANDARD",
 		"vaults.0.description": "",
 		"vaults.0.status":      "CREATED",
@@ -98,10 +99,7 @@ var existHbrVaultMapFunc = func(rand int) map[string]string {
 
 var fakeHbrVaultMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"vaults.#":             "0",
-		"vaults.0.vault_id":    NOSET,
-		"vaults.0.description": NOSET,
-		"vaults.0.status":      NOSET,
+		"vaults.#": "0",
 	}
 }
 
