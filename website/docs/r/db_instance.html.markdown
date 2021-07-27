@@ -336,6 +336,20 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 
 -> **NOTE:** If you set this parameter to Manual, you must specify the ManualHATime parameter.
 * `manual_ha_time` - (Optional, Available in 1.128.0+) The time after when you want to enable automatic primary/secondary switchover. At most, you can set this parameter to 23:59:59 seven days later. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
+* `storage_auto_scale` - (Optional, Available in 1.128.1+)Automatic storage space expansion switch. Valid values:
+  - Enable
+  - Disable
+
+-> **NOTE:** This parameter only takes effect when the StorageAutoScale parameter is set to Enable.
+* `storage_threshold` - (Optional, Available in 1.128.1+)The trigger threshold (percentage) for automatic storage space expansion. Valid values:
+  - 10
+  - 20
+  - 30
+  - 40
+  - 50
+
+-> **NOTE:** This parameter only takes effect when the StorageAutoScale parameter is set to Enable. The value must be greater than or equal to the total size of the current storage space of the instance.
+* `storage_upper_bound` - (Optional, Available in 1.128.1+) The upper limit of the total storage space for automatic expansion of the storage space, that is, automatic expansion will not cause the total storage space of the instance to exceed this value. Unit: GB. The value must be ≥0.
 
 -> **NOTE:** This parameter only takes effect when the HAConfig parameter is set to Manual.
 
