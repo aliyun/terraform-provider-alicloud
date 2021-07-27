@@ -808,6 +808,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_vault":                                  resourceAlicloudHbrVault(),
 			"alicloud_ssl_certificates_service_certificate":       resourceAlicloudSslCertificatesServiceCertificate(),
 			"alicloud_arms_alert_contact":                         resourceAlicloudArmsAlertContact(),
+			"alicloud_event_bridge_slr":                           resourceAlicloudEventBridgeSlr(),
 		},
 
 		ConfigureFunc: providerConfigure,

@@ -7,7 +7,7 @@ description: |-
   Provides a list of log stores to the user.
 ---
 
-# alicloud\_fnf\_flows
+# alicloud\_log\_stores
 
 This data source provides the Log Stores of the current Alibaba Cloud user.
 
