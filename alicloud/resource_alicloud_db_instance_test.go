@@ -156,6 +156,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 					"monitoring_period":        "60",
 					"db_instance_storage_type": "local_ssd",
 					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"ha_config": 				"Auto",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -166,6 +167,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 						"auto_upgrade_minor_version": "Auto",
 						"db_instance_storage_type":   "local_ssd",
 						"resource_group_id":          CHECKSET,
+						"ha_config": 				"Auto",
 					}),
 				),
 			},
@@ -367,6 +369,20 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_ip_mode": SafetyMode,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_auto_scale":  "Enable",
+					"storage_threshold":   "40",
+					"storage_upper_bound": "1000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":  "Enable",
+						"storage_threshold":   "40",
+						"storage_upper_bound": "1000",
 					}),
 				),
 			},
