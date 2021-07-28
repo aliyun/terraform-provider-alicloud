@@ -72,17 +72,15 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				MaxItems: 10,
 			},
 			"password": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				Sensitive:        true,
-				ConflictsWith:    []string{"key_name", "kms_encrypted_password"},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Sensitive:     true,
+				ConflictsWith: []string{"key_name", "kms_encrypted_password"},
 			},
 			"key_name": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ConflictsWith:    []string{"password", "kms_encrypted_password"},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"password", "kms_encrypted_password"},
 			},
 			"kms_encrypted_password": {
 				Type:          schema.TypeString,
@@ -630,10 +628,8 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if d.HasChange("scaling_config") {
-		update = true
-		sc := d.Get("scaling_config").([]interface{})
-		args.AutoScaling = setAutoScalingConfig(sc)
+	if v, ok := d.GetOk("scaling_config"); ok {
+		args.AutoScaling = setAutoScalingConfig(v.([]interface{}))
 	}
 
 	if v, ok := d.Get("management").([]interface{}); len(v) > 0 && ok {

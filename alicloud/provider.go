@@ -451,6 +451,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cassandra_backup_plans":                      dataSourceAlicloudCassandraBackupPlans(),
 			"alicloud_cen_transit_router_peer_attachments":         dataSourceAlicloudCenTransitRouterPeerAttachments(),
 			"alicloud_amqp_instances":                              dataSourceAlicloudAmqpInstances(),
+			"alicloud_cloud_firewall_control_policies":             dataSourceAlicloudCloudFirewallControlPolicies(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -802,6 +803,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cassandra_backup_plan":                      resourceAlicloudCassandraBackupPlan(),
 			"alicloud_cen_transit_router_peer_attachment":         resourceAlicloudCenTransitRouterPeerAttachment(),
 			"alicloud_amqp_instance":                              resourceAlicloudAmqpInstance(),
+			"alicloud_cloud_firewall_control_policy": resourceAlicloudCloudFirewallControlPolicy(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1227,6 +1229,20 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"cloudfw": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cloudfw_endpoint"],
+				},
+
+				"cloudfirewall": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cloudfirewall_endpoint"],
+				},
+
 				"onsproxy": {
 					Type:        schema.TypeString,
 					Optional:    true,

@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"encoding/json"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -218,30 +217,6 @@ func csNodepoolScalingPolicyDiffSuppressFunc(k, old, new string, d *schema.Resou
 		return false
 	}
 	return true
-}
-
-func csForceUpdate(k, old, new string, d *schema.ResourceData) bool {
-	if d.Id() == "" {
-		return false
-	}
-	return !d.Get("force_update").(bool)
-}
-
-func csForceUpdateSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	// many cs args are not returning from the server
-	// if this is a new resource, allow the diff
-	// args with this suppress func will always suppress the diff, unless user specified force_update
-	log.Printf("key %s, old %s, new %s, isnew %v, id %s", k, old, new, d.IsNewResource(), d.Id())
-	return !(d.Id() == "") && !d.Get("force_update").(bool)
-}
-
-func zoneIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if vsw, ok := d.GetOk("vswitch_id"); ok && vsw.(string) != "" {
-		return true
-	} else if multi, ok := d.GetOk("multi_az"); ok && multi.(bool) {
-		return true
-	}
-	return false
 }
 
 func logRetentionPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -680,3 +655,11 @@ func kernelVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) b
 	}
 	return true
 }
+
+func StorageAutoScaleDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("storage_auto_scale"); ok && strings.ToLower(v.(string)) == "enable" {
+		return false
+	}
+	return true
+}
+

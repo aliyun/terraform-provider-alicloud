@@ -163,10 +163,15 @@ func resourceAlicloudCSKubernetesPermissionsDelete(d *schema.ResourceData, meta 
 
 	uid := d.Id()
 
-	// Remove up all permissions owned by the user
-	err = grantPermissions(client, uid, []*cs.GrantPermissionsRequestBody{})
+	// Remove up some clusters permissions owned by the user
+	var perms []interface{}
+	if v, ok := d.GetOk("permissions"); ok {
+		perms = v.(*schema.Set).List()
+	}
+
+	err = grantPermissionsForDeleteSomeClusterPerms(client, uid, parseClusterIds(perms))
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveUserPermissions", err)
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveSomeClustersPermissions", err)
 	}
 	return nil
 }

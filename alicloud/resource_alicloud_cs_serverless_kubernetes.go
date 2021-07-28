@@ -65,9 +65,8 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MinItems:         1,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				ConflictsWith:    []string{"vswitch_id"},
+				MinItems:      1,
+				ConflictsWith: []string{"vswitch_id"},
 			},
 			"service_cidr": {
 				Type:     schema.TypeString,
