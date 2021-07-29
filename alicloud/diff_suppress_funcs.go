@@ -662,4 +662,3 @@ func StorageAutoScaleDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 	}
 	return true
 }
-

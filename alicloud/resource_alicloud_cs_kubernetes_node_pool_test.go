@@ -41,17 +41,18 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                 name,
-					"cluster_id":           "${alicloud_cs_managed_kubernetes.default.0.id}",
-					"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
-					"instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"node_count":           "1",
-					"key_name":             "${alicloud_key_pair.default.key_name}",
-					"system_disk_category": "cloud_efficiency",
-					"system_disk_size":     "40",
-					"data_disks":           []map[string]string{{"size": "100", "category": "cloud_ssd"}},
-					"tags":                 map[string]interface{}{"Created": "TF", "Foo": "Bar"},
-					"management":           []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "0"}},
+					"name":                  name,
+					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
+					"vswitch_ids":           []string{"${alicloud_vswitch.default.id}"},
+					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"node_count":            "1",
+					"key_name":              "${alicloud_key_pair.default.key_name}",
+					"system_disk_category":  "cloud_efficiency",
+					"system_disk_size":      "40",
+					"install_cloud_monitor": "false",
+					"data_disks":            []map[string]string{{"size": "100", "category": "cloud_ssd"}},
+					"tags":                  map[string]interface{}{"Created": "TF", "Foo": "Bar"},
+					"management":            []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "0"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -63,6 +64,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"key_name":                     CHECKSET,
 						"system_disk_category":         "cloud_efficiency",
 						"system_disk_size":             "40",
+						"install_cloud_monitor":        "false",
 						"data_disks.#":                 "1",
 						"data_disks.0.size":            "100",
 						"data_disks.0.category":        "cloud_ssd",
