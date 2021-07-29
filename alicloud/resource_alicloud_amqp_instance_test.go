@@ -119,7 +119,7 @@ func TestAccAlicloudAmqpInstance_professional(t *testing.T) {
 						"queue_capacity":        "50",
 						"support_eip":           "false",
 						"renewal_status":        "NotRenewal",
-						"renewal_duration":      "0",
+						"renewal_duration":      NOSET,
 						"renewal_duration_unit": "",
 					}),
 				),
@@ -134,7 +134,8 @@ func TestAccAlicloudAmqpInstance_professional(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudAmqpInstance_vip(t *testing.T) {
+// Currently, the test account does not support the vip
+func SkipTestAccAlicloudAmqpInstance_vip(t *testing.T) {
 
 	var v map[string]interface{}
 	resourceId := "alicloud_amqp_instance.default"

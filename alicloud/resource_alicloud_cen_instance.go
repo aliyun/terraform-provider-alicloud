@@ -58,7 +58,6 @@ func resourceAlicloudCenInstance() *schema.Resource {
 
 func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cbnService := CbnService{client}
 	var response map[string]interface{}
 	action := "CreateCen"
 	request := make(map[string]interface{})
@@ -98,6 +97,7 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	d.SetId(fmt.Sprint(response["CenId"]))
+	cbnService := CbnService{client}
 	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -129,10 +129,10 @@ func resourceAlicloudCenInstanceRead(d *schema.ResourceData, meta interface{}) e
 }
 func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	cbnService := CbnService{client}
 	var response map[string]interface{}
 	d.Partial(true)
 
-	cbnService := CbnService{client}
 	if d.HasChange("tags") {
 		if err := cbnService.SetResourceTags(d, "cen"); err != nil {
 			return WrapError(err)
@@ -145,19 +145,25 @@ func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	if !d.IsNewResource() && (d.HasChange("cen_instance_name") || d.HasChange("name")) {
 		update = true
-		if _, ok := d.GetOk("cen_instance_name"); ok {
-			request["Name"] = d.Get("cen_instance_name")
-		} else {
-			request["Name"] = d.Get("name")
+		if v, ok := d.GetOk("cen_instance_name"); ok {
+			if _, ok := d.GetOk("cen_instance_name"); ok {
+				request["Name"] = v
+			} else {
+				request["Name"] = v
+			}
 		}
 	}
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
-		request["Description"] = d.Get("description")
+		if v, ok := d.GetOk("description"); ok {
+			request["Description"] = v
+		}
 	}
 	if !d.IsNewResource() && d.HasChange("protection_level") {
 		update = true
-		request["ProtectionLevel"] = d.Get("protection_level")
+		if v, ok := d.GetOk("protection_level"); ok {
+			request["ProtectionLevel"] = v
+		}
 	}
 	if update {
 		action := "ModifyCenAttribute"

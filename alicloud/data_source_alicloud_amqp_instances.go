@@ -204,33 +204,30 @@ func dataSourceAlicloudAmqpInstancesRead(d *schema.ResourceData, meta interface{
 			"id":                fmt.Sprint(object["InstanceId"]),
 			"instance_id":       fmt.Sprint(object["InstanceId"]),
 			"instance_name":     object["InstanceName"],
-			"instance_type":     object["InstanceType"],
+			"instance_type":     convertAmqpInstanceInstanceTypeResponse(object["InstanceType"]),
 			"private_end_point": object["PrivateEndpoint"],
 			"public_endpoint":   object["PublicEndpoint"],
 			"status":            object["Status"],
 			"support_eip":       object["SupportEIP"],
 		}
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["InstanceName"])
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
-			ids = append(ids, fmt.Sprint(object["InstanceId"]))
-			names = append(names, object["InstanceName"])
 			s = append(s, mapping)
 			continue
 		}
-
-		bssOpenAPiService := BssOpenApiService{client}
 		id := fmt.Sprint(object["InstanceId"])
-		getResp, err := bssOpenAPiService.QueryAvailableInstances(id, "ons", "ons_onsproxy_pre")
+		bssOpenApiService := BssOpenApiService{client}
+		getResp, err := bssOpenApiService.QueryAvailableInstances(id, "ons", "ons_onsproxy_pre")
 		if err != nil {
 			return WrapError(err)
 		}
 		mapping["payment_type"] = getResp["SubscriptionType"]
-		if v, ok := getResp["RenewalDuration"]; ok {
+		if v, ok := getResp["RenewalDuration"]; ok && fmt.Sprint(v) != "0" {
 			mapping["renewal_duration"] = formatInt(v)
 		}
 		mapping["renewal_duration_unit"] = convertAmqpInstanceRenewalDurationUnitResponse(getResp["RenewalDurationUnit"])
 		mapping["renewal_status"] = getResp["RenewStatus"]
-		ids = append(ids, fmt.Sprint(mapping["id"]))
-		names = append(names, object["InstanceName"])
 		s = append(s, mapping)
 	}
 
