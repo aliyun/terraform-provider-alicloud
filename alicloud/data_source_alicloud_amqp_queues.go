@@ -186,8 +186,10 @@ func dataSourceAlicloudAmqpQueuesRead(d *schema.ResourceData, meta interface{}) 
 			"virtual_host_name": request["VirtualHost"],
 		}
 		attributesMap := make(map[string]string)
-		for key, value := range object["Attributes"].(map[string]interface{}) {
-			attributesMap[key] = fmt.Sprint(value)
+		if object["Attributes"] != nil {
+			for key, value := range object["Attributes"].(map[string]interface{}) {
+				attributesMap[key] = fmt.Sprint(value)
+			}
 		}
 		mapping["attributes"] = attributesMap
 
