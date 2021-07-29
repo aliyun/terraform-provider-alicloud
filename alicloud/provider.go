@@ -455,6 +455,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_alert_contacts":                         dataSourceAlicloudArmsAlertContacts(),
 			"alicloud_event_bridge_rules":                          dataSourceAlicloudEventBridgeRules(),
 			"alicloud_cloud_firewall_control_policies":             dataSourceAlicloudCloudFirewallControlPolicies(),
+			"alicloud_event_bridge_event_sources":                  dataSourceAlicloudEventBridgeEventSources(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -809,6 +810,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ssl_certificates_service_certificate":       resourceAlicloudSslCertificatesServiceCertificate(),
 			"alicloud_arms_alert_contact":                         resourceAlicloudArmsAlertContact(),
 			"alicloud_event_bridge_slr":                           resourceAlicloudEventBridgeSlr(),
+			"alicloud_event_bridge_event_source":                  resourceAlicloudEventBridgeEventSource(),
 		},
 
 		ConfigureFunc: providerConfigure,
