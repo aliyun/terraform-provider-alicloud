@@ -22,7 +22,7 @@ func resourceAlicloudAmqpInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Hour),
+			Create: schema.DefaultTimeout(60 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"instance_type": {
@@ -38,10 +38,11 @@ func resourceAlicloudAmqpInstance() *schema.Resource {
 			"max_eip_tps": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					v, ok := d.GetOkExists("support_eip")
-					return !(ok && v.(bool))
+					if v, ok := d.GetOkExists("support_eip"); ok && v.(bool) {
+						return false
+					}
+					return true
 				},
 			},
 			"max_tps": {
@@ -59,33 +60,57 @@ func resourceAlicloudAmqpInstance() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Subscription"}, false),
 			},
 			"period": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				ValidateFunc:     validation.IntInSlice([]int{1, 12, 2, 24, 3, 6}),
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntInSlice([]int{1, 12, 2, 24, 3, 6}),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
+						return false
+					}
+					return true
+				},
 			},
 			"queue_capacity": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 			"renewal_duration": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				ValidateFunc:     validation.IntInSlice([]int{1, 12, 2, 3, 6}),
-				DiffSuppressFunc: PostPaidAndRenewalDiffSuppressFunc,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntInSlice([]int{1, 12, 2, 3, 6}),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
+						if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+							return false
+						}
+					}
+					return true
+				},
 			},
 			"renewal_duration_unit": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"Month", "Year"}, false),
-				DiffSuppressFunc: PostPaidAndRenewalDiffSuppressFunc,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
+						if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+							return false
+						}
+					}
+					return true
+				},
 			},
 			"renewal_status": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				Computed:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"AutoRenewal", "ManualRenewal", "NotRenewal"}, false),
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"AutoRenewal", "ManualRenewal", "NotRenewal"}, false),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
+						return false
+					}
+					return true
+				},
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -95,7 +120,10 @@ func resourceAlicloudAmqpInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("instance_type").(string) == "professional"
+					if v, ok := d.GetOk("instance_type"); ok && v.(string) == "vip" {
+						return false
+					}
+					return true
 				},
 			},
 			"support_eip": {
@@ -111,69 +139,63 @@ func resourceAlicloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	action := "CreateInstance"
 	request := make(map[string]interface{})
+	parameterMapList := make([]map[string]interface{}, 0)
 	conn, err := client.NewBssopenapiClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	parameterMapList := make([]map[string]interface{}, 0)
 	parameterMapList = append(parameterMapList, map[string]interface{}{
-		"Code":  "Region",
-		"Value": client.RegionId,
+		"Code":  "InstanceType",
+		"Value": d.Get("instance_type"),
 	})
-	if v, ok := d.GetOk("instance_type"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "InstanceType",
-			"Value": v,
-		})
+	if v, ok := d.GetOk("logistics"); ok {
+		request["Logistics"] = v
 	}
 	if v, ok := d.GetOk("max_eip_tps"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "MaxEipTps",
 			"Value": v,
 		})
+	} else if v, ok := d.GetOkExists("support_eip"); ok && v.(bool) {
+		return WrapError(fmt.Errorf(RequiredWhenMsg, "max_eip_tps", "support_eip", v))
 	}
-	if v, ok := d.GetOk("max_tps"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "MaxTps",
-			"Value": v,
-		})
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "MaxTps",
+		"Value": d.Get("max_tps"),
+	})
+	request["SubscriptionType"] = d.Get("payment_type")
+	if v, ok := d.GetOk("period"); ok {
+		request["Period"] = v
 	}
-	if v, ok := d.GetOk("queue_capacity"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "QueueCapacity",
-			"Value": v,
-		})
+	request["ProductCode"] = "ons"
+	request["ProductType"] = "ons_onsproxy_pre"
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "QueueCapacity",
+		"Value": d.Get("queue_capacity"),
+	})
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "Region",
+		"Value": client.RegionId,
+	})
+	if v, ok := d.GetOk("renewal_duration"); ok {
+		request["RenewPeriod"] = v
+	} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+		return WrapError(fmt.Errorf(RequiredWhenMsg, "renewal_duration", "renewal_status", v))
 	}
-	if v, ok := d.GetOkExists("support_eip"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "SupportEip",
-			"Value": convertAmqpInstanceSupportEipRequest(v),
-		})
+	if v, ok := d.GetOk("renewal_status"); ok {
+		request["RenewalStatus"] = v
 	}
-	if v, ok := d.GetOkExists("storage_size"); ok {
+	if v, ok := d.GetOk("storage_size"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "StorageSize",
 			"Value": v,
 		})
 	}
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "SupportEip",
+		"Value": convertAmqpInstanceSupportEipRequest(d.Get("support_eip").(bool)),
+	})
 	request["Parameter"] = parameterMapList
-	request["SubscriptionType"] = d.Get("payment_type")
-	request["ProductCode"] = "ons"
-	request["ProductType"] = "ons_onsproxy_pre"
-
-	if v, ok := d.GetOk("logistics"); ok {
-		request["Logistics"] = v
-	}
-	if v, ok := d.GetOk("period"); ok {
-		request["Period"] = v
-	}
-
-	if v, ok := d.GetOk("renewal_duration"); ok {
-		request["RenewPeriod"] = v
-	}
-	if v, ok := d.GetOk("renewal_status"); ok {
-		request["RenewalStatus"] = v
-	}
 	request["ClientToken"] = buildClientToken("CreateInstance")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -203,7 +225,7 @@ func resourceAlicloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseData["InstanceId"]))
 	amqpOpenService := AmqpOpenService{client}
-	stateConf := BuildStateConf([]string{}, []string{"SERVING"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, amqpOpenService.AmqpInstanceStateRefreshFunc(d.Id(), []string{"Failed"}))
+	stateConf := BuildStateConf([]string{}, []string{"SERVING"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, amqpOpenService.AmqpInstanceStateRefreshFunc(d.Id(), []string{"EXPIRED"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -222,7 +244,7 @@ func resourceAlicloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 		}
 		return WrapError(err)
 	}
-	d.Set("instance_type", convertAmqpInstanceTypeResponse(object["InstanceType"]))
+	d.Set("instance_type", convertAmqpInstanceInstanceTypeResponse(object["InstanceType"]))
 	d.Set("status", object["Status"])
 	d.Set("support_eip", object["SupportEIP"])
 	bssOpenApiService := BssOpenApiService{client}
@@ -231,7 +253,7 @@ func resourceAlicloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	d.Set("payment_type", queryAvailableInstancesObject["SubscriptionType"])
-	if v, ok := queryAvailableInstancesObject["RenewalDuration"]; ok {
+	if v, ok := queryAvailableInstancesObject["RenewalDuration"]; ok && fmt.Sprint(v) != "0" {
 		d.Set("renewal_duration", formatInt(v))
 	}
 	d.Set("renewal_duration_unit", convertAmqpInstanceRenewalDurationUnitResponse(object["RenewalDurationUnit"]))
@@ -250,7 +272,9 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	if d.HasChange("renewal_status") {
 		update = true
 	}
-	request["RenewalStatus"] = d.Get("renewal_status")
+	if v, ok := d.GetOk("renewal_status"); ok {
+		request["RenewalStatus"] = v
+	}
 	if d.HasChange("payment_type") {
 		update = true
 		request["SubscriptionType"] = d.Get("payment_type")
@@ -259,11 +283,19 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	request["ProductType"] = "ons_onsproxy_pre"
 	if d.HasChange("renewal_duration") {
 		update = true
-		request["RenewalPeriod"] = d.Get("renewal_duration")
+		if v, ok := d.GetOk("renewal_duration"); ok {
+			request["RenewalPeriod"] = v
+		} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+			return WrapError(fmt.Errorf(RequiredWhenMsg, "renewal_duration", "renewal_status", v))
+		}
 	}
 	if d.HasChange("renewal_duration_unit") {
 		update = true
-		request["RenewalPeriodUnit"] = convertAmqpInstanceRenewalDurationUnitRequest(d.Get("renewal_duration_unit").(string))
+		if v, ok := d.GetOk("renewal_duration_unit"); ok {
+			request["RenewalPeriodUnit"] = convertAmqpInstanceRenewalDurationUnitRequest(v.(string))
+		} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+			return WrapError(fmt.Errorf(RequiredWhenMsg, "renewal_duration_unit", "renewal_status", v))
+		}
 	}
 	if update {
 		action := "SetRenewal"
@@ -303,50 +335,53 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	modifyInstanceReq := map[string]interface{}{
 		"InstanceId": d.Id(),
 	}
+	parameterMapList := make([]map[string]interface{}, 0)
+	if d.HasChange("max_tps") {
+		update = true
+	}
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "MaxTps",
+		"Value": d.Get("max_tps"),
+	})
+
+	modifyInstanceReq["SubscriptionType"] = d.Get("payment_type")
+	modifyInstanceReq["ProductCode"] = "ons"
+	if d.HasChange("queue_capacity") {
+		update = true
+	}
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "QueueCapacity",
+		"Value": d.Get("queue_capacity"),
+	})
+	if d.HasChange("support_eip") || d.IsNewResource() {
+		update = true
+	}
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "SupportEip",
+		"Value": convertAmqpInstanceSupportEipRequest(d.Get("support_eip").(bool)),
+	})
 	if d.HasChange("max_eip_tps") {
 		update = true
 	}
-	parameterMapList := make([]map[string]interface{}, 0)
 	if v, ok := d.GetOk("max_eip_tps"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "MaxEipTps",
 			"Value": v,
 		})
-	} else if v, ok := d.GetOkExists("support_eip"); !ok || v.(bool) {
+	} else if v, ok := d.GetOkExists("support_eip"); ok && v.(bool) {
 		return WrapError(fmt.Errorf(RequiredWhenMsg, "max_eip_tps", "support_eip", v))
 	}
-	if d.HasChange("max_tps") {
+	modifyInstanceReq["ProductType"] = "ons_onsproxy_pre"
+	if d.HasChange("storage_size") {
 		update = true
 	}
-	if v, ok := d.GetOk("max_tps"); ok {
+	if v, ok := d.GetOk("storage_size"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "MaxTps",
+			"Code":  "StorageSize",
 			"Value": v,
-		})
-	}
-	if d.HasChange("queue_capacity") {
-		update = true
-	}
-	if v, ok := d.GetOk("queue_capacity"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "QueueCapacity",
-			"Value": v,
-		})
-	}
-
-	if d.HasChange("support_eip") || d.IsNewResource() {
-		update = true
-	}
-	if v, ok := d.GetOkExists("support_eip"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "SupportEip",
-			"Value": convertAmqpInstanceSupportEipRequest(v),
 		})
 	}
 	modifyInstanceReq["Parameter"] = parameterMapList
-	modifyInstanceReq["SubscriptionType"] = d.Get("payment_type")
-	modifyInstanceReq["ProductCode"] = "ons"
-	modifyInstanceReq["ProductType"] = "ons_onsproxy_pre"
 	if update {
 		if v, ok := d.GetOk("modify_type"); ok {
 			modifyInstanceReq["ModifyType"] = v
@@ -382,11 +417,12 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 		if fmt.Sprint(response["Code"]) != "Success" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("max_eip_tps")
 		d.SetPartial("max_tps")
 		d.SetPartial("payment_type")
 		d.SetPartial("queue_capacity")
 		d.SetPartial("support_eip")
+		d.SetPartial("max_eip_tps")
+		d.SetPartial("storage_size")
 	}
 	d.Partial(false)
 	return resourceAlicloudAmqpInstanceRead(d, meta)
@@ -395,7 +431,16 @@ func resourceAlicloudAmqpInstanceDelete(d *schema.ResourceData, meta interface{}
 	log.Printf("[WARN] Cannot destroy resourceAlicloudAmqpInstance. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
-func convertAmqpInstanceTypeResponse(source interface{}) interface{} {
+func convertAmqpInstanceSupportEipRequest(source interface{}) interface{} {
+	switch source {
+	case false:
+		return "eip_false"
+	case true:
+		return "eip_true"
+	}
+	return ""
+}
+func convertAmqpInstanceInstanceTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "PROFESSIONAL":
 		return "professional"
@@ -419,16 +464,6 @@ func convertAmqpInstanceRenewalDurationUnitRequest(source interface{}) interface
 		return "M"
 	case "Year":
 		return "Y"
-	}
-	return source
-}
-
-func convertAmqpInstanceSupportEipRequest(source interface{}) interface{} {
-	switch source {
-	case true:
-		return "eip_true"
-	case false:
-		return "eip_false"
 	}
 	return source
 }

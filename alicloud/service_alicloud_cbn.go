@@ -86,11 +86,13 @@ func (s *CbnService) DescribeCenInstance(id string) (object map[string]interface
 		return nil, WrapError(err)
 	}
 	action := "DescribeCens"
-	request := map[string]interface{}{
-		"RegionId":         s.client.RegionId,
-		"Filter.1.Key":     "CenId",
-		"Filter.1.Value.1": id,
-	}
+	request := map[string]interface{}{}
+	filterMapList := make([]map[string]interface{}, 0)
+	filterMapList = append(filterMapList, map[string]interface{}{
+		"Key":   "CenId",
+		"Value": []string{id},
+	})
+	request["Filter"] = filterMapList
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
