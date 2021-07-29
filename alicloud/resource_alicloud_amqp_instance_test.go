@@ -134,6 +134,7 @@ func TestAccAlicloudAmqpInstance_professional(t *testing.T) {
 		},
 	})
 }
+
 // Currently, the test account does not support the vip
 func SkipTestAccAlicloudAmqpInstance_vip(t *testing.T) {
 

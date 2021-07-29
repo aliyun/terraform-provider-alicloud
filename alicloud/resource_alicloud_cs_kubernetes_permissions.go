@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
 	cs "github.com/alibabacloud-go/cs-20151215/v2/client"
@@ -85,7 +87,14 @@ func resourceAlicloudCSKubernetesPermissionsCreate(d *schema.ResourceData, meta 
 	// Grant Permissions
 	// If other permissions with this right already exist, the existing permissions will be merged
 	grantPermissionsRequest := buildPermissionArgs(d)
-	err = grantPermissionsForAddPerm(client, uid, grantPermissionsRequest)
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		err := grantPermissionsForAddPerm(client, uid, grantPermissionsRequest)
+		if err == nil {
+			return resource.NonRetryableError(err)
+		}
+		time.Sleep(5 * time.Second)
+		return resource.RetryableError(Error("[ERROR] Grant user permission failed %s", d.Id()))
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "GrantPermissions", AliyunTablestoreGoSdk)
 	}
@@ -164,14 +173,13 @@ func resourceAlicloudCSKubernetesPermissionsDelete(d *schema.ResourceData, meta 
 	uid := d.Id()
 
 	// Remove up some clusters permissions owned by the user
-	var perms []interface{}
 	if v, ok := d.GetOk("permissions"); ok {
-		perms = v.(*schema.Set).List()
-	}
-
-	err = grantPermissionsForDeleteSomeClusterPerms(client, uid, parseClusterIds(perms))
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveSomeClustersPermissions", err)
+		if perms := v.(*schema.Set).List(); len(perms) > 0 {
+			err := grantPermissionsForDeleteSomeClusterPerms(client, uid, parseClusterIds(perms))
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveSomeClustersPermissions", err)
+			}
+		}
 	}
 	return nil
 }
@@ -345,6 +353,11 @@ func grantPermissionsForDeleteSomeClusterPerms(client *cs.Client, uid string, cl
 	req := &cs.GrantPermissionsRequest{
 		Body: newPerms,
 	}
+
+	if len(clusters) > 0 && len(newPerms) == 0 {
+		req = &cs.GrantPermissionsRequest{Body: []*cs.GrantPermissionsRequestBody{}}
+	}
+
 	_, err = client.GrantPermissions(tea.String(uid), req)
 	if err != nil {
 		return err
