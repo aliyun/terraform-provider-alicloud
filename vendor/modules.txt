@@ -50,7 +50,6 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/adb
 github.com/aliyun/alibaba-cloud-sdk-go/services/alidns
 github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka
 github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi
-github.com/aliyun/alibaba-cloud-sdk-go/services/cas
 github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra
 github.com/aliyun/alibaba-cloud-sdk-go/services/cbn
 github.com/aliyun/alibaba-cloud-sdk-go/services/cdn

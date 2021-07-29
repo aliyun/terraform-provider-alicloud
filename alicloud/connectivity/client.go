@@ -13,7 +13,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	cdn_new "github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
@@ -121,7 +120,7 @@ type AliyunClient struct {
 	csprojectconnByKey           map[string]*cs.ProjectClient
 	drdsconn                     *drds.Client
 	elasticsearchconn            *elasticsearch.Client
-	casconn                      *cas.Client
+	//casconn                      *cas.Client
 	ddoscooconn                  *ddoscoo.Client
 	ddosbgpconn                  *ddosbgp.Client
 	bssopenapiconn               *bssopenapi.Client
@@ -1506,31 +1505,6 @@ func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse,
 		return nil, fmt.Errorf("caller identity not found")
 	}
 	return identity, err
-}
-
-func (client *AliyunClient) WithCasClient(do func(*cas.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the CAS client if necessary
-	if client.casconn == nil {
-		endpoint := client.config.CasEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CasCode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(CasCode), endpoint)
-		}
-		casconn, err := cas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CAS client: %#v", err)
-		}
-		casconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		casconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		casconn.AppendUserAgent(Terraform, terraformVersion)
-		casconn.AppendUserAgent(Provider, providerVersion)
-		casconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.casconn = casconn
-	}
-
-	return do(client.casconn)
 }
 
 func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interface{}, error)) (interface{}, error) {
