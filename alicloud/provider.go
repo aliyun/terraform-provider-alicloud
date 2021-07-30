@@ -264,7 +264,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nas_mount_targets":                           dataSourceAlicloudNasMountTargets(),
 			"alicloud_nas_file_systems":                            dataSourceAlicloudFileSystems(),
 			"alicloud_nas_protocols":                               dataSourceAlicloudNasProtocols(),
-			"alicloud_cas_certificates":                            dataSourceAlicloudCasCertificates(),
+			"alicloud_cas_certificates":                            dataSourceAlicloudSslCertificatesServiceCertificates(),
 			"alicloud_common_bandwidth_packages":                   dataSourceAlicloudCommonBandwidthPackages(),
 			"alicloud_route_tables":                                dataSourceAlicloudRouteTables(),
 			"alicloud_route_entries":                               dataSourceAlicloudRouteEntries(),
@@ -452,6 +452,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_peer_attachments":         dataSourceAlicloudCenTransitRouterPeerAttachments(),
 			"alicloud_amqp_instances":                              dataSourceAlicloudAmqpInstances(),
 			"alicloud_hbr_vaults":                                  dataSourceAlicloudHbrVaults(),
+			"alicloud_ssl_certificates_service_certificates":       dataSourceAlicloudSslCertificatesServiceCertificates(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -641,7 +642,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_common_bandwidth_package_attachment":        resourceAliyunCommonBandwidthPackageAttachment(),
 			"alicloud_drds_instance":                              resourceAlicloudDRDSInstance(),
 			"alicloud_elasticsearch_instance":                     resourceAlicloudElasticsearch(),
-			"alicloud_cas_certificate":                            resourceAlicloudCasCertificate(),
+			"alicloud_cas_certificate":                            resourceAlicloudSslCertificatesServiceCertificate(),
 			"alicloud_ddoscoo_instance":                           resourceAlicloudDdoscooInstance(),
 			"alicloud_ddosbgp_instance":                           resourceAlicloudDdosbgpInstance(),
 			"alicloud_network_acl":                                resourceAlicloudNetworkAcl(),
@@ -804,6 +805,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_peer_attachment":         resourceAlicloudCenTransitRouterPeerAttachment(),
 			"alicloud_amqp_instance":                              resourceAlicloudAmqpInstance(),
 			"alicloud_hbr_vault":                                  resourceAlicloudHbrVault(),
+			"alicloud_ssl_certificates_service_certificate":       resourceAlicloudSslCertificatesServiceCertificate(),
 		},
 
 		ConfigureFunc: providerConfigure,
