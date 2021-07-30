@@ -1,33 +1,35 @@
-## 1.129.0 (Unreleased)
+## 1.130.0 (Unreleased)
+## 1.129.0 (July 30, 2021)
 
-- **New Resource:** `alicloud_hbr_vault` [GH-3770]
-- **New Resource:** `alicloud_event_bridge_event_bus` [GH-3783]
-- **New Resource:** `alicloud_ssl_certificates_service_certificate` [GH-3781]
-- **New Resource:** `alicloud_arms_alert_contact` [GH-3785]
-- **New Resource:** `alicloud_event_bridge_rule` [GH-3788]
-- **New Resource:** `alicloud_cloud_firewall_control_policy` [GH-3787]  
-- **New Resource:** `alicloud_event_bridge_slr` [GH-3775]
-- **New Resource:** `alicloud_sae_namespace` [GH-3786]
-- **New Data Source:** `alicloud_hbr_vaults` [GH-3770]
-- **New Data Source:** `alicloud_event_bridge_event_buses` [GH-3783]
-- **New Data Source:** `alicloud_ssl_certificates_service_certificates` [GH-3781]
-- **New Data Source:** `alicloud_ssl_certificates_service_certificatess` [GH-3785]
-- **New Data Source:** `alicloud_event_bridge_rules` [GH-3788]
-- **New Data Source:** `alicloud_cloud_firewall_control_policies` [GH-3787]
-- **New Data Source:** `alicloud_sae_namespaces` [GH-3786]
+- **New Resource:** `alicloud_hbr_vault` ([#3770](https://github.com/aliyun/terraform-provider-alicloud/issues/3770))
+- **New Resource:** `alicloud_event_bridge_event_bus` ([#3783](https://github.com/aliyun/terraform-provider-alicloud/issues/3783))
+- **New Resource:** `alicloud_ssl_certificates_service_certificate` ([#3781](https://github.com/aliyun/terraform-provider-alicloud/issues/3781))
+- **New Resource:** `alicloud_arms_alert_contact` ([#3785](https://github.com/aliyun/terraform-provider-alicloud/issues/3785))
+- **New Resource:** `alicloud_event_bridge_rule` ([#3788](https://github.com/aliyun/terraform-provider-alicloud/issues/3788))
+- **New Resource:** `alicloud_cloud_firewall_control_policy` ([#3787](https://github.com/aliyun/terraform-provider-alicloud/issues/3787))  
+- **New Resource:** `alicloud_event_bridge_slr` ([#3775](https://github.com/aliyun/terraform-provider-alicloud/issues/3775))
+- **New Resource:** `alicloud_sae_namespace` ([#3786](https://github.com/aliyun/terraform-provider-alicloud/issues/3786))
+- **New Data Source:** `alicloud_hbr_vaults` ([#3770](https://github.com/aliyun/terraform-provider-alicloud/issues/3770))
+- **New Data Source:** `alicloud_event_bridge_event_buses` ([#3783](https://github.com/aliyun/terraform-provider-alicloud/issues/3783))
+- **New Data Source:** `alicloud_ssl_certificates_service_certificates` ([#3781](https://github.com/aliyun/terraform-provider-alicloud/issues/3781))
+- **New Data Source:** `alicloud_ssl_certificates_service_certificatess` ([#3785](https://github.com/aliyun/terraform-provider-alicloud/issues/3785))
+- **New Data Source:** `alicloud_event_bridge_rules` ([#3788](https://github.com/aliyun/terraform-provider-alicloud/issues/3788))
+- **New Data Source:** `alicloud_cloud_firewall_control_policies` ([#3787](https://github.com/aliyun/terraform-provider-alicloud/issues/3787))
+- **New Data Source:** `alicloud_sae_namespaces` ([#3786](https://github.com/aliyun/terraform-provider-alicloud/issues/3786))
 
 ENHANCEMENTS:
 
-- resource/alicloud_cs_kuberneters: Removes the useless diffFunc [GH-3772]
-- resource/alicloud_db_instance:Adds new attribute storage_auto_scale,storge_thireshold and storage_upper_bound to support storage auto-scaling [GH-3774]
-- resource/alicloud_amqp_instance: Supports to modify the attribute storage_size [GH-3778]
-- resource/alicloud_event_bridge_slr: Add resource not exist code. [GH-3790]  
-- datasource/alicloud_amqp_queues: Improves the setting attribute 'attributes' [GH-3779]
+- resource/alicloud_cs_kuberneters: Removes the useless diffFunc ([#3772](https://github.com/aliyun/terraform-provider-alicloud/issues/3772))
+- resource/alicloud_db_instance:Adds new attribute storage_auto_scale,storge_thireshold and storage_upper_bound to support storage auto-scaling ([#3774](https://github.com/aliyun/terraform-provider-alicloud/issues/3774))
+- resource/alicloud_amqp_instance: Supports to modify the attribute storage_size ([#3778](https://github.com/aliyun/terraform-provider-alicloud/issues/3778))
+- resource/alicloud_event_bridge_slr: Add resource not exist code. ([#3790](https://github.com/aliyun/terraform-provider-alicloud/issues/3790))
+- datasource/alicloud_amqp_queues: Improves the setting attribute 'attributes' ([#3779](https://github.com/aliyun/terraform-provider-alicloud/issues/3779))
 
 BUG FIXES:
-- resource/alicloud_cs_kubernetes_permissions: Fixes grant permission error [GH-3782]
-- datasource/alicloud_log_service: Fixes endpoint connection timeout bug in log service [GH-3768]
-- resource/alicloud_ddoscoo_instance: Fixes the NotApplicable error when creating the instance [GH-3789]
+
+- resource/alicloud_cs_kubernetes_permissions: Fixes grant permission error ([#3782](https://github.com/aliyun/terraform-provider-alicloud/issues/3782))
+- datasource/alicloud_log_service: Fixes endpoint connection timeout bug in log service ([#3768](https://github.com/aliyun/terraform-provider-alicloud/issues/3768))
+- resource/alicloud_ddoscoo_instance: Fixes the NotApplicable error when creating the instance ([#3789](https://github.com/aliyun/terraform-provider-alicloud/issues/3789))
 
 ## 1.128.0 (July 24, 2021)
 
@@ -48,12 +50,12 @@ ENHANCEMENTS:
 - resource/alicloud_disk: delete and recreate disk if snapshot_id changed ([#3361](https://github.com/aliyun/terraform-provider-alicloud/issues/3361))
 - resource/alicloud_cen_instance: Upgrades its dependence sdk ([#3742](https://github.com/aliyun/terraform-provider-alicloud/issues/3742))
 - resource/alicloud_route_table: Removes the specified expectedError into Retry Process with Delete Method ([#3746](https://github.com/aliyun/terraform-provider-alicloud/issues/3746))
-- resource/alicloud_db_instance: Adds engine limitation before invoking ModifySQLCollectorRetention [#3754](https://github.com/aliyun/terraform-provider-alicloud/issues/3754)] 
+- resource/alicloud_db_instance: Adds engine limitation before invoking ModifySQLCollectorRetention ([#3754](https://github.com/aliyun/terraform-provider-alicloud/issues/3754))
 - resource/alicloud_db_instance: Adds attributes ha_config and manual_ha_time to support ModifyHASwitchConfig(enable or disable automatic primary/secondary switchover). ([#3755](https://github.com/aliyun/terraform-provider-alicloud/issues/3755))
 - resource/alicloud_kvstore_instance: Adds parameter dry_run ([#3761](https://github.com/aliyun/terraform-provider-alicloud/issues/3761))
-- resource/alicloud_db_instance: Checks db_instance's status before updating sql_collector_status attribute [#3760](https://github.com/aliyun/terraform-provider-alicloud/issues/3760)]  
+- resource/alicloud_db_instance: Checks db_instance's status before updating sql_collector_status attribute ([#3760](https://github.com/aliyun/terraform-provider-alicloud/issues/3760)) 
 - resource/alicloud_kvstore_instance: Adds new attribute secondary_zone_id to support secondary zone ([#3757](https://github.com/aliyun/terraform-provider-alicloud/issues/3757))
-- resource/alicloud_polardb_cluster: Adds new attribute security_group_ids to support setting security group [#3752](https://github.com/aliyun/terraform-provider-alicloud/issues/3752)]  
+- resource/alicloud_polardb_cluster: Adds new attribute security_group_ids to support setting security group ([#3752](https://github.com/aliyun/terraform-provider-alicloud/issues/3752))  
 - provider: Sets old sdk config EnableAsync to false; Close the location client after it invoked ([#3756](https://github.com/aliyun/terraform-provider-alicloud/issues/3756))
 - vendor: Improves the vendor dependence github.com/sirupsen/logrus ([#3747](https://github.com/aliyun/terraform-provider-alicloud/issues/3747))
 - testcase: Improves the amqp resources testcase ([#3765](https://github.com/aliyun/terraform-provider-alicloud/issues/3765))
