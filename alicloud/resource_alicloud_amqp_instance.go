@@ -157,7 +157,7 @@ func resourceAlicloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 			"Value": v,
 		})
 	} else if v, ok := d.GetOkExists("support_eip"); ok && v.(bool) {
-		return WrapError(fmt.Errorf(RequiredWhenMsg, "max_eip_tps", "support_eip", v))
+		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "max_eip_tps", "support_eip", d.Get("support_eip")))
 	}
 	parameterMapList = append(parameterMapList, map[string]interface{}{
 		"Code":  "MaxTps",
@@ -180,7 +180,7 @@ func resourceAlicloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("renewal_duration"); ok {
 		request["RenewPeriod"] = v
 	} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
-		return WrapError(fmt.Errorf(RequiredWhenMsg, "renewal_duration", "renewal_status", v))
+		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_duration", "renewal_status", d.Get("renewal_status")))
 	}
 	if v, ok := d.GetOk("renewal_status"); ok {
 		request["RenewalStatus"] = v
@@ -286,7 +286,7 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 		if v, ok := d.GetOk("renewal_duration"); ok {
 			request["RenewalPeriod"] = v
 		} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
-			return WrapError(fmt.Errorf(RequiredWhenMsg, "renewal_duration", "renewal_status", v))
+			return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_duration", "renewal_status", d.Get("renewal_status")))
 		}
 	}
 	if d.HasChange("renewal_duration_unit") {
@@ -294,7 +294,7 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 		if v, ok := d.GetOk("renewal_duration_unit"); ok {
 			request["RenewalPeriodUnit"] = convertAmqpInstanceRenewalDurationUnitRequest(v.(string))
 		} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
-			return WrapError(fmt.Errorf(RequiredWhenMsg, "renewal_duration_unit", "renewal_status", v))
+			return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_duration_unit", "renewal_status", d.Get("renewal_status")))
 		}
 	}
 	if update {
@@ -369,7 +369,7 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 			"Value": v,
 		})
 	} else if v, ok := d.GetOkExists("support_eip"); ok && v.(bool) {
-		return WrapError(fmt.Errorf(RequiredWhenMsg, "max_eip_tps", "support_eip", v))
+		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "max_eip_tps", "support_eip", d.Get("support_eip")))
 	}
 	modifyInstanceReq["ProductType"] = "ons_onsproxy_pre"
 	if d.HasChange("storage_size") {

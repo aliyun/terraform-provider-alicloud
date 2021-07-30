@@ -11,7 +11,7 @@ func TestAccAlicloudAmqpInstancesDataSource(t *testing.T) {
 
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_amqp_instances.default"
-	name := fmt.Sprintf("tf-testacc-amqpQueue%v", rand)
+	name := fmt.Sprintf("tf-testacc-amqpInstances%v", rand)
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceAmqpInstancesConfigDependence)
 
@@ -30,7 +30,7 @@ func TestAccAlicloudAmqpInstancesDataSource(t *testing.T) {
 			"ids": []string{"${alicloud_amqp_instance.default.instance_id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_amqp_instance.default.instance_name}_fake"},
+			"ids": []string{"${alicloud_amqp_instance.default.instance_id}_fake"},
 		}),
 	}
 
