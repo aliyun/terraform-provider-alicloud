@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"os"
 	"strings"
 	"testing"
@@ -57,7 +58,11 @@ func TestAccAlicloudSaeNamespaceDataSource(t *testing.T) {
 		existMapFunc: existAlicloudSaeNamespaceDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudSaeNamespaceDataSourceNameMapFunc,
 	}
-	alicloudSaeNamespaceCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.SaeNamespaceSupportRegions)
+	}
+
+	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand,preCheck, idsConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudSaeNamespaceDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

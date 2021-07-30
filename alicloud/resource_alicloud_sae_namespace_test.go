@@ -12,7 +12,7 @@ import (
 
 var region = os.Getenv("ALICLOUD_REGION")
 
-func TestAccAlicloudSAENamespace_basic0(t *testing.T) {
+func TestAccAlicloudSaeNamespace_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_sae_namespace.default"
 	ra := resourceAttrInit(resourceId, AlicloudSAENamespaceMap0)
@@ -27,6 +27,7 @@ func TestAccAlicloudSAENamespace_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.SaeNamespaceSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
