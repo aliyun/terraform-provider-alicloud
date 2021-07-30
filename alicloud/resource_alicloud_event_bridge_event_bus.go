@@ -55,7 +55,7 @@ func resourceAlicloudEventBridgeEventBusCreate(d *schema.ResourceData, meta inte
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -79,11 +79,11 @@ func resourceAlicloudEventBridgeEventBusCreate(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudEventBridgeEventBusRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	eventbridgeShareService := EventbridgeShareService{client}
-	object, err := eventbridgeShareService.DescribeEventBridgeEventBus(d.Id())
+	eventbridgeService := EventbridgeService{client}
+	object, err := eventbridgeService.DescribeEventBridgeEventBus(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_event_bridge_event_bus eventbridgeShareService.DescribeEventBridgeEventBus Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_event_bridge_event_bus eventbridgeService.DescribeEventBridgeEventBus Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -109,7 +109,7 @@ func resourceAlicloudEventBridgeEventBusUpdate(d *schema.ResourceData, meta inte
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -146,7 +146,7 @@ func resourceAlicloudEventBridgeEventBusDelete(d *schema.ResourceData, meta inte
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

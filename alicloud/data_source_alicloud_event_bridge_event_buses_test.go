@@ -28,10 +28,10 @@ func TestAccAlicloudEventBridgeEventBusesDataSource(t *testing.T) {
 	}
 	namePrefixConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
-			"name_prefix": `"tf-testAcc"`,
+			"name_prefix": `"${alicloud_event_bridge_event_bus.default.event_bus_name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
-			"name_prefix": `"tf-testAcc_fake"`,
+			"name_prefix": `"${alicloud_event_bridge_event_bus.default.event_bus_name}_fake"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{

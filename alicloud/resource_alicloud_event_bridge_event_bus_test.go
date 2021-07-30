@@ -14,7 +14,7 @@ func TestAccAlicloudEventBridgeEventBus_basic(t *testing.T) {
 	resourceId := "alicloud_event_bridge_event_bus.default"
 	ra := resourceAttrInit(resourceId, AlicloudEventBridgeEventBusMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventbridgeShareService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &EventbridgeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEventBridgeEventBus")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
