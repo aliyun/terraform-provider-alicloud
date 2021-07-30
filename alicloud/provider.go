@@ -455,6 +455,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_alert_contacts":                         dataSourceAlicloudArmsAlertContacts(),
 			"alicloud_event_bridge_rules":                          dataSourceAlicloudEventBridgeRules(),
 			"alicloud_cloud_firewall_control_policies":             dataSourceAlicloudCloudFirewallControlPolicies(),
+			"alicloud_sae_namespaces":                              dataSourceAlicloudSaeNamespaces(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -809,6 +810,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ssl_certificates_service_certificate":       resourceAlicloudSslCertificatesServiceCertificate(),
 			"alicloud_arms_alert_contact":                         resourceAlicloudArmsAlertContact(),
 			"alicloud_event_bridge_slr":                           resourceAlicloudEventBridgeSlr(),
+			"alicloud_event_bridge_rule":                          resourceAlicloudEventBridgeRule(),
+			"alicloud_cloud_firewall_control_policy":              resourceAlicloudCloudFirewallControlPolicy(),
+			"alicloud_sae_namespace":                              resourceAlicloudSaeNamespace(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -969,7 +973,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.CdsEndpoint = strings.TrimSpace(endpoints["cds"].(string))
 		config.HbrEndpoint = strings.TrimSpace(endpoints["hbr"].(string))
 		config.ArmsEndpoint = strings.TrimSpace(endpoints["arms"].(string))
-
+		config.ServerlessEndpoint = strings.TrimSpace(endpoints["serverless"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1197,6 +1201,7 @@ func init() {
 
 		"arms_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom arms endpoints.",
 
+		"serverless_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom serverless endpoints.",
 	}
 }
 
@@ -1246,6 +1251,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["arms_endpoint"],
+				},
+				"serverless": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["serverless_endpoint"],
 				},
 
 				"hbr": {
@@ -1766,6 +1777,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cds"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["hbr"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["arms"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["serverless"].(string)))
 
 	return hashcode.String(buf.String())
 }
