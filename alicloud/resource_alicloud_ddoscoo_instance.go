@@ -83,11 +83,6 @@ func resourceAlicloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 	request["Period"] = requests.NewInteger(d.Get("period").(int))
-	if d.Get("product_type").(string) == "ddoscoo_intl" {
-		request["RegionId"] = "ap-southeast-1"
-	} else {
-		request["RegionId"] = "cn-hangzhou"
-	}
 	request["ProductCode"] = "ddos"
 	request["ProductType"] = d.Get("product_type").(string)
 	request["SubscriptionType"] = "Subscription"
@@ -124,6 +119,13 @@ func resourceAlicloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
+			}
+			if err != nil {
+				if IsExpectedErrors(err, []string{"NotApplicable"}) {
+					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
