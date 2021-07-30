@@ -119,6 +119,7 @@ type Config struct {
 	OnsproxyEndpoint        string
 	CdsEndpoint             string
 	HbrEndpoint             string
+	ArmsEndpoint            string
 }
 
 func (c *Config) loadAndValidate() error {

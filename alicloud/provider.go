@@ -452,6 +452,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_instances":                              dataSourceAlicloudAmqpInstances(),
 			"alicloud_hbr_vaults":                                  dataSourceAlicloudHbrVaults(),
 			"alicloud_ssl_certificates_service_certificates":       dataSourceAlicloudSslCertificatesServiceCertificates(),
+			"alicloud_arms_alert_contacts":                         dataSourceAlicloudArmsAlertContacts(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -804,6 +805,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_instance":                              resourceAlicloudAmqpInstance(),
 			"alicloud_hbr_vault":                                  resourceAlicloudHbrVault(),
 			"alicloud_ssl_certificates_service_certificate":       resourceAlicloudSslCertificatesServiceCertificate(),
+			"alicloud_arms_alert_contact":                         resourceAlicloudArmsAlertContact(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -964,6 +966,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.CdsEndpoint = strings.TrimSpace(endpoints["cds"].(string))
 
 		config.HbrEndpoint = strings.TrimSpace(endpoints["hbr"].(string))
+		config.ArmsEndpoint = strings.TrimSpace(endpoints["arms"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1188,6 +1191,8 @@ func init() {
 		"cds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cds endpoints.",
 
 		"hbr_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom hbr endpoints.",
+
+		"arms_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom arms endpoints.",
 	}
 }
 
@@ -1232,6 +1237,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"arms": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["arms_endpoint"],
+				},
+
 				"hbr": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1749,6 +1761,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["onsproxy"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cds"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["hbr"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["arms"].(string)))
 	return hashcode.String(buf.String())
 }
 
