@@ -122,6 +122,9 @@ func resourceAlicloudEventBridgeSlrDelete(d *schema.ResourceData, meta interface
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
