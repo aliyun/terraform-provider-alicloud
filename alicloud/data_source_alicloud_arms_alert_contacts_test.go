@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -103,7 +104,11 @@ func TestAccAlicloudArmsAlertContactsDataSource(t *testing.T) {
 		existMapFunc: existArmsAlertContactsMapFunc,
 		fakeMapFunc:  fakeArmsAlertContactsMapFunc,
 	}
-	ArmsAlertContactsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, nameConf, idsConf, emailConf, phoneNumConf, allConf)
+	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.ARMSSupportRegions)
+	}
+	ArmsAlertContactsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, nameConf, idsConf, emailConf, phoneNumConf, allConf)
 }
 
 func dataSourceArmsAlertContactsConfigDependence(name string) string {

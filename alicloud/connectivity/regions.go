@@ -123,3 +123,4 @@ var DmSupportRegions = []Region{Hangzhou, APSouthEast1, APSouthEast2}
 var BssOpenApiSupportRegions = []Region{Hangzhou, Shanghai, APSouthEast1}
 var EipAddressBGPProSupportRegions = []Region{Hongkong}
 var CenTransitRouterVpcAttachmentSupportRegions = []Region{Hangzhou}
+var ARMSSupportRegions = []Region{Hangzhou, Shanghai, Beijing, APSouthEast1}
