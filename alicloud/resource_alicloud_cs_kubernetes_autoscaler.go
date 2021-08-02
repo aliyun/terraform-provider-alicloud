@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -447,7 +448,7 @@ func DeleteAutoscaler(kubeconf string) error {
 		return WrapError(fmt.Errorf("failed to create client-go clientSet,because of %v", err))
 	}
 
-	err = clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Delete(clusterAutoscaler, &metav1.DeleteOptions{})
+	err = clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Delete(context.TODO(), clusterAutoscaler, metav1.DeleteOptions{})
 
 	if errors.IsNotFound(err) == true {
 		return nil
@@ -458,7 +459,7 @@ func DeleteAutoscaler(kubeconf string) error {
 
 // deploy cluster-autoscaler to kubernetes cluster
 func DeployAutoscaler(options autoscalerOptions, clientSet *kubernetes.Clientset) error {
-	deploy, err := clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Get(clusterAutoscaler, metav1.GetOptions{})
+	deploy, err := clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Get(context.TODO(), clusterAutoscaler, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			ak := options.AccessKeyId
@@ -535,7 +536,7 @@ func DeployAutoscaler(options autoscalerOptions, clientSet *kubernetes.Clientset
 					},
 				},
 			}
-			_, err := clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Create(deployObject)
+			_, err := clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Create(context.TODO(), deployObject, metav1.CreateOptions{})
 			if err != nil {
 				return WrapError(fmt.Errorf("failed to create %s deployment,because of %v", clusterAutoscaler, err))
 			}
@@ -546,7 +547,7 @@ func DeployAutoscaler(options autoscalerOptions, clientSet *kubernetes.Clientset
 	} else {
 		// update deployment
 		deploy.Spec.Template.Spec.Containers[0].Command = options.Args
-		_, err := clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Update(deploy)
+		_, err := clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Update(context.TODO(), deploy, metav1.UpdateOptions{})
 		if err != nil {
 			return WrapError(fmt.Errorf("failed to update %s deployment,because of %v", clusterAutoscaler, err))
 		}
@@ -631,10 +632,10 @@ func createOrUpdateAutoscalerMeta(clientSet *kubernetes.Clientset, meta autoscal
 	}
 	cm.Name = clusterAutoscalerMeta
 
-	configmap, err := clientSet.CoreV1().ConfigMaps(defaultAutoscalerNamespace).Get(clusterAutoscalerMeta, metav1.GetOptions{})
+	configmap, err := clientSet.CoreV1().ConfigMaps(defaultAutoscalerNamespace).Get(context.TODO(), clusterAutoscalerMeta, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			_, err = clientSet.CoreV1().ConfigMaps(defaultAutoscalerNamespace).Create(cm)
+			_, err = clientSet.CoreV1().ConfigMaps(defaultAutoscalerNamespace).Create(context.TODO(), cm, metav1.CreateOptions{})
 			if err != nil {
 				return WrapError(fmt.Errorf("failed to create configmap of autoscaler meta,because of %v", err))
 			}
@@ -646,7 +647,7 @@ func createOrUpdateAutoscalerMeta(clientSet *kubernetes.Clientset, meta autoscal
 	}
 	configmap.Data = meta_map
 	// update configmapa
-	_, err = clientSet.CoreV1().ConfigMaps(defaultAutoscalerNamespace).Update(configmap)
+	_, err = clientSet.CoreV1().ConfigMaps(defaultAutoscalerNamespace).Update(context.TODO(), configmap, metav1.UpdateOptions{})
 
 	if err != nil {
 		return WrapError(fmt.Errorf("failed to update configmap autoscaler meta,because of %v", err))
