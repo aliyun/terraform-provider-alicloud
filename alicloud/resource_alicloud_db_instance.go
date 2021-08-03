@@ -371,6 +371,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"ha_config": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Auto", "Manual"}, false),
 			},
 			"manual_ha_time": {
