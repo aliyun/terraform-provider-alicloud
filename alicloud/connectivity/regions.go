@@ -124,4 +124,5 @@ var BssOpenApiSupportRegions = []Region{Hangzhou, Shanghai, APSouthEast1}
 var EipAddressBGPProSupportRegions = []Region{Hongkong}
 var CenTransitRouterVpcAttachmentSupportRegions = []Region{Hangzhou}
 var ARMSSupportRegions = []Region{Hangzhou, Shanghai, Beijing, APSouthEast1}
-var SaeNamespaceSupportRegions = []Region{Hangzhou,Shanghai,Beijing,Zhangjiakou,Hangzhou,USWest1}
+var SaeSupportRegions = []Region{Hangzhou,Shanghai,Beijing,Zhangjiakou,Hangzhou,USWest1}
+var EcdSupportRegions = []Region{Hangzhou,Shanghai,Beijing,Shenzhen,Hongkong,APSouthEast1,APSouthEast2}
