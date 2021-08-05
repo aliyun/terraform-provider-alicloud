@@ -3,7 +3,8 @@ subcategory: "Cloud Firewall"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cloud_firewall_control_policies"
 sidebar_current: "docs-alicloud-datasource-cloud-firewall-control-policies"
-description: |- Provides a list of Cloud Firewall Control Policies to the user.
+description: |- 
+  Provides a list of Cloud Firewall Control Policies to the user.
 ---
 
 # alicloud\_cloud\_firewall\_control\_policies
