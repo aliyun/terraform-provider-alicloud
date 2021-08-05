@@ -44,7 +44,7 @@ func resourceAlicloudCloudFirewallControlPolicy() *schema.Resource {
 			"dest_port": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed:     true,
+				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("dest_port_type"); ok && v.(string) == "port" {
 						return false
@@ -55,7 +55,7 @@ func resourceAlicloudCloudFirewallControlPolicy() *schema.Resource {
 			"dest_port_group": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed:     true,
+				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("dest_port_type"); ok && v.(string) == "group" {
 						return false
