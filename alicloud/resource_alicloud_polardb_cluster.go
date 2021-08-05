@@ -94,6 +94,30 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: polardbPostPaidDiffSuppressFunc,
 			},
+			"db_cluster_ip_array": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"db_cluster_ip_array_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "default",
+						},
+						"security_ips": {
+							Type:     schema.TypeSet,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Optional: true,
+						},
+						"modify_mode": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"Cover", "Append", "Delete"}, false),
+						},
+					},
+				},
+			},
 			"security_ips": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -305,6 +329,14 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("maintain_time")
+	}
+
+	if d.HasChange("db_cluster_ip_array") {
+
+		if err := polarDBService.ModifyDBAccessWhitelistSecurityIps(d); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("db_cluster_ip_array")
 	}
 
 	if d.HasChange("security_ips") {
@@ -528,6 +560,10 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 			d.SetId("")
 			return nil
 		}
+		return WrapError(err)
+	}
+
+	if err = polarDBService.DBClusterIPArrays(d, "db_cluster_ip_array"); err != nil {
 		return WrapError(err)
 	}
 

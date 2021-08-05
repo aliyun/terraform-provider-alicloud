@@ -1319,3 +1319,83 @@ func (s *PolarDBService) DescribeDBSecurityGroups(clusterId string) ([]string, e
 	}
 	return groups, nil
 }
+
+func (s *PolarDBService) ModifyDBAccessWhitelistSecurityIps(d *schema.ResourceData) error {
+	if l, ok := d.GetOk("db_cluster_ip_array"); ok {
+		for _, e := range l.(*schema.Set).List() {
+			pack := e.(map[string]interface{})
+			//ips expand string list
+			ipList := expandStringList(pack["security_ips"].(*schema.Set).List())
+			ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
+			// default disable connect from outside
+			if ipstr == "" {
+				ipstr = LOCAL_HOST_IP
+			}
+			request := polardb.CreateModifyDBClusterAccessWhitelistRequest()
+			request.RegionId = s.client.RegionId
+			request.DBClusterId = d.Id()
+			request.SecurityIps = ipstr
+			request.DBClusterIPArrayName = pack["db_cluster_ip_array_name"].(string)
+			request.ModifyMode = pack["modify_mode"].(string)
+			raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+				return polarDBClient.ModifyDBClusterAccessWhitelist(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			if err := s.WaitForCluster(d.Id(), Running, DefaultTimeoutMedium); err != nil {
+				return WrapError(err)
+			}
+		}
+	}
+	d.SetPartial("db_cluster_ip_array")
+	return nil
+}
+
+func (s *PolarDBService) DBClusterIPArrays(d *schema.ResourceData, attribute string) error {
+	request := polardb.CreateDescribeDBClusterAccessWhitelistRequest()
+	request.RegionId = s.client.RegionId
+	request.DBClusterId = d.Id()
+
+	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+		return polarDBClient.DescribeDBClusterAccessWhitelist(request)
+	})
+	if err != nil {
+		return WrapError(err)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*polardb.DescribeDBClusterAccessWhitelistResponse)
+
+	dbClusterIPArray := response.Items.DBClusterIPArray
+	var dbClusterIPArrays = make([]map[string]interface{}, 0, len(dbClusterIPArray))
+	for _, i := range dbClusterIPArray {
+		if i.DBClusterIPArrayAttribute != "hidden" && i.DBClusterIPArrayName != "default" {
+			l := map[string]interface{}{
+				"db_cluster_ip_array_name": i.DBClusterIPArrayName,
+				"security_ips":             convertPolarDBIpsSetToString(i.SecurityIps),
+			}
+			dbClusterIPArrays = append(dbClusterIPArrays, l)
+		}
+	}
+	if err := d.Set(attribute, dbClusterIPArrays); err != nil {
+		return WrapError(err)
+	}
+
+	return nil
+}
+
+func convertPolarDBIpsSetToString(sourceIps string) []string {
+	ipsMap := make(map[string]string)
+
+	for _, ip := range strings.Split(sourceIps, COMMA_SEPARATED) {
+		ipsMap[ip] = ip
+	}
+	var ips []string
+	if len(ipsMap) > 0 {
+		for key := range ipsMap {
+			ips = append(ips, key)
+		}
+	}
+	return ips
+}

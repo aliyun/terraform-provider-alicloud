@@ -71,6 +71,7 @@ The following arguments are supported:
 * `auto_renew_period` - (Optional) Auto-renewal period of an cluster, in the unit of the month. It is valid when pay_type is `PrePaid`. Valid value:1, 2, 3, 6, 12, 24, 36, Default to 1.
 * `period` - (Optional) The duration that you will buy DB cluster (in month). It is valid when pay_type is `PrePaid`. Valid values: [1~9], 12, 24, 36.
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
+* `db_cluster_ip_array` - (Optional, Type: list, Available in 1.130.0+) db_cluster_ip_array defines how users can send requests to your API.
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of an cluster. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `resource_group_id` (Optional, ForceNew, Computed, Available in 1.96.0+) The ID of resource group which the PolarDB cluster belongs. If not specified, then it belongs to the default resource group.
 * `vswitch_id` - (Optional) The virtual switch ID to launch DB instances in one VPC.
@@ -88,6 +89,15 @@ The following arguments are supported:
 -> **NOTE:** `encrypt_new_tables` Polardb MySQL 8.0 cluster, after TDE and Automatic Encryption are enabled, all newly created tables are automatically encrypted in the cluster.
 * `security_group_ids` - (Optional, Available in 1.128.0+) The ID of the security group. Separate multiple security groups with commas (,). You can add a maximum of three security groups to a cluster.
 -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~20 minutes. Please make full preparation before changing them.
+
+### Block db_cluster_ip_array
+
+The db_cluster_ip_array mapping supports the following:
+
+* `modify_mode` - (Optional) The method for modifying the IP whitelist. Valid values are `Cover`, `Append`, `Delete`.
+* `security_ips` - (Optional) List of IP addresses allowed to access all databases of an cluster. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
+* `db_cluster_ip_array_name` - (Optional) The name of the IP whitelist group. The group name must be 2 to 120 characters in length and consists of lowercase letters and digits. It must start with a letter, and end with a letter or a digit. 
+  -> **NOTE:** If the specified whitelist group name does not exist, the whitelist group is created. If the specified whitelist group name exists, the whitelist group is modified. If you do not specify this parameter, the default group is modified. You can create a maximum of 50 IP whitelist groups for a cluster.
   
 ### Removing alicloud_polardb_cluster from your configuration
 

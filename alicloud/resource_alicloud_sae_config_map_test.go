@@ -10,19 +10,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-
-func TestAccAlicloudSaeNamespace_basic0(t *testing.T) {
+func TestAccAlicloudSaeConfigMap_basic0(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_sae_namespace.default"
-	ra := resourceAttrInit(resourceId, AlicloudSAENamespaceMap0)
+	resourceId := "alicloud_sae_config_map.default"
+	ra := resourceAttrInit(resourceId, AlicloudSAEConfigMapMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SaeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSaeNamespace")
+	}, "DescribeSaeConfigMap")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1, 100)
-	name := fmt.Sprintf("tf-testacc%ssaenamespace%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAENamespaceBasicDependence0)
+	name := fmt.Sprintf("tf-testacc%ssaeconfigmap%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEConfigMapBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -34,49 +33,47 @@ func TestAccAlicloudSaeNamespace_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"namespace_name":        name,
-					"namespace_id":          fmt.Sprintf("%s:tftest%d", os.Getenv("ALICLOUD_REGION"), rand),
-					"namespace_description": "tftestaccdescription",
+					"namespace_id": "${alicloud_sae_namespace.default.namespace_id}",
+					"name":         "tftestaccname",
+					"data":         `{\"env.home\":\"/root\",\"envtest.shell\":\"/bin/sh\"}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"namespace_name":        name,
-						"namespace_id":          fmt.Sprintf("%s:tftest%d", os.Getenv("ALICLOUD_REGION"), rand),
-						"namespace_description": "tftestaccdescription",
+						"namespace_id": fmt.Sprintf("%s:configmaptest",os.Getenv("ALICLOUD_REGION")),
+						"name":         "tftestaccname",
+						"data":         "{\"env.home\":\"/root\",\"envtest.shell\":\"/bin/sh\"}",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"namespace_name": name + "update",
+					"description": "tf-testaccdescription",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"namespace_name":        name + "update",
-						"namespace_description": "tftestaccdescription",
+					"description": "tf-testaccdescription",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"namespace_description": "tftestaccdescriptionupdate",
+					"data": `{\"env.home\":\"/root\",\"env.shell\":\"/bin/sh\"}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"namespace_name":        name + "update",
-						"namespace_description": "tftestaccdescriptionupdate",
+						"data": "{\"env.home\":\"/root\",\"env.shell\":\"/bin/sh\"}",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"namespace_name":        name + "updateall",
-					"namespace_description": "tftestaccdescriptionupdateall",
+					"description": "tf-testAccDesc",
+					"data":        `{\"env.home\":\"/root\",\"envtest.shell\":\"/bin/sh\"}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"namespace_name":        name + "updateall",
-						"namespace_description": "tftestaccdescriptionupdateall",
+						"description": "tf-testAccDesc",
+						"data":        "{\"env.home\":\"/root\",\"envtest.shell\":\"/bin/sh\"}",
 					}),
 				),
 			},
@@ -89,16 +86,22 @@ func TestAccAlicloudSaeNamespace_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudSAENamespaceMap0 = map[string]string{
-	"namespace_name":        "namespace_name",
-	"namespace_id":          fmt.Sprintf("%s:tftest", os.Getenv("ALICLOUD_REGION")),
-	"namespace_description": "tftestaccdescription",
+var AlicloudSAEConfigMapMap0 = map[string]string{
+	"description":  "",
+	"namespace_id": fmt.Sprintf("%s:configmaptest",os.Getenv("ALICLOUD_REGION")),
+	"name":         "tftestaccname",
 }
 
-func AlicloudSAENamespaceBasicDependence0(name string) string {
+func AlicloudSAEConfigMapBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
+resource "alicloud_sae_namespace" "default" {
+  namespace_description = "namespace_desc"
+  namespace_id = "%s:configmaptest"
+  namespace_name = "namespace_name"
+}
+
 variable "name" {
   default = "%s"
 }
-`, name)
+`,os.Getenv("ALICLOUD_REGION"), name)
 }
