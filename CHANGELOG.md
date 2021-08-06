@@ -1,4 +1,20 @@
 ## 1.130.0 (Unreleased)
+
+- **New Resource:** `alicloud_sae_config_map`  [GH-3801]
+- **New Resource:** `alb_security_policy`  [GH-3809]  
+- **New Data Source:** `alicloud_sae_config_maps` [GH-3801]
+- **New Data Source:** `alb_security_policies` [GH-3809]
+
+ENHANCEMENTS:
+
+- resource/alicloud_polardb_cluster: Adds new attribute db_cluster_ip_array to modify security ips array name [GH-3798]
+- resource/resource_alicloud_cs_kubernetes_permissions: User authorization may be cleared when updating user permissions [GH-3807]  
+- testcase/alicloud_sae_namespace: Improves its supported regions [GH-3793]
+
+BUG FIXES:
+
+- resource/alicloud_db_instance: fix bug result of attribute ha_config not set Computed:true. [GH-3797]
+
 ## 1.129.0 (July 30, 2021)
 
 - **New Resource:** `alicloud_hbr_vault` ([#3770](https://github.com/aliyun/terraform-provider-alicloud/issues/3770))
