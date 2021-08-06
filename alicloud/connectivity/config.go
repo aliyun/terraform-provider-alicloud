@@ -124,6 +124,7 @@ type Config struct {
 	ServerlessEndpoint      string
 	AlbEndpoint             string
 	RedisaEndpoint          string
+	GwsecdEndpoint          string
 }
 
 func (c *Config) loadAndValidate() error {

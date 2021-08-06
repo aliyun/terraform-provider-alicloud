@@ -18,15 +18,26 @@ This data source provides the Sae Config Maps of the current Alibaba Cloud user.
 Basic Usage
 
 ```terraform
-
+variable "ConfigMapName" {
+	default = "examplename"
+}
+resource "alicloud_sae_namespace" "example" {
+	namespace_id   = "cn-hangzhou:yourname"
+	namespace_name = "example_value"
+	namespace_description = "your_description"
+}
+resource "alicloud_sae_config_map" "example" {
+	data         = jsonencode({"env.home": "/root", "env.shell": "/bin/sh"})
+	name         = var.ConfigMapName
+	namespace_id = alicloud_sae_namespace.example.namespace_id
+}
 data "alicloud_sae_config_maps" "nameRegex" {
-  namespace_id = "cn-hangzhou:namespaceId"
-  name_regex   = "^my-ConfigMap"
+	namespace_id = alicloud_sae_namespace.example.namespace_id
+	name_regex   = "^example"
 }
-output "sae_config_map_id_2" {
-  value = data.alicloud_sae_config_maps.nameRegex.maps.0.id
-}
-            
+output "sae_config_map_id" {
+	value = data.alicloud_sae_config_maps.nameRegex.maps.0.id
+}           
 ```
 
 ## Argument Reference
@@ -35,7 +46,7 @@ The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of Config Map IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Config Map name.
-* `namespace_id` - (Required, ForceNew) The NamespaceId of Config Maps.
+* `namespace_id` - (Required, ForceNew) The NamespaceId of Config Maps. The Id of Namespace.It can contain 2 to 32 characters.The value is in format {RegionId}:{namespace}.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Argument Reference

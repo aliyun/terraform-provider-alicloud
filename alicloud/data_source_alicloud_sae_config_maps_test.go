@@ -64,7 +64,7 @@ func TestAccAlicloudSaeConfigmapsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeAlicloudSaeNamespaceDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.BssOpenApiSupportRegions)
+		testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
 	}
 	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }

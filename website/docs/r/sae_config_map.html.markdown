@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 variable "ConfigMapName" {
-  default = "example_name"
+  default = "examplename"
 }
 resource "alicloud_sae_config_map" "example" {
   data         = jsonencode({"env.home": "/root", "env.shell": "/bin/sh"})
@@ -29,8 +29,9 @@ resource "alicloud_sae_config_map" "example" {
   namespace_id = alicloud_sae_namespace.example.namespace_id
 }
 resource "alicloud_sae_namespace" "example" {
-  namespace_id   = "cn-hangzhou:NamespaceName"
+  namespace_id   = "cn-hangzhou:yourname"
   namespace_name = "example_value"
+  namespace_description = "your_description"
 }
 
 ```
@@ -42,7 +43,7 @@ The following arguments are supported:
 * `data` - (Required) ConfigMap instance data.
 * `description` - (Optional) The Description of ConfigMap.
 * `name` - (Required, ForceNew) ConfigMap instance name.
-* `namespace_id` - (Required, ForceNew) The NamespaceId of ConfigMap.
+* `namespace_id` - (Required, ForceNew) The NamespaceId of ConfigMap.It can contain 2 to 32 lowercase characters.The value is in format `{RegionId}:{namespace}`
 
 ## Attributes Reference
 
