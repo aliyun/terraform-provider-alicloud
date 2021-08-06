@@ -120,8 +120,9 @@ type Config struct {
 	CdsEndpoint             string
 	HbrEndpoint             string
 	ArmsEndpoint            string
-	CloudfwEndpoint 		string
+	CloudfwEndpoint         string
 	ServerlessEndpoint      string
+	AlbEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {

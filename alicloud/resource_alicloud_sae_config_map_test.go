@@ -39,7 +39,7 @@ func TestAccAlicloudSaeConfigMap_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"namespace_id": fmt.Sprintf("%s:configmaptest",os.Getenv("ALICLOUD_REGION")),
+						"namespace_id": fmt.Sprintf("%s:configmaptest", os.Getenv("ALICLOUD_REGION")),
 						"name":         "tftestaccname",
 						"data":         "{\"env.home\":\"/root\",\"envtest.shell\":\"/bin/sh\"}",
 					}),
@@ -51,7 +51,7 @@ func TestAccAlicloudSaeConfigMap_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-					"description": "tf-testaccdescription",
+						"description": "tf-testaccdescription",
 					}),
 				),
 			},
@@ -88,7 +88,7 @@ func TestAccAlicloudSaeConfigMap_basic0(t *testing.T) {
 
 var AlicloudSAEConfigMapMap0 = map[string]string{
 	"description":  "",
-	"namespace_id": fmt.Sprintf("%s:configmaptest",os.Getenv("ALICLOUD_REGION")),
+	"namespace_id": fmt.Sprintf("%s:configmaptest", os.Getenv("ALICLOUD_REGION")),
 	"name":         "tftestaccname",
 }
 
@@ -103,5 +103,5 @@ resource "alicloud_sae_namespace" "default" {
 variable "name" {
   default = "%s"
 }
-`,os.Getenv("ALICLOUD_REGION"), name)
+`, os.Getenv("ALICLOUD_REGION"), name)
 }

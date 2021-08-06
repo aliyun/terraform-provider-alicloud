@@ -57,7 +57,7 @@ func resourceAlicloudSaeConfigMapCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = StringPointer(v.(string))
 	}
-	request["Name"],request["NamespaceId"] = StringPointer(d.Get("name").(string)),StringPointer(d.Get("namespace_id").(string))
+	request["Name"], request["NamespaceId"] = StringPointer(d.Get("name").(string)), StringPointer(d.Get("namespace_id").(string))
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})

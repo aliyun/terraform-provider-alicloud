@@ -53,7 +53,7 @@ func resourceAlicloudSaeNamespaceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("namespace_description"); ok {
 		request["NamespaceDescription"] = StringPointer(v.(string))
 	}
-	request["NamespaceId"],request["NamespaceName"] = StringPointer(d.Get("namespace_id").(string)),StringPointer(d.Get("namespace_name").(string))
+	request["NamespaceId"], request["NamespaceName"] = StringPointer(d.Get("namespace_id").(string)), StringPointer(d.Get("namespace_name").(string))
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
@@ -176,12 +176,12 @@ func resourceAlicloudSaeNamespaceDelete(d *schema.ResourceData, meta interface{}
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(),"DELETE "+ action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DELETE "+action, AlibabaCloudSdkGoERROR)
 	}
 	if respBody, isExist := response["body"]; isExist {
 		response = respBody.(map[string]interface{})
 	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "DELETE "+ action, response))
+		return WrapError(fmt.Errorf("%s failed, response: %v", "DELETE "+action, response))
 	}
 	addDebug(action, response, request)
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"InvalidNamespaceId.NotFound"}) {
