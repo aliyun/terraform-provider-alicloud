@@ -21,10 +21,10 @@ Basic Usage
 data "alicloud_sae_namespaces" "nameRegex" {
   name_regex = "^my-Namespace"
 }
-output "sae_namespace_id_2" {
+output "sae_namespace_id" {
   value = data.alicloud_sae_namespaces.nameRegex.namespaces.0.id
 }
-            
+
 ```
 
 ## Argument Reference

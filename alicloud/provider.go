@@ -459,6 +459,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_config_maps":                             dataSourceAlicloudSaeConfigMaps(),
 			"alicloud_alb_security_policies":                       dataSourceAlicloudAlbSecurityPolicies(),
 			"alicloud_event_bridge_event_sources":                  dataSourceAlicloudEventBridgeEventSources(),
+			"alicloud_ecd_policy_groups":                           dataSourceAlicloudEcdPolicyGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -821,6 +822,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kvstore_audit_log_config":                   resourceAlicloudKvstoreAuditLogConfig(),
 			"alicloud_event_bridge_event_source":                  resourceAlicloudEventBridgeEventSource(),
 			"alicloud_cloud_firewall_control_policy_order":        resourceAlicloudCloudFirewallControlPolicyOrder(),
+			"alicloud_ecd_policy_group":                           resourceAlicloudEcdPolicyGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -984,6 +986,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ServerlessEndpoint = strings.TrimSpace(endpoints["serverless"].(string))
 		config.AlbEndpoint = strings.TrimSpace(endpoints["alb"].(string))
 		config.RedisaEndpoint = strings.TrimSpace(endpoints["redisa"].(string))
+		config.GwsecdEndpoint = strings.TrimSpace(endpoints["gwsecd"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1216,6 +1219,8 @@ func init() {
 		"alb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom alb endpoints.",
 
 		"redisa_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom redisa endpoints.",
+
+		"gwsecd_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom gwsecd endpoints.",
 	}
 }
 
@@ -1272,7 +1277,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["redisa_endpoint"],
 				},
-
+				"gwsecd": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["gwsecd_endpoint"],
+				},
 				"arms": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1806,8 +1816,8 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["arms"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["serverless"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["alb"].(string)))
-
 	buf.WriteString(fmt.Sprintf("%s-", m["redisa"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["gwsecd"].(string)))
 	return hashcode.String(buf.String())
 }
 

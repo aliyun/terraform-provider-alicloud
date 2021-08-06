@@ -2997,6 +2997,7 @@ func (client *AliyunClient) NewServerlessClient() (*roa.Client, error) {
 	return conn, nil
 }
 
+
 func (client *AliyunClient) NewAlbClient() (*rpc.Client, error) {
 	productCode := "alb"
 	endpoint := ""
@@ -3026,6 +3027,31 @@ func (client *AliyunClient) NewRedisaClient() (*rpc.Client, error) {
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "r-kvstore.aliyuncs.com"
+			client.config.Endpoints[productCode] = endpoint
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewGwsecdClient() (*rpc.Client, error) {
+	productCode := "gwsecd"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = fmt.Sprintf("gwsecd.%s.aliyuncs.com", client.config.RegionId)
 			client.config.Endpoints[productCode] = endpoint
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}

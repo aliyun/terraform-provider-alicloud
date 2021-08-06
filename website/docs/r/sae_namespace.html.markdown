@@ -21,8 +21,9 @@ Basic Usage
 
 ```terraform
 resource "alicloud_sae_namespace" "example" {
-  namespace_id   = "cn-hangzhou:NamespaceName"
+  namespace_id   = "cn-hangzhou:yourname"
   namespace_name = "example_value"
+  namespace_description = "your_description"
 }
 
 ```
@@ -32,7 +33,7 @@ resource "alicloud_sae_namespace" "example" {
 The following arguments are supported:
 
 * `namespace_description` - (Optional) The Description of Namespace.
-* `namespace_id` - (Required, ForceNew) The Id of Namespace.It can contain 2 to 32 characters.The value is in format `{RegionId}:{namespace}`
+* `namespace_id` - (Required, ForceNew) The Id of Namespace.It can contain 2 to 32 lowercase characters.The value is in format `{RegionId}:{namespace}`
 * `namespace_name` - (Required) The Name of Namespace.
 
 ## Attributes Reference
