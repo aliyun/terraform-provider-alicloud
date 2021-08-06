@@ -123,6 +123,7 @@ type Config struct {
 	CloudfwEndpoint         string
 	ServerlessEndpoint      string
 	AlbEndpoint             string
+	RedisaEndpoint          string
 }
 
 func (c *Config) loadAndValidate() error {

@@ -817,6 +817,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_namespace":                              resourceAlicloudSaeNamespace(),
 			"alicloud_sae_config_map":                             resourceAlicloudSaeConfigMap(),
 			"alicloud_alb_security_policy":                        resourceAlicloudAlbSecurityPolicy(),
+			"alicloud_kvstore_audit_log_config":                   resourceAlicloudKvstoreAuditLogConfig(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -979,6 +980,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ArmsEndpoint = strings.TrimSpace(endpoints["arms"].(string))
 		config.ServerlessEndpoint = strings.TrimSpace(endpoints["serverless"].(string))
 		config.AlbEndpoint = strings.TrimSpace(endpoints["alb"].(string))
+		config.RedisaEndpoint = strings.TrimSpace(endpoints["redisa"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1209,6 +1211,8 @@ func init() {
 		"serverless_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom serverless endpoints.",
 
 		"alb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom alb endpoints.",
+
+		"redisa_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom redisa endpoints.",
 	}
 }
 
@@ -1259,6 +1263,13 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["alb_endpoint"],
 				},
+				"redisa": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["redisa_endpoint"],
+				},
+
 				"arms": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1793,6 +1804,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["serverless"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["alb"].(string)))
 
+	buf.WriteString(fmt.Sprintf("%s-", m["redisa"].(string)))
 	return hashcode.String(buf.String())
 }
 
