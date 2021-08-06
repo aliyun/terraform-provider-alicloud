@@ -129,9 +129,9 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 
 		// Remove all clusters permission
 		if len(n) == 0 {
-			err := grantPermissions(client, uid, []*cs.GrantPermissionsRequestBody{})
+			err := grantPermissionsForDeleteSomeClusterPerms(client, uid, parseClusterIds(o))
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveAllClustersPermissions", err)
+				return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveSomeClustersPermissions", err)
 			}
 			d.Partial(false)
 			return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
