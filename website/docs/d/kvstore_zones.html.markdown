@@ -33,6 +33,11 @@ The following arguments are supported:
 
 * `multi` - (Optional) Indicate whether the zones can be used in a multi AZ configuration. Default to `false`. Multi AZ is usually used to launch KVStore instances.
 * `instance_charge_type` - (Optional) Filter the results by a specific instance charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
+* `engine` - (Optional) Database type. Options are `Redis`, `Memcache`. Default to `Redis`.
+* product_type - (Optional, Available in v1.130.0+) The type of the service. Valid values:
+    * Local: an ApsaraDB for Redis instance with a local disk.
+    * OnECS: an ApsaraDB for Redis instance with a standard disk. This type is available only on the Alibaba Cloud China site.
+    
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
