@@ -69,7 +69,7 @@ func resourceAlicloudEventBridgeSlrCreate(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_slr", action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
+	if fmt.Sprint(response["Code"]) != "Success" {
 		return WrapError(fmt.Errorf("CreateServiceLinkedRoleForProduct failed, response: %v", response))
 	}
 	d.SetId(request["ProductName"].(string))
