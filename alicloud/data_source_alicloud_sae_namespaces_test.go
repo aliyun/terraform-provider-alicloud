@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
@@ -62,7 +63,7 @@ func TestAccAlicloudSaeNamespaceDataSource(t *testing.T) {
 		testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
 	}
 
-	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand,preCheck, idsConf, nameRegexConf, allConf)
+	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudSaeNamespaceDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -91,6 +92,6 @@ resource "alicloud_sae_namespace" "default" {
 data "alicloud_sae_namespaces" "default" {	
 	%s
 }
-`, rand, rand,region, rand, strings.Join(pairs, " \n "))
+`, rand, rand, region, rand, strings.Join(pairs, " \n "))
 	return config
 }

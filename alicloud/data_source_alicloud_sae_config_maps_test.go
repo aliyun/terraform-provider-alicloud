@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
@@ -43,9 +44,9 @@ func TestAccAlicloudSaeConfigmapsDataSource(t *testing.T) {
 			"ids.#":                "1",
 			"names.#":              "1",
 			"maps.#":               "1",
-			"maps.0.name":          fmt.Sprintf("tf-testaccsaenames-%d",rand),
-			"maps.0.description":   fmt.Sprintf("tf-testaccsaenamespacedesc-%d",rand),
-			"maps.0.namespace_id":  fmt.Sprintf("%s:configtest",os.Getenv("ALICLOUD_REGION")),
+			"maps.0.name":          fmt.Sprintf("tf-testaccsaenames-%d", rand),
+			"maps.0.description":   fmt.Sprintf("tf-testaccsaenamespacedesc-%d", rand),
+			"maps.0.namespace_id":  fmt.Sprintf("%s:configtest", os.Getenv("ALICLOUD_REGION")),
 			"maps.0.data":          "{\"env.home\":\"/root\",\"env.shell\":\"/bin/sh\"}",
 			"maps.0.create_time":   CHECKSET,
 			"maps.0.config_map_id": CHECKSET,
@@ -65,7 +66,7 @@ func TestAccAlicloudSaeConfigmapsDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.BssOpenApiSupportRegions)
 	}
-	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand,preCheck, idsConf, nameRegexConf, allConf)
+	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudSaeConfigmapsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -95,6 +96,6 @@ data "alicloud_sae_config_maps" "default" {
 	namespace_id = "%s:configtest"
 	%s
 }
-`, rand, rand,os.Getenv("ALICLOUD_REGION"),os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, " \n "))
+`, rand, rand, os.Getenv("ALICLOUD_REGION"), os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, " \n "))
 	return config
 }
