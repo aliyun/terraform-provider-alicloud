@@ -184,3 +184,63 @@ func (s *EventbridgeService) CheckRoleForProductRefreshFunc(id string, failState
 		return object, fmt.Sprint(object["CheckPass"]), nil
 	}
 }
+
+func (s *EventbridgeService) DescribeEventBridgeEventSource(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEventbridgeClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListUserDefinedEventSources"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"Limit":    PageSizeLarge,
+	}
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+		v, err := jsonpath.Get("$.Data.EventSourceList", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.EventSourceList", response)
+		}
+		if len(v.([]interface{})) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge", id)), NotFoundWithResponse, response)
+		}
+		for _, v := range v.([]interface{}) {
+			if v.(map[string]interface{})["Name"].(string) == id {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge", id)), NotFoundWithResponse, response)
+	}
+	return
+}

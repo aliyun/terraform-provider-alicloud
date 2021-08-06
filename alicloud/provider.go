@@ -458,6 +458,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_namespaces":                              dataSourceAlicloudSaeNamespaces(),
 			"alicloud_sae_config_maps":                             dataSourceAlicloudSaeConfigMaps(),
 			"alicloud_alb_security_policies":                       dataSourceAlicloudAlbSecurityPolicies(),
+			"alicloud_event_bridge_event_sources":                  dataSourceAlicloudEventBridgeEventSources(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -818,6 +819,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_config_map":                             resourceAlicloudSaeConfigMap(),
 			"alicloud_alb_security_policy":                        resourceAlicloudAlbSecurityPolicy(),
 			"alicloud_kvstore_audit_log_config":                   resourceAlicloudKvstoreAuditLogConfig(),
+			"alicloud_event_bridge_event_source":                  resourceAlicloudEventBridgeEventSource(),
+
 		},
 
 		ConfigureFunc: providerConfigure,

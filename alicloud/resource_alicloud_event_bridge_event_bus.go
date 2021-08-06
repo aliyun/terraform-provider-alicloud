@@ -69,7 +69,7 @@ func resourceAlicloudEventBridgeEventBusCreate(d *schema.ResourceData, meta inte
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_event_bridge_event_bus", action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
+	if fmt.Sprint(response["Code"]) != "Success" {
 		return WrapError(fmt.Errorf("CreateEventBus failed, response: %v", response))
 	}
 
@@ -123,7 +123,7 @@ func resourceAlicloudEventBridgeEventBusUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Success"]) == "false" {
+		if fmt.Sprint(response["Code"]) != "Success" {
 			return WrapError(fmt.Errorf("UpdateEventBus failed, response: %v", response))
 		}
 	}
