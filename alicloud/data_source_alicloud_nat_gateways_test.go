@@ -48,13 +48,13 @@ func TestAccAlicloudNatGatewaysDataSourceBasic(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_nat_gateway.default.name}"`,
+			"name_regex": `"${alicloud_nat_gateway.default.nat_gateway_name}"`,
 			"vpc_id":     `"${alicloud_vpc.default.id}"`,
 			"ids":        `[ "${alicloud_nat_gateway.default.id}" ]`,
 			"status":     `"Available"`,
 		}),
 		fakeConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_nat_gateway.default.name}"`,
+			"name_regex": `"${alicloud_nat_gateway.default.nat_gateway_name}"`,
 			"ids":        `[ "${alicloud_nat_gateway.default.id}" ]`,
 			"vpc_id":     `"${alicloud_vpc.default.id}_fake"`,
 			"status":     `"Creating"`,
@@ -84,11 +84,20 @@ resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
 }
 
+resource "alicloud_vswitch" "default" {
+	vpc_id = alicloud_vpc.default.id
+	cidr_block = "172.16.0.0/21"
+	zone_id = data.alicloud_zones.default.zones.0.id
+	vswitch_name = var.name
+}
+
 resource "alicloud_nat_gateway" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	specification = "Small"
-	nat_gateway_name = "${var.name}"
+	nat_gateway_name = var.name
     description = "${var.name}_decription"
+	nat_type = "Enhanced"
+	vswitch_id = alicloud_vswitch.default.id
 }
 
 data "alicloud_nat_gateways" "default" {
@@ -112,7 +121,7 @@ var existNatGatewaysMapFunc = func(rand int) map[string]string {
 		"gateways.0.nat_type":             CHECKSET,
 		"gateways.0.payment_type":         CHECKSET,
 		"gateways.0.resource_group_id":    CHECKSET,
-		"gateways.0.vswitch_id":           "",
+		"gateways.0.vswitch_id":           CHECKSET,
 		"gateways.0.specification":        "Small",
 		"gateways.0.status":               "Available",
 		"gateways.0.forward_table_ids.#":  CHECKSET,

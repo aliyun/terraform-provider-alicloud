@@ -142,7 +142,7 @@ func TestAccAlicloudOssBucketObjectsDataSource_versioning(t *testing.T) {
 		return map[string]string{
 			"objects.#":                        "1",
 			"objects.0.key":                    fmt.Sprintf("tf-sample/%s-object", fmt.Sprintf("tf-testacc-bucket-object-%d", rand)),
-			"objects.0.acl":                    "default",
+			"objects.0.acl":                    "private",
 			"objects.0.content_type":           "text/plain",
 			"objects.0.content_length":         CHECKSET,
 			"objects.0.cache_control":          "max-age=0",

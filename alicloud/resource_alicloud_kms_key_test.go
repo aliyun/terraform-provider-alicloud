@@ -118,8 +118,6 @@ func TestAccAlicloudKmsKey_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			// eu-central-1 not support Aliyun_SM4
-			testAccPreCheckWithRegions(t, false, connectivity.KmsKeyUnSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -129,14 +127,14 @@ func TestAccAlicloudKmsKey_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":            name,
-					"key_spec":               "Aliyun_SM4",
+					"key_spec":               "Aliyun_AES_256",
 					"protection_level":       "HSM",
 					"pending_window_in_days": "7",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":            name,
-						"key_spec":               "Aliyun_SM4",
+						"key_spec":               "Aliyun_AES_256",
 						"protection_level":       "HSM",
 						"pending_window_in_days": "7",
 					}),

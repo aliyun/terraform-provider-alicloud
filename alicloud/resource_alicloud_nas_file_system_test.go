@@ -195,7 +195,7 @@ func TestAccAlicloudNasFileSystemEncrypt(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"protocol_type": "${data.alicloud_nas_protocols.example.protocols.0}",
+					"protocol_type": "NFS",
 					"storage_type":  "Capacity",
 					"encrypt_type":  "1",
 				}),
@@ -253,9 +253,6 @@ func AlicloudNasFileSystemBasicDependence1(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
-}
-data "alicloud_nas_protocols" "example" {
-        type = "Capacity"
 }
 resource "alicloud_kms_key" "key" {
  description             = var.name

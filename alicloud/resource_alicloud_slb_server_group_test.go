@@ -201,7 +201,7 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-testAccSlbServerGroupClassicUpdate",
+						"name": "tf-testAccSlbServerGroupClassic",
 					}),
 				),
 			},

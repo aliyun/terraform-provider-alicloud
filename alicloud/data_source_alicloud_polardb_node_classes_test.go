@@ -30,11 +30,6 @@ func TestAccAlicloudPolarDBNodeClasses(t *testing.T) {
 			"db_type":    "Mysql",
 			"db_version": "5.6",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"pay_type":   "PostPaid",
-			"db_type":    "Mysql",
-			"db_version": "fake",
-		}),
 	}
 
 	EngineVersionConfpgsql := dataSourceTestAccConfig{
@@ -42,11 +37,6 @@ func TestAccAlicloudPolarDBNodeClasses(t *testing.T) {
 			"pay_type":   "PostPaid",
 			"db_type":    "PostgreSQL",
 			"db_version": "11",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"pay_type":   "PostPaid",
-			"db_type":    "PostgreSQL",
-			"db_version": "fake",
 		}),
 	}
 

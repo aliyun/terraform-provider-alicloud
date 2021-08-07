@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGpdbConnectionUpdate(t *testing.T) {
+func SkipTestAccAlicloudGpdbConnectionUpdate(t *testing.T) {
 	var v *gpdb.DBInstanceNetInfo
 
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)

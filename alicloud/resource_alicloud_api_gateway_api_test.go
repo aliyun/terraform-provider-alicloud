@@ -175,21 +175,21 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"request_config": []map[string]string{{
-						"protocol": "HTTP",
-						"method":   "GET",
-						"path":     "/test/path/test",
-						"mode":     "MAPPING",
-					}},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"request_config.0.path": "/test/path/test",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"request_config": []map[string]string{{
+			//			"protocol": "HTTP",
+			//			"method":   "GET",
+			//			"path":     "/test/path/test",
+			//			"mode":     "MAPPING",
+			//		}},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"request_config.0.path": "/test/path/test",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"http_service_config": []map[string]string{{
