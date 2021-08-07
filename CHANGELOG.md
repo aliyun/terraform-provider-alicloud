@@ -1,19 +1,33 @@
-## 1.130.0 (Unreleased)
+## 1.131.0 (Unreleased)
+## 1.130.0 (August 07, 2021)
 
-- **New Resource:** `alicloud_sae_config_map`  [GH-3801]
-- **New Resource:** `alb_security_policy`  [GH-3809]  
-- **New Data Source:** `alicloud_sae_config_maps` [GH-3801]
-- **New Data Source:** `alb_security_policies` [GH-3809]
+- **New Resource:** `alicloud_ecp_key_pair`  ([#3815](https://github.com/aliyun/terraform-provider-alicloud/issues/3815))
+- **New Resource:** `alicloud_kvstore_audit_log_config` [[#3812](https://github.com/aliyun/terraform-provider-alicloud/issues/3812)]  
+- **New Resource:** `alicloud_alb_security_policy` ([#3809](https://github.com/aliyun/terraform-provider-alicloud/issues/3809))
+- **New Resource:** `alicloud_ecd_policy_group` ([#3808](https://github.com/aliyun/terraform-provider-alicloud/issues/3808))
+- **New Resource:** `alicloud_event_bridge_event_source` ([#3806](https://github.com/aliyun/terraform-provider-alicloud/issues/3806))
+- **New Resource:** `alicloud_cloud_firewall_control_policy_order` ([#3804](https://github.com/aliyun/terraform-provider-alicloud/issues/3804))
+- **New Resource:** `alicloud_sae_config_map`  ([#3801](https://github.com/aliyun/terraform-provider-alicloud/issues/3801))
+- **New Resource:** `alicloud_alb_security_policy`  [[#3809](https://github.com/aliyun/terraform-provider-alicloud/issues/3809)]  
+- **New Data Source:** `alicloud_ecp_key_pairs` ([#3815](https://github.com/aliyun/terraform-provider-alicloud/issues/3815))
+- **New Data Source:** `alicloud_alb_security_policies` ([#3809](https://github.com/aliyun/terraform-provider-alicloud/issues/3809))
+- **New Data Source:** `alicloud_ecd_policy_groups` ([#3808](https://github.com/aliyun/terraform-provider-alicloud/issues/3808))
+- **New Data Source:** `alicloud_event_bridge_event_sources` ([#3806](https://github.com/aliyun/terraform-provider-alicloud/issues/3806))
+- **New Data Source:** `alicloud_sae_config_maps` ([#3801](https://github.com/aliyun/terraform-provider-alicloud/issues/3801))
 
 ENHANCEMENTS:
 
-- resource/alicloud_polardb_cluster: Adds new attribute db_cluster_ip_array to modify security ips array name [GH-3798]
-- resource/resource_alicloud_cs_kubernetes_permissions: User authorization may be cleared when updating user permissions [GH-3807]  
-- testcase/alicloud_sae_namespace: Improves its supported regions [GH-3793]
+- testcase: Modify getting default vpc filter in the testcase ([#3814](https://github.com/aliyun/terraform-provider-alicloud/issues/3814))
+- resource/alicloud_alidns_record: Fixes the LastOperationNotFinished when creating several records one time ([#3813](https://github.com/aliyun/terraform-provider-alicloud/issues/3813))
+- resource/alicloud_polardb_cluster: Adds new attribute db_cluster_ip_array to modify security ips array name ([#3798](https://github.com/aliyun/terraform-provider-alicloud/issues/3798))
+- resource/resource_alicloud_cs_kubernetes_permissions: User authorization may be cleared when updating user permissions [[#3807](https://github.com/aliyun/terraform-provider-alicloud/issues/3807)]  
+- testcase/alicloud_sae_namespace: Improves its supported regions [[#3793](https://github.com/aliyun/terraform-provider-alicloud/issues/3793)] 
+- data/alicloud_nat_gateways: Removes the nat_type default value; improves the other testcases ([#3762](https://github.com/aliyun/terraform-provider-alicloud/issues/3762))
 
 BUG FIXES:
 
-- resource/alicloud_db_instance: fix bug result of attribute ha_config not set Computed:true. [GH-3797]
+- resource/alicloud_event_bridge_event_bus: Fixes Count Exceed Limit Bug ([#3806](https://github.com/aliyun/terraform-provider-alicloud/issues/3806))
+- resource/alicloud_db_instance: Fixes bug result of attribute ha_config not set Computed:true. ([#3797](https://github.com/aliyun/terraform-provider-alicloud/issues/3797))
 
 ## 1.129.0 (July 30, 2021)
 
