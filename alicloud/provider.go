@@ -460,6 +460,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_security_policies":                       dataSourceAlicloudAlbSecurityPolicies(),
 			"alicloud_event_bridge_event_sources":                  dataSourceAlicloudEventBridgeEventSources(),
 			"alicloud_ecd_policy_groups":                           dataSourceAlicloudEcdPolicyGroups(),
+			"alicloud_ecp_key_pairs":                               dataSourceAlicloudEcpKeyPairs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -823,6 +824,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_event_bridge_event_source":                  resourceAlicloudEventBridgeEventSource(),
 			"alicloud_cloud_firewall_control_policy_order":        resourceAlicloudCloudFirewallControlPolicyOrder(),
 			"alicloud_ecd_policy_group":                           resourceAlicloudEcdPolicyGroup(),
+			"alicloud_ecp_key_pair":                               resourceAlicloudEcpKeyPair(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -987,6 +989,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.AlbEndpoint = strings.TrimSpace(endpoints["alb"].(string))
 		config.RedisaEndpoint = strings.TrimSpace(endpoints["redisa"].(string))
 		config.GwsecdEndpoint = strings.TrimSpace(endpoints["gwsecd"].(string))
+		config.CloudphoneEndpoint = strings.TrimSpace(endpoints["cloudphone"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1221,6 +1224,8 @@ func init() {
 		"redisa_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom redisa endpoints.",
 
 		"gwsecd_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom gwsecd endpoints.",
+
+		"cloudphone_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudphone endpoints.",
 	}
 }
 
@@ -1265,6 +1270,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"cloudphone": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cloudphone_endpoint"],
+				},
+
 				"alb": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1818,6 +1830,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["alb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["redisa"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["gwsecd"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cloudphone"].(string)))
 	return hashcode.String(buf.String())
 }
 

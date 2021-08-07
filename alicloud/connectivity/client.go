@@ -3069,3 +3069,28 @@ func (client *AliyunClient) NewGwsecdClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
+
+func (client *AliyunClient) NewCloudphoneClient() (*rpc.Client, error) {
+	productCode := "cloudphone"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = fmt.Sprintf("cloudphone.%s.aliyuncs.com", client.RegionId)
+			client.config.Endpoints[productCode] = endpoint
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
