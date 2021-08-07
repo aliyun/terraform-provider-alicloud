@@ -93,7 +93,7 @@ func KvstoreAuditLogConfigBasicdependence(name string) string {
 	  product_type   = "Local"
 	}
 	data "alicloud_vpcs" "default" {
-	  is_default = true
+	  name_regex = "default-NODELETING"
 	}
 	data "alicloud_vswitches" "default" {
 	  vpc_id  = data.alicloud_vpcs.default.ids.0

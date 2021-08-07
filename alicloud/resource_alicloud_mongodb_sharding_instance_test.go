@@ -854,7 +854,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 const testMongoDBShardingInstance_vpc_base = `
 data "alicloud_mongodb_zones" "default" {}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {
@@ -888,7 +888,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 const testMongoDBShardingInstance_vpc_name = `
 data "alicloud_mongodb_zones" "default" {}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {
@@ -922,7 +922,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 const testMongoDBShardingInstance_vpc_account_password = `
 data "alicloud_mongodb_zones" "default" {}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {
@@ -957,7 +957,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 const testMongoDBShardingInstance_vpc_mongos = `
 data "alicloud_mongodb_zones" "default" {}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {
@@ -995,7 +995,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 const testMongoDBShardingInstance_vpc_shard = `
 data "alicloud_mongodb_zones" "default" {}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {
@@ -1039,7 +1039,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 const testMongoDBShardingInstance_vpc_backup = `
 data "alicloud_mongodb_zones" "default" {}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {
@@ -1083,7 +1083,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 const testMongoDBShardingInstance_vpc_together = `
 data "alicloud_mongodb_zones" "default" {}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {

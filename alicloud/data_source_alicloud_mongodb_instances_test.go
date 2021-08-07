@@ -138,7 +138,7 @@ func testAccCheckAlicloudMongoDBDataSourceConfig(rand int, attrMap map[string]st
 data "alicloud_mongodb_zones" "default" {}
 
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {

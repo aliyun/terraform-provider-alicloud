@@ -100,7 +100,7 @@ monitor_group_name = var.name
 }
 
 data "alicloud_vpcs" "default" {
-  is_default = true
+  name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
   ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]

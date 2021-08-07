@@ -844,7 +844,7 @@ resource "alicloud_vswitch" "default" {
 const PolarDBCommonTestCase = `
 data "alicloud_polardb_zones" "default"{}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
 	zone_id = local.zone_id
@@ -870,7 +870,7 @@ resource "alicloud_vpc" "default" {
 const AdbCommonTestCase = `
 data "alicloud_adb_zones" "default" {}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
@@ -894,7 +894,7 @@ data "alicloud_kvstore_zones" "default"{
 	instance_charge_type = "PostPaid"
 }
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
 	zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
@@ -922,7 +922,7 @@ resource "alicloud_vswitch" "default" {
 const ElasticsearchInstanceCommonTestCase = `
 data "alicloud_elasticsearch_zones" "default" {}
 data "alicloud_vpcs" "default" {
-  is_default = true
+  name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0

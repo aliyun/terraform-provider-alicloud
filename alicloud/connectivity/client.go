@@ -2997,7 +2997,6 @@ func (client *AliyunClient) NewServerlessClient() (*roa.Client, error) {
 	return conn, nil
 }
 
-
 func (client *AliyunClient) NewAlbClient() (*rpc.Client, error) {
 	productCode := "alb"
 	endpoint := ""

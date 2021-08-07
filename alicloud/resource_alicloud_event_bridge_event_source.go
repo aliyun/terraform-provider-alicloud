@@ -95,7 +95,7 @@ func resourceAlicloudEventBridgeEventSourceCreate(d *schema.ResourceData, meta i
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_event_bridge_event_source", action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Code"]) != "Success"{
+	if fmt.Sprint(response["Code"]) != "Success" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
