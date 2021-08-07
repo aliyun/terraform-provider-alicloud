@@ -36,7 +36,7 @@ func TestAccAlicloudEcdPolicyGroup_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-					"policy_group_name":                 "tf-testaccPolicyGroupName",
+						"policy_group_name": "tf-testaccPolicyGroupName",
 					}),
 				),
 			},
@@ -245,7 +245,7 @@ func TestAccAlicloudEcdPolicyGroup_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"authorize_access_policy_rules.#":   "2",
+						"authorize_access_policy_rules.#": "2",
 					}),
 				),
 			},

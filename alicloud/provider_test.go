@@ -106,6 +106,9 @@ func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connecti
 	region := os.Getenv("ALICLOUD_REGION")
 	find := false
 	backupRegion := string(connectivity.APSouthEast1)
+	if region == string(connectivity.APSouthEast1) {
+		backupRegion = string(connectivity.EUCentral1)
+	}
 	backupRegionFind := false
 	for _, r := range regions {
 		if region == string(r) {
@@ -291,8 +294,20 @@ func testAccPreCheckWithNoDefaultVpc(t *testing.T) {
 	response, _ := raw.(*vpc.DescribeVpcsResponse)
 
 	if len(response.Vpcs.Vpc) < 1 {
-		t.Skipf("Skipping the test case with there is no default vpc")
-		t.Skipped()
+		request.IsDefault = requests.NewBoolean(false)
+		request.VpcName = "default"
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVpcs(request)
+		})
+		if err != nil {
+			t.Skipf("Skipping the test case with err: %s", err)
+			t.Skipped()
+		}
+		response2, _ := raw.(*vpc.DescribeVpcsResponse)
+		if len(response2.Vpcs.Vpc) < 1 {
+			t.Skipf("Skipping the test case with there is no default vpc")
+			t.Skipped()
+		}
 	}
 }
 

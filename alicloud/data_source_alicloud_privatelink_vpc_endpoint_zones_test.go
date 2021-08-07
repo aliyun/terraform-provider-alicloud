@@ -66,7 +66,7 @@ func SkipTestAccAlicloudPrivatelinkVpcEndpointZonesDataSource(t *testing.T) {
 func dataSourcePrivatelinkVpcEndpointZonesDependence(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_vpcs" "default" {
-	 is_default = true
+	 name_regex = "default-NODELETING"
 	}
 
 	data "alicloud_vswitches" "default" {

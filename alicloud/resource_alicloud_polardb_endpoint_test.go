@@ -116,7 +116,7 @@ func resourcePolarDBEndpointConfigDependence(name string) string {
         }
 
         data "alicloud_vpcs" "vpcs_ds"{
-                is_default = "true"
+                name_regex = "default-NODELETING"
         }
 
         resource "alicloud_polardb_cluster" "cluster" {

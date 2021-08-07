@@ -114,7 +114,7 @@ data "alicloud_nas_protocols" "example" {
 }
 
 data "alicloud_vpcs" "example" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "example" {

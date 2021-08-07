@@ -37,17 +37,17 @@ func TestAccAlicloudCloudFirewallControlPolicyOrder_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"order":  "3",
+						"order": "3",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"order":     "2",
+					"order": "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"order":  "2",
+						"order": "2",
 					}),
 				),
 			},

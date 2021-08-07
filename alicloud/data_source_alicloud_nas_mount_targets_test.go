@@ -137,7 +137,7 @@ variable "description" {
   default = "tf-testAccCheckAlicloudFileSystemsDataSource"
 }
 data "alicloud_vpcs" "default" {
-			is_default = true
+			name_regex = "default-NODELETING"
 }
 variable "storage_type" {
   default = "Capacity"

@@ -239,7 +239,7 @@ func resourceDRDSInstanceConfigDependence(name string) string {
 	}
 	
 	data "alicloud_vpcs" "default"	{
-        is_default = "true"
+        name_regex = "default-NODELETING"
 	}
 	data "alicloud_vswitches" "default" {
 	  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
