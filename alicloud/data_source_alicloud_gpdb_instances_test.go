@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudGpdbInstancesDataSource(t *testing.T) {
+func SkipTestAccAlicloudGpdbInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_gpdb_instances.default"
 	name := fmt.Sprintf("tf-testAccGpdbInstance_datasource-%d", rand)

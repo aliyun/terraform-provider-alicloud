@@ -146,11 +146,15 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"vpc_id":           "${alicloud_vpc.default.id}",
 					"nat_gateway_name": "${var.name}",
+					"nat_type":         "Enhanced",
+					"vswitch_id":       "${alicloud_vswitch.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vpc_id":           CHECKSET,
 						"nat_gateway_name": name,
+						"nat_type":         "Enhanced",
+						"vswitch_id":       CHECKSET,
 					}),
 				),
 			},

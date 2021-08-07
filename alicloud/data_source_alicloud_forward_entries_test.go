@@ -127,6 +127,8 @@ resource "alicloud_nat_gateway" "default" {
 	vpc_id = "${alicloud_vswitch.default.vpc_id}"
 	specification = "Small"
 	name = "${var.name}"
+    nat_type = "Enhanced"
+	vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_eip_address" "default" {

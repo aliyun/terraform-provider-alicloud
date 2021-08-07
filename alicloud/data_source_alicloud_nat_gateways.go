@@ -47,7 +47,6 @@ func dataSourceAlicloudNatGateways() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      "Normal",
 				ValidateFunc: validation.StringInSlice([]string{"Enhanced", "Normal"}, false),
 			},
 			"payment_type": {
