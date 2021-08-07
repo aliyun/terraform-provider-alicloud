@@ -125,6 +125,7 @@ type Config struct {
 	AlbEndpoint             string
 	RedisaEndpoint          string
 	GwsecdEndpoint          string
+	CloudphoneEndpoint      string
 }
 
 func (c *Config) loadAndValidate() error {
