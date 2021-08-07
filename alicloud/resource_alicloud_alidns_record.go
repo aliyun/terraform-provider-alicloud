@@ -119,7 +119,7 @@ func resourceAlicloudAlidnsRecordCreate(d *schema.ResourceData, meta interface{}
 			return alidnsClient.AddDomainRecord(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalError"}) {
+			if IsExpectedErrors(err, []string{"InternalError", "LastOperationNotFinished"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
