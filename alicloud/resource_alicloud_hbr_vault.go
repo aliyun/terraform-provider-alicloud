@@ -102,7 +102,7 @@ func resourceAlicloudHbrVaultCreate(d *schema.ResourceData, meta interface{}) er
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudHbrVaultUpdate(d, meta)
+	return resourceAlicloudHbrVaultRead(d, meta)
 }
 func resourceAlicloudHbrVaultRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -130,11 +130,13 @@ func resourceAlicloudHbrVaultUpdate(d *schema.ResourceData, meta interface{}) er
 	request := map[string]interface{}{
 		"VaultId": d.Id(),
 	}
-	if !d.IsNewResource() && d.HasChange("description") {
+	if d.HasChange("description") {
 		update = true
-		request["Description"] = d.Get("description")
+		if v, ok := d.GetOk("description"); ok {
+			request["Description"] = v
+		}
 	}
-	if !d.IsNewResource() && d.HasChange("vault_name") {
+	if d.HasChange("vault_name") {
 		update = true
 		request["VaultName"] = d.Get("vault_name")
 	}

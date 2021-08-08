@@ -84,7 +84,7 @@ if [[ ${SWEEPER} = true ]]; then
     fi
     if [[ ${ALICLOUD_REGION} == "eu-central-1" ]]; then
         echo -e "TF_ACC=1 go test ./alicloud -v  -sweep=ap-southeast-1 -sweep-run=${TEST_SWEEPER_CASE_CODE} -sweep-allow-failures=true"
-        TF_ACC=1 go test ./alicloud -v  -sweep=ap-southeast-1 -sweep-run=${TEST_SWEEPER_CASE_CODE} -sweep-allow-failures=true -timeout=60m
+        TF_ACC=1 go test ./alicloud -v  -sweep=ap-southeast-1 -sweep-allow-failures=true -timeout=60m
     fi
     echo -e "\n--------------- END ---------------"
     exit 0
