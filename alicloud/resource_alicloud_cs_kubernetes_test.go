@@ -117,6 +117,7 @@ func testSweepCSKubernetes(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
+	sweepOtherResourceSuffixes := make([]string, 0)
 
 	raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 		return csClient.DescribeClusters("")
@@ -162,6 +163,7 @@ func testSweepCSKubernetes(region string) error {
 		}
 
 		log.Printf("[INFO] Deleting CS Clusters: %s (%s)", name, id)
+		sweepOtherResourceSuffixes = append(sweepOtherResourceSuffixes, id)
 
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			if err := invoker.Run(func() error {
@@ -226,6 +228,8 @@ func testSweepCSKubernetes(region string) error {
 			log.Printf("[ERROR] Failed to deleting VPC %s: %s", id, WrapError(err))
 		}
 	}
+	// Sweep the log projects which created by K8s Service
+	testSweepLogProjectsWithPrefixAndSuffix(region, []string{}, sweepOtherResourceSuffixes)
 	return nil
 }
 
@@ -824,9 +828,11 @@ func resourceCSKubernetesConfigDependence_multiAZ(name string) string {
 	}
 
 	resource "alicloud_nat_gateway" "default" {
-	  name = "${var.name}"
+	  nat_gateway_name = "${var.name}"
 	  vpc_id = "${alicloud_vpc.default.id}"
 	  specification   = "Small"
+      vswitch_id    = alicloud_vswitch.default1.id
+      nat_type      = "Enhanced"
 	}
 
 	resource "alicloud_snat_entry" "default1" {
