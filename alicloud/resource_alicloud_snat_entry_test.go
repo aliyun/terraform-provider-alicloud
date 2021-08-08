@@ -137,7 +137,7 @@ resource "alicloud_nat_gateway" "default" {
   depends_on    = [alicloud_vpc.default]
   vpc_id        = alicloud_vswitch.default.vpc_id
   specification = "Small"
-  name          = "${var.name}"
+  nat_gateway_name          = "${var.name}"
   vswitch_id    = alicloud_vswitch.default.id
   nat_type      = "Enhanced"
 }
@@ -182,7 +182,7 @@ resource "alicloud_nat_gateway" "default" {
   depends_on    = [alicloud_vpc.default]
   vpc_id        = alicloud_vswitch.default[0].vpc_id
   specification = "Small"
-  name          = "${var.name}"
+  nat_gateway_name          = "${var.name}"
   vswitch_id    = alicloud_vswitch.default[0].id
   nat_type      = "Enhanced"
 }
