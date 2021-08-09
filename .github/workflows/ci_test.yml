@@ -5,7 +5,7 @@ on:
       - .github/workflows/ci_test.yml
       - .go-version
       - alicloud/*_test.go
-      #- scripts/validate-terraform.sh
+      - scripts/validate-terraform.sh
       - tools/go.mod
     branches:
       - master
@@ -14,7 +14,7 @@ on:
       - .github/workflows/ci_test.yml
       - .go-version
       - alicloud/*_test.go
-      #- scripts/validate-terraform.sh
+      - scripts/validate-terraform.sh
       - tools/go.mod
 
 jobs:
