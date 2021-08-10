@@ -463,6 +463,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecp_key_pairs":                               dataSourceAlicloudEcpKeyPairs(),
 			"alicloud_hbr_oss_backup_plans":                        dataSourceAlicloudHbrOssBackupPlans(),
 			"alicloud_scdn_domains":                                dataSourceAlicloudScdnDomains(),
+			"alicloud_alb_server_groups":                           dataSourceAlicloudAlbServerGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -829,6 +830,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecp_key_pair":                               resourceAlicloudEcpKeyPair(),
 			"alicloud_hbr_oss_backup_plan":                        resourceAlicloudHbrOssBackupPlan(),
 			"alicloud_scdn_domain":                                resourceAlicloudScdnDomain(),
+			"alicloud_alb_server_group":                           resourceAlicloudAlbServerGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
