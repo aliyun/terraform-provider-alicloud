@@ -39,11 +39,12 @@ resource "alicloud_eip_address" "example" {
 The following arguments are supported:
 
 * `activity_id` - (Optional) The activity id.
-* `address_name` - (Optional) The name of the EIP.
+* `address_name` - (Optional) The name of the EIP instance. This name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://.
 * `bandwidth` - (Optional, Computed) The maximum bandwidth of the EIP. Valid values: `1` to `200`. Unit: Mbit/s. Default value: `5`.
 * `deletion_protection` - (Optional, Computed) Whether enable the deletion protection or not. Default value: `false`.
 * `description` - (Optional) The description of the EIP.
-* `internet_charge_type` - (Optional, ForceNew) The metering method of the EIP. Valid values: `PayByBandwidth` This is the default value. `PayByTraffic`. If `payment_type` is set to `Subscription`, `internet_charge_type` must be set to `PayByBandwidth`. If `payment_type` is set to `PayAsYouGo`, `internet_charge_type` can be set to `PayByBandwidth` or `PayByTraffic`.
+* `internet_charge_type` - (Optional, ForceNew) The metering method of the EIP. 
+  Valid values: `PayByBandwidth` and `PayByTraffic`. Default to `PayByBandwidth`. **NOTE:** It must be set to "PayByBandwidth" when `payment_type` is "Subscription".
 * `isp` - (Optional, ForceNew) The line type. You can set this parameter only when you create a `PayAsYouGo` EIP. Valid values: `BGP`: BGP (Multi-ISP) lines.Up to 89 high-quality BGP lines are available worldwide. Direct connections with multiple Internet Service Providers (ISPs), including Telecom, Unicom, Mobile, Railcom, Netcom, CERNET, China Broadcast Network, Dr. Peng, and Founder, can be established in all regions in mainland China. `BGP_PRO`:  BGP (Multi-ISP) Pro lines optimize data transmission to mainland China and improve connection quality for international services. Compared with BGP (Multi-ISP), when BGP (Multi-ISP) Pro provides services to clients in mainland China (excluding data centers), cross-border connections are established without using international ISP services. This reduces network latency.
 * `netmode` - (Optional) The type of the network. Valid value is `public` (Internet).
 * `payment_type` - (Optional, ForceNew) The billing method of the EIP. Valid values: `Subscription` and `PayAsYouGo`. Default value is `PayAsYouGo`. 
