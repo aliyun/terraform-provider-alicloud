@@ -46,6 +46,7 @@ resource "alicloud_amqp_instance" "vip" {
 
 The following arguments are supported:
 
+* `instance_name` - (Optional, Available in v1.131.0+) The instance name.
 * `instance_type` - (Required, ForceNew) The Instance Type. Valid values: `professional`, `vip`.
 * `max_eip_tps` - (Optional) The max eip tps. It is valid when `support_eip` is true. The valid value is [128, 45000] with the step size 128.
 * `max_tps` - (Required) The peak TPS traffic. The smallest valid value is 1000 and the largest value is 100,000.

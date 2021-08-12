@@ -58,7 +58,7 @@ func (s *AmqpOpenService) DescribeAmqpVirtualHost(id string) (object map[string]
 			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
-			if v.(map[string]interface{})["Name"].(string) == parts[1] {
+			if fmt.Sprint(v.(map[string]interface{})["Name"]) == parts[1] {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
@@ -121,7 +121,7 @@ func (s *AmqpOpenService) DescribeAmqpQueue(id string) (object map[string]interf
 			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
-			if v.(map[string]interface{})["Name"].(string) == parts[2] {
+			if fmt.Sprint(v.(map[string]interface{})["Name"]) == parts[2] {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
@@ -184,7 +184,7 @@ func (s *AmqpOpenService) DescribeAmqpExchange(id string) (object map[string]int
 			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
-			if v.(map[string]interface{})["Name"].(string) == parts[2] {
+			if fmt.Sprint(v.(map[string]interface{})["Name"]) == parts[2] {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
@@ -240,7 +240,7 @@ func (s *AmqpOpenService) DescribeAmqpInstance(id string) (object map[string]int
 			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
-			if v.(map[string]interface{})["InstanceId"].(string) == id {
+			if fmt.Sprint(v.(map[string]interface{})["InstanceId"]) == id {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
