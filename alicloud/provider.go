@@ -461,6 +461,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_event_bridge_event_sources":                  dataSourceAlicloudEventBridgeEventSources(),
 			"alicloud_ecd_policy_groups":                           dataSourceAlicloudEcdPolicyGroups(),
 			"alicloud_ecp_key_pairs":                               dataSourceAlicloudEcpKeyPairs(),
+			"alicloud_hbr_oss_backup_plans":                        dataSourceAlicloudHbrOssBackupPlans(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -825,6 +826,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_firewall_control_policy_order":        resourceAlicloudCloudFirewallControlPolicyOrder(),
 			"alicloud_ecd_policy_group":                           resourceAlicloudEcdPolicyGroup(),
 			"alicloud_ecp_key_pair":                               resourceAlicloudEcpKeyPair(),
+			"alicloud_hbr_oss_backup_plan":                        resourceAlicloudHbrOssBackupPlan(),
 		},
 
 		ConfigureFunc: providerConfigure,
