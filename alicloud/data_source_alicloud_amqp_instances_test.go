@@ -18,7 +18,7 @@ func TestAccAlicloudAmqpInstancesDataSource(t *testing.T) {
 	// Currently, there is missing OpenAPI to set instance name when creating the instance.
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_amqp_instance.default.instance_id}",
+			"name_regex": "${alicloud_amqp_instance.default.instance_name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "fake_tf-testacc*",
@@ -39,7 +39,7 @@ func TestAccAlicloudAmqpInstancesDataSource(t *testing.T) {
 			"ids.#":                             "1",
 			"names.#":                           "1",
 			"instances.#":                       "1",
-			"instances.0.instance_name":         CHECKSET,
+			"instances.0.instance_name":         name,
 			"instances.0.instance_id":           CHECKSET,
 			"instances.0.id":                    CHECKSET,
 			"instances.0.instance_type":         "professional",
@@ -83,6 +83,7 @@ func dataSourceAmqpInstancesConfigDependence(name string) string {
 		}
 
 		resource "alicloud_amqp_instance" "default" {
+		  instance_name  = var.name
 		  instance_type  = "professional"
 		  payment_type   = "Subscription"
 		  renewal_status = "ManualRenewal"

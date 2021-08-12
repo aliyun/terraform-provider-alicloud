@@ -59,7 +59,7 @@ func (s *BssOpenApiService) QueryAvailableInstances(id, productCode, productType
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
 	} else {
-		if v.([]interface{})[0].(map[string]interface{})["InstanceID"].(string) != id {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceID"]) != id {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
 		}
 	}

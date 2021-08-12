@@ -25,6 +25,10 @@ func resourceAlicloudAmqpInstance() *schema.Resource {
 			Create: schema.DefaultTimeout(60 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"instance_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"instance_type": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -230,7 +234,7 @@ func resourceAlicloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudAmqpInstanceRead(d, meta)
+	return resourceAlicloudAmqpInstanceUpdate(d, meta)
 }
 func resourceAlicloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -244,6 +248,7 @@ func resourceAlicloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 		}
 		return WrapError(err)
 	}
+	d.Set("instance_name", object["InstanceName"])
 	d.Set("instance_type", convertAmqpInstanceInstanceTypeResponse(object["InstanceType"]))
 	d.Set("status", object["Status"])
 	d.Set("support_eip", object["SupportEIP"])
@@ -267,24 +272,61 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 
 	update := false
 	request := map[string]interface{}{
+		"InstanceId": d.Id(),
+	}
+	if d.HasChange("instance_name") {
+		update = true
+	}
+	if v, ok := d.GetOk("instance_name"); ok {
+		request["InstanceName"] = v
+	}
+	if update {
+		action := "UpdateInstanceName"
+		conn, err := client.NewOnsproxyClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+		d.SetPartial("instance_name")
+	}
+	update = false
+	setRenewalReq := map[string]interface{}{
 		"InstanceIDs": d.Id(),
 	}
-	if d.HasChange("renewal_status") {
+	if !d.IsNewResource() && d.HasChange("renewal_status") {
 		update = true
 	}
 	if v, ok := d.GetOk("renewal_status"); ok {
-		request["RenewalStatus"] = v
+		setRenewalReq["RenewalStatus"] = v
 	}
-	if d.HasChange("payment_type") {
+	if !d.IsNewResource() && d.HasChange("payment_type") {
 		update = true
-		request["SubscriptionType"] = d.Get("payment_type")
+		setRenewalReq["SubscriptionType"] = d.Get("payment_type")
 	}
-	request["ProductCode"] = "ons"
-	request["ProductType"] = "ons_onsproxy_pre"
-	if d.HasChange("renewal_duration") {
+	setRenewalReq["ProductCode"] = "ons"
+	setRenewalReq["ProductType"] = "ons_onsproxy_pre"
+	if !d.IsNewResource() && d.HasChange("renewal_duration") {
 		update = true
 		if v, ok := d.GetOk("renewal_duration"); ok {
-			request["RenewalPeriod"] = v
+			setRenewalReq["RenewalPeriod"] = v
 		} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
 			return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_duration", "renewal_status", d.Get("renewal_status")))
 		}
@@ -292,7 +334,7 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	if d.HasChange("renewal_duration_unit") {
 		update = true
 		if v, ok := d.GetOk("renewal_duration_unit"); ok {
-			request["RenewalPeriodUnit"] = convertAmqpInstanceRenewalDurationUnitRequest(v.(string))
+			setRenewalReq["RenewalPeriodUnit"] = convertAmqpInstanceRenewalDurationUnitRequest(v.(string))
 		} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
 			return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_duration_unit", "renewal_status", d.Get("renewal_status")))
 		}
@@ -305,7 +347,7 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, setRenewalReq, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -319,7 +361,7 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		addDebug(action, response, setRenewalReq)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -336,7 +378,7 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 		"InstanceId": d.Id(),
 	}
 	parameterMapList := make([]map[string]interface{}, 0)
-	if d.HasChange("max_tps") {
+	if !d.IsNewResource() && d.HasChange("max_tps") {
 		update = true
 	}
 	parameterMapList = append(parameterMapList, map[string]interface{}{
@@ -346,21 +388,21 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 
 	modifyInstanceReq["SubscriptionType"] = d.Get("payment_type")
 	modifyInstanceReq["ProductCode"] = "ons"
-	if d.HasChange("queue_capacity") {
+	if !d.IsNewResource() && d.HasChange("queue_capacity") {
 		update = true
 	}
 	parameterMapList = append(parameterMapList, map[string]interface{}{
 		"Code":  "QueueCapacity",
 		"Value": d.Get("queue_capacity"),
 	})
-	if d.HasChange("support_eip") || d.IsNewResource() {
+	if !d.IsNewResource() && d.HasChange("support_eip") {
 		update = true
 	}
 	parameterMapList = append(parameterMapList, map[string]interface{}{
 		"Code":  "SupportEip",
 		"Value": convertAmqpInstanceSupportEipRequest(d.Get("support_eip").(bool)),
 	})
-	if d.HasChange("max_eip_tps") {
+	if !d.IsNewResource() && d.HasChange("max_eip_tps") {
 		update = true
 	}
 	if v, ok := d.GetOk("max_eip_tps"); ok {
@@ -372,7 +414,7 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "max_eip_tps", "support_eip", d.Get("support_eip")))
 	}
 	modifyInstanceReq["ProductType"] = "ons_onsproxy_pre"
-	if d.HasChange("storage_size") {
+	if !d.IsNewResource() && d.HasChange("storage_size") {
 		update = true
 	}
 	if v, ok := d.GetOk("storage_size"); ok {

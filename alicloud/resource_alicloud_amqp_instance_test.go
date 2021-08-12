@@ -37,6 +37,7 @@ func TestAccAlicloudAmqpInstance_professional(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_name":  "${var.name}",
 					"instance_type":  "professional",
 					"max_tps":        "1000",
 					"payment_type":   "Subscription",
@@ -46,6 +47,7 @@ func TestAccAlicloudAmqpInstance_professional(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"instance_name":         name,
 						"instance_type":         "professional",
 						"max_tps":               "1000",
 						"payment_type":          "Subscription",
@@ -54,6 +56,16 @@ func TestAccAlicloudAmqpInstance_professional(t *testing.T) {
 						"renewal_status":        "ManualRenewal",
 						"renewal_duration_unit": "",
 						"status":                "SERVING",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name + "-update",
 					}),
 				),
 			},
@@ -107,6 +119,7 @@ func TestAccAlicloudAmqpInstance_professional(t *testing.T) {
 			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_name":  name,
 					"modify_type":    "Downgrade",
 					"max_tps":        "1000",
 					"queue_capacity": "50",
@@ -115,6 +128,7 @@ func TestAccAlicloudAmqpInstance_professional(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"instance_name":         name,
 						"max_tps":               "1000",
 						"queue_capacity":        "50",
 						"support_eip":           "false",
