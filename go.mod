@@ -41,15 +41,12 @@ require (
 	github.com/valyala/fasthttp v1.22.0 // indirect
 	golang.org/x/net v0.0.0-20210226101413-39120d07d75e
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.21.0-rc.0
 	k8s.io/apimachinery v0.21.0-rc.0
 	//k8s.io/client-go v11.0.0+incompatible
 	k8s.io/client-go v0.21.0-rc.0
-	k8s.io/klog v1.0.0 // indirect
 )
 
 go 1.13
