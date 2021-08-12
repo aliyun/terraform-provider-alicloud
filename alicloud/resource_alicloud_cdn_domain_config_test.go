@@ -11,6 +11,92 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+func TestAccAlicloudCdnDomainConfig_filetype_based_ttl_set_new(t *testing.T) {
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+
+	resourceId := "alicloud_cdn_domain_config.default"
+	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%s%d.xiaozhu.com", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"function_name": "filetype_based_ttl_set",
+					"function_args": []map[string]interface{}{
+						{
+							"arg_name":  "ttl",
+							"arg_value": "300",
+						},
+						{
+							"arg_name":  "file_type",
+							"arg_value": "jpg",
+						},
+						{
+							"arg_name":  "weight",
+							"arg_value": "1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_name":     name,
+						"function_name":   "filetype_based_ttl_set",
+						"function_args.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_args": []map[string]interface{}{
+						{
+							"arg_name":  "ttl",
+							"arg_value": "200",
+						},
+						{
+							"arg_name":  "file_type",
+							"arg_value": "png",
+						},
+						{
+							"arg_name":  "weight",
+							"arg_value": "2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+
+					testAccCheck(map[string]string{
+						"function_args.#": "3",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccAlicloudCdnDomainConfig_ip_allow_list(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
