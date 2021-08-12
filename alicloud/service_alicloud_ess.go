@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -378,12 +377,8 @@ func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (i
 	request := ess.CreateDescribeScalingInstancesRequest()
 	request.RegionId = srv.client.RegionId
 	request.ScalingGroupId = id
-	s := reflect.ValueOf(request).Elem()
-
 	if len(instanceIds) > 0 {
-		for i, id := range instanceIds {
-			s.FieldByName(fmt.Sprintf("InstanceId%d", i+1)).Set(reflect.ValueOf(id))
-		}
+		request.InstanceId = &instanceIds
 	}
 
 	raw, err := srv.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
