@@ -1,4 +1,23 @@
 ## 1.131.0 (Unreleased)
+
+- **New Resource:** `alicloud_hbr_oss_backup_plan` [GH-3827]
+- **New Resource:** `alicloud_scdn_domain` [GH-3840]  
+- **New Data Source:** `alicloud_hbr_oss_backup_plans` [GH-3827]
+- **New Data Source:** `alicloud_scdn_domains` [GH-3840]
+
+ENHANCEMENTS:
+
+- resource/alicloud_hbr_vault: Improves its update action [GH-3816]
+- resource/alicloud_instance: Adds new attribute instance_name [GH-3830]  
+- testcase: Improves the sweep testcase for log_project [GH-3817]
+- docs/alicloud_eip_address: Corrects its docs and adds some note [GH-3823]
+- docs/alicloud_amqp_exchange: Adds the enum HEADERS for the exchange_type [GH-3832]
+
+BUG FIXES:
+
+- resource/alicloud_ess_attachment: Fixes the bug: call of reflect.Value.Set on zero Value [GH-3828]
+- data/alicloud_ess_scheduler_tasks: Fixes the converting type error [GH-3826]
+
 ## 1.130.0 (August 07, 2021)
 
 - **New Resource:** `alicloud_ecp_key_pair`  ([#3815](https://github.com/aliyun/terraform-provider-alicloud/issues/3815))
