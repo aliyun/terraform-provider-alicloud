@@ -462,6 +462,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_policy_groups":                           dataSourceAlicloudEcdPolicyGroups(),
 			"alicloud_ecp_key_pairs":                               dataSourceAlicloudEcpKeyPairs(),
 			"alicloud_hbr_oss_backup_plans":                        dataSourceAlicloudHbrOssBackupPlans(),
+			"alicloud_scdn_domains":                                dataSourceAlicloudScdnDomains(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -827,6 +828,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_policy_group":                           resourceAlicloudEcdPolicyGroup(),
 			"alicloud_ecp_key_pair":                               resourceAlicloudEcpKeyPair(),
 			"alicloud_hbr_oss_backup_plan":                        resourceAlicloudHbrOssBackupPlan(),
+			"alicloud_scdn_domain":                                resourceAlicloudScdnDomain(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -992,6 +994,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.RedisaEndpoint = strings.TrimSpace(endpoints["redisa"].(string))
 		config.GwsecdEndpoint = strings.TrimSpace(endpoints["gwsecd"].(string))
 		config.CloudphoneEndpoint = strings.TrimSpace(endpoints["cloudphone"].(string))
+		config.ScdnEndpoint = strings.TrimSpace(endpoints["scdn"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1228,6 +1231,8 @@ func init() {
 		"gwsecd_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom gwsecd endpoints.",
 
 		"cloudphone_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudphone endpoints.",
+
+		"scdn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom scdn endpoints.",
 	}
 }
 
@@ -1297,6 +1302,13 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["gwsecd_endpoint"],
 				},
+				"scdn": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["scdn_endpoint"],
+				},
+
 				"arms": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1833,6 +1845,8 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["redisa"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["gwsecd"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudphone"].(string)))
+
+	buf.WriteString(fmt.Sprintf("%s-", m["scdn"].(string)))
 	return hashcode.String(buf.String())
 }
 
