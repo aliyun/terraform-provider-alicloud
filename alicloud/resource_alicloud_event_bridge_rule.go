@@ -66,8 +66,9 @@ func resourceAlicloudEventBridgeRule() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"form": {
-										Type:     schema.TypeString,
-										Required: true,
+										Type:         schema.TypeString,
+										Required:     true,
+										ValidateFunc: validation.StringInSlice([]string{"ORIGINAL", "TEMPLATE", "JSONPATH", "CONSTANT"}, false),
 									},
 									"resource_key": {
 										Type:     schema.TypeString,
@@ -79,7 +80,7 @@ func resourceAlicloudEventBridgeRule() *schema.Resource {
 									},
 									"value": {
 										Type:     schema.TypeString,
-										Required: true,
+										Optional: true,
 									},
 								},
 							},
@@ -133,8 +134,13 @@ func resourceAlicloudEventBridgeRuleCreate(d *schema.ResourceData, meta interfac
 				paramListMap := map[string]interface{}{}
 				paramListMap["form"] = paramListArg["form"]
 				paramListMap["resourceKey"] = paramListArg["resource_key"]
-				paramListMap["template"] = paramListArg["template"]
-				paramListMap["value"] = paramListArg["value"]
+				if paramListMap["form"] == "TEMPLATE" {
+					paramListMap["template"] = paramListArg["template"]
+					paramListMap["value"] = paramListArg["value"]
+				}
+				if paramListMap["form"] == "JSONPATH" || paramListMap["form"] == "CONSTANT" {
+					paramListMap["value"] = paramListArg["value"]
+				}
 				paramListMaps = append(paramListMaps, paramListMap)
 			}
 			targetsMap["paramList"] = paramListMaps
@@ -164,7 +170,7 @@ func resourceAlicloudEventBridgeRuleCreate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_event_bridge_rule", action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
+	if fmt.Sprint(response["Code"]) != "Success" {
 		return WrapError(fmt.Errorf("CreateRule failed, response: %v", response))
 	}
 
@@ -218,7 +224,11 @@ func resourceAlicloudEventBridgeRuleRead(d *schema.ResourceData, meta interface{
 				targetsMaps = append(targetsMaps, targetsListMap)
 			}
 		}
-		d.Set("targets", targetsMaps)
+
+		err = d.Set("targets", targetsMaps)
+		if err != nil {
+			return WrapError(err)
+		}
 	}
 
 	return nil
@@ -254,8 +264,13 @@ func resourceAlicloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 				paramListMap := map[string]interface{}{}
 				paramListMap["form"] = paramListArg["form"]
 				paramListMap["resourceKey"] = paramListArg["resource_key"]
-				paramListMap["template"] = paramListArg["template"]
-				paramListMap["value"] = paramListArg["value"]
+				if paramListMap["form"] == "TEMPLATE" {
+					paramListMap["template"] = paramListArg["template"]
+					paramListMap["value"] = paramListArg["value"]
+				}
+				if paramListMap["form"] == "JSONPATH" || paramListMap["form"] == "CONSTANT" {
+					paramListMap["value"] = paramListArg["value"]
+				}
 				paramListMaps = append(paramListMaps, paramListMap)
 			}
 			targetsMap["paramList"] = paramListMaps
@@ -291,7 +306,7 @@ func resourceAlicloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Success"]) == "false" {
+		if fmt.Sprint(response["Code"]) != "Success" {
 			return WrapError(fmt.Errorf("UpdateTargets failed, response: %v", response))
 		}
 		d.SetPartial("targets")
@@ -334,7 +349,7 @@ func resourceAlicloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Success"]) == "false" {
+		if fmt.Sprint(response["Code"]) != "Success" {
 			return WrapError(fmt.Errorf("UpdateRule failed, response: %v", response))
 		}
 		d.SetPartial("description")
@@ -373,7 +388,7 @@ func resourceAlicloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				if fmt.Sprint(response["Success"]) == "false" {
+				if fmt.Sprint(response["Code"]) != "Success" {
 					return WrapError(fmt.Errorf("DisableRule failed, response: %v", response))
 				}
 				stateConf := BuildStateConf([]string{}, []string{"DISABLE"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, eventbridgeService.EventBridgeRuleStateRefreshFunc(d.Id(), []string{}))
@@ -407,7 +422,7 @@ func resourceAlicloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				if fmt.Sprint(response["Success"]) == "false" {
+				if fmt.Sprint(response["Code"]) != "Success" {
 					return WrapError(fmt.Errorf("EnableRule failed, response: %v", response))
 				}
 				stateConf := BuildStateConf([]string{}, []string{"ENABLE"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, eventbridgeService.EventBridgeRuleStateRefreshFunc(d.Id(), []string{}))
@@ -458,7 +473,7 @@ func resourceAlicloudEventBridgeRuleDelete(d *schema.ResourceData, meta interfac
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventRuleNotExisted"}) {
 		return nil
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
+	if fmt.Sprint(response["Code"]) != "Success" {
 		return WrapError(fmt.Errorf("DeleteRule failed, response: %v", response))
 	}
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, eventbridgeService.EventBridgeRuleStateRefreshFunc(d.Id(), []string{}))

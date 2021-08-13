@@ -126,14 +126,11 @@ resource "alicloud_event_bridge_rule" "default" {
     param_list {
       resource_key = "queue"
       form         = "CONSTANT"
-      template     = "{abc}"
       value        = "tf-testaccEbRule"
     }
     param_list {
       resource_key = "Body"
       form         = "ORIGINAL"
-      template     = "{abc}"
-      value        = "tf-testAcc"
     }
   }
 }
