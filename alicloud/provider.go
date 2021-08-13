@@ -464,6 +464,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_oss_backup_plans":                        dataSourceAlicloudHbrOssBackupPlans(),
 			"alicloud_scdn_domains":                                dataSourceAlicloudScdnDomains(),
 			"alicloud_alb_server_groups":                           dataSourceAlicloudAlbServerGroups(),
+			"alicloud_data_works_folders":                          dataSourceAlicloudDataWorksFolders(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -831,6 +832,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_oss_backup_plan":                        resourceAlicloudHbrOssBackupPlan(),
 			"alicloud_scdn_domain":                                resourceAlicloudScdnDomain(),
 			"alicloud_alb_server_group":                           resourceAlicloudAlbServerGroup(),
+			"alicloud_data_works_folder":                          resourceAlicloudDataWorksFolder(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -997,6 +999,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.GwsecdEndpoint = strings.TrimSpace(endpoints["gwsecd"].(string))
 		config.CloudphoneEndpoint = strings.TrimSpace(endpoints["cloudphone"].(string))
 		config.ScdnEndpoint = strings.TrimSpace(endpoints["scdn"].(string))
+		config.DataworkspublicEndpoint = strings.TrimSpace(endpoints["dataworkspublic"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1235,6 +1238,8 @@ func init() {
 		"cloudphone_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudphone endpoints.",
 
 		"scdn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom scdn endpoints.",
+
+		"dataworkspublic_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dataworkspublic endpoints.",
 	}
 }
 
@@ -1279,6 +1284,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"dataworkspublic": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["dataworkspublic_endpoint"],
+				},
+
 				"cloudphone": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1847,8 +1859,8 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["redisa"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["gwsecd"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudphone"].(string)))
-
 	buf.WriteString(fmt.Sprintf("%s-", m["scdn"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["dataworkspublic"].(string)))
 	return hashcode.String(buf.String())
 }
 
