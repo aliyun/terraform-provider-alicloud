@@ -504,6 +504,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_virtual_border_routers":      dataSourceAlicloudExpressConnectVirtualBorderRouters(),
 			"alicloud_imm_projects":                                dataSourceAlicloudImmProjects(),
 			"alicloud_click_house_db_clusters":                     dataSourceAlicloudClickHouseDbClusters(),
+			"alicloud_direct_mail_domains":                         dataSourceAlicloudDirectMailDomains(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -903,6 +904,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_virtual_border_router":      resourceAlicloudExpressConnectVirtualBorderRouter(),
 			"alicloud_imm_project":                                resourceAlicloudImmProject(),
 			"alicloud_click_house_db_cluster":                     resourceAlicloudClickHouseDbCluster(),
+			"alicloud_direct_mail_domain":                         resourceAlicloudDirectMailDomain(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
