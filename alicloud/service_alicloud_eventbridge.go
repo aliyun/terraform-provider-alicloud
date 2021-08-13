@@ -95,7 +95,7 @@ func (s *EventbridgeService) DescribeEventBridgeRule(id string) (object map[stri
 	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventRuleNotExisted"}) {
 		return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:Rule", id)), NotFoundMsg, ProviderERROR)
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
+	if fmt.Sprint(response["Code"]) != "Success" {
 		return object, WrapError(fmt.Errorf("GetRule failed, response: %v", response))
 	}
 	v, err := jsonpath.Get("$.Data", response)

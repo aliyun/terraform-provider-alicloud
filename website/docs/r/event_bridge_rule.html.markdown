@@ -41,7 +41,6 @@ resource "alicloud_event_bridge_rule" "example" {
     param_list {
       resource_key = "Body"
       form         = "ORIGINAL"
-      value        = "tf-testAcc"
     }
   }
 }
@@ -68,10 +67,10 @@ The following arguments are supported:
 
 ### Block param_list
 
-* `resource_key` - (Required) The resource key of param. For more information, see [Event target parameters](https://help.aliyun.com/document_detail/185887.htm)
-* `value` - (Required) The value of param.
-* `form` - (Required) The format of param.
-* `template` - (Required) The template of param.
+* `resource_key` - (Required) The resource key of param.  For more information, see [Event target parameters](https://help.aliyun.com/document_detail/185887.htm)
+* `form` - (Required) The format of param.  Valid values: `ORIGINAL`, `TEMPLATE`, `JSONPATH`, `CONSTANT`.
+* `value` - (Optional) The value of param.
+* `template` - (Optional) The template of param.
 
 ## Attributes Reference
 
