@@ -239,7 +239,7 @@ func dataSourceAlicloudAlbServerGroupsRead(d *schema.ResourceData, meta interfac
 	}
 	if m, ok := d.GetOk("server_group_ids"); ok {
 		for k, v := range m.([]interface{}) {
-			request[fmt.Sprintf("ServerGroupIds.%d", k + 1)] = v.(string)
+			request[fmt.Sprintf("ServerGroupIds.%d", k+1)] = v.(string)
 		}
 	}
 	if v, ok := d.GetOk("server_group_name"); ok {
