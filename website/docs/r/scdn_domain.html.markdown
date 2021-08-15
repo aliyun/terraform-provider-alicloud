@@ -29,28 +29,6 @@ resource "alicloud_scdn_domain" "example" {
     priority = "20"
     type     = "oss"
   }
-  domain_configs {
-    function_name = "referer_white_list_set"
-    function_args {
-      arg_name = "refer_domain_allow_list"
-      arg_value = "110.110.110.110"
-    }
-  }
-  domain_configs {
-    function_name = "filetype_based_ttl_set"
-    function_args {
-      arg_name = "ttl"
-      arg_value = "330"
-    }
-    function_args {
-      arg_name = "file_type"
-      arg_value = "jpg"
-    }
-    function_args {
-      arg_name = "weight"
-      arg_value = "1"
-    }
-  }
 }
 
 ```
@@ -62,7 +40,6 @@ The following arguments are supported:
 * `biz_name` - (Optional) from the Business Type Drop-down List. Valid values: `download`, `image`, `scdn`, `video`.
 * `cert_infos` - (Optional) Certificate Information. See the following `Block cert_infos`.
 * `check_url` - (Optional) The health check url.
-* `domain_configs` - (Optional) Domain name configuration data list. See the following `Block domain_configs`.
 * `domain_name` - (Required, ForceNew) The name of domain.
 * `force_set` - (Optional) Whether to set certificate forcibly.
 * `resource_group_id` - (Optional, Computed) The resource group id.
@@ -81,16 +58,7 @@ The sources supports the following:
   * ipaddr: IP Source Station 
   * domain: the Domain Name 
   * oss: OSS Bucket as a Source Station.
-
-#### Block domain_configs
-
-The domain_configs supports the following: 
-
-* `config_id` - (Optional) Configuration ID.
-* `function_args` - (Optional) Each Function. See the following `Block function_args`.
-* `function_name` - (Optional) Function Name. See [funtion name](https://help.aliyun.com/document_detail/92912.html).
-* `status` - (Optional) Configure State, Including success, testing, failed, configuring.
-
+  
 #### Block function_args
 
 The function_args supports the following: 

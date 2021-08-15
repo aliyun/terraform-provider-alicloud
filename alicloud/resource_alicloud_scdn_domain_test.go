@@ -132,26 +132,6 @@ func TestAccAlicloudScdnDomain_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_configs": []map[string]interface{}{
-						{
-							"function_name": "referer_white_list_set",
-							"function_args": []map[string]interface{}{
-								{
-									"arg_name":  "refer_domain_allow_list",
-									"arg_value": "110.110.110.111",
-								},
-							},
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"domain_configs.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"status": "offline",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -244,43 +224,6 @@ func TestAccAlicloudScdnDomain_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_configs": []map[string]interface{}{
-						{
-							"function_name": "referer_white_list_set",
-							"function_args": []map[string]interface{}{
-								{
-									"arg_name":  "refer_domain_allow_list",
-									"arg_value": "110.110.110.110",
-								},
-							},
-						},
-						{
-							"function_name": "filetype_based_ttl_set",
-							"function_args": []map[string]interface{}{
-								{
-									"arg_name":  "ttl",
-									"arg_value": "300",
-								},
-								{
-									"arg_name":  "file_type",
-									"arg_value": "jpg",
-								},
-								{
-									"arg_name":  "weight",
-									"arg_value": "1",
-								},
-							},
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"domain_configs.#": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"status":   "online",
 					"biz_name": "video",
 					"cert_infos": []map[string]interface{}{
@@ -302,25 +245,6 @@ func TestAccAlicloudScdnDomain_basic(t *testing.T) {
 					//		"type":     "ipaddr",
 					//	},
 					//},
-					"domain_configs": []map[string]interface{}{
-						{
-							"function_name": "filetype_based_ttl_set",
-							"function_args": []map[string]interface{}{
-								{
-									"arg_name":  "ttl",
-									"arg_value": "400",
-								},
-								{
-									"arg_name":  "file_type",
-									"arg_value": "png",
-								},
-								{
-									"arg_name":  "weight",
-									"arg_value": "2",
-								},
-							},
-						},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -329,7 +253,6 @@ func TestAccAlicloudScdnDomain_basic(t *testing.T) {
 						"cert_infos.#": "1",
 						"check_url":    "www.yourdomainupdate.com/test.html",
 						//"sources.#":        "1",
-						"domain_configs.#": "1",
 					}),
 				),
 			},
@@ -337,7 +260,7 @@ func TestAccAlicloudScdnDomain_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_set", "domain_configs", "check_url", "force_set", "biz_name", "cert_infos"},
+				ImportStateVerifyIgnore: []string{"force_set", "check_url", "force_set", "biz_name", "cert_infos"},
 			},
 		},
 	})
