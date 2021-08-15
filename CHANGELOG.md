@@ -1,22 +1,33 @@
-## 1.131.0 (Unreleased)
+## 1.132.0 (Unreleased)
+## 1.131.0 (August 16, 2021)
 
-- **New Resource:** `alicloud_hbr_oss_backup_plan` [GH-3827]
-- **New Resource:** `alicloud_scdn_domain` [GH-3840]  
-- **New Data Source:** `alicloud_hbr_oss_backup_plans` [GH-3827]
-- **New Data Source:** `alicloud_scdn_domains` [GH-3840]
+- **New Resource:** `alicloud_scdn_domain_config` ([#3847](https://github.com/aliyun/terraform-provider-alicloud/issues/3847))
+- **New Resource:** `alicloud_dcdn_domain_config` ([#3846](https://github.com/aliyun/terraform-provider-alicloud/issues/3846))
+- **New Resource:** `alicloud_arms_alert_contact_group` ([#3845](https://github.com/aliyun/terraform-provider-alicloud/issues/3845))
+- **New Resource:** `alb_server_group` ([#3834](https://github.com/aliyun/terraform-provider-alicloud/issues/3834))
+- **New Resource:** `alicloud_data_work_folder` ([#3831](https://github.com/aliyun/terraform-provider-alicloud/issues/3831))
+- **New Resource:** `alicloud_hbr_oss_backup_plan` ([#3827](https://github.com/aliyun/terraform-provider-alicloud/issues/3827))
+- **New Resource:** `alicloud_scdn_domain` [[#3840](https://github.com/aliyun/terraform-provider-alicloud/issues/3840)]  
+- **New Data Source:** `alicloud_arms_alert_contact_groups` ([#3845](https://github.com/aliyun/terraform-provider-alicloud/issues/3845))
+- **New Data Source:** `alb_server_groups` ([#3834](https://github.com/aliyun/terraform-provider-alicloud/issues/3834))
+- **New Data Source:** `alicloud_data_work_folders` ([#3831](https://github.com/aliyun/terraform-provider-alicloud/issues/3831))
+- **New Data Source:** `alicloud_hbr_oss_backup_plans` ([#3827](https://github.com/aliyun/terraform-provider-alicloud/issues/3827))
+- **New Data Source:** `alicloud_scdn_domains` ([#3840](https://github.com/aliyun/terraform-provider-alicloud/issues/3840))
 
 ENHANCEMENTS:
 
-- resource/alicloud_hbr_vault: Improves its update action [GH-3816]
-- resource/alicloud_instance: Adds new attribute instance_name [GH-3830]  
-- testcase: Improves the sweep testcase for log_project [GH-3817]
-- docs/alicloud_eip_address: Corrects its docs and adds some note [GH-3823]
-- docs/alicloud_amqp_exchange: Adds the enum HEADERS for the exchange_type [GH-3832]
+- Add Github WorkFlow(pull_request,tf_acctest) ([#3836](https://github.com/aliyun/terraform-provider-alicloud/issues/3836))
+- resource/alicloud_hbr_vault: Improves its update action ([#3816](https://github.com/aliyun/terraform-provider-alicloud/issues/3816))
+- resource/alicloud_instance: Adds new attribute instance_name [[#3830](https://github.com/aliyun/terraform-provider-alicloud/issues/3830)]  
+- testcase: Improves the sweep testcase for log_project ([#3817](https://github.com/aliyun/terraform-provider-alicloud/issues/3817))
+- docs/alicloud_eip_address: Corrects its docs and adds some note ([#3823](https://github.com/aliyun/terraform-provider-alicloud/issues/3823))
+- docs/alicloud_amqp_exchange: Adds the enum HEADERS for the exchange_type ([#3832](https://github.com/aliyun/terraform-provider-alicloud/issues/3832))
 
 BUG FIXES:
 
-- resource/alicloud_ess_attachment: Fixes the bug: call of reflect.Value.Set on zero Value [GH-3828]
-- data/alicloud_ess_scheduler_tasks: Fixes the converting type error [GH-3826]
+- resource/alicloud_event_bridge_rule: Fixes the targets parameters bug and update its testcase ([#3842](https://github.com/aliyun/terraform-provider-alicloud/issues/3842))
+- resource/alicloud_ess_attachment: Fixes the bug: call of reflect.Value.Set on zero Value ([#3828](https://github.com/aliyun/terraform-provider-alicloud/issues/3828))
+- data/alicloud_ess_scheduler_tasks: Fixes the converting type error ([#3826](https://github.com/aliyun/terraform-provider-alicloud/issues/3826))
 
 ## 1.130.0 (August 07, 2021)
 
