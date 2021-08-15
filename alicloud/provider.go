@@ -835,6 +835,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_server_group":                           resourceAlicloudAlbServerGroup(),
 			"alicloud_data_works_folder":                          resourceAlicloudDataWorksFolder(),
 			"alicloud_arms_alert_contact_group":                   resourceAlicloudArmsAlertContactGroup(),
+			"alicloud_dcdn_domain_config":                         resourceAlicloudDcdnDomainConfig(),
 		},
 
 		ConfigureFunc: providerConfigure,
