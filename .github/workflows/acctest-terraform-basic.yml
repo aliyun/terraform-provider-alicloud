@@ -1,4 +1,4 @@
-name: Terrafrom Test Process
+name: Terrafrom Basic Test Process
 on:
   push:
     paths:

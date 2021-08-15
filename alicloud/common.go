@@ -981,3 +981,14 @@ func convertArrayObjectToJsonString(src interface{}) (string, error) {
 	}
 	return string(res), nil
 }
+
+func convertArrayToString(src interface{}, sep string) string {
+	if src == nil {
+		return ""
+	}
+	items := make([]string, 0)
+	for _, v := range src.([]interface{}) {
+		items = append(items, fmt.Sprint(v))
+	}
+	return strings.Join(items, sep)
+}

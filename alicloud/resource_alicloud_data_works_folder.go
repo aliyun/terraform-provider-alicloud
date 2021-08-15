@@ -186,7 +186,7 @@ func resourceAlicloudDataWorksFolderDelete(d *schema.ResourceData, meta interfac
 	return nil
 }
 
-func getConvertMap() map[string]string{
+func getConvertMap() map[string]string {
 	convertMap := make(map[string]string)
 	convertMap["Business Flow"] = "业务流程"
 	convertMap["folderAlgm"] = "算法"
@@ -209,11 +209,10 @@ func ConvertDataWorksFrontEndFolderPathToBackEndFolderPath(source string) string
 	convertMap := getConvertMap()
 
 	for convert := range convertMap {
-		result = strings.Replace(result, convert, convertMap[convert],1)
+		result = strings.Replace(result, convert, convertMap[convert], 1)
 	}
 	return result
 }
-
 
 func ConvertDataWorksBackEndFolderPathToFrontEndFolderPath(source string) string {
 	result := source
