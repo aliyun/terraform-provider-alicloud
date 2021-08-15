@@ -67,42 +67,6 @@ func resourceAlicloudScdnDomain() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"domain_configs": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"config_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"function_args": {
-							Type:     schema.TypeSet,
-							Optional: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"arg_name": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"arg_value": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-								},
-							},
-						},
-						"function_name": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"status": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-			},
 			"domain_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -510,79 +474,6 @@ func resourceAlicloudScdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 	d.Partial(false)
-	if d.HasChange("DomainConfigs") {
-		oldDomainConfigs, newDomainConfigs := d.GetChange("DomainConfigs")
-		oldDomainConfigsSet := oldDomainConfigs.(*schema.Set)
-		newDomainConfigsSet := newDomainConfigs.(*schema.Set)
-		removed := oldDomainConfigsSet.Difference(newDomainConfigsSet)
-		added := newDomainConfigsSet.Difference(oldDomainConfigsSet)
-		if removed.Len() > 0 {
-			batchdeletescdndomainconfigsrequest := map[string]interface{}{
-				"DomainNames": d.Id(),
-			}
-			functionNameList := make([]interface{}, 0)
-			for _, domainConfigs := range removed.List() {
-				domainConfigsArg := domainConfigs.(map[string]interface{})
-				functionNameList = append(functionNameList, domainConfigsArg["function_name"])
-			}
-			batchdeletescdndomainconfigsrequest["FunctionNames"] = convertListToJsonString(functionNameList)
-
-			action := "BatchDeleteScdnDomainConfigs"
-			conn, err := client.NewScdnClient()
-			if err != nil {
-				return WrapError(err)
-			}
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, batchdeletescdndomainconfigsrequest, &util.RuntimeOptions{})
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
-			addDebug(action, response, batchdeletescdndomainconfigsrequest)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-			}
-			d.SetPartial("DomainConfigs")
-		}
-		if added.Len() > 0 {
-			batchsetscdndomainconfigsrequest := map[string]interface{}{
-				"DomainNames": d.Id(),
-			}
-			functions, err := scdnService.convertFunctionsToString(added.List())
-			if err != nil {
-				return WrapError(err)
-			}
-			batchsetscdndomainconfigsrequest["Functions"] = functions
-			action := "BatchSetScdnDomainConfigs"
-			conn, err := client.NewScdnClient()
-			if err != nil {
-				return WrapError(err)
-			}
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, batchsetscdndomainconfigsrequest, &util.RuntimeOptions{})
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
-			addDebug(action, response, batchsetscdndomainconfigsrequest)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-			}
-			d.SetPartial("DomainConfigs")
-		}
-	}
 	return resourceAlicloudScdnDomainRead(d, meta)
 }
 func resourceAlicloudScdnDomainDelete(d *schema.ResourceData, meta interface{}) error {

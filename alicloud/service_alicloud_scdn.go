@@ -316,3 +316,66 @@ func (s *ScdnService) DescribeScdnDomainDetail(id string) (object map[string]int
 	object = v.(map[string]interface{})
 	return object, nil
 }
+
+func (s *ScdnService) DescribeScdnDomainConfig(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewScdnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	action := "DescribeScdnDomainConfigs"
+	request := map[string]interface{}{
+		"DomainName":    parts[0],
+		"FunctionNames": parts[1],
+	}
+	if parts[2] != "" {
+		request["ConfigId"] = parts[2]
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("ScdnDomainConfig", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.DomainConfigs.DomainConfig", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DomainConfigs.DomainConfig", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("DCDN:DomainConfig", id)), NotFoundWithResponse, response)
+	} else if len(v.([]interface{})) > 0 {
+		object = v.([]interface{})[0].(map[string]interface{})
+	}
+	return object, nil
+}
+
+func (s *ScdnService) ScdnDomainConfigStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeScdnDomainConfig(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["Status"].(string) == failState {
+				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+			}
+		}
+		return object, object["Status"].(string), nil
+	}
+}
