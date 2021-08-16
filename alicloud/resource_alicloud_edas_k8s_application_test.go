@@ -301,23 +301,81 @@ func TestAccAlicloudEdasK8sApplicationJar_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"application_name": "${var.name}",
-					"cluster_id":       "${alicloud_edas_k8s_cluster.default.id}",
-					"package_type":     "FatJar",
-					"package_url":      packageUrl,
-					"jdk":              "Open JDK 8",
-					"replicas":         "1",
-					"readiness":        `{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"tcpSocket\":{\"host\":\"\", \"port\":18081}}`,
-					"liveness":         `{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"tcpSocket\":{\"host\":\"\", \"port\":18081}}`,
+					"application_name":     "${var.name}",
+					"cluster_id":           "${alicloud_edas_k8s_cluster.default.id}",
+					"package_type":         "FatJar",
+					"package_url":          packageUrl,
+					"jdk":                  "Open JDK 8",
+					"replicas":             "1",
+					"readiness":            `{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"tcpSocket\":{\"host\":\"\", \"port\":18081}}`,
+					"liveness":             `{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"tcpSocket\":{\"host\":\"\", \"port\":18081}}`,
+					"empty_dir":            `[{\"name\":\"emptydirvolume-0\",\"mountPath\":\"/home/emptydir/test\"}]`,
+					"local_volume":         `[{\"mountPath\":\"/home/hostpath/tmp\",\"name\":\"localvolume-0\",\"nodePath\":\"/tmp\",\"opsAuth\":0,\"type\":\"Directory\"}]`,
+					"deploy_across_zones":  "true",
+					"deploy_across_nodes":  "true",
+					"java_start_up_config": `{\"InitialHeapSize\":{\"original\":512,\"startup\":\"-Xms512m\"},\"MaxHeapSize\":{\"original\":512,\"startup\":\"-Xmx512m\"},\"CustomParams\":{\"original\":\"-Dtestkey=testval\",\"startup\":\"-Dtestkey=testval\"}}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"package_type": "FatJar",
-						"package_url":  packageUrl,
-						"replicas":     "1",
-						"jdk":          "Open JDK 8",
-						"readiness":    CHECKSET,
-						"liveness":     CHECKSET,
+						"package_type":         "FatJar",
+						"package_url":          packageUrl,
+						"replicas":             "1",
+						"jdk":                  "Open JDK 8",
+						"readiness":            CHECKSET,
+						"liveness":             CHECKSET,
+						"empty_dir":            CHECKSET,
+						"local_volume":         CHECKSET,
+						"deploy_across_zones":  "true",
+						"deploy_across_nodes":  "true",
+						"java_start_up_config": CHECKSET,
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"empty_dir":            `[{\"name\":\"emptydirvolume-0\",\"mountPath\":\"/home/emptydir/test2\"}]`,
+					"local_volume":         `[{\"mountPath\":\"/home/hostpath/tmp2\",\"name\":\"localvolume-0\",\"nodePath\":\"/tmp\",\"opsAuth\":0,\"type\":\"Directory\"}]`,
+					"deploy_across_zones":  "false",
+					"deploy_across_nodes":  "false",
+					"custom_tolerations":   `[{\"key\":\"toleration-test2\",\"operator\":\"Equal\",\"value\":\"test2\",\"effect\":\"NoExecute\",\"tolerationSeconds\":300},{\"key\":\"toleration-test\",\"operator\":\"Exists\",\"effect\":\"NoSchedule\"}]`,
+					"custom_affinity":      `{\"nodeAffinity\":{\"requiredDuringSchedulingIgnoredDuringExecution\":{\"nodeSelectorTerms\":[{\"matchExpressions\":[{\"key\":\"beta.kubernetes.io/arch\",\"operator\":\"NotIn\",\"values\":[\"arm64\",\"arm\"]}]}]},\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"weight\":1,\"preference\":{\"matchExpressions\":[{\"key\":\"beta.kubernetes.io/arch\",\"operator\":\"In\",\"values\":[\"amd64\"]}]}}]},\"podAffinity\":{\"requiredDuringSchedulingIgnoredDuringExecution\":[{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"edas.oam.acname\",\"operator\":\"NotIn\",\"values\":[\"test\"]}]},\"topologyKey\":\"kubernetes.io/hostname\"}]},\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"weight\":1,\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"edas.appid\",\"operator\":\"DoesNotExist\"}]},\"namespaces\":[\"default\"],\"topologyKey\":\"failure-domain.beta.kubernetes.io/region\"}}]}}`,
+					"java_start_up_config": `{\"InitialHeapSize\":{\"original\":512,\"startup\":\"-Xms512m\"},\"MaxHeapSize\":{\"original\":512,\"startup\":\"-Xmx512m\"},\"CustomParams\":{\"original\":\"-Dtestkey2=testval2\",\"startup\":\"-Dtestkey2=testval2\"}}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"empty_dir":            CHECKSET,
+						"local_volume":         CHECKSET,
+						"deploy_across_zones":  "false",
+						"deploy_across_nodes":  "false",
+						"custom_tolerations":   CHECKSET,
+						"custom_affinity":      CHECKSET,
+						"java_start_up_config": CHECKSET,
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"readiness":           "{}",
+					"liveness":            "{}",
+					"empty_dir":           "[]",
+					"local_volume":        "[]",
+					"deploy_across_zones": "true",
+					"deploy_across_nodes": "true",
+					"custom_tolerations":  "[]",
+					"custom_affinity":     "{}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"readiness":           "{}",
+						"liveness":            "{}",
+						"empty_dir":           "[]",
+						"local_volume":        "[]",
+						"deploy_across_zones": "true",
+						"deploy_across_nodes": "true",
+						"custom_tolerations":  "[]",
+						"custom_affinity":     "{}",
 					}),
 				),
 			},
@@ -331,67 +389,23 @@ func TestAccAlicloudEdasK8sApplicationJar_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"readiness": "{}",
-					"liveness":  "{}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"readiness": "{}",
-						"liveness":  "{}",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"package_url": updateUrl,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"package_url": updateUrl,
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"replicas": "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"replicas": "2",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"jdk": "Dragonwell JDK 8",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"jdk": "Dragonwell JDK 8",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"package_url": updateUrl,
-					"replicas":    "2",
 					"jdk":         "Dragonwell JDK 8",
-					"readiness":   "{}",
-					"liveness":    "{}",
+					"replicas":    "2",
+					"package_url": updateUrl,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"package_url": updateUrl,
-						"replicas":    "2",
 						"jdk":         "Dragonwell JDK 8",
-						"readiness":   "{}",
-						"liveness":    "{}",
+						"replicas":    "2",
+						"package_url": updateUrl,
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
@@ -492,6 +506,7 @@ func resourceEdasK8sApplicationConfigDependence(name string) string {
 		  worker_data_disk_category =   "cloud_ssd"
 		  worker_instance_charge_type = "PostPaid"
 		  slb_internet_enabled =        "true"
+          cluster_spec =                "ack.pro.small"
 		}
 		
 		resource "alicloud_edas_k8s_cluster" "default" {

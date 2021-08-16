@@ -41,6 +41,7 @@ var (
 		"alicloud_slb_listener":             {"lb_protocol", "instance_port", "lb_port"},
 		"alicloud_kvstore_instance":         {"connection_string"},
 		"alicloud_instance":                 {"subnet_id"},
+		"alicloud_edas_k8s_application":     {"logical_region_id", "namespace"},
 	}
 )
 

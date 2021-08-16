@@ -53,6 +53,21 @@ type Prober struct {
 	Hook                `json:",inline"`
 }
 
+type K8sLocalVolumeInfo struct {
+	Name      string `json:"name,omitempty"`
+	Type      string `json:"type,omitempty"`
+	NodePath  string `json:"nodePath,omitempty"`
+	MountPath string `json:"mountPath,omitempty"`
+	OpsAuth   int    `json:"opsAuth,omitempty"`
+}
+
+type K8sEmptyDir struct {
+	Name        string `json:"name,omitempty"`
+	ReadOnly    bool   `json:"readOnly,omitempty"`
+	MountPath   string `json:"mountPath,omitempty"`
+	SubPathExpr string `json:"subPathExpr,omitempty"`
+}
+
 func (e *EdasService) GetChangeOrderStatus(id string) (info *edas.ChangeOrderInfo, err error) {
 	request := edas.CreateGetChangeOrderInfoRequest()
 	request.RegionId = e.client.RegionId
@@ -474,6 +489,67 @@ func (e *EdasService) DescribeEdasK8sApplication(appId string) (*edas.Applcation
 	return &v, nil
 }
 
+func (e *EdasService) DescribeJavaStartUpConfig(appId string) (*edas.JavaStartUpConfig, error) {
+	config := &edas.JavaStartUpConfig{}
+
+	request := edas.CreateGetJavaStartUpConfigRequest()
+	request.AppId = appId
+	raw, err := e.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+		return edasClient.GetJavaStartUpConfig(request)
+	})
+	if err != nil {
+		return config, WrapError(err)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+	response, _ := raw.(*edas.GetJavaStartUpConfigResponse)
+	if response.Code != 200 {
+		if strings.Contains(response.Message, "does not exist") {
+			return config, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return config, WrapError(Error("get java start up config error :" + response.Message))
+	}
+
+	return &response.JavaStartUpConfig, nil
+}
+
+func (e *EdasService) DescribeWebContainerConfig(appId string) (*edas.WebContainerConfig, error) {
+	config := &edas.WebContainerConfig{}
+
+	request := edas.CreateGetWebContainerConfigRequest()
+	request.AppId = appId
+	raw, err := e.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+		return edasClient.GetWebContainerConfig(request)
+	})
+	if err != nil {
+		return config, WrapError(err)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+	response, _ := raw.(*edas.GetWebContainerConfigResponse)
+	if response.Code != 200 {
+		if strings.Contains(response.Message, "does not exist") {
+			return config, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return config, WrapError(Error("get web container config error :" + response.Message))
+	}
+	return &response.WebContainerConfig, nil
+}
+
+func (e *EdasService) WebContainerConfigEqual(old, new interface{}) bool {
+	oldStr := old.(string)
+	newStr := new.(string)
+	var oldConfig edas.WebContainerConfig
+	err := json.Unmarshal([]byte(oldStr), &oldConfig)
+	if err != nil {
+		return false
+	}
+	var newConfig edas.WebContainerConfig
+	err = json.Unmarshal([]byte(newStr), &newConfig)
+	if err != nil {
+		return false
+	}
+	return reflect.DeepEqual(oldConfig, newConfig)
+}
+
 func (e *EdasService) PreStopEqual(old, new interface{}) bool {
 	oldStr := old.(string)
 	newStr := new.(string)
@@ -536,4 +612,85 @@ func (e *EdasService) ReadinessEqual(old, new interface{}) bool {
 		return false
 	}
 	return reflect.DeepEqual(oldProber, newProber)
+}
+
+func (e *EdasService) K8sLocalVolumeEqual(old, new interface{}) bool {
+	oldStr := old.(string)
+	newStr := new.(string)
+
+	var oldVolume []K8sLocalVolumeInfo
+	err := json.Unmarshal([]byte(oldStr), &oldVolume)
+	if err != nil {
+		return false
+	}
+	var newVolume []K8sLocalVolumeInfo
+	err = json.Unmarshal([]byte(newStr), &newVolume)
+	if err != nil {
+		return false
+	}
+	return reflect.DeepEqual(oldVolume, newVolume)
+}
+
+func (e *EdasService) K8sEmptyDirEqual(old, new interface{}) bool {
+	oldStr := old.(string)
+	newStr := new.(string)
+
+	var oldVolume []K8sEmptyDir
+	err := json.Unmarshal([]byte(oldStr), &oldVolume)
+	if err != nil {
+		return false
+	}
+	var newVolume []K8sEmptyDir
+	err = json.Unmarshal([]byte(newStr), &newVolume)
+	if err != nil {
+		return false
+	}
+	return reflect.DeepEqual(oldVolume, newVolume)
+}
+
+func (e *EdasService) IsJsonEqual(v1, v2 interface{}) bool {
+	s1 := v1.(string)
+	s2 := v2.(string)
+	var i1 interface{}
+	err := json.Unmarshal([]byte(s1), &i1)
+	if err != nil {
+		return false
+	}
+	var i2 interface{}
+	err = json.Unmarshal([]byte(s2), &i2)
+	if err != nil {
+		return false
+	}
+	return reflect.DeepEqual(&i1, &i2)
+}
+
+func (e *EdasService) IsJsonArrayEqual(v1, v2 interface{}) bool {
+	s1 := v1.(string)
+	s2 := v2.(string)
+	var i1 []interface{}
+	err := json.Unmarshal([]byte(s1), &i1)
+	if err != nil {
+		return false
+	}
+	var i2 []interface{}
+	err = json.Unmarshal([]byte(s2), &i2)
+	if err != nil {
+		return false
+	}
+	if len(i1) != len(i2) {
+		return false
+	}
+	for _, obj := range i1 {
+		found := false
+		for _, obj2 := range i2 {
+			if reflect.DeepEqual(obj, obj2) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
