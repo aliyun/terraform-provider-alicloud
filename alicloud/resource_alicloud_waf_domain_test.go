@@ -72,8 +72,10 @@ func testSweepWafDomains(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve waf domain in service list: %s", err)
 		}
-		for _, item := range response["DomainNames"].([]interface{}) {
-			domainIds = append(domainIds, fmt.Sprintf(`%s:%s`, instanceId, item.(string)))
+		if response["DomainNames"] != nil {
+			for _, item := range response["DomainNames"].([]interface{}) {
+				domainIds = append(domainIds, fmt.Sprintf(`%s:%s`, instanceId, item.(string)))
+			}
 		}
 	}
 

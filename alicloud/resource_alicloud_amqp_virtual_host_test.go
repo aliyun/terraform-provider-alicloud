@@ -35,7 +35,7 @@ func testSweepAmqpVirtualHost(region string) error {
 
 	action := "ListInstances"
 	request := make(map[string]interface{})
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = PageSizeXLarge
 	var response map[string]interface{}
 	conn, err := client.NewOnsproxyClient()
 	if err != nil {
@@ -46,7 +46,7 @@ func testSweepAmqpVirtualHost(region string) error {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-12-12"), StringPointer("AK"), request, nil, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
@@ -146,6 +146,11 @@ func testSweepAmqpVirtualHost(region string) error {
 					break
 				}
 			}
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
 		}
 	}
 

@@ -340,6 +340,7 @@ shared:
       ALICLOUD_ACCOUNT_SITE: {{alicloud_account_site}}
       TEST_CASE_CODE: ""
       SWEEPER: false
+      CHECKOUT_REGION: "true"
       ACCESS_URL: {{access_ci_url}}
       ACCESS_USER_NAME: {{access_ci_user_name}}
       ACCESS_PASSWORD: {{access_ci_password}}
