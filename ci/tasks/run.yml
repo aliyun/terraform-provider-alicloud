@@ -19,6 +19,7 @@ params:
   ALICLOUD_ACCOUNT_SITE: "Domestic"
   TEST_CASE_CODE:        ""
   SWEEPER:               ""
+  CHECKOUT_REGION:       "false"
   ACCESS_URL:            ""
   ACCESS_USER_NAME:      ""
   ACCESS_PASSWORD:       ""
