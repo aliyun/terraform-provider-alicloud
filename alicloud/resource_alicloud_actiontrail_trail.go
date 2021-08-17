@@ -250,6 +250,9 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 		if v, ok := d.GetOk("oss_bucket_name"); ok {
 			request["OssBucketName"] = v
 		}
+		if v, ok := d.GetOk("oss_write_role_arn"); ok {
+			request["OssWriteRoleArn"] = v
+		}
 
 		action := "UpdateTrail"
 		conn, err := client.NewActiontrailClient()
