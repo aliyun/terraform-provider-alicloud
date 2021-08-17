@@ -39,6 +39,7 @@ func testSweepRosStackGroup(region string) error {
 		"PageSize":   PageSizeLarge,
 		"PageNumber": 1,
 		"RegionId":   region,
+		"Status":     "ACTIVE",
 	}
 	var response map[string]interface{}
 	action := "ListStackGroups"
