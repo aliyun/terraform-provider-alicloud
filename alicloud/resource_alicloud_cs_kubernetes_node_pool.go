@@ -631,7 +631,9 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if d.HasChange("scaling_config") {
 		update = true
-		args.AutoScaling = setAutoScalingConfig(d.Get("scaling_config").([]interface{}))
+		if v, ok := d.GetOk("scaling_config"); ok {
+			args.AutoScaling = setAutoScalingConfig(v.([]interface{}))
+		}
 	}
 
 	if v, ok := d.Get("management").([]interface{}); len(v) > 0 && ok {
