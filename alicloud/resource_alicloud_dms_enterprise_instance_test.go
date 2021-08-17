@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -37,16 +36,17 @@ func testSweepDMSEnterpriseInstances(region string) error {
 		"tf_testAcc",
 		"testacc",
 	}
-	request := make(map[string]interface{})
+	request := map[string]interface{}{
+		"InstanceState": "NORMAL",
+		"PageSize":      PageSizeXLarge,
+		"PageNumber":    1,
+	}
 	var response map[string]interface{}
 	action := "ListInstances"
 	conn, err := client.NewDmsenterpriseClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request["PageSize"] = PageSizeLarge
-	request["PageNumber"] = 1
-	sweeped := false
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -80,7 +80,6 @@ func testSweepDMSEnterpriseInstances(region string) error {
 				log.Printf("[INFO] Skipping DMS Enterprise Instances: %s", id)
 				continue
 			}
-			sweeped = true
 			action := "DeleteInstance"
 			request := map[string]interface{}{
 				"Host": item["Host"],
@@ -93,14 +92,10 @@ func testSweepDMSEnterpriseInstances(region string) error {
 			}
 			log.Printf("[INFO] Delete DMS Enterprise Instance Success: %s ", item["InstanceAlias"].(string))
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < PageSizeXLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
-	}
-	if sweeped {
-		// Waiting 30 seconds to ensure these DMS Enterprise Instance have been deleted.
-		time.Sleep(30 * time.Second)
 	}
 	return nil
 }

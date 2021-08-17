@@ -2,6 +2,8 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"testing"
 
@@ -10,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -30,73 +31,106 @@ func testSweepKVStoreInstances(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
+	conn, err := client.NewRedisaClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
 	}
+	action := "DescribeInstances"
+	request := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"PageSize":   PageSizeXLarge,
+		"PageNumber": 1,
+	}
 
-	var insts []r_kvstore.KVStoreInstance
-	req := r_kvstore.CreateDescribeInstancesRequest()
-	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
-	req.PageNumber = requests.NewInteger(1)
+	kvstoreInstanceIds := make([]string, 0)
+	var response map[string]interface{}
 	for _, instanceType := range []string{string(KVStoreRedis), string(KVStoreMemcache)} {
-		req.InstanceType = instanceType
+		request["InstanceType"] = instanceType
 		for {
-			raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-				return rkvClient.DescribeInstances(req)
-			})
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				return fmt.Errorf("Error retrieving KVStore Instances: %s", err)
+				log.Printf("[ERROR] Failed to retrieve VPC in service list: %s", err)
+				return nil
 			}
-			resp, _ := raw.(*r_kvstore.DescribeInstancesResponse)
-			if resp == nil || len(resp.Instances.KVStoreInstance) < 1 {
+			resp, err := jsonpath.Get("$.Instances.KVStoreInstance", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Instances.KVStoreInstance", response)
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				skip := true
+				item := v.(map[string]interface{})
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["InstanceName"])), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping KVStore Instance: %v (%v)", item["InstanceName"], item["InstanceId"])
+					continue
+				}
+				kvstoreInstanceIds = append(kvstoreInstanceIds, fmt.Sprint(item["InstanceId"]))
+			}
+			if len(result) < PageSizeXLarge {
 				break
 			}
-			insts = append(insts, resp.Instances.KVStoreInstance...)
-
-			if len(resp.Instances.KVStoreInstance) < PageSizeLarge {
-				break
-			}
-
-			page, err := getNextpageNumber(req.PageNumber)
-			if err != nil {
-				return err
-			}
-			req.PageNumber = page
+			request["PageNumber"] = request["PageNumber"].(int) + 1
 		}
 	}
 
-	sweeped := false
-	for _, v := range insts {
-		name := v.InstanceName
-		id := v.InstanceId
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+	for _, id := range kvstoreInstanceIds {
+		log.Printf("[INFO] Deleting KVStore Instance: %s", id)
+		action := "ModifyInstanceAttribute"
+		request := map[string]interface{}{
+			"InstanceId":                id,
+			"InstanceReleaseProtection": false,
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping KVStore Instance: %s (%s)", name, id)
-			continue
-		}
-
-		sweeped = true
-		log.Printf("[INFO] Deleting KVStore Instance: %s (%s)", name, id)
-		req := r_kvstore.CreateDeleteInstanceRequest()
-		req.InstanceId = id
-		_, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.DeleteInstance(req)
+			return nil
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete KVStore Instance (%s (%s)): %s", name, id, err)
+			log.Printf("[ERROR] Failed to modify KVStore Instance release protection (%s): %s", id, err)
+		}
+		action = "DeleteInstance"
+		request = map[string]interface{}{
+			"InstanceId": id,
+		}
+		wait = incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete KVStore Instance (%s): %s", id, err)
 		}
 	}
-	if sweeped {
-		// Waiting 30 seconds to ensure these KVStore instances have been deleted.
-		time.Sleep(30 * time.Second)
+	if len(kvstoreInstanceIds) > 0 {
+		// Waiting 10 seconds to ensure these KVStore instances have been deleted.
+		time.Sleep(10 * time.Second)
 	}
 	return nil
 }
