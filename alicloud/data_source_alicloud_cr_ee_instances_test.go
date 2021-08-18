@@ -10,7 +10,9 @@ func TestAccAlicloudCrEEInstancesDataSource(t *testing.T) {
 		dataSourceCrEEInstancesConfigDependence)
 
 	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{}),
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^tf-testacc",
+		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "test-fake.*",
 		}),
@@ -24,7 +26,9 @@ func TestAccAlicloudCrEEInstancesDataSource(t *testing.T) {
 	}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{}),
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^tf-testacc",
+		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"test-id-fake"},
 			"name_regex": "test-fake.*",
@@ -62,10 +66,8 @@ func TestAccAlicloudCrEEInstancesDataSource(t *testing.T) {
 		existMapFunc: existCrEEInstancesMapFunc,
 		fakeMapFunc:  fakeCrEEInstancesMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithCrEE(t)
-	}
-	crEEInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, nameRegexConf, idsConf, allConf)
+
+	crEEInstancesCheckInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceCrEEInstancesConfigDependence(name string) string {

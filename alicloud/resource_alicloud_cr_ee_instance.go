@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
@@ -77,6 +79,24 @@ func resourceAlicloudCrEEInstance() *schema.Resource {
 			"end_time": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"kms_encrypted_password": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: kmsDiffSuppressFunc,
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
 			},
 		},
 	}
@@ -159,7 +179,7 @@ func resourceAlicloudCrEEInstanceCreate(d *schema.ResourceData, meta interface{}
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCrEEInstanceRead(d, meta)
+	return resourceAlicloudCrEEInstanceUpdate(d, meta)
 }
 
 func resourceAlicloudCrEEInstanceRead(d *schema.ResourceData, meta interface{}) error {
@@ -224,6 +244,43 @@ func resourceAlicloudCrEEInstanceRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAlicloudCrEEInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	response := &cr_ee.ResetLoginPasswordResponse{}
+	request := cr_ee.CreateResetLoginPasswordRequest()
+	request.InstanceId = d.Id()
+	action := request.GetActionName()
+
+	if d.HasChanges("password", "kms_encrypted_password") {
+		password := d.Get("password").(string)
+		kmsPassword := d.Get("kms_encrypted_password").(string)
+
+		if password == "" && kmsPassword == "" {
+			return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+		}
+
+		if password != "" {
+			request.Password = password
+		} else {
+			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
+			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			request.Password = decryptResp
+		}
+
+		raw, err := client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+			return creeClient.ResetLoginPassword(request)
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		response, _ = raw.(*cr_ee.ResetLoginPasswordResponse)
+		if !response.ResetLoginPasswordIsSuccess {
+			return WrapErrorf(fmt.Errorf(response.Code), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
 	return resourceAlicloudCrEEInstanceRead(d, meta)
 }
 

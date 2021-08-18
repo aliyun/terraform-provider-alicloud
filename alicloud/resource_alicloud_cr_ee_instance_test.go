@@ -11,8 +11,6 @@ import (
 )
 
 func TestAccAlicloudCrEEInstance_Basic(t *testing.T) {
-	t.Skip("Skipping cr ee instance test case")
-
 	var v *cr_ee.GetInstanceResponse
 	resourceId := "alicloud_cr_ee_instance.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -29,6 +27,7 @@ func TestAccAlicloudCrEEInstance_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -38,8 +37,8 @@ func TestAccAlicloudCrEEInstance_Basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type":   "Subscription",
 					"period":         "1",
-					"renew_period":   "1",
-					"renewal_status": "AutoRenewal",
+					"renew_period":   "0",
+					"renewal_status": "ManualRenewal",
 					"instance_type":  "Basic",
 					"instance_name":  name,
 				}),
@@ -48,8 +47,8 @@ func TestAccAlicloudCrEEInstance_Basic(t *testing.T) {
 						"status":         CHECKSET,
 						"created_time":   CHECKSET,
 						"end_time":       CHECKSET,
-						"renew_period":   "1",
-						"renewal_status": "AutoRenewal",
+						"renew_period":   "0",
+						"renewal_status": "ManualRenewal",
 						"instance_name":  name,
 						"instance_type":  "Basic",
 						"payment_type":   "Subscription",
@@ -57,15 +56,55 @@ func TestAccAlicloudCrEEInstance_Basic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"password": "YourPassword123",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{
+						"name": name,
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "custom_oss_bucket"},
+				ImportStateVerifyIgnore: []string{"period", "custom_oss_bucket", "password", "kms_encrypted_password", "kms_encryption_context"},
 			},
 		},
 	})
 }
 
 func resourceCrEEInstanceConfigDependence(name string) string {
-	return ""
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+	data "alicloud_kms_keys" "default" {
+	  status = "Enabled"
+	}
+	resource "alicloud_kms_key" "default" {
+	  count = length(data.alicloud_kms_keys.default.ids) > 0 ? 0 : 1
+	  description = var.name
+	  status = "Enabled"
+	  pending_window_in_days = 7
+	}
+	
+	resource "alicloud_kms_ciphertext" "default" {
+	  key_id = length(data.alicloud_kms_keys.default.ids) > 0 ? data.alicloud_kms_keys.default.ids.0 : concat(alicloud_kms_key.default.*.id, [""])[0]
+	  plaintext = "YourPassword1234"
+	  encryption_context = {
+		"name" = var.name
+	  }
+	}
+	`, name)
 }
