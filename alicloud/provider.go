@@ -469,6 +469,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_data_works_folders":                          dataSourceAlicloudDataWorksFolders(),
 			"alicloud_arms_alert_contact_groups":                   dataSourceAlicloudArmsAlertContactGroups(),
 			"alicloud_express_connect_access_points":               dataSourceAlicloudExpressConnectAccessPoints(),
+			"alicloud_lindorm_instances":                           dataSourceAlicloudLindormInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -842,6 +843,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_alert_contact_group":                   resourceAlicloudArmsAlertContactGroup(),
 			"alicloud_dcdn_domain_config":                         resourceAlicloudDcdnDomainConfig(),
 			"alicloud_scdn_domain_config":                         resourceAlicloudScdnDomainConfig(),
+			"alicloud_lindorm_instance":                           resourceAlicloudLindormInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
