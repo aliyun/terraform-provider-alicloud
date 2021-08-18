@@ -5,9 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func (c *CrService) ListCrEEInstances(pageNo int, pageSize int) (*cr_ee.ListInstanceResponse, error) {
@@ -99,23 +100,33 @@ func (c *CrService) ListCrEEInstanceEndpoint(instanceId string) (*cr_ee.ListInst
 	request := cr_ee.CreateListInstanceEndpointRequest()
 	request.RegionId = c.client.RegionId
 	request.InstanceId = instanceId
-	resource := instanceId
 	action := request.GetActionName()
 
-	raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-		return creeClient.ListInstanceEndpoint(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+			return creeClient.ListInstanceEndpoint(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, raw, request.RpcRequest, request)
+
+		response, _ = raw.(*cr_ee.ListInstanceEndpointResponse)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return response, WrapErrorf(err, DefaultErrorMsg, resource, action, AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, raw, request.RpcRequest, request)
-
-	response, _ = raw.(*cr_ee.ListInstanceEndpointResponse)
 	if !response.ListInstanceEndpointIsSuccess {
-		return response, c.wrapCrServiceError(resource, action, response.Code)
+		return response, c.wrapCrServiceError(instanceId, action, response.Code)
 	}
 	return response, nil
 }

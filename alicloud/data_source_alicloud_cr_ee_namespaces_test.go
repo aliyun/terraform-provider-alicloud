@@ -75,10 +75,7 @@ func TestAccAlicloudCrEENamespacesDataSource(t *testing.T) {
 		existMapFunc: existCrEENamespacesMapFunc,
 		fakeMapFunc:  fakeCrEENamespacesMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithCrEE(t)
-	}
-	crEENamespacesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+	crEENamespacesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceCrEENamespacesConfigDependence(name string) string {
@@ -88,6 +85,7 @@ func dataSourceCrEENamespacesConfigDependence(name string) string {
 	}
 
 	data "alicloud_cr_ee_instances" "default" {
+		name_regex = "^tf-testacc"
 	}
 	
 	resource "alicloud_cr_ee_namespace" "default" {

@@ -92,7 +92,7 @@ The following arguments are supported:
 * `instance_name` - (Optional) It has been deprecated from provider version 1.101.0 and `db_instance_name` instead.
 * `db_instance_name` - (Optional, Available in 1.101.0+) The name of KVStore DBInstance. It is a string of 2 to 256 characters. 
 * `password`- (Optional, Sensitive) The password of the KVStore DBInstance. The password is a string of 8 to 30 characters and must contain uppercase letters, lowercase letters, and numbers.
-* `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to a instance. If the `password` is filled in, this field will be ignored.
+* `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `instance_class` - (Optional) Type of the applied ApsaraDB for Redis instance. It can be retrieved by data source [`alicloud_kvstore_instance_classes`](https://www.terraform.io/docs/providers/alicloud/d/kvstore_instance_classes.html)
 or referring to help-docs [Instance type table](https://www.alibabacloud.com/help/doc-detail/26350.htm).
