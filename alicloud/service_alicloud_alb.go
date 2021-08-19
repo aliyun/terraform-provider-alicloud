@@ -41,21 +41,12 @@ func (s *AlbService) ListAclEntries(id string) (object map[string]interface{}, e
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.Acl"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ALB:Acl", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	v, err := jsonpath.Get("$.AclEntries", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AclEntries", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
-	} else {
-		if v.([]interface{})[0].(map[string]interface{})["AclId"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
-		}
-	}
-	object = v.([]interface{})[0].(map[string]interface{})
-	return object, nil
+	return response, nil
 }
 
 func (s *AlbService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
@@ -214,7 +205,17 @@ func (s *AlbService) DescribeAlbAcl(id string) (object map[string]interface{}, e
 		})
 		addDebug(action, response, request)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"Forbidden.Acl"}) {
+				return object, WrapErrorf(Error(GetNotFoundMessage("ALB:Acl", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+		totalCount, err := jsonpath.Get("$.TotalCount", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TotalCount", response)
+		}
+		if fmt.Sprint(totalCount) == "0" {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
 		}
 		v, err := jsonpath.Get("$.Acls", response)
 		if err != nil {
@@ -224,7 +225,7 @@ func (s *AlbService) DescribeAlbAcl(id string) (object map[string]interface{}, e
 			return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
-			if v.(map[string]interface{})["AclId"].(string) == id {
+			if fmt.Sprint(v.(map[string]interface{})["AclId"]) == id {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
@@ -574,5 +575,26 @@ func (s *AlbService) AlbLoadBalancerStateRefreshFunc(id string, failStates []str
 			}
 		}
 		return object, fmt.Sprint(object["LoadBalancerStatus"]), nil
+	}
+}
+
+func (s *AlbService) AlbAclStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAlbAcl(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+
+			if fmt.Sprint(object["AclStatus"]) == failState {
+				return object, fmt.Sprint(object["AclStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["AclStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["AclStatus"]), nil
 	}
 }
