@@ -31,38 +31,38 @@ func TestAccAlicloudHbrNasBackupPlansDataSource(t *testing.T) {
 
 	fileSystemIdconf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrNasBackupPlanSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_hbr_nas_backup_plan.default.id}"]`,
+			"ids":            `["${alicloud_hbr_nas_backup_plan.default.id}"]`,
 			"file_system_id": `"${alicloud_hbr_nas_backup_plan.default.file_system_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrNasBackupPlanSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_hbr_nas_backup_plan.default.id}"]`,
+			"ids":            `["${alicloud_hbr_nas_backup_plan.default.id}"]`,
 			"file_system_id": `"${alicloud_hbr_nas_backup_plan.default.file_system_id}_fake"`,
 		}),
 	}
 
 	vaultIdconf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrNasBackupPlanSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_hbr_nas_backup_plan.default.id}"]`,
+			"ids":      `["${alicloud_hbr_nas_backup_plan.default.id}"]`,
 			"vault_id": `"${alicloud_hbr_nas_backup_plan.default.vault_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrNasBackupPlanSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_hbr_nas_backup_plan.default.id}"]`,
+			"ids":      `["${alicloud_hbr_nas_backup_plan.default.id}"]`,
 			"vault_id": `"${alicloud_hbr_nas_backup_plan.default.vault_id}_fake"`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrNasBackupPlanSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_hbr_nas_backup_plan.default.id}"]`,
-			"name_regex": `"${alicloud_hbr_nas_backup_plan.default.nas_backup_plan_name}"`,
+			"ids":            `["${alicloud_hbr_nas_backup_plan.default.id}"]`,
+			"name_regex":     `"${alicloud_hbr_nas_backup_plan.default.nas_backup_plan_name}"`,
 			"file_system_id": `"${alicloud_hbr_nas_backup_plan.default.file_system_id}"`,
-			"vault_id": `"${alicloud_hbr_nas_backup_plan.default.vault_id}"`,
+			"vault_id":       `"${alicloud_hbr_nas_backup_plan.default.vault_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrNasBackupPlanSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_hbr_nas_backup_plan.default.id}_fake"]`,
-			"name_regex": `"${alicloud_hbr_nas_backup_plan.default.nas_backup_plan_name}_fake"`,
+			"ids":            `["${alicloud_hbr_nas_backup_plan.default.id}_fake"]`,
+			"name_regex":     `"${alicloud_hbr_nas_backup_plan.default.nas_backup_plan_name}_fake"`,
 			"file_system_id": `"${alicloud_hbr_nas_backup_plan.default.file_system_id}_fake"`,
-			"vault_id": `"${alicloud_hbr_nas_backup_plan.default.vault_id}_fake"`,
+			"vault_id":       `"${alicloud_hbr_nas_backup_plan.default.vault_id}_fake"`,
 		}),
 	}
 

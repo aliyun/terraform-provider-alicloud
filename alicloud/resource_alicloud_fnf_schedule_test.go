@@ -43,8 +43,10 @@ func testSweepFnfSchedule(region string) error {
 		"tf_testAcc",
 	}
 
-	action := "ListSchedules"
-	request := make(map[string]interface{})
+	action := "ListFlows"
+	request := map[string]interface{}{
+		"Limit": 100,
+	}
 	var response map[string]interface{}
 	conn, err := client.NewFnfClient()
 	if err != nil {
@@ -54,44 +56,71 @@ func testSweepFnfSchedule(region string) error {
 	runtime.SetAutoretry(true)
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &runtime)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_schedules", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_flows", action, AlibabaCloudSdkGoERROR)
 	}
 	addDebug(action, response, request)
-
-	resp, err := jsonpath.Get("$.Schedules", response)
+	resp, err := jsonpath.Get("$.Flows", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Schedules", response)
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Flows", response)
 	}
-
 	result, _ := resp.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
-		name := item["ScheduleName"].(string)
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(name, prefix) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Fnf Schedule: %s ", name)
-			continue
-		}
-		log.Printf("[Info] Delete Fnf Schedule: %s", name)
+		name := item["Name"].(string)
 
-		action := "DeleteSchedule"
+		action := "ListSchedules"
+		request := map[string]interface{}{
+			"FlowName": name,
+			"Limit":    100,
+		}
+		var response map[string]interface{}
 		conn, err := client.NewFnfClient()
 		if err != nil {
 			return WrapError(err)
 		}
-		request := map[string]interface{}{
-			"FlowName":     item["FlowName"],
-			"ScheduleName": name,
-		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &runtime)
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Fnf Schedule (%s): %s", name, err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_schedules", action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+
+		resp, err := jsonpath.Get("$.Schedules", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Schedules", response)
+		}
+
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			name := item["ScheduleName"].(string)
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(name, prefix) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Fnf Schedule: %s ", name)
+				continue
+			}
+			log.Printf("[Info] Delete Fnf Schedule: %s", name)
+
+			action := "DeleteSchedule"
+			conn, err := client.NewFnfClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request := map[string]interface{}{
+				"FlowName":     item["FlowName"],
+				"ScheduleName": name,
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Fnf Schedule (%s): %s", name, err)
+			}
 		}
 	}
 	return nil

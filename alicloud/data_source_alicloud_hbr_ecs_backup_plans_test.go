@@ -31,38 +31,38 @@ func TestAccAlicloudHbrEcsBackupPlansDataSource(t *testing.T) {
 
 	ecsInstanceIdconf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrEcsBackupPlanSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_hbr_ecs_backup_plan.default.id}"]`,
+			"ids":         `["${alicloud_hbr_ecs_backup_plan.default.id}"]`,
 			"instance_id": `"${alicloud_hbr_ecs_backup_plan.default.instance_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrEcsBackupPlanSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_hbr_ecs_backup_plan.default.id}"]`,
+			"ids":         `["${alicloud_hbr_ecs_backup_plan.default.id}"]`,
 			"instance_id": `"${alicloud_hbr_ecs_backup_plan.default.instance_id}_fake"`,
 		}),
 	}
 
 	vaultIdconf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrEcsBackupPlanSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_hbr_ecs_backup_plan.default.id}"]`,
+			"ids":      `["${alicloud_hbr_ecs_backup_plan.default.id}"]`,
 			"vault_id": `"${alicloud_hbr_ecs_backup_plan.default.vault_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrEcsBackupPlanSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_hbr_ecs_backup_plan.default.id}"]`,
+			"ids":      `["${alicloud_hbr_ecs_backup_plan.default.id}"]`,
 			"vault_id": `"${alicloud_hbr_ecs_backup_plan.default.vault_id}_fake"`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrEcsBackupPlanSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_hbr_ecs_backup_plan.default.id}"]`,
-			"name_regex": `"${alicloud_hbr_ecs_backup_plan.default.ecs_backup_plan_name}"`,
+			"ids":         `["${alicloud_hbr_ecs_backup_plan.default.id}"]`,
+			"name_regex":  `"${alicloud_hbr_ecs_backup_plan.default.ecs_backup_plan_name}"`,
 			"instance_id": `"${alicloud_hbr_ecs_backup_plan.default.instance_id}"`,
-			"vault_id": `"${alicloud_hbr_ecs_backup_plan.default.vault_id}"`,
+			"vault_id":    `"${alicloud_hbr_ecs_backup_plan.default.vault_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrEcsBackupPlanSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_hbr_ecs_backup_plan.default.id}_fake"]`,
-			"name_regex": `"${alicloud_hbr_ecs_backup_plan.default.ecs_backup_plan_name}_fake"`,
+			"ids":         `["${alicloud_hbr_ecs_backup_plan.default.id}_fake"]`,
+			"name_regex":  `"${alicloud_hbr_ecs_backup_plan.default.ecs_backup_plan_name}_fake"`,
 			"instance_id": `"${alicloud_hbr_ecs_backup_plan.default.instance_id}_fake"`,
-			"vault_id": `"${alicloud_hbr_ecs_backup_plan.default.vault_id}_fake"`,
+			"vault_id":    `"${alicloud_hbr_ecs_backup_plan.default.vault_id}_fake"`,
 		}),
 	}
 

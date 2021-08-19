@@ -33,10 +33,8 @@ func testSweepCenBandwidthLimit(region string) error {
 	cenService := CenService{client}
 
 	prefixes := []string{
-		fmt.Sprintf("tf-testAcc%s", region),
-		fmt.Sprintf("tf_testAcc%s", region),
-		fmt.Sprintf("tf-testAccCen%s", region),
-		fmt.Sprintf("tf_testAccCen%s", region),
+		"tf-testAcc",
+		"tf_testAcc%s",
 	}
 
 	var insts []cbn.CenInterRegionBandwidthLimit

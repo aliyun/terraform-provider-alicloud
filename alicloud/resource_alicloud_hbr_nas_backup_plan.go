@@ -398,12 +398,12 @@ func resourceAlicloudHbrNasBackupPlanDelete(d *schema.ResourceData, meta interfa
 	return nil
 }
 
-func ConvertNasFileSystemUnixToString(v string, t int64) string{
+func ConvertNasFileSystemUnixToString(v string, t int64) string {
 	var s string
 	c := time.Unix(t, 0)
 	if strings.HasSuffix(v, "CST") {
 		s = fmt.Sprint(c.Format("2006-01-02T15:04:05CST"))
-	} else if strings.HasSuffix(v,"Z"){
+	} else if strings.HasSuffix(v, "Z") {
 		s = fmt.Sprint(c.Format("2006-01-02T15:04:05Z"))
 	} else {
 		s = fmt.Sprint(c.Format("2006-01-02T15:04:05CST"))
@@ -411,11 +411,11 @@ func ConvertNasFileSystemUnixToString(v string, t int64) string{
 	return s
 }
 
-func ConvertNasFileSystemStringToUnix(v string) int64{
+func ConvertNasFileSystemStringToUnix(v string) int64 {
 	var t time.Time
 	if strings.HasSuffix(v, "CST") {
 		t, _ = time.ParseInLocation("2006-01-02T15:04:05CST", v, time.Local)
-	} else if strings.HasSuffix(v,"Z"){
+	} else if strings.HasSuffix(v, "Z") {
 		t, _ = time.ParseInLocation("2006-01-02T15:04:05Z", v, time.FixedZone("CST", 8*3600))
 	} else {
 		t, _ = time.ParseInLocation("2006-01-02T15:04:05CST", v, time.Local)

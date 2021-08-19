@@ -49,13 +49,15 @@ func testSweepBrainIndustrialPidOrganization(region string) error {
 	action := "ListPidOrganizations"
 	conn, err := client.NewAistudioClient()
 	if err != nil {
-		return WrapError(err)
+		log.Printf("%s failed: %v", action, err)
+		return nil
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	response, _ = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
 	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_brain_industrial_pid_organization", action, AlibabaCloudSdkGoERROR)
+		log.Printf("%s failed: %v", action, response)
+		return nil
 	}
 	resp, err := jsonpath.Get("$.OrganizationList", response)
 	if err != nil {

@@ -45,6 +45,9 @@ func testSweepCrEENamespace(region string) error {
 			}
 			pageNo++
 		}
+		if len(instances.Instances) < pageSize {
+			break
+		}
 		pageNo++
 	}
 

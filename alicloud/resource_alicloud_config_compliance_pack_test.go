@@ -65,6 +65,7 @@ func testSweepConfigCompliancePack(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed To List Compliance Packs: %s", err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.CompliancePacksResult.CompliancePacks", response)
 		if err != nil {
