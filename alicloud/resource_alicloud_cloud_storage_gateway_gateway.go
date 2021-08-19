@@ -26,10 +26,10 @@ func resourceAlicloudCloudStorageGatewayGateway() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"location": {
-				Type:     schema.TypeString,
+				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Cloud", "On_Premise"}, false),
-				Required: true,
-				ForceNew: true,
+				Required:     true,
+				ForceNew:     true,
 			},
 			"storage_bundle_id": {
 				Type:     schema.TypeString,
@@ -37,10 +37,10 @@ func resourceAlicloudCloudStorageGatewayGateway() *schema.Resource {
 				ForceNew: true,
 			},
 			"type": {
-				Type:     schema.TypeString,
+				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"File", "Iscsi"}, false),
-				Required: true,
-				ForceNew: true,
+				Required:     true,
+				ForceNew:     true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -52,9 +52,9 @@ func resourceAlicloudCloudStorageGatewayGateway() *schema.Resource {
 				Optional: true,
 			},
 			"gateway_class": {
-				Type:     schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "Standard","Enhanced","Advanced"}, false),
-				Optional: true,
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "Standard", "Enhanced", "Advanced"}, false),
+				Optional:     true,
 			},
 			"gateway_name": {
 				Type:     schema.TypeString,
@@ -69,10 +69,10 @@ func resourceAlicloudCloudStorageGatewayGateway() *schema.Resource {
 			},
 
 			"public_network_bandwidth": {
-				Type:     schema.TypeInt,
-				ValidateFunc: validation.IntBetween(5,200),
-				Computed: true,
-				Optional: true,
+				Type:         schema.TypeInt,
+				ValidateFunc: validation.IntBetween(5, 200),
+				Computed:     true,
+				Optional:     true,
 			},
 			"reason_detail": {
 				Type:     schema.TypeString,
@@ -114,7 +114,7 @@ func resourceAlicloudCloudStorageGatewayGatewayCreate(d *schema.ResourceData, me
 	request["Location"] = d.Get("location")
 	request["Name"] = d.Get("gateway_name")
 	fmt.Sprintf("gateway_name = %d\n", request["Name"])
-	if v,ok := d.GetOk("payment_type");ok{
+	if v, ok := d.GetOk("payment_type"); ok {
 		request["PostPaid"] = convertCsgGatewayPaymentTypeReq(v.(string))
 	}
 
@@ -150,7 +150,7 @@ func resourceAlicloudCloudStorageGatewayGatewayCreate(d *schema.ResourceData, me
 	}
 	d.SetId(fmt.Sprint(response["GatewayId"]))
 
-	if d.Get("location").(string) == "Cloud"{
+	if d.Get("location").(string) == "Cloud" {
 		action = "DeployGateway"
 		request = map[string]interface{}{
 			"GatewayId": d.Id(),
@@ -201,7 +201,7 @@ func resourceAlicloudCloudStorageGatewayGatewayRead(d *schema.ResourceData, meta
 		}
 		return WrapError(err)
 	}
-	d.Set("payment_type",convertCsgGatewayPaymentTypeResp(object["IsPostPaid"].(bool)))
+	d.Set("payment_type", convertCsgGatewayPaymentTypeResp(object["IsPostPaid"].(bool)))
 
 	d.Set("description", object["Description"])
 	d.Set("gateway_class", object["GatewayClass"])

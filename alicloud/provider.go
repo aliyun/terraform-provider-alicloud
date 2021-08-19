@@ -471,6 +471,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_access_points":               dataSourceAlicloudExpressConnectAccessPoints(),
 			"alicloud_cloud_storage_gateway_gateways":              dataSourceAlicloudCloudStorageGatewayGateways(),
 			"alicloud_lindorm_instances":                           dataSourceAlicloudLindormInstances(),
+			"alicloud_express_connect_physical_connection_service": dataSourceAlicloudExpressConnectPhysicalConnectionService(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
