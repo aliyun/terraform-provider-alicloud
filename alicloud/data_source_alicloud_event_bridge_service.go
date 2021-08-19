@@ -43,7 +43,7 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "CreateInstance"
 	request := map[string]interface{}{
-		"ProductCode": "eventbridge",
+		"ProductCode":      "eventbridge",
 		"SubscriptionType": "PayAsYouGo",
 	}
 

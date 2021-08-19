@@ -181,10 +181,10 @@ func TestAccAlicloudCsgGateway_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"type":              "Iscsi",
-						"payment_type":      "PayAsYouGo",
-						"location":          "On_Premise",
-						"gateway_name":      name,
+						"type":         "Iscsi",
+						"payment_type": "PayAsYouGo",
+						"location":     "On_Premise",
+						"gateway_name": name,
 					}),
 				),
 			},
@@ -220,15 +220,15 @@ func TestAccAlicloudCsgGateway_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":              "DescriptionAll",
-					"gateway_name":             "gateway_nameAll",
-					"type":                     "Iscsi",
+					"description":  "DescriptionAll",
+					"gateway_name": "gateway_nameAll",
+					"type":         "Iscsi",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":              "DescriptionAll",
-						"gateway_name":             "gateway_nameAll",
-						"type":                     "Iscsi",
+						"description":  "DescriptionAll",
+						"gateway_name": "gateway_nameAll",
+						"type":         "Iscsi",
 					}),
 				),
 			},
@@ -241,7 +241,6 @@ func TestAccAlicloudCsgGateway_basic1(t *testing.T) {
 		},
 	})
 }
-
 
 var AlicloudCloudStorageGatewayGatewayMap0 = map[string]string{
 	"public_network_bandwidth": CHECKSET,
@@ -294,9 +293,9 @@ resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
 }
 
 var AlicloudCloudStorageGatewayGatewayMap1 = map[string]string{
-	"reason_type":              NOSET,
-	"status":                   CHECKSET,
-	"type":                     CHECKSET,
-	"location":                 CHECKSET,
-	"storage_bundle_id":        CHECKSET,
+	"reason_type":       NOSET,
+	"status":            CHECKSET,
+	"type":              CHECKSET,
+	"location":          CHECKSET,
+	"storage_bundle_id": CHECKSET,
 }
