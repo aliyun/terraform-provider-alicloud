@@ -78,20 +78,21 @@ variable "name" {
 	default = "%s"
 }
 data "alicloud_cr_ee_instances" "default" {
-	name_regex = "^tf-testacc"
+	name_regex = "^tf-testacc-advanced"
 }
 
 resource "alicloud_cr_ee_instance" "new" {
 	count = length(data.alicloud_cr_ee_instances.default.ids) > 1 ? 0 : length(data.alicloud_cr_ee_instances.default.ids) > 0 ? 1 : 2
 	payment_type = "Subscription"
 	period = "1"
+	renew_period = "0"
 	renewal_status = "ManualRenewal"
-	instance_type = "Basic"
-	instance_name = var.name
+	instance_type = "Advanced"
+	instance_name = "tf-testacc-advanced-1234-${count.index}"
 } 
 
 locals {
-	instance_ids = concat(data.alicloud_cr_ee_instances.default.ids, alicloud_cr_ee_instance.new.*.id)
+	instance_ids = sort(concat(data.alicloud_cr_ee_instances.default.ids, alicloud_cr_ee_instance.new.*.id))
 }
 resource "alicloud_cr_ee_namespace" "source_ns" {
 	instance_id = local.instance_ids.0

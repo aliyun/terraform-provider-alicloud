@@ -54,6 +54,13 @@ The following attributes are exported:
 * `created_time` - Time of Container Registry Enterprise Edition instance creation.
 * `end_time` - Time of Container Registry Enterprise Edition instance expiration.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 min) Used when create the Instance.
+
+
 ## Import
 
 Container Registry Enterprise Edition instance can be imported using the `id`, e.g.

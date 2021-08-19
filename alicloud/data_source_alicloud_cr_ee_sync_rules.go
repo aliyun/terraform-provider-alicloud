@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
 
@@ -192,7 +193,7 @@ func dataSourceAlicloudCrEESyncRulesRead(d *schema.ResourceData, meta interface{
 
 		response, _ = raw.(*cr_ee.ListRepoSyncRuleResponse)
 		if !response.ListRepoSyncRuleIsSuccess {
-			return crService.wrapCrServiceError("alicloud_cr_ee_sync_rules", request.GetActionName(), response.Code)
+			return WrapErrorf(fmt.Errorf("%v", response), DataDefaultErrorMsg, "alicloud_cr_ee_sync_rules", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 		for _, rule := range response.SyncRules {
