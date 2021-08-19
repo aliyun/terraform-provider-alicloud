@@ -25,7 +25,9 @@ func resourceAlicloudCrEEInstance() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"payment_type": {
 				Type:         schema.TypeString,
@@ -174,7 +176,7 @@ func resourceAlicloudCrEEInstanceCreate(d *schema.ResourceData, meta interface{}
 	d.SetId(fmt.Sprintf("%v", response.Data.InstanceId))
 
 	crService := &CrService{client}
-	stateConf := BuildStateConf([]string{"PENDING", "STARTING"}, []string{"RUNNING"}, 3*time.Minute, 15*time.Second, crService.InstanceStatusRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{"PENDING", "STARTING"}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 15*time.Second, crService.InstanceStatusRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

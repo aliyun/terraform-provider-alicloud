@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"fmt"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -134,10 +136,10 @@ func resourceAlicloudCrEESyncRuleCreate(d *schema.ResourceData, meta interface{}
 
 	response, _ = raw.(*cr_ee.CreateRepoSyncRuleResponse)
 	if !response.CreateRepoSyncRuleIsSuccess {
-		return crService.wrapCrServiceError("alicloud_cr_ee_sync_rule", request.GetActionName(), response.Code)
+		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_cr_ee_sync_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(crService.GenResourceId(instanceId, namespaceName, response.SyncRuleId))
+	d.SetId(fmt.Sprint(instanceId, ":", namespaceName, ":", response.SyncRuleId))
 
 	return resourceAlicloudCrEESyncRuleRead(d, meta)
 }
@@ -173,8 +175,10 @@ func resourceAlicloudCrEESyncRuleRead(d *schema.ResourceData, meta interface{}) 
 func resourceAlicloudCrEESyncRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	crService := &CrService{client}
-	instanceId := d.Get("instance_id").(string)
-	syncRuleId := d.Get("rule_id").(string)
+	parts, err := ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return WrapError(err)
+	}
 	syncDirection := d.Get("sync_direction").(string)
 	if syncDirection != "FROM" {
 		return WrapError(Error(DefaultErrorMsg, d.Id(), "delete", "[Please delete sync rule in the source instance]"))
@@ -183,8 +187,8 @@ func resourceAlicloudCrEESyncRuleDelete(d *schema.ResourceData, meta interface{}
 	response := &cr_ee.DeleteRepoSyncRuleResponse{}
 	request := cr_ee.CreateDeleteRepoSyncRuleRequest()
 	request.RegionId = crService.client.RegionId
-	request.InstanceId = instanceId
-	request.SyncRuleId = syncRuleId
+	request.InstanceId = parts[0]
+	request.SyncRuleId = parts[2]
 	raw, err := crService.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 		return creeClient.DeleteRepoSyncRule(request)
 	})
@@ -195,7 +199,7 @@ func resourceAlicloudCrEESyncRuleDelete(d *schema.ResourceData, meta interface{}
 
 	response, _ = raw.(*cr_ee.DeleteRepoSyncRuleResponse)
 	if !response.DeleteRepoSyncRuleIsSuccess {
-		return crService.wrapCrServiceError(d.Id(), request.GetActionName(), response.Code)
+		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

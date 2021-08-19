@@ -51,7 +51,7 @@ func testSweepCrEENamespace(region string) error {
 	testPrefix := "tf-testacc"
 	for _, namespace := range namespaces {
 		if strings.HasPrefix(namespace.NamespaceName, testPrefix) {
-			crService.DeleteCrEENamespace(namespace.InstanceId, namespace.NamespaceName)
+			crService.DeleteCrEENamespace(fmt.Sprint(namespace.InstanceId, ":", namespace.NamespaceName))
 		}
 	}
 	return nil
