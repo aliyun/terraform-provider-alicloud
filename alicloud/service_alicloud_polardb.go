@@ -530,10 +530,10 @@ func (s *PolarDBService) DescribePolarDBClusterEndpoint(id string) (*polardb.DBE
 	return &response.Items[0], nil
 }
 
-func (s *PolarDBService) DescribePolarDBClusterSSL(id string) (*polardb.Item, error) {
-	parts, err := ParseResourceId(id, 2)
+func (s *PolarDBService) DescribePolarDBClusterSSL(d *schema.ResourceData) error {
+	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return WrapError(err)
 	}
 	dbClusterId := parts[0]
 	dbEndpointId := parts[1]
@@ -557,18 +557,45 @@ func (s *PolarDBService) DescribePolarDBClusterSSL(id string) (*polardb.Item, er
 		return nil
 	})
 	response, _ := raw.(*polardb.DescribeDBClusterSSLResponse)
+	var sslConnectionString string
+	var sslExpireTime string
+	var sslEnabled string
 	if len(response.Items) < 1 {
-		return nil, nil
+		sslConnectionString = ""
+		sslExpireTime = ""
+		sslEnabled = ""
 	} else if len(response.Items) == 1 && response.Items[0].DBEndpointId == "" {
-		return &response.Items[0], nil
+		sslConnectionString = response.Items[0].SSLConnectionString
+		sslExpireTime = response.Items[0].SSLExpireTime
+		sslEnabled = convertPolarDBSSLEnableResponse(response.Items[0].SSLEnabled)
 	} else {
 		for _, item := range response.Items {
 			if item.DBEndpointId == dbEndpointId {
-				return &item, nil
+				sslConnectionString = item.SSLConnectionString
+				sslExpireTime = item.SSLExpireTime
+				sslEnabled = convertPolarDBSSLEnableResponse(item.SSLEnabled)
 			}
 		}
 	}
-	return nil, nil
+	sslAutoRotate := response.SSLAutoRotate
+
+	if err := d.Set("ssl_connection_string", sslConnectionString); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ssl_expire_time", sslExpireTime); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ssl_auto_rotate", sslAutoRotate); err != nil {
+		return WrapError(err)
+	}
+
+	if sslEnabled == "Enable" {
+		d.Set("ssl_certificate_url", "https://apsaradb-public.oss-ap-southeast-1.aliyuncs.com/ApsaraDB-CA-Chain.zip?file=ApsaraDB-CA-Chain.zip&regionId="+request.RegionId)
+	} else {
+		d.Set("ssl_certificate_url", "")
+	}
+
+	return nil
 }
 
 func (s *PolarDBService) DescribePolarDBDatabase(id string) (ds *polardb.Database, err error) {
@@ -1398,4 +1425,12 @@ func convertPolarDBIpsSetToString(sourceIps string) []string {
 		}
 	}
 	return ips
+}
+
+func convertPolarDBSSLEnableResponse(source string) string {
+	switch source {
+	case "Enabled":
+		return "Enable"
+	}
+	return "Disable"
 }

@@ -76,6 +76,15 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"ssl_auto_rotate": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Enable", "Disable"}, false),
+			},
+			"ssl_certificate_url": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -186,23 +195,10 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	endpointSslItem, err := polarDBService.DescribePolarDBClusterSSL(d.Id())
-	if err != nil {
+	if err = polarDBService.DescribePolarDBClusterSSL(d); err != nil {
 		return WrapError(err)
 	}
 
-	var sslConnectionString string
-	var sslExpireTime string
-	if endpointSslItem == nil {
-		sslConnectionString = ""
-		sslExpireTime = ""
-
-	} else {
-		sslConnectionString = endpointSslItem.SSLConnectionString
-		sslExpireTime = endpointSslItem.SSLExpireTime
-	}
-	d.Set("ssl_connection_string", sslConnectionString)
-	d.Set("ssl_expire_time", sslExpireTime)
 	return nil
 }
 
@@ -269,7 +265,7 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if d.HasChange("ssl_enabled") || d.HasChange("net_type") {
+	if d.HasChange("ssl_enabled") || d.HasChange("net_type") || d.HasChange("ssl_auto_rotate") {
 		if d.Get("ssl_enabled") == "" && d.Get("net_type") != "" {
 			return WrapErrorf(Error("Need to specify ssl_enabled as Enable or Disable, if you want to modify the net_type."), DefaultErrorMsg, d.Id(), "ModifyDBClusterSSL", ProviderERROR)
 		}
@@ -278,6 +274,7 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 		modifySSLRequest.NetType = d.Get("net_type").(string)
 		modifySSLRequest.DBClusterId = dbClusterId
 		modifySSLRequest.DBEndpointId = dbEndpointId
+		modifySSLRequest.SSLAutoRotate = d.Get("ssl_auto_rotate").(string)
 		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 				return polarDBClient.ModifyDBClusterSSL(modifySSLRequest)
