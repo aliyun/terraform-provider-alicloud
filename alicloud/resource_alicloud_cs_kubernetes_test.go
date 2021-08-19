@@ -187,8 +187,8 @@ func testSweepCSKubernetes(region string) error {
 		slbIds = append(slbIds, strings.Split(v.ExternalLoadbalancerID, ",")...)
 	}
 	if sweeped {
-		// Waiting 2 minutes to eusure these swarms have been deleted.
-		time.Sleep(1 * time.Minute)
+		// Waiting 30 seconds to eusure these swarms have been deleted.
+		time.Sleep(30 * time.Second)
 	}
 	// Currently, the CS will retain some resources after the cluster is deleted.
 	slbS := SlbService{client}

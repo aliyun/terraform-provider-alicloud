@@ -63,6 +63,7 @@ func testSweepConfigAggregateConfigRule(region string) error {
 		})
 		if err != nil {
 			log.Println("List Config Aggregator Failed!", err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.AggregatorsResult.Aggregators", response)
 		if err != nil {

@@ -53,7 +53,8 @@ func testSweepBrainIndustrialPidProject(region string) error {
 		runtime.SetAutoretry(true)
 		response, _ = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
 		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_brain_industrial_pid_project", action, AlibabaCloudSdkGoERROR)
+			log.Println(fmt.Errorf("%s failed: %v", action, response))
+			return nil
 		}
 		resp, err := jsonpath.Get("$.PidProjectList", response)
 		if err != nil {

@@ -61,7 +61,7 @@ func testSweepConfigRule(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve config rule in service list: %s", err)
-			return err
+			return nil
 		}
 		resp, err := jsonpath.Get("$.ConfigRules.ConfigRuleList", response)
 		if err != nil {

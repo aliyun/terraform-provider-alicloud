@@ -31,13 +31,13 @@ func TestAccAlicloudHBRNasBackupPlan_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_type":                         "COMPLETE",
-					"vault_id":                            "${alicloud_hbr_vault.default.id}",
-					"file_system_id":                      "${alicloud_nas_file_system.default.id}",
-					"create_time":                         "${data.alicloud_nas_file_systems.default.systems.0.create_time}",
-					"schedule":                            "I|1602673264|PT2H",
-					"nas_backup_plan_name":                "tf-testAccCase",
-					"retention":                           "1",
+					"backup_type":          "COMPLETE",
+					"vault_id":             "${alicloud_hbr_vault.default.id}",
+					"file_system_id":       "${alicloud_nas_file_system.default.id}",
+					"create_time":          "${data.alicloud_nas_file_systems.default.systems.0.create_time}",
+					"schedule":             "I|1602673264|PT2H",
+					"nas_backup_plan_name": "tf-testAccCase",
+					"retention":            "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
