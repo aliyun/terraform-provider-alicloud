@@ -939,7 +939,7 @@ func checkWaitForReady(object interface{}, conditions map[string]interface{}) (b
 	return true, values, nil
 }
 
-// When using teadsl, we need to convert float, int64 and int32 to int for comparison.
+// When  using teadsl, we need to convert float, int64 and int32 to int for comparison.
 func formatInt(src interface{}) int {
 	if src == nil {
 		return 0

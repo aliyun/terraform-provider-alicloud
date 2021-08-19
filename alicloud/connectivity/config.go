@@ -127,6 +127,7 @@ type Config struct {
 	GwsecdEndpoint          string
 	CloudphoneEndpoint      string
 	DataworkspublicEndpoint string
+	HcsSgwEndpoint          string
 }
 
 func (c *Config) loadAndValidate() error {
