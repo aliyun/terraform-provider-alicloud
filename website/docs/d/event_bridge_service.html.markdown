@@ -22,6 +22,7 @@ For information about Event Bridge and how to use it, see [What is Event Bridge]
 ```
 data "alicloud_event_bridge_service" "open" {
 	enable = "On"
+	code = "eventbridge_post_public_intl"
 }
 ```
 
@@ -30,6 +31,7 @@ data "alicloud_event_bridge_service" "open" {
 The following arguments are supported:
 
 * `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: `On` or `Off`. Default to `Off`.
+* `Code` - (Required) Sites that need to open Event Bridge. Vaild values : `eventbridge_post_public_intl` and `eventbridge_post_public_cn`. Set to `code = "eventbridge_post_public_intl"` to represent the opening of Event Bridge products on the international station. Set to `code = "eventbridge_post_public_cn"` to represent the site that opened Event Bridge in china station.
 
 -> **NOTE:** Setting `enable = "On"` to open the Event Bridge service that means you have read and agreed the [Event Bridge Terms of Service](https://help.aliyun.com/document_detail/163911.html). The service can not closed once it is opened.
 

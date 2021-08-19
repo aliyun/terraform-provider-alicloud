@@ -19,7 +19,7 @@ For information about Event Bridge service-linked roles(SLR) and how to use it, 
 
 ```terraform
 resource "alicloud_event_bridge_slr" "slr" {
-    product_name = "AliyunServiceRoleForEventBridgeSourceRocketMQ"
+    product_name = "AliyunServiceRoleForEventBridgeSendToMNS"
 }
 ```
 
@@ -28,7 +28,7 @@ resource "alicloud_event_bridge_slr" "slr" {
 The following arguments are supported:
 
 * `product_name` - (Required, ForceNew) The product name for SLR. EventBridge can automatically create the following service-linked roles:
-Event source related: `AliyunServiceRoleForEventBridgeSourceRocketMQ`, `AliyunServiceRoleForEventBridgeSourceActionTrail`, `AliyunServiceRoleForEventBridgeSourceRabbitMQ`
+Event source related: `AliyunServiceRoleForEventBridgeSendToMNS`,`AliyunServiceRoleForEventBridgeSourceRocketMQ`, `AliyunServiceRoleForEventBridgeSourceActionTrail`, `AliyunServiceRoleForEventBridgeSourceRabbitMQ`
 Target related: `AliyunServiceRoleForEventBridgeConnectVPC`, `AliyunServiceRoleForEventBridgeSendToFC`, `AliyunServiceRoleForEventBridgeSendToSMS`, `AliyunServiceRoleForEventBridgeSendToDirectMail`, `AliyunServiceRoleForEventBridgeSendToRabbitMQ`, `AliyunServiceRoleForEventBridgeSendToRocketMQ`
 
 ## Attributes Reference
