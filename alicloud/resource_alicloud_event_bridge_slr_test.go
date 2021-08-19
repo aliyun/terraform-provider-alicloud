@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEventBridgeSlr_basic(t *testing.T) {
+func TestAccAlicloudEventBridgeSlr_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_event_bridge_slr.default"
 	ra := resourceAttrInit(resourceId, AlicloudEventBridgeEventSlrMap0)
@@ -33,6 +33,43 @@ func TestAccAlicloudEventBridgeSlr_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"product_name": "AliyunServiceRoleForEventBridgeSourceRocketMQ",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAlicloudEventBridgeSlr_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_event_bridge_slr.default"
+	ra := resourceAttrInit(resourceId, AlicloudEventBridgeEventSlrMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EventbridgeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEventBridgeSlr")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, "", testAccCheckAlicloudEventBridgeSlrDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"product_name": "AliyunServiceRoleForEventBridgeSendToMNS",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"product_name": "AliyunServiceRoleForEventBridgeSendToMNS",
 					}),
 				),
 			},

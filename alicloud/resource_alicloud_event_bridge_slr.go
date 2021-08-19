@@ -30,6 +30,7 @@ func resourceAlicloudEventBridgeSlr() *schema.Resource {
 					"AliyunServiceRoleForEventBridgeSourceRocketMQ",
 					"AliyunServiceRoleForEventBridgeSourceActionTrail",
 					"AliyunServiceRoleForEventBridgeSourceRabbitMQ",
+					"AliyunServiceRoleForEventBridgeSendToMNS",
 					"AliyunServiceRoleForEventBridgeConnectVPC",
 					"AliyunServiceRoleForEventBridgeSendToFC",
 					"AliyunServiceRoleForEventBridgeSendToSMS",

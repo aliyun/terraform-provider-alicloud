@@ -22,6 +22,11 @@ func dataSourceAlicloudEventBridgeService() *schema.Resource {
 				Optional:     true,
 				Default:      "Off",
 			},
+			"code": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"eventbridge_post_public_intl", "eventbridge_post_public_cn"}, false),
+				Required:     true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -38,9 +43,12 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "CreateInstance"
 	request := map[string]interface{}{
-		"ProductCode":      "eventbridge",
-		"ProductType":      "eventbridge_post_public_cn",
+		"ProductCode": "eventbridge",
 		"SubscriptionType": "PayAsYouGo",
+	}
+
+	if v, ok := d.GetOk("code"); ok {
+		request["ProductType"] = v
 	}
 	conn, err := meta.(*connectivity.AliyunClient).NewBssopenapiClient()
 	if err != nil {
