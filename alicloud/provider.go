@@ -469,6 +469,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_data_works_folders":                          dataSourceAlicloudDataWorksFolders(),
 			"alicloud_arms_alert_contact_groups":                   dataSourceAlicloudArmsAlertContactGroups(),
 			"alicloud_express_connect_access_points":               dataSourceAlicloudExpressConnectAccessPoints(),
+			"alicloud_cloud_storage_gateway_gateways":              dataSourceAlicloudCloudStorageGatewayGateways(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -842,6 +843,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_alert_contact_group":                   resourceAlicloudArmsAlertContactGroup(),
 			"alicloud_dcdn_domain_config":                         resourceAlicloudDcdnDomainConfig(),
 			"alicloud_scdn_domain_config":                         resourceAlicloudScdnDomainConfig(),
+			"alicloud_cloud_storage_gateway_gateway":              resourceAlicloudCloudStorageGatewayGateway(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1009,6 +1011,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.CloudphoneEndpoint = strings.TrimSpace(endpoints["cloudphone"].(string))
 		config.ScdnEndpoint = strings.TrimSpace(endpoints["scdn"].(string))
 		config.DataworkspublicEndpoint = strings.TrimSpace(endpoints["dataworkspublic"].(string))
+		config.HcsSgwEndpoint = strings.TrimSpace(endpoints["hcs_sgw"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1249,6 +1252,8 @@ func init() {
 		"scdn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom scdn endpoints.",
 
 		"dataworkspublic_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dataworkspublic endpoints.",
+
+		"hcs_sgw_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom hcs_sgw endpoints.",
 	}
 }
 
@@ -1298,6 +1303,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["dataworkspublic_endpoint"],
+				},
+
+				"hcs_sgw": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["hcs_sgw_endpoint"],
 				},
 
 				"cloudphone": {
@@ -1870,6 +1882,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudphone"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["scdn"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dataworkspublic"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["hcs_sgw"].(string)))
 	return hashcode.String(buf.String())
 }
 
