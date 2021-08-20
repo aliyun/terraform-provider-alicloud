@@ -34,8 +34,7 @@ func TestAccAlicloudHBREcsBackupClient_basic0(t *testing.T) {
 					"instance_id": "${alicloud_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-					}),
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
