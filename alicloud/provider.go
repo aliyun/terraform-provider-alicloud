@@ -476,6 +476,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_ecs_backup_clients":                      dataSourceAlicloudHbrEcsBackupClients(),
 			"alicloud_msc_sub_contacts":                            dataSourceAlicloudMscSubContacts(),
 			"alicloud_express_connect_physical_connections":        dataSourceAlicloudExpressConnectPhysicalConnections(),
+			"alicloud_alb_load_balancers":                          dataSourceAlicloudAlbLoadBalancers(),
+			"alicloud_alb_zones":                                   dataSourceAlicloudAlbZones(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -855,6 +857,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_ecs_backup_client":                      resourceAlicloudHbrEcsBackupClient(),
 			"alicloud_msc_sub_contact":                            resourceAlicloudMscSubContact(),
 			"alicloud_express_connect_physical_connection":        resourceAlicloudExpressConnectPhysicalConnection(),
+			"alicloud_alb_load_balancer":                          resourceAlicloudAlbLoadBalancer(),
 		},
 
 		ConfigureFunc: providerConfigure,
