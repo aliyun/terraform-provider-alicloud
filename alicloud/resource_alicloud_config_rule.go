@@ -195,9 +195,9 @@ func resourceAlicloudConfigRuleCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("resource_group_ids_scope"); ok {
 		request["ResourceGroupIdsScope"] = v
 	}
-	if v, ok := d.GetOk("resource_types_scope"); ok {
+	if v, ok := d.GetOk("resource_types_scope"); ok && v != nil {
 		request["ResourceTypesScope"] = convertListToCommaSeparate(v.([]interface{}))
-	} else if v, ok := d.GetOk("scope_compliance_resource_types"); ok {
+	} else if v, ok := d.GetOk("scope_compliance_resource_types"); ok && v != nil {
 		request["ResourceTypesScope"] = convertListToCommaSeparate(v.([]interface{}))
 	} else {
 		return WrapError(Error("[ERROR] Argument 'scope_compliance_resource_types' or 'resource_types_scope' must be set one!"))

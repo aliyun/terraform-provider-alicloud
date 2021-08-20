@@ -350,7 +350,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 	if d.HasChange("ip_white_list") {
 		update = true
-		if v, ok := d.GetOk("ip_white_list"); ok {
+		if v, ok := d.GetOk("ip_white_list"); ok && v != nil {
 			request["SecurityIpList"] = convertListToCommaSeparate(v.(*schema.Set).List())
 		}
 	}
