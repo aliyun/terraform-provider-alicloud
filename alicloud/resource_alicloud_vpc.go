@@ -141,7 +141,7 @@ func resourceAlicloudVpcCreate(d *schema.ResourceData, meta interface{}) error {
 		request["ResourceGroupId"] = v
 	}
 
-	if v, ok := d.GetOk("user_cidrs"); ok {
+	if v, ok := d.GetOk("user_cidrs"); ok && v != nil {
 		request["UserCidr"] = convertListToCommaSeparate(v.([]interface{}))
 	}
 

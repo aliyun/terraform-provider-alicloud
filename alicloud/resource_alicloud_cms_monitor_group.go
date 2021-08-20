@@ -46,7 +46,7 @@ func resourceAlicloudCmsMonitorGroupCreate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapError(err)
 	}
-	if v, ok := d.GetOk("contact_groups"); ok {
+	if v, ok := d.GetOk("contact_groups"); ok && v != nil {
 		request["ContactGroups"] = convertListToCommaSeparate(v.([]interface{}))
 	}
 
