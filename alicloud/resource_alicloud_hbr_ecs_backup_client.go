@@ -73,9 +73,9 @@ func resourceAlicloudHbrEcsBackupClient() *schema.Resource {
 				Computed: true,
 			},
 			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: true,
+				Type:         schema.TypeString,
+				Computed:     true,
+				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ACTIVATED", "STOPPED", "INSTALL_FAILED", "REGISTERED", "DEACTIVATED", "INSTALLING", "NOT_INSTALLED", "UPGRADING", "UPGRADE_FAILED", "UNINSTALLING", "UNINSTALL_FAILED", "UNKNOWN"}, false),
 			},
 			"use_https": {
@@ -258,7 +258,7 @@ func resourceAlicloudHbrEcsBackupClientUpdate(d *schema.ResourceData, meta inter
 		if object["Status"].(string) != target {
 			if target == "ACTIVATED" {
 				err = resourceAlicloudHbrEcsBackupClientCreate(d, meta)
-			} else if target == "STOPPED"{
+			} else if target == "STOPPED" {
 				err = resourceAlicloudHbrEcsBackupClientUninstall(d, meta)
 			} else {
 				return WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))

@@ -49,9 +49,9 @@ func TestAccAlicloudHbrEcsBackupClientsDataSource(t *testing.T) {
 			"status":       `"ACTIVATED"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrEcsBackupClientSourceConfig(rand, map[string]string{
-			"ids":         `[alicloud_hbr_ecs_backup_client.default.id]`,
+			"ids":          `[alicloud_hbr_ecs_backup_client.default.id]`,
 			"instance_ids": `[alicloud_hbr_ecs_backup_client.default.instance_id]`,
-			"status":      `"UNKNOWN"`,
+			"status":       `"UNKNOWN"`,
 		}),
 	}
 

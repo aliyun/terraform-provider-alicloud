@@ -475,6 +475,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cddc_dedicated_host_groups":                  dataSourceAlicloudCddcDedicatedHostGroups(),
 			"alicloud_hbr_ecs_backup_clients":                      dataSourceAlicloudHbrEcsBackupClients(),
 			"alicloud_msc_sub_contacts":                            dataSourceAlicloudMscSubContacts(),
+			"alicloud_express_connect_physical_connections":        dataSourceAlicloudExpressConnectPhysicalConnections(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -853,6 +854,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cddc_dedicated_host_group":                  resourceAlicloudCddcDedicatedHostGroup(),
 			"alicloud_hbr_ecs_backup_client":                      resourceAlicloudHbrEcsBackupClient(),
 			"alicloud_msc_sub_contact":                            resourceAlicloudMscSubContact(),
+			"alicloud_express_connect_physical_connection":        resourceAlicloudExpressConnectPhysicalConnection(),
 		},
 
 		ConfigureFunc: providerConfigure,
