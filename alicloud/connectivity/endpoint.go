@@ -282,12 +282,10 @@ var serviceCodeMapping = map[string]string{
 
 const (
 	OpenApiGatewayService          = "apigateway.cn-hangzhou.aliyuncs.com"
-	OpenSlsService                 = "sls.aliyuncs.com"
 	OpenOtsService                 = "ots.cn-hangzhou.aliyuncs.com"
 	OpenOssService                 = "oss-admin.aliyuncs.com"
 	OpenNasService                 = "nas.cn-hangzhou.aliyuncs.com"
 	OpenCdnService                 = "cdn.aliyuncs.com"
-	OpenBssService                 = "business.aliyuncs.com"
 	OpenKmsService                 = "kms.cn-hangzhou.aliyuncs.com"
 	OpenSaeService                 = "sae.cn-hangzhou.aliyuncs.com"
 	OpenCmsService                 = "metrics.cn-hangzhou.aliyuncs.com"
