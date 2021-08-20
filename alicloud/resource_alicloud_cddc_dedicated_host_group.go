@@ -24,26 +24,26 @@ func resourceAlicloudCddcDedicatedHostGroup() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"allocation_policy": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: true,
+				Type:         schema.TypeString,
+				Computed:     true,
+				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Evenly", "Intensively"}, false),
 			},
 			"cpu_allocation_ratio": {
-				Type:     schema.TypeInt,
-				Computed: true,
-				Optional: true,
-				ValidateFunc: validation.IntBetween(100,300),
+				Type:         schema.TypeInt,
+				Computed:     true,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(100, 300),
 			},
 			"dedicated_host_group_desc": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"disk_allocation_ratio": {
-				Type:     schema.TypeInt,
-				Computed: true,
-				Optional: true,
-				ValidateFunc: validation.IntBetween(100,300),
+				Type:         schema.TypeInt,
+				Computed:     true,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(100, 300),
 			},
 			"engine": {
 				Type:         schema.TypeString,
@@ -57,10 +57,10 @@ func resourceAlicloudCddcDedicatedHostGroup() *schema.Resource {
 				Optional: true,
 			},
 			"mem_allocation_ratio": {
-				Type:     schema.TypeInt,
-				Computed: true,
-				Optional: true,
-				ValidateFunc: validation.IntBetween(0,100),
+				Type:         schema.TypeInt,
+				Computed:     true,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(0, 100),
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -92,7 +92,7 @@ func resourceAlicloudCddcDedicatedHostGroupCreate(d *schema.ResourceData, meta i
 
 	request["Engine"] = d.Get("engine")
 	if v, ok := d.GetOk("disk_allocation_ratio"); ok {
-		if d.Get("engine").(string) == "SQLServer" && v.(int) >100 {
+		if d.Get("engine").(string) == "SQLServer" && v.(int) > 100 {
 			return WrapError(fmt.Errorf("disk_allocation_ratio needs to be less than 100 under the SQLServer"))
 		}
 		request["DiskAllocationRatio"] = v
@@ -150,8 +150,7 @@ func resourceAlicloudCddcDedicatedHostGroupRead(d *schema.ResourceData, meta int
 		d.Set("disk_allocation_ratio", formatInt(v))
 	}
 
-
-	d.Set("engine",switchEngine(object["Engine"].(string)) )
+	d.Set("engine", switchEngine(object["Engine"].(string)))
 	d.Set("host_replace_policy", object["HostReplacePolicy"])
 	if v, ok := object["MemAllocationRatio"]; ok && fmt.Sprint(v) != "0" {
 		d.Set("mem_allocation_ratio", formatInt(v))
