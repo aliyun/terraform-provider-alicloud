@@ -17,7 +17,7 @@ This resource will help you to manager node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.109.1, support remove node pool nodes.
 
--> **NOTE:** From version 1.111.0, support auto scaling node pool. For more information on how to use auto scaling node pools, see [Use Terraform to create an elastic node pool](https://help.aliyun.com/document_detail/197717.htm).
+-> **NOTE:** From version 1.111.0, support auto scaling node pool. For more information on how to use auto scaling node pools, see [Use Terraform to create an elastic node pool](https://help.aliyun.com/document_detail/197717.htm). With auto-scaling is enabled, the nodes in the node pool will be labeled with `k8s.aliyun.com=true` to prevent system pods such as coredns, metrics-servers from being scheduled to elastic nodes, and to prevent node shrinkage from causing business abnormalities.
 
 -> **NOTE:** ACK adds a new RamRole (AliyunCSManagedAutoScalerRole) for the permission control of the node pool with auto-scaling enabled. If you are using a node pool with auto scaling, please click [AliyunCSManagedAutoScalerRole](https://ram.console.aliyun.com/role/authorization?request=%7B%22Services%22%3A%5B%7B%22Service%22%3A%22CS%22%2C%22Roles%22%3A%5B%7B%22RoleName%22%3A%22AliyunCSManagedAutoScalerRole%22%2C%22TemplateId%22%3A%22AliyunCSManagedAutoScalerRole%22%7D%5D%7D%5D%2C%22ReturnUrl%22%3A%22https%3A%2F%2Fcs.console.aliyun.com%2F%22%7D) to complete the authorization. 
 
@@ -132,6 +132,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   key_name                     = alicloud_key_pair.default.key_name
 
   # automatic scaling node pool configuration.
+  # With auto-scaling is enabled, the nodes in the node pool will be labeled with `k8s.aliyun.com=true` to prevent system pods such as coredns, metrics-servers from being scheduled to elastic nodes, and to prevent node shrinkage from causing business abnormalities.
   scaling_config {
     min_size      = 1
     max_size      = 10
@@ -319,7 +320,7 @@ The following arguments are supported:
 * `taints` - (Optional) A List of Kubernetes taints to assign to the nodes.
 * `management` - (Optional, Available in 1.109.1+) Managed node pool configuration. When using a managed node pool, the node key must use `key_name`. Detailed below.
 * `scaling_policy` - (Optional, Available in 1.127.0+) The scaling mode. Valid values: `release`, `recycle`, default is `release`. Standard mode(release): Create and release ECS instances based on requests.Swift mode(recycle): Create, stop, adn restart ECS instances based on needs. New ECS instances are only created when no stopped ECS instance is avalible. This mode further accelerates the scaling process. Apart from ECS instances that use local storage, when an ECS instance is stopped, you are only chatged for storage space.
-* `scaling_config` - (Optional, Available in 1.111.0+) Auto scaling node pool configuration. For more details, see `scaling_config`.
+* `scaling_config` - (Optional, Available in 1.111.0+) Auto scaling node pool configuration. For more details, see `scaling_config`. With auto-scaling is enabled, the nodes in the node pool will be labeled with `k8s.aliyun.com=true` to prevent system pods such as coredns, metrics-servers from being scheduled to elastic nodes, and to prevent node shrinkage from causing business abnormalities.
 * `instance_charge_type`- (Optional, Available in 1.119.0+) Node payment type. Valid values: `PostPaid`, `PrePaid`, default is `PostPaid`. If value is `PrePaid`, the arguments `period`, `period_unit`, `auto_renew` and `auto_renew_period` are required.
 * `period`- (Optional, Available in 1.119.0+) Node payment period. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
 * `period_unit`- (Optional, Available in 1.119.0+) Node payment period unit, valid value: `Month`. Default is `Month`.
