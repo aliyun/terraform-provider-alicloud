@@ -385,7 +385,6 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic2(t *testing.T) {
 	})
 }
 
-
 func TestAccAlicloudCddcDedicatedHostGroup_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
@@ -629,6 +628,7 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic4(t *testing.T) {
 		},
 	})
 }
+
 var AlicloudCDDCDedicatedHostGroupMap0 = map[string]string{
 	"engine": CHECKSET,
 	"vpc_id": CHECKSET,

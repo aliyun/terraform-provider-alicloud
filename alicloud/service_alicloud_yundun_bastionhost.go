@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
@@ -16,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type bastionhostService struct {
+type YundunBastionhostService struct {
 	client *connectivity.AliyunClient
 }
 
@@ -52,7 +54,7 @@ var bastionhostpolicyRequired = []BastionhostPolicyRequired{
 	},
 }
 
-func (s *bastionhostService) DescribeYundunBastionhostInstance(id string) (v yundun_bastionhost.Instance, err error) {
+func (s *YundunBastionhostService) DescribeYundunBastionhostInstance(id string) (v yundun_bastionhost.Instance, err error) {
 	request := yundun_bastionhost.CreateDescribeInstanceBastionhostRequest()
 	var instanceIds []string
 	instanceIds = append(instanceIds, id)
@@ -75,28 +77,47 @@ func (s *bastionhostService) DescribeYundunBastionhostInstance(id string) (v yun
 	return
 }
 
-func (s *bastionhostService) DescribeBastionhostInstanceAttribute(id string) (v yundun_bastionhost.InstanceAttribute, err error) {
-	request := yundun_bastionhost.CreateDescribeInstanceAttributeRequest()
-	request.InstanceId = id
-
-	raw, err := s.client.WithBastionhostClient(func(BastionhostClient *yundun_bastionhost.Client) (interface{}, error) {
-		return BastionhostClient.DescribeInstanceAttribute(request)
-	})
-
+func (s *YundunBastionhostService) DescribeBastionhostInstanceAttribute(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewBastionhostClient()
 	if err != nil {
-		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapError(err)
 	}
-
-	response, _ := raw.(*yundun_bastionhost.DescribeInstanceAttributeResponse)
-	if response == nil || response.InstanceAttribute.InstanceId != id {
-		return v, WrapErrorf(Error(GetNotFoundMessage("Yundun_bastionhost Instance", id)), NotFoundMsg, ProviderERROR)
+	action := "DescribeInstanceAttribute"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"InstanceId": id,
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	v = response.InstanceAttribute
-	return v, WrapError(err)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"OBJECT_NOT_FOUND"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.InstanceAttribute", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceAttribute", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }
 
-func (s *bastionhostService) StartBastionhostInstance(instanceId string, vSwitchId string, securityGroupIds []string) error {
+func (s *YundunBastionhostService) StartBastionhostInstance(instanceId string, vSwitchId string, securityGroupIds []string) error {
 	request := yundun_bastionhost.CreateStartInstanceRequest()
 	request.InstanceId = instanceId
 	request.VswitchId = vSwitchId
@@ -111,7 +132,7 @@ func (s *bastionhostService) StartBastionhostInstance(instanceId string, vSwitch
 	return nil
 }
 
-func (s *bastionhostService) UpdateBastionhostInstanceDescription(instanceId string, description string) error {
+func (s *YundunBastionhostService) UpdateBastionhostInstanceDescription(instanceId string, description string) error {
 	request := yundun_bastionhost.CreateModifyInstanceAttributeRequest()
 	request.InstanceId = instanceId
 	request.Description = description
@@ -126,7 +147,7 @@ func (s *bastionhostService) UpdateBastionhostInstanceDescription(instanceId str
 	return nil
 }
 
-func (s *bastionhostService) UpdateBastionhostSecurityGroups(instanceId string, securityGroups []string) error {
+func (s *YundunBastionhostService) UpdateBastionhostSecurityGroups(instanceId string, securityGroups []string) error {
 	request := yundun_bastionhost.CreateConfigInstanceSecurityGroupsRequest()
 	request.InstanceId = instanceId
 	request.SecurityGroupIds = &securityGroups
@@ -140,7 +161,7 @@ func (s *bastionhostService) UpdateBastionhostSecurityGroups(instanceId string, 
 	return nil
 }
 
-func (s *bastionhostService) UpdateInstanceSpec(schemaSpecMap map[string]string, d *schema.ResourceData, meta interface{}) error {
+func (s *YundunBastionhostService) UpdateInstanceSpec(schemaSpecMap map[string]string, d *schema.ResourceData, meta interface{}) error {
 	request := bssopenapi.CreateModifyInstanceRequest()
 	request.InstanceId = d.Id()
 
@@ -185,7 +206,7 @@ func (s *bastionhostService) UpdateInstanceSpec(schemaSpecMap map[string]string,
 	return nil
 }
 
-func (s *bastionhostService) BastionhostInstanceRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *YundunBastionhostService) BastionhostInstanceRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeYundunBastionhostInstance(id)
 		if err != nil {
@@ -205,7 +226,7 @@ func (s *bastionhostService) BastionhostInstanceRefreshFunc(id string, failState
 	}
 }
 
-func (s *bastionhostService) createRole() error {
+func (s *YundunBastionhostService) createRole() error {
 	createRoleRequest := ram.CreateCreateRoleRequest()
 	createRoleRequest.RoleName = BastionhostRoleName
 	createRoleRequest.Description = BastionhostRoleDefaultDescription
@@ -220,7 +241,7 @@ func (s *bastionhostService) createRole() error {
 	return nil
 }
 
-func (s *bastionhostService) attachPolicy(policyToBeAttached []BastionhostPolicyRequired) error {
+func (s *YundunBastionhostService) attachPolicy(policyToBeAttached []BastionhostPolicyRequired) error {
 	attachPolicyRequest := ram.CreateAttachPolicyToRoleRequest()
 	for _, policy := range policyToBeAttached {
 		attachPolicyRequest.RoleName = BastionhostRoleName
@@ -241,7 +262,7 @@ func (s *bastionhostService) attachPolicy(policyToBeAttached []BastionhostPolicy
 	return nil
 }
 
-func (s *bastionhostService) ProcessRolePolicy() error {
+func (s *YundunBastionhostService) ProcessRolePolicy() error {
 	getRoleRequest := ram.CreateGetRoleRequest()
 	getRoleRequest.RoleName = BastionhostRoleName
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -285,7 +306,7 @@ func (s *bastionhostService) ProcessRolePolicy() error {
 	return nil
 }
 
-func (s *bastionhostService) WaitForYundunBastionhostInstance(instanceId string, status Status, timeoutSenconds time.Duration) error {
+func (s *YundunBastionhostService) WaitForYundunBastionhostInstance(instanceId string, status Status, timeoutSenconds time.Duration) error {
 	deadline := time.Now().Add(timeoutSenconds * time.Second)
 	for {
 		_, err := s.DescribeYundunBastionhostInstance(instanceId)
@@ -307,7 +328,7 @@ func (s *bastionhostService) WaitForYundunBastionhostInstance(instanceId string,
 	}
 }
 
-func (s *bastionhostService) DescribeTags(resourceId string, resourceTags map[string]interface{}, resourceType TagResourceType) (tags []yundun_bastionhost.TagResource, err error) {
+func (s *YundunBastionhostService) DescribeTags(resourceId string, resourceTags map[string]interface{}, resourceType TagResourceType) (tags []yundun_bastionhost.TagResource, err error) {
 	request := yundun_bastionhost.CreateListTagResourcesRequest()
 	request.RegionId = s.client.RegionId
 	request.ResourceType = strings.ToUpper(string(resourceType))
@@ -339,7 +360,7 @@ func (s *bastionhostService) DescribeTags(resourceId string, resourceTags map[st
 	return response.TagResources.TagResource, nil
 }
 
-func (s *bastionhostService) tagsToMap(tags []yundun_bastionhost.TagResource) map[string]string {
+func (s *YundunBastionhostService) tagsToMap(tags []yundun_bastionhost.TagResource) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		if !s.ignoreTag(t) {
@@ -349,7 +370,7 @@ func (s *bastionhostService) tagsToMap(tags []yundun_bastionhost.TagResource) ma
 	return result
 }
 
-func (s *bastionhostService) ignoreTag(t yundun_bastionhost.TagResource) bool {
+func (s *YundunBastionhostService) ignoreTag(t yundun_bastionhost.TagResource) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
@@ -362,7 +383,7 @@ func (s *bastionhostService) ignoreTag(t yundun_bastionhost.TagResource) bool {
 	return false
 }
 
-func (s *bastionhostService) setInstanceTags(d *schema.ResourceData, resourceType TagResourceType) error {
+func (s *YundunBastionhostService) setInstanceTags(d *schema.ResourceData, resourceType TagResourceType) error {
 	if d.HasChange("tags") {
 		oraw, nraw := d.GetChange("tags")
 		o := oraw.(map[string]interface{})
@@ -408,7 +429,7 @@ func (s *bastionhostService) setInstanceTags(d *schema.ResourceData, resourceTyp
 	return nil
 }
 
-func (s *bastionhostService) diffTags(oldTags, newTags []yundun_bastionhost.TagResourcesTag) ([]yundun_bastionhost.TagResourcesTag, []yundun_bastionhost.TagResourcesTag) {
+func (s *YundunBastionhostService) diffTags(oldTags, newTags []yundun_bastionhost.TagResourcesTag) ([]yundun_bastionhost.TagResourcesTag, []yundun_bastionhost.TagResourcesTag) {
 	// First, we're creating everything we have
 	create := make(map[string]interface{})
 	for _, t := range newTags {
@@ -428,7 +449,7 @@ func (s *bastionhostService) diffTags(oldTags, newTags []yundun_bastionhost.TagR
 	return s.tagsFromMap(create), remove
 }
 
-func (s *bastionhostService) tagsFromMap(m map[string]interface{}) []yundun_bastionhost.TagResourcesTag {
+func (s *YundunBastionhostService) tagsFromMap(m map[string]interface{}) []yundun_bastionhost.TagResourcesTag {
 	result := make([]yundun_bastionhost.TagResourcesTag, 0, len(m))
 	for k, v := range m {
 		result = append(result, yundun_bastionhost.TagResourcesTag{
@@ -440,7 +461,7 @@ func (s *bastionhostService) tagsFromMap(m map[string]interface{}) []yundun_bast
 	return result
 }
 
-func (s *bastionhostService) UpdateResourceGroup(resourceId, resourceGroupId string) error {
+func (s *YundunBastionhostService) UpdateResourceGroup(resourceId, resourceGroupId string) error {
 	request := yundun_bastionhost.CreateMoveResourceGroupRequest()
 	request.RegionId = s.client.RegionId
 	request.ResourceId = resourceId
@@ -454,4 +475,50 @@ func (s *bastionhostService) UpdateResourceGroup(resourceId, resourceGroupId str
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
+}
+
+func (s *YundunBastionhostService) DescribeBastionhostUserGroup(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewBastionhostClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetUserGroup"
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"InstanceId":  parts[0],
+		"UserGroupId": parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"OBJECT_NOT_FOUND"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("UserGroup", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.UserGroup", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.UserGroup", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }

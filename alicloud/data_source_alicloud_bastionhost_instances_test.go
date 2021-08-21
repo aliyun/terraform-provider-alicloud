@@ -4,44 +4,43 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudYundunBastionhostInstanceDataSource_basic(t *testing.T) {
+func TestAccAlicloudBastionhostInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
-	resourceId := "data.alicloud_yundun_bastionhost_instances.default"
+	resourceId := "data.alicloud_bastionhost_instances.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, fmt.Sprintf("tf_testAcc%d", rand),
 		dataSourceYundunBastionhostInstanceConfigDependency)
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_yundun_bastionhost_instance.default.id}"},
+			"ids": []string{"${alicloud_bastionhost_instance.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_yundun_bastionhost_instance.default.id}-fake"},
+			"ids": []string{"${alicloud_bastionhost_instance.default.id}-fake"},
 		}),
 	}
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"description_regex": "${alicloud_yundun_bastionhost_instance.default.description}",
+			"description_regex": "${alicloud_bastionhost_instance.default.description}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"description_regex": "${alicloud_yundun_bastionhost_instance.default.description}-fake",
+			"description_regex": "${alicloud_bastionhost_instance.default.description}-fake",
 		}),
 	}
 
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_yundun_bastionhost_instance.default.id}"},
+			"ids": []string{"${alicloud_bastionhost_instance.default.id}"},
 			"tags": map[string]interface{}{
 				"Created": "TF",
 			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_yundun_bastionhost_instance.default.id}-fake"},
+			"ids": []string{"${alicloud_bastionhost_instance.default.id}-fake"},
 			"tags": map[string]interface{}{
 				"Created": "TF-fake",
 			},
@@ -50,15 +49,15 @@ func TestAccAlicloudYundunBastionhostInstanceDataSource_basic(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"description_regex": "${alicloud_yundun_bastionhost_instance.default.description}",
-			"ids":               []string{"${alicloud_yundun_bastionhost_instance.default.id}"},
+			"description_regex": "${alicloud_bastionhost_instance.default.description}",
+			"ids":               []string{"${alicloud_bastionhost_instance.default.id}"},
 			"tags": map[string]interface{}{
 				"For": "acceptance test",
 			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"description_regex": "${alicloud_yundun_bastionhost_instance.default.description}-fake",
-			"ids":               []string{"${alicloud_yundun_bastionhost_instance.default.id}-fake"},
+			"description_regex": "${alicloud_bastionhost_instance.default.description}-fake",
+			"ids":               []string{"${alicloud_bastionhost_instance.default.id}-fake"},
 			"tags": map[string]interface{}{
 				"For": "acceptance test-fake",
 			},
@@ -88,13 +87,12 @@ func TestAccAlicloudYundunBastionhostInstanceDataSource_basic(t *testing.T) {
 		}
 	}
 	var yundunBastionhostInstanceCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_yundun_bastionhost_instances.default",
+		resourceId:   "data.alicloud_bastionhost_instances.default",
 		existMapFunc: existYundunBastionhostInstanceMapFunc,
 		fakeMapFunc:  fakeYundunBastionhostInstanceMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.YundunBastionhostSupportedRegions)
 		testAccPreCheckWithAccountSiteType(t, DomesticSite)
 	}
 
@@ -103,47 +101,46 @@ func TestAccAlicloudYundunBastionhostInstanceDataSource_basic(t *testing.T) {
 }
 
 func dataSourceYundunBastionhostInstanceConfigDependency(description string) string {
-	return fmt.Sprintf(
-		`data "alicloud_zones" "default" {
-				  available_resource_creation = "VSwitch"
-				}
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  zone_id = local.zone_id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+}
+resource "alicloud_vswitch" "this" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vswitch_name = var.name
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  zone_id      = data.alicloud_zones.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+resource "alicloud_security_group" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  name   = var.name
+}
+locals {
+  vswitch_id  = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id     = data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]
+  instance_id = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? data.alicloud_bastionhost_instances.default.ids.0 : concat(alicloud_bastionhost_instance.default.*.id, [""])[0]
+}
 				
-				variable "name" {
-				  default = "%s"
-				}
-				
-				resource "alicloud_vpc" "default" {
-				  vpc_name       = "${var.name}"
-				  cidr_block = "172.16.0.0/12"
-				}
-				
-				resource "alicloud_vswitch" "default" {
-				  vpc_id            = "${alicloud_vpc.default.id}"
-				  cidr_block        = "172.16.0.0/21"
-				  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-				  vswitch_name              = "${var.name}"
-				}
-				
-				resource "alicloud_security_group" "default" {
-				  name   = "${var.name}"
-				  vpc_id = "${alicloud_vpc.default.id}"
-				}
-				
-				provider "alicloud" {
-				  endpoints {
-					bssopenapi = "business.aliyuncs.com"
-				  }
-				}
-				
-				resource "alicloud_yundun_bastionhost_instance" "default" {
-				  description        = "${var.name}"
-				  license_code       = "bhah_ent_50_asset"
-				  period             = "1"
-				  vswitch_id         = "${alicloud_vswitch.default.id}"
-				  security_group_ids = ["${alicloud_security_group.default.id}"]
-				  tags 				 = {
-						Created = "TF"
-						For 	= "acceptance test"
-				  }
-				}`, description)
+resource "alicloud_bastionhost_instance" "default" {
+  description        = "${var.name}"
+  license_code       = "bhah_ent_50_asset"
+  period             = "1"
+  vswitch_id         = local.vswitch_id
+  security_group_ids = ["${alicloud_security_group.default.id}"]
+  tags 				 = {
+		Created = "TF"
+		For 	= "acceptance test"
+  }
+}`, description)
 }

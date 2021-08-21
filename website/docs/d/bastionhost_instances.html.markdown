@@ -1,13 +1,15 @@
 ---
-subcategory: "Cloud Bastionhost"
+subcategory: "Bastion Host"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_yundun_bastionhost_instances"
-sidebar_current: "docs-alicloud-yundun_bastionhost-instances"
+page_title: "Alicloud: alicloud_bastionhost_instances"
+sidebar_current: "docs-alicloud-bastionhost-instances"
 description: |-
-  Provides a list of cloud Bastionhost(yundun_bastionhost) instances available to the user.
+  Provides a list of cloud Bastionhost instances available to the user.
 ---
 
 # alicloud\_yundun_bastionhost\_instances
+
+-> **NOTE:** From the version 1.132.0, the data source has been renamed to `alicloud_bastionhost_instances`.
 
 This data source provides a list of cloud Bastionhost instances in an Alibaba Cloud account according to the specified filters.
 
@@ -16,12 +18,12 @@ This data source provides a list of cloud Bastionhost instances in an Alibaba Cl
 ## Example Usage
 
 ```
-data "alicloud_yundun_bastionhost_instances" "instance" {
-  name_regex = "^bastionhost"
+data "alicloud_bastionhost_instances" "instance" {
+  description_regex = "^bastionhost"
 }
 
 output "instance" {
-  value = "${alicloud_yundun_bastionhost_instances.instance.*.id}"
+  value = "${alicloud_bastionhost_instances.instance.*.id}"
 }
 ```
 
@@ -35,7 +37,7 @@ The following arguments are supported:
 * `descriptions` - (Optional) Descriptions to filter data source result.
 * `tags` - (Optional, Available in v1.67.0+) A map of tags assigned to the bastionhost instance. It must be in the format:
   ```
-  data "alicloud_yundun_bastionhost_instances" "instance" {
+  data "alicloud_bastionhost_instances" "instance" {
     tags = {
       tagKey1 = "tagValue1"
     }

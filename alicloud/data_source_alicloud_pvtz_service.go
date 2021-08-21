@@ -3,6 +3,9 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -30,11 +33,13 @@ func dataSourceAlicloudPvtzService() *schema.Resource {
 	}
 }
 func dataSourceAlicloudPvtzServiceRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
 	if v, ok := d.GetOk("enable"); !ok || v.(string) != "On" {
 		d.SetId("PvtzServiceHasNotBeenOpened")
 		d.Set("status", "")
 		return nil
 	}
+	var response map[string]interface{}
 	action := "CreateInstance"
 	request := map[string]interface{}{
 		"ProductCode":       "pvtz",
@@ -43,11 +48,26 @@ func dataSourceAlicloudPvtzServiceRead(d *schema.ResourceData, meta interface{})
 		"Parameter.1.Code":  "CommodityType",
 		"Parameter.1.Value": "pvtz",
 	}
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenBssService)
+	conn, err := client.NewBssopenapiClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
 	addDebug(action, response, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"SYSTEM.SALE_VALIDATE_NO_SPECIFIC_CODE_FAILED"}) {

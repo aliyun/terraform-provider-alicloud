@@ -291,6 +291,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sag_acls":                                    dataSourceAlicloudSagAcls(),
 			"alicloud_yundun_dbaudit_instance":                     dataSourceAlicloudDbauditInstances(),
 			"alicloud_yundun_bastionhost_instances":                dataSourceAlicloudBastionhostInstances(),
+			"alicloud_bastionhost_instances":                       dataSourceAlicloudBastionhostInstances(),
 			"alicloud_market_product":                              dataSourceAlicloudProduct(),
 			"alicloud_market_products":                             dataSourceAlicloudProducts(),
 			"alicloud_polardb_clusters":                            dataSourceAlicloudPolarDBClusters(),
@@ -473,6 +474,13 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_lindorm_instances":                           dataSourceAlicloudLindormInstances(),
 			"alicloud_express_connect_physical_connection_service": dataSourceAlicloudExpressConnectPhysicalConnectionService(),
 			"alicloud_cddc_dedicated_host_groups":                  dataSourceAlicloudCddcDedicatedHostGroups(),
+			"alicloud_hbr_ecs_backup_clients":                      dataSourceAlicloudHbrEcsBackupClients(),
+			"alicloud_msc_sub_contacts":                            dataSourceAlicloudMscSubContacts(),
+			"alicloud_express_connect_physical_connections":        dataSourceAlicloudExpressConnectPhysicalConnections(),
+			"alicloud_alb_load_balancers":                          dataSourceAlicloudAlbLoadBalancers(),
+			"alicloud_alb_zones":                                   dataSourceAlicloudAlbZones(),
+			"alicloud_sddp_rules":                                  dataSourceAlicloudSddpRules(),
+			"alicloud_bastionhost_user_groups":                     dataSourceAlicloudBastionhostUserGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -682,6 +690,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sag_client_user":                            resourceAlicloudSagClientUser(),
 			"alicloud_yundun_dbaudit_instance":                    resourceAlicloudDbauditInstance(),
 			"alicloud_yundun_bastionhost_instance":                resourceAlicloudBastionhostInstance(),
+			"alicloud_bastionhost_instance":                       resourceAlicloudBastionhostInstance(),
 			"alicloud_polardb_cluster":                            resourceAlicloudPolarDBCluster(),
 			"alicloud_polardb_backup_policy":                      resourceAlicloudPolarDBBackupPolicy(),
 			"alicloud_polardb_database":                           resourceAlicloudPolarDBDatabase(),
@@ -849,6 +858,12 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_storage_gateway_gateway":              resourceAlicloudCloudStorageGatewayGateway(),
 			"alicloud_lindorm_instance":                           resourceAlicloudLindormInstance(),
 			"alicloud_cddc_dedicated_host_group":                  resourceAlicloudCddcDedicatedHostGroup(),
+			"alicloud_hbr_ecs_backup_client":                      resourceAlicloudHbrEcsBackupClient(),
+			"alicloud_msc_sub_contact":                            resourceAlicloudMscSubContact(),
+			"alicloud_express_connect_physical_connection":        resourceAlicloudExpressConnectPhysicalConnection(),
+			"alicloud_alb_load_balancer":                          resourceAlicloudAlbLoadBalancer(),
+			"alicloud_sddp_rule":                                  resourceAlicloudSddpRule(),
+			"alicloud_bastionhost_user_group":                     resourceAlicloudBastionhostUserGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1018,6 +1033,10 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DataworkspublicEndpoint = strings.TrimSpace(endpoints["dataworkspublic"].(string))
 		config.HcsSgwEndpoint = strings.TrimSpace(endpoints["hcs_sgw"].(string))
 		config.CddcEndpoint = strings.TrimSpace(endpoints["cddc"].(string))
+		config.MscopensubscriptionEndpoint = strings.TrimSpace(endpoints["mscopensubscription"].(string))
+		config.SddpEndpoint = strings.TrimSpace(endpoints["sddp"].(string))
+
+		config.BastionhostEndpoint = strings.TrimSpace(endpoints["bastionhost"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1262,6 +1281,12 @@ func init() {
 		"hcs_sgw_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom hcs_sgw endpoints.",
 
 		"cddc_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cddc endpoints.",
+
+		"mscopensubscription_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom mscopensubscription endpoints.",
+
+		"sddp_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom sddp endpoints.",
+
+		"bastionhost_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom bastionhost endpoints.",
 	}
 }
 
@@ -1306,11 +1331,31 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"bastionhost": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["bastionhost_endpoint"],
+				},
+
 				"cddc": {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["cddc_endpoint"],
+				},
+				"sddp": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["sddp_endpoint"],
+				},
+
+				"mscopensubscription": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["mscopensubscription_endpoint"],
 				},
 
 				"dataworkspublic": {
@@ -1899,6 +1944,9 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["dataworkspublic"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["hcs_sgw"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cddc"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["mscopensubscription"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["sddp"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["bastionhost"].(string)))
 	return hashcode.String(buf.String())
 }
 

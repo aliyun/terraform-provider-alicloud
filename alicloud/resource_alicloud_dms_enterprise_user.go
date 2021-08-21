@@ -86,7 +86,7 @@ func resourceAlicloudDmsEnterpriseUserCreate(d *schema.ResourceData, meta interf
 		request["Mobile"] = v
 	}
 
-	if v, ok := d.GetOk("role_names"); ok {
+	if v, ok := d.GetOk("role_names"); ok && v != nil {
 		request["RoleNames"] = convertListToCommaSeparate(v.(*schema.Set).List())
 	}
 
