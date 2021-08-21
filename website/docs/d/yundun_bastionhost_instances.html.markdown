@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Bastionhost"
+subcategory: "Bastion Host"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_yundun_bastionhost_instances"
 sidebar_current: "docs-alicloud-yundun_bastionhost-instances"

@@ -107,7 +107,7 @@ func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
 	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &bastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &YundunBastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
@@ -256,7 +256,7 @@ func TestAccAlicloudYundunBastionhostInstance_Multi(t *testing.T) {
 	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &bastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &YundunBastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
