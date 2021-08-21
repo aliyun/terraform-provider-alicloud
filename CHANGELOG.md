@@ -1,4 +1,46 @@
 ## 1.132.0 (Unreleased)
+
+- **New Resource:** `alicloud_hbr_ecs_backup_plan` [GH-3810]
+- **New Resource:** `alicloud_cloud_storage_gateway_gateway` [GH-3843]  
+- **New Resource:** `alicloud_lindorm_instance` [GH-3861]
+- **New Resource:** `alicloud_cddc_dedicated_host_group` [GH-3869]  
+- **New Resource:** `alicloud_hbr_ecs_backup_client` [GH-3863]
+- **New Resource:** `alicloud_msc_sub_contact` [GH-3872] 
+- **New Resource:** `alicloud_express_connect_physical_connection` [GH-3876]
+- **New Data Source:** `alicloud_cloud_storage_gateway_gateways` [GH-3843]  
+- **New Data Source:** `alicloud_express_connect_access_points` [GH-3852]
+- **New Data Source:** `alicloud_hbr_ecs_backup_plans` [GH-3810]
+- **New Data Source:** `alicloud_lindorm_instances` [GH-3861]
+- **New Data Source:** `alicloud_express_connect_physical_connection_service` [GH-3865]
+- **New Data Source:** `alicloud_cddc_dedicated_host_groups` [GH-3869]
+- **New Data Source:** `alicloud_hbr_ecs_backup_clients` [GH-3863]  
+- **New Data Source:** `alicloud_msc_sub_contacts` [GH-3872]
+- **New Data Source:** `alicloud_express_connect_physical_connections` [GH-3876]  
+  
+
+ENHANCEMENTS:
+
+- resource/alicloud_cr_ee_instance: Adds new attribute password to support reset instance login password [GH-3854]
+- resource/alicloud_cs_kubernetes_autoscaler: upgrade client-go version [GH-3839]
+- resource/alicloud_cr_ee_instance: Supports to set create timeout; testcase: Improves the alicloud_cr_ee_sync_rule testcases [GH-3856]  
+- resource/alicloud_cdn_domain_config: Removes the function_args forceNew and to support updating it in place [GH-3835] 
+- resource/alicloud_event_bridge_slr: Adds role AliyunServiceRoleForEventBridgeSendToMNS for attribute product_name [GH-3859]
+- resource/alicloud_polardb_endpoint: Adds new attribute ssl_auto_rotate and ssl_certificate_url to set SSL certificate rotation [GH-3868]  
+- datasource/alicloud_event_bridge_service: Adds new attribute code to support international site [GH-3859]
+- data/alicloud_cr_ee_instances: Outputs more attributes authorization_token and temp_username [GH-3855] 
+- ci: Update go version to 0.13.4 [GH-3857]
+- ci: Update go version to 0.13.4 [GH-3858]  
+- testcase: Improves the running testcase strategy [GH-3848]
+- testcase: Improves the sweeper testcase [GH-3860]  
+- testcase: Improves the sweeper testcase [GH-3849]
+- docs/alicloud_cs_kubernetes_node_pool: Updates documentation and adds notes for node pool [GH-3870]
+
+BUG FIXES:
+
+- resource/alicloud_actiontrail_trail: Fixes the error when updating trail config oss_write_role_arn [GH-3851]
+- resource/alicloud_cs_kubernetes_node_pool: fix update nodepool error [GH-3839]
+
+
 ## 1.131.0 (August 16, 2021)
 
 - **New Resource:** `alicloud_scdn_domain_config` ([#3847](https://github.com/aliyun/terraform-provider-alicloud/issues/3847))
