@@ -180,6 +180,9 @@ func resourceAlicloudBastionhostUserGroupDelete(d *schema.ResourceData, meta int
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"OBJECT_NOT_FOUND"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil

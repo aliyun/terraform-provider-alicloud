@@ -1,14 +1,18 @@
 package alicloud
 
 import (
+	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
+	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"time"
 )
 
 const (
@@ -69,36 +73,64 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 
 func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := buildBastionhostCreateRequest(d, meta)
-	var response *bssopenapi.CreateInstanceResponse
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-			return bssopenapiClient.CreateInstance(request)
-		})
-
+	var response map[string]interface{}
+	action := "CreateInstance"
+	request := make(map[string]interface{})
+	parameterMapList := make([]map[string]interface{}, 0)
+	conn, err := client.NewBssopenapiClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "NetworkType",
+		"Value": "vpc",
+	})
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "LicenseCode",
+		"Value": d.Get("license_code").(string),
+	})
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "PlanCode",
+		"Value": "cloudbastion",
+	})
+	request["SubscriptionType"] = "Subscription"
+	if v, ok := d.GetOk("period"); ok {
+		request["Period"] = v
+	}
+	request["ProductCode"] = "bastionhost"
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "RegionId",
+		"Value": client.RegionId,
+	})
+	request["Parameter"] = parameterMapList
+	request["ClientToken"] = buildClientToken("CreateInstance")
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
 			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				request.RegionId = string(connectivity.APSouthEast1)
-				request.Domain = connectivity.BssOpenAPIEndpointInternational
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-		response = raw.(*bssopenapi.CreateInstanceResponse)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_yundun_bastionhost_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_bastionhost_instance", action, AlibabaCloudSdkGoERROR)
 	}
-
-	instanceId := response.Data.InstanceId
-	if !response.Success {
-		return WrapError(Error(response.Message))
+	if fmt.Sprint(response["Code"]) != "Success" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	d.SetId(instanceId)
+	responseData := response["Data"].(map[string]interface{})
+	d.SetId(fmt.Sprint(responseData["InstanceId"]))
 
 	bastionhostService := YundunBastionhostService{client}
 
@@ -117,7 +149,7 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 		securityGroupIds[index] = rawSecurityGroupId.(string)
 	}
 	// start instance
-	if err := bastionhostService.StartBastionhostInstance(instanceId, d.Get("vswitch_id").(string), securityGroupIds); err != nil {
+	if err := bastionhostService.StartBastionhostInstance(d.Id(), d.Get("vswitch_id").(string), securityGroupIds); err != nil {
 		return WrapError(err)
 	}
 	// wait for pending
@@ -139,20 +171,10 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 		}
 		return WrapError(err)
 	}
-	d.Set("description", instance.Description)
-	//period, err := computePeriodByUnit(instance.StartTime/1000, instance.ExpireTime/1000, d.Get("period").(int), "Month")
-	//if err != nil {
-	//	return WrapError(err)
-	//}
-	//d.Set("period", period)
-	d.Set("license_code", instance.LicenseCode)
-	d.Set("region_id", client.RegionId)
-	d.Set("vswitch_id", instance.VswitchId)
-	sgs := make([]string, 0, len(instance.ReferredSecurityGroups))
-	for _, sg := range instance.ReferredSecurityGroups {
-		sgs = append(sgs, sg)
-	}
-	d.Set("security_group_ids", sgs)
+	d.Set("description", instance["Description"])
+	d.Set("license_code", instance["LicenseCode"])
+	d.Set("vswitch_id", instance["VswitchId"])
+	d.Set("security_group_ids", instance["AuthorizedSecurityGroups"])
 
 	tags, err := BastionhostService.DescribeTags(d.Id(), nil, TagResourceInstance)
 	if err != nil {

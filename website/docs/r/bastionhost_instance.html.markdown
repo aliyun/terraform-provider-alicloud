@@ -1,15 +1,17 @@
 ---
 subcategory: "Bastion Host"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_yundun_bastionhost_instance"
-sidebar_current: "docs-alicloud-resource-yundun-bastionhost-instance"
+page_title: "Alicloud: alicloud_bastionhost_instance"
+sidebar_current: "docs-alicloud-resource-bastionhost-instance"
 description: |-
-  Provides a Alicloud Cloud Bastionhost Instance Resource.
+  Provides a Alicloud Bastion Host Instance Resource.
 ---
 
-# alicloud_yundun_bastionhost_instance
+# alicloud_bastionhost_instance
 
-Cloud Bastionhost instance resource ("Yundun_bastionhost" is the short term of this product). 
+-> **NOTE:** From the version 1.132.0, the resource has been renamed to `alicloud_bastionhost_instance`.
+
+Cloud Bastion Host instance resource ("Yundun_bastionhost" is the short term of this product). 
 For information about Resource Manager Resource Directory and how to use it, see [What is Bastionhost](https://www.alibabacloud.com/help/en/doc-detail/52922.htm).
 
 -> **NOTE:** The endpoint of bssopenapi used only support "business.aliyuncs.com" at present.
@@ -23,13 +25,7 @@ For information about Resource Manager Resource Directory and how to use it, see
 Basic Usage
 
 ```terraform
-provider "alicloud" {
-  endpoints {
-    bssopenapi = "business.aliyuncs.com"
-  }
-}
-
-resource "alicloud_yundun_bastionhost_instance" "default" {
+resource "alicloud_bastionhost_instance" "default" {
   description        = "Terraform-test"
   license_code       = "bhah_ent_50_asset"
   period             = "1"
@@ -54,12 +50,12 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the instance resource of Yundun_bastionhost.
+* `id` - The ID of the instance resource of Bastionhost.
 
 ## Import
 
 Yundun_bastionhost instance can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_yundun_bastionhost.example bastionhost-exampe123456
+$ terraform import alicloud_bastionhost_instance.example bastionhost-exampe123456
 ```

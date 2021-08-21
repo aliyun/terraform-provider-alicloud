@@ -14,17 +14,13 @@ import (
 )
 
 func init() {
-	resource.AddTestSweepers("alicloud_yundun_bastionhost_instance", &resource.Sweeper{
-		Name: "alicloud_yundun_bastionhost_instance",
+	resource.AddTestSweepers("alicloud_bastionhost_instance", &resource.Sweeper{
+		Name: "alicloud_bastionhost_instance",
 		F:    testSweepBastionhostInstances,
 	})
 }
 
 func testSweepBastionhostInstances(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.YundunBastionhostSupportedRegions) {
-		log.Printf("[INFO] Skipping Bastionhost Instance unsupported region: %s", region)
-		return nil
-	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -101,9 +97,9 @@ func testSweepBastionhostInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
+func TestAccAlicloudBastionhostInstance_basic(t *testing.T) {
 	var v yundun_bastionhost.Instance
-	resourceId := "alicloud_yundun_bastionhost_instance.default"
+	resourceId := "alicloud_bastionhost_instance.default"
 	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
 
 	serviceFunc := func() interface{} {
@@ -120,9 +116,7 @@ func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithTime(t, []int{1})
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.YundunBastionhostSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -144,11 +138,6 @@ func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
 						"security_group_ids.#": "1",
 					}),
 				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: false,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -234,60 +223,29 @@ func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"description":        "${var.name}",
+					"license_code":       "bhah_ent_50_asset",
+					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
+					"tags":               REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":       REMOVEKEY,
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-						"tags.Updated": REMOVEKEY,
+						"resource_group_id":    CHECKSET,
+						"description":          name,
+						"license_code":         "bhah_ent_50_asset",
+						"security_group_ids.#": "2",
+						"tags.%":               REMOVEKEY,
+						"tags.Created":         REMOVEKEY,
+						"tags.For":             REMOVEKEY,
+						"tags.Updated":         REMOVEKEY,
 					}),
 				),
 			},
-		},
-	})
-}
-
-func TestAccAlicloudYundunBastionhostInstance_Multi(t *testing.T) {
-	var v yundun_bastionhost.Instance
-
-	resourceId := "alicloud_yundun_bastionhost_instance.default.1"
-	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &YundunBastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf_testAcc%d", rand)
-
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceBastionhostInstanceDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.YundunBastionhostSupportedRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"count":              "2",
-					"description":        "${var.name}-${count.index}",
-					"period":             "1",
-					"vswitch_id":         "${alicloud_vswitch.default.id}",
-					"license_code":       "bhah_ent_50_asset",
-					"security_group_ids": []string{"${alicloud_security_group.default.0.id}"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
-				),
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
 			},
 		},
 	})
