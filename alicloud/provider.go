@@ -478,6 +478,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_physical_connections":        dataSourceAlicloudExpressConnectPhysicalConnections(),
 			"alicloud_alb_load_balancers":                          dataSourceAlicloudAlbLoadBalancers(),
 			"alicloud_alb_zones":                                   dataSourceAlicloudAlbZones(),
+			"alicloud_sddp_rules":                                  dataSourceAlicloudSddpRules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -858,6 +859,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_msc_sub_contact":                            resourceAlicloudMscSubContact(),
 			"alicloud_express_connect_physical_connection":        resourceAlicloudExpressConnectPhysicalConnection(),
 			"alicloud_alb_load_balancer":                          resourceAlicloudAlbLoadBalancer(),
+			"alicloud_sddp_rule":                                  resourceAlicloudSddpRule(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1028,7 +1030,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.HcsSgwEndpoint = strings.TrimSpace(endpoints["hcs_sgw"].(string))
 		config.CddcEndpoint = strings.TrimSpace(endpoints["cddc"].(string))
 		config.MscopensubscriptionEndpoint = strings.TrimSpace(endpoints["mscopensubscription"].(string))
-
+		config.SddpEndpoint = strings.TrimSpace(endpoints["sddp"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1275,6 +1277,8 @@ func init() {
 		"cddc_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cddc endpoints.",
 
 		"mscopensubscription_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom mscopensubscription endpoints.",
+
+		"sddp_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom sddp endpoints.",
 	}
 }
 
@@ -1324,6 +1328,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["cddc_endpoint"],
+				},
+				"sddp": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["sddp_endpoint"],
 				},
 
 				"mscopensubscription": {
@@ -1920,6 +1930,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["hcs_sgw"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cddc"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["mscopensubscription"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["sddp"].(string)))
 	return hashcode.String(buf.String())
 }
 
