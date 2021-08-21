@@ -130,6 +130,7 @@ type Config struct {
 	HcsSgwEndpoint              string
 	CddcEndpoint                string
 	MscopensubscriptionEndpoint string
+	SddpEndpoint                string
 }
 
 func (c *Config) loadAndValidate() error {
