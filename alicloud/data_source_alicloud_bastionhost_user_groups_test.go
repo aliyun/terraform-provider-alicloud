@@ -15,43 +15,43 @@ func TestAccAlicloudBastionhostUserGroupsDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${local.instance_id}",
+			"instance_id": "${alicloud_bastionhost_instance.default.id}",
 			"ids":         []string{"${alicloud_bastionhost_user_group.default.user_group_id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${local.instance_id}",
+			"instance_id": "${alicloud_bastionhost_instance.default.id}",
 			"ids":         []string{"${alicloud_bastionhost_user_group.default.id}-fake"},
 		}),
 	}
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${local.instance_id}",
+			"instance_id": "${alicloud_bastionhost_instance.default.id}",
 			"name_regex":  name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${local.instance_id}",
+			"instance_id": "${alicloud_bastionhost_instance.default.id}",
 			"name_regex":  name + "fake",
 		}),
 	}
 	userGroupNameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id":     "${local.instance_id}",
+			"instance_id":     "${alicloud_bastionhost_instance.default.id}",
 			"user_group_name": name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id":     "${local.instance_id}",
+			"instance_id":     "${alicloud_bastionhost_instance.default.id}",
 			"user_group_name": name + "fake",
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id":     "${local.instance_id}",
+			"instance_id":     "${alicloud_bastionhost_instance.default.id}",
 			"name_regex":      name,
 			"user_group_name": name,
 			"ids":             []string{"${alicloud_bastionhost_user_group.default.user_group_id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id":     "${local.instance_id}",
+			"instance_id":     "${alicloud_bastionhost_instance.default.id}",
 			"user_group_name": name + "fake",
 			"name_regex":      name + "fake",
 			"ids":             []string{"${alicloud_bastionhost_user_group.default.id}-fake"},
@@ -118,11 +118,8 @@ resource "alicloud_security_group" "default" {
 locals {
   vswitch_id  = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
   zone_id     = data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]
-  instance_id = length(data.alicloud_yundun_bastionhost_instances.default.ids) > 0 ? data.alicloud_yundun_bastionhost_instances.default.ids.0 : concat(alicloud_yundun_bastionhost_instance.default.*.id, [""])[0]
 }
-data "alicloud_yundun_bastionhost_instances" "default" {}
-resource "alicloud_yundun_bastionhost_instance" "default" {
-  count              = length(data.alicloud_yundun_bastionhost_instances.default.ids) > 0 ? 0 : 1
+resource "alicloud_bastionhost_instance" "default" {
   description        = var.name
   license_code       = "bhah_ent_50_asset"
   period             = "1"
@@ -130,7 +127,7 @@ resource "alicloud_yundun_bastionhost_instance" "default" {
   security_group_ids = [alicloud_security_group.default.id]
 }
 resource "alicloud_bastionhost_user_group" "default" {
-  instance_id     = local.instance_id
+  instance_id     = alicloud_bastionhost_instance.default.id
   user_group_name = var.name
 }
 `, name)

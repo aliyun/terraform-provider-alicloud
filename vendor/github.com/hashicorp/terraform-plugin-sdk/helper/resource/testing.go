@@ -672,9 +672,6 @@ func Test(t TestT, c TestCase) {
 	}
 
 	// If we never checked an id-only refresh, it is a failure.
-if errored {
-		InvokeTestError = true
-	}
 	if idRefresh {
 		if !errored && len(c.Steps) > 0 && idRefreshCheck == nil {
 			t.Error("ID-only refresh check never ran.")
@@ -1388,5 +1385,3 @@ func detailedErrorMessage(err error) string {
 		return err.Error()
 	}
 }
-
-var InvokeTestError bool

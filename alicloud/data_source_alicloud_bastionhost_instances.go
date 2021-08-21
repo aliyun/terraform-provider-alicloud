@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -134,7 +135,7 @@ func dataSourceAlicloudBastionhostInstancesRead(d *schema.ResourceData, meta int
 			return bastionhostClient.DescribeInstanceBastionhost(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_bastionhost_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_bastionhost_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*yundun_bastionhost.DescribeInstanceBastionhostResponse)
@@ -168,22 +169,16 @@ func dataSourceAlicloudBastionhostInstancesRead(d *schema.ResourceData, meta int
 	if len(instanceIds) < 1 {
 		return WrapError(extractBastionhostInstance(d, nil, nil))
 	}
-	var specs []yundun_bastionhost.InstanceAttribute
+	specs := make([]map[string]interface{}, 0)
 	var tags []yundun_bastionhost.TagResources
+	BastionhostService := YundunBastionhostService{client}
+
 	for _, instanceId := range instanceIds {
-		{
-			request := yundun_bastionhost.CreateDescribeInstanceAttributeRequest()
-			request.InstanceId = instanceId
-			raw, err := client.WithBastionhostClient(func(bastionhostClient *yundun_bastionhost.Client) (interface{}, error) {
-				return bastionhostClient.DescribeInstanceAttribute(request)
-			})
-			if err != nil {
-				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_bastionhost_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			res, _ := raw.(*yundun_bastionhost.DescribeInstanceAttributeResponse)
-			specs = append(specs, res.InstanceAttribute)
+		object, err := BastionhostService.DescribeBastionhostInstanceAttribute(instanceId)
+		if err != nil {
+			return WrapError(err)
 		}
+		specs = append(specs, object)
 
 		{
 			request := yundun_bastionhost.CreateListTagResourcesRequest()
@@ -204,26 +199,26 @@ func dataSourceAlicloudBastionhostInstancesRead(d *schema.ResourceData, meta int
 	return WrapError(extractBastionhostInstance(d, specs, tags))
 }
 
-func extractBastionhostInstance(d *schema.ResourceData, specs []yundun_bastionhost.InstanceAttribute, tags []yundun_bastionhost.TagResources) error {
+func extractBastionhostInstance(d *schema.ResourceData, specs []map[string]interface{}, tags []yundun_bastionhost.TagResources) error {
 	var instanceIds []string
 	var descriptions []string
 	var instances []map[string]interface{}
 
 	for i := 0; i < len(specs); i++ {
 		instanceMap := map[string]interface{}{
-			"id":                    specs[i].InstanceId,
-			"description":           specs[i].Description,
-			"user_vswitch_id":       specs[i].VswitchId,
-			"private_domain":        specs[i].IntranetEndpoint,
-			"public_domain":         specs[i].InternetEndpoint,
-			"instance_status":       specs[i].InstanceStatus,
-			"license_code":          specs[i].LicenseCode,
-			"public_network_access": specs[i].PublicNetworkAccess,
-			"security_group_ids":    specs[i].ReferredSecurityGroups,
+			"id":                    specs[i]["InstanceId"],
+			"description":           specs[i]["Description"],
+			"user_vswitch_id":       specs[i]["VswitchId"],
+			"private_domain":        specs[i]["IntranetEndpoint"],
+			"public_domain":         specs[i]["InternetEndpoint"],
+			"instance_status":       specs[i]["InstanceStatus"],
+			"license_code":          specs[i]["LicenseCode"],
+			"public_network_access": specs[i]["PublicNetworkAccess"],
+			"security_group_ids":    specs[i]["AuthorizedSecurityGroups"],
 			"tags":                  bastionhostTagsToMap(tags[i].TagResource),
 		}
-		instanceIds = append(instanceIds, specs[i].InstanceId)
-		descriptions = append(descriptions, specs[i].Description)
+		instanceIds = append(instanceIds, fmt.Sprint(specs[i]["InstanceId"]))
+		descriptions = append(descriptions, fmt.Sprint(specs[i]["Description"]))
 		instances = append(instances, instanceMap)
 	}
 

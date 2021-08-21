@@ -31,7 +31,7 @@ func TestAccAlicloudBastionhostUserGroup_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":     "${local.instance_id}",
+					"instance_id":     "${alicloud_bastionhost_instance.default.id}",
 					"user_group_name": "tf-testAcc-0T2Sep=samLLheEIbZ",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -118,11 +118,8 @@ resource "alicloud_security_group" "default" {
 locals {
   vswitch_id  = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
   zone_id     = data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]
-  instance_id = length(data.alicloud_yundun_bastionhost_instances.default.ids) > 0 ? data.alicloud_yundun_bastionhost_instances.default.ids.0 : concat(alicloud_yundun_bastionhost_instance.default.*.id, [""])[0]
 }
-data "alicloud_yundun_bastionhost_instances" "default" {}
-resource "alicloud_yundun_bastionhost_instance" "default" {
-  count              = length(data.alicloud_yundun_bastionhost_instances.default.ids) > 0 ? 0 : 1
+resource "alicloud_bastionhost_instance" "default" {
   description        = var.name
   license_code       = "bhah_ent_50_asset"
   period             = "1"
