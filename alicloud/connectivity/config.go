@@ -131,6 +131,7 @@ type Config struct {
 	CddcEndpoint                string
 	MscopensubscriptionEndpoint string
 	SddpEndpoint                string
+	BastionhostEndpoint         string
 }
 
 func (c *Config) loadAndValidate() error {

@@ -1,18 +1,14 @@
 package alicloud
 
 import (
-	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"time"
 )
 
 const (
@@ -104,7 +100,7 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 	}
 	d.SetId(instanceId)
 
-	bastionhostService := bastionhostService{client}
+	bastionhostService := YundunBastionhostService{client}
 
 	// check RAM policy
 	if err := bastionhostService.ProcessRolePolicy(); err != nil {
@@ -134,7 +130,7 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 
 func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	BastionhostService := bastionhostService{client}
+	BastionhostService := YundunBastionhostService{client}
 	instance, err := BastionhostService.DescribeBastionhostInstanceAttribute(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -168,7 +164,7 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 
 func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	bastionhostService := bastionhostService{client}
+	bastionhostService := YundunBastionhostService{client}
 
 	d.Partial(true)
 	if d.HasChange("tags") {
@@ -234,7 +230,7 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 
 func resourceAlicloudBastionhostInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	bastionhostService := bastionhostService{client}
+	bastionhostService := YundunBastionhostService{client}
 	request := yundun_bastionhost.CreateRefundInstanceRequest()
 	request.InstanceId = d.Id()
 

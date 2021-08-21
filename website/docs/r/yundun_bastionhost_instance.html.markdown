@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Bastionhost"
+subcategory: "Bastion Host"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_yundun_bastionhost_instance"
 sidebar_current: "docs-alicloud-resource-yundun-bastionhost-instance"
@@ -34,7 +34,7 @@ resource "alicloud_yundun_bastionhost_instance" "default" {
   license_code       = "bhah_ent_50_asset"
   period             = "1"
   vswitch_id         = "v-testVswitch"
-  security_group_ids = "sg-test"
+  security_group_ids = ["sg-test", "sg-12345"]
 }
 ```
 ## Argument Reference
