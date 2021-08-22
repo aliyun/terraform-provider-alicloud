@@ -80,6 +80,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 					validation.IntBetween(1, 1000),
 					validation.IntInSlice([]int{-1})),
 				Optional: true,
+				Default:  -1,
 			},
 			"scheduler": {
 				Type:         schema.TypeString,
