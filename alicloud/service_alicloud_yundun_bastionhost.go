@@ -77,7 +77,7 @@ func (s *YundunBastionhostService) DescribeYundunBastionhostInstance(id string) 
 	return
 }
 
-func (s *YundunBastionhostService) DescribeBastionhostInstanceAttribute(id string) (object map[string]interface{}, err error) {
+func (s *YundunBastionhostService) DescribeBastionhostInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewBastionhostClient()
 	if err != nil {
