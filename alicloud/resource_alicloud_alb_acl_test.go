@@ -2,12 +2,13 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -65,7 +66,7 @@ func testSweepAlbAcl(region string) error {
 	resp, err := jsonpath.Get("$.Acls", response)
 
 	if formatInt(response["TotalCount"]) != 0 && err != nil {
-		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.","$.Acls", action, err)
+		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Acls", action, err)
 		return nil
 	}
 	sweeped := false

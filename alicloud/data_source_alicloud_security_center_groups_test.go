@@ -66,9 +66,9 @@ data "alicloud_security_center_groups" "default" {
 
 var existSasGroupMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"groups.#":             "1",
-		"groups.0.group_id":    CHECKSET,
-		"groups.0.group_name":  fmt.Sprintf("tf-testAccSasGroupsDataSource%d", rand),
+		"groups.#":            "1",
+		"groups.0.group_id":   CHECKSET,
+		"groups.0.group_name": fmt.Sprintf("tf-testAccSasGroupsDataSource%d", rand),
 	}
 }
 
