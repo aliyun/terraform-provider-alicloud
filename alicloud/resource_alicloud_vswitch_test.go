@@ -43,6 +43,7 @@ func init() {
 			"alicloud_polardb_cluster",
 			"alicloud_hbase_instance",
 			"alicloud_cassandra_cluster",
+			"alicloud_network_acl",
 		},
 	})
 }

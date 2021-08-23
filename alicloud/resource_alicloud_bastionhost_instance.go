@@ -7,8 +7,6 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -163,7 +161,7 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	BastionhostService := YundunBastionhostService{client}
-	instance, err := BastionhostService.DescribeBastionhostInstanceAttribute(d.Id())
+	instance, err := BastionhostService.DescribeBastionhostInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -269,33 +267,4 @@ func resourceAlicloudBastionhostInstanceDelete(d *schema.ResourceData, meta inte
 	// is quite necessary (conservative estimation cloud be less then 3 minutes)
 	time.Sleep(BATIONHOST_RELEASE_HANG_MINS * time.Minute)
 	return WrapError(bastionhostService.WaitForYundunBastionhostInstance(d.Id(), Deleted, 0))
-}
-
-func buildBastionhostCreateRequest(d *schema.ResourceData, meta interface{}) *bssopenapi.CreateInstanceRequest {
-	request := bssopenapi.CreateCreateInstanceRequest()
-	request.ProductCode = "bastionhost"
-	request.SubscriptionType = "Subscription"
-	request.Period = requests.NewInteger(d.Get("period").(int))
-	client := meta.(*connectivity.AliyunClient)
-
-	request.Parameter = &[]bssopenapi.CreateInstanceParameter{
-		// force to buy vpc version
-		{
-			Code:  "NetworkType",
-			Value: "vpc",
-		},
-		{
-			Code:  "LicenseCode",
-			Value: d.Get("license_code").(string),
-		},
-		{
-			Code:  "PlanCode",
-			Value: "cloudbastion",
-		},
-		{
-			Code:  "RegionId",
-			Value: client.RegionId,
-		},
-	}
-	return request
 }
