@@ -2,8 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 
