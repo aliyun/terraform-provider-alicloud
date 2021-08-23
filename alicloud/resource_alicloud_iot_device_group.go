@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"log"
 	"time"
 
@@ -26,9 +27,10 @@ func resourceAlicloudIotDeviceGroup() *schema.Resource {
 				Optional: true,
 			},
 			"group_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringLenBetween(0, 30),
 			},
 			"iot_instance_id": {
 				Type:     schema.TypeString,

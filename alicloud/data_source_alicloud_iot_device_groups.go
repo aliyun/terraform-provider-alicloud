@@ -26,9 +26,10 @@ func dataSourceAlicloudIotDeviceGroups() *schema.Resource {
 				Computed: true,
 			},
 			"group_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringLenBetween(0, 30),
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
