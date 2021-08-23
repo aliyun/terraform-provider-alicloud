@@ -486,6 +486,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_snapshots":                               dataSourceAlicloudHbrSnapshots(),
 			"alicloud_bastionhost_users":                           dataSourceAlicloudBastionhostUsers(),
 			"alicloud_dfs_access_groups":                           dataSourceAlicloudDfsAccessGroups(),
+			"alicloud_ehpc_job_templates":                          dataSourceAlicloudEhpcJobTemplates(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -873,8 +874,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_acl":                                    resourceAlicloudAlbAcl(),
 			"alicloud_bastionhost_user":                           resourceAlicloudBastionhostUser(),
 			"alicloud_dfs_access_group":                           resourceAlicloudDfsAccessGroup(),
+			"alicloud_ehpc_job_template":                          resourceAlicloudEhpcJobTemplate(),
 		},
-
 		ConfigureFunc: providerConfigure,
 	}
 }
@@ -1047,6 +1048,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.BastionhostEndpoint = strings.TrimSpace(endpoints["bastionhost"].(string))
 		config.SasEndpoint = strings.TrimSpace(endpoints["sas"].(string))
 		config.AlidfsEndpoint = strings.TrimSpace(endpoints["alidfs"].(string))
+		config.EhpcEndpoint = strings.TrimSpace(endpoints["ehpc"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1301,6 +1303,8 @@ func init() {
 		"sas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom sas endpoints.",
 
 		"alidfs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom alidfs endpoints.",
+
+		"ehpc_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ehpc endpoints.",
 	}
 }
 
@@ -1358,7 +1362,6 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["bastionhost_endpoint"],
 				},
-
 				"cddc": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1384,6 +1387,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["sas_endpoint"],
+				},
+
+				"ehpc": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ehpc_endpoint"],
 				},
 
 				"dataworkspublic": {
@@ -1977,6 +1987,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["bastionhost"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["sas"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["alidfs"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ehpc"].(string)))
 	return hashcode.String(buf.String())
 }
 
