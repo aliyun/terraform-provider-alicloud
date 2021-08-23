@@ -133,6 +133,7 @@ type Config struct {
 	SddpEndpoint                string
 	BastionhostEndpoint         string
 	SasEndpoint                 string
+	AlidfsEndpoint              string
 }
 
 func (c *Config) loadAndValidate() error {
