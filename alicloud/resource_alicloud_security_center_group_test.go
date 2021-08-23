@@ -2,18 +2,18 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
-
 
 func init() {
 	resource.AddTestSweepers(
@@ -133,11 +133,11 @@ func TestAccAlicloudSASGroup_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"group_name": name+ "_update",
+					"group_name": name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"group_name": name+ "_update",
+						"group_name": name + "_update",
 					}),
 				),
 			},
@@ -150,8 +150,7 @@ func TestAccAlicloudSASGroup_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudSASGroupMap0 = map[string]string{
-}
+var AlicloudSASGroupMap0 = map[string]string{}
 
 func AlicloudSASGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(` 

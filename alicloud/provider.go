@@ -484,6 +484,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_security_center_groups":                      dataSourceAlicloudSecurityCenterGroups(),
 			"alicloud_alb_acls":                                    dataSourceAlicloudAlbAcls(),
 			"alicloud_hbr_snapshots":                               dataSourceAlicloudHbrSnapshots(),
+			"alicloud_bastionhost_users":                           dataSourceAlicloudBastionhostUsers(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -869,6 +870,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_bastionhost_user_group":                     resourceAlicloudBastionhostUserGroup(),
 			"alicloud_security_center_group":                      resourceAlicloudSecurityCenterGroup(),
 			"alicloud_alb_acl":                                    resourceAlicloudAlbAcl(),
+			"alicloud_bastionhost_user":                           resourceAlicloudBastionhostUser(),
 		},
 
 		ConfigureFunc: providerConfigure,

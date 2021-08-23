@@ -128,14 +128,14 @@ func TestAccAlicloudBastionhostInstance_basic(t *testing.T) {
 					"license_code":       "bhah_ent_50_asset",
 					"period":             "1",
 					"vswitch_id":         "${alicloud_vswitch.default.id}",
-					"security_group_ids": []string{"${alicloud_security_group.default.0.id}"},
+					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":          name,
 						"period":               "1",
-						"security_group_ids.#": "1",
+						"security_group_ids.#": "2",
 					}),
 				),
 			},
@@ -225,7 +225,7 @@ func TestAccAlicloudBastionhostInstance_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":        "${var.name}",
-					"license_code":       "bhah_ent_50_asset",
+					"license_code":       "bhah_ent_200_asset",
 					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
 					"tags":               REMOVEKEY,
 				}),
@@ -233,7 +233,7 @@ func TestAccAlicloudBastionhostInstance_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"resource_group_id":    CHECKSET,
 						"description":          name,
-						"license_code":         "bhah_ent_50_asset",
+						"license_code":         "bhah_ent_200_asset",
 						"security_group_ids.#": "2",
 						"tags.%":               REMOVEKEY,
 						"tags.Created":         REMOVEKEY,
