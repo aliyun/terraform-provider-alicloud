@@ -481,6 +481,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_zones":                                   dataSourceAlicloudAlbZones(),
 			"alicloud_sddp_rules":                                  dataSourceAlicloudSddpRules(),
 			"alicloud_bastionhost_user_groups":                     dataSourceAlicloudBastionhostUserGroups(),
+			"alicloud_security_center_groups":                      dataSourceAlicloudSecurityCenterGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -864,6 +865,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_load_balancer":                          resourceAlicloudAlbLoadBalancer(),
 			"alicloud_sddp_rule":                                  resourceAlicloudSddpRule(),
 			"alicloud_bastionhost_user_group":                     resourceAlicloudBastionhostUserGroup(),
+			"alicloud_security_center_group":                      resourceAlicloudSecurityCenterGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1035,8 +1037,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.CddcEndpoint = strings.TrimSpace(endpoints["cddc"].(string))
 		config.MscopensubscriptionEndpoint = strings.TrimSpace(endpoints["mscopensubscription"].(string))
 		config.SddpEndpoint = strings.TrimSpace(endpoints["sddp"].(string))
-
 		config.BastionhostEndpoint = strings.TrimSpace(endpoints["bastionhost"].(string))
+		config.SasEndpoint = strings.TrimSpace(endpoints["sas"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1287,6 +1289,8 @@ func init() {
 		"sddp_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom sddp endpoints.",
 
 		"bastionhost_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom bastionhost endpoints.",
+
+		"sas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom sas endpoints.",
 	}
 }
 
@@ -1356,6 +1360,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["mscopensubscription_endpoint"],
+				},
+
+				"sas": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["sas_endpoint"],
 				},
 
 				"dataworkspublic": {
@@ -1947,6 +1958,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["mscopensubscription"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["sddp"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["bastionhost"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["sas"].(string)))
 	return hashcode.String(buf.String())
 }
 
