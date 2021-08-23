@@ -103,8 +103,8 @@ func TestAccAlicloudIotDeviceGroup_basic0(t *testing.T) {
 	}, "DescribeIotDeviceGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 100)
-	name := fmt.Sprintf("tf-testacc%siotdevicegroup%d", defaultRegionToTest, rand)
+	rand := acctest.RandIntRange(1, 1000)
+	name := fmt.Sprintf("tf_testacciot%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudIotDeviceGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
