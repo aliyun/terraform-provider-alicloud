@@ -57,11 +57,13 @@ func testSweepSasGroup(region string) error {
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_security_center_groups", action, AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] Failed to fetch Sas Groups: %s", WrapErrorf(err, DataDefaultErrorMsg, "alicloud_security_center_groups", action, AlibabaCloudSdkGoERROR))
+		return nil
 	}
 	resp, err := jsonpath.Get("$.Groups", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Groups", response)
+		log.Printf("[ERROR] Failed to parse Sas Groups: %s", WrapErrorf(err, FailedGetAttributeMsg, action, "$.Groups", response))
+		return nil
 	}
 	sweeped := false
 	result, _ := resp.([]interface{})

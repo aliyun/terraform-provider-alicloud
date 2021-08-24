@@ -398,6 +398,34 @@ func convertMaptoJsonString(m map[string]interface{}) (string, error) {
 	}
 }
 
+func convertListMapToJsonString(configured []map[string]interface{}) (string, error) {
+	if len(configured) < 1 {
+		return "[]", nil
+	}
+
+	result := "["
+	for i, m := range configured {
+		if m == nil {
+			continue
+		}
+
+		sm := make(map[string]interface{}, len(m))
+		for k, v := range m {
+			sm[k] = v
+		}
+
+		item, err := json.Marshal(sm)
+		if err == nil {
+			result += string(item)
+			if i < len(configured)-1 {
+				result += ","
+			}
+		}
+	}
+	result += "]"
+	return result, nil
+}
+
 func convertMapFloat64ToJsonString(m map[string]interface{}) (string, error) {
 	sm := make(map[string]json.Number, len(m))
 
