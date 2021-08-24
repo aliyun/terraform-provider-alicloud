@@ -36,7 +36,6 @@ func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name
@@ -214,7 +213,6 @@ func TestAccAlicloudAutoProvisioningGroup_valid(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		Providers:    testAccProviders,
 		CheckDestroy: rac.checkResourceDestroy(),

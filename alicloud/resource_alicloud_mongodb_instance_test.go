@@ -336,7 +336,6 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -440,7 +439,6 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.MongoDBMultiAzSupportedRegions)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -544,7 +542,6 @@ func TestAccAlicloudMongoDBInstance_multi_instance(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

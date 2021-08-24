@@ -56,7 +56,6 @@ func SkipTestAccAlicloudPrivatelinkVpcEndpointZonesDataSource(t *testing.T) {
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
 		testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
 	}
 

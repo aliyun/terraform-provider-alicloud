@@ -81,10 +81,7 @@ func TestAccAlicloudHBaseInstancesDataSourceNewInstance(t *testing.T) {
 		}),
 	}
 
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	checkInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, tagsConf, allConf)
+	checkInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, tagsConf, allConf)
 }
 
 // new a instance config

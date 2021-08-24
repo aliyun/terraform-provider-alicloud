@@ -236,7 +236,6 @@ func SkipTestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

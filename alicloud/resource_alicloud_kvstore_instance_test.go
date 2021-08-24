@@ -151,7 +151,6 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -425,7 +424,6 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1069,7 +1067,6 @@ func TestAccAlicloudKVStoreRedisInstance_vpcmulti(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

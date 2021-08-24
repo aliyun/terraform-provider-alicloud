@@ -52,7 +52,6 @@ func TestAccAlicloudAlikafkaSaslUsersDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheckWithAlikafkaAclEnable(t)
 		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
-		testAccPreCheckWithNoDefaultVswitch(t)
 	}
 	alikafkaSaslUsersCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
@@ -64,7 +63,7 @@ func dataSourceAlikafkaSaslUsersConfigDependence(name string) string {
 		}
 
         data "alicloud_vswitches" "default" {
-		  is_default = "true"
+		  name_regex = "^default-"
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
