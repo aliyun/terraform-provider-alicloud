@@ -71,6 +71,14 @@ The following attributes are exported:
 * `append_meta` - Determines whether to append log meta automatically.
 * `enable_web_tracking` - Determines whether to enable Web Tracking.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create`  - (Defaults to 3 mins) Used when Creating LogStore. 
+* `delete`  - (Defaults to 3 mins) Used when Deleting LogStore.
+* `read`    - (Defaults to 2 mins) Used when Reading LogStore.
+
 ## Import
 
 Log store can be imported using the id, e.g.
