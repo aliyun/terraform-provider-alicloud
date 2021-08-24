@@ -157,7 +157,6 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 			testAccPreCheckWithRegions(t, true, connectivity.KVstoreClassicNetworkInstanceSupportRegions)
 		},
 
@@ -223,7 +222,6 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 			testAccPreCheckWithRegions(t, true, connectivity.KVstoreClassicNetworkInstanceSupportRegions)
 		},
 

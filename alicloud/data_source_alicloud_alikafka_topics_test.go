@@ -67,7 +67,7 @@ func dataSourceAlikafkaTopicsConfigDependence(name string) string {
 
 
         data "alicloud_vswitches" "default" {
-		  is_default = "true"
+		  name_regex = "^default-"
 		}
 
 		resource "alicloud_alikafka_instance" "default" {

@@ -124,7 +124,6 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -198,7 +197,6 @@ func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
 			testAccPreCheckWithRegions(t, false, connectivity.DrdsClassicNoSupportedRegions)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,

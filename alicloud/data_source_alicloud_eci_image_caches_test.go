@@ -71,12 +71,7 @@ func TestAccAlicloudEciImageCachesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeEciImageCachesMapCheck,
 	}
 
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-		testAccPreCheckWithNoDefaultVswitch(t)
-	}
-
-	eciImageCachesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, statusConf, idsConf)
+	eciImageCachesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, statusConf, idsConf)
 }
 
 func dataSourceEciImageCachesConfigDependence(name string) string {

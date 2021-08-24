@@ -126,7 +126,6 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -347,7 +346,6 @@ func TestAccAlicloudAlikafkaInstance_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		// module name
 		IDRefreshName: resourceId,

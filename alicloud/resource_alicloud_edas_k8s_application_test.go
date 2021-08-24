@@ -141,7 +141,6 @@ func TestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -292,7 +291,6 @@ func TestAccAlicloudEdasK8sApplicationJar_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -417,7 +415,6 @@ func TestAccAlicloudEdasK8sApplication_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,

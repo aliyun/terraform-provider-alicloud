@@ -74,10 +74,7 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 		existMapFunc: existElasticsearchMapFunc,
 		fakeMapFunc:  fakeElasticsearchMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	elasticsearchCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, descriptionRegexConf, idsConf, tagsConf, allConf)
+	elasticsearchCheckInfo.dataSourceTestCheck(t, rand, descriptionRegexConf, idsConf, tagsConf, allConf)
 }
 
 var existElasticsearchMapFunc = func(rand int) map[string]string {

@@ -124,7 +124,6 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -223,7 +222,6 @@ func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -254,7 +252,7 @@ func resourceAlikafkaConsumerGroupConfigDependence(name string) string {
 		}
 
         data "alicloud_vswitches" "default" {
-		  is_default = "true"
+		  name_regex = "^default-"
 		}
 
 		resource "alicloud_alikafka_instance" "default" {

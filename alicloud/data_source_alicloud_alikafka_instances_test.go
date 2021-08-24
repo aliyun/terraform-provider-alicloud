@@ -81,7 +81,6 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 	}
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
-		testAccPreCheckWithNoDefaultVswitch(t)
 	}
 	alikafkaInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
@@ -93,7 +92,7 @@ func dataSourceAlikafkaInstancesConfigDependence(name string) string {
 		}
 
         data "alicloud_vswitches" "default" {
-		  is_default = "true"
+		  name_regex = "^default-"
 		}
 
 		resource "alicloud_security_group" "default" {

@@ -103,12 +103,7 @@ func TestAccAlicloudAdbDbClustersDataSource(t *testing.T) {
 		fakeMapFunc:  fakeAdbClusterMapFunc,
 	}
 
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-		testAccPreCheckWithNoDefaultVswitch(t)
-	}
-
-	AdbClusterCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameConf, statusConf, tagsConf, allConf)
+	AdbClusterCheckInfo.dataSourceTestCheck(t, rand, nameConf, statusConf, tagsConf, allConf)
 }
 
 func testAccCheckAlicloudAdbDbClusterDataSourceConfig(rand int, attrMap map[string]string) string {
