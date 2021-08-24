@@ -54,11 +54,8 @@ func TestAccAlicloudPolarDBClusterDatabasesDataSource(t *testing.T) {
 		existMapFunc: existPolarClusterMapFunc,
 		fakeMapFunc:  fakePolarClusterMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
 
-	PolarClusterCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idConf, allConf)
+	PolarClusterCheckInfo.dataSourceTestCheck(t, rand, idConf, allConf)
 }
 
 func testAccCheckAlicloudPolarClusterDatabasesDataSourceConfig(rand int, attrMap map[string]string) string {

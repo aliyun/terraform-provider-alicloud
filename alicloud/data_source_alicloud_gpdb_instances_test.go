@@ -122,11 +122,8 @@ func SkipTestAccAlicloudGpdbInstancesDataSource(t *testing.T) {
 		existMapFunc: existMapFunc,
 		fakeMapFunc:  fakeMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
 
-	CheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, availabilityZoneConf, vSwitchIdConf, tagsConf, allConf)
+	CheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, availabilityZoneConf, vSwitchIdConf, tagsConf, allConf)
 }
 
 func dataSourceGpdbConfigDependence(name string) string {

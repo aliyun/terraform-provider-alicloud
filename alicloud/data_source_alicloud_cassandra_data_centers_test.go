@@ -66,10 +66,7 @@ func TestAccAlicloudCassandraDataCentersDataSourceNewDataCenter(t *testing.T) {
 		}),
 	}
 
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	checkCassandraDcInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+	checkCassandraDcInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 }
 
 // new a cluster and a dataCenter config

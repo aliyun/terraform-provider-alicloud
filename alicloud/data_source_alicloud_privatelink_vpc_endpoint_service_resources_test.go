@@ -44,11 +44,7 @@ func SkipTestAccAlicloudPrivatelinkVpcEndpointServiceResourcesDataSource(t *test
 		fakeMapFunc:  fakePrivatelinkVpcEndpointServiceResourcesMapFunc,
 	}
 
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-
-	PrivatelinkVpcEndpointServiceResourcesInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, serviceIdConf)
+	PrivatelinkVpcEndpointServiceResourcesInfo.dataSourceTestCheck(t, 0, serviceIdConf)
 }
 
 func dataSourcePrivatelinkVpcEndpointServiceResourcesDependence(name string) string {

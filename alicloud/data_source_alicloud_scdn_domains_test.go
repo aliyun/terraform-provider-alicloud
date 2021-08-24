@@ -108,28 +108,6 @@ resource "alicloud_scdn_domain" "default" {
     priority = "20"
     type     = "oss"
   }
-  domain_configs {
-    function_name = "referer_white_list_set"
-    function_args {
-      arg_name = "refer_domain_allow_list"
-      arg_value = "110.110.110.110"
-    }
-  }
-  domain_configs {
-    function_name = "filetype_based_ttl_set"
-    function_args {
-      arg_name = "ttl"
-      arg_value = "330"
-    }
-    function_args {
-      arg_name = "file_type"
-      arg_value = "jpg"
-    }
-    function_args {
-      arg_name = "weight"
-      arg_value = "1"
-    }
-  }
   cert_infos {
 	cert_name = var.name
     cert_type ="upload"

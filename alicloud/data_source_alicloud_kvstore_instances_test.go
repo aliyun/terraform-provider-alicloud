@@ -175,10 +175,7 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 		existMapFunc: existKvstoreInstanceMapFunc,
 		fakeMapFunc:  fakeKvstoreInstanceMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	kvstoreInstancesInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, nameRegexConf, idsConf, tagsConf, statusConf, paramsConf, allConf)
+	kvstoreInstancesInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, tagsConf, statusConf, paramsConf, allConf)
 }
 
 func dataSourceKvstoreInstancesDependence(name string) string {

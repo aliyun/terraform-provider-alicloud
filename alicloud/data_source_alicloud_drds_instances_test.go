@@ -89,7 +89,6 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
-		testAccPreCheckWithNoDefaultVpc(t)
 	}
 
 	drdsInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, descriptionRegexConf, idsConf, allConf)

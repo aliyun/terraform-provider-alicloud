@@ -55,7 +55,6 @@ func TestAccAlicloudPrivatelinkVpcEndpointConnectionsDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
-		testAccPreCheckWithNoDefaultVpc(t)
 	}
 
 	PrivatelinkVpcEndpointConnectionsInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, statusConf)

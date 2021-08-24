@@ -117,11 +117,7 @@ func TestAccAlicloudNasMountTargetDataSource(t *testing.T) {
 			"status":              `"Inactive"`,
 		}),
 	}
-	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	mountTargetCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, fileSystemIdConf, accessGroupNameConf, typeConf, netWorkTypeConf, mountTargetDomainConf, vpcIdConf, vswitchIdConf, idsConf, statusConf, allConf)
+	mountTargetCheckInfo.dataSourceTestCheck(t, rand, fileSystemIdConf, accessGroupNameConf, typeConf, netWorkTypeConf, mountTargetDomainConf, vpcIdConf, vswitchIdConf, idsConf, statusConf, allConf)
 }
 
 func testAccCheckAlicloudMountTargetDataSourceConfig(rand int, attrMap map[string]string) string {

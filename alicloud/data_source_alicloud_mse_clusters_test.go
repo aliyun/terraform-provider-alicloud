@@ -104,10 +104,7 @@ func TestAccAlicloudMSEClustersDataSource(t *testing.T) {
 		existMapFunc: existMseClusterMapFunc,
 		fakeMapFunc:  fakeMseClusterMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	mseClustersInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, nameRegexConf, idsConf, statusConf, allConf)
+	mseClustersInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, statusConf, allConf)
 }
 
 func dataSourceMseClustersDependence(name string) string {

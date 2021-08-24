@@ -128,7 +128,6 @@ func TestAccAlicloudAlikafkaSaslUser_basic(t *testing.T) {
 			testAccPreCheckWithAlikafkaAclEnable(t)
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -211,7 +210,6 @@ func TestAccAlicloudAlikafkaSaslUser_multi(t *testing.T) {
 			testAccPreCheckWithAlikafkaAclEnable(t)
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -244,7 +242,7 @@ func resourceAlikafkaSaslUserConfigDependence(name string) string {
 		}
 
         data "alicloud_vswitches" "default" {
-		  is_default = "true"
+		  name_regex = "^default"
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
