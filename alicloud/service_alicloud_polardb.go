@@ -61,9 +61,6 @@ func (s *PolarDBService) DescribePolarDBClusterAttribute(id string) (instance *p
 
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*polardb.DescribeDBClusterAttributeResponse)
-	if len(response.DBClusterId) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("Cluster", id)), NotFoundMsg, ProviderERROR)
-	}
 
 	return response, nil
 }
