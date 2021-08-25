@@ -139,7 +139,7 @@ func testSweepInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudInstanceBasic(t *testing.T) {
+func TestAccAlicloudEcsInstanceBasic(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -488,7 +488,7 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceVpc(t *testing.T) {
+func TestAccAlicloudEcsInstanceVpc(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -812,7 +812,7 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstancePrepaid(t *testing.T) {
+func TestAccAlicloudEcsInstancePrepaid(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1198,7 +1198,7 @@ func TestAccAlicloudInstancePrepaid(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceDataDisks(t *testing.T) {
+func TestAccAlicloudEcsInstanceDataDisks(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1353,7 +1353,7 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceTypeUpdate(t *testing.T) {
+func TestAccAlicloudEcsInstanceTypeUpdate(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1440,7 +1440,7 @@ func TestAccAlicloudInstanceTypeUpdate(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceSpotInstanceLimit(t *testing.T) {
+func TestAccAlicloudEcsInstanceSpotInstanceLimit(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1494,7 +1494,7 @@ func TestAccAlicloudInstanceSpotInstanceLimit(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceMulti(t *testing.T) {
+func TestAccAlicloudEcsInstanceMulti(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default.9"

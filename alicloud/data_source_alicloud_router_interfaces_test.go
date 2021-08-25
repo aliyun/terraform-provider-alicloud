@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudRouterInterfacesDataSourceBasic(t *testing.T) {
+func TestAccAlicloudVpcRouterInterfacesDataSourceBasic(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheck(t)
 		testAccPreCheckWithAccountSiteType(t, DomesticSite)

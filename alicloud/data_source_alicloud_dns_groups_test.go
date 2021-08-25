@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDnsGroupsDataSource(t *testing.T) {
+func TestAccAlicloudAlidnsGroupsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100000, 999999)
 
 	testAccConfig := dataSourceTestAccConfigFunc("data.alicloud_dns_groups.default", fmt.Sprintf("tf-testacc-%d", rand), dataSourceDnsGroupsConfigDependence)

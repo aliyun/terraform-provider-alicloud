@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRouteEntryInstance(t *testing.T) {
+func TestAccAlicloudVpcRouteEntryInstance(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default"
@@ -52,7 +52,7 @@ func TestAccAlicloudRouteEntryInstance(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRouteEntryInterface(t *testing.T) {
+func TestAccAlicloudVpcRouteEntryInterface(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default"
@@ -87,7 +87,7 @@ func TestAccAlicloudRouteEntryInterface(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRouteEntryNatGateway(t *testing.T) {
+func TestAccAlicloudVpcRouteEntryNatGateway(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default"
@@ -122,7 +122,7 @@ func TestAccAlicloudRouteEntryNatGateway(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRouteEntryMulti(t *testing.T) {
+func TestAccAlicloudVpcRouteEntryMulti(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default.4"

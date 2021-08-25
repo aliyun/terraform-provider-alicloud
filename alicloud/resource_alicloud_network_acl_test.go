@@ -153,7 +153,7 @@ func testSweepNetworkAcl(region string) error {
 	return nil
 }
 
-func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
+func TestAccAlicloudVpcNetworkAcl_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_network_acl.default"
 	ra := resourceAttrInit(resourceId, AlicloudNetworkAclMap0)

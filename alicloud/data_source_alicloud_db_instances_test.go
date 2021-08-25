@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDBInstancesDataSource(t *testing.T) {
+func TestAccAlicloudRdsDBInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	nameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
@@ -158,7 +158,7 @@ func TestAccAlicloudDBInstancesDataSource(t *testing.T) {
 	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, nameConf, idsConf, engineConf, vpc_idConf, vswitch_idConf, tagsConf, allConf)
 }
 
-func TestAccAlicloudDBInstancesDataSourcePostgreSQLSSL(t *testing.T) {
+func TestAccAlicloudRdsDBInstancesDataSourcePostgreSQLSSL(t *testing.T) {
 	rand := acctest.RandInt()
 	nameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{

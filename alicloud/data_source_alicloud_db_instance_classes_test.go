@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
+func TestAccAlicloudRdsDBInstanceClasses_base(t *testing.T) {
 	rand := acctest.RandInt()
 	EngineVersionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
