@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -86,7 +88,10 @@ func TestAccAlicloudEventBridgeRulesDataSource(t *testing.T) {
 		existMapFunc: existAlicloudEventBridgeRulesDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudEventBridgeRulesDataSourceNameMapFunc,
 	}
-	alicloudEventBridgeRulesCheckInfo.dataSourceTestCheck(t, rand, idsConf, namePrefixConf, nameRegexConf, statusConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
+	}
+	alicloudEventBridgeRulesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, namePrefixConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudEventBridgeRulesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

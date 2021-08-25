@@ -24,6 +24,7 @@ func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

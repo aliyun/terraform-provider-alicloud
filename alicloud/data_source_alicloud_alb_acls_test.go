@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -107,7 +109,10 @@ func TestAccAlicloudAlbAclsDataSource(t *testing.T) {
 		existMapFunc: existDataAlicloudAlbAclsSourceNameMapFunc,
 		fakeMapFunc:  fakeDataAlicloudAlbAclsSourceNameMapFunc,
 	}
-	alicloudAlbAclCheckInfo.dataSourceTestCheck(t, rand, aclIdsConf, idsConf, nameRegexConf, aclNamesConf, statusConf, ResourceGroupIdConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
+	}
+	alicloudAlbAclCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, aclIdsConf, idsConf, nameRegexConf, aclNamesConf, statusConf, ResourceGroupIdConf, allConf)
 }
 func testAccCheckAlicloudAlbAclDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

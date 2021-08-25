@@ -34,6 +34,5 @@ func TestAccAlicloudEventBridgeServiceDataSource(t *testing.T) {
 const testAccCheckAlicloudEventBridgeServiceDataSource = `
 data "alicloud_event_bridge_service" "current" {
 	enable = "On"
-	code = "eventbridge_post_public_intl"
 }
 `

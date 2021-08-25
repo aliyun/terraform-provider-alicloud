@@ -274,6 +274,9 @@ func (s *AlbService) DescribeAlbSecurityPolicy(id string) (object map[string]int
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.SecurityPolicies", response)
+		if formatInt(response["TotalCount"]) == 0 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+		}
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SecurityPolicies", response)
 		}
@@ -327,6 +330,9 @@ func (s *AlbService) ListSystemSecurityPolicies(id string) (object map[string]in
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.SecurityPolicies", response)
+	if formatInt(response["TotalCount"]) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+	}
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SecurityPolicies", response)
 	}

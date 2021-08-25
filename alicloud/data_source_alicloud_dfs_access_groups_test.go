@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -57,7 +59,7 @@ func TestAccAlicloudDfsAccsessGroupsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeAlicloudDfsAccsessGroupsDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.DfsSupportRegions)
 	}
 	AlicloudDfsAccsessGroupsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
