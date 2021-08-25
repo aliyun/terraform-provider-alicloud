@@ -47,7 +47,7 @@ The following arguments are supported:
 * `comment` - (Optional) Specify the New of the User That Created the Remark Information. Supports up to 500 Characters.
 * `display_name` - (Optional, Computed) Specify the New Created the User's Display Name. Supports up to 128 Characters.
 * `email` - (Optional) Specify the New User's Mailbox.
-* `instance_id` - (Required) You Want to Query the User the Bastion Host ID of.
+* `instance_id` - (Required, ForceNew) You Want to Query the User the Bastion Host ID of.
 * `mobile` - (Optional) Specify the New of the User That Created a Different Mobile Phone Number from Your.
 * `mobile_country_code` - (Optional, Computed) Specify the New Create User Mobile Phone Number of the International Domain Name. The Default Value Is the CN. Valid Values:
   * CN: Mainland China (+86) 

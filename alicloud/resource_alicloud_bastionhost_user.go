@@ -38,6 +38,7 @@ func resourceAlicloudBastionhostUser() *schema.Resource {
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"mobile": {
 				Type:     schema.TypeString,
