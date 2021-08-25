@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudImagesDataSource_basic(t *testing.T) {
+func TestAccAlicloudEcsImagesDataSource_basic(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_images.default"
 
@@ -121,7 +121,7 @@ func TestAccAlicloudImagesDataSource_basic(t *testing.T) {
 	imagesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, statusConf, ownerConf, recentNameRegexconf, ownerNameRegexConf, ownerRecentConf, allConf)
 }
 
-func TestAccAlicloudImagesDataSource_win(t *testing.T) {
+func TestAccAlicloudEcsImagesDataSource_win(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_images.default"
 
@@ -178,7 +178,7 @@ func TestAccAlicloudImagesDataSource_win(t *testing.T) {
 	imagesCheckInfo.dataSourceTestCheck(t, rand, allConf)
 }
 
-func TestAccAlicloudImagesDataSource_linux(t *testing.T) {
+func TestAccAlicloudEcsImagesDataSource_linux(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_images.default"
 

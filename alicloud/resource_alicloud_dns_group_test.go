@@ -77,7 +77,7 @@ func testSweepDnsGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDnsGroup_basic(t *testing.T) {
+func TestAccAlicloudAlidnsGroup_basic(t *testing.T) {
 	resourceId := "alicloud_dns_group.default"
 	var v alidns.DomainGroup
 	serviceFunc := func() interface{} {

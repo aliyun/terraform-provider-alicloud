@@ -119,7 +119,7 @@ func testSweepDBInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDBInstanceMysql(t *testing.T) {
+func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 	var ips []map[string]interface{}
 
@@ -428,7 +428,7 @@ resource "alicloud_kms_key" "default" {
 `, RdsCommonTestCase, name)
 }
 
-func TestAccAlicloudDBInstanceMultiInstance(t *testing.T) {
+func TestAccAlicloudRdsDBInstanceMultiInstance(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 
 	resourceId := "alicloud_db_instance.default.4"
@@ -473,7 +473,7 @@ func TestAccAlicloudDBInstanceMultiInstance(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDBInstanceHighAvailabilityInstance(t *testing.T) {
+func TestAccAlicloudRdsDBInstanceHighAvailabilityInstance(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap2)
@@ -568,7 +568,7 @@ resource "alicloud_vswitch" "slave_a" {
 `, RdsCommonTestCase, name)
 }
 
-func TestAccAlicloudDBInstanceEnterpriseEditionInstance(t *testing.T) {
+func TestAccAlicloudRdsDBInstanceEnterpriseEditionInstance(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap2)
@@ -672,7 +672,7 @@ resource "alicloud_vswitch" "slave_b" {
 }
 
 // Unknown current resource exists
-func TestAccAlicloudDBInstanceSQLServer(t *testing.T) {
+func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 	var ips []map[string]interface{}
 
@@ -833,7 +833,7 @@ resource "alicloud_security_group" "default" {
 `, RdsCommonTestCase, name)
 }
 
-func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
+func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 	var ips []map[string]interface{}
 
@@ -964,7 +964,7 @@ func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDBInstancePostgreSQLSSL(t *testing.T) {
+func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 	var ips []map[string]interface{}
 
@@ -1236,7 +1236,7 @@ resource "alicloud_kms_key" "default" {
 }
 
 // Unknown current resource exists
-func TestAccAlicloudDBInstancePPAS(t *testing.T) {
+func TestAccAlicloudRdsDBInstancePPAS(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 	var ips []map[string]interface{}
 
@@ -1405,7 +1405,7 @@ resource "alicloud_security_group" "default" {
 }
 
 // Unknown current resource exists
-func TestAccAlicloudDBInstanceMultiAZ(t *testing.T) {
+func TestAccAlicloudRdsDBInstanceMultiAZ(t *testing.T) {
 	var instance = &rds.DBInstanceAttribute{}
 	resourceId := "alicloud_db_instance.default"
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
@@ -1478,7 +1478,7 @@ resource "alicloud_security_group" "default" {
 `, RdsCommonTestCase, name)
 }
 
-func TestAccAlicloudDBInstanceClassic(t *testing.T) {
+func TestAccAlicloudRdsDBInstanceClassic(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 
 	resourceId := "alicloud_db_instance.default"

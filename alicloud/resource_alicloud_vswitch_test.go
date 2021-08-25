@@ -129,7 +129,7 @@ func testSweepVSwitches(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVSwitch_basic(t *testing.T) {
+func TestAccAlicloudVpcVSwitch_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
 	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
