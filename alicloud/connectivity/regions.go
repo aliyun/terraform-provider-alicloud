@@ -34,6 +34,8 @@ const (
 	EUCentral1 = Region("eu-central-1")
 	EUWest1    = Region("eu-west-1")
 
+	RusWest1 = Region("rus-west-1")
+
 	ShenZhenFinance     = Region("cn-shenzhen-finance-1")
 	ShanghaiFinance     = Region("cn-shanghai-finance-1")
 	ShanghaiFinance1Pub = Region("cn-shanghai-finance-1-pub")
@@ -129,3 +131,6 @@ var EcpSupportRegions = []Region{Hangzhou, Shanghai, Beijing, Shenzhen}
 var CsgSupportRegions = []Region{Shanghai}
 var SddpSupportRegions = []Region{Hangzhou, Zhangjiakou, APSouthEast1}
 var CddcSupportRegions = []Region{Shenzhen, Beijing, APSouth1, EUWest1, APNorthEast1, MEEast1, ChengDu, Qingdao, Shanghai, Hongkong, HeYuan, APSouthEast1, APSouthEast2, APSouthEast3, EUCentral1, Huhehaote, APSouthEast5, USEast1, Zhangjiakou, USWest1, Hangzhou}
+var DfsSupportRegions = []Region{Hangzhou, Zhangjiakou, Shanghai, Beijing, HeYuan, ChengDu, APSouthEast5, USEast1, RusWest1}
+var EventBridgeSupportRegions = []Region{Hangzhou, Zhangjiakou, Shanghai, Shenzhen, Beijing, HeYuan, ChengDu, Huhehaote, Hongkong, EUCentral1, USWest1, USEast1}
+var AlbSupportRegions = []Region{Hangzhou, Shanghai, Qingdao, Zhangjiakou, Beijing, WuLanChaBu, Shenzhen, ChengDu, Hongkong, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5, APNorthEast1, EUCentral1, USEast1, APSouth1}
