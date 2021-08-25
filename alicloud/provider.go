@@ -508,6 +508,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_bastionhost_host_groups":                     dataSourceAlicloudBastionhostHostGroups(),
 			"alicloud_vpc_dhcp_options_sets":                       dataSourceAlicloudVpcDhcpOptionsSets(),
 			"alicloud_alb_health_check_templates":                  dataSourceAlicloudAlbHealthCheckTemplates(),
+			"alicloud_cdn_real_time_log_deliveries":                dataSourceAlicloudCdnRealTimeLogDeliveries(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -911,6 +912,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_bastionhost_host_group":                     resourceAlicloudBastionhostHostGroup(),
 			"alicloud_vpc_dhcp_options_set":                       resourceAlicloudVpcDhcpOptionsSet(),
 			"alicloud_alb_health_check_template":                  resourceAlicloudAlbHealthCheckTemplate(),
+			"alicloud_cdn_real_time_log_delivery":                 resourceAlicloudCdnRealTimeLogDelivery(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
