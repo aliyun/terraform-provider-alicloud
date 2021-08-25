@@ -14,11 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-const (
-	BATIONHOST_RELEASE_HANG_MINS  = 5
-	BASTIONHOST_WAITING_FOR_START = 600
-)
-
 func resourceAlicloudBastionhostInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudBastionhostInstanceCreate,
@@ -29,6 +24,7 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
 			Update: schema.DefaultTimeout(20 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
 
 		Importer: &schema.ResourceImporter{
@@ -152,7 +148,7 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 	// wait for pending
-	stateConf = BuildStateConf([]string{"PENDING", "CREATING"}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), BASTIONHOST_WAITING_FOR_START*time.Second, bastionhostService.BastionhostInstanceRefreshFunc(d.Id(), []string{"UPGRADING", "UPGRADE_FAILED", "CREATE_FAILED"}))
+	stateConf = BuildStateConf([]string{"PENDING", "CREATING"}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 600*time.Second, bastionhostService.BastionhostInstanceRefreshFunc(d.Id(), []string{"UPGRADING", "UPGRADE_FAILED", "CREATE_FAILED"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -266,6 +262,9 @@ func resourceAlicloudBastionhostInstanceDelete(d *schema.ResourceData, meta inte
 	// Wait for the release procedure of cloud resource dependencies. Instance can not be fetched through api as soon as release has
 	// been invoked, however the resources have not been fully destroyed yet. Therefore, a certain amount time of waiting
 	// is quite necessary (conservative estimation cloud be less then 3 minutes)
-	time.Sleep(BATIONHOST_RELEASE_HANG_MINS * time.Minute)
-	return WrapError(bastionhostService.WaitForYundunBastionhostInstance(d.Id(), Deleted, 0))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, bastionhostService.BastionhostInstanceRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }
