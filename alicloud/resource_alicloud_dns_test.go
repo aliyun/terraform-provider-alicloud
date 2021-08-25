@@ -80,7 +80,7 @@ func testSweepDns(region string) error {
 
 }
 
-func TestAccAlicloudDns_basic(t *testing.T) {
+func TestAccAlicloudAlidns_basic(t *testing.T) {
 	resourceId := "alicloud_dns.default"
 	randInt := acctest.RandIntRange(10000, 99999)
 	var v *alidns.DescribeDomainInfoResponse

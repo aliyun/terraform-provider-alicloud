@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudImageExport(t *testing.T) {
+func TestAccAlicloudEcsImageExport(t *testing.T) {
 	var v ecs.Image
 	resourceId := "alicloud_image_export.default"
 	ra := resourceAttrInit(resourceId, testAccExportImageCheckMap)

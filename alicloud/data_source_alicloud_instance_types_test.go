@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudInstanceTypesDataSource_basic(t *testing.T) {
+func TestAccAlicloudEcsInstanceTypesDataSource_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -40,7 +40,7 @@ func TestAccAlicloudInstanceTypesDataSource_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceTypesDataSource_gpu(t *testing.T) {
+func TestAccAlicloudEcsInstanceTypesDataSource_gpu(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -113,7 +113,7 @@ func TestAccAlicloudInstanceTypesDataSource_gpu(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceTypesDataSource_empty(t *testing.T) {
+func TestAccAlicloudEcsInstanceTypesDataSource_empty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -141,7 +141,7 @@ func TestAccAlicloudInstanceTypesDataSource_empty(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceTypesDataSource_k8sSpec(t *testing.T) {
+func TestAccAlicloudEcsInstanceTypesDataSource_k8sSpec(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -191,7 +191,7 @@ func TestAccAlicloudInstanceTypesDataSource_k8sSpec(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudInstanceTypesDataSource_k8sFamily(t *testing.T) {
+func TestAccAlicloudEcsInstanceTypesDataSource_k8sFamily(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)

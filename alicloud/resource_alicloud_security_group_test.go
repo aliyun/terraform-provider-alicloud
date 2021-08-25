@@ -122,7 +122,7 @@ func testAccCheckSecurityGroupDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
+func TestAccAlicloudEcsSecurityGroupBasic(t *testing.T) {
 	var v ecs.DescribeSecurityGroupAttributeResponse
 	resourceId := "alicloud_security_group.default"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityBasicMap)
@@ -197,7 +197,7 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSecurityGroupMulti(t *testing.T) {
+func TestAccAlicloudEcsSecurityGroupMulti(t *testing.T) {
 	var v ecs.DescribeSecurityGroupAttributeResponse
 	resourceId := "alicloud_security_group.default.9"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityBasicMap)

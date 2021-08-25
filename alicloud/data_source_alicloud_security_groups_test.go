@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSecurityGroupsDataSourceBasic(t *testing.T) {
+func TestAccAlicloudEcsSecurityGroupsDataSourceBasic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 
 	nameRegexConf := dataSourceTestAccConfig{

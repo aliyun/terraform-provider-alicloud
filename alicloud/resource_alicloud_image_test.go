@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudImageBasic(t *testing.T) {
+func TestAccAlicloudEcsImageBasic(t *testing.T) {
 	var v ecs.Image
 
 	resourceId := "alicloud_image.default"

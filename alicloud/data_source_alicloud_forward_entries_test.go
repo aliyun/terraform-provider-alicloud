@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudForwardEntriesDataSourceBasic(t *testing.T) {
+func TestAccAlicloudVpcForwardEntriesDataSourceBasic(t *testing.T) {
 	rand := acctest.RandInt()
 	forwardTableIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{

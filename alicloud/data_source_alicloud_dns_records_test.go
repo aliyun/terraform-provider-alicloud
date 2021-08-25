@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDnsRecordsDataSource(t *testing.T) {
+func TestAccAlicloudAlidnsRecordsDataSourceOld(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_dns_records.default"
 

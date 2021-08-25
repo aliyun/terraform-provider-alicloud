@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudForwardEntry_basic(t *testing.T) {
+func TestAccAlicloudVpcForwardEntry_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_forward_entry.default"
 	ra := resourceAttrInit(resourceId, AlicloudForwardEntryMap0)

@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudImageSharePermission(t *testing.T) {
+func TestAccAlicloudEcsImageSharePermission(t *testing.T) {
 	var v *ecs.DescribeImageSharePermissionResponse
 	resourceId := "alicloud_image_share_permission.default"
 	ra := resourceAttrInit(resourceId, testAccImageSharePermissionCheckMap)

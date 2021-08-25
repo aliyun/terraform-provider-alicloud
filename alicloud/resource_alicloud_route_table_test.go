@@ -117,7 +117,7 @@ func testSweepRouteTable(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRouteTable_basic(t *testing.T) {
+func TestAccAlicloudVpcRouteTable_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_route_table.default"
 	ra := resourceAttrInit(resourceId, AlicloudRouteTableMap0)

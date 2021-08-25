@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudNetworkAclsDataSource(t *testing.T) {
+func TestAccAlicloudVpcNetworkAclsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkAclsDataSourceName(rand, map[string]string{

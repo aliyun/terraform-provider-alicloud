@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSnatEntriesDataSourceBasic(t *testing.T) {
+func TestAccAlicloudVpcSnatEntriesDataSourceBasic(t *testing.T) {
 	rand := acctest.RandInt()
 	snatIpConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
