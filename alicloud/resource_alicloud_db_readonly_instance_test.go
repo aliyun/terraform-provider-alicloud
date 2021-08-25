@@ -65,9 +65,10 @@ func TestAccAlicloudDBReadonlyInstance_update(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart"},
 			},
 			// upgrade storage
 			{
