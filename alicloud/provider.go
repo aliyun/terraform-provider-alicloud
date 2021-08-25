@@ -29,12 +29,6 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"source_ip": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SOURCE_IP", os.Getenv("ALICLOUD_SOURCE_IP")),
-				Description: descriptions["source_ip"],
-			},
 			"access_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -136,6 +130,18 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("CLIENT_CONNECT_TIMEOUT", 30000),
 				Description: descriptions["client_connect_timeout"],
+			},
+			"source_ip": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SOURCE_IP", os.Getenv("ALICLOUD_SOURCE_IP")),
+				Description: descriptions["source_ip"],
+			},
+			"security_transport": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURITY_TRANSPORT", os.Getenv("ALICLOUD_SECURITY_TRANSPORT")),
+				Description: descriptions["security_transport"],
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
@@ -904,7 +910,6 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	ecsRoleName := getProviderConfig(d.Get("ecs_role_name").(string), "ram_role_name")
 
 	config := &connectivity.Config{
-		SourceIp:             strings.TrimSpace(d.Get("source_ip").(string)),
 		AccessKey:            strings.TrimSpace(accessKey),
 		SecretKey:            strings.TrimSpace(secretKey),
 		EcsRoleName:          strings.TrimSpace(ecsRoleName),
@@ -915,6 +920,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		Protocol:             d.Get("protocol").(string),
 		ClientReadTimeout:    d.Get("client_read_timeout").(int),
 		ClientConnectTimeout: d.Get("client_connect_timeout").(int),
+		SourceIp:             strings.TrimSpace(d.Get("source_ip").(string)),
+		SecurityTransport:    strings.TrimSpace(d.Get("security_transport").(string)),
 	}
 	token := getProviderConfig(d.Get("security_token").(string), "sts_token")
 	config.SecurityToken = strings.TrimSpace(token)
@@ -1105,8 +1112,6 @@ var descriptions map[string]string
 
 func init() {
 	descriptions = map[string]string{
-		"source_ip": "The access key for API operations. You can retrieve this from the 'Security Management' section of the Alibaba Cloud console.",
-
 		"access_key": "The access key for API operations. You can retrieve this from the 'Security Management' section of the Alibaba Cloud console.",
 
 		"secret_key": "The secret key for API operations. You can retrieve this from the 'Security Management' section of the Alibaba Cloud console.",
@@ -1137,7 +1142,10 @@ func init() {
 
 		"client_read_timeout":    "The maximum timeout of the client read request.",
 		"client_connect_timeout": "The maximum timeout of the client connection server.",
-		"ecs_endpoint":           "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.",
+		"source_ip":              "The source ip for the assume role invoking.",
+		"security_transport":     "The security transport for the assume role invoking.",
+
+		"ecs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.",
 
 		"rds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom RDS endpoints.",
 

@@ -83,8 +83,10 @@ type InsertK8sApplicationRequest struct {
 	IntranetSlbPort        requests.Integer `position:"Query" name:"IntranetSlbPort"`
 	DeployAcrossNodes      string           `position:"Query" name:"DeployAcrossNodes"`
 	PreStop                string           `position:"Query" name:"PreStop"`
+	BuildPackId            string           `position:"Query" name:"BuildPackId"`
 	LocalVolume            string           `position:"Query" name:"LocalVolume"`
 	UseBodyEncoding        requests.Boolean `position:"Query" name:"UseBodyEncoding"`
+	EmptyDirs              string           `position:"Query" name:"EmptyDirs"`
 	PackageType            string           `position:"Query" name:"PackageType"`
 	RuntimeClassName       string           `position:"Query" name:"RuntimeClassName"`
 	PostStart              string           `position:"Query" name:"PostStart"`
@@ -142,7 +144,7 @@ func CreateInsertK8sApplicationRequest() (request *InsertK8sApplicationRequest) 
 	request = &InsertK8sApplicationRequest{
 		RoaRequest: &requests.RoaRequest{},
 	}
-	request.InitWithApiInfo("Edas", "2017-08-01", "InsertK8sApplication", "/pop/v5/k8s/acs/create_k8s_app", "Edas", "openAPI")
+	request.InitWithApiInfo("Edas", "2017-08-01", "InsertK8sApplication", "/pop/v5/k8s/acs/create_k8s_app", "edas", "openAPI")
 	request.Method = requests.POST
 	return
 }
