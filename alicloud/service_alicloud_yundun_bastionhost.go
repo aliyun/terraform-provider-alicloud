@@ -511,8 +511,8 @@ func (s *YundunBastionhostService) DescribeBastionhostUserGroup(id string) (obje
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OBJECT_NOT_FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("UserGroup", id)), NotFoundWithResponse, response)
+		if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus", "OBJECT_NOT_FOUND"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:UserGroup", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -557,7 +557,7 @@ func (s *YundunBastionhostService) DescribeBastionhostUser(id string) (object ma
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OBJECT_NOT_FOUND"}) {
+		if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus", "OBJECT_NOT_FOUND"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:User", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

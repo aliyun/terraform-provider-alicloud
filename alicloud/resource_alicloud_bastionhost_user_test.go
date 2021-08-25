@@ -40,7 +40,7 @@ func TestAccAlicloudBastionhostUser_basic0(t *testing.T) {
 					testAccCheck(map[string]string{
 						"user_name":   "tf-testAccBastionHostUser-12345",
 						"source":      "Local",
-						"instance_id": "${alicloud_bastionhost_instance.default.id}",
+						"instance_id": CHECKSET,
 						"password":    "tf-testAcc-oAupFqRaH24MdOSrsIKsu3qw",
 					}),
 				),
@@ -404,7 +404,7 @@ func TestAccAlicloudBastionhostUser_basic1(t *testing.T) {
 					testAccCheck(map[string]string{
 						"user_name":      "tf-testAccBastionhostUserRam-123456",
 						"source":         "Ram",
-						"instance_id":    "${alicloud_bastionhost_instance.default.id}",
+						"instance_id":    CHECKSET,
 						"source_user_id": "247823888127488180",
 					}),
 				),
