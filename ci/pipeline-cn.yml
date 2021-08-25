@@ -73,7 +73,7 @@ groups:
       # Actiontrail
       - Actiontrail
       # SSL Certificate
-      - CasCertificate
+      - SslCertificates
       # MongoDB
       - MongoDB
       # Ddoscoo
@@ -299,7 +299,7 @@ groups:
   - name: Security
     jobs:
       # SSL Certificate
-      - CasCertificate
+      - SslCertificates
       # Ddoscoo
       - Ddoscoo
       - Ddosbgp
@@ -957,7 +957,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Actiontrail"
 
-  - name: CasCertificate
+  - name: SslCertificates
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -968,7 +968,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "CasCertificate"
+          TEST_CASE_CODE: "SslCertificates"
 
   - name: MongoDB
     plan:
