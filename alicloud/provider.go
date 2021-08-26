@@ -494,6 +494,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dfs_access_groups":                           dataSourceAlicloudDfsAccessGroups(),
 			"alicloud_ehpc_job_templates":                          dataSourceAlicloudEhpcJobTemplates(),
 			"alicloud_sddp_configs":                                dataSourceAlicloudSddpConfigs(),
+			"alicloud_hbr_restore_jobs":                            dataSourceAlicloudHbrRestoreJobs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -883,6 +884,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dfs_access_group":                           resourceAlicloudDfsAccessGroup(),
 			"alicloud_ehpc_job_template":                          resourceAlicloudEhpcJobTemplate(),
 			"alicloud_sddp_config":                                resourceAlicloudSddpConfig(),
+			"alicloud_hbr_restore_job":                            resourceAlicloudHbrRestoreJob(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
