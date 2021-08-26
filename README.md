@@ -14,18 +14,18 @@ Terraform Provider For Alibaba Cloud
 Supported Versions
 ------------------
 
-| Terraform version | minimum provider version |maxmimum provider version
+| Terraform version | minimum provider version |maximum provider version
 | ---- | ---- | ----| 
-| 0.11.x	| 1.0.0	| 1.122.0 |
-| 0.12.x	| 1.0.0	| 1.122.0 |
-| 0.13.x	| 1.0.0	| 1.122.0 |
-| 0.14.x	| 1.0.0	| 1.122.0 |
+| 0.11.x    | 1.0.0 | 1.122.0 |
+| 0.12.x    | 1.0.0 | 1.122.0 |
+| 0.13.x    | 1.0.0 | 1.122.0 |
+| 0.14.x    | 1.0.0 | 1.122.0 |
 
 Requirements
 ------------
 
--	[Terraform](https://www.terraform.io/downloads.html) 0.12.x
--	[Go](https://golang.org/doc/install) 1.13 (to build the provider plugin)
+-   [Terraform](https://www.terraform.io/downloads.html) 0.12.x
+-   [Go](https://golang.org/doc/install) 1.13 (to build the provider plugin)
 -   [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports):
     ```
     go get golang.org/x/tools/cmd/goimports
@@ -55,7 +55,7 @@ Using the provider
 Developing the Provider
 ---------------------------
 
-If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.11+ is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
+If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.11+ is *required*). You'll also need to correctly set up a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
 
 To compile the provider, run `make build`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
 
@@ -66,18 +66,18 @@ $ $GOPATH/bin/terraform-provider-alicloud
 ...
 ```
 
-Running `make dev` or `make devlinux` or `devwin` will only build the specified developing provider which matchs the local system.
+Running `make dev` or `make devlinux` or `devwin` will only build the specified developing provider which matches the local system.
 And then, it will unarchive the provider binary and then replace the local provider plugin.
 
-In order to test the provider, you can simply run `make test`.
+To test the provider, you can simply run `make test`.
 
 ```sh
 $ make test
 ```
 
-In order to run the full suite of Acceptance tests, run `make testacc`.
+To run the full suite of Acceptance tests, run `make testacc`.
 
-*Note:* Acceptance tests create real resources, and often cost money to run.
+*Note:* Acceptance tests create real resources and often cost money to run.
 
 ```sh
 $ make testacc
@@ -98,25 +98,25 @@ TF_ACC=1 TF_LOG=INFO go test ./alicloud -v -run=TestAccAlicloud -timeout=1440m |
 go2xunit -input $outfile -output $GOPATH/tests.xml
 ```
 
--> **Note:** The last line is optional, it allows to convert test results into a XML format compatible with xUnit.
+-> **Note:** The last line is optional, it allows to convert test results into an XML format compatible with xUnit.
 
 
 -> **Note:** Most test cases will create PostPaid resources when running above test command. However, currently not all
- account site type support create PostPaid resources, so you need set your account site type before running the command:
+ account site type support create PostPaid resources, so you need to set your account site type before running the command:
 ```
-# If your account belongs to domestic site
+# If your account belongs to a domestic site
 export ALICLOUD_ACCOUNT_SITE=Domestic
 
-# If your account belongs to international site
+# If your account belongs to an international site
 export ALICLOUD_ACCOUNT_SITE=International
 ```
-The setting of acount site type can skip some unsupported cases automatically.
+The setting of the account site type can skip some unsupported cases automatically.
 
--> **Note:** At present, there is missing CMS contact group resource and please create manually a contact group by web console and set it by environment variable `ALICLOUD_CMS_CONTACT_GROUP`, like:
+-> **Note:** At present, there is a missing CMS contact group resource, and please create manually a contact group by web console and set it by environment variable `ALICLOUD_CMS_CONTACT_GROUP`, like:
  ```
  export ALICLOUD_CMS_CONTACT_GROUP=tf-testAccCms
  ```
- Otherwise, all of resource `alicloud_cms_alarm's` test cases will be skipped.
+ Otherwise, all of the resource `alicloud_cms_alarm's` test cases will be skipped.
 
 ## Refer
 
