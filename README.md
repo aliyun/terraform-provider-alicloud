@@ -1,38 +1,32 @@
-Terraform Provider For Alibaba Cloud
-==================
+# Terraform Provider For Alibaba Cloud
 
 - Website: https://www.terraform.io
 - [![Gitter chat](https://badges.gitter.im/hashicorp-terraform/Lobby.png)](https://gitter.im/hashicorp-terraform/Lobby)
 - Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
 
-<img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="400px"> 
-
+<img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="400px">
 
 <img src="https://www.datocms-assets.com/2885/1506527326-color.svg" width="400px">
 
+## Supported Versions
 
-Supported Versions
-------------------
+| Terraform version | minimum provider version | maximum provider version |
+| ----------------- | ------------------------ | ------------------------ |
+| 0.11.x            | 1.0.0                    | 1.122.0                  |
+| 0.12.x            | 1.0.0                    | 1.122.0                  |
+| 0.13.x            | 1.0.0                    | 1.122.0                  |
+| 0.14.x            | 1.0.0                    | 1.122.0                  |
 
-| Terraform version | minimum provider version |maximum provider version
-| ---- | ---- | ----| 
-| 0.11.x    | 1.0.0 | 1.122.0 |
-| 0.12.x    | 1.0.0 | 1.122.0 |
-| 0.13.x    | 1.0.0 | 1.122.0 |
-| 0.14.x    | 1.0.0 | 1.122.0 |
+## Requirements
 
-Requirements
-------------
+- [Terraform](https://www.terraform.io/downloads.html) 0.12.x
+- [Go](https://golang.org/doc/install) 1.13 (to build the provider plugin)
+- [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports):
+  ```
+  go get golang.org/x/tools/cmd/goimports
+  ```
 
--   [Terraform](https://www.terraform.io/downloads.html) 0.12.x
--   [Go](https://golang.org/doc/install) 1.13 (to build the provider plugin)
--   [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports):
-    ```
-    go get golang.org/x/tools/cmd/goimports
-    ```
-
-Building The Provider
----------------------
+## Building The Provider
 
 Clone repository to: `$GOPATH/src/github.com/aliyun/terraform-provider-alicloud`
 
@@ -48,14 +42,13 @@ $ cd $GOPATH/src/github.com/aliyun/terraform-provider-alicloud
 $ make build
 ```
 
-Using the provider
-----------------------
+## Using the provider
+
 ## Fill in for each provider
 
-Developing the Provider
----------------------------
+## Developing the Provider
 
-If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.11+ is *required*). You'll also need to correctly set up a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
+If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.11+ is _required_). You'll also need to correctly set up a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
 
 To compile the provider, run `make build`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
 
@@ -77,15 +70,17 @@ $ make test
 
 To run the full suite of Acceptance tests, run `make testacc`.
 
-*Note:* Acceptance tests create real resources and often cost money to run.
+_Note:_ Acceptance tests create real resources and often cost money to run.
 
 ```sh
 $ make testacc
 ```
 
 ## Acceptance Testing
-Before making a release, the resources and data sources are tested automatically with acceptance tests (the tests are located in the alicloud/*_test.go files).
+
+Before making a release, the resources and data sources are tested automatically with acceptance tests (the tests are located in the alicloud/\*\_test.go files).
 You can run them by entering the following instructions in a terminal:
+
 ```
 cd $GOPATH/src/github.com/aliyun/terraform-provider-alicloud
 export ALICLOUD_ACCESS_KEY=xxx
@@ -100,9 +95,9 @@ go2xunit -input $outfile -output $GOPATH/tests.xml
 
 -> **Note:** The last line is optional, it allows to convert test results into an XML format compatible with xUnit.
 
-
 -> **Note:** Most test cases will create PostPaid resources when running above test command. However, currently not all
- account site type support create PostPaid resources, so you need to set your account site type before running the command:
+account site type support create PostPaid resources, so you need to set your account site type before running the command:
+
 ```
 # If your account belongs to a domestic site
 export ALICLOUD_ACCOUNT_SITE=Domestic
@@ -110,13 +105,16 @@ export ALICLOUD_ACCOUNT_SITE=Domestic
 # If your account belongs to an international site
 export ALICLOUD_ACCOUNT_SITE=International
 ```
+
 The setting of the account site type can skip some unsupported cases automatically.
 
 -> **Note:** At present, there is a missing CMS contact group resource, and please create manually a contact group by web console and set it by environment variable `ALICLOUD_CMS_CONTACT_GROUP`, like:
- ```
- export ALICLOUD_CMS_CONTACT_GROUP=tf-testAccCms
- ```
- Otherwise, all of the resource `alicloud_cms_alarm's` test cases will be skipped.
+
+```
+export ALICLOUD_CMS_CONTACT_GROUP=tf-testAccCms
+```
+
+Otherwise, all of the resource `alicloud_cms_alarm's` test cases will be skipped.
 
 ## Refer
 
