@@ -66,6 +66,7 @@ func TestAccAlicloudSDDPConfig_basic0(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"lang"},
 			},
 		},
 	})
@@ -128,6 +129,7 @@ func TestAccAlicloudSDDPConfig_basic1(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"lang"},
 			},
 		},
 	})
@@ -190,6 +192,7 @@ func TestAccAlicloudSDDPConfig_basic2(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"lang"},
 			},
 		},
 	})
