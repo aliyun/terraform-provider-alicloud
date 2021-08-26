@@ -47,18 +47,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `clients` - A list of Hbr Ecs Backup Clients. Each element contains the following attributes:
-	* `arch_type` - The Client System Architecture (Only the ECS File Backup Client Is Available. Possible Values: * AMD64 * 386.
-	* `backup_status` - Client protected status.
-	* `client_type` - The Client Type. Possible Values: * ECS_CLIENT (ECS File Backup Client).
-	* `client_version` - Client Version.
-	* `create_time` - The Client Creates a Time. Unix Time Seconds.
-	* `data_network_type` - The Data Plane Data Access Point Type. Valid Values: * Public Internet * VPC VPC * Classic Network.
-	* `data_proxy_setting` - The Data Plane Proxy Settings. Valid Values: * DISABLE  * USE_CONTROL_PROXY (Default, the same with Control Plane) * CUSTOM (Custom Configuration Items for the HTTP Protocol).
-	* `ecs_backup_client_id` - The first ID of the resource.
-	* `hostname` - The ECS Host Name.
 	* `id` - The ID of the Ecs Backup Client.
 	* `instance_id` - The ID of ECS Instance.
 	* `instance_name` - ECS Instance Names.
+	* `arch_type` - The Client System Architecture (Only the ECS File Backup Client Is Available. Valid Values: `AMD64` , `386`.
+	* `backup_status` - Client protected status.
+	* `client_type` - The Client Type. Valid Values: `ECS_CLIENT` (ECS File Backup Client).
+	* `client_version` - Client Version.
+	* `create_time` - The Client Creates a Time. Unix Time Seconds.
+	* `data_network_type` - The Data Plane Data Access Point Type. Valid Values: `PUBLIC`, `VPC`, `CLASSIC`.
+	* `data_proxy_setting` - The Data Plane Proxy Settings. Valid Values: `DISABLE`, `USE_CONTROL_PROXY`, `CUSTOM`. **Note**: `USE_CONTROL_PROXY` (Default, the same with Control Plane), `CUSTOM` (Custom Configuration Items for the HTTP Protocol).
+	* `ecs_backup_client_id` - The first ID of the resource.
+	* `hostname` - The ECS Host Name.
 	* `last_heart_beat_time` - Client Last Heartbeat Time. Unix Time Seconds.
 	* `max_client_version` - The Latest Client Version.
 	* `max_cpu_core` - A Single Backup Task Uses for Example, Instances Can Be Grouped According to CPU Core Count, 0 Means No Restrictions.

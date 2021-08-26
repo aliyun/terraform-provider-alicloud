@@ -37,7 +37,6 @@ resource "alicloud_hbr_nas_backup_plan" "example" {
   ["/home/include"]
   EOF
 }
-
 ```
 
 ## Argument Reference
@@ -49,7 +48,7 @@ The following arguments are supported:
 * `schedule` - (Required) The Backup Policy. Formats: I | {Range Specified by the StartTime }|{ Interval}\n* The Time Range Specified by the StartTime Backup Start Time in Unix Time Seconds.\n* Interval ISO8601 Time Intervals. For Example:\n**PT1H Interval for an Hour.\n**P1D Interval Day.\nMeaning from {Range Specified by the Starttime} Every {Interval} of the Time Where We Took Backups Once a Task. Does Not Compensate the Has Elapsed Time the Backup Task. If the Last Backup Has Not Been Completed without Triggering the next Backup.
 * `disabled` - (Optional) Whether to Disable the Backup Task. Valid Values: true, false.
 * `file_system_id` - (Optional, ForceNew) The File System ID.
-* `create_time` - (Optional, ForceNew) File System Creation Time. Unix Time Seconds.
+* `create_time` - (Optional, ForceNew) File System Creation Time. **Note** The time format of the API adopts the ISO 8601 format, such as `2021-07-09T15:45:30CST` or `2021-07-09T07:45:30Z`.
 * `include` - (Optional) The include path. String of Json List, most 255 Characters. e.g. `"[\"/home/work\"]"`
 * `exclude` - (Optional) The exclude path. String of Json List, most 255 Characters. e.g. `"[\"/var\"]"`
 * `path` - (Optional) Backup Path. Up to 65536 Characters. e.g.`["/home", "/var"]`
