@@ -3308,17 +3308,20 @@ func (client *AliyunClient) NewMscopensubscriptionClient() (*rpc.Client, error) 
 
 func (client *AliyunClient) NewSddpClient() (*rpc.Client, error) {
 	productCode := "sddp"
-	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("sddp.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
+	endpoint := "sddp.cn-zhangjiakou.aliyuncs.com"
+	//todo : Fix after Cloud Product fixing Location Configuration
+	//if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	//	if err := client.loadEndpoint(productCode); err != nil {
+	//		endpoint = fmt.Sprintf("sddp.%s.aliyuncs.com", client.config.RegionId)
+	//		client.config.Endpoints[productCode] = endpoint
+	//		log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+	//	}
+	//}
+	//if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	//	endpoint = v.(string)
+	//}
+
+
 	sdkConfig := client.teaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
