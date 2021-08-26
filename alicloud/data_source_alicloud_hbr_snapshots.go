@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -74,7 +75,7 @@ func dataSourceAlicloudHbrSnapshots() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"MATCH_TERM", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "IN", "NOT_IN"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"MATCH_TERM", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "BETWEEN", "IN", "NOT_IN"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
@@ -263,10 +264,16 @@ func dataSourceAlicloudHbrSnapshotsRead(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("complete_time"); ok {
 		completeChecker := make(map[string]interface{})
 		completeChecker["field"] = "CompleteTime"
-		completeChecker["value"] = ConvertNasFileSystemStringToUnix(v.(string))
 		completeChecker["operation"] = "MATCH_TERM"
 		if vv, ok := d.GetOk("complete_time_checker"); ok {
 			completeChecker["operation"] = vv.(string)
+		}
+		if completeChecker["operation"] == "BETWEEN" {
+			timeSection := strings.Split(v.(string), ",")
+			completeChecker["value"] = ConvertNasFileSystemStringToUnix(timeSection[0])
+			completeChecker["value2"] = ConvertNasFileSystemStringToUnix(timeSection[1])
+		} else {
+			completeChecker["value"] = ConvertNasFileSystemStringToUnix(v.(string))
 		}
 		filtersMapList = append(filtersMapList, completeChecker)
 	}
