@@ -51,7 +51,7 @@ data "alicloud_hbr_snapshots" "nas_snapshots" {
   source_type           = "NAS"
   file_system_id        = data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id
   create_time           = data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time
-  complete_time         = "2021-08-23 14:17:15"
+  complete_time         = "2021-08-23T14:17:15CST"
   complete_time_checker = "GREATER_THAN_OR_EQUAL"
 }
 
@@ -71,7 +71,7 @@ The following arguments are supported:
 * `bucket` - (Optional, ForceNew) The Bucket Name of OSS. While source_type equals `OSS`, this parameter must be set.
 * `file_system_id` - (Optional, ForceNew) The File System ID of Nas. While source_type equals `NAS`, this parameter must be set.
 * `create_time` - (Optional, ForceNew) File System Creation timestamp of Nas. While source_type equals `NAS`, this parameter must be set.
-* `complete_time` - (Optional, ForceNew) Timestamp of Snapshot completion.
+* `complete_time` - (Optional, ForceNew) Timestamp of Snapshot completion. Note The time format of the API adopts the ISO 8601 format, such as 2021-07-09T15:45:30CST or 2021-07-09T07:45:30Z.
 * `complete_time_checker` - (Optional, ForceNew) Complete time filter operator. Optional values: `MATCH_TERM`, `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
