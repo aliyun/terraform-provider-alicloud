@@ -36,7 +36,6 @@ resource "alicloud_hbr_ecs_backup_plan" "example" {
   ["/home/include"]
   EOF
 }
-
 ```
 
 ## Argument Reference

@@ -20,10 +20,10 @@ For information about HBR Oss Backup Plan and how to use it, see [What is Oss Ba
 Basic Usage
 
 ```terraform
-
 variable "name" {
   default = "%s"
 }
+
 resource "alicloud_hbr_vault" "default" {
   vault_name = var.name
 }
@@ -33,9 +33,10 @@ data "alicloud_oss_buckets" "default" {
 }
 
 resource "alicloud_hbr_oss_backup_plan" "example" {
-  oss_backup_plan_name = "example_value"
-  instance_id          = data.alicloud_oss_buckets.default.buckets.0.name
+  oss_backup_plan_name = var.name
   vault_id             = alicloud_hbr_vault.default.id
+  bucket               = alicloud_oss_bucket.default.bucket
+  prefix               = "/home"
   retention            = "1"
   schedule             = "I|1602673264|PT2H"
   backup_type          = "COMPLETE"
