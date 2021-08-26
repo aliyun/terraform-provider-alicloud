@@ -73,7 +73,7 @@ func TestAccAlicloudHbrSnapshotsDataSource(t *testing.T) {
 			"vault_id":              `"${data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id}"`,
 			"file_system_id":        `"${data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id}"`,
 			"create_time":           `"${data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time}"`,
-			"complete_time":         `"2021-08-23 14:17:15"`,
+			"complete_time":         `"2021-08-23T14:17:15CST"`,
 			"complete_time_checker": `"GREATER_THAN_OR_EQUAL"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrSnapshotSourceConfig(rand, map[string]string{
@@ -81,7 +81,7 @@ func TestAccAlicloudHbrSnapshotsDataSource(t *testing.T) {
 			"vault_id":              `"${data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id}"`,
 			"file_system_id":        `"${data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id}"`,
 			"create_time":           `"${data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time}"`,
-			"complete_time":         `"2021-08-23 14:17:15"`,
+			"complete_time":         `"2021-08-23T14:17:15CST"`,
 			"complete_time_checker": `"LESS_THAN"`,
 		}),
 	}
@@ -120,7 +120,7 @@ data "alicloud_hbr_snapshots" "default" {
 
 var existHbrSnapshotMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"snapshots.#":    "1",
+		"snapshots.#":    CHECKSET,
 		"snapshots.0.id": CHECKSET,
 	}
 }
