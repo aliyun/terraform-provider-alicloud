@@ -86,7 +86,26 @@ func TestAccAlicloudHbrSnapshotsDataSource(t *testing.T) {
 		}),
 	}
 
-	HbrSnapshotCheckInfo.dataSourceTestCheck(t, rand, ecsBackupConf, ossBackupConf, nasBackupConf, statusBackupConf, completeTimeBackupConf)
+	betweenTimeBackupConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudHbrSnapshotSourceConfig(rand, map[string]string{
+			"source_type":           `"NAS"`,
+			"vault_id":              `"${data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id}"`,
+			"file_system_id":        `"${data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id}"`,
+			"create_time":           `"${data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time}"`,
+			"complete_time":         `"2021-08-20T14:17:15CST,2021-08-26T14:17:15CST"`,
+			"complete_time_checker": `"BETWEEN"`,
+		}),
+		fakeConfig: testAccCheckAlicloudHbrSnapshotSourceConfig(rand, map[string]string{
+			"source_type":           `"NAS"`,
+			"vault_id":              `"${data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id}"`,
+			"file_system_id":        `"${data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id}"`,
+			"create_time":           `"${data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time}"`,
+			"complete_time":         `"2021-07-20T14:17:15CST,2021-07-24T14:17:15CST"`,
+			"complete_time_checker": `"BETWEEN"`,
+		}),
+	}
+
+	HbrSnapshotCheckInfo.dataSourceTestCheck(t, rand, ecsBackupConf, ossBackupConf, nasBackupConf, statusBackupConf, completeTimeBackupConf, betweenTimeBackupConf)
 }
 
 func testAccCheckAlicloudHbrSnapshotSourceConfig(rand int, attrMap map[string]string) string {
