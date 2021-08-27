@@ -499,6 +499,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ens_key_pairs":                               dataSourceAlicloudEnsKeyPairs(),
 			"alicloud_sae_applications":                            dataSourceAlicloudSaeApplications(),
 			"alicloud_alb_rules":                                   dataSourceAlicloudAlbRules(),
+			"alicloud_cms_metric_rule_templates":                   dataSourceAlicloudCmsMetricRuleTemplates(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -893,6 +894,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ens_key_pair":                               resourceAlicloudEnsKeyPair(),
 			"alicloud_sae_application":                            resourceAlicloudSaeApplication(),
 			"alicloud_alb_rule":                                   resourceAlicloudAlbRule(),
+			"alicloud_cms_metric_rule_template":                   resourceAlicloudCmsMetricRuleTemplate(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
