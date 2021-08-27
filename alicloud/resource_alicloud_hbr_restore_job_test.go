@@ -148,7 +148,6 @@ func TestAccAlicloudHBRRestoreJob_basic2(t *testing.T) {
 					"snapshot_id":        "${data.alicloud_hbr_snapshots.ecs_snapshots.snapshots.0.snapshot_id}",
 					"target_instance_id": "${data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id}",
 					"target_path":        "/",
-					"options":            "{\\\"includes\\\":[],\\\"excludes\\\":[]}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -156,7 +155,6 @@ func TestAccAlicloudHBRRestoreJob_basic2(t *testing.T) {
 						"source_type":    "ECS_FILE",
 						"restore_type":   "ECS_FILE",
 						"target_path":    "/",
-						"options":        "{\"includes\":[],\"excludes\":[]}",
 					}),
 				),
 			},

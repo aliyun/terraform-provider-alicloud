@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -105,7 +106,11 @@ func TestAccAlicloudHbrSnapshotsDataSource(t *testing.T) {
 		}),
 	}
 
-	HbrSnapshotCheckInfo.dataSourceTestCheck(t, rand, ecsBackupConf, ossBackupConf, nasBackupConf, statusBackupConf, completeTimeBackupConf, betweenTimeBackupConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.HbrSupportRegions)
+	}
+
+	HbrSnapshotCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, ecsBackupConf, ossBackupConf, nasBackupConf, statusBackupConf, completeTimeBackupConf, betweenTimeBackupConf)
 }
 
 func testAccCheckAlicloudHbrSnapshotSourceConfig(rand int, attrMap map[string]string) string {
