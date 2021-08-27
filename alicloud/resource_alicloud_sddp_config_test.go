@@ -43,7 +43,7 @@ func TestAccAlicloudSDDPConfig_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-						"value": "40",
+					"value": "40",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -63,9 +63,9 @@ func TestAccAlicloudSDDPConfig_basic0(t *testing.T) {
 			//	),
 			//},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"lang"},
 			},
 		},
@@ -126,9 +126,9 @@ func TestAccAlicloudSDDPConfig_basic1(t *testing.T) {
 			//	),
 			//},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"lang"},
 			},
 		},
@@ -189,18 +189,16 @@ func TestAccAlicloudSDDPConfig_basic2(t *testing.T) {
 			//	),
 			//},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"lang"},
 			},
 		},
 	})
 }
 
-var AlicloudSDDPConfigMap0 = map[string]string{
-
-}
+var AlicloudSDDPConfigMap0 = map[string]string{}
 
 func AlicloudSDDPConfigBasicDependence0(name string) string {
 	return fmt.Sprintf(` 

@@ -68,12 +68,12 @@ func TestAccAlicloudHbrRestoreJobsDataSource(t *testing.T) {
 
 	restoreBackupConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrRestoreJobSourceConfig(rand, map[string]string{
-			"restore_type":          `"NAS"`,
-			"restore_id":            `["${alicloud_hbr_restore_job.default.restore_job_id}"]`,
+			"restore_type": `"NAS"`,
+			"restore_id":   `["${alicloud_hbr_restore_job.default.restore_job_id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrRestoreJobSourceConfig(rand, map[string]string{
-			"restore_type":          `"NAS"`,
-			"restore_id":            `["${alicloud_hbr_restore_job.default.restore_job_id}_fake"]`,
+			"restore_type": `"NAS"`,
+			"restore_id":   `["${alicloud_hbr_restore_job.default.restore_job_id}_fake"]`,
 		}),
 	}
 

@@ -19,7 +19,7 @@ func TestAccAlicloudRdsParameterGroup_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tftestAccAlicloudRdsParameterGroup%d", rand)
+	name := fmt.Sprintf("tf-testAccAlicloudRdsParameterGroup%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRdsParameterGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
