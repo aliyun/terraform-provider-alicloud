@@ -111,7 +111,7 @@ groups:
       - Oos
       - Amqp
       - CloudFirewall
-      - Sddp
+      - SDDP
       - DirectMail
       - SAS
       - DFS
@@ -1466,7 +1466,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Ecd"
 
-  - name: Sddp
+  - name: SDDP
     plan:
       - <<: *clone-provider
       - get: trigger
