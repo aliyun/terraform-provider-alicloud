@@ -47,19 +47,21 @@ resource "alicloud_hbr_restore_job" "default" {
 }
 ```
 
+-> **NOTE:** This resource can only be created, cannot be modified or deleted. Therefore, any modification of the resource attribute will not affect exist resource.
+
 ## Argument Reference
 
 The following arguments are supported:
 
-* `restore_job_id` - (Required, ForceNew) Restore Job ID. It's the unique key of this resource, you must specify a keyword.
+* `restore_job_id` - (Required, ForceNew) Restore Job ID. It's the unique key of this resource, you must specify a unique keyword.
 * `vault_id` - (Required, ForceNew) The ID of Vault.
 * `source_type` - (Required, ForceNew) The Type of Data Source. Valid values: `ECS_FILE`, `NAS`, `OSS`.
 * `restore_type` - (Required, ForceNew) The Recovery Destination Types. Valid values: `ECS_FILE`, `NAS`, `OSS`. **Note**: Currently, there is a one-to-one correspondence between the data source type with the recovery destination type.
 * `snapshot_hash` - (Required, ForceNew) Restore Snapshot of HashCode.
 * `snapshot_id` - (Required, ForceNew) The ID of Snapshot.
 * `options` - (Optional, ForceNew) Recovery Options. It's a json string with format:`"{"includes":[],"excludes":[]}",`.
-* `exclude` - (Optional) The exclude.
-* `include` - (Optional) The include.
+* `exclude` - (Optional while source_type equals `ECS_FILE`, ForceNew) The exclude path. It's a json string with format:`["/home", "/exclude"]`. 
+* `include` - (Optional while source_type equals `ECS_FILE`, ForceNew) The include path. It's a json string with format:`["/home", "/include"]`.
 * `target_bucket` - (Required while source_type equals `OSS`, ForceNew) The Target ofo OSS Bucket Name.
 * `target_prefix` - (Required while source_type equals `OSS`, ForceNew) The Target of the OSS Object Prefix.
 * `target_file_system_id` - (Required while source_type equals `NAS`, ForceNew) The Destination File System ID.

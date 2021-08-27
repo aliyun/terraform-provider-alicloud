@@ -35,7 +35,7 @@ func resourceAlicloudHbrRestoreJob() *schema.Resource {
 			},
 			"options": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 			"restore_job_id": {
