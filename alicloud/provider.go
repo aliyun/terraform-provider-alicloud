@@ -500,6 +500,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_applications":                            dataSourceAlicloudSaeApplications(),
 			"alicloud_alb_rules":                                   dataSourceAlicloudAlbRules(),
 			"alicloud_cms_metric_rule_templates":                   dataSourceAlicloudCmsMetricRuleTemplates(),
+			"alicloud_iot_device_groups":                           dataSourceAlicloudIotDeviceGroups(),
 			"alicloud_express_connect_virtual_border_routers":      dataSourceAlicloudExpressConnectVirtualBorderRouters(),
 			"alicloud_imm_projects":                                dataSourceAlicloudImmProjects(),
 		},
@@ -897,6 +898,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_application":                            resourceAlicloudSaeApplication(),
 			"alicloud_alb_rule":                                   resourceAlicloudAlbRule(),
 			"alicloud_cms_metric_rule_template":                   resourceAlicloudCmsMetricRuleTemplate(),
+			"alicloud_iot_device_group":                           resourceAlicloudIotDeviceGroup(),
 			"alicloud_express_connect_virtual_border_router":      resourceAlicloudExpressConnectVirtualBorderRouter(),
 			"alicloud_imm_project":                                resourceAlicloudImmProject(),
 		},
@@ -1075,6 +1077,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.AlidfsEndpoint = strings.TrimSpace(endpoints["alidfs"].(string))
 		config.EhpcEndpoint = strings.TrimSpace(endpoints["ehpc"].(string))
 		config.EnsEndpoint = strings.TrimSpace(endpoints["ens"].(string))
+		config.IotEndpoint = strings.TrimSpace(endpoints["iot"].(string))
 		config.ImmEndpoint = strings.TrimSpace(endpoints["imm"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
@@ -1336,6 +1339,8 @@ func init() {
 
 		"ens_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ens endpoints.",
 
+		"iot_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom iot endpoints.",
+
 		"imm_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom imm endpoints.",
 	}
 }
@@ -1381,6 +1386,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"iot": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["iot_endpoint"],
+				},
+
 				"imm": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2035,6 +2047,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["alidfs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ehpc"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ens"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["iot"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["imm"].(string)))
 	return hashcode.String(buf.String())
 }
