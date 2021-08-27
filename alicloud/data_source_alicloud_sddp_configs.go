@@ -115,8 +115,8 @@ func dataSourceAlicloudSddpConfigsRead(d *schema.ResourceData, meta interface{})
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$", response)
 	}
 	var configlistMap map[string]interface{}
-	if _,ok := resp.(map[string]interface{});ok{
-		configlistMap =  resp.(map[string]interface{})
+	if _, ok := resp.(map[string]interface{}); ok {
+		configlistMap = resp.(map[string]interface{})
 	}
 
 	result, _ := configlistMap["ConfigList"].([]interface{})

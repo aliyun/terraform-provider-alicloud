@@ -127,7 +127,7 @@ func dataSourcePrivatelinkVpcEndpointsDependence(name string) string {
 	  name_regex = "default-NODELETING"
 	}
 	resource "alicloud_security_group" "default" {
-	  name        = "tftest"
+	  name        = "tf-testAcc-for-privatelink"
 	  description = "privatelink test security group"
 	  vpc_id      = data.alicloud_vpcs.default.ids.0
 	}

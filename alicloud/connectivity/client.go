@@ -3321,7 +3321,6 @@ func (client *AliyunClient) NewSddpClient() (*rpc.Client, error) {
 	//	endpoint = v.(string)
 	//}
 
-
 	sdkConfig := client.teaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)

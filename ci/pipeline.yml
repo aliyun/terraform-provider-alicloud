@@ -111,7 +111,7 @@ groups:
       - Oos
       - Amqp
       - CloudFirewall
-      - Sddp
+      - SDDP
       - DirectMail
       - SAS
       - DFS
@@ -1471,7 +1471,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Ecd"
 
-  - name: Sddp
+  - name: SDDP
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1489,7 +1489,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 1830Thu
+        resource: 0030Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -2210,13 +2210,13 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
-  - name: 1830Thu
-    type: time
-    source:
-      start: 06:30 PM
-      stop: 10:50 PM
-      days: [Thursday]
-      location: {{time_location}}
+#  - name: 1830Thu
+#    type: time
+#    source:
+#      start: 06:30 PM
+#      stop: 10:50 PM
+#      days: [Thursday]
+#      location: {{time_location}}
 
 #  - name: 19Thu
 #    type: time
