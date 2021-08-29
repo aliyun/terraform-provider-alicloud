@@ -497,6 +497,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_restore_jobs":                            dataSourceAlicloudHbrRestoreJobs(),
 			"alicloud_alb_listeners":                               dataSourceAlicloudAlbListeners(),
 			"alicloud_sae_applications":                            dataSourceAlicloudSaeApplications(),
+			"alicloud_ens_key_pairs":                               dataSourceAlicloudEnsKeyPairs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -889,6 +890,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_restore_job":                            resourceAlicloudHbrRestoreJob(),
 			"alicloud_alb_listener":                               resourceAlicloudAlbListener(),
 			"alicloud_sae_application":                            resourceAlicloudSaeApplication(),
+			"alicloud_ens_key_pair":                               resourceAlicloudEnsKeyPair(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1064,6 +1066,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.SasEndpoint = strings.TrimSpace(endpoints["sas"].(string))
 		config.AlidfsEndpoint = strings.TrimSpace(endpoints["alidfs"].(string))
 		config.EhpcEndpoint = strings.TrimSpace(endpoints["ehpc"].(string))
+		config.EnsEndpoint = strings.TrimSpace(endpoints["ens"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1321,6 +1324,8 @@ func init() {
 		"alidfs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom alidfs endpoints.",
 
 		"ehpc_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ehpc endpoints.",
+
+		"ens_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ens endpoints.",
 	}
 }
 
@@ -1370,6 +1375,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["alidfs_endpoint"],
+				},
+
+				"ens": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ens_endpoint"],
 				},
 
 				"bastionhost": {
@@ -2004,6 +2016,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["sas"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["alidfs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ehpc"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ens"].(string)))
 	return hashcode.String(buf.String())
 }
 
