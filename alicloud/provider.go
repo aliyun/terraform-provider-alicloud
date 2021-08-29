@@ -497,6 +497,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_restore_jobs":                            dataSourceAlicloudHbrRestoreJobs(),
 			"alicloud_alb_listeners":                               dataSourceAlicloudAlbListeners(),
 			"alicloud_ens_key_pairs":                               dataSourceAlicloudEnsKeyPairs(),
+			"alicloud_sae_applications":                            dataSourceAlicloudSaeApplications(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -889,6 +890,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_restore_job":                            resourceAlicloudHbrRestoreJob(),
 			"alicloud_alb_listener":                               resourceAlicloudAlbListener(),
 			"alicloud_ens_key_pair":                               resourceAlicloudEnsKeyPair(),
+			"alicloud_sae_application":                            resourceAlicloudSaeApplication(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
