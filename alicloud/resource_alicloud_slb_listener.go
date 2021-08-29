@@ -852,6 +852,10 @@ func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) (*request
 	if description, ok := d.GetOk("description"); ok && description.(string) != "" {
 		request.QueryParams["Description"] = description.(string)
 	}
+	// scheduler
+	if scheduler, ok := d.GetOk("scheduler"); ok && scheduler.(string) != "" {
+		request.QueryParams["Scheduler"] = scheduler.(string)
+	}
 
 	return request, nil
 
