@@ -83,7 +83,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 			},
 			"scheduler": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"wrr", "wlc", "rr", "sch"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"wrr", "wlc", "rr", "sch", "tch", "qch"}, false),
 				Optional:     true,
 				Default:      WRRScheduler,
 			},
