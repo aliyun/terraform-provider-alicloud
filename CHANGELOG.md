@@ -1,4 +1,60 @@
-## 1.133.0 (Unreleased)
+## 1.134.0 (Unreleased)
+## 1.133.0 (August 30, 2021)
+
+- **New Resource:** `alicloud_ens_key_pair` [GH-3917]
+- **New Resource:** `alicloud_sae_application` [GH-3916]
+- **New Resource:** `alicloud_alb_rule` [GH-3915]
+- **New Resource:** `alicloud_security_center_group` [GH-3867]
+- **New Resource:** `alicloud_alb_acls` [GH-3853]
+- **New Resource:** `alicloud_bastionhost_user` [GH-3893]
+- **New Resource:** `alicloud_dfs_access_group` [GH-3885]
+- **New Resource:** `alicloud_ehpc_job_template` [GH-3871]
+- **New Resource:** `alicloud_sddp_config` [GH-3889]
+- **New Resource:** `alicloud_hbr_restore_job` [GH-3890]
+- **New Resource:** `alicloud_alb_listener` [GH-3908]
+- **New Data Source:** `alicloud_ens_key_pairs` [GH-3917]
+- **New Data Source:** `alicloud_sae_applications` [GH-3916]
+- **New Data Source:** `alicloud_alb_rules` [GH-3915]
+- **New Data Source:** `alicloud_security_center_groups` [GH-3867]
+- **New Data Source:** `alicloud_alb_acls` [GH-3853]
+- **New Data Source:** `alicloud_hbr_snapshots` [GH-3883]
+- **New Data Source:** `alicloud_bastionhost_users` [GH-3893]
+- **New Data Source:** `alicloud_dfs_access_groups` [GH-3885]
+- **New Data Source:** `alicloud_ehpc_job_templates` [GH-3871]
+- **New Data Source:** `alicloud_sddp_configs` [GH-3889]
+- **New Data Source:** `alicloud_hbr_restore_jobs` [GH-3890]
+- **New Data Source:** `alicloud_alb_listeners` [GH-3908]
+
+ENHANCEMENTS:
+
+- resource/alicloud_slb_listener: Attribute scheduler support more values tch and qch [GH-3924]
+- resource/alicloud_slb_listener: Supports to setting scheduler in the creating to fix it cannot modify [GH-3923]
+- resource/alicloud_bastionhost_instance: Enlarges the create timeout and improves its docs [GH-3899]
+- resource/alicloud_alb_security_policy: add formatInt(response["TotalCount"]) == 0 selection [GH-3902]
+- resource/alicloud_log_store: Adds retry in sls delete logstore and fix resource logtail config nil bug [GH-3887]
+- resource/alicloud_event_bridge_service: Optimize the way to activate the service [GH-3902]
+- resource/alicloud_hbr_restore_job: update property options and fix hbr snapshot datasource testcase [GH-3914]
+- datasource/alicloud_hbr_snapshots: update timechecker [GH-3906]
+- testcase/alicloud_alb_server_group: Optimize the creation of test-dependent [GH-3902]
+- ECS instances testcase: Limit ALB supported regions testcase: Limit Event Bridge [GH-3902]
+- supported regions testcase: Limit DFS supported regions docs/alb_server_group: Optimization Basic Usage Example [GH-3902]
+- provider: Adds two new attribute source_ip and security_transport [GH-3900]
+- testcase: Improves the sweeper testcases [GH-3884]
+- testcase: Improves the testcase for fetching default vpc and vswitch [GH-3895]
+- testcase: Renames the testcase name by classifing them with product code [GH-3897]
+- testcase: Improves the testcase resource name [GH-3904]
+
+BUG FIXES:
+
+- resource/alicloud_polardb_cluster: Fixes the resource not found error [GH-3896]
+- resource/alicloud_arms_contact: Fixes the ParameterMissing error when invoking UpdateAlertContact [GH-3898]
+- resource/alicloud_elasticsearch_instance: Fixes the GetCustomerLabelFail error by adding retry [GH-3901]
+- resource/alicloud_bastihost_instance: Fixes the InvalidApi error [GH-3903]
+- resource/alicloud_sddp_rule: Fixes the Sddp's Endpoint [GH-3907]
+- Fixes the concurrent write bug when describing the endpoints [GH-3894]
+- testcase: Fixes hbr snapshot doc and test case [GH-3905]
+- testcase: Fixed lang's import bug for sddp config [GH-3909]
+
 ## 1.132.0 (August 21, 2021)
 
 - **New Resource:** `alicloud_hbr_nas_backup_plan` ([#3810](https://github.com/aliyun/terraform-provider-alicloud/issues/3810))
