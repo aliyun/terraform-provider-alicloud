@@ -12,6 +12,9 @@ description: |-
 Provides a AnalyticDB for PostgreSQL instance resource supports replica set instances only. the AnalyticDB for PostgreSQL provides stable, reliable, and automatic scalable database services. 
 You can see detail product introduction [here](https://www.alibabacloud.com/help/doc-detail/35387.htm)
 
+-> **NOTE:**  This resource is used to manage a Reserved Storage Mode instance, and creating new reserved storage mode instance is no longer supported since v1.127.0. 
+You can still use this resource to manage the instance which has been already created, but can not create a new one. Or you also can use resource `alicloud_gpdb_elastic_instance` to create an instance which storage type is flexible.
+
 -> **NOTE:**  Available in 1.47.0+
 
 -> **NOTE:**  The following regions don't support create Classic network Gpdb instance.
@@ -19,8 +22,6 @@ You can see detail product introduction [here](https://www.alibabacloud.com/help
 
 -> **NOTE:**  Create instance or change instance would cost 10~15 minutes. Please make full preparation.
 
--> **NOTE:**  This resource is used to manage a Reserved Storage Mode instance, and creating a new reserved storage mode instance is no longer supported since v1.127.0. 
-You can still use this resource to manage the instance which has been already created, but can not create a new one. 
 
 ## Example Usage
 

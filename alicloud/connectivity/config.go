@@ -85,7 +85,6 @@ type Config struct {
 	HBaseEndpoint            string
 	AdbEndpoint              string
 	MaxComputeEndpoint       string
-
 	edasEndpoint                string
 	SkipRegionValidation        bool
 	ConfigurationSource         string
@@ -137,6 +136,7 @@ type Config struct {
 	AlidfsEndpoint              string
 	EhpcEndpoint                string
 	EnsEndpoint                 string
+	GpdbEndpoint                string
 }
 
 func (c *Config) loadAndValidate() error {

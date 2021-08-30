@@ -148,6 +148,9 @@ func TestAccAlicloudGpdbElasticInstanceVpc(t *testing.T) {
 						"instance_network_type":   "VPC",
 						"payment_type":            "PayAsYouGo",
 						"vswitch_id":              CHECKSET,
+						"master_node_num":         "1",
+						"encryption_type":         "Off",
+						"encryption_key":          "",
 					}),
 				),
 			},
@@ -175,20 +178,152 @@ func TestAccAlicloudGpdbElasticInstanceVpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_ip_list.#": "1",
-						"security_ip_list.0": "10.168.1.12",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_enabled": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_enabled": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"preferred_backup_period": "Saturday",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"preferred_backup_period": "Saturday",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"preferred_backup_time": "15:00Z-16:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"preferred_backup_time": "15:00Z-16:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_retention_period": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_retention_period": "6",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_retention_period": "6",
+					"enable_recovery_point": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_retention_period": "6",
+						"enable_recovery_point": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_retention_period": "6",
+					"enable_recovery_point": "true",
+					"recovery_point_period": "4",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_retention_period": "6",
+						"enable_recovery_point": "true",
+						"recovery_point_period": "4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "Terraform",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%": "1",
+						"tags.Created": "Terraform",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameters": []map[string]string{
+						{
+							"name": "statement_timeout",
+							"value": "10800010",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"force_restart_instance": "true",
+					"parameters": []map[string]string{
+						{
+							"name": "statement_timeout",
+							"value": "10800020",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#": "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_description": "tf-testAccGpdbInstance_elastic_6.0",
-					"security_ip_list":        []string{"10.168.1.13"},
+					"security_ip_list":        []string{"10.168.1.12", "10.168.1.13"},
+					"ssl_enabled":             "2",
+					"preferred_backup_period": "Sunday",
+					"preferred_backup_time":   "14:00Z-15:00Z",
+					"backup_retention_period": "7",
+					"enable_recovery_point":   "true",
+					"recovery_point_period":   "8",
+					"tags":                    REMOVEKEY,
+					"force_restart_instance":  "false",
+					"parameters": []map[string]string{
+						{
+							"name": "statement_timeout",
+							"value": "10800030",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_instance_description": "tf-testAccGpdbInstance_elastic_6.0",
-						"security_ip_list.#":      "1",
-						"security_ip_list.0":      "10.168.1.13",
+						"db_instance_description":     "tf-testAccGpdbInstance_elastic_6.0",
+						"security_ip_list.#":          "2",
+						"ssl_enabled":                 "2",
+						"preferred_backup_period":     "Sunday",
+						"preferred_backup_time":       "14:00Z-15:00Z",
+						"backup_retention_period":     "7",
+						"enable_recovery_point":       "true",
+						"recovery_point_period":       "8",
+						"tags.%":                      REMOVEKEY,
+						"tags.Created":                REMOVEKEY,
+						"force_restart_instance":      "false",
+						"parameters.#":                "1",
 					}),
 				),
 			},
