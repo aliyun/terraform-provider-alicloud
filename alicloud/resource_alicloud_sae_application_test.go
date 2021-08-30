@@ -30,7 +30,7 @@ func testSweepSaeApplication(region string) error {
 	prefixes := []string{
 		"tftestacc",
 	}
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegionWithBackendRegions(region, true, connectivity.SaeSupportRegions)
 	if err != nil {
 		return WrapErrorf(err, "Error getting Alicloud client.")
 	}
