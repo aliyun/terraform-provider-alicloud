@@ -216,5 +216,5 @@ The following attributes are exported:
 Load balancer listener can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_slb_listener.example "lb-abc123456:22"
+$ terraform import alicloud_slb_listener.example "lb-abc123456:tcp:22"
 ```
