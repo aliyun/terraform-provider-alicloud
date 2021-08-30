@@ -26,11 +26,11 @@ data "alicloud_instances" "default" {
 }
 
 resource "alicloud_hbr_ecs_backup_client" "example" {
-  instance_id = data.alicloud_instances.default.instances.0.id
-  use_https          =  false
-  data_network_type  =  "PUBLIC"
-  max_cpu_core       =  2
-  max_worker         =  4
+  instance_id        = data.alicloud_instances.default.instances.0.id
+  use_https          = false
+  data_network_type  = "PUBLIC"
+  max_cpu_core       = 2
+  max_worker         = 4
   data_proxy_setting = "USE_CONTROL_PROXY"
   proxy_host         = "192.168.11.101"
   proxy_port         = 80
@@ -43,17 +43,17 @@ resource "alicloud_hbr_ecs_backup_client" "example" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required, ForceNew) The ECS Instance Id.
-* `use_https` - (Optional) Indicates Whether to Use the Https Transport Data Plane Data. Valid values: `true`, `false`.
+* `instance_id` - (Required, ForceNew) The ID of ECS instance.
+* `use_https` - (Optional) Indicates whether to use the HTTPS protocol. Valid values: `true`, `false`.
 * `status` - (Optional, Computed) Status of client. Valid values: `ACTIVATED`, `STOPPED`.
-* `data_network_type` - (Optional) The Data Plane Data Access Point Type. Valid values: `CLASSIC`, `PUBLIC`, `VPC`.
-* `data_proxy_setting` - (Optional, Computed) The Data Plane Proxy Settings. Valid values: `CUSTOM`, `DISABLE`, `USE_CONTROL_PROXY`.
-* `max_cpu_core` - (Optional) A Single Backup Task Uses for Example, Instances Can Be Grouped According to CPU Core Count, 0 Means No Restrictions.
-* `max_worker` - (Optional) A Single Backup Task Parallel Work, the Number of 0 Means No Restrictions.
-* `proxy_host` - (Optional) Custom Data Plane Proxy Server Host Address.
-* `proxy_port` - (Optional) Custom Data Plane Proxy Server Host Port.
-* `proxy_user` - (Optional) Custom Data Plane Proxy Server Username.
-* `proxy_password` - (Optional) Custom Data Plane Proxy Password.
+* `data_network_type` - (Optional) The data plane access point type. Valid values: `CLASSIC`, `PUBLIC`, `VPC`.
+* `data_proxy_setting` - (Optional, Computed) The data plane proxy settings. Valid values: `CUSTOM`, `DISABLE`, `USE_CONTROL_PROXY`.
+* `max_cpu_core` - (Optional) Number of CPU cores used by a single backup task, 0 means no restrictions.
+* `max_worker` - (Optional) Number of concurrent jobs for a single backup task, 0 means no restrictions.
+* `proxy_host` - (Optional) Custom data plane proxy server host address.
+* `proxy_port` - (Optional) Custom data plane proxy server host port.
+* `proxy_user` - (Optional) Username of custom data plane proxy server.
+* `proxy_password` - (Optional) Custom data plane proxy server password.
 
 ## Attributes Reference
 
@@ -63,14 +63,14 @@ The following attributes are exported:
 
 ## Notice
 
-> Please read the following precautions carefully before deleting a client:
-
+-> **Note:** Please read the following precautions carefully before deleting a client:
 1. You cannot delete active clients that have received heartbeat packets within one hour.
-2. You can make the client inactive by change the status of client to `ACTIVATED`.
+2. You can make the client inactive by change the status of client to `STOPPED`.
 3. The resources bound to the client will be deleted in cascade, including:
-- Backup plan
-- Backup task (Running in the background)
-- Snapshot
+    - Backup plan
+    - Backup task (Running in the background)
+    - Snapshot
+
 
 ## Import
 

@@ -4,14 +4,14 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_hbr_ecs_backup_plan"
 sidebar_current: "docs-alicloud-resource-hbr-ecs-backup-plan"
 description: |-
-  Provides a Alicloud HBR Ecs Backup Plan resource.
+  Provides a Alicloud Hybrid Backup Recovery (HBR) Ecs Backup Plan resource.
 ---
 
 # alicloud\_hbr\_ecs\_backup\_plan
 
 Provides a HBR Ecs Backup Plan resource.
 
-For information about HBR Ecs Backup Plan and how to use it, see [What is Ecs Backup Plan](https://www.alibabacloud.com/help/doc-detail/186568.htm).
+For information about HBR Ecs Backup Plan and how to use it, see [What is Ecs Backup Plan](https://www.alibabacloud.com/help/doc-detail/186574.htm).
 
 -> **NOTE:** Available in v1.132.0+.
 
@@ -27,7 +27,7 @@ resource "alicloud_hbr_ecs_backup_plan" "example" {
   retention            = "1"
   schedule             = "I|1602673264|PT2H"
   backup_type          = "COMPLETE"
-  speed_limit          = "I|1602673264|PT2H"
+  speed_limit          = "0:24:5120"
   path                 = ["/home", "/var"]
   exclude              = <<EOF
   ["/home/exclude"]
@@ -40,20 +40,25 @@ resource "alicloud_hbr_ecs_backup_plan" "example" {
 
 ## Argument Reference
 
-The following arguments are supported:
+The following arguments are support:
 
-* `ecs_backup_plan_name` - (Required) The Configuration Page of a Backup Plan Name. 1-64 Characters, requiring a Single Warehouse under Each of the Data Source Type Drop-down List of the Configuration Page of a Backup Plan Name Is Unique.
-* `vault_id` - (Required, ForceNew) Vault ID.
-* `instance_id` - (Required, ForceNew) The ECS Instance Id. Must Have Installed the Client.
-* `retention` - (Required) Backup Retention Period, the Minimum Value of 1.
-* `schedule` - (Required) Backup strategy. Optional format: I|{startTime}|{interval} * startTime Backup start time, UNIX time, in seconds. * interval ISO8601 time interval. E.g: ** PT1H, one hour apart. ** P1D, one day apart. It means to execute a backup task every {interval} starting from {startTime}. The backup task for the elapsed time will not be compensated. If the last backup task is not completed, the next backup task will not be triggered.
-* `disabled` - (Optional) Whether to Disable the Backup Task. Valid Values: true, false.
-* `backup_type` - (Optional, Computed, ForceNew) Backup Type. Valid Values: * Complete. Valid values: `COMPLETE`.
-* `options` - (Optional) Windows System with Application Consistency Using VSS. eg: {`UseVSS`:false}.
-* `speed_limit` - (Optional) flow control. The format is: {start}|{end}|{bandwidth} * start starting hour * end end hour * bandwidth limit rate, in KiB ** Use | to separate multiple flow control configurations; ** Multiple flow control configurations are not allowed to have overlapping times.
-* `path` - (Optional) Backup Path. e.g. `["/home", "/var"]`
-* `exclude` - (Optional) Exclude Path. String of Json List, most 255 Characters. e.g. `"[\"/home/work\"]"`
-* `include` - (Optional) Include Path. String of Json List, most 255 Characters. e.g. `"[\"/var\"]"`
+* `ecs_backup_plan_name` - (Required) The name of the backup plan. 1~64 characters, the backup plan name of each data source type in a single warehouse required to be unique.
+* `vault_id` - (Required, ForceNew) The ID of Backup vault.
+* `instance_id` - (Required, ForceNew) The ID of ECS instance. The ecs backup client must have been installed on the host.
+* `retention` - (Required) Backup retention days, the minimum is 1.
+* `schedule` - (Required) Backup strategy. Optional format: I|{startTime}|{interval}. It means to execute a backup task every {interval} starting from {startTime}. The backup task for the elapsed time will not be compensated. If the last backup task is not completed yet, the next backup task will not be triggered.
+    * `startTime` Backup start time, UNIX time seconds.
+    * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `1D` means one day apart. 
+* `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
+* `backup_type` - (Optional, Computed, ForceNew) Backup type. Valid values: `COMPLETE`.
+* `options` - (Optional) Windows operating system with application consistency using VSS. eg: {`UseVSS`:false}.
+* `speed_limit` - (Optional) Flow control. The format is: {start}|{end}|{bandwidth}. Use `|` to separate multiple flow control configurations, multiple flow control configurations not allowed to have overlapping times.
+    * `start` starting hour 
+    * `end` end hour 
+    * `bandwidth` limit rate, in KiB
+* `path` - (Optional) Backup path. e.g. `["/home", "/var"]`
+* `exclude` - (Optional) Exclude path. String of Json list, up to 255 characters. e.g. `"[\"/home/work\"]"`
+* `include` - (Optional) Include path. String of Json list, up to 255 characters. e.g. `"[\"/var\"]"`
 
 
 ## Attributes Reference
