@@ -249,6 +249,58 @@ func TestAccAlicloudConfigCompliancePack_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudConfigCompliancePack_basic0(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_compliance_pack.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigCompliancePackMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigCompliancePack")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigcompliancepack%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigCompliancePackBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compliance_pack_name":        name,
+					"compliance_pack_template_id": "ct-3d20ff4e06a30027f76e",
+					"config_rules": []map[string]interface{}{
+						{
+							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
+						},
+					},
+					"description": name,
+					"risk_level":  "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compliance_pack_name":        name,
+						"compliance_pack_template_id": "ct-3d20ff4e06a30027f76e",
+						"config_rules.#":              "1",
+						"description":                 name,
+						"risk_level":                  "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudConfigCompliancePackMap0 = map[string]string{
 	"compliance_pack_name":        CHECKSET,
 	"compliance_pack_template_id": CHECKSET,

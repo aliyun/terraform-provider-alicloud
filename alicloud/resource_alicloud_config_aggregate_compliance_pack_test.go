@@ -307,6 +307,61 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudConfigAggregateCompliancePack_basic0(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregate_compliance_pack.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateCompliancePackMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregateCompliancePack")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigaggregatecompliancepack%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateCompliancePackBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_id":                  "${data.alicloud_config_aggregators.default.ids.0}",
+					"aggregate_compliance_pack_name": name,
+					"compliance_pack_template_id":    "ct-3d20ff4e06a30027f76e",
+					"config_rules": []map[string]interface{}{
+						{
+							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
+						},
+					},
+					"description": name,
+					"risk_level":  "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_id":                  CHECKSET,
+						"aggregate_compliance_pack_name": name,
+						"compliance_pack_template_id":    "ct-3d20ff4e06a30027f76e",
+						"config_rules.#":                 "1",
+						"description":                    name,
+						"risk_level":                     "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudConfigAggregateCompliancePackMap0 = map[string]string{
 	"aggregator_id":                  CHECKSET,
 	"aggregate_compliance_pack_name": CHECKSET,
