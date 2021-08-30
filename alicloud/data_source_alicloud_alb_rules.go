@@ -17,11 +17,6 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudAlbRulesRead,
 		Schema: map[string]*schema.Schema{
-			"listener_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"listener_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -357,9 +352,6 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 
 	action := "ListRules"
 	request := make(map[string]interface{})
-	if v, ok := d.GetOk("listener_id"); ok {
-		request["ListenerIds.1"] = v
-	}
 	if m, ok := d.GetOk("listener_ids"); ok {
 		for k, v := range m.([]interface{}) {
 			request[fmt.Sprintf("ListenerIds.%d", k+1)] = v.(string)

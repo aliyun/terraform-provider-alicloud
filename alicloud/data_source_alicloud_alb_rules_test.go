@@ -22,15 +22,6 @@ func TestAccAlicloudAlbRulesDataSource(t *testing.T) {
 		}),
 	}
 
-	listenerIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudAlbRuleDataSourceName(rand, map[string]string{
-			"listener_id": `"${alicloud_alb_listener.default.id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudAlbRuleDataSourceName(rand, map[string]string{
-			"listener_id": `"${alicloud_alb_listener.default.id}_fake"`,
-		}),
-	}
-
 	listenerIdsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAlbRuleDataSourceName(rand, map[string]string{
 			"listener_ids": `["${alicloud_alb_listener.default.id}"]`,
@@ -84,7 +75,6 @@ func TestAccAlicloudAlbRulesDataSource(t *testing.T) {
 			"rule_ids":          `["${alicloud_alb_rule.default.id}"]`,
 			"name_regex":        `"${alicloud_alb_rule.default.rule_name}"`,
 			"status":            `"Available"`,
-			"listener_id":       `"${alicloud_alb_listener.default.id}"`,
 			"listener_ids":      `["${alicloud_alb_listener.default.id}"]`,
 			"load_balancer_ids": `["${alicloud_alb_load_balancer.default.id}"]`,
 		}),
@@ -93,7 +83,6 @@ func TestAccAlicloudAlbRulesDataSource(t *testing.T) {
 			"rule_ids":          `["${alicloud_alb_rule.default.id}_fake"]`,
 			"status":            `"Configuring"`,
 			"name_regex":        `"${alicloud_alb_rule.default.rule_name}_fake"`,
-			"listener_id":       `"${alicloud_alb_listener.default.id}_fake"`,
 			"listener_ids":      `["${alicloud_alb_listener.default.id}_fake"]`,
 			"load_balancer_ids": `["${alicloud_alb_load_balancer.default.id}_fake"]`,
 		}),
@@ -121,7 +110,7 @@ func TestAccAlicloudAlbRulesDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
 	}
-	alicloudAlbRuleCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, ruleIdsConf, idsConf, nameRegexConf, listenerIdConf, listenerIdsConf, statusConf, loadBalancerIdsConf, allConf)
+	alicloudAlbRuleCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, ruleIdsConf, idsConf, nameRegexConf, listenerIdsConf, statusConf, loadBalancerIdsConf, allConf)
 }
 func testAccCheckAlicloudAlbRuleDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

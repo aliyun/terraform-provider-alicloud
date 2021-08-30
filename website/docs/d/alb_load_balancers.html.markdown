@@ -3,7 +3,7 @@ subcategory: "Application Load Balancer (ALB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alb_load_balancers"
 sidebar_current: "docs-alicloud-datasource-alb-load-balancers"
-description: |- Provides a list of Alb Load Balancers to the user.
+  description: |- Provides a list of Alb Load Balancers to the user.
 ---
 
 # alicloud\_alb\_load\_balancers
