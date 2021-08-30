@@ -11,7 +11,7 @@ description: |-
 
 Provides a HBR Oss Backup Plan resource.
 
-For information about HBR Oss Backup Plan and how to use it, see [What is Oss Backup Plan](https://www.alibabacloud.com/product/hybrid-backup-recovery).
+For information about HBR Oss Backup Plan and how to use it, see [What is Oss Backup Plan](https://www.alibabacloud.com/help/doc-detail/130040.htm).
 
 -> **NOTE:** Available in v1.131.0+.
 
@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "%s"
+  default = "example_value"
 }
 
 resource "alicloud_hbr_vault" "default" {
@@ -29,7 +29,7 @@ resource "alicloud_hbr_vault" "default" {
 }
 
 data "alicloud_oss_buckets" "default" {
-  name_regex = "bosh-cf-blobstore-hz"
+  name_regex = "oss_bucket_example_name"
 }
 
 resource "alicloud_hbr_oss_backup_plan" "example" {
@@ -47,13 +47,15 @@ resource "alicloud_hbr_oss_backup_plan" "example" {
 
 The following arguments are supported:
 
-* `oss_backup_plan_name` - (Required) The Configuration Page of a Backup Plan Name. 1-64 Characters, requiring a Single Warehouse under Each of the Data Source Type Drop-down List of the Configuration Page of a Backup Plan Name Is Unique.
-* `vault_id` - (Required, ForceNew) Vault ID.
-* `bucket` - (Required, ForceNew) The OSS Bucket Name.
-* `retention` - (Required) Backup Retention Period, the Minimum Value of 1.
-* `schedule` - (Required) Backup strategy. Optional format: I|{startTime}|{interval} * startTime Backup start time, UNIX time, in seconds. * interval ISO8601 time interval. E.g: ** PT1H, one hour apart. ** P1D, one day apart. It means to execute a backup task every {interval} starting from {startTime}. The backup task for the elapsed time will not be compensated. If the last backup task is not completed, the next backup task will not be triggered.
-* `disabled` - (Optional) Whether to Disable the Backup Task. Valid Values: true, false.
-* `backup_type` - (Optional, Computed, ForceNew) Backup Type. Valid Values: * Complete. Valid values: `COMPLETE`.
+* `oss_backup_plan_name` - (Required) The name of the backup plan. 1~64 characters, the backup plan name of each data source type in a single warehouse required to be unique.
+* `vault_id` - (Required, ForceNew) The ID of backup vault.
+* `bucket` - (Required, ForceNew) The name of OSS bucket.
+* `retention` - (Required) Backup retention days, the minimum is 1.
+* `schedule` - (Required) Backup strategy. Optional format: I|{startTime}|{interval}. It means to execute a backup task every {interval} starting from {startTime}. The backup task for the elapsed time will not be compensated. If the last backup task is not completed yet, the next backup task will not be triggered.
+    * `startTime` Backup start time, UNIX time seconds.
+    * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `1D` means one day apart.
+* `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
+* `backup_type` - (Optional, Computed, ForceNew) Backup Type. Valid values: `COMPLETE`.
 
 
 ## Attributes Reference

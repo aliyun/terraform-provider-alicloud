@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_hbr_ecs_backup_clients"
 sidebar_current: "docs-alicloud-datasource-hbr-ecs-backup-clients"
 description: |-
-  Provides a list of Hbr Ecs Backup Clients to the user.
+  Provides a list of Hybrid Backup Recovery (HBR) Ecs Backup Clients to the user.
 ---
 
 # alicloud\_hbr\_ecs\_backup\_clients
 
-This data source provides the Hbr Ecs Backup Clients of the current Alibaba Cloud user.
+This data source provides the Hbr Ecs File Backup Clients of the current Alibaba Cloud user.
 
 -> **NOTE:** Available in v1.132.0+.
 
@@ -47,29 +47,31 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `clients` - A list of Hbr Ecs Backup Clients. Each element contains the following attributes:
-	* `id` - The ID of the Ecs Backup Client.
-	* `instance_id` - The ID of ECS Instance.
-	* `instance_name` - ECS Instance Names.
-	* `arch_type` - The Client System Architecture (Only the ECS File Backup Client Is Available. Valid Values: `AMD64` , `386`.
-	* `backup_status` - Client protected status.
-	* `client_type` - The Client Type. Valid Values: `ECS_CLIENT` (ECS File Backup Client).
-	* `client_version` - Client Version.
-	* `create_time` - The Client Creates a Time. Unix Time Seconds.
-	* `data_network_type` - The Data Plane Data Access Point Type. Valid Values: `PUBLIC`, `VPC`, `CLASSIC`.
-	* `data_proxy_setting` - The Data Plane Proxy Settings. Valid Values: `DISABLE`, `USE_CONTROL_PROXY`, `CUSTOM`. **Note**: `USE_CONTROL_PROXY` (Default, the same with Control Plane), `CUSTOM` (Custom Configuration Items for the HTTP Protocol).
-	* `ecs_backup_client_id` - The first ID of the resource.
-	* `hostname` - The ECS Host Name.
-	* `last_heart_beat_time` - Client Last Heartbeat Time. Unix Time Seconds.
-	* `max_client_version` - The Latest Client Version.
-	* `max_cpu_core` - A Single Backup Task Uses for Example, Instances Can Be Grouped According to CPU Core Count, 0 Means No Restrictions.
-	* `max_worker` - A Single Backup Task Parallel Work, the Number of 0 Means No Restrictions.
-	* `os_type` - The Client System Type (Only the ECS File Backup Client Is Available. Possible Values: * windows * linux.
-	* `private_ipv4` - Instance Must Not Use the Intranet IP Address.
-	* `proxy_host` - Custom Data Plane Proxy Server Host Address.
-	* `proxy_password` - Custom Data Plane Proxy Password.
-	* `proxy_port` - Custom Data Plane Proxy Server Host Port.
-	* `proxy_user` - Custom Data Plane Proxy Server User Name.
-	* `status` - The status of the resource.
-	* `updated_time` - Client Update Time. Unix Time Seconds.
-	* `use_https` - Indicates Whether to Use the Https Transport Data Plane Data.
-	* `zone_id` - The Zone ID.
+    * `id` - The ID of the Ecs Backup Client.
+    * `instance_id` - The ID of ECS instance.
+    * `instance_name` - The name of ECS instance.
+    * `arch_type` - The system architecture of client, only the ECS File Backup Client is available. Valid values: `AMD64` , `386`.
+    * `backup_status` - Client protected status.
+    * `client_type` - The type of client. Valid values: `ECS_CLIENT` (ECS File Backup Client).
+    * `client_version` - The version of client.
+    * `create_time` - The creation time of client. Unix time seconds.
+    * `data_network_type` - The data plane access point type. Valid Values: `PUBLIC`, `VPC`, `CLASSIC`.
+    * `data_proxy_setting` - The data plane proxy settings. Valid Values: `DISABLE`, `USE_CONTROL_PROXY`, `CUSTOM`.
+        * `USE_CONTROL_PROXY` (Default, the same with control plane)
+        * `CUSTOM` (Custom configuration items for the HTTP protocol).
+    * `ecs_backup_client_id` - The first ID of the resource.
+    * `hostname` - The name of ECS host.
+    * `last_heart_beat_time` - Client last heartbeat time. Unix Time Seconds.
+    * `max_client_version` - The latest client version.
+    * `max_cpu_core` - Number of CPU cores used by a single backup task, 0 means no restrictions.
+    * `max_worker` - Number of concurrent jobs for a single backup task, 0 means no restrictions.
+    * `os_type` - The operating system type of client, only the ECS File Backup Client is available. Valid values: `windows`, `linux`.
+    * `private_ipv4` - Intranet IP address of the instance, only available for ECS file backup client.
+    * `proxy_host` - Custom data plane proxy server host address.
+    * `proxy_port` - Custom data plane proxy server host port.
+    * `proxy_user` - Username of custom data plane proxy server.
+    * `proxy_password` - Custom data plane proxy server password.
+    * `status` - The status of the resource.
+    * `updated_time` - The update time of client. Unix Time Seconds.
+    * `use_https` - Indicates whether to use the HTTPS protocol. Valid values: `true`, `false`.
+    * `zone_id` - The ID of Zone.
