@@ -501,6 +501,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_rules":                                   dataSourceAlicloudAlbRules(),
 			"alicloud_cms_metric_rule_templates":                   dataSourceAlicloudCmsMetricRuleTemplates(),
 			"alicloud_express_connect_virtual_border_routers":      dataSourceAlicloudExpressConnectVirtualBorderRouters(),
+			"alicloud_imm_projects":                                dataSourceAlicloudImmProjects(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -897,6 +898,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_rule":                                   resourceAlicloudAlbRule(),
 			"alicloud_cms_metric_rule_template":                   resourceAlicloudCmsMetricRuleTemplate(),
 			"alicloud_express_connect_virtual_border_router":      resourceAlicloudExpressConnectVirtualBorderRouter(),
+			"alicloud_imm_project":                                resourceAlicloudImmProject(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1073,6 +1075,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.AlidfsEndpoint = strings.TrimSpace(endpoints["alidfs"].(string))
 		config.EhpcEndpoint = strings.TrimSpace(endpoints["ehpc"].(string))
 		config.EnsEndpoint = strings.TrimSpace(endpoints["ens"].(string))
+		config.ImmEndpoint = strings.TrimSpace(endpoints["imm"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1332,6 +1335,8 @@ func init() {
 		"ehpc_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ehpc endpoints.",
 
 		"ens_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ens endpoints.",
+
+		"imm_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom imm endpoints.",
 	}
 }
 
@@ -1376,6 +1381,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"imm": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["imm_endpoint"],
+				},
+
 				"alidfs": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2023,6 +2035,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["alidfs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ehpc"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ens"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["imm"].(string)))
 	return hashcode.String(buf.String())
 }
 

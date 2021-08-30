@@ -137,6 +137,7 @@ type Config struct {
 	AlidfsEndpoint              string
 	EhpcEndpoint                string
 	EnsEndpoint                 string
+	ImmEndpoint                 string
 }
 
 func (c *Config) loadAndValidate() error {
