@@ -3,7 +3,7 @@ subcategory: "Application Load Balancer (ALB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alb_listeners"
 sidebar_current: "docs-alicloud-datasource-alb-listeners"
-description: |- Provides a list of Application Load Balancer (ALB) Listeners to the user.
+  description: |- Provides a list of Application Load Balancer (ALB) Listeners to the user.
 ---
 
 # alicloud\_alb\_listeners
