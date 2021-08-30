@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudDBConnectionConfigUpdate(t *testing.T) {
-	var v *rds.DBInstanceNetInfo
+	var v map[string]interface{}
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccDBconnection%s", rand)
 	var basicMap = map[string]string{

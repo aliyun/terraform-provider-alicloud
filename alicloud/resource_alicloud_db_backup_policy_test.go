@@ -4,35 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func testAccCheckDBBackupPolicyDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_db_backup_policy" {
-			continue
-		}
-		request := rds.CreateDescribeBackupPolicyRequest()
-		request.DBInstanceId = rs.Primary.ID
-		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.DescribeBackupPolicy(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-				continue
-			}
-			return WrapError(err)
-		}
-	}
-	return nil
-}
-
 func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
-	var v *rds.DescribeBackupPolicyResponse
+	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
 	serverFunc := func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -49,7 +26,7 @@ func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckDBBackupPolicyDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -258,7 +235,7 @@ resource "alicloud_db_instance" "default" {
 }
 
 func TestAccAlicloudDBBackupPolicy_pgdb(t *testing.T) {
-	var v *rds.DescribeBackupPolicyResponse
+	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
 	serverFunc := func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -275,7 +252,7 @@ func TestAccAlicloudDBBackupPolicy_pgdb(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckDBBackupPolicyDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -453,7 +430,7 @@ resource "alicloud_db_instance" "default" {
 }
 
 func TestAccAlicloudDBBackupPolicy_SQLServer(t *testing.T) {
-	var v *rds.DescribeBackupPolicyResponse
+	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
 	serverFunc := func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -470,7 +447,7 @@ func TestAccAlicloudDBBackupPolicy_SQLServer(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckDBBackupPolicyDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -593,7 +570,7 @@ resource "alicloud_db_instance" "default" {
 
 // Unknown current resource exists
 func TestAccAlicloudDBBackupPolicy_PPAS(t *testing.T) {
-	var v *rds.DescribeBackupPolicyResponse
+	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
 	serverFunc := func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -611,7 +588,7 @@ func TestAccAlicloudDBBackupPolicy_PPAS(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckDBBackupPolicyDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
