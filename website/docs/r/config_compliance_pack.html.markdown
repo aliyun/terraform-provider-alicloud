@@ -57,14 +57,14 @@ The following arguments are supported:
 
 The config_rules supports the following: 
 
-* `config_rule_parameters` - (Required) A list of Config Rule Parameters.
+* `config_rule_parameters` - (Optional) A list of Config Rule Parameters.
 * `managed_rule_identifier` - (Required) The Managed Rule Identifier.
 
 #### Block config_rule_parameters
 
 The config_rule_parameters supports the following: 
 
-* `parameter_name` - (Required) The parameter name.
+* `parameter_name` - (Optional) The parameter name.
 * `parameter_value` - (Optional) The parameter value.
 
 ## Attributes Reference

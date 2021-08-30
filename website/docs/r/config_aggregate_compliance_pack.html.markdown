@@ -69,15 +69,15 @@ The following arguments are supported:
 
 The config_rules supports the following: 
 
-* `config_rule_parameters` - (Required) A list of parameter rules.
+* `config_rule_parameters` - (Optional) A list of parameter rules.
 * `managed_rule_identifier` - (Required) The Managed Rule Identifier.
 
 #### Block config_rule_parameters
 
 The config_rule_parameters supports the following: 
 
-* `parameter_name` - (Required) The Parameter Name.
-* `parameter_value` - (Required) The Parameter Value.
+* `parameter_name` - (Optional) The Parameter Name.
+* `parameter_value` - (Optional) The Parameter Value.
 
 ## Attributes Reference
 

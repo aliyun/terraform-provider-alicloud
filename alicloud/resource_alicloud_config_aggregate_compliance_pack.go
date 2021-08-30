@@ -48,16 +48,16 @@ func resourceAlicloudConfigAggregateCompliancePack() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"config_rule_parameters": {
 							Type:     schema.TypeSet,
-							Required: true,
+							Optional: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"parameter_name": {
 										Type:     schema.TypeString,
-										Required: true,
+										Optional: true,
 									},
 									"parameter_value": {
 										Type:     schema.TypeString,
-										Required: true,
+										Optional: true,
 									},
 								},
 							},
