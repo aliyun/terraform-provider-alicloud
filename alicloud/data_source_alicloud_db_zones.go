@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -29,6 +31,18 @@ func dataSourceAlicloudDBZones() *schema.Resource {
 				ForceNew:     true,
 				Default:      PostPaid,
 				ValidateFunc: validation.StringInSlice([]string{"PrePaid", "PostPaid"}, false),
+			},
+			"engine": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"MySQL", "SQLServer", "PostgreSQL", "PPAS", "MariaDB"}, false),
+				Default:      "MySQL",
+			},
+			"engine_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -62,62 +76,71 @@ func dataSourceAlicloudDBZones() *schema.Resource {
 
 func dataSourceAlicloudDBZonesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	multi := d.Get("multi").(bool)
-	var zoneIds []string
-	instanceChargeType := d.Get("instance_charge_type").(string)
-
-	request := rds.CreateDescribeAvailableResourceRequest()
-	request.RegionId = client.RegionId
-	if instanceChargeType == string(PostPaid) {
-		request.InstanceChargeType = string(Postpaid)
-	} else {
-		request.InstanceChargeType = string(Prepaid)
+	action := "DescribeAvailableZones"
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+		"Engine":   d.Get("engine").(string),
+		"SourceIp": client.SourceIp,
 	}
-	var response = &rds.DescribeAvailableResourceResponse{}
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (i interface{}, err error) {
-			return rdsClient.DescribeAvailableResource(request)
-		})
+	if v, ok := d.GetOk("engine_version"); ok && v.(string) != "" {
+		request["EngineVersion"] = v.(string)
+	}
+	instanceChargeType := d.Get("instance_charge_type").(string)
+	if instanceChargeType == string(PostPaid) {
+		request["InstanceChargeType"] = string(Postpaid)
+	} else {
+		request["InstanceChargeType"] = string(Prepaid)
+	}
+	multi := d.Get("multi").(bool)
+	var ids []string
+	var s []map[string]interface{}
+	var response map[string]interface{}
+	conn, err := client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{Throttling}) {
-				time.Sleep(time.Duration(3) * time.Second)
+			if NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response = raw.(*rds.DescribeAvailableResourceResponse)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_zones", action, AlibabaCloudSdkGoERROR)
 	}
-	if len(response.AvailableZones.AvailableZone) <= 0 {
-		return WrapError(fmt.Errorf("[ERROR] There is no available zone for RDS."))
+	resp, err := jsonpath.Get("$.AvailableZones", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Accounts.DBInstanceAccount", response)
 	}
-	for _, r := range response.AvailableZones.AvailableZone {
-		if multi && strings.Contains(r.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
-			zoneIds = append(zoneIds, r.ZoneId)
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		zoneId := fmt.Sprint(v.(map[string]interface{})["ZoneId"])
+
+		if multi && !strings.Contains(zoneId, MULTI_IZ_SYMBOL) {
 			continue
 		}
-		if !multi && !strings.Contains(r.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
-			zoneIds = append(zoneIds, r.ZoneId)
-			continue
-		}
+		ids = append(ids, zoneId)
 	}
-	if len(zoneIds) > 0 {
-		sort.Strings(zoneIds)
+	if len(ids) > 0 {
+		sort.Strings(ids)
 	}
 
-	var s []map[string]interface{}
 	if !multi {
-		for _, zoneId := range zoneIds {
+		for _, zoneId := range ids {
 			mapping := map[string]interface{}{"id": zoneId}
 			s = append(s, mapping)
 		}
 	} else {
-		for _, zoneId := range zoneIds {
+		for _, zoneId := range ids {
 			mapping := map[string]interface{}{
 				"id":             zoneId,
 				"multi_zone_ids": splitMultiZoneId(zoneId),
@@ -125,11 +148,11 @@ func dataSourceAlicloudDBZonesRead(d *schema.ResourceData, meta interface{}) err
 			s = append(s, mapping)
 		}
 	}
-	d.SetId(dataResourceIdHash(zoneIds))
+	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("zones", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("ids", zoneIds); err != nil {
+	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

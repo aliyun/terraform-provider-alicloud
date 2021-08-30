@@ -2,17 +2,13 @@ package alicloud
 
 import (
 	"fmt"
-	"sort"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -28,9 +24,11 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 				ForceNew: true,
 			},
 			"engine": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"MySQL", "SQLServer", "PostgreSQL", "PPAS", "MariaDB"}, false),
+				Default:      "MySQL",
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
@@ -55,13 +53,14 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 				Optional: true,
 			},
 			"category": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance"}, false),
 			},
 			"storage_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "local_ssd"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3"}, false),
 			},
 			"multi_zone": {
 				Type:     schema.TypeBool,
@@ -137,196 +136,259 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 
 func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := rds.CreateDescribeAvailableResourceRequest()
-	request.RegionId = client.RegionId
-	request.ZoneId = d.Get("zone_id").(string)
 	instanceChargeType := d.Get("instance_charge_type").(string)
-	multiZone := d.Get("multi_zone").(bool)
 	if instanceChargeType == string(PostPaid) {
 		instanceChargeType = string(Postpaid)
 	} else {
 		instanceChargeType = string(Prepaid)
 	}
-	request.InstanceChargeType = instanceChargeType
-	var response = &rds.DescribeAvailableResourceResponse{}
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.DescribeAvailableResource(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{Throttling}) {
-				time.Sleep(time.Duration(5) * time.Second)
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
+	zoneId, zoneIdOk := d.GetOk("zone_id")
+	engine, engineOk := d.GetOk("engine")
+	engineVersion, engineVersionOk := d.GetOk("engine_version")
+	dbInstanceClass, dbInstanceClassOk := d.GetOk("db_instance_class")
+	storageType, storageTypeOk := d.GetOk("storage_type")
+	category, categoryOk := d.GetOk("category")
+
+	availableZones := make([]map[string]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	ids := make([]string, 0)
+	// if all filters can be got, there is no need to invoking DescribeAvailableZones to get them
+	if zoneIdOk && zoneId.(string) != "" &&
+		engineOk && engine.(string) != "" &&
+		engineVersionOk && engineVersion.(string) != "" &&
+		storageTypeOk && storageType.(string) != "" &&
+		categoryOk && category.(string) != "" {
+
+		action := "DescribeAvailableClasses"
+		request := map[string]interface{}{
+			"RegionId":              client.RegionId,
+			"SourceIp":              client.SourceIp,
+			"ZoneId":                zoneId,
+			"InstanceChargeType":    instanceChargeType,
+			"Engine":                engine,
+			"EngineVersion":         engineVersion,
+			"DBInstanceStorageType": storageType,
+			"Category":              category,
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response = raw.(*rds.DescribeAvailableResourceResponse)
-		return nil
-	})
-
-	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_instance_classes", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
-	type ClassInfosItem struct {
-		Index        int
-		StorageRange map[string]string
-		ZoneIds      []map[string]interface{}
-		Price        float64
-	}
-
-	classInfos := make(map[string]ClassInfosItem)
-	indexMap := make(map[string]int)
-	ids := []string{}
-
-	engine, engineGot := d.GetOk("engine")
-	engineVersion, engineVersionGot := d.GetOk("engine_version")
-	dbInstanceClass, dbInstanceClassGot := d.GetOk("db_instance_class")
-	storageType, storageTypeGot := d.GetOk("storage_type")
-	category, categoryGot := d.GetOk("category")
-
-	for _, AvailableZone := range response.AvailableZones.AvailableZone {
-		id_item := []string{}
-		if multiZone {
-			if !strings.Contains(AvailableZone.ZoneId, "MAZ") {
-				continue
-			}
-			for _, v := range splitMultiZoneId(AvailableZone.ZoneId) {
-				id_item = append(id_item, v)
-			}
-		} else {
-			if strings.Contains(AvailableZone.ZoneId, "MAZ") {
-				continue
-			}
-			id_item = []string{AvailableZone.ZoneId}
-		}
-
-		zoneId := map[string]interface{}{
-			"id":           AvailableZone.ZoneId,
-			"sub_zone_ids": id_item,
-		}
-
-		ids = append(ids, AvailableZone.ZoneId)
-		for _, SupportedEngine := range AvailableZone.SupportedEngines.SupportedEngine {
-			if engineGot && engine.(string) != SupportedEngine.Engine {
-				continue
-			}
-			ids = append(ids, SupportedEngine.Engine)
-			for _, SupportedEngineVersion := range SupportedEngine.SupportedEngineVersions.SupportedEngineVersion {
-				if engineVersionGot && engineVersion != SupportedEngineVersion.Version {
-					continue
-				}
-				ids = append(ids, SupportedEngineVersion.Version)
-				for _, SupportedCategory := range SupportedEngineVersion.SupportedCategorys.SupportedCategory {
-					if categoryGot && category.(string) != SupportedCategory.Category {
-						continue
-					}
-					for _, SupportedStorageType := range SupportedCategory.SupportedStorageTypes.SupportedStorageType {
-						if storageTypeGot && storageType.(string) != SupportedStorageType.StorageType {
-							continue
-						}
-						for _, AvailableResource := range SupportedStorageType.AvailableResources.AvailableResource {
-							if dbInstanceClassGot && dbInstanceClass.(string) != AvailableResource.DBInstanceClass {
-								continue
-							}
-							zoneIds := []map[string]interface{}{}
-							if _, ok := classInfos[AvailableResource.DBInstanceClass]; ok {
-								zoneIds = append(classInfos[AvailableResource.DBInstanceClass].ZoneIds, zoneId)
-							} else {
-								zoneIds = []map[string]interface{}{zoneId}
-								indexMap[AvailableResource.DBInstanceClass] = len(classInfos)
-							}
-							classInfos[AvailableResource.DBInstanceClass] = ClassInfosItem{
-								Index: indexMap[AvailableResource.DBInstanceClass],
-								StorageRange: map[string]string{
-									"min":  strconv.Itoa(AvailableResource.DBInstanceStorageRange.Min),
-									"max":  strconv.Itoa(AvailableResource.DBInstanceStorageRange.Max),
-									"step": strconv.Itoa(AvailableResource.DBInstanceStorageRange.Step),
-								},
-								ZoneIds: zoneIds,
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	infos := make([]map[string]interface{}, len(classInfos))
-	var classIds []string
-	for k, v := range classInfos {
-		infos[v.Index] = map[string]interface{}{
-			"zone_ids":       v.ZoneIds,
-			"storage_range":  v.StorageRange,
-			"instance_class": k,
-		}
-		classIds = append(classIds, k)
-	}
-	// The price will be query and assigned when the engine_version be specified and the sorted_by is "Price", Instead, it is assigned a null character.
-	sortedBy := d.Get("sorted_by").(string)
-	if engineVersionGot && len(infos) > 0 && sortedBy == "Price" {
-		bssopenapiService := BssopenapiService{client}
-		priceList, err := getDBInstanceClassPrice(bssopenapiService, instanceChargeType,
-			infos, engineVersion.(string))
+		var response map[string]interface{}
+		conn, err := client.NewRdsClient()
 		if err != nil {
 			return WrapError(err)
 		}
-		for i, info := range infos {
-			info["price"] = fmt.Sprintf("%.4f", priceList[i])
-		}
-		sort.SliceStable(infos, func(i, j int) bool {
-			iPrice, _ := strconv.ParseFloat(infos[i]["price"].(string), 64)
-			jPrice, _ := strconv.ParseFloat(infos[j]["price"].(string), 64)
-			return iPrice < jPrice
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_instance_classes", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.DBInstanceClasses", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DBInstanceClasses", response)
+		}
+		zoneIds := make([]map[string]interface{}, 0)
+		zoneIds = append(zoneIds, map[string]interface{}{
+			"id":           zoneId,
+			"sub_zone_ids": splitMultiZoneId(zoneId.(string)),
+		})
+		for _, r := range resp.([]interface{}) {
+			instanceClassItem := r.(map[string]interface{})
+			if dbInstanceClassOk && dbInstanceClass != "" && dbInstanceClass != fmt.Sprint(instanceClassItem["DBInstanceClass"]) {
+				continue
+			}
+			mapping := map[string]interface{}{
+				"instance_class": fmt.Sprint(instanceClassItem["DBInstanceClass"]),
+				"zone_ids":       zoneIds,
+				"storage_range": map[string]interface{}{
+					"min":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MinValue"]),
+					"max":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MaxValue"]),
+					"step": fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["Step"]),
+				},
+			}
+			s = append(s, mapping)
+			ids = append(ids, fmt.Sprint(instanceClassItem["DBInstanceClass"]))
+		}
+	} else {
+		// 1. Invkoing DescribeAvailableZones to get available zones and other filters
+		action := "DescribeAvailableZones"
+		request := map[string]interface{}{
+			"RegionId": client.RegionId,
+			"SourceIp": client.SourceIp,
+		}
+		if v, ok := d.GetOk("engine"); ok && v.(string) != "" {
+			request["Engine"] = v.(string)
+		}
+		if v, ok := d.GetOk("engine_version"); ok && v.(string) != "" {
+			request["EngineVersion"] = v.(string)
+		}
+		if v, ok := d.GetOk("zone_id"); ok && v.(string) != "" {
+			request["ZoneId"] = v.(string)
+		}
+		if instanceChargeType == string(PostPaid) {
+			request["InstanceChargeType"] = string(Postpaid)
+		} else {
+			request["InstanceChargeType"] = string(Prepaid)
+		}
+		multiZone := d.Get("multi_zone").(bool)
+		var response map[string]interface{}
+		conn, err := client.NewRdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_instance_classes", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.AvailableZones", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AvailableZones", response)
+		}
+		for _, r := range resp.([]interface{}) {
+			availableZoneItem := r.(map[string]interface{})
+
+			zoneId := fmt.Sprint(availableZoneItem["ZoneId"])
+			if multiZone && !strings.Contains(zoneId, MULTI_IZ_SYMBOL) {
+				continue
+			}
+
+			for _, r := range availableZoneItem["SupportedEngines"].([]interface{}) {
+				supportedEngineItem := r.(map[string]interface{})
+				if engineOk && engine.(string) != "" && engine.(string) != fmt.Sprint(supportedEngineItem["Engine"]) {
+					continue
+				}
+				for _, r := range supportedEngineItem["SupportedEngineVersions"].([]interface{}) {
+					supportedEngineVersionItem := r.(map[string]interface{})
+					if engineVersionOk && engineVersion.(string) != "" && engineVersion.(string) != fmt.Sprint(supportedEngineVersionItem["Version"]) {
+						continue
+					}
+					for _, r := range supportedEngineVersionItem["SupportedCategorys"].([]interface{}) {
+						supportedCategoryItem := r.(map[string]interface{})
+						if categoryOk && category.(string) != "" && category.(string) != fmt.Sprint(supportedCategoryItem["Category"]) {
+							continue
+						}
+						if !storageTypeOk || storageType.(string) == "" {
+							availableZones = append(availableZones, availableZoneItem)
+							continue
+						}
+						for _, r := range supportedCategoryItem["SupportedStorageTypes"].([]interface{}) {
+							storageTypeItem := r.(map[string]interface{})
+
+							if storageType.(string) != fmt.Sprint(storageTypeItem["StorageType"]) {
+								continue
+							}
+							availableZones = append(availableZones, availableZoneItem)
+						}
+					}
+				}
+			}
+		}
+		// 2. Iterating the availableZones and invoking DescribeAvailableClasses to get available classes
+		for _, availableZone := range availableZones {
+			action := "DescribeAvailableClasses"
+			request := map[string]interface{}{
+				"RegionId":           client.RegionId,
+				"SourceIp":           client.SourceIp,
+				"ZoneId":             fmt.Sprint(availableZone["ZoneId"]),
+				"InstanceChargeType": instanceChargeType,
+			}
+			zoneIds := make([]map[string]interface{}, 0)
+			zoneIds = append(zoneIds, map[string]interface{}{
+				"id":           fmt.Sprint(availableZone["ZoneId"]),
+				"sub_zone_ids": splitMultiZoneId(fmt.Sprint(availableZone["ZoneId"])),
+			})
+			for _, r := range availableZone["SupportedEngines"].([]interface{}) {
+				supportedEngineItem := r.(map[string]interface{})
+				request["Engine"] = fmt.Sprint(supportedEngineItem["Engine"])
+				for _, r := range supportedEngineItem["SupportedEngineVersions"].([]interface{}) {
+					supportedEngineVersionItem := r.(map[string]interface{})
+					request["EngineVersion"] = fmt.Sprint(supportedEngineVersionItem["Version"])
+					for _, r := range supportedEngineVersionItem["SupportedCategorys"].([]interface{}) {
+						supportedCategoryItem := r.(map[string]interface{})
+						request["Category"] = fmt.Sprint(supportedCategoryItem["Category"])
+						for _, r := range supportedCategoryItem["SupportedStorageTypes"].([]interface{}) {
+							storageTypeItem := r.(map[string]interface{})
+							request["DBInstanceStorageType"] = fmt.Sprint(storageTypeItem["StorageType"])
+							var response map[string]interface{}
+							wait := incrementalWait(3*time.Second, 3*time.Second)
+							err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+								response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+								if err != nil {
+									if NeedRetry(err) {
+										wait()
+										return resource.RetryableError(err)
+									}
+									return resource.NonRetryableError(err)
+								}
+								return nil
+							})
+							addDebug(action, response, request)
+							if err != nil {
+								return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_instance_classes", action, AlibabaCloudSdkGoERROR)
+							}
+							resp, err := jsonpath.Get("$.DBInstanceClasses", response)
+							if err != nil {
+								return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DBInstanceClasses", response)
+							}
+							for _, r := range resp.([]interface{}) {
+								instanceClassItem := r.(map[string]interface{})
+								if dbInstanceClassOk && dbInstanceClass != "" && dbInstanceClass != fmt.Sprint(instanceClassItem["DBInstanceClass"]) {
+									continue
+								}
+								mapping := map[string]interface{}{
+									"instance_class": fmt.Sprint(instanceClassItem["DBInstanceClass"]),
+									"zone_ids":       zoneIds,
+									"storage_range": map[string]interface{}{
+										"min":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MinValue"]),
+										"max":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MaxValue"]),
+										"step": fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["Step"]),
+									},
+								}
+								s = append(s, mapping)
+								ids = append(ids, fmt.Sprint(instanceClassItem["DBInstanceClass"]))
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	err = d.Set("instance_classes", infos)
+	err := d.Set("instance_classes", s)
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("ids", classIds)
+	d.Set("ids", ids)
 	if output, ok := d.GetOk("output_file"); ok {
-		err = writeToFile(output.(string), infos)
+		err = writeToFile(output.(string), s)
 		if err != nil {
 			return WrapError(err)
 		}
 	}
 	return nil
-}
-
-func getDBInstanceClassPrice(bssopenapiService BssopenapiService, instanceChargeType string, infos []map[string]interface{}, version string) ([]float64, error) {
-	client := bssopenapiService.client
-	var modules interface{}
-	var productType string
-	moduleCode := "DBInstanceClass"
-	var payAsYouGo []bssopenapi.GetPayAsYouGoPriceModuleList
-	var subsciption []bssopenapi.GetSubscriptionPriceModuleList
-	for _, info := range infos {
-		config := fmt.Sprintf("DBInstanceClass:%s,EngineVersion:%s,Region:%s", info["instance_class"], version, client.Region)
-		if instanceChargeType == string(Postpaid) {
-			payAsYouGo = append(payAsYouGo, bssopenapi.GetPayAsYouGoPriceModuleList{
-				ModuleCode: moduleCode,
-				Config:     config,
-				PriceType:  "Hour",
-			})
-		} else {
-			subsciption = append(subsciption, bssopenapi.GetSubscriptionPriceModuleList{
-				ModuleCode: moduleCode,
-				Config:     config,
-			})
-		}
-	}
-
-	if len(payAsYouGo) != 0 {
-		modules = payAsYouGo
-		productType = "bards"
-	} else {
-		modules = subsciption
-	}
-
-	return bssopenapiService.GetInstanceTypePrice("rds", productType, modules)
 }

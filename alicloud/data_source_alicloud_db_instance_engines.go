@@ -1,10 +1,13 @@
 package alicloud
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -29,8 +32,10 @@ func dataSourceAlicloudDBInstanceEngines() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
 			},
 			"engine": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"MySQL", "SQLServer", "PostgreSQL", "PPAS", "MariaDB"}, false),
+				Default:      "MySQL",
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
@@ -44,6 +49,11 @@ func dataSourceAlicloudDBInstanceEngines() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			// Computed values.
 			"instance_engines": {
@@ -90,120 +100,107 @@ func dataSourceAlicloudDBInstanceEngines() *schema.Resource {
 func dataSourceAlicloudDBInstanceEnginesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := rds.CreateDescribeAvailableResourceRequest()
-	request.RegionId = client.RegionId
-	request.ZoneId = d.Get("zone_id").(string)
-	instanceChargeType := d.Get("instance_charge_type").(string)
-	multiZone := d.Get("multi_zone").(bool)
-	if instanceChargeType == string(PostPaid) {
-		instanceChargeType = string(Postpaid)
-	} else {
-		instanceChargeType = string(Prepaid)
+	action := "DescribeAvailableZones"
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+		"Engine":   d.Get("engine").(string),
+		"SourceIp": client.SourceIp,
 	}
-	request.InstanceChargeType = instanceChargeType
-	var response = &rds.DescribeAvailableResourceResponse{}
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.DescribeAvailableResource(request)
-		})
+	if v, ok := d.GetOk("engine_version"); ok && v.(string) != "" {
+		request["EngineVersion"] = v.(string)
+	}
+	if v, ok := d.GetOk("zone_id"); ok && v.(string) != "" {
+		request["ZoneId"] = v.(string)
+	}
+	instanceChargeType := d.Get("instance_charge_type").(string)
+	if instanceChargeType == string(PostPaid) {
+		request["InstanceChargeType"] = string(Postpaid)
+	} else {
+		request["InstanceChargeType"] = string(Prepaid)
+	}
+	multiZone := d.Get("multi_zone").(bool)
+	var ids []string
+	var s []map[string]interface{}
+	var response map[string]interface{}
+	conn, err := client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{Throttling}) {
-				time.Sleep(time.Duration(5) * time.Second)
+			if NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response = raw.(*rds.DescribeAvailableResourceResponse)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_instance_engines", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_instance_engines", action, AlibabaCloudSdkGoERROR)
 	}
-
-	type engineInfosItem struct {
-		Index         int
-		Engine        string
-		EngineVersion string
-		ZoneIds       []map[string]interface{}
+	resp, err := jsonpath.Get("$.AvailableZones", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AvailableZones", response)
 	}
-
-	engineInfos := make(map[string]engineInfosItem)
-	indexMap := make(map[string]int)
-	ids := []string{}
-
 	engine, engineGot := d.GetOk("engine")
 	engineVersion, engineVersionGot := d.GetOk("engine_version")
+	for _, r := range resp.([]interface{}) {
+		availableZoneItem := r.(map[string]interface{})
 
-	for _, AvailableZone := range response.AvailableZones.AvailableZone {
-		id_item := []string{}
-		if multiZone {
-			if !strings.Contains(AvailableZone.ZoneId, "MAZ") {
-				continue
-			}
-			for _, v := range splitMultiZoneId(AvailableZone.ZoneId) {
-				id_item = append(id_item, v)
-			}
-		} else {
-			if strings.Contains(AvailableZone.ZoneId, "MAZ") {
-				continue
-			}
-			id_item = []string{AvailableZone.ZoneId}
+		zoneId := fmt.Sprint(availableZoneItem["ZoneId"])
+		if multiZone && !strings.Contains(zoneId, MULTI_IZ_SYMBOL) {
+			continue
 		}
+		zoneIds := make([]map[string]interface{}, 0)
+		zoneIds = append(zoneIds, map[string]interface{}{
+			"id":           zoneId,
+			"sub_zone_ids": splitMultiZoneId(zoneId),
+		})
 
-		zoneId := map[string]interface{}{
-			"id":           AvailableZone.ZoneId,
-			"sub_zone_ids": id_item,
-		}
-		ids = append(ids, AvailableZone.ZoneId)
-		for _, SupportedEngine := range AvailableZone.SupportedEngines.SupportedEngine {
-			if engineGot && engine != SupportedEngine.Engine {
+		for _, r := range availableZoneItem["SupportedEngines"].([]interface{}) {
+			supportedEngineItem := r.(map[string]interface{})
+			if engineGot && engine.(string) != "" && engine.(string) != fmt.Sprint(supportedEngineItem["Engine"]) {
 				continue
 			}
-			ids = append(ids, SupportedEngine.Engine)
-			for _, SupportedEngineVersion := range SupportedEngine.SupportedEngineVersions.SupportedEngineVersion {
-				if engineVersionGot && engineVersion != SupportedEngineVersion.Version {
+			for _, r := range supportedEngineItem["SupportedEngineVersions"].([]interface{}) {
+				supportedEngineVersionItem := r.(map[string]interface{})
+				if engineVersionGot && engineVersion.(string) != "" && engineVersion.(string) != fmt.Sprint(supportedEngineVersionItem["Version"]) {
 					continue
 				}
-				ids = append(ids, SupportedEngineVersion.Version)
-
-				for _, SupportedCategory := range SupportedEngineVersion.SupportedCategorys.SupportedCategory {
-					zoneIds := []map[string]interface{}{}
-					if _, ok := engineInfos[SupportedCategory.Category]; ok {
-						zoneIds = append(engineInfos[SupportedCategory.Category].ZoneIds, zoneId)
-					} else {
-						zoneIds = []map[string]interface{}{zoneId}
-						indexMap[SupportedCategory.Category] = len(engineInfos)
+				for _, r := range supportedEngineVersionItem["SupportedCategorys"].([]interface{}) {
+					supportedCategoryItem := r.(map[string]interface{})
+					if fmt.Sprint(supportedCategoryItem["Category"]) == "" {
+						continue
 					}
-					engineInfos[SupportedCategory.Category] = engineInfosItem{
-						Index:         indexMap[SupportedCategory.Category],
-						Engine:        SupportedEngine.Engine,
-						EngineVersion: SupportedEngineVersion.Version,
-						ZoneIds:       zoneIds,
+					mapping := map[string]interface{}{
+						"zone_ids":       zoneIds,
+						"engine":         fmt.Sprint(supportedEngineItem["Engine"]),
+						"engine_version": fmt.Sprint(supportedEngineVersionItem["Version"]),
+						"category":       fmt.Sprint(supportedCategoryItem["Category"]),
 					}
+					s = append(s, mapping)
+					ids = append(ids, fmt.Sprint(supportedEngineItem["Engine"]))
 				}
 			}
-		}
-	}
-
-	infos := make([]map[string]interface{}, len(engineInfos))
-	for k, v := range engineInfos {
-		infos[v.Index] = map[string]interface{}{
-			"zone_ids":       v.ZoneIds,
-			"engine":         v.Engine,
-			"engine_version": v.EngineVersion,
-			"category":       k,
 		}
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	err = d.Set("instance_engines", infos)
+	err = d.Set("instance_engines", s)
 	if err != nil {
 		return WrapError(err)
 	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		err = writeToFile(output.(string), infos)
+		err = writeToFile(output.(string), s)
 		if err != nil {
 			return WrapError(err)
 		}

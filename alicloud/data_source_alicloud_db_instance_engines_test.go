@@ -8,11 +8,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDBEngines_base(t *testing.T) {
+func TestAccAlicloudRdsDBEngines_base(t *testing.T) {
 	rand := acctest.RandInt()
 	ZoneIDConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
-			"zone_id": `"${data.alicloud_zones.default.zones.0.id}"`,
+			"zone_id": `"${data.alicloud_db_zones.default.zones.0.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"zone_id": `"fake_zoneid"`,
@@ -22,21 +22,18 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 	ChargeTypeConf_Postpaid := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PostPaid"`,
-			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
+			"zone_id":              `"${data.alicloud_db_zones.default.zones.0.id}"`,
 		}),
 	}
 	ChargeTypeConf_Prepaid := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PrePaid"`,
-			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
+			"zone_id":              `"${data.alicloud_db_zones.default.zones.0.id}"`,
 		}),
 	}
 	EngineConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"engine": `"MySQL"`,
-		}),
-		fakeConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
-			"engine": `"Fake"`,
 		}),
 	}
 	EngineVersionConf := dataSourceTestAccConfig{
@@ -64,10 +61,10 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 			"instance_charge_type": `"PostPaid"`,
 			"engine":               `"MySQL"`,
 			"engine_version":       `"5.6"`,
-			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
+			"zone_id":              `"${data.alicloud_db_zones.default.zones.0.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
-			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
+			"zone_id":              `"${data.alicloud_db_zones.default.zones.0.id}"`,
 			"instance_charge_type": `"PostPaid"`,
 			"engine":               `"MySQL"`,
 			"engine_version":       `"3.0"`,
@@ -76,18 +73,19 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 
 	var existDBInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instance_engines.#":                           CHECKSET,
-			"instance_engines.0.engine":                    CHECKSET,
-			"instance_engines.0.zone_ids.0.id":             CHECKSET,
-			"instance_engines.0.engine_version":            CHECKSET,
-			"instance_engines.0.category":                  CHECKSET,
-			"instance_engines.0.zone_ids.0.sub_zone_ids.0": CHECKSET,
+			"ids.#":                             CHECKSET,
+			"instance_engines.#":                CHECKSET,
+			"instance_engines.0.engine":         CHECKSET,
+			"instance_engines.0.zone_ids.0.id":  CHECKSET,
+			"instance_engines.0.engine_version": CHECKSET,
+			"instance_engines.0.category":       CHECKSET,
 		}
 	}
 
 	var fakeDBInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"instance_engines.#": "0",
+			"ids.#":              "0",
 		}
 	}
 
@@ -105,8 +103,8 @@ func testAccCheckAlicloudDBEnginesDataSourceConfig(attrMap map[string]string) st
 		pairs = append(pairs, k+" = "+v)
 	}
 	config := fmt.Sprintf(`
-data "alicloud_zones" "default" {
-  available_resource_creation= "Rds"
+data "alicloud_db_zones" "default" {
+  instance_charge_type= "PostPaid"
 }
 data "alicloud_db_instance_engines" "default" {
   %s

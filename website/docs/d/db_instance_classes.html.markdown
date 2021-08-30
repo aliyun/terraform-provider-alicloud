@@ -34,8 +34,8 @@ The following arguments are supported:
 
 * `zone_id` - (Optional) The Zone to launch the DB instance.
 * `instance_charge_type` - (Optional) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
-* `engine` - (Optional) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL` and `PPAS`. If no value is specified, all types are returned.
-* `category` - (Optional) DB Instance category. the value like [`Basic`, `HighAvailability`, `Finance`], [detail info](https://www.alibabacloud.com/help/doc-detail/69795.htm).
+* `engine` - (Optional) Database type. Valid values:"MySQL", "SQLServer", "PostgreSQL", "PPAS", "MariaDB". Default to "MySQL".
+* `category` - (Optional) DB Instance category. the value like [`Basic`, `HighAvailability`, `Finance`, `AlwaysOn`], [detail info](https://www.alibabacloud.com/help/doc-detail/69795.htm).
 * `engine_version` - (Optional) Database version required by the user. Value options can refer to the latest docs [detail info](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
 * `db_instance_class` - (Optional, Available in 1.51.0+) The DB instance class type by the user.
 * `storage_type` - (Optional) The DB instance storage space required by the user. Valid values: `cloud_ssd` and `local_ssd`.
