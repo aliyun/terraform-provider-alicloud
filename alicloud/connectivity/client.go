@@ -37,7 +37,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
@@ -88,7 +87,6 @@ type AliyunClient struct {
 	accountId                    string
 	ecsconn                      *ecs.Client
 	essconn                      *ess.Client
-	rdsconn                      *rds.Client
 	vpcconn                      *vpc.Client
 	slbconn                      *slb.Client
 	alikafkaconn                 *alikafka.Client
@@ -306,34 +304,6 @@ func (client *AliyunClient) WithOfficalCSClient(do func(*officalCS.Client) (inte
 	}
 
 	return do(client.officalCSConn)
-}
-
-func (client *AliyunClient) WithRdsClient(do func(*rds.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the RDS client if necessary
-	if client.rdsconn == nil {
-		endpoint := client.config.RdsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, RDSCode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(RDSCode), endpoint)
-		}
-		rdsconn, err := rds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the RDS client: %#v", err)
-		}
-
-		rdsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		rdsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		rdsconn.SourceIp = client.SourceIp
-		rdsconn.SecurityTransport = client.SecurityTransport
-		rdsconn.AppendUserAgent(Terraform, terraformVersion)
-		rdsconn.AppendUserAgent(Provider, providerVersion)
-		rdsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.rdsconn = rdsconn
-	}
-
-	return do(client.rdsconn)
 }
 
 func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interface{}, error)) (interface{}, error) {

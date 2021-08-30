@@ -331,28 +331,39 @@ func testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand int, attrMap map[
 		pairs = append(pairs, k+" = "+v)
 	}
 	config := fmt.Sprintf(`
-data "alicloud_zones" "default" {
-  available_resource_creation = "Rds"
+
+data "alicloud_db_zones" "default"{
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_charge_type = "PostPaid"
 }
-resource "alicloud_vpc" "default" {
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+    category = "HighAvailability"
+    storage_type = "local_ssd"
+	instance_charge_type = "PostPaid"
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_name              = "${var.name}"
+
+data "alicloud_vpcs" "default" {
+ name_regex = "^default-NODELETING"
 }
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
 variable "name" {
 	default = "tf-testAccDBInstanceConfig_%d"
 }
 resource "alicloud_db_instance" "default" {
 	engine = "MySQL"
-	engine_version = "5.6"
-	instance_type = "rds.mysql.s1.small"
+	engine_version = "8.0"
+	instance_type = data.alicloud_db_instance_classes.default.ids.0
 	instance_storage = "20"
-	vswitch_id = "${alicloud_vswitch.default.id}"
+	vswitch_id = data.alicloud_vswitches.default.ids.0
 	instance_name = "${var.name}"
 	tags = {
 		"key1" = "value1"
@@ -372,28 +383,38 @@ func testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand int, attrMap
 		pairs = append(pairs, k+" = "+v)
 	}
 	config := fmt.Sprintf(`
-data "alicloud_zones" "default" {
-  available_resource_creation = "Rds"
+data "alicloud_db_zones" "default"{
+	engine = "PostgreSQL"
+	engine_version = "13.0"
+	instance_charge_type = "PostPaid"
 }
-resource "alicloud_vpc" "default" {
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "PostgreSQL"
+	engine_version = "13.0"
+    category = "HighAvailability"
+    storage_type = "local_ssd"
+	instance_charge_type = "PostPaid"
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_name              = "${var.name}"
+
+data "alicloud_vpcs" "default" {
+ name_regex = "^default-NODELETING"
 }
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
 variable "name" {
 	default = "tf-testAccDBInstanceConfig_%d"
 }
 resource "alicloud_db_instance" "default" {
 	engine = "PostgreSQL"
 	engine_version = "13.0"
-	instance_type = "pg.n2.small.1"
+	instance_type = data.alicloud_db_instance_classes.default.ids.0
 	instance_storage = "20"
-	vswitch_id = "${alicloud_vswitch.default.id}"
+	vswitch_id = data.alicloud_vswitches.default.ids.0
 	instance_name = "${var.name}"
 	tags = {
 		"key1" = "value1"

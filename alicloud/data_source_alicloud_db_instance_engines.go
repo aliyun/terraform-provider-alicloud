@@ -35,11 +35,24 @@ func dataSourceAlicloudDBInstanceEngines() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"MySQL", "SQLServer", "PostgreSQL", "PPAS", "MariaDB"}, false),
-				Default:      "MySQL",
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"db_instance_class": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"category": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance"}, false),
+			},
+			"db_instance_storage_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3"}, false),
 			},
 			"multi_zone": {
 				Type:     schema.TypeBool,
@@ -100,11 +113,13 @@ func dataSourceAlicloudDBInstanceEngines() *schema.Resource {
 func dataSourceAlicloudDBInstanceEnginesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "DescribeAvailableZones"
+	action := "DescribeAvailableResource"
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
-		"Engine":   d.Get("engine").(string),
 		"SourceIp": client.SourceIp,
+	}
+	if v, ok := d.GetOk("engine"); ok && v.(string) != "" {
+		request["Engine"] = v.(string)
 	}
 	if v, ok := d.GetOk("engine_version"); ok && v.(string) != "" {
 		request["EngineVersion"] = v.(string)
@@ -117,6 +132,15 @@ func dataSourceAlicloudDBInstanceEnginesRead(d *schema.ResourceData, meta interf
 		request["InstanceChargeType"] = string(Postpaid)
 	} else {
 		request["InstanceChargeType"] = string(Prepaid)
+	}
+	if v, ok := d.GetOk("db_instance_storage_type"); ok && v.(string) != "" {
+		request["DBInstanceStorageType"] = v.(string)
+	}
+	if v, ok := d.GetOk("category"); ok && v.(string) != "" {
+		request["Category"] = v.(string)
+	}
+	if v, ok := d.GetOk("db_instance_class"); ok && v.(string) != "" {
+		request["DBInstanceClass"] = v.(string)
 	}
 	multiZone := d.Get("multi_zone").(bool)
 	var ids []string
@@ -148,13 +172,11 @@ func dataSourceAlicloudDBInstanceEnginesRead(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AvailableZones", response)
 	}
-	engine, engineGot := d.GetOk("engine")
-	engineVersion, engineVersionGot := d.GetOk("engine_version")
 	for _, r := range resp.([]interface{}) {
 		availableZoneItem := r.(map[string]interface{})
 
 		zoneId := fmt.Sprint(availableZoneItem["ZoneId"])
-		if multiZone && !strings.Contains(zoneId, MULTI_IZ_SYMBOL) {
+		if (multiZone && !strings.Contains(zoneId, MULTI_IZ_SYMBOL)) || (!multiZone && strings.Contains(zoneId, MULTI_IZ_SYMBOL)) {
 			continue
 		}
 		zoneIds := make([]map[string]interface{}, 0)
@@ -165,19 +187,10 @@ func dataSourceAlicloudDBInstanceEnginesRead(d *schema.ResourceData, meta interf
 
 		for _, r := range availableZoneItem["SupportedEngines"].([]interface{}) {
 			supportedEngineItem := r.(map[string]interface{})
-			if engineGot && engine.(string) != "" && engine.(string) != fmt.Sprint(supportedEngineItem["Engine"]) {
-				continue
-			}
 			for _, r := range supportedEngineItem["SupportedEngineVersions"].([]interface{}) {
 				supportedEngineVersionItem := r.(map[string]interface{})
-				if engineVersionGot && engineVersion.(string) != "" && engineVersion.(string) != fmt.Sprint(supportedEngineVersionItem["Version"]) {
-					continue
-				}
 				for _, r := range supportedEngineVersionItem["SupportedCategorys"].([]interface{}) {
 					supportedCategoryItem := r.(map[string]interface{})
-					if fmt.Sprint(supportedCategoryItem["Category"]) == "" {
-						continue
-					}
 					mapping := map[string]interface{}{
 						"zone_ids":       zoneIds,
 						"engine":         fmt.Sprint(supportedEngineItem["Engine"]),

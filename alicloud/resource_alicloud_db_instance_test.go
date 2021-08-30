@@ -6,12 +6,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -35,40 +36,55 @@ func testSweepDBInstances(region string) error {
 		"tf_testAcc",
 	}
 
-	var insts []rds.DBInstance
-	req := rds.CreateDescribeDBInstancesRequest()
-	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
-	req.PageNumber = requests.NewInteger(1)
+	action := "DescribeDBInstances"
+	request := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+	objects := make([]interface{}, 0)
+	var response map[string]interface{}
+	conn, err := client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.DescribeDBInstances(req)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
-			return fmt.Errorf("Error retrieving RDS Instances: %s", err)
+			log.Printf("[ERROR] %s got an error: %v", action, err)
+			continue
 		}
-		resp, _ := raw.(*rds.DescribeDBInstancesResponse)
-		if resp == nil || len(resp.Items.DBInstance) < 1 {
+		resp, err := jsonpath.Get("$.Items.DBInstance", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items.DBInstance", response)
+		}
+		result, _ := resp.([]interface{})
+		objects = append(objects, result...)
+		if len(result) < PageSizeLarge {
 			break
 		}
-		insts = append(insts, resp.Items.DBInstance...)
-
-		if len(resp.Items.DBInstance) < PageSizeLarge {
-			break
-		}
-
-		page, err := getNextpageNumber(req.PageNumber)
-		if err != nil {
-			return err
-		}
-		req.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
-	sweeped := false
 	vpcService := VpcService{client}
-	for _, v := range insts {
-		name := v.DBInstanceDescription
-		id := v.DBInstanceId
+	for _, v := range objects {
+		item := v.(map[string]interface{})
+		name := fmt.Sprint(item["DBInstanceDescription"])
+		id := fmt.Sprint(item["DBInstanceId"])
 		skip := true
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
@@ -76,12 +92,11 @@ func testSweepDBInstances(region string) error {
 				break
 			}
 		}
-		// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+		// If a rds name is set by other service, it should be fetched by vswitch name and deleted.
 		if skip {
-			if need, err := vpcService.needSweepVpc(v.VpcId, v.VSwitchId); err == nil {
+			if need, err := vpcService.needSweepVpc(fmt.Sprint(item["VpcId"]), fmt.Sprint(item["VSwitchId"])); err == nil {
 				skip = !need
 			}
-
 		}
 
 		if skip {
@@ -90,37 +105,63 @@ func testSweepDBInstances(region string) error {
 		}
 
 		log.Printf("[INFO] Deleting RDS Instance: %s (%s)", name, id)
-		if len(v.ReadOnlyDBInstanceIds.ReadOnlyDBInstanceId) > 0 {
-			request := rds.CreateReleaseReadWriteSplittingConnectionRequest()
-			request.DBInstanceId = id
-			if _, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-				return rdsClient.ReleaseReadWriteSplittingConnection(request)
+		if len(item["ReadOnlyDBInstanceIds"].(map[string]interface{})["ReadOnlyDBInstanceId"].([]interface{})) > 0 {
+			action := "ReleaseReadWriteSplittingConnection"
+			request := map[string]interface{}{
+				"RegionId":     client.RegionId,
+				"DBInstanceId": id,
+				"SourceIp":     client.SourceIp,
+			}
+
+			runtime := util.RuntimeOptions{}
+			if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
+						return resource.RetryableError(err)
+					}
+					if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidRwSplitNetType.NotFound"}) {
+						return nil
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
 			}); err != nil {
 				log.Printf("[ERROR] ReleaseReadWriteSplittingConnection error: %#v", err)
-			} else {
-				time.Sleep(5 * time.Second)
 			}
 		}
-		req := rds.CreateDeleteDBInstanceRequest()
-		req.DBInstanceId = id
-		_, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.DeleteDBInstance(req)
+		action := "DeleteDBInstance"
+		request := map[string]interface{}{
+			"DBInstanceId": id,
+			"SourceIp":     client.SourceIp,
+		}
+		conn, err := client.NewRdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		runtime := util.RuntimeOptions{}
+		err = resource.Retry(50*time.Minute, func() *resource.RetryError {
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil && !NotFoundError(err) {
+				if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}) || NeedRetry(err) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete RDS Instance (%s (%s)): %s", name, id, err)
-		} else {
-			sweeped = true
 		}
 	}
-	if sweeped {
-		// Waiting 30 seconds to eusure these DB instances have been deleted.
-		time.Sleep(30 * time.Second)
-	}
+
 	return nil
 }
 
 func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
 	resourceId := "alicloud_db_instance.default"
@@ -429,7 +470,7 @@ resource "alicloud_kms_key" "default" {
 }
 
 func TestAccAlicloudRdsDBInstanceMultiInstance(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance map[string]interface{}
 
 	resourceId := "alicloud_db_instance.default.4"
 	ra := resourceAttrInit(resourceId, instanceBasicMap)
@@ -474,7 +515,7 @@ func TestAccAlicloudRdsDBInstanceMultiInstance(t *testing.T) {
 }
 
 func TestAccAlicloudRdsDBInstanceHighAvailabilityInstance(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance map[string]interface{}
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap2)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
@@ -569,7 +610,7 @@ resource "alicloud_vswitch" "slave_a" {
 }
 
 func TestAccAlicloudRdsDBInstanceEnterpriseEditionInstance(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance map[string]interface{}
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap2)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
@@ -673,7 +714,7 @@ resource "alicloud_vswitch" "slave_b" {
 
 // Unknown current resource exists
 func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
 	resourceId := "alicloud_db_instance.default"
@@ -834,7 +875,7 @@ resource "alicloud_security_group" "default" {
 }
 
 func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
 	resourceId := "alicloud_db_instance.default"
@@ -965,7 +1006,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 }
 
 func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
 	resourceId := "alicloud_db_instance.default"
@@ -1237,7 +1278,7 @@ resource "alicloud_kms_key" "default" {
 
 // Unknown current resource exists
 func TestAccAlicloudRdsDBInstancePPAS(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
 	resourceId := "alicloud_db_instance.default"
@@ -1406,7 +1447,7 @@ resource "alicloud_security_group" "default" {
 
 // Unknown current resource exists
 func TestAccAlicloudRdsDBInstanceMultiAZ(t *testing.T) {
-	var instance = &rds.DBInstanceAttribute{}
+	var instance map[string]interface{}
 	resourceId := "alicloud_db_instance.default"
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1479,7 +1520,7 @@ resource "alicloud_security_group" "default" {
 }
 
 func TestAccAlicloudRdsDBInstanceClassic(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance map[string]interface{}
 
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap)

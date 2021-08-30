@@ -6,7 +6,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -21,9 +20,9 @@ var DBReadWriteMap = map[string]string{
 }
 
 func TestAccAlicloudDBReadWriteSplittingConnection_update(t *testing.T) {
-	var connection = &rds.DBInstanceNetInfo{}
-	var primary = &rds.DBInstanceAttribute{}
-	var readonly = &rds.DBInstanceAttribute{}
+	var connection map[string]interface{}
+	var primary map[string]interface{}
+	var readonly map[string]interface{}
 
 	resourceId := "alicloud_db_read_write_splitting_connection.default"
 	ra := resourceAttrInit(resourceId, DBReadWriteMap)

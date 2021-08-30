@@ -37,12 +37,25 @@ func dataSourceAlicloudDBZones() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"MySQL", "SQLServer", "PostgreSQL", "PPAS", "MariaDB"}, false),
-				Default:      "MySQL",
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+			},
+			"db_instance_class": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"category": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance"}, false),
+			},
+			"db_instance_storage_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -76,14 +89,25 @@ func dataSourceAlicloudDBZones() *schema.Resource {
 
 func dataSourceAlicloudDBZonesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DescribeAvailableZones"
+	action := "DescribeAvailableResource"
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
-		"Engine":   d.Get("engine").(string),
 		"SourceIp": client.SourceIp,
+	}
+	if v, ok := d.GetOk("engine"); ok && v.(string) != "" {
+		request["Engine"] = v.(string)
 	}
 	if v, ok := d.GetOk("engine_version"); ok && v.(string) != "" {
 		request["EngineVersion"] = v.(string)
+	}
+	if v, ok := d.GetOk("db_instance_storage_type"); ok && v.(string) != "" {
+		request["DBInstanceStorageType"] = v.(string)
+	}
+	if v, ok := d.GetOk("category"); ok && v.(string) != "" {
+		request["Category"] = v.(string)
+	}
+	if v, ok := d.GetOk("db_instance_class"); ok && v.(string) != "" {
+		request["DBInstanceClass"] = v.(string)
 	}
 	instanceChargeType := d.Get("instance_charge_type").(string)
 	if instanceChargeType == string(PostPaid) {
@@ -125,7 +149,7 @@ func dataSourceAlicloudDBZonesRead(d *schema.ResourceData, meta interface{}) err
 	for _, v := range result {
 		zoneId := fmt.Sprint(v.(map[string]interface{})["ZoneId"])
 
-		if multi && !strings.Contains(zoneId, MULTI_IZ_SYMBOL) {
+		if (multi && !strings.Contains(zoneId, MULTI_IZ_SYMBOL)) || (!multi && strings.Contains(zoneId, MULTI_IZ_SYMBOL)) {
 			continue
 		}
 		ids = append(ids, zoneId)
@@ -134,19 +158,12 @@ func dataSourceAlicloudDBZonesRead(d *schema.ResourceData, meta interface{}) err
 		sort.Strings(ids)
 	}
 
-	if !multi {
-		for _, zoneId := range ids {
-			mapping := map[string]interface{}{"id": zoneId}
-			s = append(s, mapping)
+	for _, zoneId := range ids {
+		mapping := map[string]interface{}{
+			"id":             zoneId,
+			"multi_zone_ids": splitMultiZoneId(zoneId),
 		}
-	} else {
-		for _, zoneId := range ids {
-			mapping := map[string]interface{}{
-				"id":             zoneId,
-				"multi_zone_ids": splitMultiZoneId(zoneId),
-			}
-			s = append(s, mapping)
-		}
+		s = append(s, mapping)
 	}
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("zones", s); err != nil {

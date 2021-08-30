@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudDBAccountPrivilege_mysql(t *testing.T) {
 
-	var v *rds.DBInstanceAccount
+	var v map[string]interface{}
 	name := "tf-testAccDBAccountPrivilege_mysql"
 	resourceId := "alicloud_db_account_privilege.default"
 	var basicMap = map[string]string{
@@ -90,7 +89,7 @@ func TestAccAlicloudDBAccountPrivilege_mysql(t *testing.T) {
 
 func TestAccAlicloudDBAccountPrivilege_PostgreSql(t *testing.T) {
 
-	var v *rds.DBInstanceAccount
+	var v map[string]interface{}
 	name := "tf-testAccDBAccountPrivilege_PostgreSql"
 	resourceId := "alicloud_db_account_privilege.default"
 	var basicMap = map[string]string{

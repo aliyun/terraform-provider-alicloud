@@ -1388,25 +1388,28 @@ func (s *RdsService) flattenDBSecurityIPs(list []interface{}) []map[string]inter
 
 func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 	if d.HasChange("tags") {
-		oraw, nraw := d.GetChange("tags")
-		o := oraw.(map[string]interface{})
-		n := nraw.(map[string]interface{})
-		remove, add := diffRdsTags(o, n)
-
-		if len(remove) > 0 {
-			conn, err := s.client.NewRdsClient()
-			if err != nil {
-				return WrapError(err)
+		added, removed := parsingTags(d)
+		conn, err := s.client.NewRdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
 			}
-			action := "UntagResources"
+		}
+		if len(removedTagKeys) > 0 {
+			action := "UnTagResources"
 			request := map[string]interface{}{
-				"ResourceId":   &[]string{d.Id()},
-				"ResourceType": "INSTANCE",
-				"TagKey":       &remove,
 				"RegionId":     s.client.RegionId,
+				"ResourceType": "INSTANCE",
+				"ResourceId.1": d.Id(),
 				"SourceIp":     s.client.SourceIp,
 			}
-
+			for i, key := range removedTagKeys {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
 			wait := incrementalWait(1*time.Second, 2*time.Second)
 			runtime := util.RuntimeOptions{}
 			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
@@ -1426,19 +1429,20 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 			}
 		}
 
-		if len(add) > 0 {
-			conn, err := s.client.NewRdsClient()
-			if err != nil {
-				return WrapError(err)
-			}
+		if len(added) > 0 {
 			action := "TagResources"
 			request := map[string]interface{}{
-				"ResourceId":   &[]string{d.Id()},
-				"Tag":          &add,
-				"ResourceType": "INSTANCE",
 				"RegionId":     s.client.RegionId,
-				"SourceIp":     s.client.SourceIp,
+				"ResourceType": "INSTANCE",
+				"ResourceId.1": d.Id(),
 			}
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = value
+				count++
+			}
+
 			wait := incrementalWait(1*time.Second, 2*time.Second)
 			runtime := util.RuntimeOptions{}
 			err = resource.Retry(10*time.Minute, func() *resource.RetryError {

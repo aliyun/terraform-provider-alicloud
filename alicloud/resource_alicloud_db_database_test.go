@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudDBDatabaseUpdate(t *testing.T) {
-	var database *rds.Database
+	var v map[string]interface{}
 	resourceId := "alicloud_db_database.default"
 
 	var dbDatabaseBasicMap = map[string]string{
@@ -21,7 +20,7 @@ func TestAccAlicloudDBDatabaseUpdate(t *testing.T) {
 	}
 
 	ra := resourceAttrInit(resourceId, dbDatabaseBasicMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &database, func() interface{} {
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDBDatabase")
 	rac := resourceAttrCheckInit(rc, ra)

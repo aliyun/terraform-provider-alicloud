@@ -18,17 +18,14 @@ func TestAccAlicloudRdsDBInstanceClasses_base(t *testing.T) {
 			"zone_id": `"fake_zoneid"`,
 		}),
 	}
-	EngineConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
-			"engine": `"PostgreSQL"`,
-		}),
-	}
 	EngineVersionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"zone_id":        `"${data.alicloud_db_zones.default.zones.0.id}"`,
 			"engine":         `"MySQL"`,
-			"engine_version": `"5.6"`,
+			"engine_version": `"8.0"`,
 		}),
 		fakeConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"zone_id":        `"${data.alicloud_db_zones.default.zones.0.id}"`,
 			"engine":         `"MySQL"`,
 			"engine_version": `"3.0"`,
 		}),
@@ -36,37 +33,44 @@ func TestAccAlicloudRdsDBInstanceClasses_base(t *testing.T) {
 
 	ChargeTypeConf_Prepaid := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"zone_id":              `"${data.alicloud_db_zones.default.zones.0.id}"`,
 			"instance_charge_type": `"PrePaid"`,
 		}),
 	}
 	ChargeTypeConf_Postpaid := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"zone_id":              `"${data.alicloud_db_zones.default.zones.0.id}"`,
 			"instance_charge_type": `"PostPaid"`,
 		}),
 	}
 	StorageTypeConf_local_ssd := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"zone_id":      `"${data.alicloud_db_zones.default.zones.0.id}"`,
 			"storage_type": `"local_ssd"`,
 		}),
 	}
 
 	StorageTypeConf_cloud_ssd := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"zone_id":      `"${data.alicloud_db_zones.default.zones.0.id}"`,
 			"storage_type": `"cloud_ssd"`,
 		}),
 	}
 	multiZoneConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"zone_id":    `"${data.alicloud_db_zones.default.zones.0.id}"`,
 			"multi_zone": `"true"`,
 		}),
 	}
 	falseMultiZoneConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"zone_id":    `"${data.alicloud_db_zones.default.zones.0.id}"`,
 			"multi_zone": `"false"`,
 		}),
 	}
 	CategoryConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"zone_id":  `"${data.alicloud_db_zones.default.zones.0.id}"`,
 			"category": `"HighAvailability"`,
 		}),
 	}
@@ -78,7 +82,7 @@ func TestAccAlicloudRdsDBInstanceClasses_base(t *testing.T) {
 			"storage_type":         `"local_ssd"`,
 			"category":             `"HighAvailability"`,
 			"engine":               `"MySQL"`,
-			"engine_version":       `"5.6"`,
+			"engine_version":       `"8.0"`,
 		}),
 		fakeConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
 			"zone_id":              `"${data.alicloud_db_zones.default.zones.0.id}"`,
@@ -90,13 +94,12 @@ func TestAccAlicloudRdsDBInstanceClasses_base(t *testing.T) {
 
 	var existDBInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instance_classes.#":                           CHECKSET,
-			"instance_classes.0.instance_class":            CHECKSET,
-			"instance_classes.0.storage_range.min":         CHECKSET,
-			"instance_classes.0.storage_range.max":         CHECKSET,
-			"instance_classes.0.storage_range.step":        CHECKSET,
-			"instance_classes.0.zone_ids.0.id":             CHECKSET,
-			"instance_classes.0.zone_ids.0.sub_zone_ids.0": CHECKSET,
+			"instance_classes.#":                    CHECKSET,
+			"instance_classes.0.instance_class":     CHECKSET,
+			"instance_classes.0.storage_range.min":  CHECKSET,
+			"instance_classes.0.storage_range.max":  CHECKSET,
+			"instance_classes.0.storage_range.step": CHECKSET,
+			"instance_classes.0.zone_ids.0.id":      CHECKSET,
 		}
 	}
 
@@ -114,8 +117,8 @@ func TestAccAlicloudRdsDBInstanceClasses_base(t *testing.T) {
 
 	//DBInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConf, prePaidSortedByConf, postPaidSortedByConf,
 	//	ChargeTypeConf_Prepaid, ChargeTypeConf_Postpaid, CategoryConf, DBInstanceClassConf, multiZoneConf, falseMultiZoneConf, StorageTypeConf_local_ssd, StorageTypeConf_cloud_ssd, allConf)
-	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, ZoneIDConf, EngineConf, EngineVersionConf,
-		ChargeTypeConf_Prepaid, ChargeTypeConf_Postpaid, CategoryConf, multiZoneConf, falseMultiZoneConf, StorageTypeConf_local_ssd, StorageTypeConf_cloud_ssd, allConf)
+	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, ZoneIDConf, EngineVersionConf, ChargeTypeConf_Prepaid,
+		ChargeTypeConf_Postpaid, CategoryConf, multiZoneConf, falseMultiZoneConf, StorageTypeConf_local_ssd, StorageTypeConf_cloud_ssd, allConf)
 }
 
 func testAccCheckAlicloudDBInstanceClassesDataSourceConfig(attrMap map[string]string) string {
