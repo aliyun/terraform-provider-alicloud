@@ -506,6 +506,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_click_house_db_clusters":                     dataSourceAlicloudClickHouseDbClusters(),
 			"alicloud_direct_mail_domains":                         dataSourceAlicloudDirectMailDomains(),
 			"alicloud_bastionhost_host_groups":                     dataSourceAlicloudBastionhostHostGroups(),
+			"alicloud_vpc_dhcp_options_sets":                       dataSourceAlicloudVpcDhcpOptionsSets(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -907,6 +908,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_click_house_db_cluster":                     resourceAlicloudClickHouseDbCluster(),
 			"alicloud_direct_mail_domain":                         resourceAlicloudDirectMailDomain(),
 			"alicloud_bastionhost_host_group":                     resourceAlicloudBastionhostHostGroup(),
+			"alicloud_vpc_dhcp_options_set":                       resourceAlicloudVpcDhcpOptionsSet(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
