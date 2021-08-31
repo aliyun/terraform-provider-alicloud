@@ -893,7 +893,6 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ens_key_pair":                               resourceAlicloudEnsKeyPair(),
 			"alicloud_sae_application":                            resourceAlicloudSaeApplication(),
 			"alicloud_alb_rule":                                   resourceAlicloudAlbRule(),
-
 		},
 		ConfigureFunc: providerConfigure,
 	}
