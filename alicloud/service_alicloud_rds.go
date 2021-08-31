@@ -553,6 +553,73 @@ func (s *RdsService) RevokeAccountPrivilege(id, dbName string) error {
 	return nil
 }
 
+func (s *RdsService) ModifyDBAccessWhitelistSecurityIps(d *schema.ResourceData) error {
+	action := "ModifySecurityIps"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": d.Id(),
+		"SourceIp":     s.client.SourceIp,
+	}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	if l, ok := d.GetOk("db_instance_ip_array"); ok {
+		for _, e := range l.(*schema.Set).List() {
+			pack := e.(map[string]interface{})
+			//ips expand string list
+			ipList := expandStringList(pack["security_ips"].(*schema.Set).List())
+			ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
+			// default disable connect from outside
+			if ipstr == "" {
+				ipstr = LOCAL_HOST_IP
+			}
+
+			request["SecurityIps"] = ipstr
+			request["DBInstanceIPArrayName"] = pack["db_instance_ip_array_name"]
+			DBInstanceIPArrayAttribute := pack["db_instance_ip_array_attribute"]
+			WhitelistNetworkType := pack["whitelist_network_type"]
+			ModifyMode := pack["modify_mode"]
+			SecurityIPType := pack["security_ip_type"]
+			if DBInstanceIPArrayAttribute != nil && DBInstanceIPArrayAttribute != "" {
+				request["DBInstanceIPArrayAttribute"] = DBInstanceIPArrayAttribute
+			}
+			if SecurityIPType != nil && SecurityIPType != "" {
+				request["SecurityIPType"] = SecurityIPType
+			}
+			if WhitelistNetworkType != nil && WhitelistNetworkType != "" {
+				request["WhitelistNetworkType"] = WhitelistNetworkType
+			}
+			if ModifyMode != nil && ModifyMode != "" {
+				request["ModifyMode"] = ModifyMode
+			}
+
+			var response map[string]interface{}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(action, response, request)
+			if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
+				return WrapError(err)
+			}
+		}
+	}
+	return nil
+}
+
 func (s *RdsService) ReleaseDBPublicConnection(instanceId, connection string) error {
 	action := "ReleaseInstancePublicConnection"
 	request := map[string]interface{}{

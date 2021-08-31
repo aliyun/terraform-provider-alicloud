@@ -139,6 +139,43 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 			},
 
+			"db_instance_ip_array": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"security_ips": {
+							Type:     schema.TypeSet,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Optional: true,
+						},
+						"db_instance_ip_array_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "default",
+						},
+						"db_instance_ip_array_attribute": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"security_ip_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"whitelist_network_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"modify_mode": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"Cover", "Append", "Delete"}, false),
+						},
+					},
+				},
+			},
+
 			"security_ips": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -844,6 +881,13 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if d.HasChange("db_instance_ip_array") {
+		if err := rdsService.ModifyDBAccessWhitelistSecurityIps(d); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("db_instance_ip_array")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudDBInstanceRead(d, meta)
@@ -1321,6 +1365,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("ha_config", res["HAConfig"])
 	d.Set("manual_ha_time", res["ManualHATime"])
+
 	return nil
 }
 
