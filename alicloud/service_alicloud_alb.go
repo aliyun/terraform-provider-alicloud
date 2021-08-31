@@ -739,3 +739,42 @@ func (s *AlbService) AlbRuleStateRefreshFunc(id string, failStates []string) res
 		return object, fmt.Sprint(object["RuleStatus"]), nil
 	}
 }
+
+func (s *AlbService) DescribeAlbHealthCheckTemplate(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewAlbClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetHealthCheckTemplateAttribute"
+	request := map[string]interface{}{
+		"HealthCheckTemplateId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.HealthCheckTemplate"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ALB:HealthCheckTemplate", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
