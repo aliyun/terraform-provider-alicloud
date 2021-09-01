@@ -2,17 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-/**
-This resource has buried point data.
-VBR is buried point data.
-*/
-func SkipTestAccAlicloudCenTransitRouterRouteTablePropagationsDataSource(t *testing.T) {
+func TestAccAlicloudCenTransitRouterRouteTablePropagationsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterRouteTablePropagationsDataSourceName(rand, map[string]string{
@@ -62,7 +59,10 @@ func SkipTestAccAlicloudCenTransitRouterRouteTablePropagationsDataSource(t *test
 		existMapFunc: existAlicloudCenTransitRouterRouteTablePropagationsDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudCenTransitRouterRouteTablePropagationsDataSourceNameMapFunc,
 	}
-	alicloudCenTransitRouterRouteTablePropagationsCheckInfo.dataSourceTestCheck(t, rand, idsConf, statusConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.VbrSupportRegions)
+	}
+	alicloudCenTransitRouterRouteTablePropagationsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, allConf)
 }
 func testAccCheckAlicloudCenTransitRouterRouteTablePropagationsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -85,10 +85,26 @@ resource "alicloud_cen_transit_router" "default" {
 cen_id= alicloud_cen_instance.default.id
 }
 
+data "alicloud_express_connect_physical_connections" "nameRegex" {
+  name_regex = "^preserved-NODELETING"
+}
+
+resource "alicloud_express_connect_virtual_border_router" "default" {
+  local_gateway_ip           = "10.0.0.1"
+  peer_gateway_ip            = "10.0.0.2"
+  peering_subnet_mask        = "255.255.255.252"
+  physical_connection_id     = data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id
+  virtual_border_router_name = var.name
+  vlan_id                    = 1
+  min_rx_interval            = 1000
+  min_tx_interval            = 1000
+  detect_multiplier          = 10
+}
+
 resource "alicloud_cen_transit_router_vbr_attachment" "default" {
   cen_id = alicloud_cen_instance.default.id
   transit_router_id = alicloud_cen_transit_router.default.transit_router_id
-  vbr_id = "vbr-j6cxhs879lwxzosc4h0lv"
+  vbr_id = alicloud_express_connect_virtual_border_router.default.id
   auto_publish_route_enabled = true
   transit_router_attachment_name = var.name
   transit_router_attachment_description = "tf-test"

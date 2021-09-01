@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -88,7 +89,10 @@ func TestAccAlicloudCenTransitRouterRouteTablesDataSource(t *testing.T) {
 		existMapFunc: existAlicloudCenTransitRouterRouteTablesDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudCenTransitRouterRouteTablesDataSourceNameMapFunc,
 	}
-	alicloudCenTransitRouterRouteTablesCheckInfo.dataSourceTestCheck(t, rand, idsConf, transitRouterRouteTableStatusConf, nameRegexConf, statusConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
+	}
+	alicloudCenTransitRouterRouteTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, transitRouterRouteTableStatusConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
