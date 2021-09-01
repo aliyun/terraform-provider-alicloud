@@ -375,7 +375,7 @@ func (s *RamService) DescribeRamGroupPolicyAttachment(id string) (*ram.PolicyInL
 	listPoliciesForGroupResponse, _ := raw.(*ram.ListPoliciesForGroupResponse)
 	if len(listPoliciesForGroupResponse.Policies.Policy) > 0 {
 		for _, v := range listPoliciesForGroupResponse.Policies.Policy {
-			if v.PolicyName == parts[1] && v.PolicyType == parts[2] {
+			if v.PolicyType == parts[2] && (v.PolicyName == parts[1] || strings.ToLower(v.PolicyName) == strings.ToLower(parts[1])) {
 				return &v, nil
 			}
 		}
@@ -664,7 +664,7 @@ func (s *RamService) DescribeRamUserPolicyAttachment(id string) (*ram.PolicyInLi
 
 	if len(listPoliciesForUserResponse.Policies.Policy) > 0 {
 		for _, v := range listPoliciesForUserResponse.Policies.Policy {
-			if v.PolicyName == parts[1] && v.PolicyType == parts[2] {
+			if v.PolicyType == parts[2] && (v.PolicyName == parts[1] || strings.ToLower(v.PolicyName) == strings.ToLower(parts[1])) {
 				return &v, nil
 			}
 		}
@@ -733,7 +733,7 @@ func (s *RamService) DescribeRamRolePolicyAttachment(id string) (*ram.PolicyInLi
 
 	if len(listPoliciesForRoleResponse.Policies.Policy) > 0 {
 		for _, v := range listPoliciesForRoleResponse.Policies.Policy {
-			if v.PolicyName == parts[1] && v.PolicyType == parts[2] {
+			if v.PolicyType == parts[2] && (v.PolicyName == parts[1] || strings.ToLower(v.PolicyName) == strings.ToLower(parts[1])) {
 				return &v, nil
 			}
 		}

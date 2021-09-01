@@ -172,7 +172,7 @@ func dataSourceAlicloudDBInstanceEnginesRead(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AvailableZones", response)
 	}
-	for _, r := range resp.([]interface{}) {
+	for _, r := range resp.(map[string]interface{}) {
 		availableZoneItem := r.(map[string]interface{})
 
 		zoneId := fmt.Sprint(availableZoneItem["ZoneId"])
