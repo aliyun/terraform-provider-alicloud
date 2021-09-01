@@ -3,13 +3,12 @@ subcategory: "Message Center"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_msc_sub_contact"
 sidebar_current: "docs-alicloud-resource-msc-sub-contact"
-description: |- Provides a Alicloud Message Center Contact resource.
+  description: |- Provides a Alicloud Message Center Contact resource.
 ---
 
 # alicloud\_msc\_sub\_contact
 
 Provides a Msc Sub Contact resource.
-
 
 -> **NOTE:** Available in v1.132.0+.
 
@@ -21,7 +20,7 @@ Basic Usage
 resource "alicloud_msc_sub_contact" "default" {
   contact_name = example_value
   position = "CEO"
-  email =  "123@163.com"
+  email = "123@163.com"
   mobile = "153xxxxx906"
 }
 ```

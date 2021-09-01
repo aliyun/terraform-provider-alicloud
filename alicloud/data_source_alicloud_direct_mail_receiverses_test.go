@@ -11,7 +11,7 @@ import (
 )
 
 func TestAccAlicloudDirectMailReceiversesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(10000, 99999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDirectMailReceiversesDataSourceName(rand, map[string]string{
 			"ids": `[alicloud_direct_mail_receivers.default.id]`,
@@ -59,7 +59,7 @@ func TestAccAlicloudDirectMailReceiversesDataSource(t *testing.T) {
 			"receiverses.0.id":              CHECKSET,
 			"receiverses.0.create_time":     CHECKSET,
 			"receiverses.0.description":     fmt.Sprintf("tf-testAcc-%d", rand),
-			"receiverses.0.receivers_alias": "tf-vme8@onaliyun.com",
+			"receiverses.0.receivers_alias": fmt.Sprintf("%d@onaliyun.com", rand),
 			"receiverses.0.receivers_name":  fmt.Sprintf("tf-testAcc-%d", rand),
 			"receiverses.0.status":          `0`,
 		}
@@ -95,13 +95,13 @@ variable "name" {
 
 resource "alicloud_direct_mail_receivers" "default" {
 	receivers_name = var.name
-	receivers_alias = "tf-vme8@onaliyun.com"
+	receivers_alias = join("",["%d","@onaliyun.com"])
 	description =  var.name
 }
 
 data "alicloud_direct_mail_receiverses" "default" {
 	%s	
 }
-`, rand, strings.Join(pairs, " \n "))
+`, rand, rand, strings.Join(pairs, " \n "))
 	return config
 }
