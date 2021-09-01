@@ -132,7 +132,35 @@ resource "alicloud_log_audit" "example" {
   multi_account = ["123456789123", "12345678912300123"]
 }
 ```
+Resource Directory Usage
 
+```
+resource "alicloud_log_audit" "example" {
+  display_name = "tf-audit-test"
+  aliuid       = "12345678"
+  variable_map = {
+    "actiontrail_enabled" = "true",
+    "actiontrail_ttl"     = "180",
+    "oss_access_enabled"  = "true",
+    "oss_access_ttl"      = "180",
+  }
+  resource_directory_type = "all"
+}
+```
+```
+resource "alicloud_log_audit" "example" {
+  display_name = "tf-audit-test"
+  aliuid       = "12345678"
+  variable_map = {
+    "actiontrail_enabled" = "true",
+    "actiontrail_ttl"     = "180",
+    "oss_access_enabled"  = "true",
+    "oss_access_ttl"      = "180",
+  }
+  multi_account = ["123456789123", "12345678912300123"]
+  resource_directory_type = "custom"
+}
+```
 ## Argument Reference
 
 The following arguments are supported:
@@ -277,6 +305,7 @@ The following arguments are supported:
     
     - `k8s_ingress_ttl` - (Optional) K8s ingress log ttl. Default 180.
 * `multi_account` - (Optional) Multi-account configuration, please fill in multiple aliuid.
+* `resource_directory_type` - (Optional, Available in 1.135.0+) Resource Directory type. Optional values are all or custom. If the value is custom, argument multi_account should be provided.
                 
 
 ## Attributes Reference
