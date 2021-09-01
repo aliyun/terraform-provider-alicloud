@@ -3,7 +3,7 @@ subcategory: "Message Center"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_msc_sub_contacts"
 sidebar_current: "docs-alicloud-datasource-msc-sub-contacts"
-description: |- Provides a list of Message Center Contacts to the user.
+  description: |- Provides a list of Message Center Contacts to the user.
 ---
 
 # alicloud\_msc\_sub\_contacts

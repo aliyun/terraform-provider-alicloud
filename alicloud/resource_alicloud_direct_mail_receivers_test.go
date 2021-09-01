@@ -143,13 +143,13 @@ func TestAccAlicloudDirectMailReceivers_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"receivers_name":  "${var.name}",
-					"receivers_alias": "tf-vme8@onaliyun.com",
+					"receivers_alias": name + "@onaliyun.com",
 					"description":     name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"receivers_name":  name,
-						"receivers_alias": "tf-vme8@onaliyun.com",
+						"receivers_alias": name + "@onaliyun.com",
 						"description":     name,
 					}),
 				),
@@ -163,12 +163,7 @@ func TestAccAlicloudDirectMailReceivers_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudDirectMailReceiversMap0 = map[string]string{
-	"status":          CHECKSET,
-	"description":     CHECKSET,
-	"receivers_name":  CHECKSET,
-	"receivers_alias": "tf-vme8@onaliyun.com",
-}
+var AlicloudDirectMailReceiversMap0 = map[string]string{}
 
 func AlicloudDirectMailReceiversBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
