@@ -144,7 +144,7 @@ func TestAccAlicloudExpressConnectVirtualBorderRoutersDataSource(t *testing.T) {
 		fakeMapFunc:  fakeExpressConnectVirtualBorderRoutersMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+		testAccPreCheckWithRegions(t, true, connectivity.VbrSupportRegions)
 	}
 
 	ExpressConnectVirtualBorderRoutersInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, idsConf, nameRegexConf, statusConf, filterConf, allConf)
