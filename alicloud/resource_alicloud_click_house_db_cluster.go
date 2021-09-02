@@ -211,7 +211,7 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 	d.Set("encryption_key", object["EncryptionKey"])
 	d.Set("encryption_type", object["EncryptionType"])
 	d.Set("maintain_time", object["MaintainTime"])
-	d.Set("status",object["DBClusterStatus"])
+	d.Set("status", object["DBClusterStatus"])
 	d.Set("payment_type", convertClickHouseDbClusterPaymentTypeResponse(object["PayType"].(string)))
 	d.Set("storage_type", convertClickHouseDbClusterStorageTypeResponse(object["StorageType"].(string)))
 	d.Set("vswitch_id", object["VSwitchId"])
