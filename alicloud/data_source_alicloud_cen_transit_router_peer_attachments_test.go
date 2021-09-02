@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -68,6 +69,7 @@ func TestAccAlicloudCenTransitRouterPeerAttachmentsDataSource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenTransitRouterPeerAttachmentDestroyWithProviders(&providers),
@@ -86,21 +88,23 @@ variable "name" {
 }
 
 provider "alicloud" {
- alias = "hz"
- region = "cn-hangzhou"
-}
-
-provider "alicloud" {
   alias = "bj"
   region = "cn-beijing"
 }
 
+provider "alicloud" {
+  alias = "cn"
+  region = "cn-hangzhou"
+}
+
 resource "alicloud_cen_instance" "default" {
+  provider = alicloud.cn
   name = var.name
   protection_level = "REDUCED"
 }
 
 resource "alicloud_cen_bandwidth_package" "default" {
+  provider = alicloud.cn
   bandwidth                  = 5
   cen_bandwidth_package_name = var.name
   geographic_region_a_id     = "China"
@@ -108,25 +112,25 @@ resource "alicloud_cen_bandwidth_package" "default" {
 }
 
 resource "alicloud_cen_bandwidth_package_attachment" "default" {
+  provider = alicloud.cn
   instance_id          = alicloud_cen_instance.default.id
   bandwidth_package_id = alicloud_cen_bandwidth_package.default.id
 }
 
 resource "alicloud_cen_transit_router" "default_0" {
-  provider = alicloud.hz
-  cen_id = alicloud_cen_instance.default.id
-  transit_router_name = "tf-testacc12093"
-  depends_on = [alicloud_cen_bandwidth_package_attachment.default]
+  provider = alicloud.cn
+  cen_id = alicloud_cen_bandwidth_package_attachment.default.instance_id
+  transit_router_name = "${var.name}-00"
 }
 
 resource "alicloud_cen_transit_router" "default_1" {
   provider = alicloud.bj
-  transit_router_name = "tf-testacc12214"
-  cen_id = alicloud_cen_instance.default.id
-  depends_on = [alicloud_cen_transit_router.default_0]
+  cen_id = alicloud_cen_transit_router.default_0.cen_id
+  transit_router_name = "${var.name}-01"
 }
 
 resource "alicloud_cen_transit_router_peer_attachment" "default" {
+  provider = alicloud.cn
   cen_id                                = alicloud_cen_instance.default.id
   transit_router_id                     = alicloud_cen_transit_router.default_0.transit_router_id
   peer_transit_router_region_id         = "cn-beijing"
@@ -138,6 +142,7 @@ resource "alicloud_cen_transit_router_peer_attachment" "default" {
 }
 
 data "alicloud_cen_transit_router_peer_attachments" "default" {
+  provider = alicloud.cn
   cen_id = alicloud_cen_transit_router_peer_attachment.default.cen_id
 	%s
 }

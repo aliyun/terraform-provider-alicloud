@@ -20,9 +20,9 @@ func TestAccAlicloudCenRouteEntriesDataSource(t *testing.T) {
 			"cidr_block":     `"11.0.0.0/16"`,
 		}),
 		fakeConfig: testAccAlicloudCenRouteEntriesDataSourceConfig(rand, map[string]string{
-			"instance_id":    `"${alicloud_cen_route_entry.default.instance_id}_fake"`,
+			"instance_id":    `"${alicloud_cen_route_entry.default.instance_id}"`,
 			"route_table_id": `"${alicloud_cen_route_entry.default.route_table_id}"`,
-			"cidr_block":     `"11.1.0.0/16"`,
+			"cidr_block":     `"11.2.0.0/16"`,
 		}),
 	}
 	preCheck := func() {
