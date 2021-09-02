@@ -54,7 +54,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Virtual Border Router IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Virtual Border Router name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) To DO so, the instance state with. Valid values: `active`, `deleting`, `recovering`, `terminated`, `terminating`, `unconfirmed`.
+* `status` - (Optional, ForceNew) The instance state with. Valid values: `active`, `deleting`, `recovering`, `terminated`, `terminating`, `unconfirmed`.
 
 ### Block filter
 
@@ -71,11 +71,11 @@ The following attributes are exported in addition to the arguments listed above:
 * `names` - A list of Virtual Border Router names.
 * `routers` - A list of Express Connect Virtual Border Routers. Each element contains the following attributes:
 	* `access_point_id` - The physical leased line access point ID.
-	* `activation_time` - To DO so, the first activation of the time.
+	* `activation_time` - The first activation time of VBR.
 	* `circuit_code` - Operators for physical connection circuit provided coding.
 	* `cloud_box_instance_id` - Box Instance Id.
 	* `create_time` - The representative of the creation time resources attribute field.
-	* `description` - To DO so, the description of. Length is from 2 to 256 characters, must start with a letter or the Chinese at the beginning, but not at the http:// Or https:// at the beginning.
+	* `description` - The description of VBR. Length is from 2 to 256 characters, must start with a letter or the Chinese at the beginning, but not at the http:// Or https:// at the beginning.
 	* `detect_multiplier` - Detection time multiplier that recipient allows the sender to send a message of the maximum allowable connections for the number of packets, used to detect whether the link normal. Value: 3~10.
 	* `ecc_id` - High Speed Migration Service Instance Id.
 	* `enable_ipv6` - Whether to Enable IPv6.
@@ -95,10 +95,10 @@ The following attributes are exported in addition to the arguments listed above:
 	* `physical_connection_status` - Physical Private Line State.
 	* `recovery_time` - The Last from a Terminated State to the Active State of the Time.
 	* `route_table_id` - Route Table ID.
-	* `status` - To DO so, the instance state with.
+	* `status` - The VBR state.
 	* `termination_time` - The Most Recent Was Aborted by the Time.
 	* `type` - VBR Type.
-	* `virtual_border_router_id` - To DO so, the instance ID.
-	* `virtual_border_router_name` - To DO so, the name of the root directory. Length is from 2 to 128 characters, must start with a letter or the Chinese at the beginning can contain numbers, the underscore character (_) and dash (-). But do not start with http:// or https:// at the beginning.
-	* `vlan_id` - To DO so, the VLAN ID of the value range: 0~2999.
+	* `virtual_border_router_id` - The VBR ID.
+	* `virtual_border_router_name` - The name of VBR. Length is from 2 to 128 characters, must start with a letter or the Chinese at the beginning can contain numbers, the underscore character (_) and dash (-). But do not start with http:// or https:// at the beginning.
+	* `vlan_id` - The VLAN ID of the VBR. Value range: 0~2999.
 	* `vlan_interface_id` - The ID of the Router Interface.
