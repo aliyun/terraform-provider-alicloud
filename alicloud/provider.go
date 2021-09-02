@@ -502,6 +502,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_metric_rule_templates":                   dataSourceAlicloudCmsMetricRuleTemplates(),
 			"alicloud_express_connect_virtual_border_routers":      dataSourceAlicloudExpressConnectVirtualBorderRouters(),
 			"alicloud_imm_projects":                                dataSourceAlicloudImmProjects(),
+			"alicloud_click_house_db_clusters":                     dataSourceAlicloudClickHouseDbClusters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -899,6 +900,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_metric_rule_template":                   resourceAlicloudCmsMetricRuleTemplate(),
 			"alicloud_express_connect_virtual_border_router":      resourceAlicloudExpressConnectVirtualBorderRouter(),
 			"alicloud_imm_project":                                resourceAlicloudImmProject(),
+			"alicloud_click_house_db_cluster":                     resourceAlicloudClickHouseDbCluster(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1076,6 +1078,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EhpcEndpoint = strings.TrimSpace(endpoints["ehpc"].(string))
 		config.EnsEndpoint = strings.TrimSpace(endpoints["ens"].(string))
 		config.ImmEndpoint = strings.TrimSpace(endpoints["imm"].(string))
+		config.ClickhouseEndpoint = strings.TrimSpace(endpoints["clickhouse"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1337,6 +1340,8 @@ func init() {
 		"ens_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ens endpoints.",
 
 		"imm_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom imm endpoints.",
+
+		"clickhouse_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom clickhouse endpoints.",
 	}
 }
 
@@ -1386,6 +1391,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["imm_endpoint"],
+				},
+				"clickhouse": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["clickhouse_endpoint"],
 				},
 
 				"alidfs": {
@@ -2036,6 +2047,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["ehpc"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ens"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["imm"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["clickhouse"].(string)))
 	return hashcode.String(buf.String())
 }
 

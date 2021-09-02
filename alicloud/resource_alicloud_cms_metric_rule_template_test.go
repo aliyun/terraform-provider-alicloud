@@ -118,6 +118,7 @@ func TestAccAlicloudCloudMonitorServiceMetricRuleTemplate_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

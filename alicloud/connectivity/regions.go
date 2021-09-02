@@ -138,3 +138,4 @@ var AlbSupportRegions = []Region{Hangzhou, Shanghai, Qingdao, Zhangjiakou, Beiji
 var IMMSupportRegions = []Region{Hangzhou, Zhangjiakou, APSouthEast1, Shenzhen, Beijing, Shanghai}
 var CenTRSupportRegions = []Region{Hangzhou, Shanghai, Beijing, Shenzhen, Hongkong, APSouthEast1, USEast1, APSouth1}
 var VbrSupportRegions = []Region{Hangzhou}
+var ClickHouseSupportRegions = []Region{APSouthEast1,Shenzhen,EUCentral1}

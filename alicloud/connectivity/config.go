@@ -138,6 +138,7 @@ type Config struct {
 	EhpcEndpoint                string
 	EnsEndpoint                 string
 	ImmEndpoint                 string
+	ClickhouseEndpoint          string
 }
 
 func (c *Config) loadAndValidate() error {
