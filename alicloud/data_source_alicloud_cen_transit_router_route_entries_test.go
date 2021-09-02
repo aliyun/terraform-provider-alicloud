@@ -105,7 +105,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
   peering_subnet_mask        = "255.255.255.252"
   physical_connection_id     = data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = 1
+  vlan_id                    = 12
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
@@ -121,17 +121,17 @@ resource "alicloud_cen_transit_router_vbr_attachment" "default" {
 }
 
 resource "alicloud_cen_transit_router_route_table" "default" {
-transit_router_id = alicloud_cen_transit_router.default.transit_router_id
-transit_router_route_table_name = var.name
+	transit_router_id = alicloud_cen_transit_router_vbr_attachment.default.transit_router_id
+	transit_router_route_table_name = var.name
 }
 
 resource "alicloud_cen_transit_router_route_entry" "default" {
-transit_router_route_entry_description = "desc"
-transit_router_route_entry_destination_cidr_block = "192.168.1.0/24"
-transit_router_route_entry_name = var.name
-transit_router_route_entry_next_hop_id = alicloud_cen_transit_router_vbr_attachment.default.transit_router_attachment_id
-transit_router_route_entry_next_hop_type = "Attachment"
-transit_router_route_table_id = alicloud_cen_transit_router_route_table.default.transit_router_route_table_id
+	transit_router_route_entry_description = "desc"
+	transit_router_route_entry_destination_cidr_block = "192.168.1.0/24"
+	transit_router_route_entry_name = var.name
+	transit_router_route_entry_next_hop_id = alicloud_cen_transit_router_vbr_attachment.default.transit_router_attachment_id
+	transit_router_route_entry_next_hop_type = "Attachment"
+	transit_router_route_table_id = alicloud_cen_transit_router_route_table.default.transit_router_route_table_id
 }
 
 data "alicloud_cen_transit_router_route_entries" "default" {

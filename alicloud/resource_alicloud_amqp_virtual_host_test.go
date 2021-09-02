@@ -71,6 +71,9 @@ func testSweepAmqpVirtualHost(region string) error {
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			instanceId := fmt.Sprint(item["InstanceId"])
+			if fmt.Sprint(item["Status"]) != "SERVING" {
+				continue
+			}
 			action := "ListVirtualHosts"
 			request := make(map[string]interface{})
 			request["InstanceId"] = instanceId
