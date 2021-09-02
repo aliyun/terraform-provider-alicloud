@@ -2,6 +2,8 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strings"
 	"testing"
@@ -25,9 +27,13 @@ func init() {
 			"alicloud_cen_bandwidth_package",
 			"alicloud_cen_flowlog",
 			"alicloud_cen_instance_attachment",
+			"alicloud_cen_transit_router",
+			"alicloud_cen_bandwidth_limit",
 		},
 	})
 }
+
+var sweepCenInstanceIds []string
 
 func testSweepCenInstances(region string) error {
 	rawClient, err := sharedClientForRegion(region)
@@ -70,7 +76,7 @@ func testSweepCenInstances(region string) error {
 		describeCensRequest.PageNumber = page
 	}
 
-	sweeped := false
+	sweepCenInstanceIds = make([]string, 0)
 	for _, v := range insts {
 		name := v.Name
 		id := v.CenId
@@ -85,6 +91,7 @@ func testSweepCenInstances(region string) error {
 			log.Printf("[INFO] Skipping CEN Instance: %s (%s)", name, id)
 			continue
 		}
+		sweepCenInstanceIds = append(sweepCenInstanceIds, id)
 		describeCenAttachedChildInstancesRequest := cbn.CreateDescribeCenAttachedChildInstancesRequest()
 		describeCenAttachedChildInstancesRequest.CenId = id
 		raw, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
@@ -114,6 +121,238 @@ func testSweepCenInstances(region string) error {
 				log.Printf("[ERROR] Failed to WaitFor CEN Attached Instance Detached (%s (%s %s)): %s", name, id, instanceId, err)
 			}
 		}
+
+		action := "ListTransitRouterVbrAttachments"
+		request := make(map[string]interface{})
+		request["CenId"] = id
+		request["RegionId"] = client.RegionId
+		request["PageSize"] = PageSizeLarge
+		request["PageNumber"] = 1
+		var response map[string]interface{}
+		conn, err := client.NewCbnClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		for {
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				log.Printf("[ERROR] %s failed: %v", action, err)
+				return nil
+			}
+			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				name := fmt.Sprint(item["TransitRouterAttachmentName"])
+				id := fmt.Sprint(item["TransitRouterAttachmentId"])
+				skip := true
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(name, prefix) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[DEBUG] Skipping the tr %s", name)
+					continue
+				}
+				action := "DeleteTransitRouterVbrAttachment"
+				log.Printf("[DEBUG] %s %s", action, name)
+
+				request := map[string]interface{}{
+					"TransitRouterAttachmentId": id,
+				}
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					log.Printf("[ERROR] %s failed %v", action, err)
+				}
+			}
+			if len(result) < PageSizeLarge {
+				break
+			}
+			request["PageNumber"] = request["PageNumber"].(int) + 1
+		}
+
+		action = "ListTransitRouterVpcAttachments"
+		request = make(map[string]interface{})
+		request["CenId"] = id
+		request["RegionId"] = client.RegionId
+		request["PageSize"] = PageSizeLarge
+		request["PageNumber"] = 1
+		for {
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				log.Printf("[ERROR] %s failed: %v", action, err)
+				return nil
+			}
+			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				name := fmt.Sprint(item["TransitRouterAttachmentName"])
+				id := fmt.Sprint(item["TransitRouterAttachmentId"])
+				skip := true
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(name, prefix) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[DEBUG] Skipping the tr %s", name)
+					continue
+				}
+				action := "DeleteTransitRouterVpcAttachment"
+				log.Printf("[DEBUG] %s %s", action, name)
+
+				request := map[string]interface{}{
+					"TransitRouterAttachmentId": id,
+				}
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					log.Printf("[ERROR] %s failed %v", action, err)
+				}
+			}
+			if len(result) < PageSizeLarge {
+				break
+			}
+			request["PageNumber"] = request["PageNumber"].(int) + 1
+		}
+
+		action = "ListTransitRouterPeerAttachments"
+		request = make(map[string]interface{})
+		request["CenId"] = id
+		request["RegionId"] = client.RegionId
+		request["PageSize"] = PageSizeLarge
+		request["PageNumber"] = 1
+		for {
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				log.Printf("[ERROR] %s failed: %v", action, err)
+				return nil
+			}
+			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				name := fmt.Sprint(item["TransitRouterAttachmentName"])
+				id := fmt.Sprint(item["TransitRouterAttachmentId"])
+				skip := true
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(name, prefix) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[DEBUG] Skipping the tr %s", name)
+					continue
+				}
+
+				action := "DeleteTransitRouterPeerAttachment"
+				log.Printf("[DEBUG] %s %s", action, name)
+
+				request := map[string]interface{}{
+					"TransitRouterAttachmentId": id,
+				}
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					log.Printf("[ERROR] %s failed %v", action, err)
+				}
+			}
+			if len(result) < PageSizeLarge {
+				break
+			}
+			request["PageNumber"] = request["PageNumber"].(int) + 1
+		}
+
 		log.Printf("[INFO] Deleting CEN Instance: %s (%s)", name, id)
 		deleteCenRequest := cbn.CreateDeleteCenRequest()
 		deleteCenRequest.CenId = id
@@ -122,13 +361,7 @@ func testSweepCenInstances(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete CEN Instance (%s (%s)): %s", name, id, err)
-		} else {
-			sweeped = true
 		}
-	}
-	if sweeped {
-		// Waiting 5 seconds to eusure these instances have been deleted.
-		time.Sleep(5 * time.Second)
 	}
 	return nil
 }
