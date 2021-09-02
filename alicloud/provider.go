@@ -518,6 +518,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_directories":                       dataSourceAlicloudCloudSsoDirectories(),
 			"alicloud_bastionhost_host_accounts":                   dataSourceAlicloudBastionhostHostAccounts(),
 			"alicloud_waf_certificates":                            dataSourceAlicloudWafCertificates(),
+			"alicloud_simple_application_server_instances":         dataSourceAlicloudSimpleApplicationServerInstances(),
+			"alicloud_simple_application_server_plans":             dataSourceAlicloudSimpleApplicationServerPlans(),
+			"alicloud_simple_application_server_images":            dataSourceAlicloudSimpleApplicationServerImages(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -934,6 +937,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_bastionhost_host_account":                   resourceAlicloudBastionhostHostAccount(),
 			"alicloud_bastionhost_host_attachment":                resourceAlicloudBastionhostHostAttachment(),
 			"alicloud_waf_certificate":                            resourceAlicloudWafCertificate(),
+			"alicloud_simple_application_server_instance":         resourceAlicloudSimpleApplicationServerInstance(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1117,6 +1121,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DgEndpoint = strings.TrimSpace(endpoints["dg"].(string))
 		config.CloudssoEndpoint = strings.TrimSpace(endpoints["cloudsso"].(string))
 		config.WafEndpoint = strings.TrimSpace(endpoints["waf"].(string))
+		config.SwasEndpoint = strings.TrimSpace(endpoints["swas"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1394,6 +1399,8 @@ func init() {
 		"cloudsso_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudsso endpoints.",
 
 		"waf_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom waf endpoints.",
+
+		"swas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom swas endpoints.",
 	}
 }
 
@@ -1469,6 +1476,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["iot_endpoint"],
+				},
+				"swas": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["swas_endpoint"],
 				},
 
 				"imm": {
@@ -2138,6 +2151,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["dg"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudsso"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["waf"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["swas"].(string)))
 	return hashcode.String(buf.String())
 }
 
