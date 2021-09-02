@@ -226,6 +226,9 @@ func resourceAlicloudCenTransitRouterDelete(d *schema.ResourceData, meta interfa
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterInstanceId"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
