@@ -142,6 +142,7 @@ type Config struct {
 	ClickhouseEndpoint          string
 	DtsEndpoint                 string
 	DgEndpoint                  string
+	CloudssoEndpoint            string
 }
 
 func (c *Config) loadAndValidate() error {
