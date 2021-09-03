@@ -35,71 +35,74 @@ func testSweepAlbAcl(region string) error {
 		"tf_testAcc",
 	}
 	action := "ListAcls"
-	request := map[string]interface{}{
-		"MaxResults": 100,
-	}
+	request := map[string]interface{}{}
+
+	request["MaxResults"] = PageSizeXLarge
+
 	var response map[string]interface{}
 	conn, err := client.NewAlbClient()
 	if err != nil {
 		log.Printf("[ERROR] %s get an error: %#v", action, err)
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
-		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
-
-	resp, err := jsonpath.Get("$.Acls", response)
-
-	if formatInt(response["TotalCount"]) != 0 && err != nil {
-		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Acls", action, err)
-		return nil
-	}
-	sweeped := false
-	result, _ := resp.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(item["AclName"].(string)), strings.ToLower(prefix)) {
-				skip = false
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping ALB Acl: %s", item["AclName"].(string))
-			continue
-		}
-
-		sweeped = true
-		action := "DeleteAcl"
-		request := map[string]interface{}{
-			"AclId": item["AclId"],
-		}
-		request["ClientToken"] = buildClientToken("DeleteAcl")
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			return nil
+		})
+		addDebug(action, response, request)
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete ALB Acl (%s): %s", item["AclName"].(string), err)
+			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			return nil
 		}
-		if sweeped {
-			// Waiting 5 seconds to ensure ALB Acl have been deleted.
-			time.Sleep(5 * time.Second)
+
+		resp, err := jsonpath.Get("$.Acls", response)
+		if formatInt(response["TotalCount"]) != 0 && err != nil {
+			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Acls", action, err)
+			return nil
 		}
-		log.Printf("[INFO] Delete ALB Acl success: %s ", item["AclName"].(string))
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+
+			if _, ok := item["AclName"]; !ok {
+				continue
+			}
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(item["AclName"].(string)), strings.ToLower(prefix)) {
+					skip = false
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Alb Acl: %s", item["AclName"].(string))
+				continue
+			}
+			action := "DeleteAcl"
+			request := map[string]interface{}{
+				"AclId": item["AclId"],
+			}
+			request["ClientToken"] = buildClientToken("DeleteAcl")
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Alb Acl (%s): %s", item["AclId"].(string), err)
+			}
+			log.Printf("[INFO] Delete Alb Acl success: %s ", item["AclId"].(string))
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
 	}
 	return nil
 }
