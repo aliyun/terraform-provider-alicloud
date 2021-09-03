@@ -32,8 +32,8 @@ func testSweepNasAccessGroup(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
+		"tf-testacc",
+		"tf_testacc",
 	}
 
 	action := "DescribeAccessGroups"
@@ -63,7 +63,7 @@ func testSweepNasAccessGroup(region string) error {
 			name := item["AccessGroupName"].(string)
 			skip := true
 			for _, prefix := range prefixes {
-				if strings.HasPrefix(name, prefix) {
+				if strings.HasPrefix(strings.ToLower(name), prefix) {
 					skip = false
 					break
 				}
