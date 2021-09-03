@@ -203,7 +203,8 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"deploy_type": "4",
-						"eip_max":     "1"}),
+						"eip_max":     "1",
+					}),
 				),
 			},
 

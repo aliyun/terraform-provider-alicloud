@@ -18,9 +18,6 @@ func init() {
 	resource.AddTestSweepers("alicloud_click_house_db_cluster", &resource.Sweeper{
 		Name: "alicloud_click_house_db_cluster",
 		F:    testSweepClickhouseDbCLuster,
-		Dependencies: []string{
-			"alicloud_click_house_db_cluster",
-		},
 	})
 }
 
