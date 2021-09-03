@@ -1125,7 +1125,11 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	if config.ConfigurationSource == "" {
-		sourceName := fmt.Sprintf("Default/%s:%s", config.AccessKey, strings.Trim(uuid.New().String(), "-"))
+		sourceAccessKey := config.AccessKey
+		if len(sourceAccessKey) > 25 {
+			sourceAccessKey = sourceAccessKey[:25]
+		}
+		sourceName := fmt.Sprintf("Default/%s:%s", sourceAccessKey, strings.Trim(uuid.New().String(), "-"))
 		if len(sourceName) > 64 {
 			sourceName = sourceName[:64]
 		}

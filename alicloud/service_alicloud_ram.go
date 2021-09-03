@@ -212,7 +212,8 @@ func (s *RamService) DescribeRamUser(id string) (*ram.UserInGetUser, error) {
 		addDebug(listUsersRequest.GetActionName(), raw, listUsersRequest.RegionId, listUsersRequest)
 		response, _ := raw.(*ram.ListUsersResponse)
 		for _, user := range response.Users.User {
-			if user.UserId == id {
+			// the d.Id() has changed from userName to userId since v1.44.0, add the logic for backward compatibility.
+			if user.UserId == id || user.UserName == id {
 				userName = user.UserName
 				break
 			}
@@ -224,8 +225,7 @@ func (s *RamService) DescribeRamUser(id string) (*ram.UserInGetUser, error) {
 	}
 
 	if userName == "" {
-		// the d.Id() has changed from userName to userId since v1.44.0, add the logic for backward compatibility.
-		userName = id
+		return user, WrapErrorf(fmt.Errorf("there is no ram user with id or name is %s", id), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
 	getUserRequest := ram.CreateGetUserRequest()
 	getUserRequest.RegionId = s.client.RegionId
