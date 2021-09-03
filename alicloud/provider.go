@@ -913,6 +913,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_dhcp_options_set":                       resourceAlicloudVpcDhcpOptionsSet(),
 			"alicloud_alb_health_check_template":                  resourceAlicloudAlbHealthCheckTemplate(),
 			"alicloud_cdn_real_time_log_delivery":                 resourceAlicloudCdnRealTimeLogDelivery(),
+			"alicloud_bastionhost_user_attachment":                resourceAlicloudBastionhostUserAttachment(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
