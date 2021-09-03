@@ -156,7 +156,7 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action"},
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type"},
 			},
 			{
 				Config: testMongoDBInstance_classic_ssl_action,
@@ -309,7 +309,7 @@ func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action"},
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type"},
 			},
 			{
 				Config: testMongoDBInstance_classic_tde,
@@ -359,7 +359,7 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action"},
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type"},
 			},
 			{
 				Config: testMongoDBInstance_vpc_name,
@@ -462,7 +462,7 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action"},
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type"},
 			},
 			{
 				Config: testMongoDBInstance_multiAZ_name,

@@ -84,6 +84,11 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `tde_status` - (Optional, Available in 1.73.0+) The TDE(Transparent Data Encryption) status.
 * `maintain_start_time` - (Optional, Available in v1.56.0+) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available in v1.56.0+) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
+* `order_type` - (Optional, Available in v1.134.0+) The type of configuration changes performed. Default value: DOWNGRADE. Valid values:
+  * UPGRADE: The specifications are upgraded.
+  * DOWNGRADE: The specifications are downgraded.
+    Note: This parameter is only applicable to instances when `instance_charge_type` is PrePaid.
+    
 * `ssl_action` - (Optional, Available in v1.78.0+) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate.
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
 

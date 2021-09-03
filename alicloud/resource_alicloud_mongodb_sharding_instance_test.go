@@ -177,9 +177,10 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"order_type"},
 			},
 			{
 				Config: testMongoDBShardingInstance_classic_name,
@@ -306,9 +307,10 @@ func TestAccAlicloudMongoDBShardingInstance_classicVersion4(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"order_type"},
 			},
 			{
 				Config: testMongoDBShardingInstance_classic_tde,
@@ -371,9 +373,10 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"order_type"},
 			},
 			{
 				Config: testMongoDBShardingInstance_vpc_name,

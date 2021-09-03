@@ -163,6 +163,11 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"order_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
+			},
 			"ssl_status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -529,6 +534,11 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		request := dds.CreateModifyDBInstanceSpecRequest()
 		request.DBInstanceId = d.Id()
 
+		if d.Get("instance_charge_type").(string) == "PrePaid" {
+			if v, ok := d.GetOk("order_type"); ok {
+				request.OrderType = v.(string)
+			}
+		}
 		request.DBInstanceClass = d.Get("db_instance_class").(string)
 		request.DBInstanceStorage = strconv.Itoa(d.Get("db_instance_storage").(int))
 		request.ReplicationFactor = strconv.Itoa(d.Get("replication_factor").(int))

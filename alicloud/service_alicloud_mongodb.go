@@ -220,6 +220,11 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 		if state["node_class"] != diff["node_class"] ||
 			state["node_storage"] != diff["node_storage"] {
 			request := dds.CreateModifyNodeSpecRequest()
+			if d.Get("instance_charge_type").(string) == "PrePaid" {
+				if v, ok := d.GetOk("order_type"); ok {
+					request.OrderType = v.(string)
+				}
+			}
 			request.RegionId = server.client.RegionId
 			request.DBInstanceId = d.Id()
 			request.NodeClass = diff["node_class"].(string)

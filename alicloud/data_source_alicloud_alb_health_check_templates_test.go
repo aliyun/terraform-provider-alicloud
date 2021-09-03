@@ -66,8 +66,8 @@ func TestAccAlicloudAlbHealthCheckTemplatesDataSource(t *testing.T) {
 
 	var existDataAlicloudAlbHealthCheckTemplatesSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                 "1",
-			"templates.#":           "1",
+			"ids.#":                                  "1",
+			"templates.#":                            "1",
 			"templates.0.health_check_template_name": fmt.Sprintf("tf-testAccAlbHealthCheckTemplate%d", rand),
 		}
 	}
