@@ -2,12 +2,103 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_alb_load_balancer",
+		&resource.Sweeper{
+			Name: "alicloud_alb_load_balancer",
+			F:    testSweepAlbLoadBalancer,
+		})
+}
+
+func testSweepAlbLoadBalancer(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	action := "ListLoadBalancers"
+	request := map[string]interface{}{
+		"MaxResults": PageSizeXLarge,
+	}
+	var response map[string]interface{}
+	conn, err := client.NewAlbClient()
+	if err != nil {
+		log.Printf("[ERROR] %s get an error: %#v", action, err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		return nil
+	}
+
+	resp, err := jsonpath.Get("$.LoadBalancers", response)
+
+	if formatInt(response["TotalCount"]) != 0 && err != nil {
+		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.LoadBalancers", action, err)
+		return nil
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if _, ok := item["LoadBalancerName"]; !ok {
+			continue
+		}
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(item["LoadBalancerName"].(string)), strings.ToLower(prefix)) {
+				skip = false
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping ALB LoadBalancer: %s", item["LoadBalancerName"].(string))
+			continue
+		}
+
+		action := "DeleteLoadBalancer"
+		request := map[string]interface{}{
+			"LoadBalancerId": item["LoadBalancerId"],
+		}
+		request["ClientToken"] = buildClientToken("DeleteLoadBalancer")
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete ALB LoadBalancer (%s): %s", item["LoadBalancerId"].(string), err)
+		}
+		log.Printf("[INFO] Delete ALB LoadBalancer success: %s ", item["LoadBalancerId"].(string))
+	}
+	return nil
+}
 
 func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
 	var v map[string]interface{}
