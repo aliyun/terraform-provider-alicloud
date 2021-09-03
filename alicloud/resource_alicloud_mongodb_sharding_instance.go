@@ -184,6 +184,11 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 				MinItems: 2,
 				MaxItems: 32,
 			},
+			"order_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
+			},
 			"tags": tagsSchema(),
 		},
 	}

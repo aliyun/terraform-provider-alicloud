@@ -145,6 +145,10 @@ If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of 
     * `readonly_replicas` - (Optional, Available in 1.126.0+) The number of read-only nodes in shard node. Valid values: 0 to 5. Default value: 0.
 * `backup_period` - (Optional, Available in 1.42.0+) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
 * `backup_time` - (Optional, Available in 1.42.0+) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
+* `order_type` - (Optional, Available in v1.134.0+) The type of configuration changes performed. Default value: DOWNGRADE. Valid values:
+  * UPGRADE: The specifications are upgraded.
+  * DOWNGRADE: The specifications are downgraded. 
+    Note: This parameter is only applicable to instances when `instance_charge_type` is PrePaid.
 
 ## Attributes Reference
 
