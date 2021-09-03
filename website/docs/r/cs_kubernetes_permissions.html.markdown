@@ -86,7 +86,11 @@ resource "alicloud_ram_policy" "policy" {
   {
     "Statement": [
       {
-        "Action": "cs:Get*",
+        "Action": [
+          "cs:Get*",
+          "cs:List*",
+          "cs:Describe*"
+        ],
         "Effect": "Allow",
         "Resource": [
           "acs:cs:*:*:cluster/${alicloud_cs_managed_kubernetes.default.0.id}"
@@ -150,7 +154,11 @@ resource "alicloud_ram_policy" "policy" {
   {
     "Statement": [
       {
-        "Action": "cs:Get*",
+        "Action": [
+          "cs:Get*",
+          "cs:List*",
+          "cs:Describe*"
+        ],
         "Effect": "Allow",
         "Resource": [
           "acs:cs:*:*:cluster/${target cluster ID}"
