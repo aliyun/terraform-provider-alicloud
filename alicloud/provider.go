@@ -510,6 +510,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_health_check_templates":                  dataSourceAlicloudAlbHealthCheckTemplates(),
 			"alicloud_cdn_real_time_log_deliveries":                dataSourceAlicloudCdnRealTimeLogDeliveries(),
 			"alicloud_click_house_accounts":                        dataSourceAlicloudClickHouseAccounts(),
+			"alicloud_direct_mail_mail_addresses":                  dataSourceAlicloudDirectMailMailAddresses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -916,6 +917,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cdn_real_time_log_delivery":                 resourceAlicloudCdnRealTimeLogDelivery(),
 			"alicloud_click_house_account":                        resourceAlicloudClickHouseAccount(),
 			"alicloud_bastionhost_user_attachment":                resourceAlicloudBastionhostUserAttachment(),
+			"alicloud_direct_mail_mail_address":                   resourceAlicloudDirectMailMailAddress(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
