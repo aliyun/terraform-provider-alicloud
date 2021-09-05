@@ -32,8 +32,8 @@ func TestAccAlicloudBastionhostUserAttachment_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":   "${alicloud_bastionhost_instance.default.id}",
-					"user_group_id": "${alicloud_bastionhost_user.default.id}",
-					"user_id":       "${alicloud_bastionhost_user_group.default.id}",
+					"user_group_id": "${alicloud_bastionhost_user.default.user_group_id}",
+					"user_id":       "${alicloud_bastionhost_user_group.default.user_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

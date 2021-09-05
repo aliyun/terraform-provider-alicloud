@@ -41,10 +41,10 @@ func dataSourceAlicloudClickHouseAccounts() *schema.Resource {
 				ForceNew: true,
 			},
 			"status": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{"Creating","Available","Deleting"},false),
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Creating", "Available", "Deleting"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
