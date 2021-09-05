@@ -44,7 +44,7 @@ func testSweepSasGroup(region string) error {
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
@@ -65,7 +65,6 @@ func testSweepSasGroup(region string) error {
 		log.Printf("[ERROR] Failed to parse Sas Groups: %s", WrapErrorf(err, FailedGetAttributeMsg, action, "$.Groups", response))
 		return nil
 	}
-	sweeped := false
 	result, _ := resp.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
@@ -81,7 +80,6 @@ func testSweepSasGroup(region string) error {
 			continue
 		}
 
-		sweeped = true
 		action := "DeleteGroup"
 		request := map[string]interface{}{
 			"GroupId": item["GroupId"],
@@ -89,10 +87,6 @@ func testSweepSasGroup(region string) error {
 		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Sas Group (%s): %s", item["GroupName"].(string), err)
-		}
-		if sweeped {
-			// Waiting 5 seconds to ensure Ros StackGroup have been deleted.
-			time.Sleep(5 * time.Second)
 		}
 		log.Printf("[INFO] Delete Sas Group success: %s ", item["GroupName"].(string))
 
