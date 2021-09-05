@@ -6,36 +6,72 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudRdsDBZonesDataSource_basic(t *testing.T) {
+func TestAccAlicloudRdsDBZonesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_db_zones.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceDBZonesConfigDependence)
 
-	multiConfig := dataSourceTestAccConfig{
+	multiZoneTrueConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"multi": "true",
 		}),
 	}
 
-	chargeTypeConfig := dataSourceTestAccConfig{
+	multiZoneFalseConfig := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"multi": "false",
+		}),
+	}
+	chargeTypePostPaidConfig := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"instance_charge_type": "PostPaid",
+		}),
+	}
+	chargeTypePrePaidConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"instance_charge_type": "PrePaid",
 		}),
 	}
 	engineVersionConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"engine": "MySQL",
+			"engine":         "MySQL",
 			"engine_version": "8.0",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"engine":         "MySQL",
+			"engine_version": "2.0",
 		}),
 	}
 
-	allconfig := dataSourceTestAccConfig{
+	CategoryConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"multi":                "true",
-			"instance_charge_type": "PrePaid",
-			"engine": "MySQL",
-			"engine_version":       "8.0",
+			"engine_version": "8.0",
+			"category":       "HighAvailability",
+		}),
+	}
+	StorageTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"db_instance_storage_type": "local_ssd",
+		}),
+	}
+
+	allConfig := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"multi":                    "true",
+			"instance_charge_type":     "PrePaid",
+			"engine":                   "MySQL",
+			"engine_version":           "8.0",
+			"category":                 "HighAvailability",
+			"db_instance_storage_type": "cloud_ssd",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"multi":                    "true",
+			"instance_charge_type":     "PrePaid",
+			"engine":                   "MySQL",
+			"engine_version":           "2.0",
+			"category":                 "HighAvailability",
+			"db_instance_storage_type": "cloud_ssd",
 		}),
 	}
 
@@ -62,7 +98,7 @@ func TestAccAlicloudRdsDBZonesDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeDBZonesMapFunc,
 	}
 
-	DBZonesCheckInfo.dataSourceTestCheck(t, rand, multiConfig, chargeTypeConfig, engineVersionConfig, allconfig)
+	DBZonesCheckInfo.dataSourceTestCheck(t, rand, multiZoneTrueConfig, multiZoneFalseConfig, chargeTypePostPaidConfig, chargeTypePrePaidConfig, engineVersionConfig, CategoryConf, StorageTypeConf, allConfig)
 }
 
 func dataSourceDBZonesConfigDependence(name string) string {
