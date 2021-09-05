@@ -25,6 +25,7 @@ func TestAccAlicloudRdsDBZonesDataSource_basic(t *testing.T) {
 	}
 	engineVersionConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
+			"engine": "MySQL",
 			"engine_version": "8.0",
 		}),
 	}
@@ -33,6 +34,7 @@ func TestAccAlicloudRdsDBZonesDataSource_basic(t *testing.T) {
 		existConfig: testAccConfig(map[string]interface{}{
 			"multi":                "true",
 			"instance_charge_type": "PrePaid",
+			"engine": "MySQL",
 			"engine_version":       "8.0",
 		}),
 	}

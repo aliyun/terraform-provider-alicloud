@@ -24,14 +24,14 @@ func resourceAlicloudDirectMailMailAddress() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"account_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-z0-9_-]+@[a-z0-9_-]+(\.[a-z0-9_-]+)+$`), "The email address must be filled in the format of account@domain, and only lowercase letters or numbers can be used."),
 			},
 			"password": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
 				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[0-9A-Za-z]{10,20}$`), "The password must be length 10-20 string, contains numbers, uppercase letters, lowercase letters at the same time."),
 			},
 			"reply_address": {
