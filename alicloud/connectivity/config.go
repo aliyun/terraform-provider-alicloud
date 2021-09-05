@@ -140,6 +140,7 @@ type Config struct {
 	IotEndpoint                 string
 	ImmEndpoint                 string
 	ClickhouseEndpoint          string
+	DtsEndpoint                 string
 }
 
 func (c *Config) loadAndValidate() error {
