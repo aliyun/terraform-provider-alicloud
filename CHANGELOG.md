@@ -1,59 +1,118 @@
-## 1.134.0 (Unreleased)
-## 1.133.0 (August 30, 2021)
+## 1.135.0 (Unreleased)
+## 1.134.0 (September 5, 2021)
 
-- **New Resource:** `alicloud_ens_key_pair` [GH-3917]
-- **New Resource:** `alicloud_sae_application` [GH-3916]
-- **New Resource:** `alicloud_alb_rule` [GH-3915]
-- **New Resource:** `alicloud_security_center_group` [GH-3867]
-- **New Resource:** `alicloud_alb_acls` [GH-3853]
-- **New Resource:** `alicloud_bastionhost_user` [GH-3893]
-- **New Resource:** `alicloud_dfs_access_group` [GH-3885]
-- **New Resource:** `alicloud_ehpc_job_template` [GH-3871]
-- **New Resource:** `alicloud_sddp_config` [GH-3889]
-- **New Resource:** `alicloud_hbr_restore_job` [GH-3890]
-- **New Resource:** `alicloud_alb_listener` [GH-3908]
-- **New Data Source:** `alicloud_ens_key_pairs` [GH-3917]
-- **New Data Source:** `alicloud_sae_applications` [GH-3916]
-- **New Data Source:** `alicloud_alb_rules` [GH-3915]
-- **New Data Source:** `alicloud_security_center_groups` [GH-3867]
-- **New Data Source:** `alicloud_alb_acls` [GH-3853]
-- **New Data Source:** `alicloud_hbr_snapshots` [GH-3883]
-- **New Data Source:** `alicloud_bastionhost_users` [GH-3893]
-- **New Data Source:** `alicloud_dfs_access_groups` [GH-3885]
-- **New Data Source:** `alicloud_ehpc_job_templates` [GH-3871]
-- **New Data Source:** `alicloud_sddp_configs` [GH-3889]
-- **New Data Source:** `alicloud_hbr_restore_jobs` [GH-3890]
-- **New Data Source:** `alicloud_alb_listeners` [GH-3908]
+- **New Resource:** `alicloud_dts_jobmonitor_rule` ([#3965](https://github.com/aliyun/terraform-provider-alicloud/issues/3965))
+- **New Resource:** `alicloud_bastionhost_user_attachment` ([#3964](https://github.com/aliyun/terraform-provider-alicloud/issues/3964))
+- **New Resource:** `alicloud_cdn_real_time_log_delivery` ([#3963](https://github.com/aliyun/terraform-provider-alicloud/issues/3963))
+- **New Resource:** `alicloud_direct_mail_mail_address` ([#3961](https://github.com/aliyun/terraform-provider-alicloud/issues/3961))
+- **New Resource:** `alicloud_bastionhost_host_group` ([#3955](https://github.com/aliyun/terraform-provider-alicloud/issues/3955))
+- **New Resource:** `alicloud_click_house_db_cluster` ([#3948](https://github.com/aliyun/terraform-provider-alicloud/issues/3948))
+- **New Resource:** `alicloud_vpc_dhcp_options_set` [[#3944](https://github.com/aliyun/terraform-provider-alicloud/issues/3944)]  
+- **New Resource:** `alicloud_express_connect_vitrual_border_router` ([#3943](https://github.com/aliyun/terraform-provider-alicloud/issues/3943))
+- **New Resource:** `alicloud_clisck_house_account` ([#3940](https://github.com/aliyun/terraform-provider-alicloud/issues/3940))
+- **New Resource:** `alicloud_alb_health_check_template` ([#3938](https://github.com/aliyun/terraform-provider-alicloud/issues/3938))
+- **New Resource:** `alicloud_imm_project` ([#3936](https://github.com/aliyun/terraform-provider-alicloud/issues/3936))
+- **New Resource:** `alicloud_cms_metric_rule_template` [[#3931](https://github.com/aliyun/terraform-provider-alicloud/issues/3931)]  
+- **New Resource:** `alicloud_iot_device_group` [[#3929](https://github.com/aliyun/terraform-provider-alicloud/issues/3929)]  
+- **New Resource:** `alicloud_direct_mail_domain` ([#3837](https://github.com/aliyun/terraform-provider-alicloud/issues/3837))
+- **New Data Source:** `alicloud_cdn_real_time_log_deliveries` ([#3963](https://github.com/aliyun/terraform-provider-alicloud/issues/3963))
+- **New Data Source:** `alicloud_direct_mail_mail_addresses` ([#3961](https://github.com/aliyun/terraform-provider-alicloud/issues/3961))
+- **New Data Source:** `alicloud_bastionhost_host_groups` ([#3955](https://github.com/aliyun/terraform-provider-alicloud/issues/3955))
+- **New Data Source:** `alicloud_click_house_db_clusters` ([#3948](https://github.com/aliyun/terraform-provider-alicloud/issues/3948))
+- **New Data Source:** `alicloud_vpc_dhcp_options_sets` ([#3944](https://github.com/aliyun/terraform-provider-alicloud/issues/3944))
+- **New Data Source:** `alicloud_express_connect_vitrual_border_routers` ([#3943](https://github.com/aliyun/terraform-provider-alicloud/issues/3943))
+- **New Data Source:** `alicloud_clisck_house_accounts` ([#3940](https://github.com/aliyun/terraform-provider-alicloud/issues/3940))
+- **New Data Source:** `alicloud_alb_health_check_templates` ([#3938](https://github.com/aliyun/terraform-provider-alicloud/issues/3938))
+- **New Data Source:** `alicloud_imm_project` ([#3936](https://github.com/aliyun/terraform-provider-alicloud/issues/3936))
+- **New Data Source:** `alicloud_cms_metric_rule_templates` ([#3931](https://github.com/aliyun/terraform-provider-alicloud/issues/3931))
+- **New Data Source:** `alicloud_iot_device_groups` ([#3929](https://github.com/aliyun/terraform-provider-alicloud/issues/3929))
+- **New Data Source:** `alicloud_direct_mail_domains` ([#3837](https://github.com/aliyun/terraform-provider-alicloud/issues/3837))
 
 ENHANCEMENTS:
 
-- resource/alicloud_slb_listener: Attribute scheduler support more values tch and qch [GH-3924]
-- resource/alicloud_slb_listener: Supports to setting scheduler in the creating to fix it cannot modify [GH-3923]
-- resource/alicloud_bastionhost_instance: Enlarges the create timeout and improves its docs [GH-3899]
-- resource/alicloud_alb_security_policy: add formatInt(response["TotalCount"]) == 0 selection [GH-3902]
-- resource/alicloud_log_store: Adds retry in sls delete logstore and fix resource logtail config nil bug [GH-3887]
-- resource/alicloud_event_bridge_service: Optimize the way to activate the service [GH-3902]
-- resource/alicloud_hbr_restore_job: update property options and fix hbr snapshot datasource testcase [GH-3914]
-- datasource/alicloud_hbr_snapshots: update timechecker [GH-3906]
-- testcase/alicloud_alb_server_group: Optimize the creation of test-dependent [GH-3902]
-- ECS instances testcase: Limit ALB supported regions testcase: Limit Event Bridge [GH-3902]
-- supported regions testcase: Limit DFS supported regions docs/alb_server_group: Optimization Basic Usage Example [GH-3902]
-- provider: Adds two new attribute source_ip and security_transport [GH-3900]
-- testcase: Improves the sweeper testcases [GH-3884]
-- testcase: Improves the testcase for fetching default vpc and vswitch [GH-3895]
-- testcase: Renames the testcase name by classifing them with product code [GH-3897]
-- testcase: Improves the testcase resource name [GH-3904]
+- datasource/alicloud_db_instance_engines: Upgrades its dependence OpenAPI to DescribeAvailableZones ([#3969](https://github.com/aliyun/terraform-provider-alicloud/issues/3969))
+- resource/resource_alicloud_cs_kubernetes_permissions: update doc ([#3962](https://github.com/aliyun/terraform-provider-alicloud/issues/3962))
+- datasource/alicloud_db_zones: Upgrades its dependence OpenAPI to DescribeAvailableZones  ([#3968](https://github.com/aliyun/terraform-provider-alicloud/issues/3968))
+- testcase: Improves the bastionhost user attachment testcase ([#3967](https://github.com/aliyun/terraform-provider-alicloud/issues/3967))
+- testcase/alb: add sweeper test ([#3966](https://github.com/aliyun/terraform-provider-alicloud/issues/3966))
+- website: Fixed the sidebar ([#3960](https://github.com/aliyun/terraform-provider-alicloud/issues/3960))
+- testcase: Improves the provider test setting region id  ([#3959](https://github.com/aliyun/terraform-provider-alicloud/issues/3959))
+- resource/alicloud_mongodb_instance,alicloud_mongodb_sharding_instance: Adds new attribute order_type to support updating instance spec ([#3958](https://github.com/aliyun/terraform-provider-alicloud/issues/3958))
+- improves the client config source_ip and security_transport [[#3956](https://github.com/aliyun/terraform-provider-alicloud/issues/3956)]  
+- resource/alicloud_iot_device_group: Increase the length limit of the groupname attribute ([#3954](https://github.com/aliyun/terraform-provider-alicloud/issues/3954))
+- docs: Improves the resource vbr and its datasource docs ([#3953](https://github.com/aliyun/terraform-provider-alicloud/issues/3953))
+- resource/alicloud_cen_transit_router: Fixes the ParameterInstanceId error when deleting the resource; Improves other testcases ([#3952](https://github.com/aliyun/terraform-provider-alicloud/issues/3952))
+- testcase: Improves the alicloud_cen_atachment testcases; Improves the sweep testcases ([#3951](https://github.com/aliyun/terraform-provider-alicloud/issues/3951))
+- testcase: Improves the alicloud_cen_tranit_router_xxx testcases by adding vbr resource ([#3946](https://github.com/aliyun/terraform-provider-alicloud/issues/3946))
+- resource/alicloud_ram_user_policy_attachment,alicloud_ram_role_policy_attachment,alicloud_ram_group_policy_attachment: Fixes the resource not found error when creating an attachment using system policy ([#3945](https://github.com/aliyun/terraform-provider-alicloud/issues/3945))
+- doc/alicloud_alb_server_group: Optimize document links doc/alicloud_msc_sub_contact: Optimize document links doc/alicloud_msc_sub_contac testcase/alicloud_direct_mail_receivers: Optimize Test case testcase/alicloud_direct_mail_receiverses: Optimize Test case testcase/alicloud_alb_listener: Remove invalid logts: Optimize document links ([#3941](https://github.com/aliyun/terraform-provider-alicloud/issues/3941))
+- datasource/alicloud_db_instances: Upgrades its dependence sdk; datasource/alicloud_db_zones: Supports more attributes, like engine, engine_version ([#3932](https://github.com/aliyun/terraform-provider-alicloud/issues/3932))
 
 BUG FIXES:
 
-- resource/alicloud_polardb_cluster: Fixes the resource not found error [GH-3896]
-- resource/alicloud_arms_contact: Fixes the ParameterMissing error when invoking UpdateAlertContact [GH-3898]
-- resource/alicloud_elasticsearch_instance: Fixes the GetCustomerLabelFail error by adding retry [GH-3901]
-- resource/alicloud_bastihost_instance: Fixes the InvalidApi error [GH-3903]
-- resource/alicloud_sddp_rule: Fixes the Sddp's Endpoint [GH-3907]
-- Fixes the concurrent write bug when describing the endpoints [GH-3894]
-- testcase: Fixes hbr snapshot doc and test case [GH-3905]
-- testcase: Fixed lang's import bug for sddp config [GH-3909]
+- resource/alicloud_ram_user: Fixes the EntityNotExist.User error when getting user  ([#3957](https://github.com/aliyun/terraform-provider-alicloud/issues/3957))
+- resource/alicloud_alikafka_instance: Fixes the diff error caused by eip_max and security_group ([#3937](https://github.com/aliyun/terraform-provider-alicloud/issues/3937))
+- testcase:Fixed testcase's value for sae application ([#3934](https://github.com/aliyun/terraform-provider-alicloud/issues/3934))
+- datasource/alicloud_db_zones, alicloud_db_instance_classes, alicloud_db_instance_engines: Uses new api DescribeZones and DescribeInstanceClasses to improve them ([#3930](https://github.com/aliyun/terraform-provider-alicloud/issues/3930))
+- docs/alicloud_hbr_vault,alicloud_hbr_ecs_backup_client,alicloud_hbr_ecs_backup_plan,alicloud_nas_backup_plan,alicloud_oss_backup_plan,alicloud_snapshots,alicloud_restore_job: Corrects its docs and adds some note ([#3928](https://github.com/aliyun/terraform-provider-alicloud/issues/3928))
+- resource/alicloud_config_aggregate_compliance_pack: Change config_rule_parameters, parameter_name, parameter_value toOptional resource/alicloud_config_compliance_pack: Change config_rule_parameters, parameter_name, parameter_value to Optional ([#3927](https://github.com/aliyun/terraform-provider-alicloud/issues/3927))
+- doc/alicloud_alb_listeners: Optimize document links doc/alicloud_alb_load_balancers: Optimize document links testcase/alicloud_alb_rules: remove listener_id Field ([#3926](https://github.com/aliyun/terraform-provider-alicloud/issues/3926))
+
+## 1.133.0 (August 30, 2021)
+
+- **New Resource:** `alicloud_ens_key_pair` ([#3917](https://github.com/aliyun/terraform-provider-alicloud/issues/3917))
+- **New Resource:** `alicloud_sae_application` ([#3916](https://github.com/aliyun/terraform-provider-alicloud/issues/3916))
+- **New Resource:** `alicloud_alb_rule` ([#3915](https://github.com/aliyun/terraform-provider-alicloud/issues/3915))
+- **New Resource:** `alicloud_security_center_group` ([#3867](https://github.com/aliyun/terraform-provider-alicloud/issues/3867))
+- **New Resource:** `alicloud_alb_acls` ([#3853](https://github.com/aliyun/terraform-provider-alicloud/issues/3853))
+- **New Resource:** `alicloud_bastionhost_user` ([#3893](https://github.com/aliyun/terraform-provider-alicloud/issues/3893))
+- **New Resource:** `alicloud_dfs_access_group` ([#3885](https://github.com/aliyun/terraform-provider-alicloud/issues/3885))
+- **New Resource:** `alicloud_ehpc_job_template` ([#3871](https://github.com/aliyun/terraform-provider-alicloud/issues/3871))
+- **New Resource:** `alicloud_sddp_config` ([#3889](https://github.com/aliyun/terraform-provider-alicloud/issues/3889))
+- **New Resource:** `alicloud_hbr_restore_job` ([#3890](https://github.com/aliyun/terraform-provider-alicloud/issues/3890))
+- **New Resource:** `alicloud_alb_listener` ([#3908](https://github.com/aliyun/terraform-provider-alicloud/issues/3908))
+- **New Data Source:** `alicloud_ens_key_pairs` ([#3917](https://github.com/aliyun/terraform-provider-alicloud/issues/3917))
+- **New Data Source:** `alicloud_sae_applications` ([#3916](https://github.com/aliyun/terraform-provider-alicloud/issues/3916))
+- **New Data Source:** `alicloud_alb_rules` ([#3915](https://github.com/aliyun/terraform-provider-alicloud/issues/3915))
+- **New Data Source:** `alicloud_security_center_groups` ([#3867](https://github.com/aliyun/terraform-provider-alicloud/issues/3867))
+- **New Data Source:** `alicloud_alb_acls` ([#3853](https://github.com/aliyun/terraform-provider-alicloud/issues/3853))
+- **New Data Source:** `alicloud_hbr_snapshots` ([#3883](https://github.com/aliyun/terraform-provider-alicloud/issues/3883))
+- **New Data Source:** `alicloud_bastionhost_users` ([#3893](https://github.com/aliyun/terraform-provider-alicloud/issues/3893))
+- **New Data Source:** `alicloud_dfs_access_groups` ([#3885](https://github.com/aliyun/terraform-provider-alicloud/issues/3885))
+- **New Data Source:** `alicloud_ehpc_job_templates` ([#3871](https://github.com/aliyun/terraform-provider-alicloud/issues/3871))
+- **New Data Source:** `alicloud_sddp_configs` ([#3889](https://github.com/aliyun/terraform-provider-alicloud/issues/3889))
+- **New Data Source:** `alicloud_hbr_restore_jobs` ([#3890](https://github.com/aliyun/terraform-provider-alicloud/issues/3890))
+- **New Data Source:** `alicloud_alb_listeners` ([#3908](https://github.com/aliyun/terraform-provider-alicloud/issues/3908))
+
+ENHANCEMENTS:
+
+- resource/alicloud_slb_listener: Attribute scheduler support more values tch and qch ([#3924](https://github.com/aliyun/terraform-provider-alicloud/issues/3924))
+- resource/alicloud_slb_listener: Supports to setting scheduler in the creating to fix it cannot modify ([#3923](https://github.com/aliyun/terraform-provider-alicloud/issues/3923))
+- resource/alicloud_bastionhost_instance: Enlarges the create timeout and improves its docs ([#3899](https://github.com/aliyun/terraform-provider-alicloud/issues/3899))
+- resource/alicloud_alb_security_policy: add formatInt(response["TotalCount"]) == 0 selection ([#3902](https://github.com/aliyun/terraform-provider-alicloud/issues/3902))
+- resource/alicloud_log_store: Adds retry in sls delete logstore and fix resource logtail config nil bug ([#3887](https://github.com/aliyun/terraform-provider-alicloud/issues/3887))
+- resource/alicloud_event_bridge_service: Optimize the way to activate the service ([#3902](https://github.com/aliyun/terraform-provider-alicloud/issues/3902))
+- resource/alicloud_hbr_restore_job: update property options and fix hbr snapshot datasource testcase ([#3914](https://github.com/aliyun/terraform-provider-alicloud/issues/3914))
+- datasource/alicloud_hbr_snapshots: update timechecker ([#3906](https://github.com/aliyun/terraform-provider-alicloud/issues/3906))
+- testcase/alicloud_alb_server_group: Optimize the creation of test-dependent ([#3902](https://github.com/aliyun/terraform-provider-alicloud/issues/3902))
+- ECS instances testcase: Limit ALB supported regions testcase: Limit Event Bridge ([#3902](https://github.com/aliyun/terraform-provider-alicloud/issues/3902))
+- supported regions testcase: Limit DFS supported regions docs/alb_server_group: Optimization Basic Usage Example ([#3902](https://github.com/aliyun/terraform-provider-alicloud/issues/3902))
+- provider: Adds two new attribute source_ip and security_transport ([#3900](https://github.com/aliyun/terraform-provider-alicloud/issues/3900))
+- testcase: Improves the sweeper testcases ([#3884](https://github.com/aliyun/terraform-provider-alicloud/issues/3884))
+- testcase: Improves the testcase for fetching default vpc and vswitch ([#3895](https://github.com/aliyun/terraform-provider-alicloud/issues/3895))
+- testcase: Renames the testcase name by classifing them with product code ([#3897](https://github.com/aliyun/terraform-provider-alicloud/issues/3897))
+- testcase: Improves the testcase resource name ([#3904](https://github.com/aliyun/terraform-provider-alicloud/issues/3904))
+
+BUG FIXES:
+
+- resource/alicloud_polardb_cluster: Fixes the resource not found error ([#3896](https://github.com/aliyun/terraform-provider-alicloud/issues/3896))
+- resource/alicloud_arms_contact: Fixes the ParameterMissing error when invoking UpdateAlertContact ([#3898](https://github.com/aliyun/terraform-provider-alicloud/issues/3898))
+- resource/alicloud_elasticsearch_instance: Fixes the GetCustomerLabelFail error by adding retry ([#3901](https://github.com/aliyun/terraform-provider-alicloud/issues/3901))
+- resource/alicloud_bastihost_instance: Fixes the InvalidApi error ([#3903](https://github.com/aliyun/terraform-provider-alicloud/issues/3903))
+- resource/alicloud_sddp_rule: Fixes the Sddp's Endpoint ([#3907](https://github.com/aliyun/terraform-provider-alicloud/issues/3907))
+- Fixes the concurrent write bug when describing the endpoints ([#3894](https://github.com/aliyun/terraform-provider-alicloud/issues/3894))
+- testcase: Fixes hbr snapshot doc and test case ([#3905](https://github.com/aliyun/terraform-provider-alicloud/issues/3905))
+- testcase: Fixed lang's import bug for sddp config ([#3909](https://github.com/aliyun/terraform-provider-alicloud/issues/3909))
 
 ## 1.132.0 (August 21, 2021)
 
