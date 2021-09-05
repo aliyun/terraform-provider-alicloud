@@ -511,6 +511,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cdn_real_time_log_deliveries":                dataSourceAlicloudCdnRealTimeLogDeliveries(),
 			"alicloud_click_house_accounts":                        dataSourceAlicloudClickHouseAccounts(),
 			"alicloud_direct_mail_mail_addresses":                  dataSourceAlicloudDirectMailMailAddresses(),
+			"alicloud_database_gateway_gateways":                   dataSourceAlicloudDatabaseGatewayGateways(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -919,6 +920,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_bastionhost_user_attachment":                resourceAlicloudBastionhostUserAttachment(),
 			"alicloud_direct_mail_mail_address":                   resourceAlicloudDirectMailMailAddress(),
 			"alicloud_dts_job_monitor_rule":                       resourceAlicloudDtsJobMonitorRule(),
+			"alicloud_database_gateway_gateway":                   resourceAlicloudDatabaseGatewayGateway(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1099,6 +1101,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ImmEndpoint = strings.TrimSpace(endpoints["imm"].(string))
 		config.ClickhouseEndpoint = strings.TrimSpace(endpoints["clickhouse"].(string))
 		config.DtsEndpoint = strings.TrimSpace(endpoints["dts"].(string))
+		config.DgEndpoint = strings.TrimSpace(endpoints["dg"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1370,6 +1373,8 @@ func init() {
 		"clickhouse_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom clickhouse endpoints.",
 
 		"dts_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dts endpoints.",
+
+		"dg_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dg endpoints.",
 	}
 }
 
@@ -1414,6 +1419,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"dg": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["dg_endpoint"],
+				},
+
 				"dts": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2092,6 +2104,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["imm"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["clickhouse"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dts"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["dg"].(string)))
 	return hashcode.String(buf.String())
 }
 

@@ -141,6 +141,7 @@ type Config struct {
 	ImmEndpoint                 string
 	ClickhouseEndpoint          string
 	DtsEndpoint                 string
+	DgEndpoint                  string
 }
 
 func (c *Config) loadAndValidate() error {
