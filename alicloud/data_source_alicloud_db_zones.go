@@ -174,7 +174,7 @@ func dataSourceAlicloudDBZonesRead(d *schema.ResourceData, meta interface{}) err
 					supportedEngineVersionItem := r.(map[string]interface{})
 					for _, r := range supportedEngineVersionItem["SupportedCategorys"].([]interface{}) {
 						supportedCategoryItem := r.(map[string]interface{})
-						if targetCategory != fmt.Sprint(supportedCategoryItem["Category"]) {
+						if targetCategory != "" && targetCategory != fmt.Sprint(supportedCategoryItem["Category"]) {
 							continue
 						}
 						if targetStorageType == "" {

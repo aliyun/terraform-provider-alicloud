@@ -179,7 +179,7 @@ func dataSourceAlicloudDBInstanceEnginesRead(d *schema.ResourceData, meta interf
 			availableZoneItem := r.(map[string]interface{})
 
 			zoneId := fmt.Sprint(availableZoneItem["ZoneId"])
-			if multiZone && !strings.Contains(zoneId, MULTI_IZ_SYMBOL) {
+			if (multiZone && !strings.Contains(zoneId, MULTI_IZ_SYMBOL)) || (!multiZone && strings.Contains(zoneId, MULTI_IZ_SYMBOL)) {
 				continue
 			}
 			zoneIds := make([]map[string]interface{}, 0)

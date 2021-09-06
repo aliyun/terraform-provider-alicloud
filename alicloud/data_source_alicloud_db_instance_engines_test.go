@@ -119,6 +119,8 @@ func testAccCheckAlicloudDBEnginesDataSourceConfig(name string) string {
 	return fmt.Sprintf(`
 data "alicloud_db_zones" "default" {
   instance_charge_type= "PostPaid"
+  engine = "MySQL"
+  db_instance_storage_type = "local_ssd"
 }
 `)
 }
