@@ -377,9 +377,10 @@ func (client *Client) DoRequest(action *string, protocol *string, method *string
 			res := util.AssertAsMap(obj)
 			if tea.BoolValue(util.Is4xx(response_.StatusCode)) || tea.BoolValue(util.Is5xx(response_.StatusCode)) {
 				_err = tea.NewSDKError(map[string]interface{}{
-					"code":    tea.ToString(DefaultAny(res["Code"], res["code"])),
-					"message": "code: " + tea.ToString(tea.IntValue(response_.StatusCode)) + ", " + tea.ToString(DefaultAny(res["Message"], res["message"])) + " request id: " + tea.ToString(DefaultAny(res["RequestId"], res["requestId"])),
-					"data":    res,
+					"code":       tea.ToString(DefaultAny(res["Code"], res["code"])),
+					"statusCode": tea.IntValue(response_.StatusCode),
+					"message":    "code: " + tea.ToString(tea.IntValue(response_.StatusCode)) + ", " + tea.ToString(DefaultAny(res["Message"], res["message"])) + " request id: " + tea.ToString(DefaultAny(res["RequestId"], res["requestId"])),
+					"data":       res,
 				})
 				return _result, _err
 			}
