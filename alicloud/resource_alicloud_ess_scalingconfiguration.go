@@ -283,6 +283,10 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -482,6 +486,11 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		d.SetPartial("system_disk_performance_level")
 	}
 
+	if d.HasChange("resource_group_id") {
+		request.ResourceGroupId = d.Get("resource_group_id").(string)
+		d.SetPartial("resource_group_id")
+	}
+
 	if d.HasChange("user_data") {
 		if v, ok := d.GetOk("user_data"); ok && v.(string) != "" {
 			_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
@@ -669,6 +678,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("instance_name", object.InstanceName)
 	d.Set("override", d.Get("override").(bool))
 	d.Set("password_inherit", object.PasswordInherit)
+	d.Set("resource_group_id", object.ResourceGroupId)
 
 	if sg, ok := d.GetOk("security_group_id"); ok && sg.(string) != "" {
 		d.Set("security_group_id", object.SecurityGroupId)
@@ -877,6 +887,10 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 
 	if v := d.Get("system_disk_performance_level").(string); v != "" {
 		request.SystemDiskPerformanceLevel = v
+	}
+
+	if v := d.Get("resource_group_id").(string); v != "" {
+		request.ResourceGroupId = v
 	}
 
 	dds, ok := d.GetOk("data_disk")
