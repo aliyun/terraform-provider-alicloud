@@ -121,6 +121,10 @@ resource "alicloud_ssl_certificates_service_certificate" "default" {
    key  = file("${path.module}/test.key")
 }
 
+resource "alicloud_alb_acl" "example" {
+	acl_name = var.name
+}
+
 resource "alicloud_alb_listener" "example" {
 	load_balancer_id = alicloud_alb_load_balancer.default_3.id
 	listener_protocol =  "HTTPS"
@@ -136,6 +140,12 @@ resource "alicloud_alb_listener" "example" {
 	}
 	certificates{
 		certificate_id = join("",[alicloud_ssl_certificates_service_certificate.default.id,"-cn-hangzhou"])
+	}
+	acl_config{
+	    acl_type = "White"
+	    acl_relations{
+	        acl_id = alicloud_alb_acl.example.id
+	    }
 	}
 }
 
@@ -153,16 +163,16 @@ The following arguments are supported:
 * `default_actions` - (Required) The Default Rule Action List. See the following `Block default_actions`.
 * `dry_run` - (Optional) The dry run.
 * `gzip_enabled` - (Optional, Computed) Whether to Enable Gzip Compression, as a Specific File Type on a Compression. Valid values: `false`, `true`. Default Value: `true`. .
-* `http2_enabled` - (Optional, Computed) Whether to Enable HTTP/2 Features. Valid Values: True Or False. Default Value: TRUE. Valid values: `false`, `true`.
+* `http2_enabled` - (Optional, Computed) Whether to Enable HTTP/2 Features. Valid Values: `True` Or `False`. Default Value: `True`.
 
 -> **NOTE:** The attribute is valid when the attribute `ListenerProtocol` is `HTTPS`.
-* `idle_timeout` - (Optional, Computed) Specify the Connection Idle Timeout Value: 1 to 60 miao.
-* `listener_description` - (Optional)The description of the listener. The description must be 2 to 256 characters in length. The name can contain only the characters in the following string: /^([^\x00-\xff]|[\w.,;/@-]){2,256}$/.
-* `listener_port` - (Required, ForceNew) The SLB Instance Front-End, and Those of the Ports Used. Value: 1~65535.
-* `listener_protocol` - (Required, ForceNew) Snooping Protocols. Valid Values: HTTP, HTTPS Or QuIC. 
-* `load_balancer_id` - (Required, ForceNew) The SLB Instance Id.
+* `idle_timeout` - (Optional, Computed) Specify the Connection Idle Timeout Value: `1` to `60`. Unit: Seconds.
+* `listener_description` - (Optional)The description of the listener. The description must be 2 to 256 characters in length. The name can contain only the characters in the following string: `/^([^\x00-\xff]|[\w.,;/@-]){2,256}$/`.
+* `listener_port` - (Required, ForceNew) The ALB Instance Front-End, and Those of the Ports Used. Value: `1` to `65535`.
+* `listener_protocol` - (Required, ForceNew) Snooping Protocols. Valid Values: `HTTP`, `HTTPS` Or `QUIC`. 
+* `load_balancer_id` - (Required, ForceNew) The ALB Instance Id.
 * `quic_config` - (Optional) Configuration Associated with the QuIC Listening. See the following `Block quic_config`.
-* `request_timeout` - (Optional, Computed) The Specified Request Timeout Time. Value: 1~180 Seconds. Default Value: 60 miao. If the Timeout Time Within the Back-End Server Has Not Answered the SLB Will Give up Waiting, the Client Returns the HTTP 504 Error Code.
+* `request_timeout` - (Optional, Computed) The Specified Request Timeout Time. Value: `1` to `180`. Unit: Seconds. Default Value: `60`. If the Timeout Time Within the Back-End Server Has Not Answered the ALB Will Give up Waiting, the Client Returns the HTTP 504 Error Code.
 * `security_policy_id` - (Optional, Computed) Security Policy.
 
 -> **NOTE:** The attribute is valid when the attribute `ListenerProtocol` is `HTTPS`.
@@ -171,6 +181,7 @@ The following arguments are supported:
 * `xforwarded_for_config` - (Optional) xforwardfor Related Attribute Configuration. See the following `Block xforwarded_for_config`.
 
 -> **NOTE:** The attribute is valid when the attribute `ListenerProtocol` is `HTTPS`.
+* `acl_config` - (Optional, Available 1.136.0+)The configurations of the access control lists (ACLs). See the following `Block acl_config`.
 
 #### Block xforwarded_for_config
 
@@ -207,20 +218,28 @@ The default_actions supports the following:
 * `forward_group_config` - (Required) The configurations of the actions. This parameter is required if Type is set to FowardGroup.
     *  `server_group_tuples` - (Required) The destination server group to which requests are forwarded.
         * `server_group_id` - (Required) The ID of the destination server group to which requests are forwarded.
-  
+
+#### Block acl_config
+
+The acl_config supports the following:
+
+* `acl_relations` - (Optional, Available 1.136.0+) The ACLs that are associated with the listener.
+    * `acl_id` - (Optional, Available 1.136.0+) Snooping Binding of the Access Policy Group ID List.
+* `acl_type` - (Optional, Available 1.136.0+) The type of the ACL. Valid values: `White` Or `Black`. `White`: specifies the ACL as a whitelist. Only requests from the IP addresses or CIDR blocks in the ACL are forwarded. Whitelists apply to scenarios where only specific IP addresses are allowed to access an application. Risks may occur if the whitelist is improperly set. After you set a whitelist for an Application Load Balancer (ALB) listener, only requests from IP addresses that are added to the whitelist are distributed by the listener. If the whitelist is enabled without IP addresses specified, the ALB listener does not forward requests. `Black`: All requests from the IP addresses or CIDR blocks in the ACL are denied. The blacklist is used to prevent specified IP addresses from accessing an application. If the blacklist is enabled but the corresponding ACL does not contain IP addresses, the ALB listener forwards all requests.
+
 #### Block access_log_tracing_config
 
 The access_log_tracing_config supports the following: 
 
-* `tracing_enabled` - (Optional) Xtrace Function. Value: True Or False . Default Value: False.
+* `tracing_enabled` - (Optional) Xtrace Function. Value: `True` Or `False` . Default Value: `False`.
 
--> **NOTE:** Only Instances outside the Security Group to Access the Log Switch **accesslogenabled** Open, in Order to Set This Parameter to the **True**.
-* `tracing_sample` - (Optional) Xtrace Sampling Rate. Value: **1~10000**.
+-> **NOTE:** Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the `True`.
+* `tracing_sample` - (Optional) Xtrace Sampling Rate. Value: `1` to `10000`.
 
--> **NOTE:** This attribute is valid when **tracingenabled** is **true**.
-* `tracing_type` - (Optional) Xtrace Type Value Is **Zipkin**.
+-> **NOTE:** This attribute is valid when `tracingenabled` is `true`.
+* `tracing_type` - (Optional) Xtrace Type Value Is `Zipkin`.
 
--> **NOTE:** This attribute is valid when **tracingenabled** is **true**.
+-> **NOTE:** This attribute is valid when `tracingenabled` is `true`.
 
 ## Attributes Reference
 

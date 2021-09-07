@@ -67,6 +67,36 @@ func resourceAlicloudAlbListener() *schema.Resource {
 					},
 				},
 			},
+			"acl_config": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"acl_relations": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"acl_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"acl_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"White", "Black"}, false),
+						},
+					},
+				},
+			},
 			"default_actions": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -419,6 +449,24 @@ func resourceAlicloudAlbListenerRead(d *schema.ResourceData, meta interface{}) e
 	}
 	d.Set("access_log_tracing_config", accessLogTracingConfigSli)
 
+	aclConfigSli := make([]map[string]interface{}, 0)
+	if aclConfig, ok := object["AclConfig"]; ok && len(aclConfig.(map[string]interface{})) > 0 {
+		aclConfigMap := make(map[string]interface{})
+
+		aclRelationsSli := make([]map[string]interface{}, 0)
+		if v, ok := aclConfig.(map[string]interface{})["AclRelations"]; ok && len(v.([]interface{})) > 0 {
+			for _, aclRelations := range v.([]interface{}) {
+				aclRelationsMap := make(map[string]interface{})
+				aclRelationsMap["acl_id"] = aclRelations.(map[string]interface{})["AclId"]
+				aclRelationsMap["status"] = aclRelations.(map[string]interface{})["Status"]
+				aclRelationsSli = append(aclRelationsSli, aclRelationsMap)
+			}
+		}
+		aclConfigMap["acl_relations"] = aclRelationsSli
+		aclConfigMap["acl_type"] = aclConfig.(map[string]interface{})["AclType"]
+		aclConfigSli = append(aclConfigSli, aclConfigMap)
+	}
+	d.Set("acl_config", aclConfigSli)
 	if certificatesList, ok := object["Certificates"]; ok && certificatesList != nil {
 		certificatesMaps := make([]map[string]interface{}, 0)
 		for _, certificatesListItem := range certificatesList.([]interface{}) {
@@ -828,6 +876,98 @@ func resourceAlicloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 	d.Partial(false)
+	if d.HasChange("acl_config") {
+		oldAssociateAcls, newAssociateVpcs := d.GetChange("acl_config")
+		oldAssociateAclsSet := oldAssociateAcls.(*schema.Set)
+		newAssociateAclsSet := newAssociateVpcs.(*schema.Set)
+		removed := oldAssociateAclsSet.Difference(newAssociateAclsSet)
+		added := newAssociateAclsSet.Difference(oldAssociateAclsSet)
+		if removed.Len() > 0 {
+			action := "DissociateAclsFromListener"
+			dissociateAclsFromListenerReq := map[string]interface{}{
+				"ListenerId": d.Id(),
+			}
+			dissociateAclsFromListenerReq["ClientToken"] = buildClientToken("DissociateAclsFromListener")
+			associateAclIds := make([]string, 0)
+			for _, aclConfig := range removed.List() {
+				if aclRelationsMaps, ok := aclConfig.(map[string]interface{})["acl_relations"]; ok {
+					for _, aclRelationsMap := range aclRelationsMaps.(*schema.Set).List() {
+						associateAclIds = append(associateAclIds, aclRelationsMap.(map[string]interface{})["acl_id"].(string))
+					}
+				}
+			}
+			dissociateAclsFromListenerReq["AclIds"] = associateAclIds
+			conn, err := client.NewAlbClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, dissociateAclsFromListenerReq, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, dissociateAclsFromListenerReq)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbListenerStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+		if added.Len() > 0 {
+			action := "AssociateAclsWithListener"
+			associateAclsWithListenerReq := map[string]interface{}{
+				"ListenerId": d.Id(),
+			}
+			associateAclsWithListenerReq["ClientToken"] = buildClientToken("AssociateAclsWithListener")
+			associateAclIds := make([]string, 0)
+			for _, aclConfig := range added.List() {
+				if aclRelationsMaps, ok := aclConfig.(map[string]interface{})["acl_relations"]; ok {
+					for _, aclRelationsMap := range aclRelationsMaps.(*schema.Set).List() {
+						associateAclIds = append(associateAclIds, aclRelationsMap.(map[string]interface{})["acl_id"].(string))
+					}
+				}
+				associateAclsWithListenerReq["AclType"] = aclConfig.(map[string]interface{})["acl_type"]
+			}
+			associateAclsWithListenerReq["AclIds"] = associateAclIds
+			conn, err := client.NewAlbClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, associateAclsWithListenerReq, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, associateAclsWithListenerReq)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbListenerStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+	}
 	return resourceAlicloudAlbListenerRead(d, meta)
 }
 

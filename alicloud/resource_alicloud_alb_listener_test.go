@@ -423,6 +423,123 @@ func TestAccAlicloudALBListener_basic0(t *testing.T) {
 		},
 	})
 }
+func TestAccAlicloudALBListener_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_listener.default"
+	ra := resourceAttrInit(resourceId, AlicloudALBListenerMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbListener")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 1000)
+	port := fmt.Sprintf("%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, port, AlicloudALBListenerBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id":     "${local.load_balancer_id}",
+					"listener_protocol":    "HTTPS",
+					"listener_port":        "${var.port}",
+					"listener_description": "tf-testAccListener_new",
+					"default_actions": []map[string]interface{}{
+						{
+							"type": "ForwardGroup",
+							"forward_group_config": []map[string]interface{}{
+								{
+									"server_group_tuples": []map[string]interface{}{
+										{
+											"server_group_id": "${local.server_group_id}",
+										},
+									},
+								},
+							},
+						},
+					},
+					"certificates": []map[string]interface{}{
+						{
+							"certificate_id": "${local.certificate_id}",
+						},
+					},
+					"acl_config": []map[string]interface{}{
+						{
+							"acl_type": "White",
+							"acl_relations": []map[string]interface{}{
+								{
+									"acl_id": "${alicloud_alb_acl.default.0.id}",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_id":     CHECKSET,
+						"listener_protocol":    "HTTPS",
+						"listener_port":        port,
+						"listener_description": "tf-testAccListener_new",
+						"default_actions.#":    "1",
+						"certificates.#":       "1",
+						"acl_config.#":         "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_config": []map[string]interface{}{
+						{
+							"acl_type": "Black",
+							"acl_relations": []map[string]interface{}{
+								{
+									"acl_id": "${alicloud_alb_acl.default.0.id}",
+								},
+								{
+									"acl_id": "${alicloud_alb_acl.default.1.id}",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_config": []map[string]interface{}{
+						{
+							"acl_type": "White",
+							"acl_relations": []map[string]interface{}{
+								{
+									"acl_id": "${alicloud_alb_acl.default.0.id}",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_config.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"dry_run", "xforwarded_for_config"},
+			},
+		},
+	})
+}
 
 var AlicloudALBListenerMap0 = map[string]string{
 	"dry_run": NOSET,
@@ -451,8 +568,8 @@ resource "alicloud_vswitch" "vswitch_1" {
   count             = length(data.alicloud_vswitches.default_1.ids) > 0 ? 0 : 1
   vpc_id            = data.alicloud_vpcs.default.ids.0
   cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-  zone_id =  data.alicloud_alb_zones.default.zones.0.id
-  vswitch_name              = var.name
+  zone_id 			=  data.alicloud_alb_zones.default.zones.0.id
+  vswitch_name      = var.name
 }
 
 data "alicloud_vswitches" "default_2" {
@@ -569,6 +686,10 @@ zWX931YQeACcwhxvHQJBAN5mTzzJD4w4Ma6YTaNHyXakdYfyAWrOkPIWZxfhMfXe
 DrlNdiysTI4Dd1dLeErVpjsckAaOW/JDG5PCSwkaMxk=
 -----END RSA PRIVATE KEY-----
 EOF
+}
+resource "alicloud_alb_acl" "default" {
+	acl_name = var.name
+	count = 2
 }
 
 locals {

@@ -3,7 +3,8 @@ subcategory: "Application Load Balancer (ALB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alb_server_group"
 sidebar_current: "docs-alicloud-resource-alb-server-group"
-  description: |- Provides a Alicloud ALB Server Group resource.
+description: |- 
+    Provides a Alicloud ALB Server Group resource.
 ---
 
 # alicloud\_alb\_server\_group
