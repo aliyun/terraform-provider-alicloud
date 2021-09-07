@@ -81,9 +81,10 @@ func TestAccAlicloudAlbListenersDataSource(t *testing.T) {
 
 	var existDataAlicloudAlbListenersSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":              "1",
-			"listeners.#":        "1",
-			"listeners.0.status": "Running",
+			"ids.#":                            "1",
+			"listeners.#":                      "1",
+			"listeners.0.status":               "Running",
+			"listeners.0.listener_description": fmt.Sprintf("tf-testaccalblistener%d", rand),
 		}
 	}
 	var fakeDataAlicloudAlbListenersSourceNameMapFunc = func(rand int) map[string]string {

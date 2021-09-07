@@ -80,13 +80,33 @@ func dataSourceAlicloudAlbListeners() *schema.Resource {
 								},
 							},
 						},
-						"acl_id": {
-							Type:     schema.TypeString,
+						"acl_config": {
+							Type:     schema.TypeList,
 							Computed: true,
-						},
-						"acl_type": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"acl_relations": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"acl_id": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"status": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+											},
+										},
+									},
+									"acl_type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
 						},
 						"certificates": {
 							Type:     schema.TypeList,
@@ -374,6 +394,26 @@ func dataSourceAlicloudAlbListenersRead(d *schema.ResourceData, meta interface{}
 		mapping["request_timeout"] = object["RequestTimeout"]
 		mapping["security_policy_id"] = object["SecurityPolicyId"]
 		mapping["status"] = object["ListenerStatus"]
+		xforwardedForConfigSli := make([]map[string]interface{}, 0)
+		if xforwardedForConfig, ok := object["XForwardedForConfig"]; ok && len(xforwardedForConfig.(map[string]interface{})) > 0 {
+			xforwardedForConfigMap := make(map[string]interface{})
+			xforwardedForConfigMap["xforwardedforclientcert_issuerdnalias"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertIssuerDNAlias"]
+			xforwardedForConfigMap["xforwardedforclientcert_issuerdnenabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertIssuerDNEnabled"]
+			xforwardedForConfigMap["xforwardedforclientcertclientverifyalias"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertClientVerifyAlias"]
+			xforwardedForConfigMap["xforwardedforclientcertclientverifyenabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertClientVerifyEnabled"]
+			xforwardedForConfigMap["xforwardedforclientcertfingerprintalias"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertFingerprintAlias"]
+			xforwardedForConfigMap["xforwardedforclientcertfingerprintenabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertFingerprintEnabled"]
+			xforwardedForConfigMap["xforwardedforclientcertsubjectdnalias"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertSubjectDNAlias"]
+			xforwardedForConfigMap["xforwardedforclientcertsubjectdnenabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertSubjectDNEnabled"]
+			xforwardedForConfigMap["xforwardedforclientsrcportenabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientSrcPortEnabled"]
+			xforwardedForConfigMap["xforwardedforenabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForEnabled"]
+			xforwardedForConfigMap["xforwardedforprotoenabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForProtoEnabled"]
+			xforwardedForConfigMap["xforwardedforslbidenabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForSLBIdEnabled"]
+			xforwardedForConfigMap["xforwardedforslbportenabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForSLBPortEnabled"]
+			xforwardedForConfigSli = append(xforwardedForConfigSli, xforwardedForConfigMap)
+		}
+		mapping["xforwarded_for_config"] = xforwardedForConfigSli
+
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			s = append(s, mapping)
@@ -385,9 +425,7 @@ func dataSourceAlicloudAlbListenersRead(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapError(err)
 		}
-		mapping["acl_type"] = getResp["AclConfig"].(map[string]interface{})["AclType"]
 		mapping["certificates"] = getResp["Certificates"]
-
 		defaultActionsMaps := make([]map[string]interface{}, 0)
 		if defaultActionsList, ok := getResp["DefaultActions"].([]interface{}); ok {
 			for _, defaultActions := range defaultActionsList {
@@ -412,9 +450,24 @@ func dataSourceAlicloudAlbListenersRead(d *schema.ResourceData, meta interface{}
 			}
 		}
 		mapping["default_actions"] = defaultActionsMaps
-		if v := getResp["AclConfig"].(map[string]interface{})["AclRelations"].([]interface{}); len(v) > 0 {
-			mapping["acl_id"] = v[0].(map[string]interface{})["AclId"]
+		aclConfigSli := make([]map[string]interface{}, 0)
+		if aclConfig, ok := getResp["AclConfig"]; ok && len(aclConfig.(map[string]interface{})) > 0 {
+			aclConfigMap := make(map[string]interface{})
+			aclRelationsSli := make([]map[string]interface{}, 0)
+			if v, ok := aclConfig.(map[string]interface{})["AclRelations"]; ok && len(v.([]interface{})) > 0 {
+				for _, aclRelations := range v.([]interface{}) {
+					aclRelationsMap := make(map[string]interface{})
+					aclRelationsMap["acl_id"] = aclRelations.(map[string]interface{})["AclId"]
+					aclRelationsMap["status"] = aclRelations.(map[string]interface{})["Status"]
+					aclRelationsSli = append(aclRelationsSli, aclRelationsMap)
+				}
+			}
+			aclConfigMap["acl_relations"] = aclRelationsSli
+			aclConfigMap["acl_type"] = aclConfig.(map[string]interface{})["AclType"]
+			aclConfigSli = append(aclConfigSli, aclConfigMap)
 		}
+		mapping["acl_config"] = aclConfigSli
+
 		s = append(s, mapping)
 	}
 
