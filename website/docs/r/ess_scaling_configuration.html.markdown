@@ -130,6 +130,7 @@ The following arguments are supported:
 * `password` - (Optional, ForceNew, Available in 1.60.0+) The password of the ECS instance. The password must be 8 to 30 characters in length. It must contains at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. Special characters include `() ~!@#$%^&*-_+=\|{}[]:;'<>,.?/`, The password of Windows-based instances cannot start with a forward slash (/).
 * `kms_encrypted_password` - (Optional, ForceNew, Available in 1.60.0+) An KMS encrypts password used to a db account. If the `password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.60.0+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
+* `resource_group_id` - (Optional, Available in 1.135.0+) ID of resource group.
 
 -> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
 

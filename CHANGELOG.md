@@ -1,4 +1,9 @@
 ## 1.135.0 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_ess_scalingconfiguration: Support resource_group_id.
+
 ## 1.134.0 (September 5, 2021)
 
 - **New Resource:** `alicloud_dts_jobmonitor_rule` ([#3965](https://github.com/aliyun/terraform-provider-alicloud/issues/3965))
