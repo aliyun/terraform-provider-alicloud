@@ -23,7 +23,7 @@ func init() {
 }
 
 func testSweepDFSAccessGroup(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegionWithBackendRegions(region, true, connectivity.DfsSupportRegions)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
