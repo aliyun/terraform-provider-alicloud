@@ -513,6 +513,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_direct_mail_mail_addresses":                  dataSourceAlicloudDirectMailMailAddresses(),
 			"alicloud_database_gateway_gateways":                   dataSourceAlicloudDatabaseGatewayGateways(),
 			"alicloud_bastionhost_hosts":                           dataSourceAlicloudBastionhostHosts(),
+			"alicloud_amqp_bindings":                               dataSourceAlicloudAmqpBindings(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -923,6 +924,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dts_job_monitor_rule":                       resourceAlicloudDtsJobMonitorRule(),
 			"alicloud_database_gateway_gateway":                   resourceAlicloudDatabaseGatewayGateway(),
 			"alicloud_bastionhost_host":                           resourceAlicloudBastionhostHost(),
+			"alicloud_amqp_binding":                               resourceAlicloudAmqpBinding(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
