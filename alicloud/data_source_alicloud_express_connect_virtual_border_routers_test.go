@@ -125,7 +125,7 @@ func TestAccAlicloudExpressConnectVirtualBorderRoutersDataSource(t *testing.T) {
 			"routers.0.termination_time":                    "",
 			"routers.0.virtual_border_router_id":            CHECKSET,
 			"routers.0.virtual_border_router_name":          name,
-			"routers.0.vlan_id":                             "1",
+			"routers.0.vlan_id":                             "15",
 			"routers.0.vlan_interface_id":                   CHECKSET,
 		}
 	}

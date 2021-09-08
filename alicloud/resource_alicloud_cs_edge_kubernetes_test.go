@@ -106,7 +106,7 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 					"name":                        name,
 					"worker_vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
 					"worker_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"version":                     "1.12.6-aliyunedge.2",
+					"version":                     "1.16.9-aliyunedge.1",
 					"worker_number":               "1",
 					"password":                    "Test12345",
 					"pod_cidr":                    "172.20.0.0/16",
@@ -131,7 +131,7 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                          name,
-						"version":                       "1.12.6-aliyunedge.2",
+						"version":                       "1.16.9-aliyunedge.1",
 						"worker_number":                 "1",
 						"password":                      "Test12345",
 						"pod_cidr":                      "172.20.0.0/16",
@@ -189,13 +189,13 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"version":       "1.14.8-aliyunedge.1",
+					"version":       "1.18.8-aliyunedge.1",
 					"name":          "modified-edge-cluster-again",
 					"worker_number": "3",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version":       "1.14.8-aliyunedge.1",
+						"version":       "1.18.8-aliyunedge.1",
 						"name":          "modified-edge-cluster-again",
 						"worker_number": "3",
 					}),
