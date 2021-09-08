@@ -3,7 +3,8 @@ subcategory: "Message Center"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_msc_sub_contact"
 sidebar_current: "docs-alicloud-resource-msc-sub-contact"
-  description: |- Provides a Alicloud Message Center Contact resource.
+description: |-
+  Provides a Alicloud Message Center Contact resource.
 ---
 
 # alicloud\_msc\_sub\_contact
@@ -32,7 +33,7 @@ The following arguments are supported:
 * `contact_name` - (Required) The User's Contact Name. **Note:** The name must be 2 to 12 characters in length, and can contain uppercase and lowercase letters.
 * `email` - (Required) The User's Contact Email Address.
 * `mobile` - (Required) The User's Telephone.
-* `position` - (Required, ForceNew) The User's Position. Valid values: `CEO`, `Technical Director`, `Maintenance Director`, `Project Director`,`Finance Director` and `Other`.
+* `position` - (Required, ForceNew) The User's Position. Valid values: `CEO`, `Technical Director`, `Maintenance Director`, `Project Director`,`Finance Director` and `Others`.
 
 ## Attributes Reference
 
