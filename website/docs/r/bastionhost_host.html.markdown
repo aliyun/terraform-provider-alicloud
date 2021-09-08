@@ -13,7 +13,7 @@ Provides a Bastion Host Host resource.
 
 For information about Bastion Host Host and how to use it, see [What is Host](https://www.alibabacloud.com/help/en/doc-detail/201330.htm).
 
--> **NOTE:** Available in v1.134.0+.
+-> **NOTE:** Available in v1.135.0+.
 
 ## Example Usage
 
