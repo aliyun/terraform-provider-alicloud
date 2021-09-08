@@ -41,7 +41,7 @@ func resourceAlicloudMscSubContact() *schema.Resource {
 			"position": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"CEO", "Finance Director", "Maintenance Director", "Other", "Project Director", "Technical Director"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"CEO", "Finance Director", "Maintenance Director", "Others", "Project Director", "Technical Director"}, false),
 			},
 		},
 	}
@@ -61,6 +61,7 @@ func resourceAlicloudMscSubContactCreate(d *schema.ResourceData, meta interface{
 	request["Mobile"] = d.Get("mobile")
 	request["Position"] = d.Get("position")
 	request["ClientToken"] = buildClientToken("CreateContact")
+	request["Locale"] = "en"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)

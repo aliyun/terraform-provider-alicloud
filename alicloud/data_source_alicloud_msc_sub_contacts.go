@@ -108,6 +108,7 @@ func dataSourceAlicloudMscSubContactsRead(d *schema.ResourceData, meta interface
 
 	action := "ListContacts"
 	request := make(map[string]interface{})
+	request["Locale"] = "en"
 	request["MaxResults"] = PageSizeLarge
 	var objects []map[string]interface{}
 	var contactNameRegex *regexp.Regexp
