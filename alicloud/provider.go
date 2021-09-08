@@ -514,6 +514,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_database_gateway_gateways":                   dataSourceAlicloudDatabaseGatewayGateways(),
 			"alicloud_bastionhost_hosts":                           dataSourceAlicloudBastionhostHosts(),
 			"alicloud_amqp_bindings":                               dataSourceAlicloudAmqpBindings(),
+			"alicloud_slb_tls_cipher_policies":                     dataSourceAlicloudSlbTlsCipherPolicies(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -925,6 +926,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_database_gateway_gateway":                   resourceAlicloudDatabaseGatewayGateway(),
 			"alicloud_bastionhost_host":                           resourceAlicloudBastionhostHost(),
 			"alicloud_amqp_binding":                               resourceAlicloudAmqpBinding(),
+			"alicloud_slb_tls_cipher_policy":                      resourceAlicloudSlbTlsCipherPolicy(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
