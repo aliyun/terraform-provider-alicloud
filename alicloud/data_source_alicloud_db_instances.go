@@ -64,6 +64,11 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"connection_mode": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -89,6 +94,38 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"parameters": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"force_modify": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"checking_code": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"parameter_value": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"force_restart": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"parameter_name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"parameter_description": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
 						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -310,16 +347,28 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	action := "DescribeDBInstances"
 	request := map[string]interface{}{
-		"RegionId":         client.RegionId,
-		"Engine":           d.Get("engine"),
-		"SourceIp":         client.SourceIp,
-		"DBInstanceStatus": d.Get("status"),
-		"DBInstanceType":   d.Get("db_type"),
-		"VpcId":            d.Get("vpc_id"),
-		"VSwitchId":        d.Get("vswitch_id"),
-		"ConnectionMode":   d.Get("connection_mode"),
-		"PageSize":         PageSizeLarge,
-		"PageNumber":       1,
+		"RegionId":   client.RegionId,
+		"SourceIp":   client.SourceIp,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+	if v, ok := d.GetOk("engine"); ok && v.(string) != "" {
+		request["Engine"] = v.(string)
+	}
+	if v, ok := d.GetOk("status"); ok && v.(string) != "" {
+		request["DBInstanceStatus"] = v.(string)
+	}
+	if v, ok := d.GetOk("db_type"); ok && v.(string) != "" {
+		request["DBInstanceType"] = v.(string)
+	}
+	if v, ok := d.GetOk("vpc_id"); ok && v.(string) != "" {
+		request["VpcId"] = v.(string)
+	}
+	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
+		request["VSwitchId"] = v.(string)
+	}
+	if v, ok := d.GetOk("connection_mode"); ok && v.(string) != "" {
+		request["ConnectionMode"] = v.(string)
 	}
 	if v, ok := d.GetOk("tags"); ok {
 		tagsMap := v.(map[string]interface{})
@@ -414,7 +463,7 @@ func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, objects [
 
 	for _, item := range objects {
 		readOnlyInstanceIDs := []string{}
-		for _, id := range item["ReadOnlyDBInstanceIds"].([]interface{}) {
+		for _, id := range item["ReadOnlyDBInstanceIds"].(map[string]interface{})["ReadOnlyDBInstanceId"].([]interface{}) {
 			readOnlyInstanceIDs = append(readOnlyInstanceIDs, fmt.Sprint(id.(map[string]interface{})["DBInstanceId"]))
 		}
 		instance, err := rdsService.DescribeDBInstance(fmt.Sprint(item["DBInstanceId"]))
@@ -541,6 +590,24 @@ func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, objects [
 			mapping["zone_id_slave_a"] = slaveZones[0].(map[string]interface{})["ZoneId"]
 		}
 
+		if d.Get("enable_details").(bool) {
+			paramResponse, paramError := rdsService.DescribeParameterTemplates(item["DBInstanceId"].(string), item["Engine"].(string), item["EngineVersion"].(string))
+			if paramError == nil {
+				parameterDetail := make([]map[string]interface{}, 0)
+				for _, val := range paramResponse {
+					item := val.(map[string]interface{})
+					parameterDetail = append(parameterDetail, map[string]interface{}{
+						"force_modify":          item["ForceModify"],
+						"checking_code":         item["CheckingCode"],
+						"parameter_value":       item["ParameterValue"],
+						"force_restart":         item["ForceRestart"],
+						"parameter_name":        item["ParameterName"],
+						"parameter_description": item["ParameterDescription"],
+					})
+				}
+				mapping["parameters"] = parameterDetail
+			}
+		}
 		ids = append(ids, fmt.Sprint(item["DBInstanceId"]))
 		names = append(names, fmt.Sprint(item["DBInstanceDescription"]))
 		s = append(s, mapping)

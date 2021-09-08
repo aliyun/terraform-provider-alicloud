@@ -33,7 +33,7 @@ output "first_db_instance_id" {
 ## Argument Reference
 
 The following arguments are supported:
-
+* `enable_details` - (Optional, Available in 1.135.0+) Default to `false`. Set it to `true` can output parameter template about resource attributes.
 * `name_regex` - (Optional) A regex string to filter results by instance name.
 * `ids` - (Optional, Available 1.52.0+) A list of RDS instance IDs. 
 * `engine` - (Optional) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL` and `PPAS`. If no value is specified, all types are returned.
@@ -127,3 +127,10 @@ The following attributes are exported in addition to the arguments listed above:
   * `key_usage` - (Available in 1.124.3+) The purpose of the encryption key.
   * `material_expire_time` - (Available in 1.124.3+) The time when the encryption key expires. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
   * `origin` - (Available in 1.124.3+) The source of the encryption key.
+  * `parameters` - (Available in 1.135.0+) Parameter list.
+      * `parameter_name` - The name of the parameter.
+      * `parameter_value` - The default value of the parameter.
+      * `force_modify` - Indicates whether the parameter can be modified. Valid values: true | false
+      * `force_restart` - Indicates whether the modified parameter takes effect only after a database restart. Valid values: true | false
+      * `checking_code` - The value range of the parameter.
+      * `parameter_description` - The description of the parameter.

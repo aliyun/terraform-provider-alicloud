@@ -765,6 +765,29 @@ func (s *RdsService) DescribeDBSecurityIps(instanceId string) ([]interface{}, er
 	return response["Items"].(map[string]interface{})["DBInstanceIPArray"].([]interface{}), nil
 }
 
+func (s *RdsService) DescribeParameterTemplates(instanceId, engine, engineVersion string) ([]interface{}, error) {
+	action := "DescribeParameterTemplates"
+	request := map[string]interface{}{
+		"RegionId":      s.client.RegionId,
+		"DBInstanceId":  instanceId,
+		"Engine":        engine,
+		"EngineVersion": engineVersion,
+		"SourceIp":      s.client.SourceIp,
+	}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	return response["Parameters"].(map[string]interface{})["TemplateRecord"].([]interface{}), nil
+}
+
 func (s *RdsService) GetSecurityIps(instanceId string) ([]string, error) {
 	object, err := s.DescribeDBSecurityIps(instanceId)
 	if err != nil {
