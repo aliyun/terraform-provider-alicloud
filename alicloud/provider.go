@@ -524,6 +524,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_video_surveillance_system_groups":            dataSourceAlicloudVideoSurveillanceSystemGroups(),
 			"alicloud_msc_sub_subscriptions":                       dataSourceAlicloudMscSubSubscriptions(),
 			"alicloud_sddp_instances":                              dataSourceAlicloudSddpInstances(),
+			"alicloud_vpc_nat_ip_cidrs":                            dataSourceAlicloudVpcNatIpCidrs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -948,6 +949,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_video_surveillance_system_group":                      resourceAlicloudVideoSurveillanceSystemGroup(),
 			"alicloud_msc_sub_subscription":                                 resourceAlicloudMscSubSubscription(),
 			"alicloud_sddp_instance":                                        resourceAlicloudSddpInstance(),
+			"alicloud_vpc_nat_ip_cidr":                                      resourceAlicloudVpcNatIpCidr(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
