@@ -525,6 +525,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_msc_sub_subscriptions":                       dataSourceAlicloudMscSubSubscriptions(),
 			"alicloud_sddp_instances":                              dataSourceAlicloudSddpInstances(),
 			"alicloud_vpc_nat_ip_cidrs":                            dataSourceAlicloudVpcNatIpCidrs(),
+			"alicloud_vpc_nat_ips":                                 dataSourceAlicloudVpcNatIps(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -950,6 +951,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_msc_sub_subscription":                                 resourceAlicloudMscSubSubscription(),
 			"alicloud_sddp_instance":                                        resourceAlicloudSddpInstance(),
 			"alicloud_vpc_nat_ip_cidr":                                      resourceAlicloudVpcNatIpCidr(),
+			"alicloud_vpc_nat_ip":                                           resourceAlicloudVpcNatIp(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
