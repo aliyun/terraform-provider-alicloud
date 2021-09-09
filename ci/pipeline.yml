@@ -1267,7 +1267,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: true
+        trigger: false
         resource: 0530
       - aggregate:
           - *get-aliyun-cli
