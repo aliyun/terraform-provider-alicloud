@@ -516,6 +516,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_bindings":                               dataSourceAlicloudAmqpBindings(),
 			"alicloud_slb_tls_cipher_policies":                     dataSourceAlicloudSlbTlsCipherPolicies(),
 			"alicloud_cloud_sso_directories":                       dataSourceAlicloudCloudSsoDirectories(),
+			"alicloud_bastionhost_host_accounts":                   dataSourceAlicloudBastionhostHostAccounts(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -929,6 +930,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_binding":                               resourceAlicloudAmqpBinding(),
 			"alicloud_slb_tls_cipher_policy":                      resourceAlicloudSlbTlsCipherPolicy(),
 			"alicloud_cloud_sso_directory":                        resourceAlicloudCloudSsoDirectory(),
+			"alicloud_bastionhost_host_account":                   resourceAlicloudBastionhostHostAccount(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
