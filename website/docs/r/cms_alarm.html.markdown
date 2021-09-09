@@ -16,7 +16,7 @@ Details for [alarm rule](https://www.alibabacloud.com/help/doc-detail/28608.htm)
 
 Basic Usage
 
-```terraform 
+```terraform
 resource "alicloud_cms_alarm" "basic" {
   name    = "tf-testAccCmsAlarm_basic"
   project = "acs_ecs_dashboard"
@@ -69,7 +69,7 @@ The following arguments are supported:
 
 The escalations_critical supports the following:
 
-* `statistics` - Critical level alarm statistics method. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum", "Value", "ErrorCodeMaximum", "Sum", "Count"]. Default to "Average".
+* `statistics` - Critical level alarm statistics method. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum", "Value", "ErrorCodeMaximum", "Sum", "Count", "Availability"]. Default to "Average".
 * `comparison_operator` - Critical level alarm comparison operator. Valid values: ["<=", "<", ">", ">=", "==", "!="]. Default to "==".
 * `threshold` - Critical level alarm threshold value, which must be a numeric value currently.
 * `times` - Critical level alarm retry times. Default to 3.
@@ -78,7 +78,7 @@ The escalations_critical supports the following:
 
 The escalations_warn supports the following:
 
-* `statistics` - Critical level alarm statistics method. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum", "Value", "ErrorCodeMaximum", "Sum", "Count"]. Default to "Average".
+* `statistics` - Critical level alarm statistics method. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum", "Value", "ErrorCodeMaximum", "Sum", "Count", "Availability"]. Default to "Average".
 * `comparison_operator` - Critical level alarm comparison operator. Valid values: ["<=", "<", ">", ">=", "==", "!="]. Default to "==".
 * `threshold` - Critical level alarm threshold value, which must be a numeric value currently.
 * `times` - Critical level alarm retry times. Default to 3.
@@ -87,7 +87,7 @@ The escalations_warn supports the following:
 
 The escalations_info supports the following:
 
-* `statistics` - Critical level alarm statistics method. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum", "Value", "ErrorCodeMaximum", "Sum", "Count"]. Default to "Average".
+* `statistics` - Critical level alarm statistics method. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum", "Value", "ErrorCodeMaximum", "Sum", "Count", "Availability"]. Default to "Average".
 * `comparison_operator` - Critical level alarm comparison operator. Valid values: ["<=", "<", ">", ">=", "==", "!="]. Default to "==".
 * `threshold` - Critical level alarm threshold value, which must be a numeric value currently.
 * `times` - Critical level alarm retry times. Default to 3.
