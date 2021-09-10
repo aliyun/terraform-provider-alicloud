@@ -143,6 +143,7 @@ type Config struct {
 	DtsEndpoint                 string
 	DgEndpoint                  string
 	CloudssoEndpoint            string
+	WafEndpoint                 string
 }
 
 func (c *Config) loadAndValidate() error {
