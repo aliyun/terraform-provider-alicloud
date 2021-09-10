@@ -50,8 +50,6 @@ The following arguments are supported:
 * `domain_name` - (Required) Name of the accelerated domain. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
 * `function_name` - (Required) The name of the domain config.
 * `function_args` - (Required, Type: list) The args of the domain config.
-* `config_id` - (Computed, Available in 1.132.0+) The ID of the function.
-* `status` - (Computed, Available in 1.132.0+) The Status of the function. Valid values: `success`, `testing`, `failed`, and `configuring`.
 
 ### Block function_args
 
@@ -65,6 +63,8 @@ The `function_args` block supports the following:
 The following attributes are exported:
 
 * `id` - The ID of the domain config. The value is formate as `<domain_name>:<function_name>:<config_id>`. **NOTE:** Before 1.132.0+ ,The value is formate as `<domain_name>:<function_name>`
+* `config_id` - (Available in 1.132.0+) The ID of the domain config function.
+* `status` - (Available in 1.132.0+) The Status of the function. Valid values: `success`, `testing`, `failed`, and `configuring`.
 
 ## Import
 
