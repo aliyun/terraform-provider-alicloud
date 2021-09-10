@@ -139,6 +139,10 @@ func dataSourceAlicloudEssScalingConfigurations() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -245,6 +249,7 @@ func scalingConfigurationsDescriptionAttribute(d *schema.ResourceData, scalingCo
 			"data_disks":                    essService.flattenDataDiskMappings(scalingConfiguration.DataDisks.DataDisk),
 			"lifecycle_state":               scalingConfiguration.LifecycleState,
 			"creation_time":                 scalingConfiguration.CreationTime,
+			"resource_group_id":             scalingConfiguration.ResourceGroupId,
 		}
 		ids = append(ids, scalingConfiguration.ScalingConfigurationId)
 		names = append(names, scalingConfiguration.ScalingConfigurationName)

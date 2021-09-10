@@ -63,4 +63,5 @@ The following attributes are exported in addition to the arguments listed above:
     * `performance_level` - The performance level of the ESSD used as data disk.
   * `lifecycle_state` - Lifecycle state of the scaling configuration.
   * `creation_time` - Creation time of the scaling configuration.
+  * `resource_group_id` - ID of resource group.
   
