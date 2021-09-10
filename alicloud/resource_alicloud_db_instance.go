@@ -98,6 +98,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 			},
 
+			"db_time_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
@@ -1255,7 +1261,9 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
 		return WrapError(err)
 	}
-
+	if err = rdsService.SetTimeZone(d); err != nil {
+		return WrapError(err)
+	}
 	if instance["PayType"] == string(Prepaid) {
 		action := "DescribeInstanceAutoRenewalAttribute"
 		request := map[string]interface{}{
@@ -1469,6 +1477,10 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 
 	if v, ok := d.GetOk("zone_id_slave_b"); ok {
 		request["ZoneIdSlave2"] = v
+	}
+
+	if v, ok := d.GetOk("db_time_zone"); ok {
+		request["DBTimeZone"] = v
 	}
 
 	uuid, err := uuid.GenerateUUID()
