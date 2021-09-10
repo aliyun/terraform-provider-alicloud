@@ -517,6 +517,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_slb_tls_cipher_policies":                     dataSourceAlicloudSlbTlsCipherPolicies(),
 			"alicloud_cloud_sso_directories":                       dataSourceAlicloudCloudSsoDirectories(),
 			"alicloud_bastionhost_host_accounts":                   dataSourceAlicloudBastionhostHostAccounts(),
+			"alicloud_waf_certificates":                            dataSourceAlicloudWafCertificates(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -932,6 +933,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_directory":                        resourceAlicloudCloudSsoDirectory(),
 			"alicloud_bastionhost_host_account":                   resourceAlicloudBastionhostHostAccount(),
 			"alicloud_bastionhost_host_attachment":                resourceAlicloudBastionhostHostAttachment(),
+			"alicloud_waf_certificate":                            resourceAlicloudWafCertificate(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1114,6 +1116,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DtsEndpoint = strings.TrimSpace(endpoints["dts"].(string))
 		config.DgEndpoint = strings.TrimSpace(endpoints["dg"].(string))
 		config.CloudssoEndpoint = strings.TrimSpace(endpoints["cloudsso"].(string))
+		config.WafEndpoint = strings.TrimSpace(endpoints["waf"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1389,6 +1392,8 @@ func init() {
 		"dg_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dg endpoints.",
 
 		"cloudsso_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudsso endpoints.",
+
+		"waf_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom waf endpoints.",
 	}
 }
 
@@ -1438,6 +1443,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["dg_endpoint"],
+				},
+				"waf": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["waf_endpoint"],
 				},
 
 				"dts": {
@@ -2126,6 +2137,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["dts"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dg"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudsso"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["waf"].(string)))
 	return hashcode.String(buf.String())
 }
 
