@@ -235,6 +235,34 @@ func (s *RdsService) DescribeParameters(id string) (map[string]interface{}, erro
 	return response, err
 }
 
+func (s *RdsService) SetTimeZone(d *schema.ResourceData) error {
+	targetParameterName := ""
+	engine := d.Get("engine")
+	if engine == string(MySQL) {
+		targetParameterName = "default_time_zone"
+	} else if engine == string(PostgreSQL) {
+		targetParameterName = "timezone"
+	}
+
+	if targetParameterName != "" {
+		paramsRes, err := s.DescribeParameters(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		parameters := paramsRes["RunningParameters"].(map[string]interface{})["DBInstanceParameter"].([]interface{})
+		for _, item := range parameters {
+			item := item.(map[string]interface{})
+			parameterName := item["ParameterName"]
+
+			if parameterName == targetParameterName {
+				d.Set("db_time_zone", item["ParameterValue"])
+				break
+			}
+		}
+	}
+	return nil
+}
+
 func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string) error {
 	var param []map[string]interface{}
 	documented, ok := d.GetOk(attribute)

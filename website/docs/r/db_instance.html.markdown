@@ -229,6 +229,17 @@ The following arguments are supported:
     - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
     - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
 
+* `db_time_zone` - (Optional, Available in 1.136.0+) The time zone of the instance. This parameter takes effect only when you set the `Engine` parameter to MySQL or PostgreSQL.
+  - If you set the `Engine` parameter to MySQL.
+    - This time zone of the instance is in UTC. Valid values: -12:59 to +13:00.
+    - You can specify this parameter when the instance is equipped with local SSDs. For example, you can specify the time zone to Asia/Hong_Kong. For more information about time zones, see [Time zones](https://www.alibabacloud.com/help/doc-detail/297356.htm).
+  - If you set the `Engine` parameter to PostgreSQL.
+    - This time zone of the instance is not in UTC. For more information about time zones, see [Time zones](https://www.alibabacloud.com/help/doc-detail/297356.htm).
+    - You can specify this parameter only when the instance is equipped with standard SSDs or ESSDs.
+
+-> **NOTE:**
+- You can specify the time zone when you create a primary instance. You cannot specify the time zone when you create a read-only instance. Read-only instances inherit the time zone of their primary instance.
+- If you do not specify this parameter, the system assigns the default time zone of the region where the instance resides.
 * `sql_collector_status` - (Optional, Available in 1.70.0+) The sql collector status of the instance. Valid values are `Enabled`, `Disabled`, Default to `Disabled`.
 * `sql_collector_config_value` - (Optional, Available in 1.70.0+) The sql collector keep time of the instance. Valid values are `30`, `180`, `365`, `1095`, `1825`, Default to `30`.
     
