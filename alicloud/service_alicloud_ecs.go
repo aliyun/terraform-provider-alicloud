@@ -659,6 +659,35 @@ func (s *EcsService) deleteImage(d *schema.ResourceData) error {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
+	if v, ok := d.GetOk("delete_auto_snapshot"); ok && v.(bool) {
+		errs := map[string]error{}
+
+		for _, item := range object.DiskDeviceMappings.DiskDeviceMapping {
+			if item.SnapshotId == "" {
+				continue
+			}
+			request := ecs.CreateDeleteSnapshotRequest()
+			request.RegionId = s.client.RegionId
+			request.SnapshotId = item.SnapshotId
+			request.Force = requests.NewBoolean(true)
+			raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DeleteSnapshot(request)
+			})
+			if err != nil {
+				errs[item.SnapshotId] = err
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+		if len(errs) > 0 {
+			errParts := []string{"Errors while deleting associated snapshots:"}
+			for snapshotId, err := range errs {
+				errParts = append(errParts, fmt.Sprintf("%s: %s", snapshotId, err))
+			}
+			errParts = append(errParts, "These are no longer managed by Terraform and must be deleted manually.")
+			return WrapError(fmt.Errorf(strings.Join(errParts, "\n")))
+		}
+	}
+
 	return nil
 }
 

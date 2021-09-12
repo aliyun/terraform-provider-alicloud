@@ -42,15 +42,15 @@ resource "alicloud_bastionhost_user" "default" {
   source              = "Local"
   user_name           = "my-local-user"
 }
-resource "alicloud_bastionhost_host_group" "example" {
+resource "alicloud_bastionhost_host_group" "default" {
   host_group_name = "example_value"
   instance_id     = "bastionhost-cn-tl3xxxxxxx"
 }
-resource "alicloud_bastionhost_host_account_user_attachment" "default" {
-  instance_id = alicloud_bastionhost_host.default.instance_id
-  user_id = alicloud_bastionhost_user.default.user_id
-  host_group_id = alicloud_bastionhost_host_group.default.host_group_id
-  host_account_ids = alicloud_bastionhost_host_account.default.*.host_account_id
+resource "alicloud_bastionhost_host_group_account_user_attachment" "default" {
+  instance_id        = alicloud_bastionhost_host.default.instance_id
+  user_id            = alicloud_bastionhost_user.default.user_id
+  host_group_id      = alicloud_bastionhost_host_group.default.host_group_id
+  host_account_names = alicloud_bastionhost_host_account.default.*.host_account_name
 }
 ```
 
