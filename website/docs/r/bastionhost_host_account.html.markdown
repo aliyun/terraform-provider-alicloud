@@ -34,13 +34,13 @@ resource "alicloud_bastionhost_host_account" "example" {
 
 The following arguments are supported:
 
-* `host_account_name` - (Required) Specify the new hosting account's name, support the longest 128 characters.
-* `host_id` - (Required, ForceNew) Specifies the database where you want to create your hosting account's host ID.
-* `instance_id` - (Required, ForceNew) Specifies the database where you want to create your hosting account's host bastion host ID of.
-* `pass_phrase` - (Optional, Sensitive) Specify the new hosting account's private key password. **NOTE:** It is valid when the attribute `protocol_name` is `SSH`.
-* `password` - (Optional, Sensitive) Specify the new hosting account's password.
-* `private_key` - (Optional, Sensitive) Specify the new hosting account's private key using Base64 encoded string. **NOTE:** It is valid when the attribute `protocol_name` is `SSH`
-* `protocol_name` - (Required, ForceNew) Specify the new hosting account of the agreement name. Valid values: SSH and RDP.
+* `host_account_name` - (Required) The name of the host account. The name can be up to 128 characters in length.
+* `host_id` - (Required, ForceNew) The ID of the host for which you want to create an account.
+* `instance_id` - (Required, ForceNew) The ID of the Bastionhost instance where you want to create an account for the host.
+* `pass_phrase` - (Optional, Sensitive) The passphrase of the private key for the host account. **NOTE:** It is valid when the attribute `protocol_name` is `SSH`.
+* `password` - (Optional, Sensitive) The password of the host account.
+* `private_key` - (Optional, Sensitive) The private key of the host account. The value is a Base64-encoded string. **NOTE:** It is valid when the attribute `protocol_name` is `SSH`
+* `protocol_name` - (Required, ForceNew) The protocol used by the host account. Valid values: SSH,RDP
 
 ## Attributes Reference
 
