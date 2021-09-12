@@ -65,6 +65,10 @@ func resourceAliCloudImageCopy() *schema.Resource {
 				Default:  false,
 			},
 			"tags": tagsSchema(),
+			"delete_auto_snapshot": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -105,6 +109,15 @@ func resourceAliCloudImageCopyCreate(d *schema.ResourceData, meta interface{}) e
 	d.SetId(response.ImageId)
 	stateConf := BuildStateConf([]string{"Creating", "Waiting"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, ecsService.ImageStateRefreshFunc(d.Id(), []string{"CreateFailed", "UnAvailable"}))
 	if _, err := stateConf.WaitForState(); err != nil {
+		// If the copying is timeout, the progress should be cancelled
+		cancelCopyImageRequest := ecs.CreateCancelCopyImageRequest()
+		cancelCopyImageRequest.ImageId = d.Id()
+		cancelCopyImageRequest.RegionId = client.RegionId
+		if _, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.CancelCopyImage(cancelCopyImageRequest)
+		}); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_image_copy", cancelCopyImageRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return resourceAliCloudImageCopyRead(d, meta)
