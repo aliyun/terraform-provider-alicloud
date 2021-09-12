@@ -1,57 +1,57 @@
 ## 1.136.0 (Unreleased)
 ## 1.135.0 (September 13, 2021)
 
-- **New Resource:** `alicloud_bastionhost_host_group_account_user_group_attachment` [GH-4000]
-- **New Resource:** `alicloud_bastionhost_host_group_account_user_attachment` [GH-3999]
-- **New Resource:** `alicloud_bastionhost_account_user_attachment` [GH-3998]
-- **New Resource:** `alicloud_bastionhost_account_user_group_attachment` [GH-3996]
-- **New Resource:** `alicloud_msc_sub_subscription` [GH-3994]
-- **New Resource:** `alicloud_video_surveillance_system_group` [GH-3993]
-- **New Resource:** `alicloud_bastionhost_host_attachment` [GH-3991]
-- **New Resource:** `alicloud_bastionhost_host_account` [GH-3989]
-- **New Resource:** `alicloud_bastionhost_host` [GH-3984]
-- **New Resource:** `alicloud_waf_certificate` [GH-3982]
-- **New Resource:** `alicloud_slb_tls_cipher_policy` [GH-3981]
-- **New Resource:** `simple_application_server_instance` [GH-3978]
-- **New Resource:** `alicloud_slb_tls_cipher_policy` [GH-3981]
-- **New Resource:** `alicloud_cloud_sso_directory` [GH-3972]
-- **New Resource:** `alicloud_database_gateway_gateway` [GH-3970]
-- **New Resource:** `alicloud_dts_jobmonitor_rule` [GH-3965]
-- **New Resource:**  `alicloud_direct_mail_mail_address` [GH-3961]
-- **New Resource:**  `alicloud_amqp_binding` [GH-3799]
-- **New Data Source:** `alicloud_msc_sub_subscriptions` [GH-3994]
-- **New Data Source:** `alicloud_video_surveillance_system_groups` [GH-3993]
-- **New Data Source:** `alicloud_bastionhost_host_accounts` [GH-3989]
-- **New Data Source:** `alicloud_bastionhost_hosts` [GH-3984]
-- **New Data Source:** `alicloud_waf_certificates` [GH-3982]
-- **New Data Source:** `alicloud_slb_tls_cipher_policies` [GH-3984]
-- **New Data Source:** `simple_application_server_instances` [GH-3978]
-- **New Data Source:** `alicloud_simple_application_server_images` [GH-3978]
-- **New Data Source:** `alicloud_simple_application_server_plans` [GH-3978]
-- **New Data Source:** `alicloud_cloud_sso_directories` [GH-3972]
-- **New Data Source:** `alicloud_database_gateway_gateways` [GH-3970]
-- **New Data Source:** `alicloud_direct_mail_mail_addresses` [GH-3961]
-- **New Data Source:** `alicloud_amqp_bindings` [GH-3799]
+- **New Resource:** `alicloud_bastionhost_host_group_account_user_group_attachment` ([#4000](https://github.com/aliyun/terraform-provider-alicloud/issues/4000))
+- **New Resource:** `alicloud_bastionhost_host_group_account_user_attachment` ([#3999](https://github.com/aliyun/terraform-provider-alicloud/issues/3999))
+- **New Resource:** `alicloud_bastionhost_account_user_attachment` ([#3998](https://github.com/aliyun/terraform-provider-alicloud/issues/3998))
+- **New Resource:** `alicloud_bastionhost_account_user_group_attachment` ([#3996](https://github.com/aliyun/terraform-provider-alicloud/issues/3996))
+- **New Resource:** `alicloud_msc_sub_subscription` ([#3994](https://github.com/aliyun/terraform-provider-alicloud/issues/3994))
+- **New Resource:** `alicloud_video_surveillance_system_group` ([#3993](https://github.com/aliyun/terraform-provider-alicloud/issues/3993))
+- **New Resource:** `alicloud_bastionhost_host_attachment` ([#3991](https://github.com/aliyun/terraform-provider-alicloud/issues/3991))
+- **New Resource:** `alicloud_bastionhost_host_account` ([#3989](https://github.com/aliyun/terraform-provider-alicloud/issues/3989))
+- **New Resource:** `alicloud_bastionhost_host` ([#3984](https://github.com/aliyun/terraform-provider-alicloud/issues/3984))
+- **New Resource:** `alicloud_waf_certificate` ([#3982](https://github.com/aliyun/terraform-provider-alicloud/issues/3982))
+- **New Resource:** `alicloud_slb_tls_cipher_policy` ([#3981](https://github.com/aliyun/terraform-provider-alicloud/issues/3981))
+- **New Resource:** `simple_application_server_instance` ([#3978](https://github.com/aliyun/terraform-provider-alicloud/issues/3978))
+- **New Resource:** `alicloud_slb_tls_cipher_policy` ([#3981](https://github.com/aliyun/terraform-provider-alicloud/issues/3981))
+- **New Resource:** `alicloud_cloud_sso_directory` ([#3972](https://github.com/aliyun/terraform-provider-alicloud/issues/3972))
+- **New Resource:** `alicloud_database_gateway_gateway` ([#3970](https://github.com/aliyun/terraform-provider-alicloud/issues/3970))
+- **New Resource:** `alicloud_dts_jobmonitor_rule` ([#3965](https://github.com/aliyun/terraform-provider-alicloud/issues/3965))
+- **New Resource:**  `alicloud_direct_mail_mail_address` ([#3961](https://github.com/aliyun/terraform-provider-alicloud/issues/3961))
+- **New Resource:**  `alicloud_amqp_binding` ([#3799](https://github.com/aliyun/terraform-provider-alicloud/issues/3799))
+- **New Data Source:** `alicloud_msc_sub_subscriptions` ([#3994](https://github.com/aliyun/terraform-provider-alicloud/issues/3994))
+- **New Data Source:** `alicloud_video_surveillance_system_groups` ([#3993](https://github.com/aliyun/terraform-provider-alicloud/issues/3993))
+- **New Data Source:** `alicloud_bastionhost_host_accounts` ([#3989](https://github.com/aliyun/terraform-provider-alicloud/issues/3989))
+- **New Data Source:** `alicloud_bastionhost_hosts` ([#3984](https://github.com/aliyun/terraform-provider-alicloud/issues/3984))
+- **New Data Source:** `alicloud_waf_certificates` ([#3982](https://github.com/aliyun/terraform-provider-alicloud/issues/3982))
+- **New Data Source:** `alicloud_slb_tls_cipher_policies` ([#3984](https://github.com/aliyun/terraform-provider-alicloud/issues/3984))
+- **New Data Source:** `simple_application_server_instances` ([#3978](https://github.com/aliyun/terraform-provider-alicloud/issues/3978))
+- **New Data Source:** `alicloud_simple_application_server_images` ([#3978](https://github.com/aliyun/terraform-provider-alicloud/issues/3978))
+- **New Data Source:** `alicloud_simple_application_server_plans` ([#3978](https://github.com/aliyun/terraform-provider-alicloud/issues/3978))
+- **New Data Source:** `alicloud_cloud_sso_directories` ([#3972](https://github.com/aliyun/terraform-provider-alicloud/issues/3972))
+- **New Data Source:** `alicloud_database_gateway_gateways` ([#3970](https://github.com/aliyun/terraform-provider-alicloud/issues/3970))
+- **New Data Source:** `alicloud_direct_mail_mail_addresses` ([#3961](https://github.com/aliyun/terraform-provider-alicloud/issues/3961))
+- **New Data Source:** `alicloud_amqp_bindings` ([#3799](https://github.com/aliyun/terraform-provider-alicloud/issues/3799))
 
 ENHANCEMENTS:
 
 - resource/alicloud_ess_scalingconfiguration: Support resource_group_id.
-- resource/alicloud_image_copy: Supports to cancel image when copying image is timeout; Adds new attribute delete_auto_snapshot to delete snapshot automatically when deleting copied image [GH-4001]
-- doc/alicloud_cdn_doamin_config: Optimize document format [GH-3995]
-- reource/alicloud_msc_sub_contact: Modify the enumeration value of position and limit Locale to en [GH-3994]
-- datasource/alicloud_db_instances: Adds attribute enable_details to show extra parameter template [GH-3988]
-- resource/alicloud_bastionhost_instance: Improves the attribute value setting when invoking SetRenewal to update renewal attribute [GH-3986]
-- resource/alicloud_ess_scalingconfiguration: Adds new attribute resource_group_id to support set resource group [GH-3985]
-- resource/alicloud_log_audit: logservice audit support resource directory [GH-3983]
-- datasource/alicloud_db_instance_classes: Upgrades its dependence OpenAPI to DescribeAvailableClasses [GH-3973]
-- Upgrades the dependence sdk tea-rpc and tea-roa to fix the useless retry [GH-3971]
-- datasource/alicloud_db_instance_engines: Upgrades its dependence OpenAPI to DescribeAvailableZones [GH-3970]
-- datasource/alicloud_db_zones: Upgrades its dependence OpenAPI to DescribeAvailableZones [GH-3968]
-- testcase: Improves the bastionhost user attachment testcase [GH-3967]
+- resource/alicloud_image_copy: Supports to cancel image when copying image is timeout; Adds new attribute delete_auto_snapshot to delete snapshot automatically when deleting copied image ([#4001](https://github.com/aliyun/terraform-provider-alicloud/issues/4001))
+- doc/alicloud_cdn_doamin_config: Optimize document format ([#3995](https://github.com/aliyun/terraform-provider-alicloud/issues/3995))
+- reource/alicloud_msc_sub_contact: Modify the enumeration value of position and limit Locale to en ([#3994](https://github.com/aliyun/terraform-provider-alicloud/issues/3994))
+- datasource/alicloud_db_instances: Adds attribute enable_details to show extra parameter template ([#3988](https://github.com/aliyun/terraform-provider-alicloud/issues/3988))
+- resource/alicloud_bastionhost_instance: Improves the attribute value setting when invoking SetRenewal to update renewal attribute ([#3986](https://github.com/aliyun/terraform-provider-alicloud/issues/3986))
+- resource/alicloud_ess_scalingconfiguration: Adds new attribute resource_group_id to support set resource group ([#3985](https://github.com/aliyun/terraform-provider-alicloud/issues/3985))
+- resource/alicloud_log_audit: logservice audit support resource directory ([#3983](https://github.com/aliyun/terraform-provider-alicloud/issues/3983))
+- datasource/alicloud_db_instance_classes: Upgrades its dependence OpenAPI to DescribeAvailableClasses ([#3973](https://github.com/aliyun/terraform-provider-alicloud/issues/3973))
+- Upgrades the dependence sdk tea-rpc and tea-roa to fix the useless retry ([#3971](https://github.com/aliyun/terraform-provider-alicloud/issues/3971))
+- datasource/alicloud_db_instance_engines: Upgrades its dependence OpenAPI to DescribeAvailableZones ([#3970](https://github.com/aliyun/terraform-provider-alicloud/issues/3970))
+- datasource/alicloud_db_zones: Upgrades its dependence OpenAPI to DescribeAvailableZones ([#3968](https://github.com/aliyun/terraform-provider-alicloud/issues/3968))
+- testcase: Improves the bastionhost user attachment testcase ([#3967](https://github.com/aliyun/terraform-provider-alicloud/issues/3967))
 
 BUG FIXES:
 
-- resource/alicloud_fc_trigger: Fixes fc trigger white space change error [GH-3980]
+- resource/alicloud_fc_trigger: Fixes fc trigger white space change error ([#3980](https://github.com/aliyun/terraform-provider-alicloud/issues/3980))
 
 ## 1.134.0 (September 5, 2021)
 
