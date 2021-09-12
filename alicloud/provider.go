@@ -940,6 +940,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_bastionhost_host_attachment":                    resourceAlicloudBastionhostHostAttachment(),
 			"alicloud_bastionhost_host_account_user_group_attachment": resourceAlicloudBastionhostHostAccountUserGroupAttachment(),
 			"alicloud_bastionhost_host_account_user_attachment":       resourceAlicloudBastionhostHostAccountUserAttachment(),
+			"alicloud_bastionhost_host_group_account_user_attachment": resourceAlicloudBastionhostHostGroupAccountUserAttachment(),
 			"alicloud_waf_certificate":                                resourceAlicloudWafCertificate(),
 			"alicloud_simple_application_server_instance":             resourceAlicloudSimpleApplicationServerInstance(),
 			"alicloud_video_surveillance_system_group":                resourceAlicloudVideoSurveillanceSystemGroup(),
