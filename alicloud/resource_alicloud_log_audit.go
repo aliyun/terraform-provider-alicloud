@@ -9,9 +9,9 @@ import (
 
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudLogAudit() *schema.Resource {
@@ -45,9 +45,9 @@ func resourceAlicloudLogAudit() *schema.Resource {
 				Optional: true,
 			},
 			"resource_directory_type": {
-				Type:     schema.TypeString,
+				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"custom", "all"}, true),
-				Optional: true,
+				Optional:     true,
 			},
 		},
 	}
