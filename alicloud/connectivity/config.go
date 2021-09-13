@@ -146,6 +146,7 @@ type Config struct {
 	WafEndpoint                 string
 	SwasEndpoint                string
 	VsEndpoint                  string
+	QuickbiEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {

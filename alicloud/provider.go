@@ -526,6 +526,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sddp_instances":                              dataSourceAlicloudSddpInstances(),
 			"alicloud_vpc_nat_ip_cidrs":                            dataSourceAlicloudVpcNatIpCidrs(),
 			"alicloud_vpc_nat_ips":                                 dataSourceAlicloudVpcNatIps(),
+			"alicloud_quick_bi_users":                              dataSourceAlicloudQuickBiUsers(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -952,6 +953,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sddp_instance":                                        resourceAlicloudSddpInstance(),
 			"alicloud_vpc_nat_ip_cidr":                                      resourceAlicloudVpcNatIpCidr(),
 			"alicloud_vpc_nat_ip":                                           resourceAlicloudVpcNatIp(),
+			"alicloud_quick_bi_user":                                        resourceAlicloudQuickBiUser(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1137,6 +1139,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.WafEndpoint = strings.TrimSpace(endpoints["waf"].(string))
 		config.SwasEndpoint = strings.TrimSpace(endpoints["swas"].(string))
 		config.VsEndpoint = strings.TrimSpace(endpoints["vs"].(string))
+		config.QuickbiEndpoint = strings.TrimSpace(endpoints["quickbi"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1418,6 +1421,8 @@ func init() {
 		"swas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom swas endpoints.",
 
 		"vs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom vs endpoints.",
+
+		"quickbi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom quickbi endpoints.",
 	}
 }
 
@@ -1462,6 +1467,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"quickbi": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["quickbi_endpoint"],
+				},
+
 				"dg": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2175,6 +2187,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["waf"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["swas"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["vs"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["quickbi"].(string)))
 	return hashcode.String(buf.String())
 }
 
