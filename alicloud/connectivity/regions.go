@@ -145,3 +145,4 @@ var SWASSupportRegions = []Region{Qingdao, Hangzhou, Beijing, Shenzhen, Shanghai
 var SurveillanceSystemSupportRegions = []Region{Beijing, Shenzhen, Qingdao}
 var VodSupportRegions = []Region{Shanghai}
 var OpenSearchSupportRegions = []Region{Beijing, Shenzhen, Hangzhou, Zhangjiakou, Qingdao, Shanghai, APSouthEast1}
+var GraphDatabaseSupportRegions = []Region{Shenzhen, Beijing, Qingdao, Shanghai, Hongkong, Zhangjiakou, Hangzhou, APSouthEast1, APSouthEast5, USWest1, USEast1, APSouth1}
