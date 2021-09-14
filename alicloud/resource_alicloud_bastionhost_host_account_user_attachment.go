@@ -2,12 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"log"
-	"time"
 )
 
 func resourceAlicloudBastionhostHostAccountUserAttachment() *schema.Resource {
