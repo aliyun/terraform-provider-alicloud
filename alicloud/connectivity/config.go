@@ -151,6 +151,7 @@ type Config struct {
 	OpensearchEndpoint          string
 	GdsEndpoint                 string
 	DbfsEndpoint                string
+	DevopsrdcEndpoint           string
 }
 
 func (c *Config) loadAndValidate() error {
