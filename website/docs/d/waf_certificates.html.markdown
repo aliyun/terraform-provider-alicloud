@@ -45,10 +45,10 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Certificate names.
 * `certificates` - A list of Waf Certificates. Each element contains the following attributes:
-	* `certificate_id` - Certificate recording ID.
-	* `certificate_name` - Your certificate name.
-	* `common_name` - Certificate bound to the domain name.
-	* `domain` - The domain that you want to add to WAF.
-	* `id` - The ID of the Certificate.
-	* `instance_id` - WAF instance ID.
+    * `certificate_id` - Certificate recording ID.
+    * `certificate_name` - Your certificate name.
+    * `common_name` - Certificate bound to the domain name.
+    * `domain` - The domain that you want to add to WAF.
+    * `id` - The ID of the Certificate.
+    * `instance_id` - WAF instance ID.
 	
