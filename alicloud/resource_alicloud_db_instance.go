@@ -384,6 +384,11 @@ func resourceAlicloudDBInstance() *schema.Resource {
 					return true
 				},
 			},
+			"released_keep_policy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"None", "Lastest", "All"}, false),
+			},
 		},
 	}
 }
@@ -1343,6 +1348,9 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 		"RegionId":     client.RegionId,
 		"DBInstanceId": d.Id(),
 		"SourceIp":     client.SourceIp,
+	}
+	if v, ok := d.GetOk("released_keep_policy"); ok && v.(string) != "" {
+		request["ReleasedKeepPolicy"] = v
 	}
 	conn, err := client.NewRdsClient()
 	if err != nil {
