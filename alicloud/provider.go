@@ -539,6 +539,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_graph_database_db_instances":                 dataSourceAlicloudGraphDatabaseDbInstances(),
 			"alicloud_arms_prometheus_alert_rules":                 dataSourceAlicloudArmsPrometheusAlertRules(),
 			"alicloud_dbfs_instances":                              dataSourceAlicloudDbfsInstances(),
+			"alicloud_rdc_organizations":                           dataSourceAlicloudRdcOrganizations(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -972,6 +973,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_graph_database_db_instance":                           resourceAlicloudGraphDatabaseDbInstance(),
 			"alicloud_arms_prometheus_alert_rule":                           resourceAlicloudArmsPrometheusAlertRule(),
 			"alicloud_dbfs_instance":                                        resourceAlicloudDbfsInstance(),
+			"alicloud_rdc_organization":                                     resourceAlicloudRdcOrganization(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1165,6 +1167,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.OpensearchEndpoint = strings.TrimSpace(endpoints["opensearch"].(string))
 		config.GdsEndpoint = strings.TrimSpace(endpoints["gds"].(string))
 		config.DbfsEndpoint = strings.TrimSpace(endpoints["dbfs"].(string))
+		config.DevopsrdcEndpoint = strings.TrimSpace(endpoints["devopsrdc"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1456,6 +1459,8 @@ func init() {
 		"gds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom gds endpoints.",
 
 		"dbfs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dbfs endpoints.",
+
+		"devopsrdc_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom devopsrdc endpoints.",
 	}
 }
 
@@ -1529,6 +1534,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["dbfs_endpoint"],
+				},
+				"devopsrdc": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["devopsrdc_endpoint"],
 				},
 				"dg": {
 					Type:        schema.TypeString,
@@ -2248,6 +2259,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["opensearch"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["gds"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dbfs"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["devopsrdc"].(string)))
 	return hashcode.String(buf.String())
 }
 
