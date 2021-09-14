@@ -33,10 +33,11 @@ resource "alicloud_waf_certificate" "default" {
 
 The following arguments are supported:
 
-* `certificate` - (Optional) Certificate file content.
-* `certificate_name` - (Required, ForceNew) Certificate file name.
-* `instance_id` - (Required, ForceNew) The ID of the WAF instance.
-* `private_key` - (Required) The private key.
+* `certificate` - (Optional, ForceNew, Conflicts with `certificate_id`) Certificate file content.
+* `certificate_name` - (Optional, ForceNew, Conflicts with `certificate_id`) Certificate file name.
+* `instance_id` - (Optional, ForceNew) The ID of the WAF instance.
+* `private_key` - (Optional, ForceNew, Conflicts with `certificate_id`) The private key.
+* `certificate_id` - (Optional, ForceNew, Conflicts with `certificate`, `certificate_name`,`private_key`) The certificate id is automatically generated when you upload your certificate content.**NOTE:** you can also use Certificate ID saved in SSL.
 
 ## Attributes Reference
 

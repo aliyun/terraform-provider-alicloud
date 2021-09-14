@@ -62,6 +62,10 @@ func dataSourceAlicloudWafCertificates() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"ssl_certificate_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"certificate_name": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -171,14 +175,15 @@ func dataSourceAlicloudWafCertificatesRead(d *schema.ResourceData, meta interfac
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":               fmt.Sprint(object["CertificateId"]),
-			"certificate_id":   fmt.Sprint(object["CertificateId"]),
-			"certificate_name": object["CertificateName"],
-			"common_name":      object["CommonName"],
-			"domain":           request["Domain"],
-			"instance_id":      request["InstanceId"],
-			"is_using":         object["IsUsing"],
-			"sans":             object["Sans"],
+			"id":                 fmt.Sprint(object["CertificateId"]),
+			"certificate_id":     fmt.Sprint(object["CertificateId"]),
+			"ssl_certificate_id": fmt.Sprint(object["CertificateId"]),
+			"certificate_name":   object["CertificateName"],
+			"common_name":        object["CommonName"],
+			"domain":             request["Domain"],
+			"instance_id":        request["InstanceId"],
+			"is_using":           object["IsUsing"],
+			"sans":               object["Sans"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["CertificateName"])
