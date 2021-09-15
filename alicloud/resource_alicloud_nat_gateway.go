@@ -166,6 +166,12 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"network_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"internet", "intranet"}, false),
+			},
 		},
 	}
 }
@@ -219,7 +225,9 @@ func resourceAlicloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
 	}
-
+	if v, ok := d.GetOk("network_type"); ok {
+		request["NetworkType"] = v
+	}
 	request["VpcId"] = d.Get("vpc_id")
 	request["ClientToken"] = buildClientToken("CreateNatGateway")
 	runtime := util.RuntimeOptions{}
