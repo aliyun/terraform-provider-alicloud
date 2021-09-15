@@ -111,7 +111,8 @@ The following arguments are supported:
 * `deletion_protection` - (Optional, Available in v1.124.4+) Whether enable the deletion protection or not. Default value: `false`.
   - true: Enable deletion protection.
   - false: Disable deletion protection.
-  
+* `network_type` - (Optional, Computed, Available in 1.136.0+) Indicates the type of the created NAT gateway. Valid values `internet` and `intranet`. `internet`: Internet NAT Gateway. `intranet`: VPC NAT Gateway.
+
 -> **NOTE:** The `Normal` Nat Gateway has been offline and please using `Enhanced` Nat Gateway to get the better performance. 
 
 ## Block bandwidth packages

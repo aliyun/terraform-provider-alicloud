@@ -258,6 +258,57 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudNatGateway_NetworkType(t *testing.T) {
+	t.Skip()
+	var v map[string]interface{}
+	resourceId := "alicloud_nat_gateway.default"
+	ra := resourceAttrInit(resourceId, AlicloudNatGatewayMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNatGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNatGatewayBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":               "${alicloud_vpc.default.id}",
+					"nat_gateway_name":     "${var.name}",
+					"nat_type":             "Enhanced",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"internet_charge_type": "PayByLcu",
+					"network_type":         "intranet",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":               CHECKSET,
+						"nat_gateway_name":     name,
+						"nat_type":             "Enhanced",
+						"internet_charge_type": "PayByLcu",
+						"vswitch_id":           CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "force", "network_type"},
+			},
+		},
+	})
+}
+
 func TestAccAlicloudNatGateway_PayByLcu(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nat_gateway.default"
