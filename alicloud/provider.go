@@ -541,6 +541,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dbfs_instances":                              dataSourceAlicloudDbfsInstances(),
 			"alicloud_rdc_organizations":                           dataSourceAlicloudRdcOrganizations(),
 			"alicloud_eais_instances":                              dataSourceAlicloudEaisInstances(),
+			"alicloud_sae_ingresses":                               dataSourceAlicloudSaeIngresses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -976,6 +977,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dbfs_instance":                                        resourceAlicloudDbfsInstance(),
 			"alicloud_rdc_organization":                                     resourceAlicloudRdcOrganization(),
 			"alicloud_eais_instance":                                        resourceAlicloudEaisInstance(),
+			"alicloud_sae_ingress":                                          resourceAlicloudSaeIngress(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
