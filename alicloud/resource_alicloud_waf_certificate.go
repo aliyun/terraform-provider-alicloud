@@ -47,7 +47,7 @@ func resourceAlicloudWafCertificate() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ConflictsWith: []string{"certificate", "private_key","certificate_name"},
+				ConflictsWith: []string{"certificate", "private_key", "certificate_name"},
 			},
 			"certificate_name": {
 				Type:          schema.TypeString,
