@@ -527,6 +527,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_nat_ip_cidrs":                            dataSourceAlicloudVpcNatIpCidrs(),
 			"alicloud_vpc_nat_ips":                                 dataSourceAlicloudVpcNatIps(),
 			"alicloud_quick_bi_users":                              dataSourceAlicloudQuickBiUsers(),
+			"alicloud_vod_domains":                                 dataSourceAlicloudVodDomains(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -954,6 +955,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_nat_ip_cidr":                                      resourceAlicloudVpcNatIpCidr(),
 			"alicloud_vpc_nat_ip":                                           resourceAlicloudVpcNatIp(),
 			"alicloud_quick_bi_user":                                        resourceAlicloudQuickBiUser(),
+			"alicloud_vod_domain":                                           resourceAlicloudVodDomain(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1140,6 +1142,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.SwasEndpoint = strings.TrimSpace(endpoints["swas"].(string))
 		config.VsEndpoint = strings.TrimSpace(endpoints["vs"].(string))
 		config.QuickbiEndpoint = strings.TrimSpace(endpoints["quickbi"].(string))
+		config.VodEndpoint = strings.TrimSpace(endpoints["vod"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1423,6 +1426,8 @@ func init() {
 		"vs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom vs endpoints.",
 
 		"quickbi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom quickbi endpoints.",
+
+		"vod_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom vod endpoints.",
 	}
 }
 
@@ -1473,7 +1478,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["quickbi_endpoint"],
 				},
-
+				"vod": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["vod_endpoint"],
+				},
 				"dg": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2188,6 +2198,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["swas"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["vs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["quickbi"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["vod"].(string)))
 	return hashcode.String(buf.String())
 }
 
