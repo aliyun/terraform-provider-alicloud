@@ -537,6 +537,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_dispatch_rules":                         dataSourceAlicloudArmsDispatchRules(),
 			"alicloud_open_search_app_groups":                      dataSourceAlicloudOpenSearchAppGroups(),
 			"alicloud_graph_database_db_instances":                 dataSourceAlicloudGraphDatabaseDbInstances(),
+			"alicloud_arms_prometheus_alert_rules":                 dataSourceAlicloudArmsPrometheusAlertRules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -968,6 +969,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_dispatch_rule":                                   resourceAlicloudArmsDispatchRule(),
 			"alicloud_open_search_app_group":                                resourceAlicloudOpenSearchAppGroup(),
 			"alicloud_graph_database_db_instance":                           resourceAlicloudGraphDatabaseDbInstance(),
+			"alicloud_arms_prometheus_alert_rule":                           resourceAlicloudArmsPrometheusAlertRule(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
