@@ -148,6 +148,7 @@ type Config struct {
 	VsEndpoint                  string
 	QuickbiEndpoint             string
 	VodEndpoint                 string
+	OpensearchEndpoint          string
 }
 
 func (c *Config) loadAndValidate() error {

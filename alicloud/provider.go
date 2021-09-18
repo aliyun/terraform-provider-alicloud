@@ -529,6 +529,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quick_bi_users":                              dataSourceAlicloudQuickBiUsers(),
 			"alicloud_vod_domains":                                 dataSourceAlicloudVodDomains(),
 			"alicloud_arms_dispatch_rules":                         dataSourceAlicloudArmsDispatchRules(),
+			"alicloud_open_search_app_groups":                      dataSourceAlicloudOpenSearchAppGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -958,6 +959,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quick_bi_user":                                        resourceAlicloudQuickBiUser(),
 			"alicloud_vod_domain":                                           resourceAlicloudVodDomain(),
 			"alicloud_arms_dispatch_rule":                                   resourceAlicloudArmsDispatchRule(),
+			"alicloud_open_search_app_group":                                resourceAlicloudOpenSearchAppGroup(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1145,6 +1147,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.VsEndpoint = strings.TrimSpace(endpoints["vs"].(string))
 		config.QuickbiEndpoint = strings.TrimSpace(endpoints["quickbi"].(string))
 		config.VodEndpoint = strings.TrimSpace(endpoints["vod"].(string))
+		config.OpensearchEndpoint = strings.TrimSpace(endpoints["opensearch"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1430,6 +1433,8 @@ func init() {
 		"quickbi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom quickbi endpoints.",
 
 		"vod_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom vod endpoints.",
+
+		"opensearch_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom opensearch endpoints.",
 	}
 }
 
@@ -1485,6 +1490,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["vod_endpoint"],
+				},
+				"opensearch": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["opensearch_endpoint"],
 				},
 				"dg": {
 					Type:        schema.TypeString,
@@ -2201,6 +2212,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["vs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["quickbi"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["vod"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["opensearch"].(string)))
 	return hashcode.String(buf.String())
 }
 

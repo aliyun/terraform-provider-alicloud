@@ -144,3 +144,4 @@ var CloudSsoSupportRegions = []Region{Shanghai, USWest1}
 var SWASSupportRegions = []Region{Qingdao, Hangzhou, Beijing, Shenzhen, Shanghai, GuangZhou, Huhehaote, ChengDu, Zhangjiakou, Hongkong, APSouthEast1}
 var SurveillanceSystemSupportRegions = []Region{Beijing, Shenzhen, Qingdao}
 var VodSupportRegions = []Region{Shanghai}
+var OpenSearchSupportRegions = []Region{Beijing, Shenzhen, Hangzhou, Zhangjiakou, Qingdao, Shanghai, APSouthEast1}
