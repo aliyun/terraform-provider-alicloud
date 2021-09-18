@@ -386,12 +386,12 @@ func convertJsonStringToList(configured string) ([]interface{}, error) {
 }
 
 func convertMaptoJsonString(m map[string]interface{}) (string, error) {
-	sm := make(map[string]string, len(m))
-	for k, v := range m {
-		sm[k] = v.(string)
-	}
+	//sm := make(map[string]string, len(m))
+	//for k, v := range m {
+	//	sm[k] = v.(string)
+	//}
 
-	if result, err := json.Marshal(sm); err != nil {
+	if result, err := json.Marshal(m); err != nil {
 		return "", err
 	} else {
 		return string(result), nil
