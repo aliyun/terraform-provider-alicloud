@@ -47,9 +47,7 @@ The following arguments are supported:
 * `force` - (Optional) Indicates whether to force delete the custom image, Default is `false`. 
   - true：Force deletes the custom image, regardless of whether the image is currently being used by other instances.
   - false：Verifies that the image is not currently in use by any other instances before deleting the image.
-
-* `delete_auto_snapshot` - (Optional, Available in 1.135.0+) Whether to delete the automatically created snapshots when copying an image. Default to false.
-
+  
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:

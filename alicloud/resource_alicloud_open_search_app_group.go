@@ -114,7 +114,6 @@ func resourceAlicloudOpenSearchAppGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
 		},
 	}
 }

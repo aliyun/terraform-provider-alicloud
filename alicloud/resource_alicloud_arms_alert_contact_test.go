@@ -2,11 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -25,49 +27,76 @@ func testSweepArmsAlertContact(region string) error {
 		return WrapErrorf(err, "error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	cmsService := CmsService{client}
 
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testacc",
 	}
 
-	request := cms.CreateDescribeContactListRequest()
-
-	raw, err := cmsService.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.DescribeContactList(request)
-	})
+	action := "SearchAlertContact"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["PageSize"] = PageSizeLarge
+	request["CurrentPage"] = 1
+	var response map[string]interface{}
+	conn, err := client.NewArmsClient()
 	if err != nil {
-		log.Printf("[ERROR] Failed to retrieve Cms Alarm in service list: %s", err)
+		return WrapError(err)
 	}
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_arms_alert_contacts", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.PageBean.Contacts", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PageBean.Contacts", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			name := fmt.Sprint(item["ContactName"])
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping arms alert contact: %s ", name)
+				continue
+			}
+			log.Printf("[INFO] delete arms alert contact: %s ", name)
+			action = "DeleteAlertContact"
+			request := map[string]interface{}{
+				"ContactId": fmt.Sprint(item["ContactId"]),
+				"RegionId":  client.RegionId,
+			}
 
-	var response *cms.DescribeContactListResponse
-	response, _ = raw.(*cms.DescribeContactListResponse)
-
-	for _, v := range response.Contacts.Contact {
-		name := v.Name
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete alarm contact (%s): %s", name, err)
 			}
 		}
-		if skip {
-			log.Printf("[INFO] Skipping alarm contact: %s ", name)
-			continue
+		if len(result) < PageSizeLarge {
+			break
 		}
-		log.Printf("[INFO] delete alarm contact: %s ", name)
-
-		request := cms.CreateDeleteContactRequest()
-		request.ContactName = v.Name
-		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DeleteContact(request)
-		})
-
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete alarm contact (%s): %s", name, err)
-		}
+		request["CurrentPage"] = request["CurrentPage"].(int) + 1
 	}
 
 	return nil
