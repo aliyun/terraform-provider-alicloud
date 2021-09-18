@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strings"
 	"testing"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -49,7 +50,7 @@ func testSweepArmsAlertContactGroup(region string) error {
 	}
 	resp, err := jsonpath.Get("$.ContactGroups", response)
 	if err != nil {
-		log.Printf("[ERROR] error: %v", action, err)
+		log.Printf("[ERROR] %s error: %v", action, err)
 		return nil
 	}
 	result, _ := resp.([]interface{})

@@ -141,7 +141,13 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURITY_TRANSPORT", os.Getenv("ALICLOUD_SECURITY_TRANSPORT")),
-				Description: descriptions["security_transport"],
+				Deprecated:  "It has been deprecated from version 1.136.0 and using new field secure_transport instead.",
+			},
+			"secure_transport": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURE_TRANSPORT", os.Getenv("ALICLOUD_SECURE_TRANSPORT")),
+				Description: descriptions["secure_transport"],
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
@@ -1000,7 +1006,10 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		ClientReadTimeout:    d.Get("client_read_timeout").(int),
 		ClientConnectTimeout: d.Get("client_connect_timeout").(int),
 		SourceIp:             strings.TrimSpace(d.Get("source_ip").(string)),
-		SecurityTransport:    strings.TrimSpace(d.Get("security_transport").(string)),
+		SecureTransport:      strings.TrimSpace(d.Get("secure_transport").(string)),
+	}
+	if v, ok := d.GetOk("security_transport"); config.SecureTransport == "" && ok && v.(string) != "" {
+		config.SecureTransport = v.(string)
 	}
 	token := getProviderConfig(d.Get("security_token").(string), "sts_token")
 	config.SecurityToken = strings.TrimSpace(token)
@@ -1239,7 +1248,7 @@ func init() {
 		"client_read_timeout":    "The maximum timeout of the client read request.",
 		"client_connect_timeout": "The maximum timeout of the client connection server.",
 		"source_ip":              "The source ip for the assume role invoking.",
-		"security_transport":     "The security transport for the assume role invoking.",
+		"secure_transport":       "The security transport for the assume role invoking.",
 
 		"ecs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.",
 
