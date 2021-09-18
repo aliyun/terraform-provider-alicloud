@@ -163,7 +163,7 @@ resource "alicloud_bastionhost_host" "default" {
 resource "alicloud_bastionhost_host_account" "default" {
  instance_id          = alicloud_bastionhost_host.default.instance_id
  host_account_name = var.name
- host_id           = alicloud_bastionhost_host.default.id
+ host_id           = alicloud_bastionhost_host.default.host_id
  protocol_name     = "SSH"
  password          = "YourPassword12345"
 }

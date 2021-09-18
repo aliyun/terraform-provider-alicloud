@@ -528,6 +528,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_nat_ips":                                 dataSourceAlicloudVpcNatIps(),
 			"alicloud_quick_bi_users":                              dataSourceAlicloudQuickBiUsers(),
 			"alicloud_vod_domains":                                 dataSourceAlicloudVodDomains(),
+			"alicloud_arms_dispatch_rules":                         dataSourceAlicloudArmsDispatchRules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -956,6 +957,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_nat_ip":                                           resourceAlicloudVpcNatIp(),
 			"alicloud_quick_bi_user":                                        resourceAlicloudQuickBiUser(),
 			"alicloud_vod_domain":                                           resourceAlicloudVodDomain(),
+			"alicloud_arms_dispatch_rule":                                   resourceAlicloudArmsDispatchRule(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
