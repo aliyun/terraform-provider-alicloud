@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strings"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -25,27 +26,36 @@ func testSweepArmsAlertContactGroup(region string) error {
 		return WrapErrorf(err, "error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	armsService := ArmsService{client}
 
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testacc",
 	}
 
-	request := cms.CreateDescribeContactListRequest()
-
-	raw, err := armsService.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.DescribeContactList(request)
-	})
+	action := "SearchAlertContactGroup"
+	request := make(map[string]interface{})
+	request["IsDetail"] = false
+	request["RegionId"] = client.RegionId
+	conn, err := client.NewArmsClient()
 	if err != nil {
-		log.Printf("[ERROR] Failed to retrieve Cms Alarm in service list: %s", err)
+		return WrapError(err)
 	}
-
-	var response *cms.DescribeContactListResponse
-	response, _ = raw.(*cms.DescribeContactListResponse)
-
-	for _, v := range response.Contacts.Contact {
-		name := v.Name
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		log.Printf("[ERROR] %s failed error: %v", action, err)
+		return nil
+	}
+	resp, err := jsonpath.Get("$.ContactGroups", response)
+	if err != nil {
+		log.Printf("[ERROR] error: %v", action, err)
+		return nil
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		name := fmt.Sprint(item["ContactGroupName"])
 		skip := true
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
@@ -54,22 +64,20 @@ func testSweepArmsAlertContactGroup(region string) error {
 			}
 		}
 		if skip {
-			log.Printf("[INFO] Skipping alarm contact: %s ", name)
+			log.Printf("[INFO] Skipping arms alert contact group: %s ", name)
 			continue
 		}
-		log.Printf("[INFO] delete alarm contact: %s ", name)
-
-		request := cms.CreateDeleteContactRequest()
-		request.ContactName = v.Name
-		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DeleteContact(request)
-		})
-
+		log.Printf("[INFO] delete arms alert contact group: %s ", name)
+		action = "DeleteAlertContactGroup"
+		request = map[string]interface{}{
+			"ContactGroupId": fmt.Sprint(item["ContactGroupId"]),
+			"RegionId":       client.RegionId,
+		}
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete alarm contact (%s): %s", name, err)
+			log.Printf("[ERROR] %s failed error: %v", action, err)
 		}
 	}
-
 	return nil
 }
 

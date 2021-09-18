@@ -62,7 +62,7 @@ func dataSourceAlicloudArmsDispatchRules() *schema.Resource {
 							Computed: true,
 						},
 						"group_rules": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -99,17 +99,17 @@ func dataSourceAlicloudArmsDispatchRules() *schema.Resource {
 							Computed: true,
 						},
 						"label_match_expression_grid": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"label_match_expression_groups": {
-										Type:     schema.TypeSet,
+										Type:     schema.TypeList,
 										Computed: true,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"label_match_expressions": {
-													Type:     schema.TypeSet,
+													Type:     schema.TypeList,
 													Computed: true,
 													Elem: &schema.Resource{
 														Schema: map[string]*schema.Schema{
@@ -135,12 +135,12 @@ func dataSourceAlicloudArmsDispatchRules() *schema.Resource {
 							},
 						},
 						"notify_rules": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"notify_objects": {
-										Type:     schema.TypeSet,
+										Type:     schema.TypeList,
 										Computed: true,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
