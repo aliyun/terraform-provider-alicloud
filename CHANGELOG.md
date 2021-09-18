@@ -1,4 +1,39 @@
 ## 1.136.0 (Unreleased)
+
+- **New Resource:**  `alicloud_sddp_instance` [GH-3997]
+- **New Resource:**  `alicloud_vpc_nat_ip_cidr` [GH-4005]  
+- **New Resource:**  `alicloud_vpc_nat_ip` [GH-4015]
+- **New Resource:**  `alicloud_quick_bi_user` [GH-4007]
+- **New Resource:**  `alicloud_vod_domain` [GH-4006]
+- **New Resource:**  `alicloud_arms_dispatch_rule` [GH-4006]
+- **New Resource:**  `alicloud_open_search_app_group` [GH-4021]
+- **New Resource:**  `alicloud_graph_database_db_instance` [GH-4020]
+- **New Resource:**  `alicloud_arms_prometheus_alert_rule` [GH-4022]  
+- **New Data Source:** `alicloud_sddp_instances` [GH-3997]
+- **New Data Source:** `alicloud_vpc_nat_ip_cidrs` [GH-4005]
+- **New Data Source:** `alicloud_vpc_nat_ips` [GH-4015]
+- **New Data Source:** `alicloud_quick_bi_users` [GH-4007]
+- **New Data Source:** `alicloud_vod_domains` [GH-4006]
+- **New Data Source:** `alicloud_arms_dispatch_rules` [GH-4023]  
+- **New Data Source:** `alicloud_open_search_app_groups` [GH-4021]  
+- **New Data Source:** `alicloud_graph_database_db_instances` [GH-4020]    
+- **New Data Source:** `alicloud_arms_prometheus_alert_rules` [GH-4022]
+
+ENHANCEMENTS:
+
+- resource/alicloud_db_instances: Adds attribute db_time_zone to set time zone of the instance. [GH-4003]
+- resource/alicloud_db_instances: Adds attribute released_keep_policy to set the policy of the backup files after the instance is released. [GH-4008]
+- resource/alicloud_alb_listeners: Adds new attribute acl_config to set associate acls [GH-3979]
+- resource/alicloud_waf_certificate: Adds new attribute certificate_id to support uploading a certificate from ssl [GH-4011]
+- resource/alicloud_nat_gateway: Adds new attribute network_type to support create Vpc NatGateway [GH-4012]
+- resource/alicloud_image: Adds new attribute delete_auto_snapshot to automatically delete dependence snapshots while deleting image [GH-4025]  
+- doc/alicloud_instance: Optimize system_disk_performance_level parameter [GH-4009]
+- sdk/alibaba-cloud-go-sdk: Upgrades the sdk to v1.61.1264 [GH-4026]
+
+BUG FIXES:
+
+- resource/alicloud_cr_ee_instance: Fix the problem of import failure in the international station [GH-4014]
+
 ## 1.135.0 (September 13, 2021)
 
 - **New Resource:** `alicloud_bastionhost_host_group_account_user_group_attachment` ([#4000](https://github.com/aliyun/terraform-provider-alicloud/issues/4000))
