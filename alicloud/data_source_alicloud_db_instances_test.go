@@ -126,7 +126,7 @@ func TestAccAlicloudRdsDBInstancesDataSource(t *testing.T) {
 			"instances.0.create_time":              CHECKSET,
 			"instances.0.status":                   CHECKSET,
 			"instances.0.engine":                   string(MySQL),
-			"instances.0.engine_version":           "5.6",
+			"instances.0.engine_version":           "8.0",
 			"instances.0.net_type":                 string(Intranet),
 			"instances.0.instance_type":            "rds.mysql.s1.small",
 			"instances.0.connection_mode":          CHECKSET,
@@ -394,7 +394,7 @@ data "alicloud_db_instance_classes" "default" {
 	engine = "PostgreSQL"
 	engine_version = "13.0"
     category = "HighAvailability"
-    storage_type = "local_ssd"
+    storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
 }
 

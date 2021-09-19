@@ -824,9 +824,12 @@ resource "alicloud_security_group_rule" "default" {
 `
 
 const RdsCommonTestCase = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+data "alicloud_db_zones" "default"{
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_charge_type = "PostPaid"
 }
+
 resource "alicloud_vpc" "default" {
   vpc_name       = "${var.name}"
   cidr_block = "172.16.0.0/16"
@@ -861,11 +864,6 @@ locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
   zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
 }
-resource "alicloud_vpc" "default" {
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
 `
 const AdbCommonTestCase = `
 data "alicloud_adb_zones" "default" {}
