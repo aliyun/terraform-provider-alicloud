@@ -141,7 +141,7 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURITY_TRANSPORT", os.Getenv("ALICLOUD_SECURITY_TRANSPORT")),
-				Deprecated:  "It has been deprecated from version 1.136.0 and using new field secure_transport instead.",
+				//Deprecated:  "It has been deprecated from version 1.136.0 and using new field secure_transport instead.",
 			},
 			"secure_transport": {
 				Type:        schema.TypeString,

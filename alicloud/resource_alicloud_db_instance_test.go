@@ -187,25 +187,25 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine":                   "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}",
-					"engine_version":           "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
 					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
 					"instance_charge_type":     "Postpaid",
 					"instance_name":            "${var.name}",
-					"vswitch_id":               "${alicloud_vswitch.default.id}",
+					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
-					"db_instance_storage_type": "local_ssd",
+					"db_instance_storage_type": "cloud_essd",
 					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine":                     "MySQL",
-						"engine_version":             "5.6",
+						"engine_version":             "8.0",
 						"instance_type":              CHECKSET,
 						"instance_storage":           CHECKSET,
 						"auto_upgrade_minor_version": "Auto",
-						"db_instance_storage_type":   "local_ssd",
+						"db_instance_storage_type":   "cloud_essd",
 						"resource_group_id":          CHECKSET,
 					}),
 				),
@@ -359,11 +359,11 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine":                     "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}",
-					"engine_version":             "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
+					"engine":                     "MySQL",
+					"engine_version":             "8.0",
 					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
-					"db_instance_storage_type":   "local_ssd",
+					"db_instance_storage_type":   "cloud_essd",
 					"sql_collector_status":       "Enabled",
 					"sql_collector_config_value": "30",
 					"instance_name":              "tf-testAccDBInstanceConfig",
@@ -382,10 +382,10 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine":                     "MySQL",
-						"engine_version":             "5.6",
+						"engine_version":             "8.0",
 						"instance_type":              CHECKSET,
 						"instance_storage":           "15",
-						"db_instance_storage_type":   "local_ssd",
+						"db_instance_storage_type":   "cloud_essd",
 						"sql_collector_status":       "Enabled",
 						"sql_collector_config_value": "30",
 						"instance_name":              "tf-testAccDBInstanceConfig",
@@ -431,24 +431,44 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 
 func resourceDBInstanceConfigDependence(name string) string {
 	return fmt.Sprintf(`
-%s
 variable "name" {
 	default = "%s"
 }
-variable "creation" {
-		default = "Rds"
-}
-
-data "alicloud_db_instance_engines" "default" {
-  instance_charge_type = "PostPaid"
-  engine               = "MySQL"
-  engine_version       = "5.6"
+data "alicloud_db_zones" "default"{
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_charge_type = "PostPaid"
+	category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_db_instance_classes" "default" {
-  instance_charge_type = "PostPaid"
-  engine               = "MySQL"
-  engine_version       = "5.6"
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+    category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_charge_type = "PostPaid"
+}
+
+data "alicloud_vpcs" "default" {
+ name_regex = "^default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "this" {
+ count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+ vswitch_name = var.name
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ zone_id = data.alicloud_db_zones.default.ids.0
+ cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -456,17 +476,16 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = "${var.name}"
-	vpc_id = "${alicloud_vpc.default.id}"
+	name   = var.name
+	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_kms_key" "default" {
   description = var.name
   pending_window_in_days  = 7
-  key_state               = "Enabled"
+  status               = "Enabled"
 }
-
-`, RdsCommonTestCase, name)
+`, name)
 }
 
 func TestAccAlicloudRdsDBInstanceMultiInstance(t *testing.T) {
