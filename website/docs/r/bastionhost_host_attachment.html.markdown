@@ -30,7 +30,7 @@ resource "alicloud_bastionhost_host_attachment" "example" {
 
 The following arguments are supported:
 
-* `host_group_id` - (Required, ForceNew) Specifies the added to the host group ID.
+* `host_group_id` - (Required, ForceNew) Specifies the addedintranet to the host group ID.
 * `host_id` - (Required, ForceNew) Specified to be part of a host group of host ID.
 * `instance_id` - (Required, ForceNew) The bastion host instance id.
 

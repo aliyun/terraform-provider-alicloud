@@ -37,7 +37,7 @@ The following arguments are supported:
 * `limit` - (Optional, ForceNew) The maximum number of resources returned in the response. Default value is `20`. Maximum value: `20`. The number of returned results is no greater than the specified number.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Container Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group to which the container group belongs. If you have not specified a resource group for the container group, it is added to the default resource group.
+* `resource_group_id` - (Optional, ForceNew) The ID of the resource group to which the container group belongs. If you have not specified a resource group for the container group, it is addedintranet to the default resource group.
 * `status` - (Optional, ForceNew) The status list. For more information, see the description of ContainerGroup arrays.
 * `vswitch_id` - (Optional, ForceNew) The ID of the VSwitch. Currently, container groups can only be deployed in VPC networks.
 * `zone_id` - (Optional, ForceNew) The ID of the zone where you want to deploy the container group. If no value is specified, the system assigns a zone to the container group. By default, no value is specified.
@@ -126,7 +126,7 @@ The following attributes are exported in addition to the arguments listed above:
 	* `ipv6_address` - The IPv6 address.
 	* `memory` - The amount of memory resources allocated to the container group.
 	* `ram_role_name` - The RAM role that the container group assumes. ECI and ECS share the same RAM role.
-	* `resource_group_id` - The ID of the resource group to which the container group belongs. If you have not specified a resource group for the container group, it is added to the default resource group.
+	* `resource_group_id` - The ID of the resource group to which the container group belongs. If you have not specified a resource group for the container group, it is addedintranet to the default resource group.
 	* `restart_policy` - The restart policy of the container group.
 	* `security_group_id` - The ID of the security group.
 	* `status` - The status of container.

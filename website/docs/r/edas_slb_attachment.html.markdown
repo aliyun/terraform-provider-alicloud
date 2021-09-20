@@ -37,7 +37,7 @@ The following arguments are supported:
 * `slb_ip` - (Required, ForceNew) The IP address that is allocated to the bound SLB instance.
 * `type` - (Required, ForceNew) The type of the bound SLB instance.
 * `listener_port` - (Optional, ForceNew) The listening port for the bound SLB instance.
-* `vserver_group_id` - (Optional, ForceNew) The ID of the virtual server (VServer) group associated with the intranet SLB instance.
+* `vserver_group_id` - (Optional, ForceNew) The ID of the virtual server (VServer) group associated with the internet SLB instance.
 
 ## Attributes Reference
 

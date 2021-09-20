@@ -49,7 +49,7 @@ The example aim to create one or more instances and disks in the VPC, and then a
 
 `NOTE`:
 1. The number of Security Group rules depends on the size of `ip_protocols`
-2. All of the Security Group rules' network type are `intranet`
+2. All of the Security Group rules' network type are `internet`
 
 #### RAM Role Input variables
 

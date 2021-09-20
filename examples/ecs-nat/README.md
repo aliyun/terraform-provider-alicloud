@@ -1,6 +1,6 @@
 ### Configure NAT instance Example
 
-In the Virtual Private Cloud（VPC） environment, to enable multiple back-end intranet hosts to provide services externally with a limited number of EIPs, map the ports on the EIP-bound host to the back-end intranet hosts.
+In the Virtual Private Cloud（VPC） environment, to enable multiple back-end internet hosts to provide services externally with a limited number of EIPs, map the ports on the EIP-bound host to the back-end internet hosts.
 
 ### Get up and running
 

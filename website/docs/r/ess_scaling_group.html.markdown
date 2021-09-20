@@ -59,7 +59,7 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_security_group_rule" "default" {
   type              = "ingress"
   ip_protocol       = "tcp"
-  nic_type          = "intranet"
+  nic_type          = "internet"
   policy            = "accept"
   port_range        = "22/22"
   priority          = 1
@@ -101,8 +101,8 @@ The following arguments are supported:
 * `vswitch_id` - (Deprecated) It has been deprecated from version 1.7.1 and new field 'vswitch_ids' replaces it.
 * `vswitch_ids` - (Optional) List of virtual switch IDs in which the ecs instances to be launched.
 * `removal_policies` - (Optional) RemovalPolicy is used to select the ECS instances you want to remove from the scaling group when multiple candidates for removal exist. Optional values:
-    - OldestInstance: removes the ECS instance that is added to the scaling group at the earliest point in time.
-    - NewestInstance: removes the ECS instance that is added to the scaling group at the latest point in time.
+    - OldestInstance: removes the ECS instance that is addedintranet to the scaling group at the earliest point in time.
+    - NewestInstance: removes the ECS instance that is addedintranet to the scaling group at the latest point in time.
     - OldestScalingConfiguration: removes the ECS instance that is created based on the earliest scaling configuration.
     - Default values: Default value of RemovalPolicy.1: OldestScalingConfiguration. Default value of RemovalPolicy.2: OldestInstance.
 * `db_instance_ids` - (Optional) If an RDS instance is specified in the scaling group, the scaling group automatically attaches the Intranet IP addresses of its ECS instances to the RDS access whitelist.
@@ -121,9 +121,9 @@ The following arguments are supported:
 * `spot_instance_remedy` - (Optional, Available in v1.54.0+) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
 * `group_deletion_protection` - (Optional, Available in v1.102.0+) Specifies whether the scaling group deletion protection is enabled. `true` or `false`, Default value: `false`.            
 
--> **NOTE:** When detach loadbalancers, instances in group will be remove from loadbalancer's `Default Server Group`; On the contrary, When attach loadbalancers, instances in group will be added to loadbalancer's `Default Server Group`.
+-> **NOTE:** When detach loadbalancers, instances in group will be remove from loadbalancer's `Default Server Group`; On the contrary, When attach loadbalancers, instances in group will be addedintranet to loadbalancer's `Default Server Group`.
 
--> **NOTE:** When detach dbInstances, private ip of instances in group will be remove from dbInstance's `WhiteList`; On the contrary, When attach dbInstances, private ip of instances in group will be added to dbInstance's `WhiteList`.
+-> **NOTE:** When detach dbInstances, private ip of instances in group will be remove from dbInstance's `WhiteList`; On the contrary, When attach dbInstances, private ip of instances in group will be addedintranet to dbInstance's `WhiteList`.
 
 -> **NOTE:** `on_demand_base_capacity`,`on_demand_percentage_above_base_capacity`,`spot_instance_pools`,`spot_instance_remedy` are valid only if `multi_az_policy` is 'COST_OPTIMIZED'.
 

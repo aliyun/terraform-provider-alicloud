@@ -8,7 +8,7 @@ The following arguments are supported:
 
 * `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new virtual server group.
 * `name` - (Optional) Name of the virtual server group. Our plugin provides a default name: "tf-server-group".
-* `servers` - (Required) A list of ECS instances to be added. At most 20 ECS instances can be supported in one resource. It contains three sub-fields as `Block server` follows.
+* `servers` - (Required) A list of ECS instances to be addedintranet. At most 20 ECS instances can be supported in one resource. It contains three sub-fields as `Block server` follows.
 
 ### Block servers
 
@@ -25,7 +25,7 @@ The following attributes are exported:
 * `id` - The ID of the virtual server group.
 * `load_balancer_id` - The Load Balancer ID which is used to launch a new virtual server group.
 * `name` - The name of the virtual server group.
-* `servers` - A list of ECS instances that have be added.
+* `servers` - A list of ECS instances that have be addedintranet.
 
 
 ### Get up and running

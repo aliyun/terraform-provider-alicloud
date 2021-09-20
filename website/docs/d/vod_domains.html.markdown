@@ -75,7 +75,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Domain names.
 * `domains` - A list of Vod Domains. Each element contains the following attributes:
-  * `gmt_created` - The time when the domain name for CDN was added. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+  * `gmt_created` - The time when the domain name for CDN was addedintranet. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
   * `gmt_modified` - The last time when the domain name for CDN was modified. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
   * `cname` - The CNAME that is assigned to the domain name for CDN. You must add a CNAME record in the system of your Domain Name System (DNS) service provider to map the domain name for CDN to the CNAME.
   * `description` - The description of the domain name for CDN.

@@ -52,7 +52,7 @@ The following attributes are exported:
     * `channels_mail` - The email address of the alarm contact. 
     * `channels_sms` - The phone number of the alarm contact.
     * `describe` - The description of the alarm contact.
-    * `contact_groups` - The alert groups to which the alarm contact is added.
+    * `contact_groups` - The alert groups to which the alarm contact is addedintranet.
     * `channels_state_aliim` - Indicates whether the TradeManager ID is valid.
     * `channels_state_ding_web_hook` - Indicates whether the DingTalk chatbot is normal.
     * `channels_state_mail` - The status of the email address.

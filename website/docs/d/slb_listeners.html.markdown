@@ -71,7 +71,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `persistence_timeout` - Timeout value of the TCP connection in seconds. If the value is 0, the session persistence function is disabled. Only available when the protocol is `tcp`.
   * `established_timeout` - Connection timeout in seconds for the Layer 4 TCP listener. Only available when the protocol is `tcp`.
   * `sticky_session` - Indicate whether session persistence is enabled or not. If enabled, all session requests from the same client are sent to the same backend server. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
-  * `sticky_session_type` - Method used to handle the cookie. Possible values are `insert` (cookie added to the response) and `server` (cookie set by the backend server). Only available when the protocol is `http` or `https` and sticky_session is `on`.
+  * `sticky_session_type` - Method used to handle the cookie. Possible values are `insert` (cookie addedintranet to the response) and `server` (cookie set by the backend server). Only available when the protocol is `http` or `https` and sticky_session is `on`.
   * `cookie_timeout` - Cookie timeout in seconds. Only available when the sticky_session_type is `insert`.
   * `cookie` - Cookie configured by the backend server. Only available when the sticky_session_type is `server`.
   * `health_check` - Indicate whether health check is enabled of not. Possible values are `on` and `off`.
@@ -88,10 +88,10 @@ The following attributes are exported in addition to the arguments listed above:
   * `gzip` - Indicate whether Gzip compression is enabled or not. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
   * `ssl_certificate_id` - ID of the server certificate. Only available when the protocol is `https`.
   * `ca_certificate_id` - ID of the CA certificate (only required when two-way authentication is used). Only available when the protocol is `https`.
-  * `x_forwarded_for` - Indicate whether the HTTP header field "X-Forwarded-For" is added or not; it allows the backend server to know about the user's IP address. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
-  * `x_forwarded_for_slb_ip` - Indicate whether the HTTP header field "X-Forwarded-For_SLBIP" is added or not; it allows the backend server to know about the SLB IP address. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
-  * `x_forwarded_for_slb_id` - Indicate whether the HTTP header field "X-Forwarded-For_SLBID" is added or not; it allows the backend server to know about the SLB ID. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
-  * `x_forwarded_for_slb_proto` - Indicate whether the HTTP header field "X-Forwarded-For_proto" is added or not; it allows the backend server to know about the user's protocol. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
+  * `x_forwarded_for` - Indicate whether the HTTP header field "X-Forwarded-For" is addedintranet or not; it allows the backend server to know about the user's IP address. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
+  * `x_forwarded_for_slb_ip` - Indicate whether the HTTP header field "X-Forwarded-For_SLBIP" is addedintranet or not; it allows the backend server to know about the SLB IP address. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
+  * `x_forwarded_for_slb_id` - Indicate whether the HTTP header field "X-Forwarded-For_SLBID" is addedintranet or not; it allows the backend server to know about the SLB ID. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
+  * `x_forwarded_for_slb_proto` - Indicate whether the HTTP header field "X-Forwarded-For_proto" is addedintranet or not; it allows the backend server to know about the user's protocol. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
   * `idle_timeout` - Timeout of http or https listener established connection idle timeout. Valid value range: [1-60] in seconds. Default to 15.
   * `request_timeout` - Timeout of http or https listener request (which does not get response from backend) timeout. Valid value range: [1-180] in seconds. Default to 60.
   * `enable_http2` -  Whether to enable https listener support http2 or not. Valid values are `on` and `off`. Default to `on`.

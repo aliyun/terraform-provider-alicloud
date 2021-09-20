@@ -23,11 +23,11 @@ when you create a listener or change access control configuration after a listen
 
 -> **NOTE:** The maximum number of access control lists per region  is 50.
 
--> **NOTE:** The maximum number of IP addresses added each time is 50.
+-> **NOTE:** The maximum number of IP addresses addedintranet each time is 50.
 
 -> **NOTE:** The maximum number of entries per access control list is 300.
 
--> **NOTE:** The maximum number of listeners that an access control list can be added to is 50.
+-> **NOTE:** The maximum number of listeners that an access control list can be addedintranet to is 50.
 
 For information about slb and how to use it, see [What is Server Load Balancer](https://www.alibabacloud.com/help/doc-detail/27539.htm).
 
@@ -65,7 +65,7 @@ The following arguments are supported:
 
 * `name` - (Required) Name of the access control list.
 * `ip_version` - (Optional, ForceNew) The IP Version of access control list is the type of its entry (IP addresses or CIDR blocks). It values ipv4/ipv6. Our plugin provides a default ip_version: "ipv4".
-* `entry_list` - (Optional) A list of entry (IP addresses or CIDR blocks) to be added. At most 50 etnry can be supported in one resource. It contains two sub-fields as `Entry Block` follows.
+* `entry_list` - (Optional) A list of entry (IP addresses or CIDR blocks) to be addedintranet. At most 50 etnry can be supported in one resource. It contains two sub-fields as `Entry Block` follows.
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional, ForceNew, Available in v1.67.0+) Resource group ID.
 

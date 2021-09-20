@@ -93,7 +93,7 @@ resource "alicloud_slb_backend_server" "default" {
 The following arguments are supported:
 
 * `load_balancer_id` - (Required) ID of the load balancer.
-* `backend_servers` - (Required) A list of instances to added backend server in the SLB. It contains three sub-fields as `Block server` follows.
+* `backend_servers` - (Required) A list of instances to addedintranet backend server in the SLB. It contains three sub-fields as `Block server` follows.
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
 
 ## Block servers

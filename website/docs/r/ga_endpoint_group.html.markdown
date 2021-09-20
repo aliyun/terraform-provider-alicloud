@@ -66,7 +66,7 @@ resource "alicloud_ga_endpoint_group" "example" {
 
 The following arguments are supported:
 
-* `accelerator_id` - (Required) The ID of the Global Accelerator instance to which the endpoint group will be added.
+* `accelerator_id` - (Required) The ID of the Global Accelerator instance to which the endpoint group will be addedintranet.
 * `description` - (Optional) The description of the endpoint group.
 * `endpoint_configurations` - (Required) The endpointConfigurations of the endpoint group.
 * `endpoint_group_region` - (ForceNew, Required) The ID of the region where the endpoint group is deployed.

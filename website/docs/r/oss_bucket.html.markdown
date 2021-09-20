@@ -428,7 +428,7 @@ The following attributes are exported:
 * `acl` - The acl of the bucket.
 * `creation_date` - The creation date of the bucket.
 * `extranet_endpoint` - The extranet access endpoint of the bucket.
-* `intranet_endpoint` - The intranet access endpoint of the bucket.
+* `intranet_endpoint` - The internet access endpoint of the bucket.
 * `location` - The location of the bucket.
 * `owner` - The bucket owner.
 

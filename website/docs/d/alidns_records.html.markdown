@@ -42,7 +42,7 @@ The following arguments are supported:
 * `group_id` - (Optional) Domain name group ID.
 * `key_word` - (Optional) Keywords.
 * `lang` - (Optional) User language.
-* `order_by` - (Optional) Sort by. Sort from newest to oldest according to the time added by resolution.
+* `order_by` - (Optional) Sort by. Sort from newest to oldest according to the time addedintranet by resolution.
 * `rr_key_word` - (Optional) The keywords recorded by the host are searched according to the `%RRKeyWord%` mode, and are not case sensitive.
 * `search_mode` - (Optional) Search mode, Valid values: `LIKE`, `EXACT`, `ADVANCED`, `LIKE` (fuzzy), `EXACT` (accurate) search supports KeyWord field, `ADVANCED` (advanced) mode supports other fields.
 * `type_key_word` - (Optional) Analyze type keywords, search by full match, not case sensitive.

@@ -82,7 +82,7 @@ resource "alicloud_slb_attachment" "default" {
 The following arguments are supported:
 
 * `load_balancer_id` - (Required) ID of the load balancer.
-* `instance_ids` - (Required) A list of instance ids to added backend server in the SLB.
+* `instance_ids` - (Required) A list of instance ids to addedintranet backend server in the SLB.
 * `weight` - (Optional) Weight of the instances. Valid value range: [0-100]. Default to 100.
 * `server_type` - (Optional, Available in 1.60.0+) Type of the instances. Valid value ecs, eni. Default to ecs.
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
@@ -93,7 +93,7 @@ The following attributes are exported:
 
 * `id` - ID of the resource.
 * `load_balancer_id` - ID of the load balancer.
-* `instance_ids` - A list of instance ids that have been added in the SLB.
+* `instance_ids` - A list of instance ids that have been addedintranet in the SLB.
 * `weight` - Weight of the instances.
 * `backend_servers` - The backend servers of the load balancer.
 * `server_type` - Type of the instances.

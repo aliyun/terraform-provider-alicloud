@@ -73,7 +73,7 @@ The following attributes are exported:
 * `description` - The description of the domain name for CDN.
 * `cert_name` - The name of the certificate. The value of this parameter is returned if HTTPS is enabled.
 * `cname` - The CNAME that is assigned to the domain name for CDN. You must add a CNAME record in the system of your Domain Name System (DNS) service provider to map the domain name for CDN to the CNAME.
-* `gmt_created` - The time when the domain name for CDN was added. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+* `gmt_created` - The time when the domain name for CDN was addedintranet. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 * `gmt_modified` - The last time when the domain name for CDN was modified. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 * `ssl_protocol` - Indicates whether the Secure Sockets Layer (SSL) certificate is enabled. Valid values: `on`,`off`.
 * `ssl_pub` - The public key of the certificate. The value of this parameter is returned if HTTPS is enabled.

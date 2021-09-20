@@ -47,7 +47,7 @@ resource "alicloud_instance" "backend" {
 The following arguments are supported:
 
 * `group_id` - (Required) The ID of the security group that owns the rules.
-* `nic_type` - (Optional) Refers to the network type. Can be either `internet` or `intranet`. The default value is `internet`.
+* `nic_type` - (Optional) Refers to the network type. Can be either `internet` or `internet`. The default value is `internet`.
 * `direction` - (Optional) Authorization direction. Valid values are: `ingress` or `egress`.
 * `ip_protocol` - (Optional) The IP protocol. Valid values are: `tcp`, `udp`, `icmp`, `gre` and `all`.
 * `policy` - (Optional) Authorization policy. Can be either `accept` or `drop`. The default value is `accept`.
@@ -69,7 +69,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `dest_group_id` - Target security group id for ingress authorization.
   * `dest_group_owner_account` - Alibaba Cloud account of the target security group.
   * `policy` - Authorization policy. Can be either `accept` or `drop`.
-  * `nic_type` - Network type, `internet` or `intranet`.
+  * `nic_type` - Network type, `internet` or `internet`.
   * `priority` - Rule priority.
   * `direction` - Authorization direction, `ingress` or `egress`.
   * `description` - The description of the rule.

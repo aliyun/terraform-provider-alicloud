@@ -45,7 +45,7 @@ resource "alicloud_cms_monitor_group_instances" "example" {
 The following arguments are supported:
 
 * `group_id` - (Required, ForceNew) The id of Cms Group.
-* `instances` - (Required) Instance information added to the Cms Group.
+* `instances` - (Required) Instance information addedintranet to the Cms Group.
 
 #### Block instances
 

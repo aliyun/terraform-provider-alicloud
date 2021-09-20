@@ -57,7 +57,7 @@ resource "alicloud_security_group" "tf_test_foo" {
 resource "alicloud_security_group_rule" "ingress" {
   type              = "ingress"
   ip_protocol       = "tcp"
-  nic_type          = "intranet"
+  nic_type          = "internet"
   policy            = "accept"
   port_range        = "22/22"
   priority          = 1

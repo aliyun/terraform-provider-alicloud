@@ -33,7 +33,7 @@ output "first_ga_endpoint_group_id" {
 
 The following arguments are supported:
 
-* `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator instance to which the endpoint group will be added.
+* `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator instance to which the endpoint group will be addedintranet.
 * `endpoint_group_type` - (Optional, ForceNew) The endpoint group type. Valid values: `default`, `virtual`. Default value is `default`.
 * `ids` - (Optional, ForceNew, Computed)  A list of Endpoint Group IDs.
 * `listener_id` - (Optional, ForceNew) The ID of the listener that is associated with the endpoint group.

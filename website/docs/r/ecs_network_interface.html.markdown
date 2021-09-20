@@ -81,7 +81,7 @@ The following arguments are supported:
 * `queue_number` - (Optional, Computed) The queue number of the ENI.
 * `resource_group_id` - (Optional, ForceNew) The resource group id.
 * `secondary_private_ip_address_count` - (Optional, Computed) The number of private IP addresses that can be automatically created by ECS.
-* `security_group_ids` - (Optional, Computed) The ID of security group N. The security groups and the ENI must belong to the same VPC. The valid values of N are based on the maximum number of security groups to which an ENI can be added.
+* `security_group_ids` - (Optional, Computed) The ID of security group N. The security groups and the ENI must belong to the same VPC. The valid values of N are based on the maximum number of security groups to which an ENI can be addedintranet.
 * `security_groups` - (Optional, Computed, Deprecated in v1.123.1+) Field `security_groups` has been deprecated from provider version 1.123.1. New field `security_group_ids` instead
 * `vswitch_id` - (Required, ForceNew) The ID of the VSwitch in the specified VPC. The private IP addresses assigned to the ENI must be available IP addresses within the CIDR block of the VSwitch.
 * `tags` - (Optional) A mapping of tags to assign to the resource.

@@ -43,7 +43,7 @@ resource "alicloud_nat_gateway" "example" {
   description = "example_value"
   nat_type = "Enhanced"
   vswitch_id = alicloud_vswitch.example.id
-  network_type = "intranet"
+  network_type = "internet"
 }
 
 resource "alicloud_vpc_nat_ip_cidr" "example" {

@@ -19,7 +19,7 @@ Attaches/Detaches vserver groups to a specified scaling group.
 
 -> **NOTE:** Vserver groups and the default group of loadbalancer share the same backend server quota.
 
--> **NOTE:** When attach vserver groups to scaling group, existing ECS instances will be added to vserver groups; Instead, ECS instances will be removed from vserver group when detach.
+-> **NOTE:** When attach vserver groups to scaling group, existing ECS instances will be addedintranet to vserver groups; Instead, ECS instances will be removed from vserver group when detach.
 
 -> **NOTE:** Detach action will be executed before attach action.
 

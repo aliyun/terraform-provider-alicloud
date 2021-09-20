@@ -272,7 +272,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
     - VPC: virtual private cloud (VPC) in enhanced whitelist mode
     - MIX: standard whitelist mode
 
--> **NOTE:** In standard whitelist mode, IP addresses and CIDR blocks can be added only to the default IP address whitelist. In enhanced whitelist mode, IP addresses and CIDR blocks can be added to both IP address whitelists of the classic network type and those of the VPC network type.
+-> **NOTE:** In standard whitelist mode, IP addresses and CIDR blocks can be addedintranet only to the default IP address whitelist. In enhanced whitelist mode, IP addresses and CIDR blocks can be addedintranet to both IP address whitelists of the classic network type and those of the VPC network type.
 * `modify_mode` - (Optional, Available in 1.125.0+) The method that is used to modify the IP address whitelist. Default value: Cover. Valid values:
     - Cover: Use the value of the SecurityIps parameter to overwrite the existing entries in the IP address whitelist.
     - Append: Add the IP addresses and CIDR blocks that are specified in the SecurityIps parameter to the IP address whitelist.

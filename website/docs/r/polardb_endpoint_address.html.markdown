@@ -11,7 +11,7 @@ description: |-
 
 Provides a PolarDB endpoint address resource to allocate an Internet endpoint address string for PolarDB instance.
 
--> **NOTE:** Available in v1.68.0+. Each PolarDB instance will allocate a intranet connection string automatically and its prefix is Cluster ID.
+-> **NOTE:** Available in v1.68.0+. Each PolarDB instance will allocate a internet connection string automatically and its prefix is Cluster ID.
  To avoid unnecessary conflict, please specified a internet connection prefix before applying the resource.
 
 ## Example Usage

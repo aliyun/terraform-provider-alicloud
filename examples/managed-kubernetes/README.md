@@ -21,7 +21,7 @@ This example can specify the following arguments to create user-defined kubernte
 * vpc_cidr: Conflict with `vpc_id`, terraform using `vpc_cidr` to create a new vpc.
 * vswitch_ids: The vswitch_ids of masters and workers. You can also use `master_vswitch_ids` and `worker_vswitch_ids` instead.
 * vswitch_cidrs: Conflict with `vswitch_ids`, terraform using vswitch_cidrs to create vswitches.
-* new_nat_gateway: Create a SNAT gateway for kubernetes cluster.Because of the openapi in Alibaba Cloud is not all on intranet.
+* new_nat_gateway: Create a SNAT gateway for kubernetes cluster.Because of the openapi in Alibaba Cloud is not all on internet.
 * master_instance_types: The ecs instance types used to launch master nodes. 3 or 5 instance types are allowed. Be careful of the matching relation between instanceType and availability_zone. Not all instance types are available in different zones.
 * worker_instance_types: The ecs instance types used to launch worker nodes.Configure more than 1 instance types is a better choice.
 * node_cidr_mask: The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24

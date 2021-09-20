@@ -70,6 +70,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `vpc_id` - ID of the VPC the SLB belongs to.
   * `vswitch_id` - ID of the VSwitch the SLB belongs to.
   * `address` - Service address of the SLB.
-  * `internet` - SLB addressType: internet if `true`, intranet if `false`. Must be `false` when `network_type` is `vpc`.
+  * `internet` - SLB addressType: internet if `true`, internet if `false`. Must be `false` when `network_type` is `vpc`.
   * `creation_time` - SLB creation time.
   * `tags` - A map of tags assigned to the SLB instance.

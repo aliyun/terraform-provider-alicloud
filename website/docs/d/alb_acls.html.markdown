@@ -55,7 +55,7 @@ The following attributes are exported in addition to the arguments listed above:
 	* `acl_entries` - ACL Entries.
 		* `description` - Access Control Entries Note Description Length Is Limited to 1 to 256 Characters, Letters, digital, the Dash (-), a Forward Slash (/), Half a Period (.) and Underscores (_), Support Chinese Characters.
 		* `entry` - The resource ID in terraform of Acl.
-		* `status` - The status of the ACL entry. Valid values: `Adding` , `Available` and `Removing`. `Adding`: The entry is being added. `Available`: The entry is added and available. `Removing`: The entry is being removed.
+		* `status` - The status of the ACL entry. Valid values: `Adding` , `Available` and `Removing`. `Adding`: The entry is being addedintranet. `Available`: The entry is addedintranet and available. `Removing`: The entry is being removed.
 	* `acl_id` - Access Control Policy ID.
 	* `acl_name` - The ACL Name.
 	* `address_ip_version` - Address Protocol Version.

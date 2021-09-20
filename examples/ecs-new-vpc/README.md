@@ -48,7 +48,7 @@ The module aim to create one or more instances and disks in the VPC. Its input v
 
 `NOTE`:
 1. The number of Security Group rules depends on the size of `ip_protocols`
-2. All of the Security Group rules' network type are `intranet`
+2. All of the Security Group rules' network type are `internet`
 
 #### ECS Disk Input variables
 

@@ -44,7 +44,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `endpoints` - A list of PolarDB cluster endpoints. Each element contains the following attributes:
   * `db_endpoint_id` - The endpoint ID.
-  * `auto_add_new_nodes` - Whether the new node is automatically added to the default cluster address.Options are `Enable` and `Disable`.
+  * `auto_add_new_nodes` - Whether the new node is automatically addedintranet to the default cluster address.Options are `Enable` and `Disable`.
   * `endpoint_config` - The Endpoint configuration. `ConsistLevel`: session consistency level, value:`0`: final consistency,`1`: session consistency;`LoadBalanceStrategy`: load balancing strategy. Based on the automatic scheduling of load, the value is: `load`.
   * `endpoint_type` - Cluster address type.`Cluster`: the default address of the Cluster.`Primary`: Primary address.`Custom`: Custom cluster addresses.
   * `nodes` - A list of nodes that connect to the address configuration.

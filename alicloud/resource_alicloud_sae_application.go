@@ -242,7 +242,7 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"vpc_id":{
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -263,6 +263,7 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 			"intranet": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"https_cert_id": {
@@ -287,6 +288,7 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 			"internet": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"https_cert_id": {
@@ -316,20 +318,11 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
-			"unbind_internet": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"unbind_intranet": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"internet_ip":{
+			"internet_ip": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"intranet_ip":{
+			"intranet_ip": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -464,10 +457,10 @@ func resourceAlicloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("web_container"); ok {
 		request["WebContainer"] = StringPointer(v.(string))
 	}
-	if v,exist := d.GetOk("vpc_id") ; exist{
+	if v, exist := d.GetOk("vpc_id"); exist {
 		request["VpcId"] = StringPointer(v.(string))
 	}
-	if v,exist := d.GetOk("vswitch_id") ; exist{
+	if v, exist := d.GetOk("vswitch_id"); exist {
 		request["VSwitchId"] = StringPointer(v.(string))
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -576,6 +569,42 @@ func resourceAlicloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	d.Set("status", describeApplicationStatusObject["CurrentStatus"])
+
+	describeApplicationSlbObject, err := saeService.DescribeApplicationSlb(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("internet_ip", describeApplicationSlbObject["InternetIp"])
+	d.Set("intranet_ip", describeApplicationSlbObject["IntranetIp"])
+	intranetSli := make([]interface{}, 0)
+	if v, ok := describeApplicationSlbObject["Intranet"]; ok {
+		for _, intranet := range v.([]interface{}) {
+			intranetMap := intranet.(map[string]interface{})
+			intranetObj := map[string]interface{}{
+				"https_cert_id": intranetMap["HttpsCertId"],
+				"protocol":      intranetMap["Protocol"],
+				"target_port":   intranetMap["TargetPort"],
+				"port":          intranetMap["Port"],
+			}
+			intranetSli = append(intranetSli, intranetObj)
+		}
+	}
+	d.Set("intranet", intranetSli)
+
+	internetSli := make([]interface{}, 0)
+	if v, ok := describeApplicationSlbObject["Internet"]; ok {
+		for _, internet := range v.([]interface{}) {
+			internetMap := internet.(map[string]interface{})
+			internetObj := map[string]interface{}{
+				"https_cert_id": internetMap["HttpsCertId"],
+				"protocol":      internetMap["Protocol"],
+				"target_port":   internetMap["TargetPort"],
+				"port":          internetMap["Port"],
+			}
+			internetSli = append(internetSli, internetObj)
+		}
+	}
+	d.Set("internet", internetSli)
 	return nil
 }
 func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -591,51 +620,20 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	request := map[string]*string{
 		"AppId": StringPointer(d.Id()),
 	}
-
-
-	if d.HasChange("intranet") || d.HasChange("internet") || d.HasChange("internet_ip") || d.HasChange("intranet_ip"){
-		update = true
-		if v,ok := d.GetOk("internet_ip");ok{
-			request["InternetSlbId"] = StringPointer(v.(string))
-		}
-		if v,ok := d.GetOk("intranet_ip");ok{
-			request["IntranetSlbId"] = StringPointer(v.(string))
-		}
-		if v, ok := d.GetOk("intranet"); ok {
-
-		}
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	// change 并且不是新资源
-	request = map[string]*string{
-		"AppId": StringPointer(d.Id()),
-	}
-	if d.HasChange("replicas") && !d.IsNewResource(){
+	update = false
+	if d.HasChange("replicas") && !d.IsNewResource() {
 		update = true
 		request["Replicas"] = StringPointer(strconv.Itoa(d.Get("replicas").(int)))
 	}
-	if update{
+	if update {
 		action := "/pop/v1/sam/app/rescaleApplication"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			request["Replicas"] = StringPointer(strconv.Itoa(d.Get("replicas").(int)))
 			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Application.InvalidStatus","Application.ChangerOrderRunning"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Application.InvalidStatus", "Application.ChangerOrderRunning"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -662,223 +660,223 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		"AppId": StringPointer(d.Id()),
 	}
 
-	if d.HasChange("command") || d.IsNewResource(){
+	if d.HasChange("command") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("command"); ok {
 		request["Command"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("command_args") || d.IsNewResource(){
+	if d.HasChange("command_args") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("command_args"); ok {
 		request["CommandArgs"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("config_map_mount_desc") || d.IsNewResource(){
+	if d.HasChange("config_map_mount_desc") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("config_map_mount_desc"); ok {
 		request["ConfigMapMountDesc"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("custom_host_alias") || d.IsNewResource(){
+	if d.HasChange("custom_host_alias") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("custom_host_alias"); ok {
 		request["CustomHostAlias"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("edas_container_version") || d.IsNewResource(){
+	if d.HasChange("edas_container_version") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("edas_container_version"); ok {
 		request["EdasContainerVersion"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("envs") || d.IsNewResource(){
+	if d.HasChange("envs") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("envs"); ok {
 		request["Envs"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("image_url") || d.IsNewResource(){
+	if d.HasChange("image_url") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("image_url"); ok {
 		request["ImageUrl"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("jar_start_args") || d.IsNewResource(){
+	if d.HasChange("jar_start_args") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("jar_start_args"); ok {
 		request["JarStartArgs"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("jar_start_options") || d.IsNewResource(){
+	if d.HasChange("jar_start_options") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("jar_start_options"); ok {
 		request["JarStartOptions"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("jdk") || d.IsNewResource(){
+	if d.HasChange("jdk") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("jdk"); ok {
 		request["Jdk"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("liveness") || d.IsNewResource(){
+	if d.HasChange("liveness") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("liveness"); ok {
 		request["Liveness"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("mount_desc") || d.IsNewResource(){
+	if d.HasChange("mount_desc") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("mount_desc"); ok {
 		request["MountDesc"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("mount_host") || d.IsNewResource(){
+	if d.HasChange("mount_host") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("mount_host"); ok {
 		request["MountHost"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("nas_id") || d.IsNewResource(){
+	if d.HasChange("nas_id") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("nas_id"); ok {
 		request["NasId"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("oss_ak_id") || d.IsNewResource(){
+	if d.HasChange("oss_ak_id") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("oss_ak_id"); ok {
 		request["OssAkId"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("oss_ak_secret") || d.IsNewResource(){
+	if d.HasChange("oss_ak_secret") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("oss_ak_secret"); ok {
 		request["OssAkSecret"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("oss_mount_descs") || d.IsNewResource(){
+	if d.HasChange("oss_mount_descs") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("oss_mount_descs"); ok {
 		request["OssMountDescs"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("package_url") || d.IsNewResource(){
+	if d.HasChange("package_url") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("package_url"); ok {
 		request["PackageUrl"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("php_arms_config_location") || d.IsNewResource(){
+	if d.HasChange("php_arms_config_location") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("php_arms_config_location"); ok {
 		request["PhpArmsConfigLocation"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("php_config") || d.IsNewResource(){
+	if d.HasChange("php_config") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("php_config"); ok {
 		request["PhpConfig"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("php_config_location") || d.IsNewResource(){
+	if d.HasChange("php_config_location") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("php_config_location"); ok {
 		request["PhpConfigLocation"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("post_start") || d.IsNewResource(){
+	if d.HasChange("post_start") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("post_start"); ok {
 		request["PostStart"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("pre_stop") || d.IsNewResource(){
+	if d.HasChange("pre_stop") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("pre_stop"); ok {
 		request["PreStop"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("readiness") || d.IsNewResource(){
+	if d.HasChange("readiness") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("readiness"); ok {
 		request["Readiness"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("sls_configs") || d.IsNewResource(){
+	if d.HasChange("sls_configs") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("sls_configs"); ok {
 		request["SlsConfigs"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("termination_grace_period_seconds") || d.IsNewResource(){
+	if d.HasChange("termination_grace_period_seconds") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("termination_grace_period_seconds"); ok {
 		request["TerminationGracePeriodSeconds"] = StringPointer(strconv.Itoa(v.(int)))
 	}
 
-	if d.HasChange("timezone") || d.IsNewResource(){
+	if d.HasChange("timezone") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("timezone"); ok {
 		request["Timezone"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("tomcat_config") || d.IsNewResource(){
+	if d.HasChange("tomcat_config") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("tomcat_config"); ok {
 		request["TomcatConfig"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("war_start_options") || d.IsNewResource(){
+	if d.HasChange("war_start_options") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("war_start_options"); ok {
 		request["WarStartOptions"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("web_container") || d.IsNewResource(){
+	if d.HasChange("web_container") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("web_container"); ok {
 		request["WebContainer"] = StringPointer(v.(string))
 	}
 
-	if _,exist := d.GetOkExists("auto_enable_application_scaling_rule");exist && d.IsNewResource(){
+	if _, exist := d.GetOkExists("auto_enable_application_scaling_rule"); exist && d.IsNewResource() {
 		update = true
 		if v, ok := d.GetOk("auto_enable_application_scaling_rule"); ok {
 			request["AutoEnableApplicationScalingRule"] = StringPointer(strconv.FormatBool(v.(bool)))
 		}
 	}
-	if d.HasChange("min_ready_instances") || d.IsNewResource(){
+	if d.HasChange("min_ready_instances") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("min_ready_instances"); ok {
@@ -889,35 +887,35 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		request["BatchWaitTime"] = StringPointer(strconv.Itoa(v.(int)))
 	}
 
-	if d.HasChange("change_order_desc") || d.IsNewResource(){
+	if d.HasChange("change_order_desc") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("change_order_desc"); ok {
 		request["ChangeOrderDesc"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("enable_ahas") || d.IsNewResource(){
+	if d.HasChange("enable_ahas") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("enable_ahas"); ok {
 		request["EnableAhas"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("enable_grey_tag_route") || d.IsNewResource(){
+	if d.HasChange("enable_grey_tag_route") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOkExists("enable_grey_tag_route"); ok {
 		request["EnableGreyTagRoute"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("update_strategy") || d.IsNewResource(){
+	if d.HasChange("update_strategy") || d.IsNewResource() {
 		update = true
 	}
 	if v, ok := d.GetOk("update_strategy"); ok {
 		request["UpdateStrategy"] = StringPointer(v.(string))
 	}
 
-	if update{
+	if update {
 		action := "/pop/v1/sam/app/deployApplication"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		request["PackageVersion"] = StringPointer(strconv.FormatInt(time.Now().Unix(), 10))
@@ -979,6 +977,9 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("web_container")
 	}
 
+	if err := saeService.UpdateSlb(d); err != nil {
+		return WrapError(err)
+	}
 	// 【Exists】update security_group_id
 	if d.HasChange("security_group_id") {
 		d.Partial(true)
@@ -1142,14 +1143,6 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 			d.SetPartial("status")
 		}
 	}
-
-
-
-
-
-
-
-
 	d.Partial(false)
 	return resourceAlicloudSaeApplicationRead(d, meta)
 }

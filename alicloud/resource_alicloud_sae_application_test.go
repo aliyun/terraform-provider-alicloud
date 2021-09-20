@@ -167,12 +167,18 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 					"package_type":    "Image",
 					"app_description": name + "desc",
 					"vswitch_id":      "${data.alicloud_vswitches.default.vswitches.0.id}",
-					"vpc_id":			"${data.alicloud_vpcs.default.ids.0}",
+					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
 					"image_url":       "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5",
 					"replicas":        "5",
 					"cpu":             "500",
 					"memory":          "2048",
-
+					"internet": []map[string]interface{}{
+						{
+							"port":        "80",
+							"protocol":    "TCP",
+							"target_port": "8080",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -181,273 +187,290 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 						"package_type":    "Image",
 						"app_description": name + "desc",
 						"vswitch_id":      CHECKSET,
-						"vpc_id":			CHECKSET,
+						"vpc_id":          CHECKSET,
 						"image_url":       "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5",
 						"replicas":        "5",
 						"cpu":             "500",
 						"memory":          "2048",
+						"internet.#":      "1",
 					}),
 				),
 			},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"replicas":        "6",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"replicas":        "6",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"auto_enable_application_scaling_rule":        "true",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"auto_enable_application_scaling_rule":        "true",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"min_ready_instances":        "2",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"min_ready_instances":        "2",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"pre_stop": `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"pre_stop": "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"sls_configs": `[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]`,
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"sls_configs": "[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}`,
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"timeoutSeconds\":11}`,
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"timeoutSeconds\":11}",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"timezone": "Asia/Beijing",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"timezone": "Asia/Beijing",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"cpu": "1000",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"cpu": "1000",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"memory": "4096",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"memory": "4096",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"edas_container_version": "3.5.3",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"edas_container_version": "3.5.3",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"php_config_location": "/usr/local/etc/php/php.ini",
-			//		"php_config":          "k1=v1",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"php_config_location": "/usr/local/etc/php/php.ini",
-			//			"php_config":          "k1=v1",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"min_ready_instances": "2",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"min_ready_instances": "2",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"auto_enable_application_scaling_rule": "true",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"auto_enable_application_scaling_rule": "true",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"nas_id": "${alicloud_nas_file_system.default.id}",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"nas_id": CHECKSET,
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"php_arms_config_location": "/usr/local/etc/php/conf.d/arms.ini",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"php_arms_config_location": "/usr/local/etc/php/conf.d/arms.ini",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"termination_grace_period_seconds": "30",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"termination_grace_period_seconds": "30",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"batch_wait_time": "10",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"batch_wait_time": "10",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"post_start": `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"post_start": "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"command": "sleep",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"command": "sleep",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"command":      "sleep",
-			//		"command_args": `[\"1d\"]`,
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"command_args": "[\"1d\"]",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"envs": `[{\"name\":\"envtmp\",\"value\":\"0\"}]`,
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"envs": "[{\"name\":\"envtmp\",\"value\":\"0\"}]",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"custom_host_alias": `[{\"hostName\":\"samplehost\",\"ip\":\"127.0.0.1\"}]`,
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"custom_host_alias": "[{\"hostName\":\"samplehost\",\"ip\":\"127.0.0.1\"}]",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"status": "RUNNING",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"status": "RUNNING",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"image_url": "registry-vpc.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.4.3-0",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"image_url": "registry-vpc.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.4.3-0",
-			//		}),
-			//	),
-			//},
-			//{
-			//	ResourceName:            resourceId,
-			//	ImportState:             true,
-			//	ImportStateVerify:       true,
-			//	ImportStateVerifyIgnore: []string{"auto_enable_application_scaling_rule", "batch_wait_time", "config_map_mount_desc"},
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"intranet": []map[string]interface{}{
+						{
+							"port":        "34",
+							"protocol":    "TCP",
+							"target_port": "8080",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"intranet.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replicas": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replicas": "6",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_enable_application_scaling_rule": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_enable_application_scaling_rule": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_ready_instances": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"min_ready_instances": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pre_stop": `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pre_stop": "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sls_configs": `[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sls_configs": "[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"timezone": "Asia/Beijing",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"timezone": "Asia/Beijing",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cpu": "1000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cpu": "1000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"memory": "4096",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"memory": "4096",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"edas_container_version": "3.5.3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"edas_container_version": "3.5.3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"php_config_location": "/usr/local/etc/php/php.ini",
+					"php_config":          "k1=v1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"php_config_location": "/usr/local/etc/php/php.ini",
+						"php_config":          "k1=v1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_ready_instances": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"min_ready_instances": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_enable_application_scaling_rule": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_enable_application_scaling_rule": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"nas_id": "${alicloud_nas_file_system.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"nas_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"php_arms_config_location": "/usr/local/etc/php/conf.d/arms.ini",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"php_arms_config_location": "/usr/local/etc/php/conf.d/arms.ini",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"termination_grace_period_seconds": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"termination_grace_period_seconds": "30",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"batch_wait_time": "10",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"batch_wait_time": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"post_start": `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"post_start": "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"command": "sleep",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"command": "sleep",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"command":      "sleep",
+					"command_args": `[\"1d\"]`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"command_args": "[\"1d\"]",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"envs": `[{\"name\":\"envtmp\",\"value\":\"0\"}]`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"envs": "[{\"name\":\"envtmp\",\"value\":\"0\"}]",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"custom_host_alias": `[{\"hostName\":\"samplehost\",\"ip\":\"127.0.0.1\"}]`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"custom_host_alias": "[{\"hostName\":\"samplehost\",\"ip\":\"127.0.0.1\"}]",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "RUNNING",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "RUNNING",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_url": "registry-vpc.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.4.3-0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_url": "registry-vpc.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.4.3-0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_enable_application_scaling_rule", "vpc_id", "batch_wait_time", "config_map_mount_desc"},
+			},
 		},
 	})
 }
@@ -483,6 +506,7 @@ func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 					"app_description": name + "desc",
 					"jdk":             "Open JDK 8",
 					"vswitch_id":      "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
 					"replicas":        "5",
 					"cpu":             "500",
 					"memory":          "2048",
@@ -748,6 +772,7 @@ func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 					"jdk":             "Open JDK 8",
 					"replicas":        "5",
 					"vswitch_id":      "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
 					"cpu":             "500",
 					"memory":          "2048",
 				}),

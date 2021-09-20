@@ -27,7 +27,7 @@ resource "alicloud_direct_mail_mail_address" "example" {
 ```
 
 -> **Note:**
-A maximum of 10 mailing addresses can be added.
+A maximum of 10 mailing addresses can be addedintranet.
 Individual users: Up to 10 mailing addresses can be deleted within a month.
 Enterprise users: Up to 10 mailing addresses can be deleted within a month.
 

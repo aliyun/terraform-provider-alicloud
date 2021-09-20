@@ -136,8 +136,8 @@ addons {
   name = "nginx-ingress-controller"
   # use internet
   config = "{\"IngressSlbNetworkType\":\"internet",\"IngressSlbSpec\":\"slb.s2.small\"}"
-  # if use intranet, detail below.
-  # config = "{\"IngressSlbNetworkType\":\"intranet",\"IngressSlbSpec\":\"slb.s2.small\"}"
+  # if use internet, detail below.
+  # config = "{\"IngressSlbNetworkType\":\"internet",\"IngressSlbSpec\":\"slb.s2.small\"}"
 }
 # install SLB ingress, conflict with nginx ingress
 addons {

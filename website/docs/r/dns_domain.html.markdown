@@ -13,7 +13,7 @@ Provides a DNS domain resource.
 
 -> DEPRECATED: This resource has been renamed to [alicloud_alidns_domain](https://www.terraform.io/docs/providers/alicloud/r/alidns_domain.html) from version 1.95.0.
 
--> **NOTE:** The domain name which you want to add must be already registered and had not added by another account. Every domain name can only exist in a unique group.
+-> **NOTE:** The domain name which you want to add must be already registered and had not addedintranet by another account. Every domain name can only exist in a unique group.
 
 -> **NOTE:** Available in v1.81.0+.
 

@@ -1,8 +1,12 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -205,13 +209,13 @@ func (s *SaeService) DescribeSaeApplication(id string) (object map[string]interf
 	return object, nil
 }
 
-func (s *SaeService) DescribeApplicationConfig(id string) (object map[string]interface{}, err error) {
+func (s *SaeService) DescribeApplicationSlb(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewServerlessClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "/pop/v1/sam/app/describeApplicationConfig"
+	action := "/pop/v1/sam/app/slb"
 	request := map[string]*string{
 		"AppId": StringPointer(id),
 	}
@@ -219,7 +223,7 @@ func (s *SaeService) DescribeApplicationConfig(id string) (object map[string]int
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GEY"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -292,4 +296,150 @@ func (s *SaeService) DescribeApplicationImage(id, imageUrl string) (object map[s
 	}
 	object = v.(map[string]interface{})
 	return object, nil
+}
+
+func (s *SaeService) UpdateSlb(d *schema.ResourceData) error {
+	if d.HasChange("intranet") || d.HasChange("internet") || d.HasChange("internet_ip") || d.HasChange("intranet_ip") {
+		update := false
+		request := map[string]*string{
+			"AppId": StringPointer(d.Id()),
+		}
+
+		if v, ok := d.GetOk("intranet"); ok {
+			nrawIntranet := v.(*schema.Set).List()
+			if len(nrawIntranet) == 0 {
+				// need to unbind intranet
+				update = true
+				request["Intranet"] = StringPointer(strconv.FormatBool(true))
+			}
+		}
+		if v, ok := d.GetOk("internet"); ok {
+			nrawInteranet := v.(*schema.Set).List()
+			if len(nrawInteranet) == 0 {
+				// need to unbind intranet
+				update = true
+				request["Internet"] = StringPointer(strconv.FormatBool(true))
+			}
+		}
+		if update {
+			action := "/pop/v1/sam/app/slb"
+			conn, err := s.client.NewServerlessClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			var response map[string]interface{}
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"Application.InvalidStatus", "Application.ChangerOrderRunning"}) || NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "POST "+action, AlibabaCloudSdkGoERROR)
+			}
+			if respBody, isExist := response["body"]; isExist {
+				response = respBody.(map[string]interface{})
+			} else {
+				return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
+			}
+			if fmt.Sprint(response["Success"]) == "false" {
+				return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
+			}
+			return nil
+		}
+
+		update = false
+		request = map[string]*string{
+			"AppId": StringPointer(d.Id()),
+		}
+		if v, ok := d.GetOk("internet_ip"); ok {
+			update = true
+			request["InternetSlbId"] = StringPointer(v.(string))
+		}
+		if v, ok := d.GetOk("intranet_ip"); ok {
+			update = true
+			request["IntranetSlbId"] = StringPointer(v.(string))
+		}
+		if v, ok := d.GetOk("intranet"); ok {
+			update = true
+			for _, intranet := range v.(*schema.Set).List() {
+				intranetMap := intranet.(map[string]interface{})
+				intranetReq := []interface{}{
+					map[string]interface{}{
+						"httpsCertId": intranetMap["https_cert_id"],
+						"protocol":    intranetMap["protocol"],
+						"targetPort":  intranetMap["target_port"],
+						"port":        intranetMap["port"],
+					},
+				}
+				obj, err := json.Marshal(intranetReq)
+				if err != nil {
+					return WrapError(err)
+				}
+				request["Intranet"] = StringPointer(string(obj))
+			}
+		}
+
+		if v, ok := d.GetOk("internet"); ok {
+			update = true
+			for _, internet := range v.(*schema.Set).List() {
+				internetMap := internet.(map[string]interface{})
+				internetReq := []interface{}{
+					map[string]interface{}{
+						"httpsCertId": internetMap["https_cert_id"],
+						"protocol":    internetMap["protocol"],
+						"targetPort":  internetMap["target_port"],
+						"port":        internetMap["port"],
+					},
+				}
+				obj, err := json.Marshal(internetReq)
+				if err != nil {
+					return WrapError(err)
+				}
+				request["Internet"] = StringPointer(string(obj))
+			}
+		}
+
+		if update {
+			action := "/pop/v1/sam/app/slb"
+			conn, err := s.client.NewServerlessClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			var response map[string]interface{}
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"Application.InvalidStatus", "Application.ChangerOrderRunning"}) || NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "POST "+action, AlibabaCloudSdkGoERROR)
+			}
+			if respBody, isExist := response["body"]; isExist {
+				response = respBody.(map[string]interface{})
+			} else {
+				return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
+			}
+			if fmt.Sprint(response["Success"]) == "false" {
+				return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
+			}
+		}
+	}
+
+	return nil
 }

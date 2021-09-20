@@ -13,7 +13,7 @@ Provides a connection resource to allocate an Internet connection string for ins
 
 -> **NOTE:**  Available in 1.48.0+
 
--> **NOTE:** Each instance will allocate a intranet connection string automatically and its prefix is instance ID.
+-> **NOTE:** Each instance will allocate a internet connection string automatically and its prefix is instance ID.
  To avoid unnecessary conflict, please specified a internet connection prefix before applying the resource.
 
 ## Example Usage

@@ -11,7 +11,7 @@ description: |-
 
 Provides an RDS connection resource to allocate an Internet connection string for RDS instance.
 
--> **NOTE:** Each RDS instance will allocate a intranet connnection string automatically and its prifix is RDS instance ID.
+-> **NOTE:** Each RDS instance will allocate a internet connnection string automatically and its prifix is RDS instance ID.
  To avoid unnecessary conflict, please specified a internet connection prefix before applying the resource.
 
 ## Example Usage

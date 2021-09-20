@@ -75,7 +75,7 @@ The following arguments are supported:
 
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster in which account belongs.
 * `account_name` - (Required, ForceNew) A specified account name.
-* `account_privilege` - (Optional, ForceNew) The privilege of one account access database. Valid values: ["ReadOnly", "ReadWrite"], ["DMLOnly", "DDLOnly"] added since version v1.101.0. Default to "ReadOnly".
+* `account_privilege` - (Optional, ForceNew) The privilege of one account access database. Valid values: ["ReadOnly", "ReadWrite"], ["DMLOnly", "DDLOnly"] addedintranet since version v1.101.0. Default to "ReadOnly".
 * `db_names` - (Required) List of specified database name.
 
 ## Attributes Reference

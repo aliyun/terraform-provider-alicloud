@@ -21,7 +21,7 @@ For more details about guaranteed-performance instance, see [Guaranteed-performa
 ## Example Usage
 
 ```terraform
-# Create a intranet SLB instance
+# Create a internet SLB instance
 variable "name" {
   default = "terraformtestslbconfig"
 }
@@ -43,7 +43,7 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = var.name
-  address_type       = "intranet"
+  address_type       = "internet"
   load_balancer_spec = "slb.s2.small"
   vswitch_id         = alicloud_vswitch.default.id
   tags = {
@@ -59,9 +59,9 @@ The following arguments are supported:
 * `load_balancer_name` - (Optional) The name of the SLB. This name must be unique within your AliCloud account, can have a maximum of 80 characters,
 must contain only alphanumeric characters or hyphens, such as "-","/",".","_", and must not begin or end with a hyphen. If not specified,
 Terraform will autogenerate a name beginning with `tf-lb`.
-* `address_type` - (Optional, ForceNew) The network type of the SLB instance. Valid values: ["internet", "intranet"]. If load balancer launched in VPC, this value must be `intranet`.
+* `address_type` - (Optional, ForceNew) The network type of the SLB instance. Valid values: ["internet", "internet"]. If load balancer launched in VPC, this value must be `internet`.
     - internet: After an Internet SLB instance is created, the system allocates a public IP address so that the instance can forward requests from the Internet.
-    - intranet: After an intranet SLB instance is created, the system allocates an intranet IP address so that the instance can only forward intranet requests.
+    - internet: After an internet SLB instance is created, the system allocates an internet IP address so that the instance can only forward internet requests.
 * `internet_charge_type` - (Optional, ForceNew) Valid values are `PayByBandwidth`, `PayByTraffic`. If this value is `PayByBandwidth`, then argument `address_type` must be `internet`. Default is `PayByTraffic`. If load balancer launched in VPC, this value must be `PayByTraffic`. Before version 1.10.1, the valid values are `paybybandwidth` and `paybytraffic`.
 * `bandwidth` - (Optional) Valid value is between 1 and 1000, If argument `internet_charge_type` is `PayByTraffic`, then this value will be ignore.
 * `vswitch_id` - (Required for a VPC SLB, Forces New Resource) The VSwitch ID to launch in. If `address_type` is internet, it will be ignore.

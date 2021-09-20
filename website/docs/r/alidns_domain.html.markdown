@@ -11,7 +11,7 @@ description: |-
 
 Provides a Alidns domain resource.
 
--> **NOTE:** The domain name which you want to add must be already registered and had not added by another account. Every domain name can only exist in a unique group.
+-> **NOTE:** The domain name which you want to add must be already registered and had not addedintranet by another account. Every domain name can only exist in a unique group.
 
 -> **NOTE:** Available in v1.95.0+.
 
