@@ -152,6 +152,7 @@ type Config struct {
 	GdsEndpoint                 string
 	DbfsEndpoint                string
 	DevopsrdcEndpoint           string
+	EaisEndpoint                string
 }
 
 func (c *Config) loadAndValidate() error {

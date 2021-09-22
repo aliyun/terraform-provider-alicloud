@@ -540,6 +540,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_prometheus_alert_rules":                 dataSourceAlicloudArmsPrometheusAlertRules(),
 			"alicloud_dbfs_instances":                              dataSourceAlicloudDbfsInstances(),
 			"alicloud_rdc_organizations":                           dataSourceAlicloudRdcOrganizations(),
+			"alicloud_eais_instances":                              dataSourceAlicloudEaisInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -974,6 +975,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_prometheus_alert_rule":                           resourceAlicloudArmsPrometheusAlertRule(),
 			"alicloud_dbfs_instance":                                        resourceAlicloudDbfsInstance(),
 			"alicloud_rdc_organization":                                     resourceAlicloudRdcOrganization(),
+			"alicloud_eais_instance":                                        resourceAlicloudEaisInstance(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1168,6 +1170,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.GdsEndpoint = strings.TrimSpace(endpoints["gds"].(string))
 		config.DbfsEndpoint = strings.TrimSpace(endpoints["dbfs"].(string))
 		config.DevopsrdcEndpoint = strings.TrimSpace(endpoints["devopsrdc"].(string))
+		config.EaisEndpoint = strings.TrimSpace(endpoints["eais"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1461,6 +1464,8 @@ func init() {
 		"dbfs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dbfs endpoints.",
 
 		"devopsrdc_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom devopsrdc endpoints.",
+
+		"eais_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eais endpoints.",
 	}
 }
 
@@ -1505,6 +1510,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"eais": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["eais_endpoint"],
+				},
+
 				"quickbi": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2260,6 +2272,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["gds"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dbfs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["devopsrdc"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["eais"].(string)))
 	return hashcode.String(buf.String())
 }
 
