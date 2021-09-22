@@ -33,7 +33,7 @@ resource "alicloud_cloud_firewall_control_policy" "example1" {
 }
 
 resource "alicloud_cloud_firewall_control_policy_order" "example2" {
-  acl_action       = alicloud_cloud_firewall_control_policy.example1.acl_uuid
+  acl_uuid         = alicloud_cloud_firewall_control_policy.example1.acl_uuid
   direction        = alicloud_cloud_firewall_control_policy.example1.direction
   order            = 1
 }
