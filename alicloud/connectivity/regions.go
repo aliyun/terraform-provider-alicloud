@@ -149,3 +149,4 @@ var GraphDatabaseSupportRegions = []Region{Shenzhen, Beijing, Qingdao, Shanghai,
 var DBFSSystemSupportRegions = []Region{Hangzhou}
 var EAISSystemSupportRegions = []Region{Hangzhou}
 var CloudAuthSupportRegions = []Region{Hangzhou}
+var MHUBProductSupportRegions = []Region{Shanghai}

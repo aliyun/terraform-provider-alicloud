@@ -155,6 +155,7 @@ type Config struct {
 	EaisEndpoint                string
 	CloudauthEndpoint           string
 	ImpEndpoint                 string
+	MhubEndpoint                string
 }
 
 func (c *Config) loadAndValidate() error {
