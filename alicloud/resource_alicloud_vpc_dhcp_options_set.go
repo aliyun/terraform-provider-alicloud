@@ -130,7 +130,7 @@ func resourceAlicloudVpcDhcpOptionsSetCreate(d *schema.ResourceData, meta interf
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudVpcDhcpOptionsSetRead(d, meta)
+	return resourceAlicloudVpcDhcpOptionsSetUpdate(d, meta)
 }
 func resourceAlicloudVpcDhcpOptionsSetRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)

@@ -247,6 +247,66 @@ func TestAccAlicloudVPCDhcpOptionsSet_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudVPCDhcpOptionsSet_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_dhcp_options_set.default"
+	ra := resourceAttrInit(resourceId, AlicloudVPCDhcpOptionsSetMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcDhcpOptionsSet")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcdhcpoptionsset%d", defaultRegionToTest, rand)
+	domainName := fmt.Sprintf("tftestacc%d.com", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVPCDhcpOptionsSetBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dhcp_options_set_name":        "${var.name}",
+					"dhcp_options_set_description": "${var.name}",
+					"domain_name":                  domainName,
+					"domain_name_servers":          "100.100.2.136",
+					"associate_vpcs": []map[string]interface{}{
+						{
+							"vpc_id": "${alicloud_vpc.default.0.id}",
+						},
+						{
+							"vpc_id": "${alicloud_vpc.default.1.id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dhcp_options_set_name":        name,
+						"dhcp_options_set_description": name,
+						"domain_name":                  domainName,
+						"domain_name_servers":          "100.100.2.136",
+						"associate_vpcs.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"associate_vpcs": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"associate_vpcs.#": "0",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AlicloudVPCDhcpOptionsSetMap0 = map[string]string{
 	"dry_run": NOSET,
 	"status":  CHECKSET,
