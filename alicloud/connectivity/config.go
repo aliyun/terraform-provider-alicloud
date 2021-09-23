@@ -156,6 +156,7 @@ type Config struct {
 	CloudauthEndpoint           string
 	ImpEndpoint                 string
 	MhubEndpoint                string
+	ServicemeshEndpoint         string
 }
 
 func (c *Config) loadAndValidate() error {

@@ -547,6 +547,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mhub_products":                               dataSourceAlicloudMhubProducts(),
 			"alicloud_cloud_sso_scim_server_credentials":           dataSourceAlicloudCloudSsoScimServerCredentials(),
 			"alicloud_dts_subscription_jobs":                       dataSourceAlicloudDtsSubscriptionJobs(),
+			"alicloud_service_mesh_service_meshes":                 dataSourceAlicloudServiceMeshServiceMeshes(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -989,6 +990,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mhub_product":                                         resourceAlicloudMhubProduct(),
 			"alicloud_cloud_sso_scim_server_credential":                     resourceAlicloudCloudSsoScimServerCredential(),
 			"alicloud_dts_subscription_job":                                 resourceAlicloudDtsSubscriptionJob(),
+			"alicloud_service_mesh_service_mesh":                            resourceAlicloudServiceMeshServiceMesh(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1187,6 +1189,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.CloudauthEndpoint = strings.TrimSpace(endpoints["cloudauth"].(string))
 		config.ImpEndpoint = strings.TrimSpace(endpoints["imp"].(string))
 		config.MhubEndpoint = strings.TrimSpace(endpoints["mhub"].(string))
+		config.ServicemeshEndpoint = strings.TrimSpace(endpoints["servicemesh"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1488,6 +1491,8 @@ func init() {
 		"imp_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom imp endpoints.",
 
 		"mhub_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom mhub endpoints.",
+
+		"servicemesh_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom servicemesh endpoints.",
 	}
 }
 
@@ -1557,6 +1562,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["mhub_endpoint"],
+				},
+				"servicemesh": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["servicemesh_endpoint"],
 				},
 				"quickbi": {
 					Type:        schema.TypeString,
@@ -2317,6 +2328,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudauth"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["imp"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["mhub"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["servicemesh"].(string)))
 	return hashcode.String(buf.String())
 }
 
