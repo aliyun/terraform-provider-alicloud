@@ -202,6 +202,7 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 			"replicas": {
 				Type:     schema.TypeInt,
 				Required: true,
+				ForceNew: true,
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
@@ -238,11 +239,6 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 				Computed: true,
 			},
 			"vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -570,42 +566,6 @@ func resourceAlicloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	d.Set("status", describeApplicationStatusObject["CurrentStatus"])
-
-	describeApplicationSlbObject, err := saeService.DescribeApplicationSlb(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("internet_ip", describeApplicationSlbObject["InternetIp"])
-	d.Set("intranet_ip", describeApplicationSlbObject["IntranetIp"])
-	intranetSli := make([]interface{}, 0)
-	if v, ok := describeApplicationSlbObject["Intranet"]; ok {
-		for _, intranet := range v.([]interface{}) {
-			intranetMap := intranet.(map[string]interface{})
-			intranetObj := map[string]interface{}{
-				"https_cert_id": intranetMap["HttpsCertId"],
-				"protocol":      intranetMap["Protocol"],
-				"target_port":   intranetMap["TargetPort"],
-				"port":          intranetMap["Port"],
-			}
-			intranetSli = append(intranetSli, intranetObj)
-		}
-	}
-	d.Set("intranet", intranetSli)
-
-	internetSli := make([]interface{}, 0)
-	if v, ok := describeApplicationSlbObject["Internet"]; ok {
-		for _, internet := range v.([]interface{}) {
-			internetMap := internet.(map[string]interface{})
-			internetObj := map[string]interface{}{
-				"https_cert_id": internetMap["HttpsCertId"],
-				"protocol":      internetMap["Protocol"],
-				"target_port":   internetMap["TargetPort"],
-				"port":          internetMap["Port"],
-			}
-			internetSli = append(internetSli, internetObj)
-		}
-	}
-	d.Set("internet", internetSli)
 	return nil
 }
 func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface{}) error {

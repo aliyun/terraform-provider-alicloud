@@ -111,11 +111,8 @@ The following arguments are supported:
 * `update_strategy` - (Optional) The update strategy.
 * `version_id` - (Optional, ForceNew) Application version id.
 * `vswitch_id` - (Optional, ForceNew) The vswitch id.
-* `vpc_id` - (Optional, ForceNew) The vpc id.
 * `war_start_options` - (Optional) WAR package launch application option. Application default startup command: java $JAVA_OPTS $CATALINA_OPTS [-Options] org.apache.catalina.startup.Bootstrap "$@" start.
 * `web_container` - (Optional) The version of tomcat that the deployment package depends on. Image type applications are not supported.
-* `internet_slb_id` - (Optional) Use designated public network SLBs that have been purchased to support non-shared instances
-* `intranet_slb_id` - (Optional) Use the designated private network SLB that has been purchased to support non-shared instances
 * `intranet` - (Optional) Bound public network SLB. The details see Block intranet.
 * `internet` - (Optional) Bound private network SLB. The details see Block internet.
 
@@ -134,14 +131,14 @@ The quota supports the following:
 * `target_port` - (Optional) Container port.
 * `port` - (Optional) SLB Port.
 
+
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Application.
-* `internet_ip`
-* `intranet_ip`
-
+* `internet_ip` - Use designated public network SLBs that have been purchased to support non-shared instances.
+* `intranet_ip` - Use the designated private network SLB that has been purchased to support non-shared instances.
 ## Import
 
 Serverless App Engine (SAE) Application can be imported using the id, e.g.
