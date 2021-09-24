@@ -19,7 +19,7 @@ var DBReadWriteMap = map[string]string{
 	"connection_string": CHECKSET,
 }
 
-func TestAccAlicloudDBReadWriteSplittingConnection_update(t *testing.T) {
+func TestAccAlicloudRdsDBReadWriteSplittingConnection_update(t *testing.T) {
 	var connection map[string]interface{}
 	var primary map[string]interface{}
 	var readonly map[string]interface{}
@@ -40,8 +40,8 @@ func TestAccAlicloudDBReadWriteSplittingConnection_update(t *testing.T) {
 
 	rac := resourceAttrCheckInit(rc_connection, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	prefix := fmt.Sprintf("t-con-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, prefix, resourceDBReadWriteSplittingConfigDependence)
+	name := fmt.Sprintf("tf-testAccDBReadWriteSplittingInstance%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBReadWriteSplittingConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -111,55 +111,80 @@ func TestAccAlicloudDBReadWriteSplittingConnection_update(t *testing.T) {
 	})
 }
 
-func resourceDBReadWriteSplittingConfigDependence(prefix string) string {
+func resourceDBReadWriteSplittingConfigDependence(name string) string {
 	return fmt.Sprintf(`
-	%s
-	variable "creation" {
-		default = "Rds"
-	}
-	variable "multi_az" {
-		default = "false"
-	}
-	variable "name" {
-		default = "tf-testAccDBInstance_vpc"
-	}
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
 
-	variable "prefix" {
-		default = "%s"
-	}
+variable "name" {
+	default = "%s"
+}
+data "alicloud_db_zones" "default"{
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_charge_type = "PostPaid"
+	category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+}
 
-	data "alicloud_db_instance_engines" "default" {
-  		instance_charge_type = "PostPaid"
-		engine = "MySQL"
-		engine_version = "5.6"
-	}
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+    category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_charge_type = "PostPaid"
+}
 
-	data "alicloud_db_instance_classes" "default" {
-  		instance_charge_type = "PostPaid"
-  		engine               = "MySQL"
-  		engine_version       = "5.6"
-		zone_id              = "ap-southeast-1a"
-	}
+data "alicloud_vpcs" "default" {
+ name_regex = "^default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
 
-	resource "alicloud_db_instance" "default" {
-		engine = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-		engine_version = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
-		instance_type = "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}"
-		instance_storage = "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}"
-		instance_charge_type = "Postpaid"
-		instance_name = "${var.name}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		security_ips = ["10.168.1.12", "100.69.7.112"]
-	}
+resource "alicloud_vswitch" "this" {
+ count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+ vswitch_name = var.name
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ zone_id = data.alicloud_db_zones.default.ids.0
+ cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+}
 
-	resource "alicloud_db_readonly_instance" "default" {
-		master_db_instance_id = "${alicloud_db_instance.default.id}"
-		zone_id = "${alicloud_db_instance.default.zone_id}"
-		engine_version = "${alicloud_db_instance.default.engine_version}"
-		instance_type = "${alicloud_db_instance.default.instance_type}"
-		instance_storage = "${alicloud_db_instance.default.instance_storage}"
-		instance_name = "${var.name}_ro"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-	}
-`, RdsCommonTestCase, prefix)
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
+
+resource "alicloud_security_group" "default" {
+	name   = var.name
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_db_instance" "default" {
+    engine = "MySQL"
+	engine_version = "8.0"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	vswitch_id = local.vswitch_id
+	instance_name = var.name
+	security_ips = ["10.168.1.12", "100.69.7.112"]
+}
+resource "alicloud_db_readonly_instance" "default" {
+	master_db_instance_id = alicloud_db_instance.default.id
+	zone_id = alicloud_db_instance.default.zone_id
+	engine_version = alicloud_db_instance.default.engine_version
+	instance_type = alicloud_db_instance.default.instance_type
+	instance_storage = alicloud_db_instance.default.instance_storage
+	instance_name = "${var.name}_ro"
+	vswitch_id = "${local.vswitch_id}"
+}
+
+`, name)
 }

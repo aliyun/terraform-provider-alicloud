@@ -25,6 +25,11 @@ func dataSourceAlicloudDBZones() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"multi_zone": {
+				Type:     schema.TypeBool,
+				Default:  false,
+				Optional: true,
+			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -114,7 +119,9 @@ func dataSourceAlicloudDBZonesRead(d *schema.ResourceData, meta interface{}) err
 		request["CommodityCode"] = "rds"
 	}
 	multiZone := false
-	if v, ok := d.GetOk("multi_zone"); ok {
+	if v, ok := d.GetOkExists("multi_zone"); ok {
+		multiZone = v.(bool)
+	} else if v, ok := d.GetOkExists("multi"); ok {
 		multiZone = v.(bool)
 	}
 	var targetCategory, targetStorageType string

@@ -822,28 +822,6 @@ resource "alicloud_security_group_rule" "default" {
   	cidr_ip = "172.16.0.0/24"
 }
 `
-
-const RdsCommonTestCase = `
-data "alicloud_db_zones" "default"{
-	engine = "MySQL"
-	engine_version = "8.0"
-	instance_charge_type = "PostPaid"
-}
-
-resource "alicloud_vpc" "default" {
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}"
-	name              = "${var.name}"
-	timeouts {
-    delete = "30m"
-  }
-}
-`
 const PolarDBCommonTestCase = `
 data "alicloud_polardb_zones" "default"{}
 data "alicloud_vpcs" "default" {

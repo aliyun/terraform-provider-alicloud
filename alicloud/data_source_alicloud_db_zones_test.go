@@ -14,13 +14,13 @@ func TestAccAlicloudRdsDBZonesDataSource(t *testing.T) {
 
 	multiZoneTrueConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"multi": "true",
+			"multi_zone": "true",
 		}),
 	}
 
 	multiZoneFalseConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"multi": "false",
+			"multi_zone": "false",
 		}),
 	}
 	chargeTypePostPaidConfig := dataSourceTestAccConfig{
@@ -58,20 +58,20 @@ func TestAccAlicloudRdsDBZonesDataSource(t *testing.T) {
 
 	allConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"multi":                    "true",
-			"instance_charge_type":     "PrePaid",
+			"multi_zone":               "true",
+			"instance_charge_type":     "PostPaid",
 			"engine":                   "MySQL",
 			"engine_version":           "8.0",
 			"category":                 "HighAvailability",
-			"db_instance_storage_type": "cloud_ssd",
+			"db_instance_storage_type": "local_ssd",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"multi":                    "true",
-			"instance_charge_type":     "PrePaid",
+			"multi_zone":               "true",
+			"instance_charge_type":     "PostPaid",
 			"engine":                   "MySQL",
 			"engine_version":           "2.0",
 			"category":                 "HighAvailability",
-			"db_instance_storage_type": "cloud_ssd",
+			"db_instance_storage_type": "local_ssd",
 		}),
 	}
 
