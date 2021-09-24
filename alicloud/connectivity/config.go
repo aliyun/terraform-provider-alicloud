@@ -153,6 +153,7 @@ type Config struct {
 	DbfsEndpoint                string
 	DevopsrdcEndpoint           string
 	EaisEndpoint                string
+	CloudauthEndpoint           string
 }
 
 func (c *Config) loadAndValidate() error {

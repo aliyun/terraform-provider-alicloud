@@ -37,11 +37,11 @@ func TestAccAlicloudDbfsInstancesDataSource(t *testing.T) {
 
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_dbfs_instance.default.id}"},
+			"ids":    []string{"${alicloud_dbfs_instance.default.id}"},
 			"status": "unattached",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_dbfs_instance.default.id}_fake"},
+			"ids":    []string{"${alicloud_dbfs_instance.default.id}_fake"},
 			"status": "attaching",
 		}),
 	}
