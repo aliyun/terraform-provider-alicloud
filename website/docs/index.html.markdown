@@ -274,6 +274,64 @@ Nested `endpoints` block supports the following:
 
 * `market` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Market endpoints.
 
+* `cddc` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ApsaraDB for MyBase endpoints.
+
+* `ehpc` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Elastic High Performance Computing endpoints.
+
+* `mscsub` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Message Center endpoints.
+
+* `hitsdb` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Lindorm endpoints.
+
+* `sddp` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Data Security Center endpoints.
+
+* `sas` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Security Center endpoints.
+
+* `dts` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Data Transmission endpoints.
+
+* `ens` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ens endpoints.
+
+* `alidfs` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Apsara File Storage for HDFS endpoints.
+
+* `arms` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Application Real-Time Monitoring Service endpoints.
+
+* `bastionhost` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Bastion Host endpoints.
+
+* `waf` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Web Application Firewall endpoints.
+
+* `alb` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Application Load Balancer endpoints.
+
+* `hbr` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Hybrid Backup Recovery endpoints.
+
+* `dataworkspublic` - - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Data Works endpoints.
+
+* `cloudfw` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Cloud Firewall endpoints.
+
+* `dm` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Direct Mail endpoints.
+
+* `eais` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Elastic Accelerated Computing Instances endpoints.
+
+* `dg` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Database Gateway endpoints.
+
+* `imm` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Intelligent Media Management endpoints.
+
+* `iot` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Internet of Things endpoints.
+
+* `vod` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom VOD endpoints.
+
+* `gds` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Graph Database endpoints.
+
+* `swas` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Simple Application Server endpoints.
+
+* `opensearch` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Open Search endpoints.
+
+* `clickhouse` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Click House endpoints.
+
+* `vs` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Video Surveillance System endpoints.
+
+* `quickbi` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Quick BI endpoints.
+
+* `cloudsso` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Cloud SSO endpoints.
+
 ## Testing
 
 Credentials must be provided via the `ALICLOUD_ACCESS_KEY`, `ALICLOUD_SECRET_KEY` and `ALICLOUD_REGION` environment variables in order to run acceptance tests.

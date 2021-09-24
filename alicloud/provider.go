@@ -542,6 +542,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_rdc_organizations":                           dataSourceAlicloudRdcOrganizations(),
 			"alicloud_eais_instances":                              dataSourceAlicloudEaisInstances(),
 			"alicloud_sae_ingresses":                               dataSourceAlicloudSaeIngresses(),
+			"alicloud_cloudauth_face_configs":                      dataSourceAlicloudCloudauthFaceConfigs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -978,6 +979,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_rdc_organization":                                     resourceAlicloudRdcOrganization(),
 			"alicloud_eais_instance":                                        resourceAlicloudEaisInstance(),
 			"alicloud_sae_ingress":                                          resourceAlicloudSaeIngress(),
+			"alicloud_cloudauth_face_config":                                resourceAlicloudCloudauthFaceConfig(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1173,6 +1175,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DbfsEndpoint = strings.TrimSpace(endpoints["dbfs"].(string))
 		config.DevopsrdcEndpoint = strings.TrimSpace(endpoints["devopsrdc"].(string))
 		config.EaisEndpoint = strings.TrimSpace(endpoints["eais"].(string))
+		config.CloudauthEndpoint = strings.TrimSpace(endpoints["cloudauth"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1468,6 +1471,8 @@ func init() {
 		"devopsrdc_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom devopsrdc endpoints.",
 
 		"eais_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eais endpoints.",
+
+		"cloudauth_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudauth endpoints.",
 	}
 }
 
@@ -1517,6 +1522,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["eais_endpoint"],
+				},
+
+				"cloudauth": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cloudauth_endpoint"],
 				},
 
 				"quickbi": {
@@ -2275,6 +2287,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["dbfs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["devopsrdc"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["eais"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cloudauth"].(string)))
 	return hashcode.String(buf.String())
 }
 
