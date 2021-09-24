@@ -1,4 +1,19 @@
 ## 1.137.0 (Unreleased)
+
+- **New Resource:**  `alicloud_rdc_organization` [GH-4013]
+- **New Resource:**  `alicloud_eais_instance` [GH-4032]
+- **New Resource:**  `alicloud_sae_ingress` [GH-3911]
+- **New Data Source:** `alicloud_rdc_organizations` [GH-4013]
+- **New Data Source:** `alicloud_eais_instances` [GH-4032]
+- **New Data Source:** `alicloud_sae_ingresses` [GH-3911]  
+
+ENHANCEMENTS:
+
+- resource/alicloud_vpc_dhcp_options_set: Optimize resource creation [GH-4033]
+- doc/common_bandwidth_package: Adjust document position doc/eipanycast_anycast_eip_address: Adjust document position [GH-4029]
+
+BUG FIXES:
+
 ## 1.136.0 (September 13, 2021)
 
 - **New Resource:**  `alicloud_dbfs_instance` ([#4024](https://github.com/aliyun/terraform-provider-alicloud/issues/4024))
