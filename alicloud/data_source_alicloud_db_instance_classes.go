@@ -150,7 +150,10 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 	engine, engineOk := d.GetOk("engine")
 	engineVersion, engineVersionOk := d.GetOk("engine_version")
 	dbInstanceClass, dbInstanceClassOk := d.GetOk("db_instance_class")
-	storageType, storageTypeOk := d.GetOk("storage_type")
+	dbInstanceStorageType, dbInstanceStorageTypeOk := d.GetOk("db_instance_storage_type")
+	if !dbInstanceStorageTypeOk || dbInstanceStorageType.(string) == "" {
+		dbInstanceStorageType, dbInstanceStorageTypeOk = d.GetOk("storage_type")
+	}
 	category, categoryOk := d.GetOk("category")
 
 	availableZones := make([]map[string]interface{}, 0)
@@ -160,7 +163,7 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 	if zoneIdOk && zoneId.(string) != "" &&
 		engineOk && engine.(string) != "" &&
 		engineVersionOk && engineVersion.(string) != "" &&
-		storageTypeOk && storageType.(string) != "" &&
+		dbInstanceStorageTypeOk && dbInstanceStorageType.(string) != "" &&
 		categoryOk && category.(string) != "" {
 
 		action := "DescribeAvailableClasses"
@@ -171,7 +174,7 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 			"InstanceChargeType":    instanceChargeType,
 			"Engine":                engine,
 			"EngineVersion":         engineVersion,
-			"DBInstanceStorageType": storageType,
+			"DBInstanceStorageType": dbInstanceStorageType,
 			"Category":              category,
 		}
 		var response map[string]interface{}

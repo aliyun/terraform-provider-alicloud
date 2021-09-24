@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
+func TestAccAlicloudRdsDBBackupPolicy_mysql(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
 	serverFunc := func() interface{} {
@@ -234,7 +234,7 @@ resource "alicloud_db_instance" "default" {
 }`, name)
 }
 
-func TestAccAlicloudDBBackupPolicy_pgdb(t *testing.T) {
+func TestAccAlicloudRdsDBBackupPolicy_pgdb(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
 	serverFunc := func() interface{} {
@@ -429,7 +429,7 @@ resource "alicloud_db_instance" "default" {
 }`, name)
 }
 
-func TestAccAlicloudDBBackupPolicy_SQLServer(t *testing.T) {
+func TestAccAlicloudRdsDBBackupPolicy_SQLServer(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
 	serverFunc := func() interface{} {
@@ -569,7 +569,7 @@ resource "alicloud_db_instance" "default" {
 }
 
 // Unknown current resource exists
-func TestAccAlicloudDBBackupPolicy_PPAS(t *testing.T) {
+func TestAccAlicloudRdsDBBackupPolicy_PPAS(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
 	serverFunc := func() interface{} {

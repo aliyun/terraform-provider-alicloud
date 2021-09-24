@@ -267,7 +267,6 @@ func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string)
 	var param []map[string]interface{}
 	documented, ok := d.GetOk(attribute)
 	if !ok {
-		d.Set(attribute, param)
 		return nil
 	}
 	object, err := s.DescribeParameters(d.Id())
@@ -308,8 +307,10 @@ func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string)
 			}
 		}
 	}
-	if err := d.Set(attribute, param); err != nil {
-		return WrapError(err)
+	if len(param) > 0 {
+		if err := d.Set(attribute, param); err != nil {
+			return WrapError(err)
+		}
 	}
 	return nil
 }
@@ -1723,7 +1724,6 @@ func (s *RdsService) RdsAccountStateRefreshFunc(id string, failStates []string) 
 			}
 			return nil, "", WrapError(err)
 		}
-
 		for _, failState := range failStates {
 			if object["AccountStatus"].(string) == failState {
 				return object, object["AccountStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["AccountStatus"].(string)))

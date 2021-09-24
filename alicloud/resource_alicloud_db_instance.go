@@ -1304,8 +1304,10 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("security_group_id", strings.Join(groups, COMMA_SEPARATED))
-	d.Set("security_group_ids", groups)
+	if len(groups) > 0 {
+		d.Set("security_group_id", strings.Join(groups, COMMA_SEPARATED))
+		d.Set("security_group_ids", groups)
+	}
 
 	sslAction, err := rdsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
