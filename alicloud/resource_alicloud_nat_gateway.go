@@ -68,7 +68,7 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Enhanced", "Normal"}, false),
-				Default:      "Normal",
+				Computed:     true,
 			},
 			"payment_type": {
 				Type:          schema.TypeString,
@@ -139,7 +139,7 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Large", "Middle", "Small", "XLarge.1"}, false),
-				Default:      "Small",
+				Computed:     true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("internet_charge_type").(string) == "PayByLcu"
 				},
@@ -283,6 +283,7 @@ func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("nat_type", object["NatType"])
 	d.Set("payment_type", convertNatGatewayPaymentTypeResponse(object["InstanceChargeType"].(string)))
 	d.Set("instance_charge_type", object["InstanceChargeType"])
+	d.Set("network_type", object["NetworkType"])
 	//if object["InstanceChargeType"] == "PrePaid" {
 	//	period, err := computePeriodByUnit(object["CreationTime"], object["ExpiredTime"], d.Get("period").(int), "Month")
 	//	if err != nil {

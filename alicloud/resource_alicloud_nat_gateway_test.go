@@ -259,7 +259,6 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 }
 
 func TestAccAlicloudNatGateway_NetworkType(t *testing.T) {
-	t.Skip()
 	var v map[string]interface{}
 	resourceId := "alicloud_nat_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudNatGatewayMap1)
@@ -303,7 +302,7 @@ func TestAccAlicloudNatGateway_NetworkType(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "force", "network_type"},
+				ImportStateVerifyIgnore: []string{"dry_run", "force"},
 			},
 		},
 	})

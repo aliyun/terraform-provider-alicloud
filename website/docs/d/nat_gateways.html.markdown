@@ -86,6 +86,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `internet_charge_type` - The metering method of the NAT gateway.  
   * `nat_gateway_id` - The ID of the NAT gateway.
   * `nat_gateway_name` - The name of the NAT gateway.
+  * `network_type` - (Available in 1.137.0+) Indicates the type of the created NAT gateway. Valid values `internet` and `intranet`.
   * `nat_type` - The type of the NAT gateway. 
   * `payment_type` - The billing method of the NAT gateway. 
   * `resource_group_id` - The ID of the resource group.

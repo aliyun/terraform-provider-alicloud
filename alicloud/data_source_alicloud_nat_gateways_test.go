@@ -93,11 +93,12 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_nat_gateway" "default" {
 	vpc_id = alicloud_vpc.default.id
-	specification = "Small"
+    specification = "Small"
 	nat_gateway_name = var.name
     description = "${var.name}_decription"
 	nat_type = "Enhanced"
 	vswitch_id = alicloud_vswitch.default.id
+    network_type = "internet"
 }
 
 data "alicloud_nat_gateways" "default" {
@@ -130,6 +131,7 @@ var existNatGatewaysMapFunc = func(rand int) map[string]string {
 		"gateways.0.ip_lists":             NOSET,
 		"gateways.0.nat_gateway_name":     fmt.Sprintf("tf-testAccNatGatewaysDatasource%d", rand),
 		"gateways.0.description":          fmt.Sprintf("tf-testAccNatGatewaysDatasource%d_decription", rand),
+		"gateways.0.network_type":         "internet",
 	}
 }
 

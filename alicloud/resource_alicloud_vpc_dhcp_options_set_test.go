@@ -289,7 +289,7 @@ func TestAccAlicloudVPCDhcpOptionsSet_basic1(t *testing.T) {
 						"dhcp_options_set_description": name,
 						"domain_name":                  domainName,
 						"domain_name_servers":          "100.100.2.136",
-						"associate_vpcs.#": "2",
+						"associate_vpcs.#":             "2",
 					}),
 				),
 			},
