@@ -31,6 +31,7 @@ func resourceAlicloudConfigAggregateCompliancePack() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+
 			"aggregator_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -38,7 +39,7 @@ func resourceAlicloudConfigAggregateCompliancePack() *schema.Resource {
 			},
 			"compliance_pack_template_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 			"config_rules": {
@@ -46,6 +47,11 @@ func resourceAlicloudConfigAggregateCompliancePack() *schema.Resource {
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"config_rule_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
 						"config_rule_parameters": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -104,6 +110,7 @@ func resourceAlicloudConfigAggregateCompliancePackCreate(d *schema.ResourceData,
 		configRulesArg := configRules.(map[string]interface{})
 		configRulesMap := map[string]interface{}{
 			"ManagedRuleIdentifier": configRulesArg["managed_rule_identifier"],
+			"ConfigRuleId":          configRulesArg["config_rule_id"],
 		}
 		configRuleParametersMaps := make([]map[string]interface{}, 0)
 		for _, configRuleParameters := range configRulesArg["config_rule_parameters"].(*schema.Set).List() {
@@ -145,7 +152,7 @@ func resourceAlicloudConfigAggregateCompliancePackCreate(d *schema.ResourceData,
 	}
 
 	d.SetId(fmt.Sprint(request["AggregatorId"], ":", response["CompliancePackId"]))
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, configService.ConfigAggregateCompliancePackStateRefreshFunc(d.Id(), []string{"CREATING"}))
+	stateConf := BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, configService.ConfigAggregateCompliancePackStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -178,6 +185,7 @@ func resourceAlicloudConfigAggregateCompliancePackRead(d *schema.ResourceData, m
 			if m1, ok := v.(map[string]interface{}); ok {
 				temp1 := map[string]interface{}{
 					"managed_rule_identifier": m1["ManagedRuleIdentifier"],
+					"config_rule_id":          m1["ConfigRuleId"],
 				}
 				if m1["ConfigRuleParameters"] != nil {
 					configRuleParametersMaps := make([]map[string]interface{}, 0)
@@ -225,6 +233,7 @@ func resourceAlicloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData,
 		configRulesArg := configRules.(map[string]interface{})
 		configRulesMap := map[string]interface{}{
 			"ManagedRuleIdentifier": configRulesArg["managed_rule_identifier"],
+			"ConfigRuleId":          configRulesArg["config_rule_id"],
 		}
 		configRuleParametersMaps := make([]map[string]interface{}, 0)
 		for _, configRuleParameters := range configRulesArg["config_rule_parameters"].(*schema.Set).List() {
@@ -276,7 +285,7 @@ func resourceAlicloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData,
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, configService.ConfigAggregateCompliancePackStateRefreshFunc(d.Id(), []string{"CREATING"}))
+		stateConf := BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, configService.ConfigAggregateCompliancePackStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}

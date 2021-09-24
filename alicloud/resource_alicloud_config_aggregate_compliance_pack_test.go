@@ -362,6 +362,66 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudConfigAggregateCompliancePack_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregate_compliance_pack.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateCompliancePackMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregateCompliancePack")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigaggregatecompliancepack%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateCompliancePackBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_id":                  "${data.alicloud_config_aggregators.default.ids.0}",
+					"aggregate_compliance_pack_name": name,
+					"config_rules": []map[string]interface{}{
+						{
+							"config_rule_id": "${alicloud_config_aggregate_config_rule.default.config_rule_id}",
+							"managed_rule_identifier": "${alicloud_config_aggregate_config_rule.default.source_identifier}",
+							"config_rule_parameters": []map[string]interface{}{
+								{
+									"parameter_name":  "cpuCount",
+									"parameter_value": "4",
+								},
+							},
+						},
+					},
+					"description": name,
+					"risk_level":  "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_id":                  CHECKSET,
+						"aggregate_compliance_pack_name": name,
+						"config_rules.#":                 "1",
+						"description":                    name,
+						"risk_level":                     "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudConfigAggregateCompliancePackMap0 = map[string]string{
 	"aggregator_id":                  CHECKSET,
 	"aggregate_compliance_pack_name": CHECKSET,
@@ -372,6 +432,8 @@ var AlicloudConfigAggregateCompliancePackMap0 = map[string]string{
 	"status":                         CHECKSET,
 }
 
+var AlicloudConfigAggregateCompliancePackMap1 = map[string]string{}
+
 func AlicloudConfigAggregateCompliancePackBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -379,6 +441,42 @@ variable "name" {
 }
 
 data "alicloud_config_aggregators" "default" {}
+
+`, name)
+}
+
+func AlicloudConfigAggregateCompliancePackBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+data "alicloud_instances" "default" {}
+
+data "alicloud_config_aggregators" "default" {}
+
+resource "alicloud_config_aggregate_config_rule" "default" {
+  aggregator_id              = data.alicloud_config_aggregators.default.ids.0
+  aggregate_config_rule_name = var.name
+  source_owner               = "ALIYUN"
+  source_identifier    		= "ecs-cpu-min-count-limit"
+  config_rule_trigger_types = "ConfigurationItemChangeNotification"
+  resource_types_scope      = ["ACS::ECS::Instance"]
+  risk_level                = 1
+  description                = var.name
+  exclude_resource_ids_scope = data.alicloud_instances.default.ids.0
+  input_parameters = {
+    cpuCount = "4",
+  }
+  region_ids_scope         = "cn-hangzhou"
+  resource_group_ids_scope = data.alicloud_resource_manager_resource_groups.default.ids.0
+  tag_key_scope            = "tFTest"
+  tag_value_scope          = "forTF 123"
+}
 
 `, name)
 }

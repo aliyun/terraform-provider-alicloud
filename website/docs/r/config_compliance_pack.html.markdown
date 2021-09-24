@@ -48,21 +48,22 @@ resource "alicloud_config_compliance_pack" "example" {
 The following arguments are supported:
 
 * `compliance_pack_name` - (Required, ForceNew) The Compliance Package Name.
-* `compliance_pack_template_id` - (Required, ForceNew) Compliance Package Template Id.
+* `compliance_pack_template_id` - (Optional, ForceNew) Compliance Package Template Id.
 * `config_rules` - (Required) A list of Config Rules.
 * `description` - (Required) The Description of compliance pack.
 * `risk_level` - (Required) The Risk Level. Valid values:  `1`: critical, `2`: warning, `3`: info.
 
 #### Block config_rules
 
-The config_rules supports the following: 
+The config_rules supports the following:
 
 * `config_rule_parameters` - (Optional) A list of Config Rule Parameters.
 * `managed_rule_identifier` - (Required) The Managed Rule Identifier.
+* `config_rule_id` - (Optional, Computed, Available in v1.138.0+) The ID of the config rule.
 
 #### Block config_rule_parameters
 
-The config_rule_parameters supports the following: 
+The config_rule_parameters supports the following:
 
 * `parameter_name` - (Optional) The parameter name.
 * `parameter_value` - (Optional) The parameter value.

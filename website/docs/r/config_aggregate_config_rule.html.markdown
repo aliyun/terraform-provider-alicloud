@@ -70,6 +70,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID of Aggregate Config Rule. The value is formatted `<aggregator_id>:<config_rule_id>`.
+* `config_rule_id` - (Available in v1.138.0+) The ID of the config rule.
 
 ### Timeouts
 

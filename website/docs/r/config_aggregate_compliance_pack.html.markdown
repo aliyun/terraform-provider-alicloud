@@ -60,21 +60,23 @@ The following arguments are supported:
 
 * `aggregate_compliance_pack_name` - (Required, ForceNew)The name of compliance package name.
 * `aggregator_id` - (Required, ForceNew)The ID of aggregator.
-* `compliance_pack_template_id` - (Required, ForceNew)The Template ID of compliance package.
+* `compliance_pack_template_id` - (Optional, ForceNew)The Template ID of compliance package.
 * `config_rules` - (Required) A list of  compliance package rules.
 * `description` - (Required) Teh description of compliance package.
 * `risk_level` - (Required) The Risk Level. Valid values: `1`, `2`, `3`.
 
 #### Block config_rules
 
-The config_rules supports the following: 
+The config_rules supports the following:
 
 * `config_rule_parameters` - (Optional) A list of parameter rules.
 * `managed_rule_identifier` - (Required) The Managed Rule Identifier.
+* `config_rule_id` - (Optional, Computed, Available in v1.138.0+) The ID of the config rule.
+
 
 #### Block config_rule_parameters
 
-The config_rule_parameters supports the following: 
+The config_rule_parameters supports the following:
 
 * `parameter_name` - (Optional) The Parameter Name.
 * `parameter_value` - (Optional) The Parameter Value.
