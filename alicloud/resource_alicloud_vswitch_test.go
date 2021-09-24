@@ -37,13 +37,14 @@ func init() {
 			"alicloud_mongodb_instance",
 			"alicloud_mongodb_sharding_instance",
 			"alicloud_gpdb_instance",
-			"alicloud_yundun_bastionhost_instance",
+			"alicloud_bastionhost_instance",
 			"alicloud_yundun_dbaudit_instance",
 			"alicloud_emr_cluster",
 			"alicloud_polardb_cluster",
 			"alicloud_hbase_instance",
 			"alicloud_cassandra_cluster",
 			"alicloud_network_acl",
+			"alicloud_nat_gateway",
 		},
 	})
 }
