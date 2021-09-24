@@ -111,14 +111,24 @@ The following arguments are supported:
 * `update_strategy` - (Optional) The update strategy.
 * `version_id` - (Optional, ForceNew) Application version id.
 * `vswitch_id` - (Optional, ForceNew) The vswitch id.
+* `vpc_id` - (Optional, ForceNew) The vpc id.
 * `war_start_options` - (Optional) WAR package launch application option. Application default startup command: java $JAVA_OPTS $CATALINA_OPTS [-Options] org.apache.catalina.startup.Bootstrap "$@" start.
 * `web_container` - (Optional) The version of tomcat that the deployment package depends on. Image type applications are not supported.
+* `internet_slb_id` - (Optional) Use designated public network SLBs that have been purchased to support non-shared instances
+* `intranet_slb_id` - (Optional) Use the designated private network SLB that has been purchased to support non-shared instances
+* `intranet` - (Optional)
+* `internet` - (Optional)
+
+
+
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Application.
+* `internet_ip`
+* `intranet_ip`
 
 ## Import
 
