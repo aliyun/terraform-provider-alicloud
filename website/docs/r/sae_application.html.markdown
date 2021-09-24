@@ -116,11 +116,23 @@ The following arguments are supported:
 * `web_container` - (Optional) The version of tomcat that the deployment package depends on. Image type applications are not supported.
 * `internet_slb_id` - (Optional) Use designated public network SLBs that have been purchased to support non-shared instances
 * `intranet_slb_id` - (Optional) Use the designated private network SLB that has been purchased to support non-shared instances
-* `intranet` - (Optional)
-* `internet` - (Optional)
+* `intranet` - (Optional) Bound public network SLB. The details see Block intranet.
+* `internet` - (Optional) Bound private network SLB. The details see Block internet.
 
 
+#### intranet
+The quota supports the following:
+* `https_cert_id` - (Optional) SSL certificate. `https_cert_id` is required when HTTPS is selected
+* `protocol` - (Optional) Network protocol. Valid values: `TCP` ,`HTTP`,`HTTPS`.
+* `target_port` - (Optional) Container port.
+* `port` - (Optional) SLB Port.
 
+#### internet
+The quota supports the following:
+* `https_cert_id` - (Optional) SSL certificate. `https_cert_id` is required when HTTPS is selected
+* `protocol` - (Optional) Network protocol. Valid values: `TCP` ,`HTTP`,`HTTPS`.
+* `target_port` - (Optional) Container port.
+* `port` - (Optional) SLB Port.
 
 ## Attributes Reference
 

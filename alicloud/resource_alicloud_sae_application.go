@@ -272,6 +272,7 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 						},
 						"protocol": {
 							Type:     schema.TypeString,
+							ValidateFunc: validation.StringInSlice([]string{"TCP","HTTP","HTTPS"},false),
 							Optional: true,
 						},
 						"target_port": {
