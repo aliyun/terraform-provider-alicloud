@@ -11,64 +11,64 @@ import (
 func TestAccAlicloudRdsDBInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	nameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"name_regex": `"^test1234"`,
 		}),
 	}
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"ids": `[ "${alicloud_db_instance.default.id}" ]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"ids": `[ "${alicloud_db_instance.default.id}-fake" ]`,
 		}),
 	}
 
 	engineConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"engine":     `"${alicloud_db_instance.default.engine}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"engine":     `"SQLServer"`,
 		}),
 	}
 
-	vpc_idConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+	vpcIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
-			"vpc_id":     `"${alicloud_vswitch.default.vpc_id}"`,
+			"vpc_id":     `"${local.vpc_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"vpc_id":     `"unknow"`,
 		}),
 	}
 
-	vswitch_idConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+	vswitchIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"vswitch_id": `"${alicloud_db_instance.default.vswitch_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"vswitch_id": `"unknow"`,
 		}),
 	}
 
 	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"tags": `{ 
 						"key1" = "value1" 
 						"key2" = "value2" 
 					}`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"tags": `{ 
 						"key1" = "value1_fake" 
@@ -79,18 +79,18 @@ func TestAccAlicloudRdsDBInstancesDataSource(t *testing.T) {
 
 	//the parameter connection_mode has not stable default value. It's Standard at cn-hangzhou zone , but at ap-south-1 zone it is Safe.
 	//connection_modeConf := dataSourceTestAccConfig{
-	//	existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+	//	existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 	//		"name_regex":      `"${alicloud_db_instance.default.instance_name}"`,
 	//		"connection_mode": `"Standard"`,
 	//	}),
-	//	fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+	//	fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 	//		"name_regex":      `"${alicloud_db_instance.default.instance_name}"`,
 	//		"connection_mode": `"Safe"`,
 	//	}),
 	//}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"vswitch_id": `"${alicloud_db_instance.default.vswitch_id}"`,
 			"tags": `{ 
@@ -98,17 +98,17 @@ func TestAccAlicloudRdsDBInstancesDataSource(t *testing.T) {
 						"key2" = "value2" 
 					}`,
 			"engine": `"${alicloud_db_instance.default.engine}"`,
-			"vpc_id": `"${alicloud_vswitch.default.vpc_id}"`,
+			"vpc_id": `"${local.vpc_id}"`,
 			"ids":    `[ "${alicloud_db_instance.default.id}" ]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"vswitch_id": `"${alicloud_db_instance.default.vswitch_id}"`,
 			"tags": `{ 
 						"key1" = "value1" 
 						"key2" = "value2" 
 					}`,
-			"vpc_id": `"${alicloud_vswitch.default.vpc_id}"`,
+			"vpc_id": `"${local.vpc_id}"`,
 			"engine": `"SQLServer"`,
 			"ids":    `[ "${alicloud_db_instance.default.id}" ]`,
 		}),
@@ -128,7 +128,7 @@ func TestAccAlicloudRdsDBInstancesDataSource(t *testing.T) {
 			"instances.0.engine":                   string(MySQL),
 			"instances.0.engine_version":           "8.0",
 			"instances.0.net_type":                 string(Intranet),
-			"instances.0.instance_type":            "rds.mysql.s1.small",
+			"instances.0.instance_type":            CHECKSET,
 			"instances.0.connection_mode":          CHECKSET,
 			"instances.0.availability_zone":        CHECKSET,
 			"instances.0.vpc_id":                   CHECKSET,
@@ -155,70 +155,70 @@ func TestAccAlicloudRdsDBInstancesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeDBInstanceMapFunc,
 	}
 
-	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, nameConf, idsConf, engineConf, vpc_idConf, vswitch_idConf, tagsConf, allConf)
+	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, nameConf, idsConf, engineConf, vpcIdConf, vswitchIdConf, tagsConf, allConf)
 }
 
 func TestAccAlicloudRdsDBInstancesDataSourcePostgreSQLSSL(t *testing.T) {
 	rand := acctest.RandInt()
 	nameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"name_regex": `"^test1234"`,
 		}),
 	}
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"ids": `[ "${alicloud_db_instance.default.id}" ]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"ids": `[ "${alicloud_db_instance.default.id}-fake" ]`,
 		}),
 	}
 
 	engineConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"engine":     `"${alicloud_db_instance.default.engine}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"engine":     `"SQLServer"`,
 		}),
 	}
 
-	vpc_idConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+	vpcIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
-			"vpc_id":     `"${alicloud_vswitch.default.vpc_id}"`,
+			"vpc_id":     `"${local.vpc_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"vpc_id":     `"unknow"`,
 		}),
 	}
 
-	vswitch_idConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+	vswitchIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"vswitch_id": `"${alicloud_db_instance.default.vswitch_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"vswitch_id": `"unknow"`,
 		}),
 	}
 
 	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"tags": `{ 
 						"key1" = "value1" 
 						"key2" = "value2" 
 					}`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"tags": `{ 
 						"key1" = "value1_fake" 
@@ -229,18 +229,18 @@ func TestAccAlicloudRdsDBInstancesDataSourcePostgreSQLSSL(t *testing.T) {
 
 	//the parameter connection_mode has not stable default value. It's Standard at cn-hangzhou zone , but at ap-south-1 zone it is Safe.
 	//connection_modeConf := dataSourceTestAccConfig{
-	//	existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+	//	existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 	//		"name_regex":      `"${alicloud_db_instance.default.instance_name}"`,
 	//		"connection_mode": `"Standard"`,
 	//	}),
-	//	fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+	//	fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand, map[string]string{
 	//		"name_regex":      `"${alicloud_db_instance.default.instance_name}"`,
 	//		"connection_mode": `"Safe"`,
 	//	}),
 	//}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"vswitch_id": `"${alicloud_db_instance.default.vswitch_id}"`,
 			"tags": `{ 
@@ -248,17 +248,17 @@ func TestAccAlicloudRdsDBInstancesDataSourcePostgreSQLSSL(t *testing.T) {
 						"key2" = "value2" 
 					}`,
 			"engine": `"${alicloud_db_instance.default.engine}"`,
-			"vpc_id": `"${alicloud_vswitch.default.vpc_id}"`,
+			"vpc_id": `"${local.vpc_id}"`,
 			"ids":    `[ "${alicloud_db_instance.default.id}" ]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"vswitch_id": `"${alicloud_db_instance.default.vswitch_id}"`,
 			"tags": `{ 
 						"key1" = "value1" 
 						"key2" = "value2" 
 					}`,
-			"vpc_id": `"${alicloud_vswitch.default.vpc_id}"`,
+			"vpc_id": `"${local.vpc_id}"`,
 			"engine": `"SQLServer"`,
 			"ids":    `[ "${alicloud_db_instance.default.id}" ]`,
 		}),
@@ -278,7 +278,7 @@ func TestAccAlicloudRdsDBInstancesDataSourcePostgreSQLSSL(t *testing.T) {
 			"instances.0.engine":                      string(PostgreSQL),
 			"instances.0.engine_version":              "13.0",
 			"instances.0.net_type":                    string(Intranet),
-			"instances.0.instance_type":               "pg.n2.small.1",
+			"instances.0.instance_type":               CHECKSET,
 			"instances.0.connection_mode":             CHECKSET,
 			"instances.0.availability_zone":           CHECKSET,
 			"instances.0.vpc_id":                      CHECKSET,
@@ -322,20 +322,24 @@ func TestAccAlicloudRdsDBInstancesDataSourcePostgreSQLSSL(t *testing.T) {
 		fakeMapFunc:  fakeDBInstanceMapFunc,
 	}
 
-	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, nameConf, idsConf, engineConf, vpc_idConf, vswitch_idConf, tagsConf, allConf)
+	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, nameConf, idsConf, engineConf, vpcIdConf, vswitchIdConf, tagsConf, allConf)
 }
 
-func testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand int, attrMap map[string]string) string {
+func testAccCheckAlicloudDBInstanceDataSourceConfigMysql(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
 	}
 	config := fmt.Sprintf(`
-
+variable "name" {
+	default = "tf-testAccDBInstanceConfig_%d"
+}
 data "alicloud_db_zones" "default"{
 	engine = "MySQL"
 	engine_version = "8.0"
 	instance_charge_type = "PostPaid"
+	category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_db_instance_classes" "default" {
@@ -343,7 +347,7 @@ data "alicloud_db_instance_classes" "default" {
 	engine = "MySQL"
 	engine_version = "8.0"
     category = "HighAvailability"
-    storage_type = "local_ssd"
+ 	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
 }
 
@@ -355,16 +359,35 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
-variable "name" {
-	default = "tf-testAccDBInstanceConfig_%d"
+resource "alicloud_vswitch" "this" {
+ count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+ vswitch_name = var.name
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ zone_id = data.alicloud_db_zones.default.ids.0
+ cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
+
+resource "alicloud_security_group" "default" {
+	name   = var.name
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
 resource "alicloud_db_instance" "default" {
-	engine = "MySQL"
+    engine = "MySQL"
 	engine_version = "8.0"
-	instance_type = data.alicloud_db_instance_classes.default.ids.0
-	instance_storage = "20"
-	vswitch_id = data.alicloud_vswitches.default.ids.0
-	instance_name = "${var.name}"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	vswitch_id = local.vswitch_id
+	instance_name = var.name
 	tags = {
 		"key1" = "value1"
 		"key2" = "value2"
@@ -377,16 +400,21 @@ data "alicloud_db_instances" "dbs" {
 	return config
 }
 
-func testAccCheckAlicloudDBInstanceDataSourceConfig_PostgreSQL(rand int, attrMap map[string]string) string {
+func testAccCheckAlicloudDBInstanceDataSourceConfigPostgreSQL(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
 	}
 	config := fmt.Sprintf(`
+variable "name" {
+	default = "tf-testAccDBInstanceConfig_%d"
+}
 data "alicloud_db_zones" "default"{
 	engine = "PostgreSQL"
 	engine_version = "13.0"
 	instance_charge_type = "PostPaid"
+	category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_db_instance_classes" "default" {
@@ -394,7 +422,7 @@ data "alicloud_db_instance_classes" "default" {
 	engine = "PostgreSQL"
 	engine_version = "13.0"
     category = "HighAvailability"
-    storage_type = "cloud_essd"
+ 	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
 }
 
@@ -406,16 +434,36 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
-variable "name" {
-	default = "tf-testAccDBInstanceConfig_%d"
+resource "alicloud_vswitch" "this" {
+ count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+ vswitch_name = var.name
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ zone_id = data.alicloud_db_zones.default.ids.0
+ cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
+locals {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
+
+resource "alicloud_security_group" "default" {
+	name   = var.name
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
 resource "alicloud_db_instance" "default" {
 	engine = "PostgreSQL"
 	engine_version = "13.0"
-	instance_type = data.alicloud_db_instance_classes.default.ids.0
-	instance_storage = "20"
-	vswitch_id = data.alicloud_vswitches.default.ids.0
-	instance_name = "${var.name}"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	vswitch_id = local.vswitch_id
+	instance_name = var.name
 	tags = {
 		"key1" = "value1"
 		"key2" = "value2"
