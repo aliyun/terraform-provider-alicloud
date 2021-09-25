@@ -287,6 +287,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"zone_id_slave_a": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"zone_id_slave_b": {

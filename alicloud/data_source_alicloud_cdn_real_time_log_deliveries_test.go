@@ -25,7 +25,7 @@ func TestAccAlicloudCdnRealTimeLogDeliveriesDataSource(t *testing.T) {
 	var existAlicloudCdnRealTimeLogDeliveriesDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"deliveries.#":        "1",
-			"deliveries.0.domain": fmt.Sprintf("tf-testcccrealtimelogdeliveries-%d.example.com", rand),
+			"deliveries.0.domain": fmt.Sprintf("tf-testaccrealtimelogdeliveries-%d.example.com", rand),
 		}
 	}
 	var fakeAlicloudCdnRealTimeLogDeliveriesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -49,10 +49,10 @@ func testAccCheckAlicloudCdnRealTimeLogDeliveriesDataSourceName(rand int, attrMa
 	config := fmt.Sprintf(`
 
 variable "name" {	
-	default = "tf-testcccrealtimelogdeliveries-%d"
+	default = "tf-testaccrealtimelogdeliveries-%d"
 }
 variable "domain_name" {	
-	default = "tf-testcccrealtimelogdeliveries-%d.example.com"
+	default = "tf-testaccrealtimelogdeliveries-%d.example.com"
 }
 resource "alicloud_cdn_domain_new" "default" {
   domain_name = var.domain_name

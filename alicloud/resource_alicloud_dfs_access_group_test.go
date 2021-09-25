@@ -46,7 +46,7 @@ func testSweepDFSAccessGroup(region string) error {
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
@@ -69,7 +69,6 @@ func testSweepDFSAccessGroup(region string) error {
 		return nil
 	}
 	result, _ := resp.([]interface{})
-	sweeped := false
 	for _, v := range result {
 		item := v.(map[string]interface{})
 
@@ -84,7 +83,6 @@ func testSweepDFSAccessGroup(region string) error {
 			continue
 		}
 
-		sweeped = true
 		action := "DeleteAccessGroup"
 		request := map[string]interface{}{
 			"AccessGroupId": item["AccessGroupId"].(string),
@@ -94,9 +92,6 @@ func testSweepDFSAccessGroup(region string) error {
 		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete DFS AccessGroup (%s): %s", item["AccessGroupName"].(string), err)
-		}
-		if sweeped {
-			time.Sleep(5 * time.Second)
 		}
 		log.Printf("[INFO] Delete  DFS AccessGroup success: %s ", item["AccessGroupName"].(string))
 	}
