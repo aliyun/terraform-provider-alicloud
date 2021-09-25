@@ -10,7 +10,6 @@ import (
 
 	"log"
 	"strings"
-	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -48,7 +47,6 @@ func testSweepDRDSInstances(region string) error {
 	}
 	response, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 
-	sweeped := false
 	vpcService := VpcService{client}
 	for _, v := range response.Instances.Instance {
 		name := v.Description
@@ -84,7 +82,6 @@ func testSweepDRDSInstances(region string) error {
 			continue
 		}
 
-		sweeped = true
 		log.Printf("[INFO] Deleting DRDS Instance: %s (%s)", name, id)
 		req := drds.CreateRemoveDrdsInstanceRequest()
 		req.DrdsInstanceId = id
@@ -94,10 +91,6 @@ func testSweepDRDSInstances(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete DRDS Instance (%s (%s)): %s", name, id, err)
 		}
-	}
-	if sweeped {
-		// Waiting 30 seconds to ensure these DB instances have been deleted.
-		time.Sleep(30 * time.Second)
 	}
 	return nil
 }

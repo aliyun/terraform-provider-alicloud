@@ -129,10 +129,6 @@ func testSweepKVStoreInstances(region string) error {
 			log.Printf("[ERROR] Failed to delete KVStore Instance (%s): %s", id, err)
 		}
 	}
-	if len(kvstoreInstanceIds) > 0 {
-		// Waiting 10 seconds to ensure these KVStore instances have been deleted.
-		time.Sleep(10 * time.Second)
-	}
 	return nil
 }
 
