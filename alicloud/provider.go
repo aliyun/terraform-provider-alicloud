@@ -122,13 +122,13 @@ func Provider() terraform.ResourceProvider {
 			"client_read_timeout": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("CLIENT_READ_TIMEOUT", 30000),
+				DefaultFunc: schema.EnvDefaultFunc("CLIENT_READ_TIMEOUT", 60000),
 				Description: descriptions["client_read_timeout"],
 			},
 			"client_connect_timeout": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("CLIENT_CONNECT_TIMEOUT", 30000),
+				DefaultFunc: schema.EnvDefaultFunc("CLIENT_CONNECT_TIMEOUT", 60000),
 				Description: descriptions["client_connect_timeout"],
 			},
 			"source_ip": {
