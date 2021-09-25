@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRdsDBConnectionConfigUpdate(t *testing.T) {
+func TestAccAlicloudRdsDBConnectionConfigMySQL(t *testing.T) {
 	var v map[string]interface{}
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccDBconnection%s", rand)
@@ -41,7 +41,7 @@ func TestAccAlicloudRdsDBConnectionConfigUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       "${alicloud_db_instance.instance.id}",
+					"instance_id":       "${alicloud_db_instance.default.id}",
 					"connection_prefix": fmt.Sprintf("tf-testacc%s", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(

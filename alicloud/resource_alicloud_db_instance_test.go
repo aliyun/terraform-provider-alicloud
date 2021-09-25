@@ -514,22 +514,23 @@ func TestAccAlicloudRdsDBInstanceHighAvailabilityInstance(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine":                   "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}",
-					"engine_version":           "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
 					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
 					"instance_charge_type":     "Postpaid",
 					"instance_name":            "${var.name}",
 					"db_instance_storage_type": "local_ssd",
-					"zone_id":                  "${alicloud_vswitch.default.availability_zone}",
-					"zone_id_slave_a":          "${alicloud_vswitch.slave_a.availability_zone}",
+					"zone_id":                  "${local.zone_id}",
+					"zone_id_slave_a":          "${local.zone_id}",
 					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine":         "MySQL",
-						"engine_version": "8.0",
+						"engine":                   "MySQL",
+						"engine_version":           "8.0",
+						"db_instance_storage_type": "local_ssd",
 					}),
 				),
 			},
@@ -593,17 +594,9 @@ resource "alicloud_security_group" "default" {
 	name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
-
-resource "alicloud_vswitch" "slave_a" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.1.0/24"
-  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.1.sub_zone_ids.0}"
-  name              = "tf-testaccvswitchslave"
-}
 `, name)
 }
 
-// Unknown current resource exists
 func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
