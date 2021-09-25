@@ -65,7 +65,7 @@ func TestAccAlicloudRdsAccountsDataSource(t *testing.T) {
 			"accounts.0.account_name":          "tftestnormal000",
 			"accounts.0.account_type":          `Normal`,
 			"accounts.0.database_privileges.#": `0`,
-			"accounts.0.priv_exceeded":         `0`,
+			"accounts.0.priv_exceeded":         "",
 			"accounts.0.status":                `Available`,
 		}
 	}
