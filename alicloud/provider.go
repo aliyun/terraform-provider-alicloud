@@ -982,6 +982,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_ingress":                                          resourceAlicloudSaeIngress(),
 			"alicloud_cloudauth_face_config":                                resourceAlicloudCloudauthFaceConfig(),
 			"alicloud_imp_app_template":                                     resourceAlicloudImpAppTemplate(),
+			"alicloud_pvtz_user_vpc_authorization":                          resourceAlicloudPvtzUserVpcAuthorization(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
