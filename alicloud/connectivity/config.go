@@ -290,6 +290,13 @@ func (c *Config) getTeaDslSdkConfig(stsSupported bool) (config rpc.Config, err e
 		SetReadTimeout(c.ClientReadTimeout).
 		SetConnectTimeout(c.ClientConnectTimeout).
 		SetMaxIdleConns(500)
+	if c.SourceIp != "" {
+		config.SetSourceIp(c.SourceIp)
+	}
+	if c.SecureTransport != "" {
+		config.SetSecureTransport(c.SecureTransport)
+	}
+
 	return
 }
 func (c *Config) getTeaRoaDslSdkConfig(stsSupported bool) (config roa.Config, err error) {
@@ -302,6 +309,12 @@ func (c *Config) getTeaRoaDslSdkConfig(stsSupported bool) (config roa.Config, er
 		SetReadTimeout(c.ClientReadTimeout).
 		SetConnectTimeout(c.ClientConnectTimeout).
 		SetMaxIdleConns(500)
+	if c.SourceIp != "" {
+		config.SetSourceIp(c.SourceIp)
+	}
+	if c.SecureTransport != "" {
+		config.SetSecureTransport(c.SecureTransport)
+	}
 	return
 }
 func (c *Config) getCredentialConfig(stsSupported bool) *credential.Config {
