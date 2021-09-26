@@ -154,6 +154,7 @@ type Config struct {
 	DevopsrdcEndpoint           string
 	EaisEndpoint                string
 	CloudauthEndpoint           string
+	ImpEndpoint                 string
 }
 
 func (c *Config) loadAndValidate() error {

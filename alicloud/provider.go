@@ -543,6 +543,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eais_instances":                              dataSourceAlicloudEaisInstances(),
 			"alicloud_sae_ingresses":                               dataSourceAlicloudSaeIngresses(),
 			"alicloud_cloudauth_face_configs":                      dataSourceAlicloudCloudauthFaceConfigs(),
+			"alicloud_imp_app_templates":                           dataSourceAlicloudImpAppTemplates(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -980,6 +981,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eais_instance":                                        resourceAlicloudEaisInstance(),
 			"alicloud_sae_ingress":                                          resourceAlicloudSaeIngress(),
 			"alicloud_cloudauth_face_config":                                resourceAlicloudCloudauthFaceConfig(),
+			"alicloud_imp_app_template":                                     resourceAlicloudImpAppTemplate(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1176,6 +1178,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DevopsrdcEndpoint = strings.TrimSpace(endpoints["devopsrdc"].(string))
 		config.EaisEndpoint = strings.TrimSpace(endpoints["eais"].(string))
 		config.CloudauthEndpoint = strings.TrimSpace(endpoints["cloudauth"].(string))
+		config.ImpEndpoint = strings.TrimSpace(endpoints["imp"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1473,6 +1476,8 @@ func init() {
 		"eais_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eais endpoints.",
 
 		"cloudauth_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudauth endpoints.",
+
+		"imp_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom imp endpoints.",
 	}
 }
 
@@ -1517,6 +1522,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"imp": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["imp_endpoint"],
+				},
+
 				"eais": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2288,6 +2300,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["devopsrdc"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["eais"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudauth"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["imp"].(string)))
 	return hashcode.String(buf.String())
 }
 
