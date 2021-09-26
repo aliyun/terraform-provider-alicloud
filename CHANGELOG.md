@@ -1,18 +1,32 @@
-## 1.137.0 (Unreleased)
+## 1.138.0 (Unreleased)
+## 1.137.0 (September 26, 2021)
 
-- **New Resource:**  `alicloud_rdc_organization` [GH-4013]
-- **New Resource:**  `alicloud_eais_instance` [GH-4032]
-- **New Resource:**  `alicloud_sae_ingress` [GH-3911]
-- **New Data Source:** `alicloud_rdc_organizations` [GH-4013]
-- **New Data Source:** `alicloud_eais_instances` [GH-4032]
-- **New Data Source:** `alicloud_sae_ingresses` [GH-3911]  
+- **New Resource:**  `alicloud_imp_app_template` ([#4049](https://github.com/aliyun/terraform-provider-alicloud/issues/4049))
+- **New Resource:**  `alicloud_rdc_organization` ([#4013](https://github.com/aliyun/terraform-provider-alicloud/issues/4013))
+- **New Resource:**  `alicloud_eais_instance` ([#4032](https://github.com/aliyun/terraform-provider-alicloud/issues/4032))
+- **New Resource:**  `alicloud_sae_ingress` ([#3911](https://github.com/aliyun/terraform-provider-alicloud/issues/3911))
+- **New Data Source:** `alicloud_imp_app_templates` ([#4049](https://github.com/aliyun/terraform-provider-alicloud/issues/4049))
+- **New Data Source:** `alicloud_rdc_organizations` ([#4013](https://github.com/aliyun/terraform-provider-alicloud/issues/4013))
+- **New Data Source:** `alicloud_eais_instances` ([#4032](https://github.com/aliyun/terraform-provider-alicloud/issues/4032))
+- **New Data Source:** `alicloud_sae_ingresses` [[#3911](https://github.com/aliyun/terraform-provider-alicloud/issues/3911)]  
 
 ENHANCEMENTS:
 
-- resource/alicloud_vpc_dhcp_options_set: Optimize resource creation [GH-4033]
-- doc/common_bandwidth_package: Adjust document position doc/eipanycast_anycast_eip_address: Adjust document position [GH-4029]
+- resource/alicloud_vpc_dhcp_options_set: Optimize resource creation ([#4033](https://github.com/aliyun/terraform-provider-alicloud/issues/4033))
+- doc/common_bandwidth_package: Adjust document position doc/eipanycast_anycast_eip_address: Adjust document position ([#4029](https://github.com/aliyun/terraform-provider-alicloud/issues/4029))
+- testcase: Improves the rds testcases ([#4045](https://github.com/aliyun/terraform-provider-alicloud/issues/4045))
+- sdk: Upgrades the sdk tea-rpc to 1.2.0 and tea-roa to 1.3.0 to support parameters SourceIp and SecureTransport ([#4044](https://github.com/aliyun/terraform-provider-alicloud/issues/4044))
+- provider: Enlarges the read_timeout and connect_timeout to 60s ([#4043](https://github.com/aliyun/terraform-provider-alicloud/issues/4043))
+- resource/alicloud_db_instance: Sets the attribute zone_id_slave_a to computed to fix the diff error ([#4042](https://github.com/aliyun/terraform-provider-alicloud/issues/4042))
+- resource/alicloud_rds_account: Adds UnlockAccount action to fix the Lock error when deleting PostgreSQL database account ([#4040](https://github.com/aliyun/terraform-provider-alicloud/issues/4040))
+- testcase:Fix vpc,vswithc,fc sweepers ([#4038](https://github.com/aliyun/terraform-provider-alicloud/issues/4038))
 
 BUG FIXES:
+
+- resource/alicloud_log_oss_shipper: Fixes the ShipperNotExist error while deleting the resource ([#4048](https://github.com/aliyun/terraform-provider-alicloud/issues/4048))
+- resource/alicloud_cen_instance: Fixes the setting name bug; datasource/alicloud_ots_instance_attachments: Fixes the code bug while checking whether error is nil ([#4046](https://github.com/aliyun/terraform-provider-alicloud/issues/4046))
+- resource/alicloud_route_table: Fixes the OperationConflict error when creating a new table ([#4041](https://github.com/aliyun/terraform-provider-alicloud/issues/4041))
+- datasource/alicloud_db_instance_classes: Fixes the db_instance_storage_type bug; datasource/alicloud_db_zones: Fixes the multi bug ([#4039](https://github.com/aliyun/terraform-provider-alicloud/issues/4039))
 
 ## 1.136.0 (September 13, 2021)
 
