@@ -5,8 +5,8 @@ require (
 	github.com/alibabacloud-go/cs-20151215/v2 v2.4.4
 	github.com/alibabacloud-go/darabonba-openapi v0.1.5
 	github.com/alibabacloud-go/tea v1.1.17
-	github.com/alibabacloud-go/tea-roa v1.2.9
-	github.com/alibabacloud-go/tea-rpc v1.1.9
+	github.com/alibabacloud-go/tea-roa v1.3.0
+	github.com/alibabacloud-go/tea-rpc v1.2.0
 	github.com/alibabacloud-go/tea-utils v1.3.9
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1264
 	github.com/aliyun/aliyun-datahub-sdk-go v0.1.5
