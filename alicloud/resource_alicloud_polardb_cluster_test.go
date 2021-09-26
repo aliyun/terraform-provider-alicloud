@@ -395,7 +395,7 @@ func resourcePolarDBClusterConfigDependence(name string) string {
 	resource "alicloud_security_group" "default" {
 		count = 2
 		name   = "${var.name}"
-	    vpc_id = "${alicloud_vpc.default.id}"
+	    vpc_id = "${local.vpc_id}"
 	}
 
 `, PolarDBCommonTestCase, name)

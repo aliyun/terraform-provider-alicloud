@@ -146,11 +146,9 @@ func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 	if !d.IsNewResource() && (d.HasChange("cen_instance_name") || d.HasChange("name")) {
 		update = true
 		if v, ok := d.GetOk("cen_instance_name"); ok {
-			if _, ok := d.GetOk("cen_instance_name"); ok {
-				request["Name"] = v
-			} else {
-				request["Name"] = v
-			}
+			request["Name"] = v
+		} else if v, ok := d.GetOk("name"); ok {
+			request["Name"] = v
 		}
 	}
 	if !d.IsNewResource() && d.HasChange("description") {

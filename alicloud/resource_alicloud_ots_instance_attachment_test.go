@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudOtsInstanceAttachment_basic(t *testing.T) {
+func TestAccAlicloudOtsInstanceAttachmentBasic(t *testing.T) {
 	var v ots.VpcInfo
 
 	resourceId := "alicloud_ots_instance_attachment.default"
@@ -55,7 +55,7 @@ func TestAccAlicloudOtsInstanceAttachment_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOtsInstanceAttachment_highPerformance(t *testing.T) {
+func TestAccAlicloudOtsInstanceAttachmentHighPerformance(t *testing.T) {
 	var v ots.VpcInfo
 
 	resourceId := "alicloud_ots_instance_attachment.default"

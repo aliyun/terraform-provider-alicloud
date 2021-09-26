@@ -468,7 +468,7 @@ resource "alicloud_vswitch" "this" {
 }
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+  zone_id = data.alicloud_db_zones.default.ids.0
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -525,6 +525,7 @@ func TestAccAlicloudRdsDBInstanceHighAvailabilityInstance(t *testing.T) {
 					"zone_id_slave_a":          "${local.zone_id}",
 					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
+					"security_group_ids":       "${alicloud_security_group.default.*.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -583,7 +584,7 @@ resource "alicloud_vswitch" "this" {
 }
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+  zone_id = data.alicloud_db_zones.default.ids.0
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -703,7 +704,7 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 					"instance_charge_type":     "Postpaid",
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${local.vswitch_id}",
-					"security_group_ids":       []string{},
+					"security_group_ids":       []string{"${alicloud_security_group.default.0.id}"},
 					"monitoring_period":        "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -719,8 +720,8 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 						"instance_charge_type":     "Postpaid",
 						"connection_string":        CHECKSET,
 						"port":                     CHECKSET,
-						"security_group_id":        "",
-						"security_group_ids.#":     "0",
+						"security_group_id":        CHECKSET,
+						"security_group_ids.#":     "1",
 					}),
 				),
 			},
