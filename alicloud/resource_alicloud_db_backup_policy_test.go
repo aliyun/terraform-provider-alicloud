@@ -26,7 +26,7 @@ func TestAccAlicloudRdsDBBackupPolicyMySql(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -204,7 +204,7 @@ data "alicloud_db_zones" "default"{
 	engine_version = "8.0"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 }
 
 data "alicloud_db_instance_classes" "default" {
@@ -212,7 +212,7 @@ data "alicloud_db_instance_classes" "default" {
 	engine = "MySQL"
 	engine_version = "8.0"
     category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 	instance_charge_type = "PostPaid"
 }
 
@@ -233,7 +233,7 @@ resource "alicloud_vswitch" "this" {
 }
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+  zone_id = data.alicloud_db_zones.default.ids.0
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -248,11 +248,12 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_db_instance" "default" {
     engine = "MySQL"
 	engine_version = "8.0"
- 	db_instance_storage_type = "cloud_essd"
+ 	db_instance_storage_type = "local_ssd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
+	security_group_ids = alicloud_security_group.default.*.id
 }
 `, name)
 }
@@ -275,7 +276,7 @@ func TestAccAlicloudRdsDBBackupPolicyPostgreSQL(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -388,7 +389,7 @@ func TestAccAlicloudRdsDBBackupPolicyPostgreSQL(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"preferred_backup_period":     []string{"Tuesday", "Wednesday", "Monday"},
-					"preferred_backup_time":       "10:00Z-11:00Z",
+					"preferred_backup_time":       "11:00Z-12:00Z",
 					"backup_retention_period":     "20",
 					"enable_backup_log":           "true",
 					"log_backup_retention_period": "15",
@@ -398,7 +399,7 @@ func TestAccAlicloudRdsDBBackupPolicyPostgreSQL(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"preferred_backup_period.#":   "3",
-						"preferred_backup_time":       "10:00Z-11:00Z",
+						"preferred_backup_time":       "11:00Z-12:00Z",
 						"backup_retention_period":     "20",
 						"enable_backup_log":           "true",
 						"log_backup_retention_period": "15",
@@ -449,7 +450,7 @@ resource "alicloud_vswitch" "this" {
 }
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+  zone_id = data.alicloud_db_zones.default.ids.0
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -469,6 +470,8 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
+	security_group_ids = alicloud_security_group.default.*.id
+
 }
 `, name)
 }
@@ -491,7 +494,7 @@ func TestAccAlicloudRdsDBBackupPolicySQLServer(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -586,7 +589,7 @@ data "alicloud_db_zones" "default"{
 	engine               = "SQLServer"
 	engine_version       = "2012"
 	instance_charge_type = "PostPaid"
-	category = "HighAvailability"
+	category = "Basic"
  	db_instance_storage_type = "cloud_essd"
 }
 
@@ -594,7 +597,7 @@ data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine               = "SQLServer"
 	engine_version       = "2012"
-    category = "HighAvailability"
+    category = "Basic"
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
 }
@@ -616,7 +619,7 @@ resource "alicloud_vswitch" "this" {
 }
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+  zone_id = data.alicloud_db_zones.default.ids.0
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -636,6 +639,7 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
+	security_group_ids = alicloud_security_group.default.*.id
 }
 `, name)
 }
@@ -655,11 +659,10 @@ func TestAccAlicloudRdsDBBackupPolicyMariaDB(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.RdsPPASNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -770,7 +773,7 @@ func TestAccAlicloudRdsDBBackupPolicyMariaDB(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"preferred_backup_period":     []string{"Wednesday", "Monday", "Tuesday"},
-					"preferred_backup_time":       "10:00Z-11:00Z",
+					"preferred_backup_time":       "11:00Z-12:00Z",
 					"backup_retention_period":     "20",
 					"enable_backup_log":           "true",
 					"log_backup_retention_period": "15",
@@ -780,7 +783,7 @@ func TestAccAlicloudRdsDBBackupPolicyMariaDB(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"preferred_backup_period.#":   "3",
-						"preferred_backup_time":       "10:00Z-11:00Z",
+						"preferred_backup_time":       "11:00Z-12:00Z",
 						"backup_retention_period":     "20",
 						"enable_backup_log":           "true",
 						"log_backup_retention_period": "15",
@@ -831,7 +834,7 @@ resource "alicloud_vswitch" "this" {
 }
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+  zone_id = data.alicloud_db_zones.default.ids.0
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -851,6 +854,7 @@ resource "alicloud_db_instance" "default" {
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
+	security_group_ids = alicloud_security_group.default.*.id
 }
 `, name)
 }
