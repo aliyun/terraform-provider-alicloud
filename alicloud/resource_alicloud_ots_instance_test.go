@@ -229,7 +229,7 @@ func TestAccAlicloudOtsInstance_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOtsInstance_highPerformance(t *testing.T) {
+func TestAccAlicloudOtsInstanceHighPerformance(t *testing.T) {
 	var v ots.InstanceInfo
 
 	resourceId := "alicloud_ots_instance.default"
@@ -261,13 +261,13 @@ func TestAccAlicloudOtsInstance_highPerformance(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":          name,
 					"description":   name,
-					"instance_type": "Capacity",
+					"instance_type": "HighPerformance",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":          name,
 						"description":   name,
-						"instance_type": "Capacity",
+						"instance_type": "HighPerformance",
 					}),
 				),
 			},

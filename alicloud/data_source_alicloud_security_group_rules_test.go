@@ -1,9 +1,9 @@
 package alicloud
 
 import (
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
@@ -81,7 +81,7 @@ func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNic_Type,
+				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNicType,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_security_group_rules.egress"),
 					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.egress", "rules.#", "1"),
@@ -279,7 +279,7 @@ data "alicloud_security_group_rules" "egress" {
 }
 `
 
-const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNic_Type = `
+const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNicType = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig1"
 }
