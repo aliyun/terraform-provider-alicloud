@@ -1160,9 +1160,9 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	pageNumber := 1
 	for {
-		if defaultNodePoolId == "" {
-			break
-		}
+		//if defaultNodePoolId == "" {
+		//	break
+		//}
 		var result []cs.KubernetesNodeType
 		var pagination *cs.PaginationResult
 		var requestInfo *cs.Client

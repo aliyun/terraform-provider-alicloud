@@ -16,10 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-const (
-	ManagedKubernetesCreationDefaultTimeoutInMinute = 60
-)
-
 func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCSManagedKubernetesCreate,

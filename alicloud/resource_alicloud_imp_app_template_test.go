@@ -45,16 +45,16 @@ func TestAccAlicloudIMPAppTemplate_basic0(t *testing.T) {
 					}),
 				),
 			},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"app_template_name": "tf_testAcc_IN1u0gHPAo",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"app_template_name": "tf_testAcc_IN1u0gHPAo",
-			//		}),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"app_template_name": "tf_testAcc_IN1u0gHPAo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"app_template_name": "tf_testAcc_IN1u0gHPAo",
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"config_list": []map[string]interface{}{
@@ -92,7 +92,7 @@ func TestAccAlicloudIMPAppTemplate_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					//"app_template_name": "tf_testAcc_tqPHQU5xU",
+					"app_template_name": "tf_testAcc_tqPHQU5xU",
 					"config_list": []map[string]interface{}{
 						{
 							"key":   "config.appCallbackAuthKey",
@@ -122,8 +122,8 @@ func TestAccAlicloudIMPAppTemplate_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						//"app_template_name": "tf_testAcc_tqPHQU5xU",
-						"config_list.#": "6",
+						"app_template_name": "tf_testAcc_tqPHQU5xU",
+						"config_list.#":     "6",
 					}),
 				),
 			},

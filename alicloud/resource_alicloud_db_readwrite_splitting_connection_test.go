@@ -40,7 +40,7 @@ func TestAccAlicloudRdsDBReadWriteSplittingConnection_update(t *testing.T) {
 
 	rac := resourceAttrCheckInit(rc_connection, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testAccDBReadWriteSplittingInstance%d", rand)
+	name := fmt.Sprintf("tf-testAccDBReadWrite%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBReadWriteSplittingConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -57,7 +57,7 @@ func TestAccAlicloudRdsDBReadWriteSplittingConnection_update(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":       "${alicloud_db_readonly_instance.default.master_db_instance_id}",
-					"connection_prefix": "${var.prefix}",
+					"connection_prefix": "${var.name}",
 					"distribution_type": "Standard",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -91,7 +91,7 @@ func TestAccAlicloudRdsDBReadWriteSplittingConnection_update(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":       "${alicloud_db_readonly_instance.default.master_db_instance_id}",
-					"connection_prefix": "${var.prefix}",
+					"connection_prefix": "${var.name}",
 					"distribution_type": "Standard",
 					"max_delay_time":    "30",
 					"weight":            REMOVEKEY,
@@ -113,10 +113,6 @@ func TestAccAlicloudRdsDBReadWriteSplittingConnection_update(t *testing.T) {
 
 func resourceDBReadWriteSplittingConfigDependence(name string) string {
 	return fmt.Sprintf(`
-data "alicloud_resource_manager_resource_groups" "default" {
-	status = "OK"
-}
-
 variable "name" {
 	default = "%s"
 }

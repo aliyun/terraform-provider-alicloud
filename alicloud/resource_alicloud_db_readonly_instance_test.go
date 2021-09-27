@@ -75,7 +75,7 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 					"instance_storage": "${alicloud_db_instance.default.instance_storage + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"instance_storage": "10"}),
+					testAccCheck(map[string]string{"instance_storage": CHECKSET}),
 				),
 			},
 			// upgrade instanceType
@@ -137,7 +137,7 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name":    name,
-						"instance_storage": "15",
+						"instance_storage": CHECKSET,
 					}),
 				),
 			},
@@ -211,7 +211,7 @@ func TestAccAlicloudRdsDBReadonlyInstanceSSL_update(t *testing.T) {
 					"instance_storage": "${alicloud_db_instance.default.instance_storage + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"instance_storage": "25"}),
+					testAccCheck(map[string]string{"instance_storage": CHECKSET}),
 				),
 			},
 			//upgrade instanceType
@@ -333,7 +333,7 @@ func TestAccAlicloudRdsDBReadonlyInstanceSSL_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name":               name,
-						"instance_storage":            "30",
+						"instance_storage":            CHECKSET,
 						"ssl_enabled":                 "1",
 						"ca_type":                     "aliyun",
 						"client_ca_enabled":           "1",
@@ -353,10 +353,6 @@ func TestAccAlicloudRdsDBReadonlyInstanceSSL_update(t *testing.T) {
 
 func resourceDBReadonlyInstanceConfigDependence(name string) string {
 	return fmt.Sprintf(`
-data "alicloud_resource_manager_resource_groups" "default" {
-	status = "OK"
-}
-
 variable "name" {
 	default = "%s"
 }
@@ -399,11 +395,6 @@ locals {
 
 data "alicloud_resource_manager_resource_groups" "default" {
 	status = "OK"
-}
-
-resource "alicloud_security_group" "default" {
-	name   = var.name
-	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_db_instance" "default" {
@@ -421,10 +412,6 @@ resource "alicloud_db_instance" "default" {
 
 func resourceDBReadonlyInstanceConfigSSLDependence(name string) string {
 	return fmt.Sprintf(`
-data "alicloud_resource_manager_resource_groups" "default" {
-	status = "OK"
-}
-
 variable "name" {
 	default = "%s"
 }
@@ -467,11 +454,6 @@ locals {
 
 data "alicloud_resource_manager_resource_groups" "default" {
 	status = "OK"
-}
-
-resource "alicloud_security_group" "default" {
-	name   = var.name
-	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_db_instance" "default" {

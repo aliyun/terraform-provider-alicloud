@@ -130,11 +130,11 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "tf-managed-k8s",
+					"name": name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-managed-k8s",
+						"name": name + "_update",
 					}),
 				),
 			},
@@ -207,7 +207,6 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EssdSupportRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -473,11 +472,11 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"version": "1.120.4-aliyun.1",
+					"version": "1.20.4-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": "1.120.4-aliyun.1",
+						"version": "1.20.4-aliyun.1",
 					}),
 				),
 			},
