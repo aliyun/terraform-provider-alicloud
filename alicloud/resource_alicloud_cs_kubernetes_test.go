@@ -248,7 +248,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccKubernetes-%d", rand)
+	name := fmt.Sprintf("tf-testAccKubernetes_basic-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSKubernetesConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -563,7 +563,6 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EssdSupportRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,
