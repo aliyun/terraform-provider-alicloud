@@ -36,6 +36,8 @@ const (
 	AliyunGoClientFailure = "AliyunGoClientFailure"
 
 	LogClientTimeout = "Client.Timeout exceeded while awaiting headers"
+
+	InvalidFileSystemStatus_Ordering = "InvalidFileSystemStatus.Ordering"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
