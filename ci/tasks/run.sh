@@ -107,17 +107,18 @@ touch $LOGPERREGION
 
 echo -e "\n---------------  Running ${TEST_CASE_CODE} Test Cases ---------------"
 TestRunPrefix="TestAccAlicloud${TEST_CASE_CODE}"
+CoverProfileName="${TEST_CASE_CODE}.out"
 if [[ ${TEST_CASE_CODE} == "All" ]]; then
   TestRunPrefix="TestAccAlicloud"
 fi
-echo -e "TF_ACC=1 go test ./alicloud -v -run=${TestRunPrefix} -timeout=7200m -cover"
+echo -e "TF_ACC=1 go test ./alicloud -v -run=${TestRunPrefix} -timeout=7200m -cover -coverprofile ${CoverProfileName}"
 
 PASSED=100%
 
 FILE_NAME=${ALICLOUD_REGION}-${TEST_CASE_CODE}
 FAIL_FLAG=false
 
-TF_ACC=1 go test ./alicloud -v -run=${TestRunPrefix} -timeout=7200m -cover | {
+TF_ACC=1 go test ./alicloud -v -run=${TestRunPrefix} -timeout=7200m -cover -coverprofile ${CoverProfileName} | {
 while read LINE
 do
     echo "$LINE" >> ${FILE_NAME}.log
@@ -180,6 +181,7 @@ echo "AccountType: $ALICLOUD_ACCOUNT_SITE; Product: $product; Resource: $TEST_CA
 
 aliyun oss cp ${FILE_NAME}.score oss://${BUCKET_NAME}/${FILE_NAME}.score -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
 aliyun oss cp ${FILE_NAME}.log oss://${BUCKET_NAME}/${FILE_NAME}.log -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
+aliyun oss cp ${CoverProfileName} oss://${BUCKET_NAME}/coverage/${ALICLOUD_REGION}/${CoverProfileName} -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
 
 RESULT=${RESULT}"$ALICLOUD_REGION      $TOTAL_COUNT          $FAILED_COUNT         $SKIP_COUNT          $PASS_COUNT        $PASSED\n"
 
