@@ -226,3 +226,59 @@ func (s *CloudssoService) DescribeCloudSsoDirectory(id string) (object map[strin
 
 	return getDirectoryObject, nil
 }
+
+func (s *CloudssoService) DescribeCloudSsoScimServerCredential(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCloudssoClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListSCIMServerCredentials"
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"DirectoryId": parts[0],
+	}
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.Directory"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:SCIMServerCredential", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.SCIMServerCredentials", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SCIMServerCredentials", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", id)), NotFoundWithResponse, response)
+	}
+	for _, v := range v.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["CredentialId"]) == parts[1] {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", id)), NotFoundWithResponse, response)
+	}
+	return object, nil
+}
