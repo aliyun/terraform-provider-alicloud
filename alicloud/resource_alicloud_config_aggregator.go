@@ -119,7 +119,7 @@ func resourceAlicloudConfigAggregatorCreate(d *schema.ResourceData, meta interfa
 	}
 
 	d.SetId(fmt.Sprint(response["AggregatorId"]))
-	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, configService.ConfigAggregatorStateRefreshFunc(d.Id(), []string{"0"}))
+	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, configService.ConfigAggregatorStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
