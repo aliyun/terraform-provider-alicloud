@@ -24,6 +24,7 @@ set -e
 : ${CONCOURSE_TARGET_PASSWORD:=""}
 : ${CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME:=""}
 : ${CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME:=""}
+: ${TRIGGER_TARGET_PIPELINE:=true}
 
 
 export ALICLOUD_ACCESS_KEY=${ALICLOUD_ACCESS_KEY}
@@ -209,7 +210,7 @@ exit ${EXITCODE}
 }
 
 ## If success, it should trigger an job in the China region
-if [[ ${ALICLOUD_REGION} != "cn-"* ]]; then
+if [[ ${TRIGGER_TARGET_PIPELINE} = true && ${ALICLOUD_REGION} != "cn-"* ]]; then
   echo -e "\nDownloading the fly ..."
   wget https://github.com/concourse/concourse/releases/download/v5.0.1/fly-5.0.1-linux-amd64.tgz
   tar -xzf fly-5.0.1-linux-amd64.tgz

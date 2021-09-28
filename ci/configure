@@ -48,7 +48,8 @@ for (( i=0;i<${#international_regions[@]};i++)) do
     -v alicloud_concourse_target_url=$CHINA_ACCESS_CI_URL \
     -v alicloud_concourse_target_user=$CHINA_ACCESS_CI_USER_NAME \
     -v alicloud_concourse_target_password=$CHINA_ACCESS_CI_PASSWORD \
-    -v alicloud_concourse_target_pipeline_name="cn-hangzhou"
+    -v alicloud_concourse_target_pipeline_name="cn-hangzhou" \
+    -v alicloud_trigger_target_pipeline=false
 done
 
 
@@ -98,7 +99,8 @@ for (( i=0;i<${#international_regions[@]};i++)) do
     -v alicloud_concourse_target_url=$CHINA_ACCESS_CI_URL \
     -v alicloud_concourse_target_user=$CHINA_ACCESS_CI_USER_NAME \
     -v alicloud_concourse_target_password=$CHINA_ACCESS_CI_PASSWORD \
-    -v alicloud_concourse_target_pipeline_name="cn-hangzhou"
+    -v alicloud_concourse_target_pipeline_name="cn-hangzhou" \
+    -v alicloud_trigger_target_pipeline=false
 done
 
 
@@ -143,7 +145,8 @@ fly -t terraform-intl sp -p auto-trigger \
   -v alicloud_concourse_target=terraform-china \
   -v alicloud_concourse_target_url=$CHINA_ACCESS_CI_URL \
   -v alicloud_concourse_target_user=$CHINA_ACCESS_CI_USER_NAME \
-  -v alicloud_concourse_target_password=$CHINA_ACCESS_CI_PASSWORD
+  -v alicloud_concourse_target_password=$CHINA_ACCESS_CI_PASSWORD \
+  -v alicloud_trigger_target_pipeline=false
 
 # 在杭州 Region 自动触发
 fly -t terraform-china sp -p auto-trigger \
