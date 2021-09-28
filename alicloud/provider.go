@@ -548,6 +548,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_scim_server_credentials":           dataSourceAlicloudCloudSsoScimServerCredentials(),
 			"alicloud_dts_subscription_jobs":                       dataSourceAlicloudDtsSubscriptionJobs(),
 			"alicloud_service_mesh_service_meshes":                 dataSourceAlicloudServiceMeshServiceMeshes(),
+			"alicloud_mhub_apps":                                   dataSourceAlicloudMhubApps(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -991,6 +992,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_scim_server_credential":                     resourceAlicloudCloudSsoScimServerCredential(),
 			"alicloud_dts_subscription_job":                                 resourceAlicloudDtsSubscriptionJob(),
 			"alicloud_service_mesh_service_mesh":                            resourceAlicloudServiceMeshServiceMesh(),
+			"alicloud_mhub_app":                                             resourceAlicloudMhubApp(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1543,7 +1545,6 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["imp_endpoint"],
 				},
-
 				"eais": {
 					Type:        schema.TypeString,
 					Optional:    true,
