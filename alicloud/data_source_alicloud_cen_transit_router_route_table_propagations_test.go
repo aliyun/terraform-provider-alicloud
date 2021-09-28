@@ -11,7 +11,7 @@ import (
 )
 
 func TestAccAlicloudCenTransitRouterRouteTablePropagationsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(0, 2999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterRouteTablePropagationsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_cen_transit_router_route_table_propagation.default.transit_router_attachment_id}"]`,
@@ -96,7 +96,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
   peering_subnet_mask        = "255.255.255.252"
   physical_connection_id     = data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = 14
+  vlan_id                    = %d
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
@@ -124,6 +124,6 @@ data "alicloud_cen_transit_router_route_table_propagations" "default" {
 transit_router_route_table_id = alicloud_cen_transit_router_route_table.default.transit_router_route_table_id
 	%s
 }
-`, rand, strings.Join(pairs, " \n "))
+`, rand, rand, strings.Join(pairs, " \n "))
 	return config
 }

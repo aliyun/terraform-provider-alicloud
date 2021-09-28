@@ -12,7 +12,7 @@ import (
 )
 
 func TestAccAlicloudCenVbrHealthCheckDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := acctest.RandIntRange(0, 2999)
 
 	cenIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
@@ -118,7 +118,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
   peering_subnet_mask        = "255.255.255.252"
   physical_connection_id     = data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = 10
+  vlan_id                    = %d
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
@@ -126,7 +126,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
 resource "alicloud_cen_instance_attachment" "vbr" {
   instance_id = "${alicloud_cen_instance.default.id}"
   child_instance_id = alicloud_express_connect_virtual_border_router.default.id
-  child_instance_region_id = "%[2]s"
+  child_instance_region_id = "%s"
   child_instance_type = "VBR"
 }
 
@@ -144,6 +144,6 @@ data "alicloud_cen_vbr_health_checks" "default" {
   vbr_instance_region_id = "${alicloud_cen_vbr_health_check.default.vbr_instance_region_id}"
 %s
 }
-`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, "\n   "))
+`, rand, rand, defaultRegionToTest, strings.Join(pairs, "\n   "))
 	return config
 }
