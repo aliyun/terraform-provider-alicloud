@@ -31,7 +31,7 @@ func testSweepCenRouteService(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf-test",
+		"tf_testAcc",
 	}
 
 	request := cbn.CreateDescribeCensRequest()
