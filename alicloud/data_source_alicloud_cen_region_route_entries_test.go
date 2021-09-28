@@ -5,8 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -22,10 +20,8 @@ func TestAccAlicloudCenRegionRouteEntriesDataSource(t *testing.T) {
 			"region_id":   fmt.Sprintf(`"%s"`, defaultRegionToTest),
 		}),
 	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
-	}
-	CenRegionRouteEntriesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
+
+	CenRegionRouteEntriesCheckInfo.dataSourceTestCheck(t, rand, allConf)
 }
 
 func testAccCheckCenRegionRouteEntriesDataSourceConfig(rand int, attrMap map[string]string) string {
