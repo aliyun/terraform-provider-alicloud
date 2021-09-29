@@ -1,4 +1,42 @@
 ## 1.138.0 (Unreleased)
+
+- **New Resource:**  `alicloud_pvtz_user_vpc_authorization` [GH-4052]
+- **New Resource:**  `alicloud_mhub_product` [GH-4047] 
+- **New Resource:**  `alicloud_dts_subscription_job` [GH-4017]
+- **New Resource:**  `alicloud_cloud_sso_scim_server_credential` [GH-4064]
+- **New Resource:**  `alicloud_service_mesh_service_mesh` [GH-4059]  
+- **New Resource:**  `alicloud_mhub_app` [GH-4062]
+- **New Resource:**  `alicloud_cloud_sso_group` [GH-4063]
+- **New Data Source:** `alicloud_mhub_products` [GH-4047]
+- **New Data Source:** `alicloud_dts_subscription_jobs` [GH-4017]
+- **New Data Source:** `alicloud_cloud_sso_scim_server_credentials` [GH-4064]
+- **New Data Source:** `alicloud_service_mesh_service_meshes` [GH-4059]
+- **New Data Source:** `alicloud_mhub_apps` [GH-4062]
+- **New Data Source:** `alicloud_cloud_sso_groups` [GH-4063]
+- **New Data Source:** `alicloud_hbr_backup_jobs` [GH-3950]  
+
+ENHANCEMENTS:
+
+- resource/alicloud_hbr_ecs_backup_plan,resource/alicloud_hbr_nas_backup_plan,resource/alicloud_hbr_oss_backup_plan: adjust the property backup_type and it's document. [GH-3950]
+- resource/alicloud_db_instance,alicloud_kvstore_instance: Improves the waiting time after modifying the security_ips [GH-4070]
+- resource/alicloud_cs_serverless_kubernetes: Setting the attribute vswitch_ids after getting the resource [GH-4058]
+- resource/alicloud_config_aggregator: Adjust the state judgment when the resource is created [GH-4057]  
+- resource/alicloud_config_aggregate_compliance_pack : Adjust the state judgment when the resource is create or update [GH-4057]
+- resource/alicloud_config_compliance_pack : Adjust the state judgment when the resource is create or update [GH-4057]
+- resource/alicloud_image_copy: Removes the cancelCopyImage action [GH-4061] 
+- resource/alicloud_hbr_ecs_backup_client: optimize creation timeout and it's test case; [GH-3950]  
+- data_source/data_source_alicloud_hbr_snapshots: optimized property "status"and its docs;  [GH-3950]  
+- provider: Supports new region ap-southeast-6 [GH-4071]  
+- sweeper test: Improves the cen sweeper testcases [GH-4060]
+- Adds a new resource alicloud_imp_app_template and datasource alicloud_imp_app_templates [GH-4049]
+
+BUG FIXES:
+
+- resource/alicloud_vpn_customer_gateway: Fixes the OperationConflict error while creating it [GH-4056]
+- resource/alicloud_bastionhost_user_attachment: Fixes the Commodity.BizError.InvalidStatus error while deleting the resource [GH-4067]
+- resource/alicloud_cs_edge_kubernetes: Fixes the diff error caused by attribute resource_group_id; Improves the some testcases [GH-4055]
+- Doc/cloud_firewall: fix typo in cloud firewall demo code [GH-4030]
+
 ## 1.137.0 (September 26, 2021)
 
 - **New Resource:**  `alicloud_imp_app_template` ([#4049](https://github.com/aliyun/terraform-provider-alicloud/issues/4049))
