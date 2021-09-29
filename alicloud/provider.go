@@ -545,6 +545,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloudauth_face_configs":                      dataSourceAlicloudCloudauthFaceConfigs(),
 			"alicloud_imp_app_templates":                           dataSourceAlicloudImpAppTemplates(),
 			"alicloud_mhub_products":                               dataSourceAlicloudMhubProducts(),
+			"alicloud_dts_subscription_jobs":                       dataSourceAlicloudDtsSubscriptionJobs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -985,6 +986,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_imp_app_template":                                     resourceAlicloudImpAppTemplate(),
 			"alicloud_pvtz_user_vpc_authorization":                          resourceAlicloudPvtzUserVpcAuthorization(),
 			"alicloud_mhub_product":                                         resourceAlicloudMhubProduct(),
+			"alicloud_dts_subscription_job":                                 resourceAlicloudDtsSubscriptionJob(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
