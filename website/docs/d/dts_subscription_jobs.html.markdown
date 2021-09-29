@@ -29,9 +29,8 @@ output "dts_subscription_job_id_1" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of Subscription Job IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Policy Group name.
+* `name_regex` - (Optional, ForceNew) A regex string to filter results by subscription job name.
 * `status` - (Optional, ForceNew) The status of the task. Valid values: `Abnormal`, `Downgrade`, `Locked`, `Normal`, `NotStarted`, `NotStarted`, `PreCheckPass`, `PrecheckFailed`, `Prechecking`, `Retrying`, `Starting`, `Upgrade`.
-* `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 
