@@ -43,16 +43,16 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Ecs backup plan names.
 * `plans` - A list of Hbr Ecs backup plans. Each element contains the following attributes:
-	* `ecs_backup_plan_name` - (Required) The name of the backup plan.
-	* `vault_id` - (Required, ForceNew) The ID of Backup vault.
-	* `instance_id` - (Required, ForceNew) The ID of ECS instance.
-	* `retention` - (Required) Backup retention days, the minimum is 1.
-	* `schedule` - (Required) Backup strategy. Optional format: I|{startTime}|{interval}. It means to execute a backup task every {interval} starting from {startTime}. The backup task for the elapsed time will not be compensated. If the last backup task is not completed yet, the next backup task will not be triggered.
-	* `backup_type` - (Optional, Computed, ForceNew) Backup type. Valid values: `COMPLETE`.
-	* `options` - (Optional) Windows operating system with application consistency using VSS. eg: {`UseVSS`:false}.
-	* `speed_limit` - (Optional) Flow control. The format is: {start}|{end}|{bandwidth}. Use `|` to separate multiple flow control configurations, multiple flow control configurations not allowed to have overlapping times.
-	* `path` - (Optional) Backup path. e.g. `["/home", "/var"]`
-	* `exclude` - (Optional) Exclude path. String of Json list. Up to 255 characters. e.g. `"[\"/home/work\"]"`
-	* `include` - (Optional) Include path. String of Json list. Up to 255 characters. e.g. `"[\"/var\"]"`
+	* `ecs_backup_plan_name` - The name of the backup plan.
+	* `vault_id` - The ID of Backup vault.
+	* `instance_id` - The ID of ECS instance.
+	* `retention` - Backup retention days, the minimum is 1.
+	* `schedule` - Backup strategy. Optional format: I|{startTime}|{interval}. It means to execute a backup task every {interval} starting from {startTime}. The backup task for the elapsed time will not be compensated. If the last backup task is not completed yet, the next backup task will not be triggered.
+	* `backup_type` - Backup type. Valid values: `COMPLETE`.
+	* `options` - Windows operating system with application consistency using VSS. eg: {`UseVSS`:false}.
+	* `speed_limit` - Flow control. The format is: {start}|{end}|{bandwidth}. Use `|` to separate multiple flow control configurations, multiple flow control configurations not allowed to have overlapping times.
+	* `path` - Backup path. e.g. `["/home", "/var"]`
+	* `exclude` - Exclude path. String of Json list. Up to 255 characters. e.g. `"[\"/home/work\"]"`
+	* `include` - Include path. String of Json list. Up to 255 characters. e.g. `"[\"/var\"]"`
 
 

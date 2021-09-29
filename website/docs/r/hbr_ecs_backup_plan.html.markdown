@@ -50,8 +50,8 @@ The following arguments are support:
     * `startTime` Backup start time, UNIX time seconds.
     * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `1D` means one day apart. 
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
-* `backup_type` - (Optional, Computed, ForceNew) Backup type. Valid values: `COMPLETE`.
-* `options` - (Optional) Windows operating system with application consistency using VSS. eg: {`UseVSS`:false}.
+* `backup_type` - (Required, ForceNew) Backup type. Valid values: `COMPLETE`.
+* `options` - (Optional) Windows operating system with application consistency using VSS, e.g: `{"UseVSS":false}`.
 * `speed_limit` - (Optional) Flow control. The format is: {start}|{end}|{bandwidth}. Use `|` to separate multiple flow control configurations, multiple flow control configurations not allowed to have overlapping times.
     * `start` starting hour 
     * `end` end hour 
@@ -60,6 +60,24 @@ The following arguments are support:
 * `exclude` - (Optional) Exclude path. String of Json list, up to 255 characters. e.g. `"[\"/home/work\"]"`
 * `include` - (Optional) Include path. String of Json list, up to 255 characters. e.g. `"[\"/var\"]"`
 
+
+## Notice
+
+**About Backup path rules:**
+1. If there is no wildcard `*`, you can enter 8 lines of path.
+2. When using wildcard `*`, only one line of path can be input, and wildcards like `/*/*` are supported.
+3. Each line only supports absolute paths, for example starting with `/`, `\`, `C:\`, `D:\`.
+
+**About Restrictions:**
+1. When using VSS, multiple paths, UNC paths, wildcards, and excluded files are not supported.
+2. When using UNC, VSS is not supported, wildcards are not supported, and files to be excluded are not supported.
+
+**About Include/exclude path rules:**
+1. Supports up to 8 paths, including paths using wildcards `*`.
+2. If the path does not contain `/`, then `*` matches multiple path names or file names, for example `*abc*` will match `/abc/`, `/d/eabcd/`, `/a/abc`; `*.txt` will match all files with an extension `.txt`.
+3. If the path contains `/`, each `*` only matches a single-level path or file name. For example, `/a/*/*/` share will match `/a/b/c/share`, but not `/a/d/share`.
+4. If the path ends with `/`, it means the folder matches. For example, `*tmp/` will match `/a/b/aaatmp/`, `/tmp/` and so on.
+5. The path separator takes Linux system `/` as an example, if it is Windows system, please replace it with `\`.
 
 ## Attributes Reference
 

@@ -54,8 +54,8 @@ The following arguments are supported:
 * `schedule` - (Required) Backup strategy. Optional format: I|{startTime}|{interval}. It means to execute a backup task every {interval} starting from {startTime}. The backup task for the elapsed time will not be compensated. If the last backup task is not completed yet, the next backup task will not be triggered.
     * `startTime` Backup start time, UNIX time seconds.
     * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `1D` means one day apart.
+* `backup_type` - (Required, ForceNew) Backup type. Valid values: `COMPLETE`.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
-* `backup_type` - (Optional, Computed, ForceNew) Backup Type. Valid values: `COMPLETE`.
 
 
 ## Attributes Reference

@@ -31,7 +31,7 @@ func TestAccAlicloudHBREcsBackupClient_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_instance.default.id}",
+					"instance_id": "${data.alicloud_instances.default.instances.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -242,60 +242,8 @@ variable "name" {
   default = "%s"
 }
 
-resource "alicloud_hbr_vault" "example" {
-  vault_name = var.name
-}
-
-data "alicloud_instance_types" "default" {
-  cpu_core_count    = 2
-  memory_size       = 4
-  instance_type_family   = "ecs.t5"
-}
-
-resource "alicloud_vpc" "default" {
-  cidr_block = "172.16.0.0/12"
-  vpc_name       = var.name
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-  vswitch_name      = var.name
-}
-
-resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = alicloud_vpc.default.id
-}
-
-resource "alicloud_security_group_rule" "default" {
-  type = "ingress"
-  ip_protocol = "tcp"
-  nic_type = "intranet"
-  policy = "accept"
-  port_range = "22/22"
-  priority = 1
-  security_group_id = alicloud_security_group.default.id
-  cidr_ip = "172.16.0.0/24"
-}
-
-data "alicloud_images" "default" {
-  name_regex = "^"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  internet_charge_type = "PayByTraffic"
-  system_disk_category = "cloud_efficiency"
-  security_groups = ["${alicloud_security_group.default.id}"]
-  instance_name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
 data "alicloud_instances" "default" {
-  name_regex = "hbr-ecs-backup-plan"
+  name_regex = "no-deleteing-hbr-ecs-backup-plan"
   status     = "Running"
 }
 

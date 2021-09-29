@@ -26,8 +26,7 @@ func resourceAlicloudHbrNasBackupPlan() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"backup_type": {
 				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
+				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"COMPLETE"}, false),
 			},
@@ -51,7 +50,7 @@ func resourceAlicloudHbrNasBackupPlan() *schema.Resource {
 			},
 			"file_system_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"include": {
@@ -89,7 +88,7 @@ func resourceAlicloudHbrNasBackupPlan() *schema.Resource {
 			},
 			"vault_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 		},

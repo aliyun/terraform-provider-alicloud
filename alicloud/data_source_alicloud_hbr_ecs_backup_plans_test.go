@@ -84,7 +84,7 @@ resource "alicloud_hbr_vault" "default" {
 }
 
 data "alicloud_instances" "default" {
-  name_regex = "hbr-ecs-backup-plan"
+  name_regex = "no-deleteing-hbr-ecs-backup-plan"
   status     = "Running"
 }
 

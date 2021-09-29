@@ -67,7 +67,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Snapshot IDs.
 * `vault_id` - (Required, ForceNew) The ID of Vault.
 * `source_type` - (Required, ForceNew) Data source type, valid values: `ECS_FILE`, `OSS`, `NAS`.
-* `status` - (Optional, ForceNew) The status of snapshot, valid values: `CANCELED`, `COMPLETE`, `FAILED`, `PARTIAL_COMPLETE`, `RUNNING`, `UNKNOWN`, `VM_UNAVAILABLE`.
+* `status` - (Optional, ForceNew) The status of snapshot, valid values: `COMPLETE`, `PARTIAL_COMPLETE`.
 * `instance_id` - (Optional, ForceNew) The ID of ECS instance. The ecs backup client must have been installed on the host. While source_type equals `ECS_FILE`, this parameter must be set.
 * `bucket` - (Optional, ForceNew) The bucket name of OSS. While source_type equals `OSS`, this parameter must be set.
 * `file_system_id` - (Optional, ForceNew) The File System ID of Nas. While source_type equals `NAS`, this parameter must be set.
