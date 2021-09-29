@@ -606,6 +606,9 @@ func (s *YundunBastionhostService) DescribeBastionhostUserAttachment(id string) 
 		})
 		addDebug(action, response, request)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus"}) {
+				return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:UserAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.Users", response)
@@ -760,6 +763,9 @@ func (s *YundunBastionhostService) DescribeBastionhostHostAttachment(id string) 
 		})
 		addDebug(action, response, request)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"Commodity.BizError.InvalidStatus"}) {
+				return object, WrapErrorf(Error(GetNotFoundMessage("Bastionhost:HostAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			}
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.Hosts", response)

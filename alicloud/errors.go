@@ -26,6 +26,7 @@ const (
 	ResourceNotfound        = "ResourceNotfound"
 	ServiceUnavailable      = "ServiceUnavailable"
 	InstanceNotFound        = "Instance.Notfound"
+	ForbiddenInstance       = "Forbidden.InstanceNotFound"
 	MessageInstanceNotFound = "instance is not found"
 	Throttling              = "Throttling"
 	ThrottlingUser          = "Throttling.User"

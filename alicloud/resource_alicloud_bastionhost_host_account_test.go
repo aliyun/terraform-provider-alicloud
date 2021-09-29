@@ -32,15 +32,15 @@ func TestAccAlicloudBastionhostHostAccount_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"protocol_name":     "SSH",
-					"host_id":           "${alicloud_bastionhost_host.default.id}",
+					"host_id":           "${alicloud_bastionhost_host.default.host_id}",
 					"instance_id":       "${alicloud_bastionhost_host.default.instance_id}",
 					"host_account_name": "tf-testAcc-sYQ45HFBO7j9ACfiBBxxOj5M",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocol_name":     "SSH",
-						"host_id":           "${alicloud_bastionhost_host.default.id}",
-						"instance_id":       "${alicloud_bastionhost_host.default.instance_id}",
+						"host_id":           CHECKSET,
+						"instance_id":       CHECKSET,
 						"host_account_name": "tf-testAcc-sYQ45HFBO7j9ACfiBBxxOj5M",
 					}),
 				),
@@ -173,15 +173,15 @@ func TestAccAlicloudBastionhostHostAccount_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"protocol_name":     "RDP",
-					"host_id":           "${alicloud_bastionhost_host.default.id}",
+					"host_id":           "${alicloud_bastionhost_host.default.host_id}",
 					"instance_id":       "${alicloud_bastionhost_host.default.instance_id}",
 					"host_account_name": "tf-testAcc-sYQ45HFBO7j9ACfiBBxxOj5M",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocol_name":     "RDP",
-						"host_id":           "${alicloud_bastionhost_host.default.id}",
-						"instance_id":       "${alicloud_bastionhost_host.default.instance_id}",
+						"host_id":           CHECKSET,
+						"instance_id":       CHECKSET,
 						"host_account_name": "tf-testAcc-sYQ45HFBO7j9ACfiBBxxOj5M",
 					}),
 				),

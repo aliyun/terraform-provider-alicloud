@@ -112,14 +112,15 @@ func resourceAliCloudImageCopyCreate(d *schema.ResourceData, meta interface{}) e
 	stateConf := BuildStateConf([]string{"Creating", "Waiting"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, ecsService.ImageStateRefreshFunc(d.Id(), []string{"CreateFailed", "UnAvailable"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		// If the copying is timeout, the progress should be cancelled
-		cancelCopyImageRequest := ecs.CreateCancelCopyImageRequest()
-		cancelCopyImageRequest.ImageId = d.Id()
-		cancelCopyImageRequest.RegionId = client.RegionId
-		if _, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.CancelCopyImage(cancelCopyImageRequest)
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_image_copy", cancelCopyImageRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
+		// Currently the product does not support cancel some specify images
+		//cancelCopyImageRequest := ecs.CreateCancelCopyImageRequest()
+		//cancelCopyImageRequest.ImageId = d.Id()
+		//cancelCopyImageRequest.RegionId = client.RegionId
+		//if _, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		//	return ecsClient.CancelCopyImage(cancelCopyImageRequest)
+		//}); err != nil {
+		//	return WrapErrorf(err, DefaultErrorMsg, "alicloud_image_copy", cancelCopyImageRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		//}
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return resourceAliCloudImageCopyRead(d, meta)

@@ -34,7 +34,7 @@ func testSweepCenBandwidthLimit(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc%s",
+		"tf_testAcc",
 	}
 
 	var insts []cbn.CenInterRegionBandwidthLimit
@@ -66,7 +66,6 @@ func testSweepCenBandwidthLimit(region string) error {
 		request.PageNumber = page
 	}
 
-	sweeped := false
 	for _, v := range insts {
 		cen, err := cbnService.DescribeCenInstance(v.CenId)
 		if err != nil {
@@ -83,11 +82,11 @@ func testSweepCenBandwidthLimit(region string) error {
 			}
 		}
 		if skip {
-			log.Printf("[INFO] Skipping CEN Instance: %s (%s)", name, id)
+			log.Printf("[INFO] Skipping CEN bandwidth limit: %s (%s)", name, id)
 			continue
 		}
 
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 			err := cenService.SetCenInterRegionBandwidthLimit(id, v.LocalRegionId, v.OppositeRegionId, 0)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus"}) {
@@ -100,11 +99,6 @@ func testSweepCenBandwidthLimit(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to SetCenInterRegionBandwidthLimit (%s (%s)): %s", name, id, err)
 		}
-		sweeped = true
-	}
-	if sweeped {
-		// Waiting 5 seconds to eusure these instances have been deleted.
-		time.Sleep(5 * time.Second)
 	}
 	return nil
 }

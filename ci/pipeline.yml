@@ -349,6 +349,7 @@ shared:
       CONCOURSE_TARGET_USER: {{alicloud_concourse_target_user}}
       CONCOURSE_TARGET_PASSWORD: {{alicloud_concourse_target_password}}
       CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME: {{alicloud_concourse_target_pipeline_name}}
+      TRIGGER_TARGET_PIPELINE: {{alicloud_trigger_target_pipeline}}
 
 jobs:
   - name: Sweeper-1
