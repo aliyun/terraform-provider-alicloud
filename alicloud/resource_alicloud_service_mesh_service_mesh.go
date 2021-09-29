@@ -161,9 +161,9 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 							},
 						},
 						"outbound_traffic_policy": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{"ALLOW_ANY", "REGISTRY_ONLY"}, false),
 						},
 						"pilot": {
