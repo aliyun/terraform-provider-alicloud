@@ -81,7 +81,7 @@ func dataSourceAlicloudHbrSnapshots() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"CANCELED", "COMPLETE", "QUEUED", "CANCELING", "FAILED", "PARTIAL_COMPLETE", "RUNNING", "UNKNOWN", "VM_UNAVAILABLE"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"COMPLETE", "PARTIAL_COMPLETE"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -276,6 +276,13 @@ func dataSourceAlicloudHbrSnapshotsRead(d *schema.ResourceData, meta interface{}
 			completeChecker["value"] = ConvertNasFileSystemStringToUnix(v.(string))
 		}
 		filtersMapList = append(filtersMapList, completeChecker)
+	}
+	if v, ok := d.GetOk("status"); ok {
+		filtersMapList = append(filtersMapList, map[string]interface{}{
+			"field":     "Status",
+			"value":     v.(string),
+			"operation": "MATCH_TERM",
+		})
 	}
 	request["Query"], _ = convertListMapToJsonString(filtersMapList)
 

@@ -34,7 +34,6 @@ func TestAccAlicloudHBROssBackupPlan_basic0(t *testing.T) {
 					"vault_id":             "${alicloud_hbr_vault.default.id}",
 					"bucket":               "${alicloud_oss_bucket.default.bucket}",
 					"backup_type":          "COMPLETE",
-					"prefix":               "/home",
 					"schedule":             "I|1602673264|PT2H",
 					"oss_backup_plan_name": "tf-testAccHbrOss",
 					"retention":            "1",
@@ -42,7 +41,6 @@ func TestAccAlicloudHBROssBackupPlan_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_type":          "COMPLETE",
-						"prefix":               "/home",
 						"schedule":             "I|1602673264|PT2H",
 						"oss_backup_plan_name": "tf-testAccHbrOss",
 						"retention":            "1",
@@ -146,7 +144,6 @@ var AlicloudHBROssBackupPlanMap0 = map[string]string{
 	"speed_limit":                         NOSET,
 	"include":                             NOSET,
 	"detail":                              NOSET,
-	"prefix":                              NOSET,
 	"update_paths":                        NOSET,
 	"instance_id":                         NOSET,
 	"auto_remove_file_system_mount_point": NOSET,

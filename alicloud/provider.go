@@ -550,6 +550,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_mesh_service_meshes":                 dataSourceAlicloudServiceMeshServiceMeshes(),
 			"alicloud_mhub_apps":                                   dataSourceAlicloudMhubApps(),
 			"alicloud_cloud_sso_groups":                            dataSourceAlicloudCloudSsoGroups(),
+			"alicloud_hbr_backup_jobs":                             dataSourceAlicloudHbrBackupJobs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),

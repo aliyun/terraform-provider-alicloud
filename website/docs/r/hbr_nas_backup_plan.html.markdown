@@ -44,17 +44,19 @@ resource "alicloud_hbr_nas_backup_plan" "example" {
 The following arguments are supported:
 
 * `nas_backup_plan_name` - (Required) The name of the backup plan. 1~64 characters, the backup plan name of each data source type in a single warehouse required to be unique.
+* `vault_id` - (Required, ForceNew) The ID of Backup vault.
 * `retention` - (Required) Backup retention days, the minimum is 1.
 * `schedule` - (Required) Backup strategy. Optional format: I|{startTime}|{interval}. It means to execute a backup task every {interval} starting from {startTime}. The backup task for the elapsed time will not be compensated. If the last backup task is not completed yet, the next backup task will not be triggered.
     * `startTime` Backup start time, UNIX time seconds.
     * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `1D` means one day apart.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
-* `file_system_id` - (Optional, ForceNew) The File System ID of Nas.
-* `create_time` - (Optional, ForceNew) File System Creation Time. **Note** The time format of the API adopts the ISO 8601 format, such as `2021-07-09T15:45:30CST` or `2021-07-09T07:45:30Z`.
+* `backup_type` - (Required, ForceNew) Backup type. Valid values: `COMPLETE`.
+* `file_system_id` - (Required, ForceNew) The File System ID of Nas.
+* `create_time` - (Required, ForceNew) File System Creation Time. **Note** The time format of the API adopts the ISO 8601 format, such as `2021-07-09T15:45:30CST` or `2021-07-09T07:45:30Z`.
 * `include` - (Optional) The include path. String of Json list, up to 255 characters. e.g. `"[\"/home/work\"]"`
 * `exclude` - (Optional) The exclude path. String of Json list, up to 255 characters. e.g. `"[\"/var\"]"`
 * `path` - (Optional) Backup path. Up to 65536 characters. e.g.`["/home", "/var"]`
-* `speed_limit` - (Optional) Flow control. The format is: {start}|{end}|{bandwidth}. Use `|` to separate multiple flow control configurations, multiple flow control configurations not allowed to have overlapping times.* `backup_type` - (Optional, Computed, ForceNew) Backup Type. Valid Values: * Complete. Valid values: `COMPLETE`.
+* `speed_limit` - (Optional) Flow control. The format is: {start}|{end}|{bandwidth}. Use `|` to separate multiple flow control configurations, multiple flow control configurations not allowed to have overlapping times.
 
 
 ## Attributes Reference
