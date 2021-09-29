@@ -54,8 +54,8 @@ func TestAccAlicloudCloudSsoScimServerDataSource(t *testing.T) {
 	}
 	var existCloudSsoScimServerMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                         "1",
-			"credentials.#":                 "1",
+			"ids.#":         "1",
+			"credentials.#": "1",
 		}
 	}
 
