@@ -560,6 +560,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_instance_specifications":                 dataSourceAlicloudSaeInstanceSpecifications(),
 			"alicloud_cen_transit_router_service":                  dataSourceAlicloudCenTransitRouterService(),
 			"alicloud_ecs_deployment_sets":                         dataSourceAlicloudEcsDeploymentSets(),
+			"alicloud_cloud_sso_users":                             dataSourceAlicloudCloudSsoUsers(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1011,6 +1012,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_endpoint_acl_policy":                               resourceAlicloudCrEndpointAclPolicy(),
 			"alicloud_actiontrail_history_delivery_job":                     resourceAlicloudActiontrailHistoryDeliveryJob(),
 			"alicloud_ecs_deployment_set":                                   resourceAlicloudEcsDeploymentSet(),
+			"alicloud_cloud_sso_user":                                       resourceAlicloudCloudSsoUser(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
