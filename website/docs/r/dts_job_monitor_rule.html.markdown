@@ -1,5 +1,5 @@
 ---
-subcategory: "Data Transmission (DTS)"
+subcategory: "Data Transmission Service (DTS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dts_job_monitor_rule"
 sidebar_current: "docs-alicloud-resource-dts-job-monitor-rule"
