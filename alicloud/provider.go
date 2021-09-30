@@ -551,6 +551,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mhub_apps":                                   dataSourceAlicloudMhubApps(),
 			"alicloud_cloud_sso_groups":                            dataSourceAlicloudCloudSsoGroups(),
 			"alicloud_hbr_backup_jobs":                             dataSourceAlicloudHbrBackupJobs(),
+			"alicloud_dts_synchronization_jobs":                    dataSourceAlicloudDtsSynchronizationJobs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -996,6 +997,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_mesh_service_mesh":                            resourceAlicloudServiceMeshServiceMesh(),
 			"alicloud_mhub_app":                                             resourceAlicloudMhubApp(),
 			"alicloud_cloud_sso_group":                                      resourceAlicloudCloudSsoGroup(),
+			"alicloud_dts_synchronization_instance":                         resourceAlicloudDtsSynchronizationInstance(),
+			"alicloud_dts_synchronization_job":                              resourceAlicloudDtsSynchronizationJob(),
 		},
 		ConfigureFunc: providerConfigure,
 	}

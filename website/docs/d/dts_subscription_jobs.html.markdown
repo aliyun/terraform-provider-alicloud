@@ -43,6 +43,10 @@ The following attributes are exported in addition to the arguments listed above:
 	* `dts_instance_id` - The ID of subscription job instance.
 	* `dts_job_id` - The ID of subscription job instance.
 	* `dts_job_name` - The name of subscription job instance.
+	* `data_initialization` - Whether to execute DTS supports schema migration, full data migration, or full-data initialization values include:
+	* `data_synchronization` - Whether to perform incremental data migration for migration types or synchronization values include:
+	* `structure_initialization` - Whether to perform a database table structure to migrate or initialization values include:
+	* `synchronization_direction` - Synchronization direction. Valid values: `Forward`, `Reverse`. Only when the property `sync_architecture` of the `alicloud_dts_synchronization_instance` was `bidirectional` this parameter should be passed, otherwise this parameter should not be specified.
 	* `create_time` - The creation time of subscription job instance.
 	* `checkpoint` - Subscription start time in Unix timestamp format.
 	* `db_list` - Subscription object, in the format of JSON strings.
