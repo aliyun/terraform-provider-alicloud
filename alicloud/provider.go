@@ -551,6 +551,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mhub_apps":                                   dataSourceAlicloudMhubApps(),
 			"alicloud_cloud_sso_groups":                            dataSourceAlicloudCloudSsoGroups(),
 			"alicloud_hbr_backup_jobs":                             dataSourceAlicloudHbrBackupJobs(),
+			"alicloud_click_house_regions":                         dataSourceAlicloudClickHouseRegions(),
 			"alicloud_dts_synchronization_jobs":                    dataSourceAlicloudDtsSynchronizationJobs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
