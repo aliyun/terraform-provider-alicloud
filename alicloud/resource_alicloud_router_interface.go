@@ -97,14 +97,14 @@ func resourceAlicloudRouterInterface() *schema.Resource {
 				Deprecated: "Attribute 'opposite_access_point_id' has been deprecated from version 1.11.0.",
 			},
 			"opposite_access_point_id": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Attribute 'opposite_access_point_id' has been deprecated from version 1.11.0.",
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"opposite_router_type": {
-				Type:       schema.TypeString,
-				Computed:   true,
-				Deprecated: "Attribute 'opposite_router_type' has been deprecated from version 1.11.0. Use resource alicloud_router_interface_connection's 'opposite_router_type' instead.",
+				Type:     schema.TypeString,
+				Optional: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(VRouter), string(VBR)}, false),
 			},
 			"opposite_router_id": {
 				Type:       schema.TypeString,
@@ -213,6 +213,7 @@ func resourceAlicloudRouterInterfaceRead(d *schema.ResourceData, meta interface{
 	d.Set("opposite_router_id", object.OppositeRouterId)
 	d.Set("opposite_interface_id", object.OppositeInterfaceId)
 	d.Set("opposite_interface_owner_id", object.OppositeInterfaceOwnerId)
+	d.Set("opposite_access_point_id", object.OppositeAccessPointId)
 	d.Set("health_check_source_ip", object.HealthCheckSourceIp)
 	d.Set("health_check_target_ip", object.HealthCheckTargetIp)
 	if object.ChargeType == "Prepaid" {
@@ -329,6 +330,12 @@ func buildAlicloudRouterInterfaceCreateArgs(d *schema.ResourceData, meta interfa
 		if response.TotalCount > 0 {
 			request.AccessPointId = response.VirtualBorderRouterSet.VirtualBorderRouterType[0].AccessPointId
 		}
+	}
+	if v, ok := d.GetOk("opposite_router_type"); ok {
+		request.OppositeRouterType = v.(string)
+	}
+	if v, ok := d.GetOk("opposite_access_point_id"); ok {
+		request.OppositeAccessPointId = v.(string)
 	}
 	request.ClientToken = buildClientToken(request.GetActionName())
 	return request, nil
