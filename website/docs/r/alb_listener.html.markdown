@@ -129,7 +129,7 @@ resource "alicloud_alb_listener" "example" {
 	load_balancer_id = alicloud_alb_load_balancer.default_3.id
 	listener_protocol =  "HTTPS"
 	listener_port = 443
-	listener_description = "created by terraform"
+	listener_description = "createdByTerraform"
 	default_actions{
 		type = "ForwardGroup"
 		forward_group_config{
@@ -159,7 +159,7 @@ The following arguments are supported:
 
 -> **NOTE:** Only Instances outside the Security Group to Access the Log Switch **accesslogenabled** Open, in Order to Set This Parameter to the **True**.
 * `access_log_tracing_config` - (Optional) Xtrace Configuration Information. See the following `Block access_log_tracing_config`.
-* `certificates` - (Optional) The Certificates.
+* `certificates` - (Optional) The Certificate List. See the following `Block certificates`.
 * `default_actions` - (Required) The Default Rule Action List. See the following `Block default_actions`.
 * `dry_run` - (Optional) The dry run.
 * `gzip_enabled` - (Optional, Computed) Whether to Enable Gzip Compression, as a Specific File Type on a Compression. Valid values: `false`, `true`. Default Value: `true`. .
@@ -240,6 +240,13 @@ The access_log_tracing_config supports the following:
 * `tracing_type` - (Optional) Xtrace Type Value Is `Zipkin`.
 
 -> **NOTE:** This attribute is valid when `tracingenabled` is `true`.
+
+
+#### Block certificates
+
+The certificates supports the following:
+
+* `certificate_id` - (Optional) The ID of the Certificate.
 
 ## Attributes Reference
 
