@@ -506,3 +506,53 @@ variable "name" {
 }
 `, name)
 }
+
+func TestAccAlicloudEIPAddress_basic3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_eip_address.default"
+	ra := resourceAttrInit(resourceId, AlicloudEIPAddressMap3)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEipAddress")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%seipaddress%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEIPAddressBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"isp":                  "BGP",
+					"address_name":         "${var.name}",
+					"internet_charge_type": "PayByDominantTraffic",
+					"payment_type":         "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"isp":                  "BGP",
+						"address_name":         name,
+						"internet_charge_type": "PayByDominantTraffic",
+						"payment_type":         "PayAsYouGo",
+					}),
+				),
+			},
+		},
+	})
+}
+
+var AlicloudEIPAddressMap3 = map[string]string{}
+
+func AlicloudEIPAddressBasicDependence3(name string) string {
+	return fmt.Sprintf(` 
+variable "name" {
+  default = "%s"
+}
+`, name)
+}
