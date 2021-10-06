@@ -425,7 +425,17 @@ func dataSourceAlicloudAlbListenersRead(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapError(err)
 		}
-		mapping["certificates"] = getResp["Certificates"]
+		certificatesMaps := make([]map[string]interface{}, 0)
+		if certificatesList, ok := getResp["Certificates"]; ok && certificatesList != nil {
+			for _, certificatesListItem := range certificatesList.([]interface{}) {
+				if certificatesListItemArg, ok := certificatesListItem.(map[string]interface{}); ok {
+					certificatesListItemMap := map[string]interface{}{}
+					certificatesListItemMap["certificate_id"] = certificatesListItemArg["CertificateId"]
+					certificatesMaps = append(certificatesMaps, certificatesListItemMap)
+				}
+			}
+		}
+		mapping["certificates"] = certificatesMaps
 		defaultActionsMaps := make([]map[string]interface{}, 0)
 		if defaultActionsList, ok := getResp["DefaultActions"].([]interface{}); ok {
 			for _, defaultActions := range defaultActionsList {
