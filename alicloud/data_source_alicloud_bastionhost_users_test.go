@@ -66,20 +66,24 @@ func TestAccAlicloudBastionhostUsersDataSource(t *testing.T) {
 	sourceRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"instance_id": "${alicloud_bastionhost_user.default.instance_id}",
+			"ids":         []string{"${alicloud_bastionhost_user.default.user_id}"},
 			"source":      "${alicloud_bastionhost_user.default.source}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"instance_id": "${alicloud_bastionhost_user.default.instance_id}",
+			"ids":         []string{"${alicloud_bastionhost_user.default.user_id}"},
 			"source":      "Ram",
 		}),
 	}
 	statusRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"instance_id": "${alicloud_bastionhost_user.default.instance_id}",
+			"ids":         []string{"${alicloud_bastionhost_user.default.user_id}"},
 			"status":      "${alicloud_bastionhost_user.default.status}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"instance_id": "${alicloud_bastionhost_user.default.instance_id}",
+			"ids":         []string{"${alicloud_bastionhost_user.default.user_id}"},
 			"status":      "Expired",
 		}),
 	}
