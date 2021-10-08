@@ -241,10 +241,14 @@ func dataSourceAlicloudBastionhostUsersRead(d *schema.ResourceData, meta interfa
 			"mobile_country_code": object["MobileCountryCode"],
 			"source":              object["Source"],
 			"source_user_id":      object["SourceUserId"],
-			"status":              object["UserState[*]"],
 			"id":                  fmt.Sprint(object["UserId"]),
 			"user_id":             fmt.Sprint(object["UserId"]),
 			"user_name":           object["UserName"],
+		}
+		if object["UserState"] != nil {
+			for _, userState := range object["UserState"].([]interface{}) {
+				mapping["status"] = fmt.Sprint(userState)
+			}
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["UserName"])
