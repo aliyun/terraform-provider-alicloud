@@ -553,6 +553,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_backup_jobs":                             dataSourceAlicloudHbrBackupJobs(),
 			"alicloud_click_house_regions":                         dataSourceAlicloudClickHouseRegions(),
 			"alicloud_dts_synchronization_jobs":                    dataSourceAlicloudDtsSynchronizationJobs(),
+			"alicloud_cr_endpoint_acl_policies":                    dataSourceAlicloudCrEndpointAclPolicies(),
+			"alicloud_cr_endpoint_acl_service":                     dataSourceAlicloudCrEndpointAclService(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1000,6 +1002,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_group":                                      resourceAlicloudCloudSsoGroup(),
 			"alicloud_dts_synchronization_instance":                         resourceAlicloudDtsSynchronizationInstance(),
 			"alicloud_dts_synchronization_job":                              resourceAlicloudDtsSynchronizationJob(),
+			"alicloud_cr_endpoint_acl_policy":                               resourceAlicloudCrEndpointAclPolicy(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -1199,6 +1202,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ImpEndpoint = strings.TrimSpace(endpoints["imp"].(string))
 		config.MhubEndpoint = strings.TrimSpace(endpoints["mhub"].(string))
 		config.ServicemeshEndpoint = strings.TrimSpace(endpoints["servicemesh"].(string))
+		config.AcrEndpoint = strings.TrimSpace(endpoints["acr"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1502,6 +1506,8 @@ func init() {
 		"mhub_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom mhub endpoints.",
 
 		"servicemesh_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom servicemesh endpoints.",
+
+		"acr_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom acr endpoints.",
 	}
 }
 
@@ -1546,6 +1552,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"acr": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["acr_endpoint"],
+				},
+
 				"imp": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2337,6 +2350,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["imp"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["mhub"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["servicemesh"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["acr"].(string)))
 	return hashcode.String(buf.String())
 }
 
