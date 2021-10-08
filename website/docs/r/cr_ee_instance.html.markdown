@@ -22,10 +22,10 @@ Basic Usage
 ```
 resource "alicloud_cr_ee_instance" "my-instance" {
   payment_type        = "Subscription"
-  period              = 12
-  renew_period        = 12
+  period              = 1
+  renew_period        = 1
   renewal_status      = "AutoRenewal"
-  instance_type       = "Standard"
+  instance_type       = "Advanced"
   instance_name       = "test"
 }
 ```
@@ -38,7 +38,7 @@ The following arguments are supported:
 * `period` - (Optional, Int) Service time of Container Registry Enterprise Edition instance. Default value: `12`. Valid values: `1`, `2`, `3`, `6`, `12`, `24`, `36`, `48`, `60`. Unit: `month`.
 * `renew_period` - (Optional, Int) Renewal period of Container Registry Enterprise Edition instance. Unit: `month`.
 * `renewal_status` - (Optional, String) Renewal status of Container Registry Enterprise Edition instance. Valid values: `AutoRenewal`, `ManualRenewal`.
-* `instance_type` - (Required, String) Type of Container Registry Enterprise Edition instance. Valid values: `Basic`, `Standard`, `Advanced`.
+* `instance_type` - (Required, String) Type of Container Registry Enterprise Edition instance. Valid values: `Basic`, `Standard`, `Advanced`. **NOTE:** International Account doesn't supports `Standard`.
 * `instance_name` - (Required, String) Name of Container Registry Enterprise Edition instance.
 * `custom_oss_bucket` - (Optional, String) Name of your customized oss bucket. Use this bucket as instance storage if set.
 * `password`- (Optional, Sensitive, Available in 1.132.0) The password of the Instance. The password is a string of 8 to 30 characters and must contain uppercase letters, lowercase letters, and numbers.

@@ -157,6 +157,7 @@ type Config struct {
 	ImpEndpoint                 string
 	MhubEndpoint                string
 	ServicemeshEndpoint         string
+	AcrEndpoint                 string
 }
 
 func (c *Config) loadAndValidate() error {
