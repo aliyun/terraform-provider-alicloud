@@ -1,4 +1,19 @@
 ## 1.139.0 (Unreleased)
+
+## 1.138.1 (October 10, 2021)
+
+ENHANCEMENTS:
+
+- resource/alicloud_dts_synchronization_instance: modify additional input parameters for the createInstance API, make AutoPay to false [GH-4081]
+- resource/alicloud_hbr_backup_client, resource/alicloud_hbr_ecs_backup_plan, resource/alicloud_hbr_oss_backup_plan, resource/alicloud_hbr_nas_backup_plan, resource/alicloud_hbr_restore_job, resource/alicloud_hbr_vault and theirs datasource: Improves the attribute value, test case and documents [GH-4080]
+- doc/alicloud_common_bandwidth_package: Optimize document format resource/alicloud_eip_address: Support internet charge type PayByDominantTraffic [GH-4082]
+
+BUG FIXES:
+
+- datasource/alicloud_bastionhost_users: Fixes the status without output error [GH-4084]
+- datasource/alicloud_alb_listeners: Fix the bug of parameter certifiates output doc/alicloud_alb_listener: Optimize document format doc/alicloud_alb_listeners: Optimize document format [GH-4083]
+- docs/alicloud_dts_synchronization_instance, alicloud_dts_synchronization_job: fix examples. [GH-4081]
+
 ## 1.138.0 (September 30, 2021)
 
 - **New Resource:**  `alicloud_dts_subscription_job` ([#4068](https://github.com/aliyun/terraform-provider-alicloud/issues/4068))
