@@ -82,8 +82,9 @@ func resourceAlicloudHbrEcsBackupPlan() *schema.Resource {
 				Optional: true,
 			},
 			"update_paths": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Attribute update_paths has been deprecated in v1.139.0+ and you do not need to set it anymore.",
 			},
 		},
 	}
@@ -226,13 +227,10 @@ func resourceAlicloudHbrEcsBackupPlanUpdate(d *schema.ResourceData, meta interfa
 	}
 	if d.HasChange("path") {
 		update = true
+		request["UpdatePaths"] = true
 		if v, ok := d.GetOk("path"); ok {
 			request["Path"] = v
-			request["UpdatePaths"] = true
 		}
-	}
-	if v, ok := d.GetOkExists("update_paths"); ok {
-		request["UpdatePaths"] = v
 	}
 	if !d.IsNewResource() && d.HasChange("retention") {
 		update = true

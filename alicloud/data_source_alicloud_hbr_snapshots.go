@@ -164,6 +164,10 @@ func dataSourceAlicloudHbrSnapshots() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"client_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"retention": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -369,6 +373,7 @@ func dataSourceAlicloudHbrSnapshotsRead(d *schema.ResourceData, meta interface{}
 			"job_id":               object["JobId"],
 			"parent_snapshot_hash": object["ParentSnapshotHash"],
 			"prefix":               object["Prefix"],
+			"client_id":            object["ClientId"],
 			"retention":            fmt.Sprint(object["Retention"]),
 			"snapshot_hash":        object["SnapshotHash"],
 			"id":                   fmt.Sprint(object["SnapshotId"]),

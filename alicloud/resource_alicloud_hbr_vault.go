@@ -42,7 +42,7 @@ func resourceAlicloudHbrVault() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ARCHIVE", "IA", "STANDARD"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"STANDARD"}, false),
 			},
 			"vault_type": {
 				Type:         schema.TypeString,

@@ -67,14 +67,10 @@ func resourceAlicloudHbrNasBackupPlan() *schema.Resource {
 			},
 			"path": {
 				Type:     schema.TypeList,
-				Optional: true,
+				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"retention": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"schedule": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -83,8 +79,13 @@ func resourceAlicloudHbrNasBackupPlan() *schema.Resource {
 				Optional: true,
 			},
 			"update_paths": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Attribute update_paths has been deprecated in v1.139.0+ and you do not need to set it anymore.",
+			},
+			"schedule": {
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"vault_id": {
 				Type:     schema.TypeString,
@@ -218,9 +219,9 @@ func resourceAlicloudHbrNasBackupPlanUpdate(d *schema.ResourceData, meta interfa
 	}
 	if d.HasChange("path") {
 		update = true
+		request["UpdatePaths"] = true
 		if v, ok := d.GetOk("path"); ok {
 			request["Path"] = v
-			request["UpdatePaths"] = true
 		}
 	}
 	if !d.IsNewResource() && d.HasChange("schedule") {
@@ -240,9 +241,6 @@ func resourceAlicloudHbrNasBackupPlanUpdate(d *schema.ResourceData, meta interfa
 		}
 		if v, ok := d.GetOk("speed_limit"); ok {
 			request["SpeedLimit"] = v
-		}
-		if v, ok := d.GetOkExists("update_paths"); ok {
-			request["UpdatePaths"] = v
 		}
 		action := "UpdateBackupPlan"
 		conn, err := client.NewHbrClient()

@@ -49,6 +49,16 @@ func TestAccAlicloudHBREcsBackupPlan_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"retention": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"ecs_backup_plan_name": "tf-testAcc-hbr-backup-plan2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -139,6 +149,16 @@ func TestAccAlicloudHBREcsBackupPlan_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"path": []string{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"path.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"ecs_backup_plan_name": "tf-testAcc-hbr-backup-plan3",
 					"schedule":             "I|1602673264|PT2H",
 					"retention":            "4",
@@ -146,6 +166,8 @@ func TestAccAlicloudHBREcsBackupPlan_basic0(t *testing.T) {
 					"include":              "[\\\"/proc\\\"]",
 					"exclude":              "[\\\"/home\\\", \\\"/var/\\\"]",
 					"speed_limit":          "0:24:1024",
+					"options":              "{\\\"UseVSS\\\":true}",
+					"disabled":             "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -156,6 +178,8 @@ func TestAccAlicloudHBREcsBackupPlan_basic0(t *testing.T) {
 						"include":              "[\"/proc\"]",
 						"exclude":              "[\"/home\", \"/var/\"]",
 						"speed_limit":          "0:24:1024",
+						"options":              "{\"UseVSS\":true}",
+						"disabled":             "true",
 					}),
 				),
 			},
@@ -181,7 +205,6 @@ var AlicloudHBREcsBackupPlanMap0 = map[string]string{
 	"udm_region_id":        NOSET,
 	"speed_limit":          "",
 	"include":              "",
-	"detail":               "",
 	"prefix":               NOSET,
 	"update_paths":         NOSET,
 	"bucket":               NOSET,

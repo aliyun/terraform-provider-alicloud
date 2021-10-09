@@ -19,25 +19,25 @@ Basic Usage
 
 ```terraform
 data "alicloud_hbr_ecs_backup_plans" "default" {
-    name_regex = "plan-name"
+  name_regex = "plan-name"
 }
 
 data "alicloud_hbr_backup_jobs" "default" {
   source_type = "ECS_FILE"
   filter {
-    key       = "VaultId"
-    operator  = "IN"
-    values    = [data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id]
+    key      = "VaultId"
+    operator = "IN"
+    values   = [data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id]
   }
   filter {
-    key       = "InstanceId"
-    operator  = "IN"
-    values    = [data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id]
+    key      = "InstanceId"
+    operator = "IN"
+    values   = [data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id]
   }
   filter {
-    key       = "CompleteTime"
-    operator  = "BETWEEN"
-    values    = ["2019-08-23T14:17:15CST", "2020-08-23T14:17:15CST"]
+    key      = "CompleteTime"
+    operator = "BETWEEN"
+    values   = ["2021-08-23T14:17:15CST", "2021-08-24T14:17:15CST"]
   }
 }
 
@@ -45,20 +45,28 @@ data "alicloud_hbr_backup_jobs" "example" {
   source_type = "ECS_FILE"
   status      = "COMPLETE"
   filter {
-    key       = "VaultId"
-    operator  = "IN"
-    values    = [data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id]
+    key      = "VaultId"
+    operator = "IN"
+    values   = [data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id]
   }
   filter {
-    key       = "InstanceId"
-    operator  = "IN"
-    values    = [data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id]
+    key      = "InstanceId"
+    operator = "IN"
+    values   = [data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id]
   }
   filter {
-    key       = "CompleteTime"
-    operator  = "LESS_THAN"
-    values    = ["2021-08-20T20:20:20CST"]
+    key      = "CompleteTime"
+    operator = "LESS_THAN"
+    values   = ["2021-10-20T20:20:20CST"]
   }
+}
+
+output "alicloud_hbr_backup_jobs_default_1" {
+  value = data.alicloud_hbr_backup_jobs.default.jobs.0.id
+}
+
+output "alicloud_hbr_backup_jobs_example_1" {
+  value = data.alicloud_hbr_backup_jobs.example.jobs.0.id
 }
 ```
 
@@ -67,9 +75,9 @@ data "alicloud_hbr_backup_jobs" "example" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of Backup Job IDs.
-* `source_type` - (Required, ForceNew) The type of data source. Valid values: `ECS_FILE`, `NAS`, `OSS`.
-* `status` - (Optional, ForceNew) The status of backup job. Valid values: `COMPLETE`, `PARTIAL_COMPLETE`, `FAILED`.
-* `sort_direction` - (Optional, ForceNew) The sort direction.
+* `source_type` - (Required, ForceNew) The type of data source. Valid values: `ECS_FILE`, `NAS`, `OSS`, `UDM_DISK`.
+* `status` - (Optional, ForceNew) The status of backup job. Valid values: `COMPLETE`, `PARTIAL_COMPLETE`, `FAILED`, `UNAVAILABLE`.
+* `sort_direction` - (Optional, ForceNew) The sort direction. Valid values: `ASCEND`, `DESCEND`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 
@@ -78,9 +86,10 @@ The following arguments are supported:
 More complex filters can be expressed using one or more `filter` sub-blocks,
 which take the following arguments:
 * `key`      - (Required) The key of the field to filter. Valid values: `PlanId`, `VaultId`, `InstanceId`, `Bucket`, `FileSystemId`, `CompleteTime`.
-* `operator` - (Required) The operator of the field to filter. Valid values: `MATCH_TERM`, `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL`, `BETWEEN`.
+* `operator` - (Required) The operator of the field to filter. Valid values: `EQUAL`, `NOT_EQUAL`, `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL`, `BETWEEN`, `IN`.
 * `values`   - (Required) Set of values that are accepted for the given field.
 
+-> **NOTE:** Numeric types such as `CompleteTime` do not support `IN` operations for the time being.
 
 ## Argument Reference
 
@@ -88,17 +97,17 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `jobs` - A list of Hbr Backup Jobs. Each element contains the following attributes:
 	* `id` - The ID of the backup job.
-	* `source_type` - The type of data source. Valid Values: `ECS_FILE`, `OSS`, `NAS`.
-	* `backup_job_id` - The ID of backup job.
+	* `backup_job_id` - The ID of the backup job.
+	* `source_type` - The type of data source. Valid Values: `ECS_FILE`, `OSS`, `NAS`, `UDM_DISK`.
 	* `back_job_name` - The name of backup job.
-	* `plan_id` - The IF of a backup plan.
+	* `plan_id` - The ID of a backup plan.
 	* `vault_id` - The ID of backup vault.
-	* `actual_bytes` - The actual size of backup job.
-	* `actual_items` - The actual number of files.
+	* `actual_bytes` - The actual data volume of the backup task (After deduplication) . Unit byte.
+	* `actual_items` - The actual number of items in the backup task. (Currently only file backup is available).
 	* `backup_type` - Backup type. Valid values: `COMPLETE`(full backup).
-	* `bucket` - The name of target ofo OSS bucket.
-	* `bytes_done` - The size of backup job recovered.
-	* `bytes_total` - The total size of backup job recovered.
+	* `bucket` - The name of target OSS bucket.
+	* `bytes_done` - The amount of backup data (Incremental). Unit byte.
+	* `bytes_total` - The total amount of data sources. Unit byte.
 	* `create_time` - The creation time of backup job. UNIX time seconds.
 	* `start_time` - The scheduled backup start time. UNIX time seconds.
 	* `complete_time` -  The completion time of backup job. UNIX time seconds.
@@ -108,9 +117,11 @@ The following attributes are exported in addition to the arguments listed above:
 	* `instance_id` - The ID of target ECS instance.
 	* `items_done` - The number of items restore job recovered.
 	* `items_total` - The total number of items restore job recovered.
-	* `paths` - Backup path. e.g. `["/home", "/var"]`
+	* `paths` - List of backup path. e.g. `["/home", "/var"]`.
 	* `prefix` - The prefix of Oss bucket files.
 	* `include` - Include path. String of Json list. Up to 255 characters. e.g. `"[\"/var\"]"`
 	* `exclude` - Exclude path. String of Json list. Up to 255 characters. e.g. `"[\"/home/work\"]"`
 	* `status` - The status of restore job. Valid values: `COMPLETE` , `PARTIAL_COMPLETE`, `FAILED`.
+	* `progress` - Backup progress. The value is 100%*100.
+	* `error_message` - Error message.
 	

@@ -113,6 +113,7 @@ func TestAccAlicloudHBROssBackupPlan_basic0(t *testing.T) {
 					"schedule":             "I|1602673264|PT2H",
 					"retention":            "3",
 					"prefix":               "root",
+					"disabled":             "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -120,6 +121,7 @@ func TestAccAlicloudHBROssBackupPlan_basic0(t *testing.T) {
 						"schedule":             "I|1602673264|PT2H",
 						"retention":            "3",
 						"prefix":               "root",
+						"disabled":             "true",
 					}),
 				),
 			},
