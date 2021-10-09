@@ -101,7 +101,7 @@ func resourceAlicloudDtsSynchronizationInstanceCreate(d *schema.ResourceData, me
 		return WrapError(err)
 	}
 
-	request["AutoPay"] = true
+	request["AutoPay"] = false
 	request["AutoStart"] = true
 	request["InstanceClass"] = "small"
 	if v, ok := d.GetOk("instance_class"); ok {

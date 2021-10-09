@@ -1,5 +1,5 @@
 ---
-subcategory: "DTS"
+subcategory: "Data Transmission Service (DTS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dts_synchronization_jobs"
 sidebar_current: "docs-alicloud-datasource-dts-synchronization-jobs"
