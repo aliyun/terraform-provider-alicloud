@@ -31,16 +31,26 @@ func TestAccAlicloudHBRVault_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"vault_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vault_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"vault_type":          "STANDARD",
 					"vault_storage_class": "STANDARD",
-					"vault_name":          name,
+					"vault_name":          name + "1",
 					"description":         "接入测试描述",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vault_type":          "STANDARD",
 						"vault_storage_class": "STANDARD",
-						"vault_name":          name,
+						"vault_name":          name + "1",
 						"description":         "接入测试描述",
 					}),
 				),
@@ -87,11 +97,8 @@ func TestAccAlicloudHBRVault_basic0(t *testing.T) {
 }
 
 var AlicloudHBRVaultMap0 = map[string]string{
-	"status":              CHECKSET,
-	"vault_type":          "STANDARD",
-	"vault_storage_class": "STANDARD",
-	"vault_name":          CHECKSET,
-	"description":         "接入测试描述",
+	"status":     CHECKSET,
+	"vault_name": CHECKSET,
 }
 
 func AlicloudHBRVaultBasicDependence0(name string) string {

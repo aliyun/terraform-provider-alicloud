@@ -23,7 +23,7 @@ data "alicloud_hbr_oss_backup_plans" "ids" {
 }
 output "hbr_oss_backup_plan_id" {
   value = data.alicloud_hbr_oss_backup_plans.ids.plans.0.id
-}           
+}
 ```
 
 ## Argument Reference
@@ -42,12 +42,19 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of OssBackupPlan names.
 * `plans` - A list of Hbr OssBackupPlans. Each element contains the following attributes:
-    * `oss_backup_plan_name` - (Required) The name of the backup plan. 1~64 characters, the backup plan name of each data source type in a single warehouse required to be unique.
-    * `vault_id` - (Required, ForceNew) The ID of backup vault.
+    * `id` - The ID of Oss backup plan.
+    * `oss_backup_plan_id` - The ID of Oss backup plan.
+    * `oss_backup_plan_name` - The name of the backup plan. 1~64 characters, the backup plan name of each data source type in a single warehouse required to be unique.
+    * `vault_id` - The ID of backup vault.
+    * `prefix` - Backup prefix.
     * `bucket` - (Required, ForceNew) The name of OSS bucket.
     * `retention` - (Required) Backup retention days, the minimum is 1.
     * `schedule` - (Required) Backup strategy. Optional format: I|{startTime}|{interval}. It means to execute a backup task every {interval} starting from {startTime}. The backup task for the elapsed time will not be compensated. If the last backup task is not completed yet, the next backup task will not be triggered.
         * `startTime` Backup start time, UNIX time seconds.
-        * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `1D` means one day apart.
+        * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
     * `backup_type` - (Optional, Computed, ForceNew) Backup type. Valid values: `COMPLETE`.
-
+    * `created_time` - The creation time of the backup plan. UNIX time in seconds.
+    * `updated_time` - The update time of the backup plan. UNIX time in seconds.
+    * `disabled` - Whether to be suspended. Valid values: `true`, `false`.
+    * `created_time` - The creation time of the backup plan. UNIX time in seconds.
+    * `updated_time` - The update time of the backup plan. UNIX time in seconds.

@@ -103,6 +103,7 @@ resource "alicloud_hbr_nas_backup_plan" "default" {
   vault_id =            "${alicloud_hbr_vault.default.id}"
   create_time =         "${data.alicloud_nas_file_systems.default.systems.0.create_time}"
   retention =			"2"
+  path =                ["/"]
 }
 
 data "alicloud_hbr_nas_backup_plans" "default" {

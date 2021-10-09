@@ -19,12 +19,12 @@ Basic Usage
 
 ```terraform
 data "alicloud_hbr_ecs_backup_plans" "default" {
-    name_regex = "plan-name"
+  name_regex = "plan-name"
 }
 
 data "alicloud_hbr_restore_jobs" "default" {
-  restore_type =       "ECS_FILE"
-  vault_id =           [data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id]
+  restore_type       = "ECS_FILE"
+  vault_id           = [data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id]
   target_instance_id = [data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id]
 }
 ```
@@ -56,15 +56,12 @@ The following attributes are exported in addition to the arguments listed above:
 	* `snapshot_id` - The ID of Snapshot.
 	* `snapshot_hash` - The hashcode of Snapshot.
 	* `restore_type` - The type of recovery destination. Valid Values: `ECS_FILE`, `OSS`, `NAS`.
-	* `source_type` - The type of data source. Valid Values: `ECS_FILE`, `OSS`, `NAS`.
 	* `create_time` - The creation time of restore job.
 	* `start_time` - The start time of restore job. Unix Time in Seconds.
 	* `updated_time` - The update Time of restore job. Unix Time in Seconds.
 	* `complete_time` - The completion time of restore Job.
 	* `target_bucket` - The name of target ofo OSS bucket.
-	* `target_client_id` - The ID of target client.
 	* `target_create_time` - The creation time of destination file system.
-	* `target_data_source_id` - The ID of destination data source.
 	* `target_file_system_id` - The ID of destination file system.
 	* `target_instance_id` - The ID of target ECS instance.
 	* `target_path` - The target file path of ECS instance.
@@ -79,5 +76,4 @@ The following attributes are exported in addition to the arguments listed above:
 	* `items_done` - The number of items restore job recovered.
 	* `items_total` - The total number of items restore job recovered.
 	* `options` - Recovery Options.
-	* `parent_id` - The ID of parent node.
 	* `progress` - The recovery progress.

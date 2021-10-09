@@ -38,6 +38,7 @@ func TestAccAlicloudHBRNasBackupPlan_basic0(t *testing.T) {
 					"schedule":             "I|1602673264|PT2H",
 					"nas_backup_plan_name": "tf-testAccCase",
 					"retention":            "1",
+					"path":                 []string{"/"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -45,6 +46,7 @@ func TestAccAlicloudHBRNasBackupPlan_basic0(t *testing.T) {
 						"schedule":             "I|1602673264|PT2H",
 						"nas_backup_plan_name": "tf-testAccCase",
 						"retention":            "1",
+						"path.#":               "1",
 					}),
 				),
 			},
@@ -100,17 +102,41 @@ func TestAccAlicloudHBRNasBackupPlan_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"retention": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"options": "{\\\"UseVSS\\\":false}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"options": "{\"UseVSS\":false}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"nas_backup_plan_name": "tf-testAccCase3",
 					"schedule":             "I|1602673264|PT2H",
 					"retention":            "4",
-					"path":                 []string{"/home"},
+					"path":                 []string{"/home/test2", "/home/test2"},
+					"options":              "{\\\"UseVSS\\\":true}",
+					"disabled":             "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"nas_backup_plan_name": "tf-testAccCase3",
 						"schedule":             "I|1602673264|PT2H",
 						"retention":            "4",
-						"path.#":               "1",
+						"path.#":               "2",
+						"options":              "{\"UseVSS\":true}",
+						"disabled":             "true",
 					}),
 				),
 			},

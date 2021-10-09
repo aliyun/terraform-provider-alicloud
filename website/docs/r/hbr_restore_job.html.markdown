@@ -20,30 +20,70 @@ For information about Hybrid Backup Recovery (HBR) Restore Job and how to use it
 Basic Usage
 
 ```terraform
+data "alicloud_hbr_ecs_backup_plans" "default" {
+  name_regex = "plan-tf-used-dont-delete"
+}
+data "alicloud_hbr_oss_backup_plans" "default" {
+  name_regex = "plan-tf-used-dont-delete"
+}
 data "alicloud_hbr_nas_backup_plans" "default" {
-	name_regex = "plan-tf-used-dont-delete"
+  name_regex = "plan-tf-used-dont-delete"
+}
+
+data "alicloud_hbr_snapshots" "ecs_snapshots" {
+  source_type = "ECS_FILE"
+  vault_id    = data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id
+  instance_id = data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id
+}
+
+data "alicloud_hbr_snapshots" "oss_snapshots" {
+  source_type = "OSS"
+  vault_id    = data.alicloud_hbr_oss_backup_plans.default.plans.0.vault_id
+  bucket      = data.alicloud_hbr_oss_backup_plans.default.plans.0.bucket
 }
 
 data "alicloud_hbr_snapshots" "nas_snapshots" {
-    source_type     = "NAS"
-    vault_id        =  data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id
-    file_system_id  =  data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id
-    create_time     =  data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time
+  source_type    = "NAS"
+  vault_id       = data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id
+  file_system_id = data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id
+  create_time    = data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time
 }
 
-resource "alicloud_hbr_restore_job" "default" {
-    restore_job_id        = "tftestacc112358"
-    snapshot_hash         = data.alicloud_hbr_snapshots.nas_snapshots.snapshots.0.snapshot_hash
-    vault_id              = data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id
-    source_type           = "NAS"
-    restore_type          = "NAS"
-    snapshot_id           = data.alicloud_hbr_snapshots.nas_snapshots.snapshots.0.snapshot_id
-    target_file_system_id = data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id
-    target_create_time    = data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time
-    target_path           = "/"
-    options = <<EOF
+resource "alicloud_hbr_restore_job" "nasJob" {
+  snapshot_hash         = data.alicloud_hbr_snapshots.nas_snapshots.snapshots.0.snapshot_hash
+  vault_id              = data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id
+  source_type           = "NAS"
+  restore_type          = "NAS"
+  snapshot_id           = data.alicloud_hbr_snapshots.nas_snapshots.snapshots.0.snapshot_id
+  target_file_system_id = data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id
+  target_create_time    = data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time
+  target_path           = "/"
+  options               = <<EOF
     {"includes":[], "excludes":[]}
-    EOF
+  EOF
+}
+
+resource "alicloud_hbr_restore_job" "ossJob" {
+  snapshot_hash  = data.alicloud_hbr_snapshots.oss_snapshots.snapshots.0.snapshot_hash
+  vault_id       = data.alicloud_hbr_oss_backup_plans.default.plans.0.vault_id
+  source_type    = "OSS"
+  restore_type   = "OSS"
+  snapshot_id    = data.alicloud_hbr_snapshots.oss_snapshots.snapshots.0.snapshot_id
+  target_bucket  = data.alicloud_hbr_oss_backup_plans.default.plans.0.bucket
+  target_prefix  = ""
+  options        = <<EOF
+    {"includes":[], "excludes":[]}
+  EOF
+}
+
+resource "alicloud_hbr_restore_job" "ecsJob" {
+  snapshot_hash      = data.alicloud_hbr_snapshots.ecs_snapshots.snapshots.0.snapshot_hash
+  vault_id           = data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id
+  source_type        = "ECS_FILE"
+  restore_type       = "ECS_FILE"
+  snapshot_id        = data.alicloud_hbr_snapshots.ecs_snapshots.snapshots.0.snapshot_id
+  target_instance_id = data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id
+  target_path        = "/"
 }
 ```
 
@@ -54,20 +94,20 @@ resource "alicloud_hbr_restore_job" "default" {
 
 The following arguments are supported:
 
-* `restore_job_id` - (Required, ForceNew) Restore Job ID. It's the unique key of this resource, you must specify a unique keyword.
+* `restore_job_id` - (Optional, Computed, ForceNew) Restore Job ID. It's the unique key of this resource, if you want to set this argument by yourself, you must specify a unique keyword that never appears.
 * `vault_id` - (Required, ForceNew) The ID of backup vault.
 * `source_type` - (Required, ForceNew) The type of data source. Valid values: `ECS_FILE`, `NAS`, `OSS`.
 * `restore_type` - (Required, ForceNew) The type of recovery destination. Valid values: `ECS_FILE`, `NAS`, `OSS`. **Note**: Currently, there is a one-to-one correspondence between the data source type with the recovery destination type.
 * `snapshot_id` - (Required, ForceNew) The ID of Snapshot.
-* `snapshot_hash` - (Required, ForceNew) The hashcode of restore Snapshot.
+* `snapshot_hash` - (Required, ForceNew) The hashcode of Snapshot.
 * `options` - (Optional, ForceNew) Recovery options. It's a json string with format:`"{"includes":[],"excludes":[]}",`.
-* `exclude` - (Optional while source_type equals `ECS_FILE`, ForceNew) The exclude path. It's a json string with format:`["/home", "/exclude"]`. 
-* `include` - (Optional while source_type equals `ECS_FILE`, ForceNew) The include path. It's a json string with format:`["/home", "/include"]`.
-* `target_bucket` - (Required while source_type equals `OSS`, ForceNew) The target ofo OSS bucket name.
-* `target_prefix` - (Required while source_type equals `OSS`, ForceNew) The target of the OSS object prefix.
+* `exclude` - (Optional) The exclude path. It's a json string with format:`["/excludePath]`, up to 255 characters. **WARNING:** If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
+* `include` - (Optional) The include path. It's a json string with format:`["/includePath"]`, Up to 255 characters. **WARNING:** If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
+* `target_bucket` - (Required while source_type equals `OSS`, ForceNew) The target name of OSS bucket.
+* `target_prefix` - (Required while source_type equals `OSS`, ForceNew) The target prefix of the OSS object. **WARNING:** If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
 * `target_file_system_id` - (Required while source_type equals `NAS`, ForceNew) The ID of destination File System.
-* `target_create_time` - (Required while source_type equals `NAS`, ForceNew) The creation Time of destination File System. While source_type equals `NAS`, this parameter must be set. **Note** The time format of the API adopts the ISO 8601 format, such as `2021-07-09T15:45:30CST` or `2021-07-09T07:45:30Z`.
-* `target_path` - (Required while source_type equals `NAS` or `ECS_FILE`, ForceNew) The target file path of (ECS) instance.
+* `target_create_time` - (Required while source_type equals `NAS`, ForceNew) The creation time of destination File System. While source_type equals `NAS`, this parameter must be set. **Note** The time format of the API adopts the ISO 8601 format, such as `2021-07-09T15:45:30CST` or `2021-07-09T07:45:30Z`.
+* `target_path` - (Required while source_type equals `NAS` or `ECS_FILE`, ForceNew) The target file path of (ECS) instance. **WARNING:** If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
 * `target_instance_id` - (Required while source_type equals `ECS_FILE`, ForceNew)  The target ID of ECS instance.
 
 ## Attributes Reference

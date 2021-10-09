@@ -257,12 +257,6 @@ func dataSourceAlicloudHbrRestoreJobsRead(d *schema.ResourceData, meta interface
 			"Values": v,
 		})
 	}
-	if v, ok := d.GetOk("target_instance_id"); ok {
-		filtersMapList = append(filtersMapList, map[string]interface{}{
-			"Key":    "targetInstanceId",
-			"Values": v,
-		})
-	}
 	request["Filters"] = filtersMapList
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1

@@ -19,36 +19,34 @@ Basic Usage
 
 ```terraform
 data "alicloud_hbr_ecs_backup_plans" "default" {
-    name_regex = "plan-tf-used-dont-delete"
+  name_regex = "plan-tf-used-dont-delete"
 }
 
 data "alicloud_hbr_oss_backup_plans" "default" {
-	name_regex = "plan-tf-used-dont-delete"
+  name_regex = "plan-tf-used-dont-delete"
 }
 
 data "alicloud_hbr_nas_backup_plans" "default" {
-	name_regex = "plan-tf-used-dont-delete"
-}
-
-data "alicloud_hbr_snapshots" "ids" {
-  source_type = "example_value"
-  ids         = ["example_value-1", "example_value-2"]
+  name_regex = "plan-tf-used-dont-delete"
 }
 
 data "alicloud_hbr_snapshots" "ecs_snapshots" {
-  source_type  =  "ECS_FILE"
-  vault_id     =  data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id
-  instance_id  =  data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id
+  source_type = "ECS_FILE"
+  vault_id    = data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id
+  instance_id = data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id
 }
 
 data "alicloud_hbr_snapshots" "oss_snapshots" {
-  source_type  =  "OSS"
-  vault_id     =  data.alicloud_hbr_oss_backup_plans.default.plans.0.vault_id
-  bucket       =  data.alicloud_hbr_oss_backup_plans.default.plans.0.bucket
+  source_type           = "OSS"
+  vault_id              = data.alicloud_hbr_oss_backup_plans.default.plans.0.vault_id
+  bucket                = data.alicloud_hbr_oss_backup_plans.default.plans.0.bucket
+  complete_time         = "2021-07-20T14:17:15CST,2021-07-24T14:17:15CST"
+  complete_time_checker = "BETWEEN"
 }
 
 data "alicloud_hbr_snapshots" "nas_snapshots" {
   source_type           = "NAS"
+  vault_id              = data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id
   file_system_id        = data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id
   create_time           = data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time
   complete_time         = "2021-08-23T14:17:15CST"
@@ -56,8 +54,8 @@ data "alicloud_hbr_snapshots" "nas_snapshots" {
 }
 
 output "hbr_snapshot_id_1" {
-  value = data.alicloud_hbr_snapshots.ids.snapshots.0.id
-}         
+  value = data.alicloud_hbr_snapshots.nas_snapshots.snapshots.0.id
+}
 ```
 
 ## Argument Reference
@@ -95,8 +93,9 @@ The following attributes are exported in addition to the arguments listed above:
 	* `created_time` - Snapshot creation time. UNIX time in seconds.
 	* `start_time` - The start time of the snapshot. UNIX time in seconds.
 	* `updated_time` - The update time of snapshot. UNIX time in seconds.
-	* `complete_time` - The time when the snapshot was completed. UNIX time in seconds.
+	* `complete_time` - The time when the snapshot completed. UNIX time in seconds.
 	* `instance_id` - (ECS_FILE) The ID of ECS instance.
+	* `client_id` - (ECS_FILE) The ID of ECS backup client.
 	* `bucket` - (OSS) The name of OSS bucket.
 	* `file_system_id` - (NAS) The ID of NAS File system.
 	* `create_time` - (NAS) File System Creation Time of Nas. Unix Time Seconds.

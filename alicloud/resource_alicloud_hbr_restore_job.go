@@ -22,7 +22,7 @@ func resourceAlicloudHbrRestoreJob() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(3 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"exclude": {
@@ -39,9 +39,10 @@ func resourceAlicloudHbrRestoreJob() *schema.Resource {
 				ForceNew: true,
 			},
 			"restore_job_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				ForceNew:   true,
 			},
 			"restore_type": {
 				Type:         schema.TypeString,
@@ -211,9 +212,9 @@ func resourceAlicloudHbrRestoreJobCreate(d *schema.ResourceData, meta interface{
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
-	d.SetId(fmt.Sprint(request["RestoreId"], ":", request["RestoreType"]))
+	d.SetId(fmt.Sprint(response["RestoreId"], ":", request["RestoreType"]))
 	hbrService := HbrService{client}
-	stateConf := BuildStateConf([]string{}, []string{"RUNNING", "COMPLETE", "FAILED"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, hbrService.HbrRestoreJobStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{"PARTIAL_COMPLETE", "CREATED"}, []string{"RUNNING", "COMPLETE", "FAILED"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, hbrService.HbrRestoreJobStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

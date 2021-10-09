@@ -21,25 +21,25 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "example_value"
+  default = "tf-test112358"
 }
 
 resource "alicloud_hbr_vault" "default" {
   vault_name = var.name
 }
 
-data "alicloud_oss_buckets" "default" {
-  name_regex = "oss_bucket_example_name"
+resource "alicloud_oss_bucket" "default" {
+  bucket = var.name
 }
 
-resource "alicloud_hbr_oss_backup_plan" "example" {
+resource "alicloud_hbr_oss_backup_plan" "default" {
   oss_backup_plan_name = var.name
-  vault_id             = alicloud_hbr_vault.default.id
+  prefix               = "/"
   bucket               = alicloud_oss_bucket.default.bucket
-  prefix               = "/home"
-  retention            = "1"
+  vault_id             = alicloud_hbr_vault.default.id
   schedule             = "I|1602673264|PT2H"
   backup_type          = "COMPLETE"
+  retention            = "2"
 }
 ```
 
@@ -51,11 +51,12 @@ The following arguments are supported:
 * `vault_id` - (Required, ForceNew) The ID of backup vault.
 * `bucket` - (Required, ForceNew) The name of OSS bucket.
 * `retention` - (Required) Backup retention days, the minimum is 1.
-* `schedule` - (Required) Backup strategy. Optional format: I|{startTime}|{interval}. It means to execute a backup task every {interval} starting from {startTime}. The backup task for the elapsed time will not be compensated. If the last backup task is not completed yet, the next backup task will not be triggered.
+* `schedule` - (Required) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
     * `startTime` Backup start time, UNIX time seconds.
-    * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `1D` means one day apart.
+    * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
 * `backup_type` - (Required, ForceNew) Backup type. Valid values: `COMPLETE`.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
+* `prefix` - (Optional) Backup prefix. Once specified, only objects with matching prefixes will be backed up.
 
 
 ## Attributes Reference

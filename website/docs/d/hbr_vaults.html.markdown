@@ -24,7 +24,7 @@ data "alicloud_hbr_vaults" "ids" {
 
 output "hbr_vault_id_1" {
   value = data.alicloud_hbr_vaults.ids.vaults.0.id
-}           
+}
 ```
 
 ## Argument Reference
@@ -41,19 +41,19 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `names` - A list of Vault names.
-* `vaults` - A list of Hbr Vaults. Each element contains the following attributes:
-    * `id` - The ID of Vault.
-    * `vault_id` - The ID of Vault, same as `id`.
-    * `vault_name` - The name of Vault.
-    * `description` - The description of the Vault.
-    * `vault_storage_class` - The storage class of Vault. Valid values: `STANDARD`.
+* `names` - A list of vault names.
+* `vaults` - A list of Hbr vaults. Each element contains the following attributes:
+    * `id` - The ID of vault.
+    * `vault_id` - The ID of vault, same as `id`.
+    * `vault_name` - The name of vault.
+    * `description` - The description of the vault.
+    * `vault_storage_class` - The storage class of vault. Valid values: `STANDARD`.
     * `vault_type` - The type of Vault. Valid values: `STANDARD`.
-    * `vault_status_message` - Error status information of Vault. Only valid for remote backup warehouses.
+    * `vault_status_message` - Error status information of Vault. Only valid for remote backup warehouses. Only the remote backup warehouse is valid.
     * `storage_size` - Backup vault storage usage. The unit is Byte.
     * `bucket_name` - The name of the OSS bucket of the Vault.
     * `bytes_done` - The amount of backup data. The unit is Byte.
-    * `create_time` - The creation time of the Vault. UNIX time in seconds.
+    * `created_time` - The creation time of the Vault. UNIX time in seconds.
     * `updated_time` - The update time of the Vault. UNIX time in seconds.
     * `latest_replication_time` - The time of the last remote backup synchronization.
     * `status` - The status of Vault. Valid values: `INITIALIZING`, `CREATED`, `ERROR`, `UNKNOWN`.
