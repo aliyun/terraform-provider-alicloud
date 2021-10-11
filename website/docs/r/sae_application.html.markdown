@@ -111,15 +111,38 @@ The following arguments are supported:
 * `update_strategy` - (Optional) The update strategy.
 * `version_id` - (Optional, ForceNew) Application version id.
 * `vswitch_id` - (Optional, ForceNew) The vswitch id.
+* `vpc_id` - (Optional, ForceNew, Available in v1.138.1+) The vpc id.
 * `war_start_options` - (Optional) WAR package launch application option. Application default startup command: java $JAVA_OPTS $CATALINA_OPTS [-Options] org.apache.catalina.startup.Bootstrap "$@" start.
 * `web_container` - (Optional) The version of tomcat that the deployment package depends on. Image type applications are not supported.
+* `intranet` - (Optional,Available in v1.138.1+) Bound public network SLB. The details see Block intranet.
+* `internet` - (Optional,Available in v1.138.1+) Bound private network SLB. The details see Block internet.
+* `internet_slb_id` - (Optional,Available in v1.138.1+) public network SLB ID.
+* `intranet_slb_id` - (Optional,Available in v1.138.1+) private network SLB ID.
+
+#### intranet
+
+The intranet supports the following:
+* `https_cert_id` - (Optional) SSL certificate. `https_cert_id` is required when HTTPS is selected
+* `protocol` - (Optional) Network protocol. Valid values: `TCP` ,`HTTP`,`HTTPS`.
+* `target_port` - (Optional) Container port.
+* `port` - (Optional) SLB Port.
+
+#### internet
+
+The internet supports the following:
+* `https_cert_id` - (Optional) SSL certificate. `https_cert_id` is required when HTTPS is selected
+* `protocol` - (Optional) Network protocol. Valid values: `TCP` ,`HTTP`,`HTTPS`.
+* `target_port` - (Optional) Container port.
+* `port` - (Optional) SLB Port.
+
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Application.
-
+* `internet_ip` - Use designated public network SLBs that have been purchased to support non-shared instances. **NOTE:** Available in v1.138.1+.
+* `intranet_ip` - Use the designated private network SLB that has been purchased to support non-shared instances. **NOTE:** Available in v1.138.1+.
 ## Import
 
 Serverless App Engine (SAE) Application can be imported using the id, e.g.
