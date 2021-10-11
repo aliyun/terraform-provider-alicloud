@@ -73,7 +73,7 @@ func TestAccAlicloudCloudFirewallInstance_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"fw_vpc_number": "3",
-						"modify_type": "Upgrade",
+						"modify_type":   "Upgrade",
 					}),
 				),
 			},

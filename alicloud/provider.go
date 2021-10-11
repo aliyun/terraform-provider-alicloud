@@ -558,6 +558,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_endpoint_acl_service":                     dataSourceAlicloudCrEndpointAclService(),
 			"alicloud_actiontrail_history_delivery_jobs":           dataSourceAlicloudActiontrailHistoryDeliveryJobs(),
 			"alicloud_sae_instance_specifications":                 dataSourceAlicloudSaeInstanceSpecifications(),
+			"alicloud_cen_transit_router_service":                  dataSourceAlicloudCenTransitRouterService(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
