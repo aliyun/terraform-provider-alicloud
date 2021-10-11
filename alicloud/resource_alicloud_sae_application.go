@@ -202,6 +202,7 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 			"replicas": {
 				Type:     schema.TypeInt,
 				Required: true,
+				ForceNew: true,
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
@@ -242,11 +243,6 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"vpc_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"version_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -259,72 +255,6 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 			"web_container": {
 				Type:     schema.TypeString,
 				Optional: true,
-			},
-			"intranet": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"https_cert_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"protocol": {
-							Type:         schema.TypeString,
-							ValidateFunc: validation.StringInSlice([]string{"TCP", "HTTP", "HTTPS"}, false),
-							Optional:     true,
-						},
-						"target_port": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-						"port": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-					},
-				},
-			},
-			"internet": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"https_cert_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"protocol": {
-							Type:         schema.TypeString,
-							ValidateFunc: validation.StringInSlice([]string{"TCP", "HTTP", "HTTPS"}, false),
-							Optional:     true,
-						},
-						"target_port": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-						"port": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-					},
-				},
-			},
-			"internet_slb_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"intranet_slb_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"internet_ip": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"intranet_ip": {
-				Type:     schema.TypeString,
-				Computed: true,
 			},
 		},
 	}
@@ -342,6 +272,9 @@ func resourceAlicloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 	request["AppName"] = StringPointer(d.Get("app_name").(string))
 	request["PackageType"] = StringPointer(d.Get("package_type").(string))
 	request["Replicas"] = StringPointer(strconv.Itoa(d.Get("replicas").(int)))
+	if d.HasChange("app_description") {
+		request["AppDescription"] = StringPointer(d.Get("app_description").(string))
+	}
 	if v, ok := d.GetOk("app_description"); ok {
 		request["AppDescription"] = StringPointer(v.(string))
 	}
@@ -457,11 +390,15 @@ func resourceAlicloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("web_container"); ok {
 		request["WebContainer"] = StringPointer(v.(string))
 	}
-	if v, exist := d.GetOk("vpc_id"); exist {
-		request["VpcId"] = StringPointer(v.(string))
-	}
-	if v, exist := d.GetOk("vswitch_id"); exist {
-		request["VSwitchId"] = StringPointer(v.(string))
+	vswitchId := Trim(d.Get("vswitch_id").(string))
+	if vswitchId != "" {
+		vpcService := VpcService{client}
+		vsw, err := vpcService.DescribeVSwitchWithTeadsl(vswitchId)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["VpcId"] = StringPointer(vsw["VpcId"].(string))
+		request["VSwitchId"] = StringPointer(vswitchId)
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -529,11 +466,11 @@ func resourceAlicloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 	}
 
 	if v, ok := object["MountDesc"].([]interface{}); ok {
-		mountDesc, err := convertListObjectToCommaSeparate(v)
+		mount_desc, err := convertListObjectToCommaSeparate(v)
 		if err != nil {
 			return WrapError(err)
 		}
-		d.Set("mount_desc", mountDesc)
+		d.Set("mount_desc", mount_desc)
 	}
 
 	d.Set("mount_host", object["MountHost"])
@@ -562,7 +499,6 @@ func resourceAlicloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 	d.Set("timezone", object["Timezone"])
 	d.Set("tomcat_config", object["TomcatConfig"])
 	d.Set("vswitch_id", object["VSwitchId"])
-	d.Set("vpc_id",object["VpcId"])
 	d.Set("war_start_options", object["WarStartOptions"])
 	d.Set("web_container", object["WebContainer"])
 	describeApplicationStatusObject, err := saeService.DescribeApplicationStatus(d.Id())
@@ -570,46 +506,6 @@ func resourceAlicloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	d.Set("status", describeApplicationStatusObject["CurrentStatus"])
-
-	describeApplicationSlbObject, err := saeService.DescribeApplicationSlb(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
-
-	d.Set("internet_ip", describeApplicationSlbObject["InternetIp"])
-	d.Set("intranet_ip", describeApplicationSlbObject["IntranetIp"])
-	d.Set("intranet_slb_id", describeApplicationSlbObject["IntranetSlbId"])
-	d.Set("internet_slb_id", describeApplicationSlbObject["InternetSlbId"])
-	intranetArray := make([]interface{}, 0)
-	if v, ok := describeApplicationSlbObject["Intranet"]; ok {
-		for _, intranet := range v.([]interface{}) {
-			intranetObject := intranet.(map[string]interface{})
-			intranetObj := map[string]interface{}{
-				"https_cert_id": intranetObject["HttpsCertId"],
-				"protocol":      intranetObject["Protocol"],
-				"target_port":   intranetObject["TargetPort"],
-				"port":          intranetObject["Port"],
-			}
-			intranetArray = append(intranetArray, intranetObj)
-		}
-	}
-	d.Set("intranet", intranetArray)
-
-	internetArray := make([]interface{}, 0)
-	if v, ok := describeApplicationSlbObject["Internet"]; ok {
-		for _, internet := range v.([]interface{}) {
-			internetObject := internet.(map[string]interface{})
-			internetObj := map[string]interface{}{
-				"https_cert_id": internetObject["HttpsCertId"],
-				"protocol":      internetObject["Protocol"],
-				"target_port":   internetObject["TargetPort"],
-				"port":          internetObject["Port"],
-			}
-			internetArray = append(internetArray, internetObj)
-		}
-	}
-	d.Set("internet", internetArray)
-
 	return nil
 }
 func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -620,372 +516,183 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	}
 	saeService := SaeService{client}
 	var response map[string]interface{}
-	update := false
 	d.Partial(true)
+	//DeployApplication
 	request := map[string]*string{
 		"AppId": StringPointer(d.Id()),
-	}
-
-	update = false
-	if d.HasChange("replicas") && !d.IsNewResource() {
-		update = true
-	}
-	request["Replicas"] = StringPointer(strconv.Itoa(d.Get("replicas").(int)))
-	if update {
-		action := "/pop/v1/sam/app/rescaleApplication"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
-			if err != nil {
-				if IsExpectedErrors(err, []string{"Application.InvalidStatus", "Application.ChangerOrderRunning"}) || NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "POST "+action, AlibabaCloudSdkGoERROR)
-		}
-		if respBody, isExist := response["body"]; isExist {
-			response = respBody.(map[string]interface{})
-		} else {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
-	}
-	update = false
-	//DeployApplication
-	request = map[string]*string{
-		"AppId": StringPointer(d.Id()),
-	}
-
-	if d.HasChange("command")  {
-		update = true
 	}
 	if v, ok := d.GetOk("command"); ok {
 		request["Command"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("command_args")  {
-		update = true
-	}
 	if v, ok := d.GetOk("command_args"); ok {
 		request["CommandArgs"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("config_map_mount_desc")  {
-		update = true
 	}
 	if v, ok := d.GetOk("config_map_mount_desc"); ok {
 		request["ConfigMapMountDesc"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("custom_host_alias")  {
-		update = true
-	}
 	if v, ok := d.GetOk("custom_host_alias"); ok {
 		request["CustomHostAlias"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("edas_container_version")  {
-		update = true
 	}
 	if v, ok := d.GetOk("edas_container_version"); ok {
 		request["EdasContainerVersion"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("envs")  {
-		update = true
-	}
 	if v, ok := d.GetOk("envs"); ok {
 		request["Envs"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("image_url")  {
-		update = true
 	}
 	if v, ok := d.GetOk("image_url"); ok {
 		request["ImageUrl"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("jar_start_args")  {
-		update = true
-	}
 	if v, ok := d.GetOk("jar_start_args"); ok {
 		request["JarStartArgs"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("jar_start_options")  {
-		update = true
 	}
 	if v, ok := d.GetOk("jar_start_options"); ok {
 		request["JarStartOptions"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("jdk")  {
-		update = true
-	}
 	if v, ok := d.GetOk("jdk"); ok {
 		request["Jdk"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("liveness")  {
-		update = true
 	}
 	if v, ok := d.GetOk("liveness"); ok {
 		request["Liveness"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("mount_desc")  {
-		update = true
-	}
 	if v, ok := d.GetOk("mount_desc"); ok {
 		request["MountDesc"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("mount_host")  {
-		update = true
 	}
 	if v, ok := d.GetOk("mount_host"); ok {
 		request["MountHost"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("nas_id")  {
-		update = true
-	}
 	if v, ok := d.GetOk("nas_id"); ok {
 		request["NasId"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("oss_ak_id")  {
-		update = true
 	}
 	if v, ok := d.GetOk("oss_ak_id"); ok {
 		request["OssAkId"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("oss_ak_secret")  {
-		update = true
-	}
 	if v, ok := d.GetOk("oss_ak_secret"); ok {
 		request["OssAkSecret"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("oss_mount_descs")  {
-		update = true
 	}
 	if v, ok := d.GetOk("oss_mount_descs"); ok {
 		request["OssMountDescs"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("package_url")  {
-		update = true
-	}
 	if v, ok := d.GetOk("package_url"); ok {
 		request["PackageUrl"] = StringPointer(v.(string))
 	}
+	request["PackageVersion"] = StringPointer(strconv.FormatInt(time.Now().Unix(), 10))
 
-	if d.HasChange("php_arms_config_location")  {
-		update = true
-	}
 	if v, ok := d.GetOk("php_arms_config_location"); ok {
 		request["PhpArmsConfigLocation"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("php_config")  {
-		update = true
 	}
 	if v, ok := d.GetOk("php_config"); ok {
 		request["PhpConfig"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("php_config_location")  {
-		update = true
-	}
 	if v, ok := d.GetOk("php_config_location"); ok {
 		request["PhpConfigLocation"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("post_start")  {
-		update = true
 	}
 	if v, ok := d.GetOk("post_start"); ok {
 		request["PostStart"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("pre_stop")  {
-		update = true
-	}
 	if v, ok := d.GetOk("pre_stop"); ok {
 		request["PreStop"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("readiness")  {
-		update = true
 	}
 	if v, ok := d.GetOk("readiness"); ok {
 		request["Readiness"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("sls_configs")  {
-		update = true
-	}
 	if v, ok := d.GetOk("sls_configs"); ok {
 		request["SlsConfigs"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("termination_grace_period_seconds")  {
-		update = true
 	}
 	if v, ok := d.GetOk("termination_grace_period_seconds"); ok {
 		request["TerminationGracePeriodSeconds"] = StringPointer(strconv.Itoa(v.(int)))
 	}
-
-	if d.HasChange("timezone")  {
-		update = true
-	}
 	if v, ok := d.GetOk("timezone"); ok {
 		request["Timezone"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("tomcat_config")  {
-		update = true
 	}
 	if v, ok := d.GetOk("tomcat_config"); ok {
 		request["TomcatConfig"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("war_start_options")  {
-		update = true
-	}
 	if v, ok := d.GetOk("war_start_options"); ok {
 		request["WarStartOptions"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("web_container")  {
-		update = true
 	}
 	if v, ok := d.GetOk("web_container"); ok {
 		request["WebContainer"] = StringPointer(v.(string))
 	}
-
-	if _, exist := d.GetOkExists("auto_enable_application_scaling_rule"); exist && d.IsNewResource() {
-		update = true
-		if v, ok := d.GetOk("auto_enable_application_scaling_rule"); ok {
-			request["AutoEnableApplicationScalingRule"] = StringPointer(strconv.FormatBool(v.(bool)))
-		}
-	}
-	if d.HasChange("min_ready_instances")  {
-		update = true
+	if v, ok := d.GetOk("auto_enable_application_scaling_rule"); ok {
+		request["AutoEnableApplicationScalingRule"] = StringPointer(strconv.FormatBool(v.(bool)))
 	}
 	if v, ok := d.GetOk("min_ready_instances"); ok {
 		request["MinReadyInstances"] = StringPointer(strconv.Itoa(v.(int)))
 	}
-
 	if v, ok := d.GetOk("batch_wait_time"); ok {
 		request["BatchWaitTime"] = StringPointer(strconv.Itoa(v.(int)))
-	}
-
-	if d.HasChange("change_order_desc")  {
-		update = true
 	}
 	if v, ok := d.GetOk("change_order_desc"); ok {
 		request["ChangeOrderDesc"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("enable_ahas")  {
-		update = true
-	}
 	if v, ok := d.GetOk("enable_ahas"); ok {
 		request["EnableAhas"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("enable_grey_tag_route")  {
-		update = true
 	}
 	if v, ok := d.GetOkExists("enable_grey_tag_route"); ok {
 		request["EnableGreyTagRoute"] = StringPointer(v.(string))
 	}
-
-	if d.HasChange("update_strategy")  {
-		update = true
-	}
 	if v, ok := d.GetOk("update_strategy"); ok {
 		request["UpdateStrategy"] = StringPointer(v.(string))
 	}
+	action := "/pop/v1/sam/app/deployApplication"
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 
-	if update {
-		action := "/pop/v1/sam/app/deployApplication"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		request["PackageVersion"] = StringPointer(strconv.FormatInt(time.Now().Unix(), 10))
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
-			if err != nil {
-				if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) || NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
+	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "POST "+action, AlibabaCloudSdkGoERROR)
+			if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
-		if respBody, isExist := response["body"]; isExist {
-			response = respBody.(map[string]interface{})
-		} else {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
-		}
-		d.SetPartial("command")
-		d.SetPartial("command_args")
-		d.SetPartial("config_map_mount_desc")
-		d.SetPartial("custom_host_alias")
-		d.SetPartial("edas_container_version")
-		d.SetPartial("envs")
-		d.SetPartial("image_url")
-		d.SetPartial("jar_start_args")
-		d.SetPartial("jar_start_options")
-		d.SetPartial("jdk")
-		d.SetPartial("liveness")
-		d.SetPartial("mount_desc")
-		d.SetPartial("mount_host")
-		d.SetPartial("nas_id")
-		d.SetPartial("oss_ak_id")
-		d.SetPartial("oss_ak_secret")
-		d.SetPartial("oss_mount_descs")
-		d.SetPartial("package_url")
-		d.SetPartial("package_version")
-		d.SetPartial("php_arms_config_location")
-		d.SetPartial("php_config")
-		d.SetPartial("php_config_location")
-		d.SetPartial("post_start")
-		d.SetPartial("pre_stop")
-		d.SetPartial("readiness")
-		d.SetPartial("sls_configs")
-		d.SetPartial("min_ready_instances")
-		d.SetPartial("auto_enable_application_scaling_rule")
-		d.SetPartial("termination_grace_period_seconds")
-		d.SetPartial("timezone")
-		d.SetPartial("tomcat_config")
-		d.SetPartial("war_start_options")
-		d.SetPartial("web_container")
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "POST "+action, AlibabaCloudSdkGoERROR)
 	}
-
-	// update SLB
-	update = false
-	if err := saeService.UpdateSlb(d); err != nil {
-		return WrapError(err)
+	if respBody, isExist := response["body"]; isExist {
+		response = respBody.(map[string]interface{})
+	} else {
+		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
+	}
+	d.SetPartial("command")
+	d.SetPartial("command_args")
+	d.SetPartial("config_map_mount_desc")
+	d.SetPartial("custom_host_alias")
+	d.SetPartial("edas_container_version")
+	d.SetPartial("envs")
+	d.SetPartial("image_url")
+	d.SetPartial("jar_start_args")
+	d.SetPartial("jar_start_options")
+	d.SetPartial("jdk")
+	d.SetPartial("liveness")
+	d.SetPartial("mount_desc")
+	d.SetPartial("mount_host")
+	d.SetPartial("nas_id")
+	d.SetPartial("oss_ak_id")
+	d.SetPartial("oss_ak_secret")
+	d.SetPartial("oss_mount_descs")
+	d.SetPartial("package_url")
+	d.SetPartial("package_version")
+	d.SetPartial("php_arms_config_location")
+	d.SetPartial("php_config")
+	d.SetPartial("php_config_location")
+	d.SetPartial("post_start")
+	d.SetPartial("pre_stop")
+	d.SetPartial("readiness")
+	d.SetPartial("sls_configs")
+	d.SetPartial("min_ready_instances")
+	d.SetPartial("auto_enable_application_scaling_rule")
+	d.SetPartial("termination_grace_period_seconds")
+	d.SetPartial("timezone")
+	d.SetPartial("tomcat_config")
+	d.SetPartial("war_start_options")
+	d.SetPartial("web_container")
 
 	// 【Exists】update security_group_id
 	if d.HasChange("security_group_id") {
@@ -1028,7 +735,7 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	}
 
 	// 【Exists】update rescaleApplicationVertically（CPU+Memory）
-	if (d.HasChange("cpu") || d.HasChange("memory")) && !d.IsNewResource() {
+	if d.HasChange("cpu") || d.HasChange("memory") {
 		d.Partial(true)
 		request := map[string]*string{
 			"AppId": StringPointer(d.Id()),
