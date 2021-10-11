@@ -167,7 +167,6 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 					"package_type":    "Image",
 					"app_description": name + "desc",
 					"vswitch_id":      "${data.alicloud_vswitches.default.vswitches.0.id}",
-					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
 					"image_url":       "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5",
 					"replicas":        "5",
 					"cpu":             "500",
@@ -180,73 +179,10 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 						"package_type":    "Image",
 						"app_description": name + "desc",
 						"vswitch_id":      CHECKSET,
-						"vpc_id":          CHECKSET,
-						"image_url":       CHECKSET,
+						"image_url":       "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5",
 						"replicas":        "5",
 						"cpu":             "500",
 						"memory":          "2048",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"internet": []map[string]interface{}{
-						{
-							"port":        "90",
-							"protocol":    "TCP",
-							"target_port": "8080",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"internet.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"intranet": []map[string]interface{}{
-						{
-							"port":        "34",
-							"protocol":    "TCP",
-							"target_port": "8080",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"intranet.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"replicas": "6",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"replicas": "6",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"auto_enable_application_scaling_rule": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"auto_enable_application_scaling_rule": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"min_ready_instances": "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"min_ready_instances": "2",
 					}),
 				),
 			},
@@ -272,21 +208,21 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}`,
+					"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"timeoutSeconds\":12}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}",
+						"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"timeoutSeconds\":12}",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}`,
+					"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"timeoutSeconds\":11}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}",
+						"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"timeoutSeconds\":11}",
 					}),
 				),
 			},
