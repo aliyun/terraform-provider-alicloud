@@ -41,6 +41,7 @@ data "alicloud_nas_file_systems" "default" {
 }
 
 resource "alicloud_hbr_nas_backup_plan" "default" {
+  depends_on           = ["alicloud_nas_file_system.default"]
   nas_backup_plan_name = var.name
   file_system_id       = alicloud_nas_file_system.default.id
   schedule             = "I|1602673264|PT2H"
@@ -69,6 +70,8 @@ The following arguments are supported:
 * `path` - (Required) List of backup path. Up to 65536 characters. e.g.`["/home", "/var"]`. **Note** You should at least specify a backup path, empty array not allowed here.
 * `options` - (Optional) Windows operating system with application consistency using VSS, e.g: `{"UseVSS":false}`.
 
+
+-> **Note** `alicloud_hbr_nas_backup_plan` depends on the `alicloud_nas_file_system` and creates a mount point on the file system. If this dependency has not declared, the file system may not be deleted correctly.
 
 ## Attributes Reference
 
