@@ -386,6 +386,9 @@ func resourceAlicloudHbrNasBackupPlanDelete(d *schema.ResourceData, meta interfa
 		})
 		addDebug(action, response, request)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"NasFileSystemNotExist"}) {
+				return nil
+			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
