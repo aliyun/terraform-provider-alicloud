@@ -555,6 +555,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dts_synchronization_jobs":                    dataSourceAlicloudDtsSynchronizationJobs(),
 			"alicloud_cr_endpoint_acl_policies":                    dataSourceAlicloudCrEndpointAclPolicies(),
 			"alicloud_cr_endpoint_acl_service":                     dataSourceAlicloudCrEndpointAclService(),
+			"alicloud_actiontrail_history_delivery_jobs":           dataSourceAlicloudActiontrailHistoryDeliveryJobs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1003,6 +1004,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dts_synchronization_instance":                         resourceAlicloudDtsSynchronizationInstance(),
 			"alicloud_dts_synchronization_job":                              resourceAlicloudDtsSynchronizationJob(),
 			"alicloud_cr_endpoint_acl_policy":                               resourceAlicloudCrEndpointAclPolicy(),
+			"alicloud_actiontrail_history_delivery_job":                     resourceAlicloudActiontrailHistoryDeliveryJob(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
