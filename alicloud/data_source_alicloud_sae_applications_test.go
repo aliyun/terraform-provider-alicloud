@@ -13,6 +13,7 @@ import (
 
 func TestAccAlicloudSaeApplicationDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1, 1000)
+	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSaeApplicationDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_sae_application.default.id}"]`,
@@ -105,10 +106,7 @@ func TestAccAlicloudSaeApplicationDataSource(t *testing.T) {
 		existMapFunc: existAlicloudSaeApplicationDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudSaeApplicationDataSourceNameMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
-	}
-	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameConf, fieldConf, namespaceIdConf, statusConf, allConf)
+	alicloudSaeNamespaceCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameConf, fieldConf, namespaceIdConf, statusConf, allConf)
 }
 func testAccCheckAlicloudSaeApplicationDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -150,6 +148,6 @@ resource "alicloud_sae_application" "default" {
 data "alicloud_sae_applications" "default" {
 	%s
 }
-`, rand, os.Getenv("ALICLOUD_REGION"), rand, strings.Join(pairs, " \n "))
+`, rand, defaultRegionToTest, rand, strings.Join(pairs, " \n "))
 	return config
 }

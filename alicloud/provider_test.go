@@ -105,6 +105,10 @@ func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connecti
 		t.Logf("[WARNING] The region is not set and using cn-beijing as test region")
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
 	}
+	checkoutSupportedRegions(t, supported, regions)
+}
+
+func checkoutSupportedRegions(t *testing.T, supported bool, regions []connectivity.Region) {
 	region := os.Getenv("ALICLOUD_REGION")
 	find := false
 	backupRegion := string(connectivity.APSouthEast1)
@@ -145,7 +149,7 @@ func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connecti
 			if hangzhouRegionFind {
 				t.Logf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, connectivity.Hangzhou)
 				os.Setenv("ALICLOUD_REGION", string(connectivity.Hangzhou))
-				defaultRegionToTest = backupRegion
+				defaultRegionToTest = string(connectivity.Hangzhou)
 				return
 			}
 			t.Skipf("Skipping unsupported region %s. Supported regions: %s.", region, regions)
@@ -159,7 +163,7 @@ func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connecti
 			if !hangzhouRegionFind {
 				t.Logf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, connectivity.Hangzhou)
 				os.Setenv("ALICLOUD_REGION", string(connectivity.Hangzhou))
-				defaultRegionToTest = backupRegion
+				defaultRegionToTest = string(connectivity.Hangzhou)
 				return
 			}
 			t.Skipf("Skipping unsupported region %s. Unsupported regions: %s.", region, regions)
