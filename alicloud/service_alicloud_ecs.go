@@ -2064,9 +2064,9 @@ func (s *EcsService) DescribeEcsDisk(id string) (object map[string]interface{}, 
 		"RegionId": s.client.RegionId,
 		"DiskIds":  convertListToJsonString([]interface{}{id}),
 	}
-	runtime := util.RuntimeOptions{}
+	runtime := 					util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := 				incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
