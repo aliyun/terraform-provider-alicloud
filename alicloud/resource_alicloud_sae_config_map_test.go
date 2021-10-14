@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -12,6 +11,7 @@ import (
 
 func TestAccAlicloudSaeConfigMap_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_config_map.default"
 	ra := resourceAttrInit(resourceId, AlicloudSAEConfigMapMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -23,10 +23,6 @@ func TestAccAlicloudSaeConfigMap_basic0(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc%ssaeconfigmap%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEConfigMapBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
-		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -39,7 +35,7 @@ func TestAccAlicloudSaeConfigMap_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"namespace_id": fmt.Sprintf("%s:configmaptest", os.Getenv("ALICLOUD_REGION")),
+						"namespace_id": CHECKSET,
 						"name":         "tftestaccname",
 						"data":         "{\"env.home\":\"/root\",\"envtest.shell\":\"/bin/sh\"}",
 					}),
@@ -87,21 +83,21 @@ func TestAccAlicloudSaeConfigMap_basic0(t *testing.T) {
 }
 
 var AlicloudSAEConfigMapMap0 = map[string]string{
-	"description":  "",
-	"namespace_id": fmt.Sprintf("%s:configmaptest", os.Getenv("ALICLOUD_REGION")),
-	"name":         "tftestaccname",
+	"namespace_id": CHECKSET,
+	"name":         CHECKSET,
 }
 
 func AlicloudSAEConfigMapBasicDependence0(name string) string {
+	rand := acctest.RandIntRange(1, 100)
 	return fmt.Sprintf(` 
 resource "alicloud_sae_namespace" "default" {
   namespace_description = "namespace_desc"
-  namespace_id = "%s:configmaptest"
+  namespace_id = "%s:configmaptest%d"
   namespace_name = "namespace_name"
 }
 
 variable "name" {
   default = "%s"
 }
-`, os.Getenv("ALICLOUD_REGION"), name)
+`, defaultRegionToTest, rand, name)
 }

@@ -96,8 +96,9 @@ data "alicloud_nas_file_systems" "default" {
 }
 
 resource "alicloud_hbr_nas_backup_plan" "default" {
+  depends_on =           ["alicloud_nas_file_system.default"]
   nas_backup_plan_name = var.name
-  file_system_id =      "${alicloud_nas_file_system.default.id}"
+  file_system_id =      "${data.alicloud_nas_file_systems.default.systems.0.id}"
   schedule =            "I|1602673264|PT2H"
   backup_type =         "COMPLETE"
   vault_id =            "${alicloud_hbr_vault.default.id}"
