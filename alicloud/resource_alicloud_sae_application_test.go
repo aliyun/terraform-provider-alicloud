@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -141,6 +140,7 @@ func testSweepSaeApplication(region string) error {
 //package_type = Image
 func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application.default"
 	ra := resourceAttrInit(resourceId, AlicloudSAEApplicationMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -167,7 +167,8 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 					"package_type":    "Image",
 					"app_description": name + "desc",
 					"vswitch_id":      "${data.alicloud_vswitches.default.vswitches.0.id}",
-					"image_url":       "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5",
+					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
+					"image_url":       fmt.Sprintf("registry-vpc.%s.aliyuncs.com/sae-demo-image/consumer:1.0",defaultRegionToTest),
 					"replicas":        "5",
 					"cpu":             "500",
 					"memory":          "2048",
@@ -179,10 +180,83 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 						"package_type":    "Image",
 						"app_description": name + "desc",
 						"vswitch_id":      CHECKSET,
-						"image_url":       "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5",
+						"vpc_id":          CHECKSET,
+						"image_url":       CHECKSET,
 						"replicas":        "5",
 						"cpu":             "500",
 						"memory":          "2048",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replicas": "4",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replicas": "4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"internet": []map[string]interface{}{
+						{
+							"port":        "90",
+							"protocol":    "TCP",
+							"target_port": "8080",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"internet.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"intranet": []map[string]interface{}{
+						{
+							"port":        "34",
+							"protocol":    "TCP",
+							"target_port": "8080",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"intranet.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replicas": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replicas": "6",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_enable_application_scaling_rule": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_enable_application_scaling_rule": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_ready_instances": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"min_ready_instances": "2",
 					}),
 				),
 			},
@@ -208,21 +282,21 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"timeoutSeconds\":12}`,
+					"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"timeoutSeconds\":12}",
+						"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"timeoutSeconds\":11}`,
+					"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"timeoutSeconds\":11}",
+						"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}",
 					}),
 				),
 			},
@@ -401,11 +475,11 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_url": "registry-vpc.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.4.3-0",
+					"image_url": fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0",defaultRegionToTest),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"image_url": "registry-vpc.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.4.3-0",
+						"image_url": fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0",defaultRegionToTest),
 					}),
 				),
 			},
@@ -422,6 +496,7 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 //package_type = FatJar
 func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application.default"
 	ra := resourceAttrInit(resourceId, AlicloudSAEApplicationMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -433,10 +508,7 @@ func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 	name := fmt.Sprintf("tftestacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEApplicationBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
-		},
+
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -445,11 +517,12 @@ func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"app_name":        name,
 					"namespace_id":    "${alicloud_sae_namespace.default.namespace_id}",
-					"package_url":     "http://edas-hz.oss-cn-hangzhou.aliyuncs.com/demo/1.0/hello-sae.jar?spm=5176.12834076.0.0.60326a68i2Cd8M&file=hello-sae.jar",
+					"package_url":     fmt.Sprintf("http://edas-hz.oss-%s.aliyuncs.com/demo/1.0/hello-sae.jar",defaultRegionToTest),
 					"package_type":    "FatJar",
 					"app_description": name + "desc",
 					"jdk":             "Open JDK 8",
 					"vswitch_id":      "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
 					"replicas":        "5",
 					"cpu":             "500",
 					"memory":          "2048",
@@ -462,6 +535,7 @@ func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 						"package_type":    "FatJar",
 						"vswitch_id":      CHECKSET,
 						"package_url":     CHECKSET,
+						"vpc_id":          CHECKSET,
 						"replicas":        "5",
 						"cpu":             "500",
 						"memory":          "2048",
@@ -491,21 +565,21 @@ func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"timeoutSeconds\":12}`,
+					"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"timeoutSeconds\":12}",
+						"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"timeoutSeconds\":11}`,
+					"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"timeoutSeconds\":11}",
+						"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}",
 					}),
 				),
 			},
@@ -685,6 +759,7 @@ func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 //package_type = War
 func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application.default"
 	ra := resourceAttrInit(resourceId, AlicloudSAEApplicationMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -696,10 +771,6 @@ func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 	name := fmt.Sprintf("tftestacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEApplicationBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
-		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -709,12 +780,13 @@ func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 					"app_name":        name,
 					"app_description": name + "desc",
 					"namespace_id":    "${alicloud_sae_namespace.default.namespace_id}",
-					"package_url":     fmt.Sprintf("http://edas-hz.oss-cn-hangzhou.aliyuncs.com/demo/1.0/hello-sae.war?spm=5176.12834076.0.0.60326a68Uw5yB4&file=hello-sae.war"),
+					"package_url":     fmt.Sprintf("http://edas-hz.oss-%s.aliyuncs.com/demo/1.0/hello-sae.war?spm=5176.12834076.0.0.60326a68Uw5yB4&file=hello-sae.war",defaultRegionToTest),
 					"package_type":    "War",
 					"web_container":   "apache-tomcat-8.5.42",
 					"jdk":             "Open JDK 8",
 					"replicas":        "5",
 					"vswitch_id":      "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
 					"cpu":             "500",
 					"memory":          "2048",
 				}),
@@ -729,6 +801,7 @@ func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 						"jdk":             "Open JDK 8",
 						"replicas":        "5",
 						"vswitch_id":      CHECKSET,
+						"vpc_id":          CHECKSET,
 						"cpu":             "500",
 						"memory":          "2048",
 					}),
@@ -756,21 +829,21 @@ func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"timeoutSeconds\":12}`,
+					"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"timeoutSeconds\":12}",
+						"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"timeoutSeconds\":11}`,
+					"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"timeoutSeconds\":11}",
+						"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}",
 					}),
 				),
 			},
@@ -973,7 +1046,7 @@ resource "alicloud_nas_file_system" "default" {
 variable "name" {
   default = "%s"
 }
-`, os.Getenv("ALICLOUD_REGION"), name, name)
+`, defaultRegionToTest, name, name)
 }
 
 var AlicloudSAEApplicationMap0 = map[string]string{

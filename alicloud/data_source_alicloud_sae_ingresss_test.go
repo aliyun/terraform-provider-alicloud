@@ -2,15 +2,17 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudSaeIngressesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1, 100)
+	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSaeIngressesDataSourceName(rand, map[string]string{
 			"ids":          `["${alicloud_sae_ingress.default.id}"]`,
@@ -26,7 +28,7 @@ func TestAccAlicloudSaeIngressesDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                    "1",
 			"ingresses.#":              "1",
-			"ingresses.0.namespace_id": fmt.Sprintf("%s:tftestacc", os.Getenv("ALICLOUD_REGION")),
+			"ingresses.0.namespace_id": fmt.Sprintf("%s:tftestacc%d", defaultRegionToTest, rand),
 		}
 	}
 	var fakeAlicloudSaeIngressesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -46,24 +48,24 @@ func testAccCheckAlicloudSaeIngressesDataSourceName(rand int, attrMap map[string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
 	}
-	region := os.Getenv("ALICLOUD_REGION")
 	config := fmt.Sprintf(`
 
 variable "name" {
-  default = "%s"
+  default = "tftestacc%d"
 }
 
 variable "namespace_id" {
-  default = "%s:tftestacc"
+  default = "%s:tftestacc%d"
 }
 
 resource "alicloud_sae_application" "default" {
   app_description = var.name
   app_name        = var.name
   namespace_id    = alicloud_sae_namespace.default.id
-  image_url       = "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5"
+  image_url       = "registry-vpc.cn-hangzhou.aliyuncs.com/sae-demo-image/consumer:1.0"
   package_type    = "Image"
-  vswitch_id      = data.alicloud_vswitches.default.ids.0
+  vswitch_id      = data.alicloud_vswitches.default.vswitches.0.id
+  vpc_id          = data.alicloud_vpcs.default.ids.0
   timezone        = "Asia/Beijing"
   replicas        = "5"
   cpu             = "500"
@@ -87,7 +89,7 @@ data "alicloud_vswitches" "default" {
 resource "alicloud_slb" "default" {
   load_balancer_name = var.name
   load_balancer_spec = "slb.s2.small"
-  vswitch_id         = data.alicloud_vswitches.default.ids.0
+  vswitch_id         = data.alicloud_vswitches.default.vswitches.0.id
 }
 
 resource "alicloud_slb_server_certificate" "default" {
@@ -117,6 +119,6 @@ resource "alicloud_sae_ingress" "default" {
 data "alicloud_sae_ingresses" "default" {	
 	%s
 }
-`, region, region, strings.Join(pairs, " \n "))
+`, rand, defaultRegionToTest, rand, strings.Join(pairs, " \n "))
 	return config
 }
