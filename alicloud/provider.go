@@ -562,6 +562,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_deployment_sets":                         dataSourceAlicloudEcsDeploymentSets(),
 			"alicloud_cloud_sso_users":                             dataSourceAlicloudCloudSsoUsers(),
 			"alicloud_cloud_sso_access_configurations":             dataSourceAlicloudCloudSsoAccessConfigurations(),
+			"alicloud_dfs_file_systems":                            dataSourceAlicloudDfsFileSystems(),
+			"alicloud_dfs_zones":                                   dataSourceAlicloudDfsZones(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1015,6 +1017,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_deployment_set":                                   resourceAlicloudEcsDeploymentSet(),
 			"alicloud_cloud_sso_user":                                       resourceAlicloudCloudSsoUser(),
 			"alicloud_cloud_sso_access_configuration":                       resourceAlicloudCloudSsoAccessConfiguration(),
+			"alicloud_dfs_file_system":                                      resourceAlicloudDfsFileSystem(),
 		},
 
 		ConfigureFunc: providerConfigure,
