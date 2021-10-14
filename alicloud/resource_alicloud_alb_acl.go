@@ -31,7 +31,7 @@ func resourceAlicloudAlbAcl() *schema.Resource {
 			"acl_entries": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				MaxItems: 20,
+				MaxItems: 300,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"description": {
