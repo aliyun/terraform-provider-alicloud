@@ -2074,7 +2074,7 @@ func (s *EcsService) DescribeEcsDisk(id string) (object map[string]interface{}, 
 				wait()
 				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return           resource.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
