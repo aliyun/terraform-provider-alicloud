@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -12,6 +11,7 @@ import (
 
 func TestAccAlicloudSaeNamespace_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_namespace.default"
 	ra := resourceAttrInit(resourceId, AlicloudSAENamespaceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -23,10 +23,6 @@ func TestAccAlicloudSaeNamespace_basic0(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc%ssaenamespace%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAENamespaceBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
-		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -34,13 +30,13 @@ func TestAccAlicloudSaeNamespace_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"namespace_name":        name,
-					"namespace_id":          fmt.Sprintf("%s:tftest%d", os.Getenv("ALICLOUD_REGION"), rand),
+					"namespace_id":          fmt.Sprintf("%s:tftest%d", defaultRegionToTest, rand),
 					"namespace_description": "tftestaccdescription",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"namespace_name":        name,
-						"namespace_id":          fmt.Sprintf("%s:tftest%d", os.Getenv("ALICLOUD_REGION"), rand),
+						"namespace_id":          fmt.Sprintf("%s:tftest%d", defaultRegionToTest, rand),
 						"namespace_description": "tftestaccdescription",
 					}),
 				),
@@ -89,9 +85,9 @@ func TestAccAlicloudSaeNamespace_basic0(t *testing.T) {
 }
 
 var AlicloudSAENamespaceMap0 = map[string]string{
-	"namespace_name":        "namespace_name",
-	"namespace_id":          fmt.Sprintf("%s:tftest", os.Getenv("ALICLOUD_REGION")),
-	"namespace_description": "tftestaccdescription",
+	"namespace_name":        CHECKSET,
+	"namespace_id":          CHECKSET,
+	"namespace_description": CHECKSET,
 }
 
 func AlicloudSAENamespaceBasicDependence0(name string) string {

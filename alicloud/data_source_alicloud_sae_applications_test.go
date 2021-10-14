@@ -139,7 +139,7 @@ resource "alicloud_sae_application" "default" {
   package_type=    "Image"
   jdk=             "Open JDK 8"
   vswitch_id=      data.alicloud_vswitches.default.ids.0
-
+  vpc_id          = data.alicloud_vpcs.default.ids.0
   timezone = "Asia/Shanghai"
   replicas=        "5"
   cpu=             "500"

@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -13,6 +12,7 @@ import (
 
 func TestAccAlicloudSaeConfigmapsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1, 200)
+	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSaeConfigmapsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_sae_config_map.default.id}"]`,
@@ -45,8 +45,8 @@ func TestAccAlicloudSaeConfigmapsDataSource(t *testing.T) {
 			"names.#":              "1",
 			"maps.#":               "1",
 			"maps.0.name":          fmt.Sprintf("tf-testaccsaenames-%d", rand),
-			"maps.0.description":   fmt.Sprintf("tf-testaccsaenamespacedesc-%d", rand),
-			"maps.0.namespace_id":  fmt.Sprintf("%s:configtest", os.Getenv("ALICLOUD_REGION")),
+			"maps.0.description":   fmt.Sprintf("tf-testaccsaenames-%d", rand),
+			"maps.0.namespace_id":  fmt.Sprintf("%s:configtest%d", defaultRegionToTest, rand),
 			"maps.0.data":          "{\"env.home\":\"/root\",\"env.shell\":\"/bin/sh\"}",
 			"maps.0.create_time":   CHECKSET,
 			"maps.0.config_map_id": CHECKSET,
@@ -63,10 +63,7 @@ func TestAccAlicloudSaeConfigmapsDataSource(t *testing.T) {
 		existMapFunc: existAlicloudSaeNamespaceDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudSaeNamespaceDataSourceNameMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
-	}
-	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	alicloudSaeNamespaceCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudSaeConfigmapsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -78,24 +75,28 @@ func testAccCheckAlicloudSaeConfigmapsDataSourceName(rand int, attrMap map[strin
 variable "name" {	
 	default = "tf-testaccsaenames-%d"
 }
-variable "desc" {	
-	default = "tf-testaccsaenamespacedesc-%d"
-}
+
 variable "namespace_id" {	
-	default = "%s:configtest"
+	default = "%s:configtest%d"
+}
+
+resource "alicloud_sae_namespace" "default" {
+	namespace_id = var.namespace_id
+	namespace_name = var.name
+	namespace_description = var.name
 }
 
 resource "alicloud_sae_config_map" "default" {
-	namespace_id = var.namespace_id
+	namespace_id = alicloud_sae_namespace.default.namespace_id
 	name = var.name
-	description = var.desc
+	description = var.name
 	data = jsonencode({"env.home": "/root", "env.shell": "/bin/sh"})
 }
 
 data "alicloud_sae_config_maps" "default" {	
-	namespace_id = "%s:configtest"
+	namespace_id = "%s:configtest%d"
 	%s
 }
-`, rand, rand, os.Getenv("ALICLOUD_REGION"), os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, " \n "))
+`, rand, defaultRegionToTest, rand, defaultRegionToTest, rand, strings.Join(pairs, " \n "))
 	return config
 }
