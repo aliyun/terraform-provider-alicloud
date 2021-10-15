@@ -278,8 +278,58 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 }
 func resourceAlicloudCloudSsoDirectoryDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteDirectory"
 	var response map[string]interface{}
+
+	if _, ok := d.GetOk("saml_identity_provider_configuration"); ok {
+		deleteExternalSAMLIdentityProviderReq := map[string]interface{}{
+			"DirectoryId": d.Id(),
+		}
+
+		deleteExternalSAMLIdentityProviderReq["SSOStatus"] = "Disabled"
+		action := "SetExternalSAMLIdentityProvider"
+		conn, err := client.NewCloudssoClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, deleteExternalSAMLIdentityProviderReq, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, deleteExternalSAMLIdentityProviderReq)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		clearExternalSAMLIdentityProviderReq := map[string]interface{}{
+			"DirectoryId": d.Id(),
+		}
+		action = "ClearExternalSAMLIdentityProvider"
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, clearExternalSAMLIdentityProviderReq, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, clearExternalSAMLIdentityProviderReq)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	action := "DeleteDirectory"
 	conn, err := client.NewCloudssoClient()
 	if err != nil {
 		return WrapError(err)
