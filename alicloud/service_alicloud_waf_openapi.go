@@ -51,7 +51,18 @@ func (s *Waf_openapiService) DescribeWafDomain(id string) (object map[string]int
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ComboError", "DomainNotExist"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("WafDomain", id)), NotFoundMsg, ProviderERROR)
