@@ -40,6 +40,9 @@ The following arguments are supported:
 
 -> **NOTE:** If the IdP Metadata has been uploaded, no update will be made if this parameter is not specified, otherwise the update will be made according to the parameter content. If IdP Metadata has not been uploaded, and the parameter SSOStatus is `true`, this parameter must be provided. If the IdP Metadata has not been uploaded, and the parameter SSOStatus is false, this parameter can be omitted, and the IdP Metadata will remain empty.
   * `sso_status` - (Optional) SAML SSO login enabled status. Valid values: `Enabled` or `Disabled`. Default to `Disabled`.
+
+ **NOTE:** The `saml_identity_provider_configuration` will be removed automatically when the resource is deleted, please operate with caution. If there are left more configuration in the directory, please remove them before deleting the directory.
+
 ## Attributes Reference
 
 The following attributes are exported:
