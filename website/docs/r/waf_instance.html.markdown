@@ -57,6 +57,7 @@ The following arguments are supported:
     * AutoRenewal: The service time of WAF is renewed automatically.
     * ManualRenewal (default): The service time of WAF is renewed manually.Specifies whether to configure a Layer-7 proxy, such as Anti-DDoS Pro or CDN, to filter the inbound traffic before it is forwarded to WAF. Valid values: "On" and "Off". Default to "Off".
 * `resource_group_id` - (Optional) The resource group ID.
+* `region` - (Optional, Available in 1.139.0+) The instance region ID.
 * `subscription_type` - (Required, String) Subscription of WAF service. Valid values: ["Subscription", "PayAsYouGo"].
 * `waf_log` - (Required, String) Specify whether Log service is supported. Valid values: ["true", "false"]                                           
 			
