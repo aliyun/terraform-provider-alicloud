@@ -1,40 +1,37 @@
 ## 1.140.0 (Unreleased)
 ## 1.139.0 (October 17, 2021)
 
-- **New Resource:** `alicloud_cloud_firewall_instance` [GH-4102]
-- **New Resource:** `alicloud_actiontrail_history_delivery_job` [GH-4101]
-- **New Resource:** `alicloud_cr_instance_endpoint_acl_policy` [GH-4102]
-- **New Resource:** `alicloud_cloud_firewall_instance` [GH-4102]
-- **New Resource:** `alicloud_cloud_firewall_instance` [GH-4102]  
-- **New Data Source:** `alicloud_sae_instance_specifications` [GH-4103] 
-- **New Data Source:** `alicloud_cloud_firewall_instances` [GH-4102]
-- **New Data Source:** `alicloud_actiontrail_history_delivery_jobs` [GH-4101]
-- **New Data Source:** `alicloud_cen_transit_router_service` [GH-4092]
-- **New Data Source:** `alicloud_cr_instance_endpoint_acl_policies` [GH-4102]
-- **New Data Source:** `alicloud_cr_endpoint_acl_service` [GH-4102]
-
+- **New Resource:** `alicloud_cloud_firewall_instance` ([#4102](https://github.com/aliyun/terraform-provider-alicloud/issues/4102))
+- **New Resource:** `alicloud_actiontrail_history_delivery_job` ([#4101](https://github.com/aliyun/terraform-provider-alicloud/issues/4101))
+- **New Resource:** `alicloud_cr_instance_endpoint_acl_policy` ([#4087](https://github.com/aliyun/terraform-provider-alicloud/issues/4087))
+- **New Data Source:** `alicloud_sae_instance_specifications` [[#4103](https://github.com/aliyun/terraform-provider-alicloud/issues/4103)] 
+- **New Data Source:** `alicloud_cloud_firewall_instances` ([#4102](https://github.com/aliyun/terraform-provider-alicloud/issues/4102))
+- **New Data Source:** `alicloud_actiontrail_history_delivery_jobs` ([#4101](https://github.com/aliyun/terraform-provider-alicloud/issues/4101))
+- **New Data Source:** `alicloud_cen_transit_router_service` ([#4092](https://github.com/aliyun/terraform-provider-alicloud/issues/4092))
+- **New Data Source:** `alicloud_cr_instance_endpoint_acl_policies` ([#4087](https://github.com/aliyun/terraform-provider-alicloud/issues/4087))
+- **New Data Source:** `alicloud_cr_endpoint_acl_service` ([#4087](https://github.com/aliyun/terraform-provider-alicloud/issues/4087))
 
 ENHANCEMENTS:
 
-- resource/alicloud_waf_instance: Adds new attribute region; resource/alicloud_waf_domain: Adds retry strategy to avoid ThrottlingUser error [GH-4110]
-- Github WorkFlow: Add precheck format && golang-ci-lint [GH-4106]
-- resource/alicloud_dts_synchronization_instance: modify additional input parameters for the createInstance API, make AutoPay to false [GH-4081]
-- resource/alicloud_hbr_backup_client, resource/alicloud_hbr_ecs_backup_plan, resource/alicloud_hbr_oss_backup_plan, resource/alicloud_hbr_nas_backup_plan, resource/alicloud_hbr_restore_job, resource/alicloud_hbr_vault and theirs datasource: Improves the attribute value, test case and documents [GH-4080]
-- doc/alicloud_common_bandwidth_package: Optimize document format resource/alicloud_eip_address: Support internet charge type PayByDominantTraffic [GH-4082]
-- testcase: Improves the testcase when changing region [GH-4099]
-- resource/alicloud_hbr_nas_backup_plan:Improvement DetachNasFileSystem [GH-4096]
-- docs/alicloud_route_entry: Supports two new nexthop type IPv6Gateway and Attachment [GH-4091]
-- doc/alicloud_cr_ee_instance: Optimize document format [GH-4087]
-- datasource/alicloud_alb_listeners: Fix the bug of parameter certifiates output doc/alicloud_alb_listener: Optimize document format doc/alicloud_alb_listeners: Optimize document format [GH-4083]
-- resource/alicloud_dts_synchronization_instance: modify additional input parameters for the createInstance API, make AutoPay to false; docs/alicloud_dts_synchronization_instance, alicloud_dts_synchronization_job: fix examples. [GH-4081]
-- resource/alicloud_hbr_backup_client, resource/alicloud_hbr_ecs_backup_plan, resource/alicloud_hbr_oss_backup_plan, resource/alicloud_hbr_nas_backup_plan, resource/alicloud_hbr_restore_job, resource/alicloud_hbr_vault and theirs datasource: Improves the attribute value, test case and documents. [GH-4080]
-- resource/alicloud_sae_application: supports updating Slb [GH-4035]
+- resource/alicloud_waf_instance: Adds new attribute region; resource/alicloud_waf_domain: Adds retry strategy to avoid ThrottlingUser error ([#4110](https://github.com/aliyun/terraform-provider-alicloud/issues/4110))
+- Github WorkFlow: Add precheck format && golang-ci-lint ([#4106](https://github.com/aliyun/terraform-provider-alicloud/issues/4106))
+- resource/alicloud_dts_synchronization_instance: modify additional input parameters for the createInstance API, make AutoPay to false ([#4081](https://github.com/aliyun/terraform-provider-alicloud/issues/4081))
+- resource/alicloud_hbr_backup_client, resource/alicloud_hbr_ecs_backup_plan, resource/alicloud_hbr_oss_backup_plan, resource/alicloud_hbr_nas_backup_plan, resource/alicloud_hbr_restore_job, resource/alicloud_hbr_vault and theirs datasource: Improves the attribute value, test case and documents ([#4080](https://github.com/aliyun/terraform-provider-alicloud/issues/4080))
+- doc/alicloud_common_bandwidth_package: Optimize document format resource/alicloud_eip_address: Support internet charge type PayByDominantTraffic ([#4082](https://github.com/aliyun/terraform-provider-alicloud/issues/4082))
+- testcase: Improves the testcase when changing region ([#4099](https://github.com/aliyun/terraform-provider-alicloud/issues/4099))
+- resource/alicloud_hbr_nas_backup_plan:Improvement DetachNasFileSystem ([#4096](https://github.com/aliyun/terraform-provider-alicloud/issues/4096))
+- docs/alicloud_route_entry: Supports two new nexthop type IPv6Gateway and Attachment ([#4091](https://github.com/aliyun/terraform-provider-alicloud/issues/4091))
+- doc/alicloud_cr_ee_instance: Optimize document format ([#4087](https://github.com/aliyun/terraform-provider-alicloud/issues/4087))
+- datasource/alicloud_alb_listeners: Fix the bug of parameter certifiates output doc/alicloud_alb_listener: Optimize document format doc/alicloud_alb_listeners: Optimize document format ([#4083](https://github.com/aliyun/terraform-provider-alicloud/issues/4083))
+- resource/alicloud_dts_synchronization_instance: modify additional input parameters for the createInstance API, make AutoPay to false; docs/alicloud_dts_synchronization_instance, alicloud_dts_synchronization_job: fix examples. ([#4081](https://github.com/aliyun/terraform-provider-alicloud/issues/4081))
+- resource/alicloud_hbr_backup_client, resource/alicloud_hbr_ecs_backup_plan, resource/alicloud_hbr_oss_backup_plan, resource/alicloud_hbr_nas_backup_plan, resource/alicloud_hbr_restore_job, resource/alicloud_hbr_vault and theirs datasource: Improves the attribute value, test case and documents. ([#4080](https://github.com/aliyun/terraform-provider-alicloud/issues/4080))
+- resource/alicloud_sae_application: supports updating Slb ([#4035](https://github.com/aliyun/terraform-provider-alicloud/issues/4035))
 
 BUG FIXES:
 
-- datasource/alicloud_bastionhost_users: Fixes the status without output error [GH-4084]
-- datasource/alicloud_alb_listeners: Fix the bug of parameter certifiates output doc/alicloud_alb_listener: Optimize document format doc/alicloud_alb_listeners: Optimize document format [GH-4083]
-- docs/alicloud_dts_synchronization_instance, alicloud_dts_synchronization_job: fix examples. [GH-4081]
+- datasource/alicloud_bastionhost_users: Fixes the status without output error ([#4084](https://github.com/aliyun/terraform-provider-alicloud/issues/4084))
+- datasource/alicloud_alb_listeners: Fix the bug of parameter certifiates output doc/alicloud_alb_listener: Optimize document format doc/alicloud_alb_listeners: Optimize document format ([#4083](https://github.com/aliyun/terraform-provider-alicloud/issues/4083))
+- docs/alicloud_dts_synchronization_instance, alicloud_dts_synchronization_job: fix examples. ([#4081](https://github.com/aliyun/terraform-provider-alicloud/issues/4081))
 
 ## 1.138.0 (September 30, 2021)
 
