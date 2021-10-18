@@ -1,5 +1,5 @@
 ---
-subcategory: "Action Trail"
+subcategory: "Actiontrail"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_actiontrail_history_delivery_jobs"
 sidebar_current: "docs-alicloud-datasource-actiontrail-history-delivery-jobs"

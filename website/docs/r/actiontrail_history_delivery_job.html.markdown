@@ -1,17 +1,17 @@
 ---
-subcategory: "Action Trail"
+subcategory: "Actiontrail"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_actiontrail_history_delivery_job"
 sidebar_current: "docs-alicloud-resource-actiontrail-history-delivery-job"
 description: |-
-  Provides a Alicloud Action Trail History Delivery Job resource.
+  Provides a Alicloud Actiontrail History Delivery Job resource.
 ---
 
 # alicloud\_actiontrail\_history\_delivery\_job
 
-Provides a Action Trail History Delivery Job resource.
+Provides a Actiontrail History Delivery Job resource.
 
-For information about Action Trail History Delivery Job and how to use it, see [What is History Delivery Job](https://www.alibabacloud.com/help/doc-detail/199999.htm).
+For information about Actiontrail History Delivery Job and how to use it, see [What is History Delivery Job](https://www.alibabacloud.com/help/doc-detail/199999.htm).
 
 -> **NOTE:** Available in v1.139.0+.
 
@@ -71,7 +71,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Action Trail History Delivery Job can be imported using the id, e.g.
+Actiontrail History Delivery Job can be imported using the id, e.g.
 
 ```
 $ terraform import alicloud_actiontrail_history_delivery_job.example <id>
