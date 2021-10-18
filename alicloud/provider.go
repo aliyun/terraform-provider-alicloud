@@ -565,6 +565,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dfs_file_systems":                            dataSourceAlicloudDfsFileSystems(),
 			"alicloud_dfs_zones":                                   dataSourceAlicloudDfsZones(),
 			"alicloud_vpc_traffic_mirror_filters":                  dataSourceAlicloudVpcTrafficMirrorFilters(),
+			"alicloud_dfs_access_rules":                            dataSourceAlicloudDfsAccessRules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1020,6 +1021,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_access_configuration":                       resourceAlicloudCloudSsoAccessConfiguration(),
 			"alicloud_dfs_file_system":                                      resourceAlicloudDfsFileSystem(),
 			"alicloud_vpc_traffic_mirror_filter":                            resourceAlicloudVpcTrafficMirrorFilter(),
+			"alicloud_dfs_access_rule":                                      resourceAlicloudDfsAccessRule(),
 		},
 
 		ConfigureFunc: providerConfigure,
