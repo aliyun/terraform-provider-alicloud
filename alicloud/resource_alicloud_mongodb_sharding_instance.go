@@ -190,6 +190,46 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
 			},
 			"tags": tagsSchema(),
+			"config_server_list": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"max_iops": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"connect_string": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"node_class": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"max_connections": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"port": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"node_description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"node_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"node_storage": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -401,6 +441,22 @@ func resourceAlicloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	}
 
 	d.Set("tags", ddsService.tagsInAttributeToMap(instance.Tags.Tag))
+
+	configServerSets := make([]map[string]interface{}, 0)
+	for _, v := range instance.ConfigserverList.ConfigserverAttribute {
+		configServerSets = append(configServerSets, map[string]interface{}{
+			"max_iops":         v.MaxIOPS,
+			"connect_string":   v.ConnectString,
+			"node_class":       v.NodeClass,
+			"max_connections":  v.MaxConnections,
+			"port":             v.Port,
+			"node_description": v.NodeDescription,
+			"node_id":          v.NodeId,
+			"node_storage":     v.NodeStorage,
+		})
+	}
+	err = d.Set("config_server_list", configServerSets)
+
 	return nil
 }
 
@@ -466,7 +522,7 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if d.IsNewResource() {
 		d.Partial(false)
-		return resourceAlicloudMongoDBInstanceRead(d, meta)
+		return resourceAlicloudMongoDBShardingInstanceRead(d, meta)
 	}
 
 	if d.HasChange("shard_list") {

@@ -173,6 +173,42 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Computed: true,
 			},
 			"tags": tagsSchema(),
+			"replica_sets": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"connection_port": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"replica_set_role": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"connection_domain": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_cloud_instance_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"network_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -268,7 +304,6 @@ func resourceAlicloudMongoDBInstanceCreate(d *schema.ResourceData, meta interfac
 	response, _ := raw.(*dds.CreateDBInstanceResponse)
 
 	d.SetId(response.DBInstanceId)
-
 	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
@@ -290,6 +325,21 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
+	if len(instance.ReplicaSets.ReplicaSet) > 0 {
+		replicaSets := make([]map[string]interface{}, 0)
+		for _, v := range instance.ReplicaSets.ReplicaSet {
+			replicaSets = append(replicaSets, map[string]interface{}{
+				"vswitch_id":            v.VSwitchId,
+				"connection_port":       v.ConnectionPort,
+				"replica_set_role":      v.ReplicaSetRole,
+				"connection_domain":     v.ConnectionDomain,
+				"vpc_cloud_instance_id": v.VPCCloudInstanceId,
+				"network_type":          v.NetworkType,
+				"vpc_id":                v.VPCId,
+			})
+		}
+		d.Set("replica_sets", replicaSets)
+	}
 	backupPolicy, err := ddsService.DescribeMongoDBBackupPolicy(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -525,6 +575,11 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("ssl_action")
+		// wait instance status is running after modifying
+		stateConf := BuildStateConf([]string{"SSLModifying"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	if d.HasChange("db_instance_storage") ||

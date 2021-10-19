@@ -102,6 +102,17 @@ The following attributes are exported:
 * `retention_period` - Instance log backup retention days. Available in 1.42.0+.
 * `replica_set_name` - The name of the mongo replica set
 * `ssl_status` - Status of the SSL feature. `Open`: SSL is turned on; `Closed`: SSL is turned off.
+* `replica_sets` - Replica set instance information. The details see Block replica_sets. **NOTE:** Available in v1.140+.
+
+#### replica_sets
+The replica_sets supports the following:
+* `vswitch_id` - The virtual switch ID to launch DB instances in one VPC.
+* `connection_port` - The connection port of the node.
+* `replica_set_role` - The role of the node. Valid values: `Primary`,`Secondary`.
+* `connection_domain` - The connection address of the node.
+* `vpc_cloud_instance_id` - VPC instance ID.
+* `network_type` - The network type of the node. Valid values: `Classic`,`VPC`.
+* `vpc_id` - The private network ID of the node.
 
 ### Timeouts
 
