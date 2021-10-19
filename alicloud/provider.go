@@ -1023,6 +1023,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dfs_file_system":                                      resourceAlicloudDfsFileSystem(),
 			"alicloud_vpc_traffic_mirror_filter":                            resourceAlicloudVpcTrafficMirrorFilter(),
 			"alicloud_dfs_access_rule":                                      resourceAlicloudDfsAccessRule(),
+			"alicloud_vpc_traffic_mirror_filter_egress_rule":                resourceAlicloudVpcTrafficMirrorFilterEgressRule(),
 		},
 
 		ConfigureFunc: providerConfigure,
