@@ -173,6 +173,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 						"storage_engine":                 "WiredTiger",
 						"instance_charge_type":           "PostPaid",
 						"tags.%":                         "0",
+						"config_server_list.#":           CHECKSET,
 					}),
 				),
 			},
@@ -264,7 +265,8 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 						"tags.for":                    REMOVEKEY,
 					}),
 				),
-			}},
+			},
+		},
 	})
 }
 

@@ -161,7 +161,19 @@ The following attributes are exported:
     * `port` - Mongo node port
 * `shard_list`
     * `node_id` - The ID of the shard-node.
-* `retention_period` - Instance log backup retention days. Available in 1.42.0+.
+* `retention_period` - Instance log backup retention days. **NOTE:** Available in 1.42.0+.
+* `config_server_list` - The node information list of config server. The details see Block `config_server_list`. **NOTE:** Available in v1.140+.
+
+#### config_server_list
+The config_server_list supports the following:
+* `max_iops` - The maximum IOPS of the Config Server node.
+* `connect_string` - The connection address of the Config Server node.
+* `node_class` - The node class of the Config Server node.
+* `max_connections` - The max connections of the Config Server node.
+* `port` - The connection port of the Config Server node.
+* `node_description` - The description of the Config Server node.
+* `node_id` - The ID of the Config Server node.
+* `node_storage` - The node storage of the Config Server node.
 
 ### Timeouts
 
