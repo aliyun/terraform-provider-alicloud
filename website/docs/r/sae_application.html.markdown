@@ -72,7 +72,7 @@ The following arguments are supported:
 * `command_args` - (Optional) Mirror startup command parameters. The parameters required for the above start command. For example: 1d.
 * `config_map_mount_desc` - (Optional) ConfigMap mount description.
 * `cpu` - (Optional) The CPU required for each instance, in millicores, cannot be 0. Valid values: `1000`, `16000`, `2000`, `32000`, `4000`, `500`, `8000`.
-* `custom_host_alias` - (Optional) Custom host mapping in the container. For example: [{`hostName`:`samplehost`,`ip`:`127.0.0.1`}].
+* `custom_host_alias` - (Optional) Custom host mapping in the container. For example: [{`hostName`:`samplehost`,`ip`:`127.0.0.1`}]. 
 * `deploy` - (Optional) The deploy. Valid values: `false`, `true`.
 * `edas_container_version` - (Optional) The operating environment used by the Pandora application.
 * `enable_ahas` - (Optional) The enable ahas.
