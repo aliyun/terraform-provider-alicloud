@@ -168,7 +168,7 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 					"app_description": name + "desc",
 					"vswitch_id":      "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
-					"image_url":       fmt.Sprintf("registry-vpc.%s.aliyuncs.com/sae-demo-image/consumer:1.0",defaultRegionToTest),
+					"image_url":       fmt.Sprintf("registry-vpc.%s.aliyuncs.com/sae-demo-image/consumer:1.0", defaultRegionToTest),
 					"replicas":        "5",
 					"cpu":             "500",
 					"memory":          "2048",
@@ -475,11 +475,11 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_url": fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0",defaultRegionToTest),
+					"image_url": fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0", defaultRegionToTest),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"image_url": fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0",defaultRegionToTest),
+						"image_url": fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0", defaultRegionToTest),
 					}),
 				),
 			},
@@ -517,7 +517,7 @@ func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"app_name":        name,
 					"namespace_id":    "${alicloud_sae_namespace.default.namespace_id}",
-					"package_url":     fmt.Sprintf("http://edas-hz.oss-%s.aliyuncs.com/demo/1.0/hello-sae.jar",defaultRegionToTest),
+					"package_url":     fmt.Sprintf("http://edas-hz.oss-%s.aliyuncs.com/demo/1.0/hello-sae.jar", defaultRegionToTest),
 					"package_type":    "FatJar",
 					"app_description": name + "desc",
 					"jdk":             "Open JDK 8",
@@ -780,7 +780,7 @@ func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 					"app_name":        name,
 					"app_description": name + "desc",
 					"namespace_id":    "${alicloud_sae_namespace.default.namespace_id}",
-					"package_url":     fmt.Sprintf("http://edas-hz.oss-%s.aliyuncs.com/demo/1.0/hello-sae.war?spm=5176.12834076.0.0.60326a68Uw5yB4&file=hello-sae.war",defaultRegionToTest),
+					"package_url":     fmt.Sprintf("http://edas-hz.oss-%s.aliyuncs.com/demo/1.0/hello-sae.war?spm=5176.12834076.0.0.60326a68Uw5yB4&file=hello-sae.war", defaultRegionToTest),
 					"package_type":    "War",
 					"web_container":   "apache-tomcat-8.5.42",
 					"jdk":             "Open JDK 8",

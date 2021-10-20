@@ -108,10 +108,11 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${alicloud_api_gateway_group.default.name}",
-					"group_id":    "${alicloud_api_gateway_group.default.id}",
-					"description": "tf_testAcc_api description",
-					"auth_type":   "APP",
+					"name":              "${alicloud_api_gateway_group.default.name}",
+					"group_id":          "${alicloud_api_gateway_group.default.id}",
+					"description":       "tf_testAcc_api description",
+					"auth_type":         "APP",
+					"force_nonce_check": "true",
 					"request_config": []map[string]string{{
 						"protocol": "HTTP",
 						"method":   "GET",
@@ -138,6 +139,7 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                            name,
+						"force_nonce_check":               "true",
 						"http_service_config.0.address":   "http://apigateway-backend.alicloudapi.com:8080",
 						"http_service_config.0.method":    "GET",
 						"http_service_config.0.path":      "/web/cloudapi",
