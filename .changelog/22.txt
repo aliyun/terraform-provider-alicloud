@@ -1,3 +1,0 @@
-```release-note:enhancement
-compute: added `foo_bar` field to `google_compute_foo` resource
-```
