@@ -566,6 +566,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dfs_zones":                                   dataSourceAlicloudDfsZones(),
 			"alicloud_vpc_traffic_mirror_filters":                  dataSourceAlicloudVpcTrafficMirrorFilters(),
 			"alicloud_dfs_access_rules":                            dataSourceAlicloudDfsAccessRules(),
+			"alicloud_nas_zones":                                   dataSourceAlicloudNasZones(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
