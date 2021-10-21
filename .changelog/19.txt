@@ -1,3 +1,0 @@
-```release-note:deprecation
-doc/r/sae_application add comma.
-```

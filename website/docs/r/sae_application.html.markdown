@@ -11,7 +11,7 @@ description: |-
 
 Provides a Serverless App Engine (SAE) Application resource.
 
-For information about Serverless App Engine (SAE) Application and how to use it, see [What is Application](https://help.aliyun.com/document_detail/97792.html).
+For information about Serverless App Engine (SAE) Application and how to use it, see [What is Application](https://help.aliyun.com/document_detail/97792.html)..
 
 -> **NOTE:** Available in v1.133.0+.
 
