@@ -135,11 +135,13 @@ func TestAccAlicloudNasFileSystem_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"protocol_type": "${data.alicloud_nas_protocols.example.protocols.0}",
 					"storage_type":  "Capacity",
+					"zone_id":       "${data.alicloud_nas_zones.default.zones.1.zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocol_type": CHECKSET,
 						"storage_type":  "Capacity",
+						"zone_id":       CHECKSET,
 					}),
 				),
 			},
@@ -197,12 +199,14 @@ func TestAccAlicloudNasFileSystemEncrypt(t *testing.T) {
 					"protocol_type": "NFS",
 					"storage_type":  "Capacity",
 					"encrypt_type":  "1",
+					"zone_id":       "${data.alicloud_nas_zones.default.zones.1.zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocol_type": CHECKSET,
 						"storage_type":  "Capacity",
 						"encrypt_type":  "1",
+						"zone_id":       CHECKSET,
 					}),
 				),
 			},
@@ -245,6 +249,8 @@ variable "name" {
 data "alicloud_nas_protocols" "example" {
         type = "Capacity"
 }
+data "alicloud_nas_zones" "default" {
+}
 `, name)
 }
 
@@ -257,6 +263,8 @@ resource "alicloud_kms_key" "key" {
  description             = var.name
  pending_window_in_days  = "7"
  key_state               = "Enabled"
+}
+data "alicloud_nas_zones" "default" {
 }
 `, name)
 }
