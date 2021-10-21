@@ -36,6 +36,10 @@ func resourceAlicloudConfigAggregateConfigRule() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"config_rule_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"config_rule_trigger_types": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -200,6 +204,7 @@ func resourceAlicloudConfigAggregateConfigRuleRead(d *schema.ResourceData, meta 
 		return WrapError(err)
 	}
 	d.Set("aggregator_id", parts[0])
+	d.Set("config_rule_id", parts[1])
 	d.Set("aggregate_config_rule_name", object["ConfigRuleName"])
 	d.Set("config_rule_trigger_types", object["ConfigRuleTriggerTypes"])
 	d.Set("description", object["Description"])
