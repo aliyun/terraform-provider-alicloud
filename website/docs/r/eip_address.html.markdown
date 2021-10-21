@@ -51,6 +51,7 @@ The following arguments are supported:
 * `period` - (Optional) The duration that you will buy the resource, in month. It is valid when `payment_type` is `Subscription`. Valid values: [1-9, 12, 24, 36]. At present, the provider does not support modify "period" and you can do that via web console.
 * `resource_group_id` - (Optional) The ID of the resource group.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `auto_pay`  - (Optional, Available in v1.140.0+) Whether to pay automatically. Valid values: `true` and `false`. Default value: `true`. When `auto_pay` is `true`, The order will be automatically paid. When `auto_pay` is `false`, The order needs to go to the order center to complete the payment. **NOTE:** When `payment_type` is `Subscription`, this parameter is valid.
 
 ## Attributes Reference
 
