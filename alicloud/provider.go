@@ -582,6 +582,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_nas_file_systems":                        dataSourceAlicloudEcdNasFileSystems(),
 			"alicloud_vpc_traffic_mirror_service":                  dataSourceAlicloudVpcTrafficMirrorService(),
 			"alicloud_msc_sub_webhooks":                            dataSourceAlicloudMscSubWebhooks(),
+			"alicloud_ecd_users":                                   dataSourceAlicloudEcdUsers(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1047,6 +1048,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_access_assignment":                          resourceAlicloudCloudSsoAccessAssignment(),
 			"alicloud_msc_sub_webhook":                                      resourceAlicloudMscSubWebhook(),
 			"alicloud_waf_protection_module":                                resourceAlicloudWafProtectionModule(),
+			"alicloud_ecd_user":                                             resourceAlicloudEcdUser(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1260,6 +1262,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.MhubEndpoint = strings.TrimSpace(endpoints["mhub"].(string))
 		config.ServicemeshEndpoint = strings.TrimSpace(endpoints["servicemesh"].(string))
 		config.AcrEndpoint = strings.TrimSpace(endpoints["acr"].(string))
+		config.EdsuserEndpoint = strings.TrimSpace(endpoints["edsuser"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1566,6 +1569,8 @@ func init() {
 		"servicemesh_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom servicemesh endpoints.",
 
 		"acr_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom acr endpoints.",
+
+		"edsuser_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom edsuser endpoints.",
 	}
 }
 
@@ -1610,6 +1615,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"edsuser": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["edsuser_endpoint"],
+				},
+
 				"acr": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2409,6 +2421,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["mhub"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["servicemesh"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["acr"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["edsuser"].(string)))
 	return hashcode.String(buf.String())
 }
 

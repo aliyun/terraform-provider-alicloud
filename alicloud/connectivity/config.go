@@ -158,6 +158,7 @@ type Config struct {
 	MhubEndpoint                string
 	ServicemeshEndpoint         string
 	AcrEndpoint                 string
+	EdsuserEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {
