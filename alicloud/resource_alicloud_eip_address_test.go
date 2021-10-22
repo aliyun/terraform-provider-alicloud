@@ -572,11 +572,10 @@ func TestAccAlicloudEIPAddress_basic4(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			//testAccPreCheckWithTime(t, []int{1})
+			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
