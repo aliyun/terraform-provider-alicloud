@@ -22,6 +22,10 @@ func resourceAlicloudVpcTrafficMirrorFilterEgressRule() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(1 * time.Minute),
+			Update: schema.DefaultTimeout(1 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"destination_cidr_block": {
 				Type:     schema.TypeString,

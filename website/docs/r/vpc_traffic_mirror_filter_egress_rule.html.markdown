@@ -26,13 +26,13 @@ resource "alicloud_vpc_traffic_mirror_filter" "example" {
 
 resource "alicloud_vpc_traffic_mirror_filter_egress_rule" "example" {
   traffic_mirror_filter_id = alicloud_vpc_traffic_mirror_filter.example.id
-  priority = "1",
-  rule_action = "accept",
-  protocol = "UDP",
-  destination_cidr_block = "10.0.0.0/24",
-  source_cidr_block = "10.0.0.0/24",
-  destination_port_range = "1/120",
-  source_port_range = "1/120",
+  priority                 = "1"
+  rule_action              = "accept"
+  protocol                 = "UDP"
+  destination_cidr_block   = "10.0.0.0/24"
+  source_cidr_block        = "10.0.0.0/24"
+  destination_port_range   = "1/120"
+  source_port_range        = "1/120"
 }
 
 ```
@@ -58,6 +58,13 @@ The following attributes are exported:
 * `id` - The ID of the rule. The value formats as `<traffic_mirror_filter_id>:<traffic_mirror_filter_egress_rule_id>`.
 * `status` - The state of the inbound rule. Valid values:`Creating`, `Created`, `Modifying` and `Deleting`.
 * `traffic_mirror_filter_egress_rule_id` - The ID of the outbound rule.
+
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins) Used when create the Traffic Mirror Filter Egress Rule.
+* `update` - (Defaults to 1 mins) Used when update the Traffic Mirror Filter Egress Rule.
 
 ## Import
 
