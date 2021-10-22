@@ -309,4 +309,5 @@ const (
 const (
 	BssOpenAPIEndpointDomestic      = "business.aliyuncs.com"
 	BssOpenAPIEndpointInternational = "business.ap-southeast-1.aliyuncs.com"
+	EcdOpenAPIEndpointUser          = "eds-user.ap-southeast-1.aliyuncs.com"
 )

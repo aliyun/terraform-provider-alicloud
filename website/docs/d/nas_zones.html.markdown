@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_zones"
 sidebar_current: "docs-alicloud-datasource-nas-zones"
 description: |-
-Provides a list of FileType owned by an Alibaba Cloud account.
+    Provides a list of FileType owned by an Alibaba Cloud account.
 ---
 
 # alicloud\_nas_zones
