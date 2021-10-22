@@ -65,31 +65,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Traffic Mirror Filter names.
 * `filters` - A list of Vpc Traffic Mirror Filters. Each element contains the following attributes:
-	* `egress_rules` - The list of details about outbound rules.
-		* `destination_port_range` - The destination port range of the outbound traffic.
-		* `protocol` - The transport protocol used by outbound traffic that needs to be mirrored. Valid values: `ALL`, `ICMP`, `TCP`, `UDP`.
-		* `source_cidr_block` - The source CIDR block of the outbound traffic.
-		* `source_port_range` - The source port range of the outbound traffic.
-		* `traffic_direction` - The direction of the network traffic. Valid values: `egress` or `ingress`. `egress`: outbound `ingress`: inbound.
-		* `action` - The collection policy of the outbound rule. Valid values: `accept` or `drop`. `accept`: collects network traffic. `drop`: does not collect network traffic.
-		* `destination_cidr_block` - The destination CIDR block of the outbound traffic.
-		* `priority` - The priority of the outbound rule. A smaller value indicates a higher priority.
-		* `traffic_mirror_filter_id` - The ID of the filter associated with the outbound rule.
-		* `traffic_mirror_filter_rule_id` - The ID of the outbound rule.
-		* `traffic_mirror_filter_rule_status` - The state of the outbound rule. Valid values:`Creating`, `Created`, `Modifying` and `Deleting`.
 	* `id` - The ID of the Traffic Mirror Filter.
-	* `ingress_rules` - The list of details about inbound rules.
-		* `destination_port_range` - The destination port range of the inbound traffic.
-		* `protocol` - The transport protocol used by inbound traffic that needs to be mirrored. Valid values: `ALL`, `ICMP`, `TCP`, `UDP`.
-		* `source_cidr_block` - The source CIDR block of the inbound traffic.
-		* `source_port_range` - The source port range of the inbound traffic.
-		* `traffic_direction` - The direction of the network traffic. Valid values: `egress` or `ingress`. `egress`: outbound `ingress`: inbound.
-		* `action` - The collection policy of the inbound rule. Valid values: `accept` or `drop`. `accept`: collects network traffic. `drop`: does not collect network traffic.
-		* `destination_cidr_block` - The destination CIDR block of the inbound traffic.
-		* `priority` - The priority of the inbound rule. A smaller value indicates a higher priority.
-		* `traffic_mirror_filter_id` - The ID of the filter associated with the inbound rule.
-		* `traffic_mirror_filter_rule_id` - The ID of the inbound rule.
-		* `traffic_mirror_filter_rule_status` - The state of the inbound rule. Valid values:`Creating`, `Created`, `Modifying` and `Deleting`.
 	* `status` - The state of the filter. Valid values:`Creating`, `Created`, `Modifying` and `Deleting`. `Creating`: The filter is being created. `Created`: The filter is created. `Modifying`: The filter is being modified. `Deleting`: The filter is being deleted.
 	* `traffic_mirror_filter_description` - The description of the filter.
 	* `traffic_mirror_filter_id` - The ID of the filter.
