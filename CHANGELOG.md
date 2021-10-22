@@ -1,4 +1,35 @@
 ## 1.140.0 (Unreleased)
+
+- **New Resource:** `alicloud_cloud_sso_access_configuration` [GH-4109]
+- **New Resource:** `alicloud_dfs_file_system` [GH-4112] 
+- **New Resource:** `alicloud_vpc_traffic_mirror_filter` [GH-4113] 
+- **New Resource:** `alicloud_dfs_access_rule` [GH-4116] 
+- **New Resource:** `alicloud_dfs_mount_point` [GH-4118] 
+- **New Resource:** `alicloud_vpc_traffic_mirror_filter_egress_rule` [GH-4119]
+- **New Data Source:** `alicloud_cloud_sso_access_configurations` [GH-4109]
+- **New Data Source:** `alicloud_dfs_zones` [GH-4112]  
+- **New Data Source:** `alicloud_dfs_file_systems` [GH-4112]   
+- **New Data Source:** `alicloud_vpc_traffic_mirror_filters` [GH-4113]   
+- **New Data Source:** `alicloud_dfs_access_rules` [GH-4116]
+- **New Data Source:** `alicloud_dfs_mount_points` [GH-4118]  
+- **New Data Source:** `alicloud_nas_zones` [GH-4120]
+- **New Data Source:** `alicloud_vpc_traffic_mirror_filter_egress_rules` [GH-4127]
+
+ENHANCEMENTS:
+
+- resource/alicloud_waf_instance: Adds new attribute region; resource/alicloud_waf_domain: Adds retry strategy to avoid ThrottlingUser error [GH-4110]
+- resource/alicloud_mongodb_instance support querying replica_sets [GH-4114]
+- resource/alicloud_mongodb_sharding_instance support querying config_server_list [GH-4114]
+- resource/alicloud_api_gateway_api: Support API replay attacks. [GH-4115]  
+- resource/alicloud_nas_file_system: Adds new attribute zone_id [GH-4120]  
+- resource/alicloud_eip_address: Support prepaid instances to set the auto_pay field [GH-4122] 
+- datasource/vpc_traffic_mirror_filters: Remove egress_rules and ingress_rules in its outputs [GH-4124]  
+- doc/actiontrail_history_delivery_job: Optimize document format doc/actiontrail_history_delivery_jobs: Optimize document format [GH-4111]
+
+BUG FIXES:
+
+- resource/alicloud_cloud_sso_directory: Fix the problem of dependency property saml_identity_provider_configuration when deleting [GH-4109]
+
 ## 1.139.0 (October 17, 2021)
 
 - **New Resource:** `alicloud_cloud_firewall_instance` ([#4102](https://github.com/aliyun/terraform-provider-alicloud/issues/4102))
