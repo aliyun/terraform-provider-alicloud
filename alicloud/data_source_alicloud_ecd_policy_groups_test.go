@@ -50,7 +50,7 @@ func TestAccAlicloudEcdPolicyGroupDataSource(t *testing.T) {
 			"name_regex": `"${alicloud_ecd_policy_group.default.policy_group_name}_fake"`,
 		}),
 	}
-	var existAlicloudEventBridgeEventBusesDataSourceNameMapFunc = func(rand int) map[string]string {
+	var existAlicloudEcdPolicyGroupDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                   "1",
 			"names.#":                 "1",
@@ -62,21 +62,21 @@ func TestAccAlicloudEcdPolicyGroupDataSource(t *testing.T) {
 			"groups.0.authorize_security_policy_rules.#": "1",
 		}
 	}
-	var fakeAlicloudEventBridgeEventBusesDataSourceNameMapFunc = func(rand int) map[string]string {
+	var fakeAlicloudEcdPolicyGroupDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":   "0",
 			"names.#": "0",
 		}
 	}
-	var alicloudEventBridgeEventBusesCheckInfo = dataSourceAttr{
+	var alicloudEcdPolicyGroupCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_ecd_policy_groups.default",
-		existMapFunc: existAlicloudEventBridgeEventBusesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudEventBridgeEventBusesDataSourceNameMapFunc,
+		existMapFunc: existAlicloudEcdPolicyGroupDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAlicloudEcdPolicyGroupDataSourceNameMapFunc,
 	}
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.EcdSupportRegions)
 	}
-	alicloudEventBridgeEventBusesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, nameRegexConf, allConf)
+	alicloudEcdPolicyGroupCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudEcdPolicyGroupDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
