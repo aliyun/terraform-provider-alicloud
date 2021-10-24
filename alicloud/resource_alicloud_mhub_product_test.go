@@ -122,7 +122,7 @@ func TestAccAlicloudMHUBProduct_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.MHUBProductSupportRegions)
+			testAccPreCheckWithRegions(t, true, connectivity.MHUBSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

@@ -3851,7 +3851,7 @@ func (client *AliyunClient) NewImpClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewMhubClient() (*rpc.Client, error) {
-	productCode := "mhub"
+	productCode := "emas"
 	endpoint := ""
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
