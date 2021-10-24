@@ -227,3 +227,66 @@ func (s *EcdService) EcdSimpleOfficeSiteStateRefreshFunc(id string) resource.Sta
 		return object, object["Status"].(string), nil
 	}
 }
+func (s *EcdService) DescribeEcdNasFileSystem(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewGwsecdClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeNASFileSystems"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"FileSystemId": []string{id},
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.FileSystems", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FileSystems", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["FileSystemId"]) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECD", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *EcdService) EcdNasFileSystemStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEcdNasFileSystem(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["FileSystemStatus"]) == failState {
+				return object, fmt.Sprint(object["FileSystemStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["FileSystemStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["FileSystemStatus"]), nil
+	}
+}
