@@ -580,6 +580,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_traffic_mirror_filter_ingress_rules":     dataSourceAlicloudVpcTrafficMirrorFilterIngressRules(),
 			"alicloud_ecd_nas_file_systems":                        dataSourceAlicloudEcdNasFileSystems(),
 			"alicloud_vpc_traffic_mirror_service":                  dataSourceAlicloudVpcTrafficMirrorService(),
+			"alicloud_msc_sub_webhooks":                            dataSourceAlicloudMscSubWebhooks(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1043,6 +1044,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_nas_file_system":                                  resourceAlicloudEcdNasFileSystem(),
 			"alicloud_cloud_sso_user_attachment":                            resourceAlicloudCloudSsoUserAttachment(),
 			"alicloud_cloud_sso_access_assignment":                          resourceAlicloudCloudSsoAccessAssignment(),
+			"alicloud_msc_sub_webhook":                                      resourceAlicloudMscSubWebhook(),
 		},
 
 		ConfigureFunc: providerConfigure,
