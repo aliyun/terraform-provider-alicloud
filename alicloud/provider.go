@@ -570,6 +570,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dfs_mount_points":                            dataSourceAlicloudDfsMountPoints(),
 			"alicloud_vpc_traffic_mirror_filter_egress_rules":      dataSourceAlicloudVpcTrafficMirrorFilterEgressRules(),
 			"alicloud_ecd_simple_office_sites":                     dataSourceAlicloudEcdSimpleOfficeSites(),
+			"alicloud_gpdb_accounts":                               dataSourceAlicloudGpdbAccounts(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1029,6 +1030,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_traffic_mirror_filter_egress_rule":                resourceAlicloudVpcTrafficMirrorFilterEgressRule(),
 			"alicloud_dfs_mount_point":                                      resourceAlicloudDfsMountPoint(),
 			"alicloud_ecd_simple_office_site":                               resourceAlicloudEcdSimpleOfficeSite(),
+			"alicloud_gpdb_account":                                         resourceAlicloudGpdbAccount(),
 		},
 
 		ConfigureFunc: providerConfigure,
