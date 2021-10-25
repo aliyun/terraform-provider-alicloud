@@ -580,6 +580,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_simple_office_sites":                     dataSourceAlicloudEcdSimpleOfficeSites(),
 			"alicloud_vpc_traffic_mirror_filter_ingress_rules":     dataSourceAlicloudVpcTrafficMirrorFilterIngressRules(),
 			"alicloud_ecd_nas_file_systems":                        dataSourceAlicloudEcdNasFileSystems(),
+			"alicloud_vpc_traffic_mirror_service":                  dataSourceAlicloudVpcTrafficMirrorService(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
