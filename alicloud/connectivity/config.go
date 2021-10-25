@@ -159,6 +159,7 @@ type Config struct {
 	ServicemeshEndpoint         string
 	AcrEndpoint                 string
 	EdsuserEndpoint             string
+	GpdbEndpoint                string
 }
 
 func (c *Config) loadAndValidate() error {

@@ -30,6 +30,7 @@ func testSweepGpdbElasticInstances(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		"tftest",
 	}
 
 	var instances []gpdb.DBInstance
