@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -23,8 +24,9 @@ func resourceAlicloudCloudSsoDirectory() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"directory_name": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile("^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$"), "The length is 2-64 characters, and it can contain lowercase letters, numbers, and dashes (-). It cannot start or end with a dash and cannot have two consecutive dashes. Need to be globally unique, and capitalization is not supported. Cannot start with 'd-'"),
 			},
 			"mfa_authentication_status": {
 				Type:         schema.TypeString,
