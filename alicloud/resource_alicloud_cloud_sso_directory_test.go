@@ -98,6 +98,7 @@ func testSweepCloudSsoDirectory(region string) error {
 func TestAccAlicloudCloudSSODirectory_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_sso_directory.default"
+	checkoutSupportedRegions(t, true, connectivity.CloudSsoSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudCloudSSODirectoryMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CloudssoService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -110,7 +111,6 @@ func TestAccAlicloudCloudSSODirectory_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CloudSsoSupportRegions)
 			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
 		IDRefreshName: resourceId,
