@@ -60,6 +60,7 @@ The following arguments are supported:
 
 * `access_configuration_name` - (Optional, ForceNew, ForceNew) The AccessConfigurationName of the Access Configuration.
 * `description` - (Optional) The Description of the  Access Configuration.
+* `directory_id` - (Required, ForceNew) The ID of the Directory.
 * `permission_policies` - (Optional) The Policy List. See the following `Block permission_policies`.
 * `relay_state` - (Optional) The RelayState of the Access Configuration, Cloud SSO users use this access configuration to access the RD account, the initial access page address. Must be the Alibaba Cloud console page, the default is the console home page.
 * `session_duration` - (Optional, Computed) The SessionDuration of the Access Configuration. Valid Value: `900` to `43200`. Unit: Seconds.
@@ -81,7 +82,6 @@ The following attributes are exported:
 
 * `id` - The resource ID of Access Configuration. The value formats as `<directory_id>:<access_configuration_id>`.
 * `access_configuration_id` - The AccessConfigurationId of the Access Configuration.
-* `directory_id` - The ID of the Directory.
 
 ## Import
 

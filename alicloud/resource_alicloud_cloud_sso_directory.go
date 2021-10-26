@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -23,8 +24,9 @@ func resourceAlicloudCloudSsoDirectory() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"directory_name": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile("^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$"), "The length is 2-64 characters, and it can contain lowercase letters, numbers, and dashes (-). It cannot start or end with a dash and cannot have two consecutive dashes. Need to be globally unique, and capitalization is not supported. Cannot start with 'd-'"),
 			},
 			"mfa_authentication_status": {
 				Type:         schema.TypeString,
@@ -36,24 +38,21 @@ func resourceAlicloudCloudSsoDirectory() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				MaxItems: 1,
-				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"encoded_metadata_document": {
 							Type:      schema.TypeString,
 							Optional:  true,
 							Sensitive: true,
-							Computed:  true,
 						},
 						"sso_status": {
-							Computed:     true,
 							Type:         schema.TypeString,
 							Optional:     true,
+							Default:      "Disabled",
 							ValidateFunc: validation.StringInSlice([]string{"Disabled", "Enabled"}, false),
 						},
 					},
 				},
-				ForceNew: true,
 			},
 			"scim_synchronization_status": {
 				Type:         schema.TypeString,
@@ -117,11 +116,11 @@ func resourceAlicloudCloudSsoDirectoryRead(d *schema.ResourceData, meta interfac
 	if SAMLIdentityProviderConfiguration, ok := getDirectoryObject["SAMLIdentityProviderConfiguration"]; ok && len(SAMLIdentityProviderConfiguration.(map[string]interface{})) > 0 {
 		SAMLIdentityProviderConfigurationSli := make([]map[string]interface{}, 0)
 		SAMLIdentityProviderConfigurationMap := make(map[string]interface{})
-		SAMLIdentityProviderConfigurationMap["sso_status"] = SAMLIdentityProviderConfiguration.(map[string]interface{})["SSOStatus"]
-		if v, ok := SAMLIdentityProviderConfiguration.(map[string]interface{})["EncodedMetadataDocument"]; ok && SAMLIdentityProviderConfiguration.(map[string]interface{})["SSOStatus"].(string) == "Enabled" {
+		if v, ok := SAMLIdentityProviderConfiguration.(map[string]interface{})["EncodedMetadataDocument"]; ok {
 			SAMLIdentityProviderConfigurationMap["encoded_metadata_document"] = v
+			SAMLIdentityProviderConfigurationMap["sso_status"] = SAMLIdentityProviderConfiguration.(map[string]interface{})["SSOStatus"]
+			SAMLIdentityProviderConfigurationSli = append(SAMLIdentityProviderConfigurationSli, SAMLIdentityProviderConfigurationMap)
 		}
-		SAMLIdentityProviderConfigurationSli = append(SAMLIdentityProviderConfigurationSli, SAMLIdentityProviderConfigurationMap)
 		d.Set("saml_identity_provider_configuration", SAMLIdentityProviderConfigurationSli)
 	}
 
@@ -238,14 +237,16 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 	setExternalSAMLIdentityProviderReq := map[string]interface{}{
 		"DirectoryId": d.Id(),
 	}
-	if !d.IsNewResource() && d.HasChange("saml_identity_provider_configuration") {
+	if d.HasChange("saml_identity_provider_configuration") {
 		update = true
 		if v, ok := d.GetOk("saml_identity_provider_configuration"); ok {
 			for _, setExternalSAMLIdentityProvider := range v.(*schema.Set).List() {
 				setExternalSAMLIdentityProviderArg := setExternalSAMLIdentityProvider.(map[string]interface{})
-				setExternalSAMLIdentityProviderReq["SSOStatus"] = setExternalSAMLIdentityProviderArg["sso_status"]
+				if v, ok := setExternalSAMLIdentityProviderArg["sso_status"]; ok && v != "" {
+					setExternalSAMLIdentityProviderReq["SSOStatus"] = v
+				}
 				if v, ok := setExternalSAMLIdentityProviderArg["encoded_metadata_document"]; ok && v != "" {
-					setExternalSAMLIdentityProviderReq["EncodedMetadataDocument"] = setExternalSAMLIdentityProviderArg["encoded_metadata_document"]
+					setExternalSAMLIdentityProviderReq["EncodedMetadataDocument"] = v
 				}
 			}
 		}
@@ -256,6 +257,7 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapError(err)
 		}
+		fmt.Println("setExternalSAMLIdentityProviderReq", setExternalSAMLIdentityProviderReq)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, setExternalSAMLIdentityProviderReq, &util.RuntimeOptions{})
@@ -272,6 +274,7 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		d.SetPartial("saml_identity_provider_configuration")
 	}
 	d.Partial(false)
 	return resourceAlicloudCloudSsoDirectoryRead(d, meta)
@@ -280,52 +283,60 @@ func resourceAlicloudCloudSsoDirectoryDelete(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 
-	if _, ok := d.GetOk("saml_identity_provider_configuration"); ok {
-		deleteExternalSAMLIdentityProviderReq := map[string]interface{}{
-			"DirectoryId": d.Id(),
-		}
-
-		deleteExternalSAMLIdentityProviderReq["SSOStatus"] = "Disabled"
-		action := "SetExternalSAMLIdentityProvider"
-		conn, err := client.NewCloudssoClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, deleteExternalSAMLIdentityProviderReq, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
+	// Only when encoded_metadata_document is not empty, this operation is required .
+	if v, ok := d.GetOk("saml_identity_provider_configuration"); ok {
+		for _, setExternalSAMLIdentityProvider := range v.(*schema.Set).List() {
+			setExternalSAMLIdentityProviderArg := setExternalSAMLIdentityProvider.(map[string]interface{})
+			if v, ok := setExternalSAMLIdentityProviderArg["encoded_metadata_document"]; ok && v != "" {
+				deleteExternalSAMLIdentityProviderReq := map[string]interface{}{
+					"DirectoryId": d.Id(),
 				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, deleteExternalSAMLIdentityProviderReq)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
 
-		clearExternalSAMLIdentityProviderReq := map[string]interface{}{
-			"DirectoryId": d.Id(),
-		}
-		action = "ClearExternalSAMLIdentityProvider"
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, clearExternalSAMLIdentityProviderReq, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
+				deleteExternalSAMLIdentityProviderReq["SSOStatus"] = "Disabled"
+				deleteExternalSAMLIdentityProviderReq["EncodedMetadataDocument"] = setExternalSAMLIdentityProviderArg["encoded_metadata_document"]
+
+				action := "SetExternalSAMLIdentityProvider"
+				conn, err := client.NewCloudssoClient()
+				if err != nil {
+					return WrapError(err)
 				}
-				return resource.NonRetryableError(err)
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, deleteExternalSAMLIdentityProviderReq, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, deleteExternalSAMLIdentityProviderReq)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+				clearExternalSAMLIdentityProviderReq := map[string]interface{}{
+					"DirectoryId": d.Id(),
+				}
+				action = "ClearExternalSAMLIdentityProvider"
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, clearExternalSAMLIdentityProviderReq, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, clearExternalSAMLIdentityProviderReq)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
 			}
-			return nil
-		})
-		addDebug(action, response, clearExternalSAMLIdentityProviderReq)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 

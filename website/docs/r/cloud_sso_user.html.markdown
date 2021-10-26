@@ -39,19 +39,19 @@ resource "alicloud_cloud_sso_user" "example" {
 The following arguments are supported:
 
 * `description` - (Optional) The description of user.
+* `directory_id` - (Required, ForceNew) The ID of the Directory.
 * `display_name` - (Optional, Sensitive) The display name of user.
 * `email` - (Optional, Sensitive) The User's Contact Email Address.
 * `first_name` - (Optional, Sensitive) The first name of user.
 * `last_name` - (Optional, Sensitive) The last name of user.
 * `status` - (Optional) The status of user. Valid values: `Disabled`, `Enabled`.
-* `user_name` - (Optional, ForceNew, Sensitive) The name of user.
+* `user_name` - (Required, ForceNew, Sensitive) The name of user.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID of User. The value formats as `<directory_id>:<user_id>`.
-* `directory_id` - The ID of the Directory.
 * `user_id` - The User ID of the group.
 
 ## Import

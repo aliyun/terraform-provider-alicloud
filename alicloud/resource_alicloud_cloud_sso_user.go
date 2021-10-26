@@ -63,7 +63,7 @@ func resourceAlicloudCloudSsoUser() *schema.Resource {
 			},
 			"user_name": {
 				Type:      schema.TypeString,
-				Optional:  true,
+				Required:  true,
 				ForceNew:  true,
 				Sensitive: true,
 			},
