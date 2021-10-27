@@ -583,6 +583,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_traffic_mirror_service":                  dataSourceAlicloudVpcTrafficMirrorService(),
 			"alicloud_msc_sub_webhooks":                            dataSourceAlicloudMscSubWebhooks(),
 			"alicloud_ecd_users":                                   dataSourceAlicloudEcdUsers(),
+			"alicloud_vpc_traffic_mirror_sessions":                 dataSourceAlicloudVpcTrafficMirrorSessions(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1049,6 +1050,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_msc_sub_webhook":                                      resourceAlicloudMscSubWebhook(),
 			"alicloud_waf_protection_module":                                resourceAlicloudWafProtectionModule(),
 			"alicloud_ecd_user":                                             resourceAlicloudEcdUser(),
+			"alicloud_vpc_traffic_mirror_session":                           resourceAlicloudVpcTrafficMirrorSession(),
 		},
 
 		ConfigureFunc: providerConfigure,
