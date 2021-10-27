@@ -68,8 +68,10 @@ The following methods are supported, in this order, and explained below:
 
 - Static credentials
 - Environment variables
+- Shared credentials/configuration file  
 - ECS Role
 - Assume role
+- Sidecar Credentials
 
 ### Static credentials
 
@@ -85,7 +87,6 @@ provider "alicloud" {
   region     = "${var.region}"
 }
 ```
-
 
 ### Environment variables
 
@@ -104,6 +105,20 @@ $ export ALICLOUD_ACCESS_KEY="anaccesskey"
 $ export ALICLOUD_SECRET_KEY="asecretkey"
 $ export ALICLOUD_REGION="cn-beijing"
 $ terraform plan
+```
+
+### Shared Credentials File
+
+You can use an [Alibaba Cloud credentials or configuration file](https://www.alibabacloud.com/help/doc-detail/110341.htm) to specify your credentials. The default location is `$HOME/.aliyun/config.json` on Linux and macOS, or `"%USERPROFILE%\.aliyun/config.json"` on Windows. You can optionally specify a different location in the Terraform configuration by providing the `shared_credentials_file` argument or using the `ALICLOUD_SHARED_CREDENTIALS_FILE` environment variable. This method also supports a `profile` configuration and matching `ALICLOUD_PROFILE` environment variable:
+
+Usage:
+
+```terraform
+provider "alicloud" {
+  region                  = "cn-hangzhou"
+  shared_credentials_file = "/Users/tf_user/.aliyun/creds"
+  profile                 = "customprofile"
+}
 ```
 
 ### ECS Role
@@ -144,6 +159,19 @@ provider "alicloud" {
     session_name       = "SESSION_NAME"
     session_expiration = 999
   }
+}
+```
+
+### Sidecar Credentials
+
+You can deploy a sidecar to storage alibaba cloud credentials. Then, you can optionally specify a credentials URI in the Terraform configuration by providing the `credentials_uri` argument or using the `ALICLOUD_CREDENTIALS_URI` environment variable to get the credentials automatically.
+
+Usage:
+
+```terraform
+provider "alicloud" {
+  region          = "cn-hangzhou"
+  credentials_uri = "<Your-Credential-URI>"
 }
 ```
 
@@ -206,6 +234,8 @@ The nested `assume_role` block supports the following:
 
 * `session_expiration` - (Optional) The time after which the established session for assuming role expires. Valid value range: [900-3600] seconds. Default to 3600 (in this case Alicloud use own default value). It supports environment variable `ALICLOUD_ASSUME_ROLE_SESSION_EXPIRATION`.
 
+* `credentials_uri` - (Optional) The URI of sidecar credentials service. It can also be sourced from the `ALICLOUD_CREDENTIALS_URI` environment variable.
+  
 Nested `endpoints` block supports the following:
 
 * `ecs` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.
