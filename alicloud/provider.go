@@ -590,6 +590,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipv6_addresses":                          dataSourceAlicloudVpcIpv6Addresses(),
 			"alicloud_hbr_server_backup_plans":                     dataSourceAlicloudHbrServerBackupPlans(),
 			"alicloud_cms_dynamic_tag_groups":                      dataSourceAlicloudCmsDynamicTagGroups(),
+			"alicloud_ecd_network_packages":                        dataSourceAlicloudEcdNetworkPackages(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1064,6 +1065,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipv6_egress_rule":                                 resourceAlicloudVpcIpv6EgressRule(),
 			"alicloud_hbr_server_backup_plan":                               resourceAlicloudHbrServerBackupPlan(),
 			"alicloud_cms_dynamic_tag_group":                                resourceAlicloudCmsDynamicTagGroup(),
+			"alicloud_ecd_network_package":                                  resourceAlicloudEcdNetworkPackage(),
 		},
 
 		ConfigureFunc: providerConfigure,

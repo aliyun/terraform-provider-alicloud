@@ -43,7 +43,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Simple Office Site names.
 * `sites` - A list of Ecd Simple Office Sites. Each element contains the following attributes:
-	* `bandwidth` - The Internet Bandwidth Peak.  Valid Values: 0~200. If This Field Is Set to 0, Indicates That There Is No Open Internet Access.
+	* `bandwidth` - (Deprecated from 1.142.0) The Internet Bandwidth Peak. It has been deprecated from version 1.142.0 and can be found in the new datasource alicloud_ecd_network_packages.
 	* `cen_id` - Cloud Enterprise Network Instance Id.
 	* `cidr_block` - Workspace Corresponds to the Security Office Network of IPv4 Segment.
 	* `create_time` - Workspace Creation Time.
@@ -57,7 +57,7 @@ The following attributes are exported in addition to the arguments listed above:
 	* `domain_user_name` - The Domain Administrator's Username.
 	* `enable_admin_access` - Whether to Use Cloud Desktop User Empowerment of Local Administrator Permissions.
 	* `enable_cross_desktop_access` - Enable Cross-Desktop Access.
-	* `enable_internet_access` - Whether the Open Internet Access Function.
+	* `enable_internet_access` - (Deprecated from 1.142.0) Whether the Open Internet Access Function.	
 	* `file_system_ids` - NAS File System ID.
 	* `id` - The ID of the Simple Office Site.
 	* `mfa_enabled` - Whether to Enable Multi-Factor Authentication MFA.

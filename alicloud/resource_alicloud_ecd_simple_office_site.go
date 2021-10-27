@@ -25,8 +25,9 @@ func resourceAlicloudEcdSimpleOfficeSite() *schema.Resource {
 			"bandwidth": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validation.IntBetween(0, 200),
+				Deprecated:   "Field 'bandwidth' has been deprecated from provider version 1.142.0.",
 			},
 			"cen_id": {
 				Type:     schema.TypeString,
@@ -60,9 +61,10 @@ func resourceAlicloudEcdSimpleOfficeSite() *schema.Resource {
 				Optional: true,
 			},
 			"enable_internet_access": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
+				Type:       schema.TypeBool,
+				Computed:   true,
+				Optional:   true,
+				Deprecated: "Field 'enable_internet_access' has been deprecated from provider version 1.142.0.",
 			},
 			"mfa_enabled": {
 				Type:     schema.TypeBool,
@@ -109,12 +111,15 @@ func resourceAlicloudEcdSimpleOfficeSiteCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("office_site_name"); ok {
 		request["OfficeSiteName"] = v
 	}
+
+	// todo: you can configure it using alicloud_ecd_network_package
 	if v, ok := d.GetOkExists("enable_internet_access"); ok {
 		request["EnableInternetAccess"] = v
 	}
 	if v, ok := d.GetOk("bandwidth"); ok {
 		request["Bandwidth"] = v
 	}
+
 	if v, ok := d.GetOk("desktop_access_type"); ok {
 		request["DesktopAccessType"] = v
 	}
@@ -156,6 +161,7 @@ func resourceAlicloudEcdSimpleOfficeSiteRead(d *schema.ResourceData, meta interf
 		}
 		return WrapError(err)
 	}
+	// todo:  bandwidth depends on network_package resource， you can find it in alicloud_ecd_network_package
 	if v, ok := object["Bandwidth"]; ok && fmt.Sprint(v) != "0" {
 		d.Set("bandwidth", formatInt(v))
 	}
@@ -164,9 +170,9 @@ func resourceAlicloudEcdSimpleOfficeSiteRead(d *schema.ResourceData, meta interf
 	d.Set("desktop_access_type", convertDesktopAccessType(object["DesktopAccessType"]))
 	d.Set("enable_admin_access", object["EnableAdminAccess"])
 	d.Set("enable_cross_desktop_access", object["EnableCrossDesktopAccess"])
-	d.Set("enable_internet_access", object["EnableInternetAccess"])
 	d.Set("office_site_name", object["Name"])
 	d.Set("mfa_enabled", object["MfaEnabled"])
+	d.Set("enable_internet_access", object["EnableInternetAccess"])
 	d.Set("sso_enabled", object["SsoEnabled"])
 	d.Set("status", object["Status"])
 	return nil
@@ -330,6 +336,20 @@ func resourceAlicloudEcdSimpleOfficeSiteUpdate(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudEcdSimpleOfficeSiteDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ecdService := EcdService{client}
+	object, err := ecdService.DescribeEcdSimpleOfficeSite(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ecd_simple_office_site ecdService.DescribeEcdSimpleOfficeSite Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+	if object["EnableInternetAccess"] == true {
+		log.Printf("[WARN] Cannot destroy resource EcdSimpleOfficeSite. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
 	action := "DeleteOfficeSites"
 	var response map[string]interface{}
 	conn, err := client.NewGwsecdClient()
