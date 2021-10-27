@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"runtime"
 	"strconv"
@@ -148,6 +150,12 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURE_TRANSPORT", os.Getenv("ALICLOUD_SECURE_TRANSPORT")),
 				Description: descriptions["secure_transport"],
+			},
+			"credentials_uri": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_CREDENTIALS_URI", os.Getenv("ALICLOUD_CREDENTIALS_URI")),
+				Description: descriptions["credentials_uri"],
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
@@ -1057,8 +1065,21 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	if region == "" {
 		region = DEFAULT_REGION
 	}
+	securityToken := getProviderConfig(d.Get("security_token").(string), "sts_token")
 
 	ecsRoleName := getProviderConfig(d.Get("ecs_role_name").(string), "ram_role_name")
+
+	if accessKey == "" || secretKey == "" {
+		if v, ok := d.GetOk("credentials_uri"); ok && v.(string) != "" {
+			credentialsURIResp, err := getClientByCredentialsURI(v.(string))
+			if err != nil {
+				return nil, err
+			}
+			accessKey = credentialsURIResp.AccessKeyId
+			secretKey = credentialsURIResp.AccessKeySecret
+			securityToken = credentialsURIResp.SecurityToken
+		}
+	}
 
 	config := &connectivity.Config{
 		AccessKey:            strings.TrimSpace(accessKey),
@@ -1077,8 +1098,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	if v, ok := d.GetOk("security_transport"); config.SecureTransport == "" && ok && v.(string) != "" {
 		config.SecureTransport = v.(string)
 	}
-	token := getProviderConfig(d.Get("security_token").(string), "sts_token")
-	config.SecurityToken = strings.TrimSpace(token)
+	config.SecurityToken = strings.TrimSpace(securityToken)
 
 	config.RamRoleArn = getProviderConfig("", "ram_role_arn")
 	config.RamRoleSessionName = getProviderConfig("", "ram_session_name")
@@ -1324,6 +1344,7 @@ func init() {
 		"client_connect_timeout": "The maximum timeout of the client connection server.",
 		"source_ip":              "The source ip for the assume role invoking.",
 		"secure_transport":       "The security transport for the assume role invoking.",
+		"credentials_uri":        "The URI of sidecar credentials service.",
 
 		"ecs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.",
 
@@ -2480,4 +2501,41 @@ func getAssumeRoleAK(accessKey, secretKey, stsToken, region, roleArn, sessionNam
 	}
 
 	return response.Credentials.AccessKeyId, response.Credentials.AccessKeySecret, response.Credentials.SecurityToken, nil
+}
+
+type CredentialsURIResponse struct {
+	Code            string
+	AccessKeyId     string
+	AccessKeySecret string
+	SecurityToken   string
+	Expiration      string
+}
+
+func getClientByCredentialsURI(credentialsURI string) (*CredentialsURIResponse, error) {
+	res, err := http.Get(credentialsURI)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf("get Credentials from %s failed, status code %d", credentialsURI, res.StatusCode)
+	}
+
+	body, err := io.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	var response CredentialsURIResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal credentials failed, the body %s", string(body))
+	}
+
+	if response.Code != "Success" {
+		return nil, fmt.Errorf("fetching sts token from %s got an error and its Code is not Success", credentialsURI)
+	}
+
+	return &response, nil
 }
