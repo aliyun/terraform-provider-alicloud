@@ -33,14 +33,14 @@ resource "alicloud_ecd_simple_office_site" "default" {
 
 The following arguments are supported:
 
-* `bandwidth` - (Optional, ForceNew) The Internet Bandwidth Peak. Valid values: 0~200. If This Field Is Set to 0, Indicates That There Is No Open Internet Access.
+* `bandwidth` - (Deprecated from 1.142.0) The Internet Bandwidth Peak. It has been deprecated from version 1.142.0 and can be found in the new resource alicloud_ecd_network_package.
 * `cen_id` - (Optional, ForceNew) Cloud Enterprise Network Instance ID.
 * `cen_owner_id` - (Optional) The cen owner id.
 * `cidr_block` - (Required, ForceNew) Workspace Corresponds to the Security Office Network of IPv4 Segment.
 * `desktop_access_type` - (Optional, Computed) Connect to the Cloud Desktop Allows the Use of the Access Mode of. Valid values: `Any`, `Internet`, `VPC`.
 * `enable_admin_access` - (Optional, ForceNew) Whether to Use Cloud Desktop User Empowerment of Local Administrator Permissions.
 * `enable_cross_desktop_access` - (Optional) Enable Cross-Desktop Access.
-* `enable_internet_access` - (Optional, ForceNew) Whether the Open Internet Access Function.
+* `enable_internet_access` - (Deprecated from 1.142.0) Whether the Open Internet Access Function.
 * `mfa_enabled` - (Optional) Whether to Enable Multi-Factor Authentication MFA.
 * `office_site_name` - (Optional) The office site name.
 * `sso_enabled` - (Optional) Whether to Enable Single Sign-on (SSO) for User-Based SSO.

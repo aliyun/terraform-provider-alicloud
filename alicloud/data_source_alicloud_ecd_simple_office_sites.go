@@ -51,8 +51,9 @@ func dataSourceAlicloudEcdSimpleOfficeSites() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"bandwidth": {
-							Type:     schema.TypeInt,
-							Computed: true,
+							Type:       schema.TypeInt,
+							Computed:   true,
+							Deprecated: "Field 'bandwidth' has been deprecated from provider version 1.142.0.",
 						},
 						"cen_id": {
 							Type:     schema.TypeString,
@@ -108,8 +109,9 @@ func dataSourceAlicloudEcdSimpleOfficeSites() *schema.Resource {
 							Computed: true,
 						},
 						"enable_internet_access": {
-							Type:     schema.TypeBool,
-							Computed: true,
+							Type:       schema.TypeBool,
+							Computed:   true,
+							Deprecated: "Field 'enable_internet_access' has been deprecated from provider version 1.142.0.",
 						},
 						"file_system_ids": {
 							Type:     schema.TypeList,
@@ -263,7 +265,9 @@ func dataSourceAlicloudEcdSimpleOfficeSitesRead(d *schema.ResourceData, meta int
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"bandwidth":                   formatInt(object["Bandwidth"]),
+			// todo:  bandwidth depends on network_package resource， you can find it in alicloud_ecd_network_packages
+			//"bandwidth":                   formatInt(object["Bandwidth"]),
+			//"enable_internet_access":      object["EnableInternetAccess"],
 			"cen_id":                      object["CenId"],
 			"cidr_block":                  object["CidrBlock"],
 			"create_time":                 object["CreationTime"],
