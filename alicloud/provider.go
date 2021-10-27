@@ -1045,6 +1045,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_user_attachment":                            resourceAlicloudCloudSsoUserAttachment(),
 			"alicloud_cloud_sso_access_assignment":                          resourceAlicloudCloudSsoAccessAssignment(),
 			"alicloud_msc_sub_webhook":                                      resourceAlicloudMscSubWebhook(),
+			"alicloud_waf_protection_module":                                resourceAlicloudWafProtectionModule(),
 		},
 
 		ConfigureFunc: providerConfigure,
