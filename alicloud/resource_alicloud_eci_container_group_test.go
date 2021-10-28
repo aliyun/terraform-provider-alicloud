@@ -99,6 +99,7 @@ func testSweepEciContainerGroup(region string) error {
 
 func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	resourceId := "alicloud_eci_container_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -147,6 +148,13 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 							"hostnames": []string{"hehe.com"},
 						},
 					},
+					"image_registry_credential": []map[string]interface{}{
+						{
+							"server":    fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0", defaultRegionToTest),
+							"user_name": name,
+							"password":  "tftestacc",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -160,9 +168,31 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"image_registry_credential": []map[string]interface{}{
+						{
+							"server":    fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0", defaultRegionToTest),
+							"user_name": name,
+							"password":  "tftestacc",
+						},
+						{
+							"server":    fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/busybox:1.30", defaultRegionToTest),
+							"user_name": name + "_update",
+							"password":  "tftestacc" + "_update",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_registry_credential": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"image_registry_credential"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
