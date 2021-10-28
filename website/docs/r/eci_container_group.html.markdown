@@ -93,6 +93,7 @@ The following arguments are supported:
 * `volumes` - (Optional) The list of volumes.
 * `vswitch_id` - (Required, ForceNew) The ID of the VSwitch. Currently, container groups can only be deployed in VPC networks. The number of IP addresses in the VSwitch CIDR block determines the maximum number of container groups that can be created in the VSwitch. Before you can create an ECI instance, plan the CIDR block of the VSwitch.
 * `zone_id` - (Optional, Computed, ForceNew) The ID of the zone where you want to deploy the container group. If no value is specified, the system assigns a zone to the container group. By default, no value is specified.
+* `image_registry_credential` - (Optional, Available in 1.141.0+)  The image registry credential. The details see Block `image_registry_credential`.
 
 #### Block volumes
 
@@ -166,6 +167,12 @@ The host_aliases supports the following:
 
 * `hostnames` - (Optional, ForceNew) Adds a host name.
 * `ip` - (Optional, ForceNew) Adds an IP address.
+
+#### Block image_registry_credential
+The image_registry_credential supports the following:
+* `password` - (Optional) The password used to log on to the image repository. It is required when `image_registry_credential` is configured.
+* `server` - (Optional) The address of the image repository. It is required when `image_registry_credential` is configured.
+* `user_name` - (Optional) The username used to log on to the image repository. It is required when `image_registry_credential` is configured.
 
 #### Block dns_config
 
