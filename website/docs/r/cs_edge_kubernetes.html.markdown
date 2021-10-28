@@ -87,6 +87,7 @@ The following arguments are supported:
 * `deletion_protection` - (Optional, Available in 1.103.2+)  Whether to enable cluster deletion protection.
 * `force_update` - (Optional, ForceNew, Available in 1.113.0+) Default false, when you want to change `vpc_id`, you have to set this field to true, then the cluster will be recreated.
 * `tags` - (Optional, Available in 1.120.0+) Default nil, A map of tags assigned to the kubernetes cluster and work node.
+* `retain_resources` - (Optional, Available in 1.141.0+) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 
 ### Network params
 

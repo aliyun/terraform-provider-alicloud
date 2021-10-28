@@ -103,7 +103,7 @@ The following arguments are supported:
 * `timezone` - (Optional, ForceNew, Available in 1.103.2+) When you create a cluster, set the time zones for the Master and Woker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
-* `runtime` - (Optional, Available in 1.103.2+) The runtime of containers. Default to `docker`. If you select another container runtime, see [How do I select between Docker and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm?spm=a2c63.p38356.b99.440.22563866AJkBgI). Detailed below.
+* `runtime` - (Optional, Available in 1.103.2+) The runtime of containers. Default to `docker`. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). Detailed below.
 * `enable_ssh` - (Optional) Enable login to the node through SSH. Default to `false`.
 * `rds_instances` - (Optional, Available in 1.103.2+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
@@ -125,6 +125,10 @@ The following arguments are supported:
 * `encryption_provider_key` - (Optional, ForceNew, Available in 1.103.2+) The disk encryption key.
 * `maintenance_window` - (Optional, Available in 1.109.1+) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. Detailed below.
 * `load_balancer_spec` - (ForceNew, Available in 1.117.0+) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
+* `control_plane_log_ttl` - (Optional, ForceNew, Available in 1.141.0+) Controls the sampling interval of plane logs. Default `30`. If control plane logs are to be collected, `control_plane_log_ttl` and `control_plane_log_components` must be specified.
+* `control_plane_log_components` - (Optional, ForceNew, Available in 1.141.0+) List of target components for which logs need to be collected. Supports `apiserver`, `kcm` and `scheduler`.
+* `control_plane_log_project` - (Optional, ForceNew, Available in 1.141.0+) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
+* `retain_resources` - (Optional, Available in 1.141.0+) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 
 ##### maintenance_window
 

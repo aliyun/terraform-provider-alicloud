@@ -165,6 +165,8 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
     max_size         = 10
     type             = "cpu"
   }
+  # Rely on auto-scaling configuration, please create auto-scaling configuration through alicloud_cs_autoscaling_config first.
+  depends_on = [alicloud_cs_autoscaling_config.default]
 }
 ```
 

@@ -6,6 +6,9 @@ import (
 	"strings"
 	"time"
 
+	roacs "github.com/alibabacloud-go/cs-20151215/v2/client"
+	"github.com/alibabacloud-go/tea/tea"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -205,6 +208,13 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+			},
+			"retain_resources": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}
@@ -469,25 +479,20 @@ func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta i
 }
 
 func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	csService := CsService{client}
-	var requestInfo *cs.Client
-	invoker := NewInvoker()
-	var response interface{}
-
-	if err := invoker.Run(func() error {
-		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return nil, csClient.DeleteCluster(d.Id())
-		})
-		response = raw
-		return err
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteCluster", DenverdinoAliyungo)
+	csService := CsService{meta.(*connectivity.AliyunClient)}
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
 	}
-	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["ClusterId"] = d.Id()
-		addDebug("DeleteCluster", response, requestInfo, requestMap)
+
+	args := &roacs.DeleteClusterRequest{}
+	if v := d.Get("retain_resources"); len(v.([]interface{})) > 0 {
+		args.RetainResources = tea.StringSlice(expandStringList(v.([]interface{})))
+	}
+
+	_, err = client.DeleteCluster(tea.String(d.Id()), args)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DeleteCluster", AliyunTablestoreGoSdk)
 	}
 
 	stateConf := BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, csService.CsServerlessKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))

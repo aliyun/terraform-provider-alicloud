@@ -168,7 +168,7 @@ github.com/cenkalti/backoff
 github.com/davecgh/go-spew/spew
 # github.com/deckarep/golang-set v1.7.1
 github.com/deckarep/golang-set
-# github.com/denverdino/aliyungo v0.0.0-20210518071019-eb3bbb144d8a
+# github.com/denverdino/aliyungo v0.0.0-20210910083501-4f11020c0bfb
 github.com/denverdino/aliyungo/cdn
 github.com/denverdino/aliyungo/common
 github.com/denverdino/aliyungo/cs
