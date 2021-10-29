@@ -1,4 +1,33 @@
 ## 1.141.0 (Unreleased)
+
+- **New Resource:** `alicloud_vpc_traffic_mirror_service` [GH-4134]
+- **New Resource:** `alicloud_msc_sub_webhook` [GH-4138]
+- **New Resource:** `alicloud_ecd_nas_file_system` [GH-4139]    
+- **New Resource:** `alicloud_cloud_sso_user_attachment` [GH-4140]   
+- **New Resource:** `alicloud_cloud_sso_access_assignment` [GH-4140]
+- **New Data Source:** `alicloud_msc_sub_webhooks` [GH-4138]
+- **New Data Source:** `alicloud_ecd_nas_file_systems` [GH-4139]  
+
+ENHANCEMENTS:
+
+- resource/alicloud_ess_scaling_group: supports configurating launch_template_id [GH-4133]
+- resource/alicloud_eci_container_group: supports configurating image_registry_credential [GH-4137]
+- resource/alicloud_mhub_app: redefine connectivity MHUBsupportregions [GH-4139]
+- resource/alicloud_config_aggregate_compliance_pack : Modify the parameter compliance_pack_template_id to optional, Field config_rules has been deprecated from provider version 1.141.0. New field config_rule_ids' instead. [GH-4141]  
+- resource/alicloud_config_aggregate_config_rule: Add the output parameter config_rule_id [GH-4141]  
+- resource/alicloud_config_compliance_pack : Modify the parameter compliance_pack_template_id to optional, Field config_rules has been deprecated from provider version 1.141.0. New field config_rule_ids' instead [GH-4141]  
+- resource/alicloud_mongodb_instance: support auto_renew field resource/alicloud_mongodb_sharding_instance: support auto_renew field and transforming charge_type from Postpaid to Prepaid [GH-4146] 
+- resource/alicloud_monitor_group: support creating MonitorGroup By resource_group_id [GH-4147]
+- resource/alicloud_cs_managed_kubernetes: supports control plane log collection and retain resources when destroy cluster [GH-4154]  
+- data_source/alicloud_mhub_apps: redefine connectivity MHUBsupportregions [GH-4139]
+- provider: Adds new parameter credentials_uri to support sidecar credentials [GH-4142]
+- doc/alicloud_cloud_sso_directory : Optimize document format doc/alicloud_cloud_sso_access_configuration : Optimize document format resource/alicloud_cloud_sso_user : Modify the parameter user_name as required [GH-4152]
+
+
+BUG FIXES:
+
+- provider: Fixes the undefined: io.ReadAll error [GH-4145]
+
 ## 1.140.0 (October 24, 2021)
 
 - **New Resource:** `alicloud_ecd_simple_office_site` ([#4129](https://github.com/aliyun/terraform-provider-alicloud/issues/4129))
