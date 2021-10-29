@@ -209,6 +209,10 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 					},
 				},
 			},
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -279,6 +283,9 @@ func buildMongoDBCreateRequest(d *schema.ResourceData, meta interface{}) (*dds.C
 		request.SecurityIPList = strings.Join(expandStringList(d.Get("security_ip_list").(*schema.Set).List())[:], COMMA_SEPARATED)
 	}
 
+	if v, ok := d.GetOk("auto_renew"); ok {
+		request.AutoRenew = strconv.FormatBool(v.(bool))
+	}
 	request.ClientToken = buildClientToken(request.GetActionName())
 	return request, nil
 }
@@ -302,7 +309,6 @@ func resourceAlicloudMongoDBInstanceCreate(d *schema.ResourceData, meta interfac
 
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*dds.CreateDBInstanceResponse)
-
 	d.SetId(response.DBInstanceId)
 	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
@@ -414,6 +420,9 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		prePaidRequest.InstanceId = d.Id()
 		prePaidRequest.AutoPay = requests.NewBoolean(true)
 		prePaidRequest.Period = requests.NewInteger(d.Get("period").(int))
+		if v, ok := d.GetOk("auto_renew"); ok {
+			prePaidRequest.AutoRenew = strconv.FormatBool(v.(bool))
+		}
 		raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
 			return client.TransformToPrePaid(prePaidRequest)
 		})
@@ -631,6 +640,11 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudMongoDBInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+	// Pre paid instance can not be release.
+	if d.Get("instance_charge_type").(string) == string(PrePaid) {
+		log.Printf("[WARN] Cannot destroy resourceAlicloudMongoDBInstance. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
 

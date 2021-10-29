@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -47,7 +48,6 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{string(PrePaid), string(PostPaid)}, false),
 				Optional:     true,
-				ForceNew:     true,
 				Computed:     true,
 			},
 			"period": {
@@ -122,7 +122,6 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 			},
-			//Computed
 			"retention_period": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -190,6 +189,10 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
 			},
 			"tags": tagsSchema(),
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"config_server_list": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -320,6 +323,9 @@ func buildMongoDBShardingCreateRequest(d *schema.ResourceData, meta interface{})
 	request.SecurityIPList = LOCAL_HOST_IP
 	if len(d.Get("security_ip_list").(*schema.Set).List()) > 0 {
 		request.SecurityIPList = strings.Join(expandStringList(d.Get("security_ip_list").(*schema.Set).List()), COMMA_SEPARATED)
+	}
+	if v, ok := d.GetOk("auto_renew"); ok {
+		request.AutoRenew = strconv.FormatBool(v.(bool))
 	}
 
 	request.ClientToken = buildClientToken(request.GetActionName())
@@ -595,11 +601,38 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 		d.SetPartial("security_ip_list")
 	}
+	if !d.IsNewResource() && (d.HasChange("instance_charge_type") && d.Get("instance_charge_type").(string) == "PrePaid") {
+		prePaidRequest := dds.CreateTransformToPrePaidRequest()
+		prePaidRequest.InstanceId = d.Id()
+		prePaidRequest.AutoPay = requests.NewBoolean(true)
+		prePaidRequest.Period = requests.NewInteger(d.Get("period").(int))
+		if v, ok := d.GetOk("auto_renew"); ok {
+			prePaidRequest.AutoRenew = strconv.FormatBool(v.(bool))
+		}
+		raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
+			return client.TransformToPrePaid(prePaidRequest)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), prePaidRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(prePaidRequest.GetActionName(), raw, prePaidRequest.RpcRequest, prePaidRequest)
+		// wait instance status is running after modifying
+		stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("instance_charge_type")
+		d.SetPartial("period")
+	}
 	d.Partial(false)
 	return resourceAlicloudMongoDBShardingInstanceRead(d, meta)
 }
 
 func resourceAlicloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+	if d.Get("instance_charge_type").(string) == string(PrePaid) {
+		log.Printf("[WARN] Cannot destroy resourceAlicloudMongoDBShardingInstance. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
 
