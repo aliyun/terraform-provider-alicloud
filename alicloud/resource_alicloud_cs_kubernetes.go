@@ -1388,6 +1388,9 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 
 	_, err = client.DeleteCluster(tea.String(d.Id()), args)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DeleteCluster", AliyunTablestoreGoSdk)
 	}
 
