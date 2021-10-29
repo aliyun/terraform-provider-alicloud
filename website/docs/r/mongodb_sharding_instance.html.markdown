@@ -124,7 +124,7 @@ The following arguments are supported:
 * `engine_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/zh/doc-detail/61884.htm) `EngineVersion`. 
 * `storage_engine` (Optional, ForceNew) Storage engine: WiredTiger or RocksDB. System Default value: WiredTiger.
 * `name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
-* `instance_charge_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`,System default to `PostPaid`.
+* `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`,System default to `PostPaid`. **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version v1.141.0.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. System default to 1.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. MongoDB sharding instance does not support multiple-zone.
 If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of them.
@@ -149,6 +149,7 @@ If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of 
   * UPGRADE: The specifications are upgraded.
   * DOWNGRADE: The specifications are downgraded. 
     Note: This parameter is only applicable to instances when `instance_charge_type` is PrePaid.
+* `auto_renew` - (Optional, Available in v1.141.0+) Auto renew for prepaid, true of false. Default is false.
 
 ## Attributes Reference
 

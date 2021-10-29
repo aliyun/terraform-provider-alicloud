@@ -148,6 +148,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
+			testAccPreCheckWithTime(t, []int{30})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -181,7 +182,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"order_type"},
+				ImportStateVerifyIgnore: []string{"order_type", "auto_renew"},
 			},
 			{
 				Config: testMongoDBShardingInstance_classic_name,
@@ -270,6 +271,77 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudMongoDBShardingInstance_transform_charge_type(t *testing.T) {
+	var v dds.DBInstance
+	resourceId := "alicloud_mongodb_sharding_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckMongoDBShardingInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testMongoDBShardingInstance_classic_base,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":                        CHECKSET,
+						"engine_version":                 "3.4",
+						"shard_list.#":                   "2",
+						"shard_list.0.node_class":        "dds.shard.mid",
+						"shard_list.0.node_storage":      "10",
+						"shard_list.0.readonly_replicas": "0",
+						"shard_list.1.node_class":        "dds.shard.standard",
+						"shard_list.1.node_storage":      "20",
+						"shard_list.1.readonly_replicas": "1",
+						"mongo_list.#":                   "2",
+						"mongo_list.0.node_class":        "dds.mongos.mid",
+						"mongo_list.1.node_class":        "dds.mongos.mid",
+						"name":                           "",
+						"storage_engine":                 "WiredTiger",
+						"instance_charge_type":           "PostPaid",
+						"tags.%":                         "0",
+						"config_server_list.#":           CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testMongoDBShardingInstance_classic_transform_to_prepaid,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":                        CHECKSET,
+						"engine_version":                 "3.4",
+						"shard_list.#":                   "2",
+						"shard_list.0.node_class":        "dds.shard.mid",
+						"shard_list.0.node_storage":      "10",
+						"shard_list.0.readonly_replicas": "0",
+						"shard_list.1.node_class":        "dds.shard.standard",
+						"shard_list.1.node_storage":      "20",
+						"shard_list.1.readonly_replicas": "1",
+						"mongo_list.#":                   "2",
+						"mongo_list.0.node_class":        "dds.mongos.mid",
+						"mongo_list.1.node_class":        "dds.mongos.mid",
+						"name":                           "",
+						"storage_engine":                 "WiredTiger",
+						"instance_charge_type":           "PrePaid",
+						"tags.%":                         "0",
+						"config_server_list.#":           CHECKSET,
+						"auto_renew":                     "false",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudMongoDBShardingInstance_classicVersion4(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_sharding_instance.default"
@@ -312,7 +384,7 @@ func TestAccAlicloudMongoDBShardingInstance_classicVersion4(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"order_type"},
+				ImportStateVerifyIgnore: []string{"order_type", "auto_renew"},
 			},
 			{
 				Config: testMongoDBShardingInstance_classic_tde,
@@ -378,7 +450,7 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"order_type"},
+				ImportStateVerifyIgnore: []string{"order_type", "auto_renew"},
 			},
 			{
 				Config: testMongoDBShardingInstance_vpc_name,
@@ -565,6 +637,29 @@ const testMongoDBShardingInstance_classic_base = `
 data "alicloud_mongodb_zones" "default" {}
 resource "alicloud_mongodb_sharding_instance" "default" {
   zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
+  engine_version = "3.4"
+  shard_list {
+    node_class   = "dds.shard.mid"
+    node_storage = 10
+  }
+  shard_list {
+    node_class   = "dds.shard.standard"
+    node_storage = 20
+	readonly_replicas = 1
+  }
+  mongo_list {
+    node_class = "dds.mongos.mid"
+  }
+  mongo_list {
+    node_class = "dds.mongos.mid"
+  }
+}`
+const testMongoDBShardingInstance_classic_transform_to_prepaid = `
+data "alicloud_mongodb_zones" "default" {}
+resource "alicloud_mongodb_sharding_instance" "default" {
+  zone_id             = "${data.alicloud_mongodb_zones.default.zones.0.id}"
+  auto_renew 		  = "false"
+  instance_charge_type = "PrePaid"
   engine_version = "3.4"
   shard_list {
     node_class   = "dds.shard.mid"
