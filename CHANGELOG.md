@@ -1,5 +1,7 @@
-## 1.141.0 (Unreleased)
+## 1.142.0 (Unreleased)
+## 1.141.0 (October 31, 2021)
 
+- **New Resource:** `alicloud_waf_protection_module` [GH-4143]
 - **New Resource:** `alicloud_vpc_traffic_mirror_service` [GH-4134]
 - **New Resource:** `alicloud_msc_sub_webhook` [GH-4138]
 - **New Resource:** `alicloud_ecd_nas_file_system` [GH-4139]    
@@ -10,6 +12,7 @@
 
 ENHANCEMENTS:
 
+- datasource/alicloud_dataworks_service: Renames to alicloud_data_works_service; docs: Improves the docs subcategory [GH-4157]
 - resource/alicloud_ess_scaling_group: supports configurating launch_template_id [GH-4133]
 - resource/alicloud_eci_container_group: supports configurating image_registry_credential [GH-4137]
 - resource/alicloud_mhub_app: redefine connectivity MHUBsupportregions [GH-4139]
