@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDataworksFoldersDataSource(t *testing.T) {
+func TestAccAlicloudDataWorksFoldersDataSource(t *testing.T) {
 
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_data_works_folders.default"
