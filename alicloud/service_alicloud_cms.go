@@ -524,3 +524,62 @@ func (s *CmsService) DescribeCmsMetricRuleTemplate(id string) (object map[string
 	object = v.(map[string]interface{})
 	return object, nil
 }
+
+func (s *CmsService) DescribeCmsDynamicTagGroup(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCmsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDynamicTagRuleList"
+	request := map[string]interface{}{
+		"TagRegionId": s.client.RegionId,
+		"PageSize":    PageSizeLarge,
+		"PageNumber":  1,
+	}
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+		v, err := jsonpath.Get("$.TagGroupList.TagGroup", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagGroupList.TagGroup", response)
+		}
+		if len(v.([]interface{})) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+		}
+		for _, v := range v.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["DynamicTagRuleId"]) == id {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+		if len(v.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+	}
+	return
+}
