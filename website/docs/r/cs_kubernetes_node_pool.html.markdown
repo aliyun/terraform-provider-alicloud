@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_cs\_kubernetes\_node\_pool
 
-This resource will help you to manager node pool in Kubernetes Cluster. 
+This resource will help you to manage node pool in Kubernetes Cluster. 
 
 -> **NOTE:** Available in 1.97.0+.
 

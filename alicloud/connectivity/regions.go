@@ -155,3 +155,4 @@ var ActiontrailSupportRegions = []Region{Hangzhou, Qingdao, Beijing, Shenzhen, H
 var VpcTrafficMirrorSupportRegions = []Region{Qingdao, Huhehaote, Shenzhen, Hongkong, APSouthEast2, ChengDu, USEast1, USWest1, EUWest1}
 var EcdUserSupportRegions = []Region{Shanghai}
 var VpcIpv6GatewaySupportRegions = []Region{Qingdao, Beijing, Zhangjiakou, Huhehaote, WuLanChaBu, Hangzhou, Shanghai, Shenzhen, GuangZhou, Hongkong, ChengDu, HeYuan, APSouthEast1, APSouthEast6, USEast1, EUCentral1}
+var CmsDynamicTagGroupSupportRegions = []Region{Shanghai}
