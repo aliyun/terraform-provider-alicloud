@@ -585,6 +585,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_users":                                   dataSourceAlicloudEcdUsers(),
 			"alicloud_vpc_traffic_mirror_sessions":                 dataSourceAlicloudVpcTrafficMirrorSessions(),
 			"alicloud_gpdb_accounts":                               dataSourceAlicloudGpdbAccounts(),
+			"alicloud_vpc_ipv6_gateways":                           dataSourceAlicloudVpcIpv6Gateways(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1055,6 +1056,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gpdb_account":                                         resourceAlicloudGpdbAccount(),
 			"alicloud_security_center_service_linked_role":                  resourceAlicloudSecurityCenterServiceLinkedRole(),
 			"alicloud_event_bridge_service_linked_role":                     resourceAlicloudEventBridgeServiceLinkedRole(),
+			"alicloud_vpc_ipv6_gateway":                                     resourceAlicloudVpcIpv6Gateway(),
 		},
 
 		ConfigureFunc: providerConfigure,
