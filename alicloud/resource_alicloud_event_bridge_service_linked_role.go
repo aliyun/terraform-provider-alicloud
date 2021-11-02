@@ -13,11 +13,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudEventBridgeSlr() *schema.Resource {
+func resourceAlicloudEventBridgeServiceLinkedRole() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudEventBridgeSlrCreate,
-		Read:   resourceAlicloudEventBridgeSlrRead,
-		Delete: resourceAlicloudEventBridgeSlrDelete,
+		Create: resourceAlicloudEventBridgeServiceLinkedRoleCreate,
+		Read:   resourceAlicloudEventBridgeServiceLinkedRoleRead,
+		Delete: resourceAlicloudEventBridgeServiceLinkedRoleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -42,7 +42,7 @@ func resourceAlicloudEventBridgeSlr() *schema.Resource {
 		},
 	}
 }
-func resourceAlicloudEventBridgeSlrCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEventBridgeServiceLinkedRoleCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eventbridgeService := EventbridgeService{client}
 	var response map[string]interface{}
@@ -68,7 +68,7 @@ func resourceAlicloudEventBridgeSlrCreate(d *schema.ResourceData, meta interface
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_slr", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_service_linked_role", action, AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Code"]) != "Success" {
 		return WrapError(fmt.Errorf("CreateServiceLinkedRoleForProduct failed, response: %v", response))
@@ -79,16 +79,16 @@ func resourceAlicloudEventBridgeSlrCreate(d *schema.ResourceData, meta interface
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudEventBridgeSlrRead(d, meta)
+	return resourceAlicloudEventBridgeServiceLinkedRoleRead(d, meta)
 }
 
-func resourceAlicloudEventBridgeSlrRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEventBridgeServiceLinkedRoleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eventbridgeService := EventbridgeService{client}
-	object, err := eventbridgeService.DescribeEventBridgeSlr(d.Id())
+	object, err := eventbridgeService.DescribeEventBridgeServiceLinkedRole(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_event_bridge_event_bus eventbridgeService.DescribeEventBridgeSlr Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_event_bridge_event_bus eventbridgeService.DescribeEventBridgeServiceLinkedRole Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -98,7 +98,7 @@ func resourceAlicloudEventBridgeSlrRead(d *schema.ResourceData, meta interface{}
 	return nil
 }
 
-func resourceAlicloudEventBridgeSlrDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEventBridgeServiceLinkedRoleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteServiceLinkedRole"
 	var response map[string]interface{}

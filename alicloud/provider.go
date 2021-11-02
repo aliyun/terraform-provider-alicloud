@@ -939,7 +939,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_vault":                                            resourceAlicloudHbrVault(),
 			"alicloud_ssl_certificates_service_certificate":                 resourceAlicloudSslCertificatesServiceCertificate(),
 			"alicloud_arms_alert_contact":                                   resourceAlicloudArmsAlertContact(),
-			"alicloud_event_bridge_slr":                                     resourceAlicloudEventBridgeSlr(),
+			"alicloud_event_bridge_slr":                                     resourceAlicloudEventBridgeServiceLinkedRole(),
 			"alicloud_event_bridge_rule":                                    resourceAlicloudEventBridgeRule(),
 			"alicloud_cloud_firewall_control_policy":                        resourceAlicloudCloudFirewallControlPolicy(),
 			"alicloud_sae_namespace":                                        resourceAlicloudSaeNamespace(),
@@ -1053,6 +1053,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_user":                                             resourceAlicloudEcdUser(),
 			"alicloud_vpc_traffic_mirror_session":                           resourceAlicloudVpcTrafficMirrorSession(),
 			"alicloud_gpdb_account":                                         resourceAlicloudGpdbAccount(),
+			"alicloud_security_center_service_linked_role":                  resourceAlicloudSecurityCenterServiceLinkedRole(),
+			"alicloud_event_bridge_service_linked_role":                     resourceAlicloudEventBridgeServiceLinkedRole(),
 		},
 
 		ConfigureFunc: providerConfigure,

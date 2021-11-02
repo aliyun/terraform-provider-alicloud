@@ -8,16 +8,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEventBridgeSlr_basic0(t *testing.T) {
+func TestAccAlicloudEventBridgeServiceLinkedRole_basic0(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_slr.default"
-	ra := resourceAttrInit(resourceId, AlicloudEventBridgeEventSlrMap0)
+	resourceId := "alicloud_event_bridge_service_linked_role.default"
+	ra := resourceAttrInit(resourceId, AlicloudEventBridgeEventServiceLinkedRoleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EventbridgeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEventBridgeSlr")
+	}, "DescribeEventBridgeServiceLinkedRole")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, "", testAccCheckAlicloudEventBridgeSlrDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, "", testAccCheckAlicloudEventBridgeServiceLinkedRoleDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -46,16 +46,16 @@ func TestAccAlicloudEventBridgeSlr_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEventBridgeSlr_basic1(t *testing.T) {
+func TestAccAlicloudEventBridgeServiceLinkedRole_basic1(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_slr.default"
-	ra := resourceAttrInit(resourceId, AlicloudEventBridgeEventSlrMap0)
+	resourceId := "alicloud_event_bridge_service_linked_role.default"
+	ra := resourceAttrInit(resourceId, AlicloudEventBridgeEventServiceLinkedRoleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EventbridgeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEventBridgeSlr")
+	}, "DescribeEventBridgeServiceLinkedRole")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, "", testAccCheckAlicloudEventBridgeSlrDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, "", testAccCheckAlicloudEventBridgeServiceLinkedRoleDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -83,10 +83,10 @@ func TestAccAlicloudEventBridgeSlr_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudEventBridgeEventSlrMap0 = map[string]string{
+var AlicloudEventBridgeEventServiceLinkedRoleMap0 = map[string]string{
 	"product_name": "AliyunServiceRoleForEventBridgeSourceRocketMQ",
 }
 
-func testAccCheckAlicloudEventBridgeSlrDependence(name string) string {
+func testAccCheckAlicloudEventBridgeServiceLinkedRoleDependence(name string) string {
 	return ""
 }
