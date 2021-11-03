@@ -594,6 +594,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_storage_gateway_gateway_smb_users":     dataSourceAlicloudCloudStorageGatewayGatewaySmbUsers(),
 			"alicloud_vpc_ipv6_internet_bandwidths":                dataSourceAlicloudVpcIpv6InternetBandwidths(),
 			"alicloud_simple_application_server_firewall_rules":    dataSourceAlicloudSimpleApplicationServerFirewallRules(),
+			"alicloud_pvtz_endpoints":                              dataSourceAlicloudPvtzEndpoints(),
+			"alicloud_pvtz_resolver_zones":                         dataSourceAlicloudPvtzResolverZones(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1072,6 +1074,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_storage_gateway_gateway_smb_user":               resourceAlicloudCloudStorageGatewayGatewaySmbUser(),
 			"alicloud_vpc_ipv6_internet_bandwidth":                          resourceAlicloudVpcIpv6InternetBandwidth(),
 			"alicloud_simple_application_server_firewall_rule":              resourceAlicloudSimpleApplicationServerFirewallRule(),
+			"alicloud_pvtz_endpoint":                                        resourceAlicloudPvtzEndpoint(),
 		},
 
 		ConfigureFunc: providerConfigure,
