@@ -54,7 +54,7 @@ The following attributes are exportedd:
 
 ## Import
 
-Action trail can be imported using the id or trail_name, e.g.
+Action trail can be imported using thed id or trail_name, e.g.
 
 ```
 $ terraform import alicloud_actiontrail_trail.default abc12345678
