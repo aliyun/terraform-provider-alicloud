@@ -93,7 +93,7 @@ The config_rules supports the followingsss:
 
 #### Block config_rule_ids
 
-The config_rule_ids supports the following:
+The config_rule_ids supports the followings:
 
 * `config_rule_id` - (Optional) The rule ID of Aggregate Config Rule.
 
