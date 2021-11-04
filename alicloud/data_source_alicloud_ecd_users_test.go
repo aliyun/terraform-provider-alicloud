@@ -12,7 +12,7 @@ import (
 
 func TestAccAlicloudEcdUsersDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
-	checkoutSupportedRegions(t, true, connectivity.EcdSupportRegions)
+	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcdUsersDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ecd_user.default.id}"]`,

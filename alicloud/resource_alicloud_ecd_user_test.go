@@ -102,7 +102,7 @@ func testSweepEcdUser(region string) error {
 
 func TestAccAlicloudECDUser_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.EcdSupportRegions)
+	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
 	resourceId := "alicloud_ecd_user.default"
 	ra := resourceAttrInit(resourceId, AlicloudECDUserMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

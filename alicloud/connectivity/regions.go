@@ -153,3 +153,4 @@ var CloudAuthSupportRegions = []Region{Hangzhou}
 var MHUBSupportRegions = []Region{Shanghai}
 var ActiontrailSupportRegions = []Region{Hangzhou, Qingdao, Beijing, Shenzhen, Hongkong, Shanghai, Zhangjiakou, Huhehaote, ChengDu, HeYuan, WuLanChaBu, GuangZhou, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5, APNorthEast1, USWest1, USEast1, EUCentral1, EUWest1, APSouth1, MEEast1}
 var VpcTrafficMirrorSupportRegions = []Region{Qingdao, Huhehaote, Shenzhen, Hongkong, APSouthEast2, ChengDu, USEast1, USWest1, EUWest1}
+var EcdUserSupportRegions = []Region{Shanghai}
