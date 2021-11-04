@@ -86,7 +86,7 @@ The following arguments are supported:
 
 #### Block config_rules
 
-The config_rules supports the following: 
+The config_rules supports the followings: 
 
 * `config_rule_parameters` - (Optional) A list of parameter rules.
 * `managed_rule_identifier` - (Required) The Managed Rule Identifier.
