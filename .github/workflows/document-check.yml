@@ -32,11 +32,9 @@ jobs:
           github_token: ${{secrets.github_token}}
           filter_mode: "file"
           fail_on_error: true
-          level: "error"
-          reporter: "github-pr-review"
           locale: "US"
-          exclude: ./vendor/*
-          pattern: "*.md"
+          path: ./website/docs/*
+
 
 
 
