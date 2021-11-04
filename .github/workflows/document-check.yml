@@ -30,4 +30,8 @@ jobs:
         uses: reviewdog/action-misspell@v1
         with:
           github_token: ${{ secrets.github_token }}
+          exclude: |
+            ./.git/*
+            ./.cache/*
+            ./vendor/*
           locale: "US"
