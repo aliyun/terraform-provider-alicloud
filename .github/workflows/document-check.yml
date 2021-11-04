@@ -32,6 +32,7 @@ jobs:
           github_token: ${{secrets.github_token}}
           uses: ./website
           locale: "US"
+          exclude: ./vendor/*
           pattern: "*.md"
 
 
