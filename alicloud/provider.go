@@ -584,6 +584,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_msc_sub_webhooks":                            dataSourceAlicloudMscSubWebhooks(),
 			"alicloud_ecd_users":                                   dataSourceAlicloudEcdUsers(),
 			"alicloud_vpc_traffic_mirror_sessions":                 dataSourceAlicloudVpcTrafficMirrorSessions(),
+			"alicloud_vpc_ipv6_addresses":                          dataSourceAlicloudVpcIpv6Addresses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
