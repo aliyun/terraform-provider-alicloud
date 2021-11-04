@@ -31,6 +31,7 @@ jobs:
         with:
           github_token: ${{secrets.github_token}}
           fail_on_error: true
+          filter_mode: file
           locale: "US"
           path: ./website/docs
 
