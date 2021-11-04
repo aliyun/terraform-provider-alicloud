@@ -591,6 +591,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_server_backup_plans":                     dataSourceAlicloudHbrServerBackupPlans(),
 			"alicloud_cms_dynamic_tag_groups":                      dataSourceAlicloudCmsDynamicTagGroups(),
 			"alicloud_ecd_network_packages":                        dataSourceAlicloudEcdNetworkPackages(),
+			"alicloud_cloud_storage_gateway_gateway_smb_users":     dataSourceAlicloudCloudStorageGatewayGatewaySmbUsers(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1066,6 +1067,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_server_backup_plan":                               resourceAlicloudHbrServerBackupPlan(),
 			"alicloud_cms_dynamic_tag_group":                                resourceAlicloudCmsDynamicTagGroup(),
 			"alicloud_ecd_network_package":                                  resourceAlicloudEcdNetworkPackage(),
+			"alicloud_cloud_storage_gateway_gateway_smb_user":               resourceAlicloudCloudStorageGatewayGatewaySmbUser(),
 		},
 
 		ConfigureFunc: providerConfigure,
