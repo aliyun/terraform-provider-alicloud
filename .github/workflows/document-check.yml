@@ -30,7 +30,10 @@ jobs:
         uses: reviewdog/action-misspell@v1
         with:
           github_token: ${{secrets.github_token}}
-          uses: ./website/*
+          filter_mode: "file"
+          fail_on_error: true
+          level: "error"
+          reporter: "github-pr-review"
           locale: "US"
           exclude: ./vendor/*
           pattern: "*.md"
