@@ -76,14 +76,10 @@ github.com/alibabacloud-go/tea v1.1.11/go.mod h1:/tmnEaQMyb4Ky1/5D+SE1BAsa5zj/Ke
 github.com/alibabacloud-go/tea v1.1.15/go.mod h1:nXxjm6CIFkBhwW4FQkNrolwbfon8Svy6cujmKFUq98A=
 github.com/alibabacloud-go/tea v1.1.17 h1:05R5DnaJXe9sCNIe8KUgWHC/z6w/VZIwczgUwzRnul8=
 github.com/alibabacloud-go/tea v1.1.17/go.mod h1:nXxjm6CIFkBhwW4FQkNrolwbfon8Svy6cujmKFUq98A=
-github.com/alibabacloud-go/tea-roa v1.2.9 h1:RLOaT7qdxtMyRqdRv7yJyH1TI0WIZWCF3Ek40KQwpRY=
-github.com/alibabacloud-go/tea-roa v1.2.9/go.mod h1:Cdv5rQZqx9V8kYbAHSfvCgYR6KXRnbuM12piJOjssYY=
 github.com/alibabacloud-go/tea-roa v1.3.0 h1:834Mszn4zEibGPG9InAGvyYHoNH4QU/RuOEC2Tnt2ls=
 github.com/alibabacloud-go/tea-roa v1.3.0/go.mod h1:Cdv5rQZqx9V8kYbAHSfvCgYR6KXRnbuM12piJOjssYY=
 github.com/alibabacloud-go/tea-roa-utils v1.1.5 h1:BkZAywim4piCeTA9qmRTq9gkcOI3Gltu3VobZwegnUE=
 github.com/alibabacloud-go/tea-roa-utils v1.1.5/go.mod h1:7mkMI3FZEm4LGKIR1322y0N6N9EC0R1G/oXvzQjf1fQ=
-github.com/alibabacloud-go/tea-rpc v1.1.9 h1:vhatw+FHYEGCFcwmRnhyJkAFa9uzdkNMOUjurjEQn/0=
-github.com/alibabacloud-go/tea-rpc v1.1.9/go.mod h1:zwKwxuf92liNsPcLOxPdrkvR5Dq6jtX2du6qx8FT094=
 github.com/alibabacloud-go/tea-rpc v1.2.0 h1:m3ohmuAT+IdXigKp7enB+lXuksqsor0OFNB5+QB7Isk=
 github.com/alibabacloud-go/tea-rpc v1.2.0/go.mod h1:zwKwxuf92liNsPcLOxPdrkvR5Dq6jtX2du6qx8FT094=
 github.com/alibabacloud-go/tea-rpc-utils v1.1.2 h1:ZTfFREnP2q9D49T2J/1jYYOndepGdrUOgm/JR8/bIQ0=
@@ -153,6 +149,7 @@ github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWR
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=
 github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec/go.mod h1:jMjuTZXRI4dUb/I5gc9Hdhagfvm9+RyrPryS/auMzxE=
+github.com/client9/misspell v0.3.4 h1:ta993UF76GwbvJcIo3Y68y/M3WxlpEHPWIGDkJYwzJI=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cloudflare/golz4 v0.0.0-20150217214814-ef862a3cdc58 h1:F1EaeKL/ta07PY/k9Os/UFtwERei2/XzGemhpGnBKNg=
 github.com/cloudflare/golz4 v0.0.0-20150217214814-ef862a3cdc58/go.mod h1:EOBUe0h4xcZ5GoxqC5SDxFQ8gwyZPKQoEzownBlhI80=
@@ -171,6 +168,8 @@ github.com/deckarep/golang-set v1.7.1 h1:SCQV0S6gTtp6itiFrTqI+pfmJ4LN85S1YzhDf9r
 github.com/deckarep/golang-set v1.7.1/go.mod h1:93vsz/8Wt4joVM7c2AVqh+YRMiUSc14yDtF28KmMOgQ=
 github.com/denverdino/aliyungo v0.0.0-20210518071019-eb3bbb144d8a h1:J9+NI0ywi1btTOYseLdmr/H3XxutbC4m2bU48kKpwVs=
 github.com/denverdino/aliyungo v0.0.0-20210518071019-eb3bbb144d8a/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
+github.com/denverdino/aliyungo v0.0.0-20210910083501-4f11020c0bfb h1:w0Y6orfArgN0EGUOXqa3heTmPwUzZS9oV79ddQqkVP4=
+github.com/denverdino/aliyungo v0.0.0-20210910083501-4f11020c0bfb/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=

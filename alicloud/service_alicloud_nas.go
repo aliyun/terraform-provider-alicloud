@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"fmt"
+
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,7 +28,7 @@ func (s *NasService) DescribeNasFileSystem(id string) (object map[string]interfa
 	runtime.SetAutoretry(true)
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound", "Forbidden.NasNotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound", "Forbidden.NasNotFound", "Resource.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("NasFileSystem", id)), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
@@ -186,5 +188,23 @@ func (s *NasService) NasMountTargetStateRefreshFunc(id string, failStates []stri
 			}
 		}
 		return object, object["Status"].(string), nil
+	}
+}
+
+func (s *NasService) DescribeNasFileSystemStateRefreshFunc(id string, defaultRetryState string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeNasFileSystem(id)
+		if err != nil {
+			if NeedRetry(err) && IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
+				return nil, defaultRetryState, nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
 	}
 }

@@ -81,6 +81,7 @@ func TestAccAlicloudCmsMonitorGroupsDataSource(t *testing.T) {
 			"groups.0.gmt_modified":       CHECKSET,
 			"groups.0.monitor_group_name": CHECKSET,
 			"groups.0.type":               "custom",
+			"groups.0.contact_groups.#":   CHECKSET,
 		}
 	}
 	var fakeAlicloudCmsMonitorGroupsDataSourceNameMapFunc = func(rand int) map[string]string {

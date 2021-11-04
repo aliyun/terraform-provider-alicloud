@@ -172,7 +172,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.138.0"
+var providerVersion = "1.141.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Temporarily maintain map for old ecs client methods and store special endpoint information
@@ -3851,7 +3851,7 @@ func (client *AliyunClient) NewImpClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewMhubClient() (*rpc.Client, error) {
-	productCode := "mhub"
+	productCode := "emas"
 	endpoint := ""
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -3905,6 +3905,31 @@ func (client *AliyunClient) NewAcrClient() (*rpc.Client, error) {
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("acr.%s.aliyuncs.com", client.config.RegionId)
+			client.config.Endpoints[productCode] = endpoint
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewEdsuserClient() (*rpc.Client, error) {
+	productCode := "eds-user"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = fmt.Sprintf("eds-user.%s.aliyuncs.com", client.config.RegionId)
 			client.config.Endpoints[productCode] = endpoint
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}

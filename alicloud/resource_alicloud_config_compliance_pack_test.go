@@ -168,11 +168,6 @@ func TestAccAlicloudConfigCompliancePack_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"config_rules": []map[string]interface{}{
 						{
@@ -292,11 +287,6 @@ func TestAccAlicloudConfigCompliancePack_basic0(t *testing.T) {
 					}),
 				),
 			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
 		},
 	})
 }
@@ -316,5 +306,124 @@ variable "name" {
 			default = "%s"
 		}
 
+`, name)
+}
+
+func TestAccAlicloudConfigCompliancePack_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_compliance_pack.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigCompliancePackMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigCompliancePack")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigcompliancepack%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigCompliancePackBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compliance_pack_name": name,
+					"config_rule_ids": []map[string]interface{}{
+						{
+							"config_rule_id": "${alicloud_config_rule.default.0.id}",
+						},
+						{
+							"config_rule_id": "${alicloud_config_rule.default.1.id}",
+						},
+					},
+					"description": name,
+					"risk_level":  "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compliance_pack_name": name,
+						"config_rule_ids.#":    "2",
+						"description":          name,
+						"risk_level":           "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config_rule_ids": []map[string]interface{}{
+						{
+							"config_rule_id": "${alicloud_config_rule.default.1.id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config_rule_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config_rule_ids": []map[string]interface{}{
+						{
+							"config_rule_id": "${alicloud_config_rule.default.0.id}",
+						},
+						{
+							"config_rule_id": "${alicloud_config_rule.default.1.id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config_rule_ids.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AlicloudConfigCompliancePackMap1 = map[string]string{}
+
+func AlicloudConfigCompliancePackBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_instances" "default"{}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+resource "alicloud_config_rule" "default" {
+  count                      = 2
+  rule_name                  = var.name
+  description                = var.name
+  source_identifier          = "ecs-instances-in-vpc"
+  source_owner               = "ALIYUN"
+  resource_types_scope       = ["ACS::ECS::Instance"]
+  risk_level                 = 1
+  config_rule_trigger_types  = "ConfigurationItemChangeNotification"
+  tag_key_scope              = "tfTest"
+  tag_value_scope            = "tfTest 123"
+  resource_group_ids_scope   = data.alicloud_resource_manager_resource_groups.default.ids.0
+  exclude_resource_ids_scope = data.alicloud_instances.default.instances[0].id
+  region_ids_scope           = "cn-hangzhou"
+  input_parameters = {
+    vpcIds = data.alicloud_instances.default.instances[0].vpc_id
+  }
+}
 `, name)
 }
