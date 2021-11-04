@@ -41,7 +41,7 @@ The following arguments are supported:
 * `trail_region` - (Optional) The regions to which the trail is applied. Valid values: `cn-beijing`, `cn-hangzhou`, and `All`. Default to `All`.
 * `mns_topic_arn` - (Optional) Field `mns_topic_arn` has been deprecated from version 1.118.0.
 * `status` - (Optional) The status of ActionTrail Trail. After creation, tracking is turned on by default, and you can set the status value to `Disable` to turn off tracking. Valid values: `Enable`, `Disable`. Default to `Enable`.
-* `oss_write_role_arn` - (Optional) The unique ARN of the Oss role.
+* `oss_write_role_arn` - (Optional) The uniqude ARN of the Oss role.
 * `is_organization_trail` - (Optional) Specifies whether to create a multi-account trail. Valid values:`true`: Create a multi-account trail.`false`: Create a single-account trail. It is the default value.
 
 -> **NOTE:** `sls_project_arn` and `sls_write_role_arn` should be set or not set at the same time when actiontrail delivers logs.
