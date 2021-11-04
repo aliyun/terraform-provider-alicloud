@@ -30,5 +30,11 @@ jobs:
         uses: reviewdog/action-misspell@v1
         with:
           github_token: ${{ secrets.github_token }}
-          fail_on_error: true
-          exclude:  ./vendor/*
+          locale: "US"
+          level:  "error"
+          fail_on_error: "true"
+          exclude:  |
+            ./vendor/*
+            ./ci/*
+            ./scripts/*
+

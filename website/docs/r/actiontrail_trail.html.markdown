@@ -48,7 +48,7 @@ The following arguments are supported:
 
 ## Attributes Reference
 
-The following attributes are exportedd:
+The following attributes are exporteddd:
 
 * `id` - The id of ActionTrail Trail. The value is the same as trail_name.
 
