@@ -32,7 +32,9 @@ jobs:
           github_token: ${{secrets.github_token}}
           fail_on_error: true
           locale: "US"
-          path: ./website/docs/r ./website/docs/d
+          path: |
+            ./website/docs/r
+            ./website/docs/d
 
 
 
