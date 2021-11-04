@@ -17,6 +17,7 @@ require (
 	github.com/aliyun/credentials-go v1.1.2
 	github.com/aliyun/fc-go-sdk v0.0.0-20200925033337-c013428cbe21
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
+	github.com/client9/misspell v0.3.4 // indirect
 	github.com/deckarep/golang-set v1.7.1
 	github.com/denverdino/aliyungo v0.0.0-20210910083501-4f11020c0bfb
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
