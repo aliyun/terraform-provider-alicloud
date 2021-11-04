@@ -33,7 +33,7 @@ jobs:
           locale: "US"
           level:  "error"
           fail_on_error: "true"
-          exclude:  |
+          exclude:
             ./vendor/*
             ./ci/*
             ./scripts/*
