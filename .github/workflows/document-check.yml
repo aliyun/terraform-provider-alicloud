@@ -21,7 +21,7 @@ jobs:
           folder-path: "website/docs"
           file-extension: '.md'
   misspell:
-    name: runner / misspell
+    name: runner/misspell
     runs-on: ubuntu-latest
     steps:
       - name: Check out code.
@@ -29,11 +29,10 @@ jobs:
       - name: misspell
         uses: reviewdog/action-misspell@v1
         with:
-          github_token: ${{ secrets.github_token }}
+          github_token: ${{secrets.github_token}}
+          uses: ./
           locale: "US"
-          level:  'error'
-          fail_on_error: 'false'
-          exclude: ./vendor/* ./ci/* ./scripts/*
+          pattern: "*.md"
 
 
 
