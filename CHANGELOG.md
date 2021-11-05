@@ -1,4 +1,38 @@
 ## 1.142.0 (Unreleased)
+
+- **New Resource:** `alicloud_ecd_user` [GH-4126]
+- **New Resource:** `alicloud_vpc_traffic_mirror_session` [GH-4156]
+- **New Resource:** `alicloud_gpdb_account` [GH-4158] 
+- **New Resource:** `alicloud_security_center_slr` [GH-4159]
+- **New Resource:** `alicloud_vpc_ipv6_gateway` [GH-4161]
+- **New Resource:** `alicloud_vpc_ipv6_egress_rule` [GH-4167]
+- **New Resource:** `alicloud_event_bridge_service_linked_role` [GH-4159]  
+- **New Resource:** `alicloud_ecd_network_package` [GH-4153]
+- **New Resource:** `alicloud_cms_dynamic_tag_group` [GH-4160] 
+- **New Resource:** `alicloud_cloud_storage_gateway_gateway_smb_user` [GH-4163]
+- **New Data Source:** `alicloud_ecd_users` [GH-4126]  
+- **New Data Source:** `alicloud_vpc_traffic_mirror_sessions` [GH-4156]
+- **New Data Source:** `alicloud_gpdb_accounts` [GH-4158]
+- **New Data Source:** `alicloud_vpc_ipv6_gateways` [GH-4161]
+- **New Data Source:** `alicloud_vpc_ipv6_egress_rules` [GH-4167]
+- **New Data Source:** `alicloud_vpc_ipv6_addresses` [GH-4167]
+- **New Data Source:** `alicloud_ecd_network_packages` [GH-4153]
+- **New Data Source:** `alicloud_cms_dynamic_tag_groups` [GH-4160]
+- **New Data Source:** `alicloud_cloud_storage_gateway_gateway_smb_users` [GH-4163]
+
+ENHANCEMENTS:
+
+- resource/alicloud_ecd_user: redefine connectivity EcdUserSupportRegions; data_source/alicloud_ecd_users: redefine connectivity EcdUserSupportRegions [GH-4162]
+- resource/alicloud_event_bridge_service_sle: After the version 1.142.0, the resource is renamed as alicloud_event_bridge_service_linked_role. [GH-4159]
+- resource/alicloud_ecs_network_interface: Add delete error retry code InvalidOperation.Conflict [GH-4173]  
+- datasource/alicloud_dataworks_service: Renames to alicloud_data_works_service; docs: Improves the docs subcategory [GH-4157]
+- Github WorkFlow: Add markdown-link-check && markdown-spell-check [GH-4166]
+
+BUG FIXES:
+
+- datasource/alicloud_alb_load_balancers: fix load_balancer_business_status spelling error [GH-4170]
+- docs: Fixes the spelling error [GH-4169]
+
 ## 1.141.0 (October 31, 2021)
 
 - **New Resource:** `alicloud_waf_protection_module` ([#4143](https://github.com/aliyun/terraform-provider-alicloud/issues/4143))
