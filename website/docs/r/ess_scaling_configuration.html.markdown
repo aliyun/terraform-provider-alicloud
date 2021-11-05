@@ -1,7 +1,7 @@
 ---
 subcategory: "Auto Scaling(ESS)"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_ess_scaling_configurations"
+page_title: "Alicloud: alicloud_ess_scaling_configurationsss"
 sidebar_current: "docs-alicloud-resource-ess-scaling-configuration"
 description: |-
   Provides a ESS scaling configuration resource.
