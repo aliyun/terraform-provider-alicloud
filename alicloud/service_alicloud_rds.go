@@ -817,7 +817,7 @@ func (s *RdsService) DescribeParameterTemplates(instanceId, engine, engineVersio
 	return response["Parameters"].(map[string]interface{})["TemplateRecord"].([]interface{}), nil
 }
 
-func (s *RdsService) GetSecurityIps(instanceId string) ([]string, error) {
+func (s *RdsService) GetSecurityIps(instanceId string, dbInstanceIpArrayName string) ([]string, error) {
 	object, err := s.DescribeDBSecurityIps(instanceId)
 	if err != nil {
 		return nil, WrapError(err)
@@ -827,11 +827,10 @@ func (s *RdsService) GetSecurityIps(instanceId string) ([]string, error) {
 	ipsMap := make(map[string]string)
 	for _, ip := range object {
 		ip := ip.(map[string]interface{})
-		if ip["DBInstanceIPArrayAttribute"] == "hidden" {
-			continue
+		if ip["DBInstanceIPArrayName"].(string) == dbInstanceIpArrayName {
+			ips += separator + ip["SecurityIPList"].(string)
+			separator = COMMA_SEPARATED
 		}
-		ips += separator + ip["SecurityIPList"].(string)
-		separator = COMMA_SEPARATED
 	}
 
 	for _, ip := range strings.Split(ips, COMMA_SEPARATED) {

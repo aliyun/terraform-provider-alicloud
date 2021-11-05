@@ -1175,7 +1175,12 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	ips, err := rdsService.GetSecurityIps(d.Id())
+	dbInstanceIpArrayName := "default"
+	if v, ok := d.GetOk("db_instance_ip_array_name"); ok {
+		dbInstanceIpArrayName = v.(string)
+	}
+
+	ips, err := rdsService.GetSecurityIps(d.Id(), dbInstanceIpArrayName)
 	if err != nil {
 		return WrapError(err)
 	}
