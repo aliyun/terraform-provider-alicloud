@@ -2,7 +2,7 @@
 subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_image_copy"
-sidebar_current: "docs-alicloud-resource-image-cpoy"
+sidebar_current: "docs-alicloud-resource-image-copy"
 description: |-
   Provides an ECS image copy resource.
 ---

@@ -69,7 +69,7 @@ The following arguments are supported:
 * `forward_entry_name` - (Optional, Available in 1.119.1+) The name of forward entry.
 * `external_ip` - (Required, ForceNew) The external ip address, the ip must along bandwidth package public ip which `alicloud_nat_gateway` argument `bandwidth_packages`.
 * `external_port` - (Required) The external port, valid value is 1~65535|any.
-* `ip_protocol` - (Required) The ip protocal, valid value is tcp|udp|any.
+* `ip_protocol` - (Required) The ip protocol, valid value is tcp|udp|any.
 * `internal_ip` - (Required) The internal ip, must a private ip.
 * `internal_port` - (Required) The internal port, valid value is 1~65535|any.
 * `port_break` - (Optional, Available in 1.119.1+) Specifies whether to remove limits on the port range. Default value is `false`.

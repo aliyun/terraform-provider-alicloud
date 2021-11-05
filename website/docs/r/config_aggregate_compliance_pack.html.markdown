@@ -81,7 +81,7 @@ The following arguments are supported:
 * `compliance_pack_template_id` - (Optional form v1.141.0, ForceNew)The Template ID of compliance package.
 * `config_rules` - (Optional, Computed, Deprecated form v1.141.0) A list of Config Rules.
 * `config_rule_ids` - (Optional, Computed, Available in v1.141.0) A list of Config Rule IDs.
-* `description` - (Required) Teh description of compliance package.
+* `description` - (Required) The description of compliance package.
 * `risk_level` - (Required) The Risk Level. Valid values: `1`, `2`, `3`.
 
 #### Block config_rules
