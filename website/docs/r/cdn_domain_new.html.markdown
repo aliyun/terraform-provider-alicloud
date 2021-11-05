@@ -49,7 +49,7 @@ The following arguments are supported:
 
 The `sources` block supports the following:
 
-* `content` - (Required) The adress of source. Valid values can be ip or doaminName. Each item's `content` can not be repeated.
+* `content` - (Required) The address of source. Valid values can be ip or doaminName. Each item's `content` can not be repeated.
 * `type` - (Required) The type of the source. Valid values are `ipaddr`, `domain` and `oss`.
 * `port` - (Optional, Type: int) The port of source. Valid values are `443` and `80`. Default value is `80`.
 * `priority` - (Optional, Type: int) Priority of the source. Valid values are `0` and `100`. Default value is `20`.

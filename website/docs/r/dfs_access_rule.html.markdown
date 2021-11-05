@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "exmaple_name"
+  default = "example_name"
 }
 
 resource "alicloud_dfs_access_group" "default" {
