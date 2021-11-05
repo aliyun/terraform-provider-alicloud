@@ -592,6 +592,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_dynamic_tag_groups":                      dataSourceAlicloudCmsDynamicTagGroups(),
 			"alicloud_ecd_network_packages":                        dataSourceAlicloudEcdNetworkPackages(),
 			"alicloud_cloud_storage_gateway_gateway_smb_users":     dataSourceAlicloudCloudStorageGatewayGatewaySmbUsers(),
+			"alicloud_vpc_ipv6_internet_bandwidths":                dataSourceAlicloudVpcIpv6InternetBandwidths(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1068,6 +1069,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_dynamic_tag_group":                                resourceAlicloudCmsDynamicTagGroup(),
 			"alicloud_ecd_network_package":                                  resourceAlicloudEcdNetworkPackage(),
 			"alicloud_cloud_storage_gateway_gateway_smb_user":               resourceAlicloudCloudStorageGatewayGatewaySmbUser(),
+			"alicloud_vpc_ipv6_internet_bandwidth":                          resourceAlicloudVpcIpv6InternetBandwidth(),
 		},
 
 		ConfigureFunc: providerConfigure,
