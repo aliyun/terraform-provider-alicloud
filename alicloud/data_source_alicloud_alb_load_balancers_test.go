@@ -32,12 +32,12 @@ func TestAccAlicloudAlbLoadBalancersDataSource(t *testing.T) {
 	}
 	loadBalancerBussinessstatus := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAlbLoadBalancersDataSourceName(rand, map[string]string{
-			"ids":                            `["${alicloud_alb_load_balancer.default.id}"]`,
-			"load_balancer_bussiness_status": `"Normal"`,
+			"ids":                           `["${alicloud_alb_load_balancer.default.id}"]`,
+			"load_balancer_business_status": `"Normal"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAlbLoadBalancersDataSourceName(rand, map[string]string{
-			"ids":                            `["${alicloud_alb_load_balancer.default.id}_fake"]`,
-			"load_balancer_bussiness_status": `"Abnormal"`,
+			"ids":                           `["${alicloud_alb_load_balancer.default.id}_fake"]`,
+			"load_balancer_business_status": `"Abnormal"`,
 		}),
 	}
 	vpcIdsConf := dataSourceTestAccConfig{
@@ -135,6 +135,7 @@ func TestAccAlicloudAlbLoadBalancersDataSource(t *testing.T) {
 			"tags":                           `{Created = "TF"}`,
 			"resource_group_id":              `"${alicloud_alb_load_balancer.default.resource_group_id}"`,
 			"load_balancer_ids":              `["${alicloud_alb_load_balancer.default.id}"]`,
+			"load_balancer_business_status":  `"Normal"`,
 			"load_balancer_bussiness_status": `"Normal"`,
 			"address_type":                   `"Internet"`,
 		}),
@@ -148,6 +149,7 @@ func TestAccAlicloudAlbLoadBalancersDataSource(t *testing.T) {
 			"tags":                           `{Created = "TF_fake"}`,
 			"resource_group_id":              `"${alicloud_alb_load_balancer.default.resource_group_id}_fake"`,
 			"load_balancer_ids":              `["${alicloud_alb_load_balancer.default.id}_fake"]`,
+			"load_balancer_business_status":  `"Abnormal"`,
 			"load_balancer_bussiness_status": `"Abnormal"`,
 			"address_type":                   `"Intranet"`,
 		}),
