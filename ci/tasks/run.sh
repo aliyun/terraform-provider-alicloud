@@ -108,7 +108,9 @@ touch $LOGPERREGION
 
 echo -e "\n---------------  Running ${TEST_CASE_CODE} Test Cases ---------------"
 TestRunPrefix="TestAccAlicloud${TEST_CASE_CODE}"
-CoverProfileName="${TEST_CASE_CODE}.out"
+RunTime=$(date "+%Y-%m-%d")
+echo $time2
+CoverProfileName="${TEST_CASE_CODE}-${RunTime}.out"
 if [[ ${TEST_CASE_CODE} == "All" ]]; then
   TestRunPrefix="TestAccAlicloud"
 fi
