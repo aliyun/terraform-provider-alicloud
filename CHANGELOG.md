@@ -1,37 +1,39 @@
-## 1.142.0 (Unreleased)
+## 1.143.0 (Unreleased)
+## 1.142.0 (November 7, 2021)
 
-- **New Resource:** `alicloud_ecd_user` [GH-4126]
-- **New Resource:** `alicloud_vpc_traffic_mirror_session` [GH-4156]
-- **New Resource:** `alicloud_gpdb_account` [GH-4158] 
-- **New Resource:** `alicloud_security_center_slr` [GH-4159]
-- **New Resource:** `alicloud_vpc_ipv6_gateway` [GH-4161]
-- **New Resource:** `alicloud_vpc_ipv6_egress_rule` [GH-4167]
-- **New Resource:** `alicloud_event_bridge_service_linked_role` [GH-4159]  
-- **New Resource:** `alicloud_ecd_network_package` [GH-4153]
-- **New Resource:** `alicloud_cms_dynamic_tag_group` [GH-4160] 
-- **New Resource:** `alicloud_cloud_storage_gateway_gateway_smb_user` [GH-4163]
-- **New Data Source:** `alicloud_ecd_users` [GH-4126]  
-- **New Data Source:** `alicloud_vpc_traffic_mirror_sessions` [GH-4156]
-- **New Data Source:** `alicloud_gpdb_accounts` [GH-4158]
-- **New Data Source:** `alicloud_vpc_ipv6_gateways` [GH-4161]
-- **New Data Source:** `alicloud_vpc_ipv6_egress_rules` [GH-4167]
-- **New Data Source:** `alicloud_vpc_ipv6_addresses` [GH-4167]
-- **New Data Source:** `alicloud_ecd_network_packages` [GH-4153]
-- **New Data Source:** `alicloud_cms_dynamic_tag_groups` [GH-4160]
-- **New Data Source:** `alicloud_cloud_storage_gateway_gateway_smb_users` [GH-4163]
+- **New Resource:** `alicloud_ecd_user` ([#4126](https://github.com/aliyun/terraform-provider-alicloud/issues/4126))
+- **New Resource:** `alicloud_vpc_traffic_mirror_session` ([#4156](https://github.com/aliyun/terraform-provider-alicloud/issues/4156))
+- **New Resource:** `alicloud_gpdb_account` ([#4158](https://github.com/aliyun/terraform-provider-alicloud/issues/4158)) 
+- **New Resource:** `alicloud_security_center_slr` ([#4159](https://github.com/aliyun/terraform-provider-alicloud/issues/4159))
+- **New Resource:** `alicloud_vpc_ipv6_gateway` ([#4161](https://github.com/aliyun/terraform-provider-alicloud/issues/4161))
+- **New Resource:** `alicloud_vpc_ipv6_egress_rule` ([#4167](https://github.com/aliyun/terraform-provider-alicloud/issues/4167))
+- **New Resource:** `alicloud_event_bridge_service_linked_role` ([#4159](https://github.com/aliyun/terraform-provider-alicloud/issues/4159))  
+- **New Resource:** `alicloud_ecd_network_package` ([#4153](https://github.com/aliyun/terraform-provider-alicloud/issues/4153))
+- **New Resource:** `alicloud_cms_dynamic_tag_group` ([#4160](https://github.com/aliyun/terraform-provider-alicloud/issues/4160)) 
+- **New Resource:** `alicloud_cloud_storage_gateway_gateway_smb_user` ([#4163](https://github.com/aliyun/terraform-provider-alicloud/issues/4163))
+- **New Data Source:** `alicloud_ecd_users` ([#4126](https://github.com/aliyun/terraform-provider-alicloud/issues/4126))  
+- **New Data Source:** `alicloud_vpc_traffic_mirror_sessions` ([#4156](https://github.com/aliyun/terraform-provider-alicloud/issues/4156))
+- **New Data Source:** `alicloud_gpdb_accounts` ([#4158](https://github.com/aliyun/terraform-provider-alicloud/issues/4158))
+- **New Data Source:** `alicloud_vpc_ipv6_gateways` ([#4161](https://github.com/aliyun/terraform-provider-alicloud/issues/4161))
+- **New Data Source:** `alicloud_vpc_ipv6_egress_rules` ([#4167](https://github.com/aliyun/terraform-provider-alicloud/issues/4167))
+- **New Data Source:** `alicloud_vpc_ipv6_addresses` ([#4167](https://github.com/aliyun/terraform-provider-alicloud/issues/4167))
+- **New Data Source:** `alicloud_ecd_network_packages` ([#4153](https://github.com/aliyun/terraform-provider-alicloud/issues/4153))
+- **New Data Source:** `alicloud_cms_dynamic_tag_groups` ([#4160](https://github.com/aliyun/terraform-provider-alicloud/issues/4160))
+- **New Data Source:** `alicloud_cloud_storage_gateway_gateway_smb_users` ([#4163](https://github.com/aliyun/terraform-provider-alicloud/issues/4163))
 
 ENHANCEMENTS:
 
-- resource/alicloud_ecd_user: redefine connectivity EcdUserSupportRegions; data_source/alicloud_ecd_users: redefine connectivity EcdUserSupportRegions [GH-4162]
-- resource/alicloud_event_bridge_service_sle: After the version 1.142.0, the resource is renamed as alicloud_event_bridge_service_linked_role. [GH-4159]
-- resource/alicloud_ecs_network_interface: Add delete error retry code InvalidOperation.Conflict [GH-4173]  
-- datasource/alicloud_dataworks_service: Renames to alicloud_data_works_service; docs: Improves the docs subcategory [GH-4157]
-- Github WorkFlow: Add markdown-link-check && markdown-spell-check [GH-4166]
+- resource/alicloud_cloud_storage_gateway_gateway_smb_user: Adds waiting codes to wait the task is completed ([#4175](https://github.com/aliyun/terraform-provider-alicloud/issues/4175))
+- resource/alicloud_ecd_user: redefine connectivity EcdUserSupportRegions; data_source/alicloud_ecd_users: redefine connectivity EcdUserSupportRegions ([#4162](https://github.com/aliyun/terraform-provider-alicloud/issues/4162))
+- resource/alicloud_event_bridge_service_sle: After the version 1.142.0, the resource is renamed as alicloud_event_bridge_service_linked_role. ([#4159](https://github.com/aliyun/terraform-provider-alicloud/issues/4159))
+- resource/alicloud_ecs_network_interface: Add delete error retry code InvalidOperation.Conflict ([#4173](https://github.com/aliyun/terraform-provider-alicloud/issues/4173))  
+- datasource/alicloud_dataworks_service: Renames to alicloud_data_works_service; docs: Improves the docs subcategory ([#4157](https://github.com/aliyun/terraform-provider-alicloud/issues/4157))
+- Github WorkFlow: Add markdown-link-check && markdown-spell-check ([#4166](https://github.com/aliyun/terraform-provider-alicloud/issues/4166))
 
 BUG FIXES:
 
-- datasource/alicloud_alb_load_balancers: fix load_balancer_business_status spelling error [GH-4170]
-- docs: Fixes the spelling error [GH-4169]
+- datasource/alicloud_alb_load_balancers: fix load_balancer_business_status spelling error ([#4170](https://github.com/aliyun/terraform-provider-alicloud/issues/4170))
+- docs: Fixes the spelling error ([#4169](https://github.com/aliyun/terraform-provider-alicloud/issues/4169))
 
 ## 1.141.0 (October 31, 2021)
 
@@ -996,7 +998,7 @@ ENHANCEMENTS:
 
 ENHANCEMENTS:
 
-- resource/alicloud_common_bandwidth_package: Renames the name to bandwidth_package_name; Adds new field status; Upgrades its dependence sdk [([#3376](https://github.com/aliyun/terraform-provider-alicloud/issues/3376))]
+- resource/alicloud_common_bandwidth_package: Renames the name to bandwidth_package_name; Adds new field status; Upgrades its dependence sdk [([#3376](https://github.com/aliyun/terraform-provider-alicloud/issues/3376)))
 - resource/alicloud_route_table: Adds retry code to avoid concurrency issues when deleting ([#3377](https://github.com/aliyun/terraform-provider-alicloud/issues/3377))
 - resource/alicloud_quotas_xxx: Supports setting SourceIp to avoid useless error when using sts to operate ([#3388](https://github.com/aliyun/terraform-provider-alicloud/issues/3388))
 - resource/alicloud_resource_resource_manager_resource_directory: Supports enable or disable control policy by attribute status ([#3391](https://github.com/aliyun/terraform-provider-alicloud/issues/3391))
