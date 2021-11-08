@@ -69,6 +69,8 @@ The following arguments are supported:
 
 ## Attributes Reference
 
+
+
 The following attributes are exported:
 
 * `id` - The current cluster connection resource ID. Composed of cluster ID and connection string with format `<db_cluster_id>:<connection_prefix>`.
