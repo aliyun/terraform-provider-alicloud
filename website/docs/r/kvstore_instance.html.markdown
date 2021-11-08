@@ -17,8 +17,10 @@ Basic Usage
 
 ```terraform
 resource "alicloud_kvstore_instance" "example" {
+
   db_instance_name            = "tf-test-basic"
   vswitch_id                            = "vsw-123456"
+
   security_ips          = [
     "10.23.12.24"]
   instance_type                 = "Redis"
