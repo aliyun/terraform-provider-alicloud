@@ -46,6 +46,7 @@ func resourceAlicloudCloudStorageGatewayGatewaySmbUser() *schema.Resource {
 
 func resourceAlicloudCloudStorageGatewayGatewaySmbUserCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	sgwService := SgwService{client}
 	var response map[string]interface{}
 	action := "CreateGatewaySMBUser"
 	request := make(map[string]interface{})
@@ -78,6 +79,11 @@ func resourceAlicloudCloudStorageGatewayGatewaySmbUserCreate(d *schema.ResourceD
 
 	d.SetId(fmt.Sprint(request["GatewayId"], ":", request["Username"]))
 
+	stateConf := BuildStateConf([]string{}, []string{"task.state.completed"}, d.Timeout(schema.TimeoutCreate), 1*time.Second, sgwService.CloudStorageGatewayTaskStateRefreshFunc(fmt.Sprint(request["GatewayId"]), fmt.Sprint(response["TaskId"]), []string{"task.state.Failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return resourceAlicloudCloudStorageGatewayGatewaySmbUserRead(d, meta)
 }
 
@@ -104,6 +110,7 @@ func resourceAlicloudCloudStorageGatewayGatewaySmbUserRead(d *schema.ResourceDat
 
 func resourceAlicloudCloudStorageGatewayGatewaySmbUserDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	sgwService := SgwService{client}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -134,6 +141,10 @@ func resourceAlicloudCloudStorageGatewayGatewaySmbUserDelete(d *schema.ResourceD
 	addDebug(action, response, request)
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	stateConf := BuildStateConf([]string{}, []string{"task.state.completed"}, d.Timeout(schema.TimeoutCreate), 1*time.Second, sgwService.CloudStorageGatewayTaskStateRefreshFunc(fmt.Sprint(request["GatewayId"]), fmt.Sprint(response["TaskId"]), []string{"task.state.Failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }
