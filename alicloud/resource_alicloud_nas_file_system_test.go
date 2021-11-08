@@ -125,7 +125,7 @@ func TestAccAlicloudNasFileSystem_basic(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.NasNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -135,11 +135,13 @@ func TestAccAlicloudNasFileSystem_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"protocol_type": "${data.alicloud_nas_protocols.example.protocols.0}",
 					"storage_type":  "Capacity",
+					"zone_id":       "${data.alicloud_nas_zones.default.zones.1.zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocol_type": CHECKSET,
 						"storage_type":  "Capacity",
+						"zone_id":       CHECKSET,
 					}),
 				),
 			},
@@ -186,7 +188,7 @@ func TestAccAlicloudNasFileSystemEncrypt(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.NasNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -197,12 +199,14 @@ func TestAccAlicloudNasFileSystemEncrypt(t *testing.T) {
 					"protocol_type": "NFS",
 					"storage_type":  "Capacity",
 					"encrypt_type":  "1",
+					"zone_id":       "${data.alicloud_nas_zones.default.zones.1.zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocol_type": CHECKSET,
 						"storage_type":  "Capacity",
 						"encrypt_type":  "1",
+						"zone_id":       CHECKSET,
 					}),
 				),
 			},
@@ -235,6 +239,103 @@ func TestAccAlicloudNasFileSystemEncrypt(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudNasFileSystemExtreme_basic(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasFileSystem0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudNasFileSystem%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence2)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.NasNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocol_type":    "NFS",
+					"zone_id":          "${data.alicloud_nas_zones.default.zones.0.zone_id}",
+					"storage_type":     "standard",
+					"file_system_type": "extreme",
+					"capacity":         "100",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocol_type":    CHECKSET,
+						"zone_id":          CHECKSET,
+						"storage_type":     "standard",
+						"file_system_type": "extreme",
+						"capacity":         "100",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAlicloudNasFileSystemExtremeEncrypt(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasFileSystem0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudNasFileSystem%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.NasClassicSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocol_type":    "NFS",
+					"zone_id":          "${data.alicloud_nas_zones.default.zones.0.zone_id}",
+					"storage_type":     "standard",
+					"file_system_type": "extreme",
+					"capacity":         "100",
+					"encrypt_type":     "2",
+					"kms_key_id":       "${alicloud_kms_key.key.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocol_type":    CHECKSET,
+						"zone_id":          CHECKSET,
+						"storage_type":     "standard",
+						"file_system_type": "extreme",
+						"capacity":         "100",
+						"encrypt_type":     "2",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudNasFileSystem0 = map[string]string{}
 
 func AlicloudNasFileSystemBasicDependence0(name string) string {
@@ -245,6 +346,8 @@ variable "name" {
 data "alicloud_nas_protocols" "example" {
         type = "Capacity"
 }
+data "alicloud_nas_zones" "default" {
+}
 `, name)
 }
 
@@ -253,10 +356,35 @@ func AlicloudNasFileSystemBasicDependence1(name string) string {
 variable "name" {
 	default = "%s"
 }
+
+data "alicloud_nas_zones" "default" {
+}
+`, name)
+}
+
+func AlicloudNasFileSystemBasicDependence2(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_nas_zones" "default" {
+}
+`, name)
+}
+
+func AlicloudNasFileSystemBasicDependence3(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
 resource "alicloud_kms_key" "key" {
  description             = var.name
  pending_window_in_days  = "7"
  key_state               = "Enabled"
+}
+
+data "alicloud_nas_zones" "default" {
 }
 `, name)
 }

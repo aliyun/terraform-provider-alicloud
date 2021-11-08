@@ -19,6 +19,8 @@ This resource will help you to manager cluster-autoscaler in Kubernetes Cluster.
 
 -> **NOTE:** Available in 1.65.0+.
 
+-> **NOTE:** From version v1.127.0+. Resource `alicloud_cs_kubernetes_autoscaler` is replaced by resource [alicloud_cs_autoscaling_config](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_autoscaling_config). If you have used resource `alicloud_cs_kubernetes_autoscaler`, please refer to [Use Terraform to create an auto-scaling node pool](https://www.alibabacloud.com/help/doc-detail/197717.htm) to switch to `alicloud_cs_autoscaling_config`.
+
 ## Example Usage
 
 cluster-autoscaler in Kubernetes Cluster.

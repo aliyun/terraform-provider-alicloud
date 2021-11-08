@@ -73,7 +73,7 @@ func TestAccAlicloudMhubAppDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithRegions(t, true, connectivity.MHUBAppSupportRegions)
+		testAccPreCheckWithRegions(t, true, connectivity.MHUBSupportRegions)
 	}
 
 	AlicloudMhubAppCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, osTypeConf)

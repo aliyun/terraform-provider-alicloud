@@ -20,7 +20,17 @@ For information about Cloud Config Aggregate Compliance Pack and how to use it, 
 Basic Usage
 
 ```terraform
-resource "alicloud_config_aggregator" "example" {
+variable "name" {
+  default = "example_name"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+data "alicloud_instances" "default" {}
+
+resource "alicloud_config_aggregator" "default" {
   aggregator_accounts {
     account_id   = "140278452670****"
     account_name = "test-2"
@@ -30,25 +40,33 @@ resource "alicloud_config_aggregator" "example" {
   description     = "tf-testaccaggregator"
 }
 
-resource "alicloud_config_aggregate_compliance_pack" "example" {
+
+resource "alicloud_config_aggregate_config_rule" "default" {
+  aggregator_id              = alicloud_config_aggregator.default.id
+  aggregate_config_rule_name = var.name
+  source_owner               = "ALIYUN"
+  source_identifier          = "ecs-cpu-min-count-limit"
+  config_rule_trigger_types  = "ConfigurationItemChangeNotification"
+  resource_types_scope       = ["ACS::ECS::Instance"]
+  risk_level                 = 1
+  description                = var.name
+  exclude_resource_ids_scope = data.alicloud_instances.default.ids.0
+  input_parameters = {
+    cpuCount = "4",
+  }
+  region_ids_scope         = "cn-hangzhou"
+  resource_group_ids_scope = data.alicloud_resource_manager_resource_groups.default.ids.0
+  tag_key_scope            = "tFTest"
+  tag_value_scope          = "forTF 123"
+}
+
+resource "alicloud_config_aggregate_compliance_pack" "default" {
   aggregate_compliance_pack_name = "tf-testaccConfig1234"
-  aggregator_id                  = alicloud_config_aggregators.example.id
-  compliance_pack_template_id    = "ct-3d20ff4e06a30027f76e"
+  aggregator_id                  = alicloud_config_aggregator.default.id
   description                    = "tf-testaccConfig1234"
   risk_level                     = 1
-  config_rules {
-    managed_rule_identifier = "ecs-instance-expired-check"
-    config_rule_parameters {
-      parameter_name  = "days"
-      parameter_value = "60"
-    }
-  }
-  config_rules {
-    managed_rule_identifier = "ecs-snapshot-retention-days"
-    config_rule_parameters {
-      parameter_name  = "days"
-      parameter_value = "7"
-    }
+  config_rule_ids {
+    config_rule_id = alicloud_config_aggregate_config_rule.default.config_rule_id
   }
 }
 
@@ -60,9 +78,10 @@ The following arguments are supported:
 
 * `aggregate_compliance_pack_name` - (Required, ForceNew)The name of compliance package name.
 * `aggregator_id` - (Required, ForceNew)The ID of aggregator.
-* `compliance_pack_template_id` - (Required, ForceNew)The Template ID of compliance package.
-* `config_rules` - (Required) A list of  compliance package rules.
-* `description` - (Required) Teh description of compliance package.
+* `compliance_pack_template_id` - (Optional form v1.141.0, ForceNew)The Template ID of compliance package.
+* `config_rules` - (Optional, Computed, Deprecated form v1.141.0) A list of Config Rules.
+* `config_rule_ids` - (Optional, Computed, Available in v1.141.0) A list of Config Rule IDs.
+* `description` - (Required) The description of compliance package.
 * `risk_level` - (Required) The Risk Level. Valid values: `1`, `2`, `3`.
 
 #### Block config_rules
@@ -71,6 +90,12 @@ The config_rules supports the following:
 
 * `config_rule_parameters` - (Optional) A list of parameter rules.
 * `managed_rule_identifier` - (Required) The Managed Rule Identifier.
+
+#### Block config_rule_ids
+
+The config_rule_ids supports the following:
+
+* `config_rule_id` - (Optional) The rule ID of Aggregate Config Rule.
 
 #### Block config_rule_parameters
 

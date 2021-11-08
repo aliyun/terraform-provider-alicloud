@@ -340,6 +340,114 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
+	var v *cs.KubernetesClusterDetail
+
+	resourceId := "alicloud_cs_managed_kubernetes.default"
+	ra := resourceAttrInit(resourceId, map[string]string{})
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testaccmanagedkubernetes-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSManagedKubernetesConfig)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                         name,
+					"cluster_spec":                 "ack.pro.small",
+					"is_enterprise_security_group": "true",
+					"deletion_protection":          "false",
+					"node_cidr_mask":               "26",
+					"pod_cidr":                     "172.20.0.0/16",
+					"service_cidr":                 "172.21.0.0/20",
+					"os_type":                      "Linux",
+					"platform":                     "AliyunLinux",
+					"password":                     "Test12345",
+					"worker_number":                "0",
+					"worker_vswitch_ids":           []string{"${alicloud_vswitch.default.id}"},
+					"worker_instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"worker_disk_size":             "50",
+					"worker_disk_category":         "cloud_ssd",
+					"control_plane_log_ttl":        "30",
+					"control_plane_log_components": []string{"apiserver", "kcm", "scheduler"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"cluster_spec":         "ack.pro.small",
+						"deletion_protection":  "false",
+						"pod_cidr":             "172.20.0.0/16",
+						"service_cidr":         "172.21.0.0/20",
+						"os_type":              "Linux",
+						"platform":             "AliyunLinux",
+						"password":             "Test12345",
+						"worker_number":        "0",
+						"worker_disk_size":     "50",
+						"worker_disk_category": "cloud_ssd",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"name", "new_nat_gateway", "pod_cidr", "service_cidr", "control_plane_log_ttl",
+					"node_cidr_mask", "vswitch_ids", "worker_disk_category", "worker_disk_size", "control_plane_log_components",
+					"worker_instance_charge_type", "worker_instance_types", "os_type", "platform", "timezone", "password",
+					"exclude_autoscaler_nodes", "install_cloud_monitor", "proxy_mode", "slb_internet_enabled", "worker_vswitch_ids",
+					"cpu_policy", "enable_ssh", "is_enterprise_security_group",
+				},
+			},
+		},
+	})
+}
+
+func resourceCSManagedKubernetesConfig(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_zones" default {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_instance_types" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 4
+	memory_size = 8
+	kubernetes_node_role = "Worker"
+}
+resource "alicloud_vpc" "default" {
+  vpc_name = "${var.name}"
+  cidr_block = "10.1.0.0/21"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = "${var.name}"
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "10.1.1.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+`, name)
+}
+
 func resourceCSManagedKubernetesConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {

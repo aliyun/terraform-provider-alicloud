@@ -7,6 +7,18 @@ on:
       - alicloud/*.go
 
 jobs:
+  formatter:
+    name: Go Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          fetch-depth: 0
+      - name: Golang Formatter
+        uses: Jerome1337/gofmt-action@v1.0.4
+        with:
+          gofmt-path: './alicloud'
+          gofmt-flags: '-l -d'
   labeler:
     runs-on: ubuntu-latest
     name: Label the PR size

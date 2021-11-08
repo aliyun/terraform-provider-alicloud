@@ -1,17 +1,17 @@
 ---
-subcategory: "Video Surveillance (VS)"
+subcategory: "Video Surveillance System"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vs_service"
-sidebar_current: "docs-alicloud-datasource-vs-service"
+sidebar_current: "docs-alicloud-datasource-video-surveillance-system-service"
 description: |-
-    Provides a datasource to open the Video Surveillance (VS) service automatically.
+  Provides a list of Video Surveillance System Groups to the user.
 ---
 
 # alicloud\_vs\_service
 
-Using this data source can open Video Surveillance (VS) service automatically. If the service has been opened, it will return opened.
+Using this data source can open Video Surveillance System service automatically. If the service has been opened, it will return opened.
 
-For information about Video Surveillance (VS) and how to use it, see [What is VS](https://help.aliyun.com/product/108765.html).
+For information about Video Surveillance System and how to use it, see [What is VS](https://help.aliyun.com/product/108765.html).
 
 -> **NOTE:** Available in v1.116.0+
 

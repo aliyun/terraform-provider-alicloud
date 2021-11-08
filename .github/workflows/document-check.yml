@@ -1,0 +1,74 @@
+name: Documentation Checks
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - .github/workflows/document-check.yml
+      - .go-version
+      - website/docs/**
+
+jobs:
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          folder-path: "website/docs"
+          file-extension: '.md'
+
+  markdown-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: avto-dev/markdown-lint@v1
+
+  misspell:
+    name: runner/misspell
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code.
+        uses: actions/checkout@v1
+      - name: misspell
+        uses: reviewdog/action-misspell@v1
+        with:
+          github_token: ${{secrets.github_token}}
+          fail_on_error: true
+          filter_mode: file
+          locale: "US"
+          path: ./website/docs
+
+  terrafmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo "GO_VERSION=$(cat .go-version)" >> $GITHUB_ENV
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - uses: actions/cache@v2
+        continue-on-error: true
+        timeout-minutes:
+      - run: cd tools && go install github.com/katbyte/terrafmt
+      - run: terrafmt diff ./website --check --pattern '*.markdown'
+
+#  terraform-validate:
+#    runs-on: ubuntu-latest
+#    name: Validate terraform
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#      - run: cd tools && go install github.com/katbyte/terrafmt
+#      - run: terrafmt diff ./website --check --pattern '*.markdown'
+#      - run: |
+
+
+
+
+
+
+

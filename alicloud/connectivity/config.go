@@ -158,6 +158,8 @@ type Config struct {
 	MhubEndpoint                string
 	ServicemeshEndpoint         string
 	AcrEndpoint                 string
+	EdsuserEndpoint             string
+	GpdbEndpoint                string
 }
 
 func (c *Config) loadAndValidate() error {

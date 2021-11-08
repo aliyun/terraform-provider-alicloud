@@ -149,6 +149,7 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
 					}),
 				),
 			},
@@ -156,7 +157,7 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action", "order_type"},
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
 			},
 			{
 				Config: testMongoDBInstance_classic_ssl_action,
@@ -273,6 +274,60 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudMongoDBInstance_transform_charge_type(t *testing.T) {
+	var v dds.DBInstance
+	resourceId := "alicloud_mongodb_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
+			testAccPreCheckWithTime(t, []int{30})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckMongoDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testMongoDBInstance_classic_base,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":       "3.4",
+						"db_instance_storage":  "10",
+						"db_instance_class":    "dds.mongo.mid",
+						"name":                 "",
+						"storage_engine":       "WiredTiger",
+						"instance_charge_type": "PostPaid",
+						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testMongoDBInstance_classic_transform_to_prepaid,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":       "3.4",
+						"db_instance_storage":  "10",
+						"db_instance_class":    "dds.mongo.mid",
+						"name":                 "",
+						"storage_engine":       "WiredTiger",
+						"instance_charge_type": "PrePaid",
+						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
+						"auto_renew":           "false",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
@@ -302,6 +357,7 @@ func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
 					}),
 				),
 			},
@@ -309,7 +365,7 @@ func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action", "order_type"},
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
 			},
 			{
 				Config: testMongoDBInstance_classic_tde,
@@ -352,6 +408,7 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
 					}),
 				),
 			},
@@ -359,7 +416,7 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action", "order_type"},
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
 			},
 			{
 				Config: testMongoDBInstance_vpc_name,
@@ -455,6 +512,7 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
 					}),
 				),
 			},
@@ -462,7 +520,7 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action", "order_type"},
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
 			},
 			{
 				Config: testMongoDBInstance_multiAZ_name,
@@ -558,6 +616,7 @@ func TestAccAlicloudMongoDBInstance_multi_instance(t *testing.T) {
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
 					}),
 				),
 			},
@@ -633,6 +692,17 @@ resource "alicloud_mongodb_instance" "default" {
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
+}`
+
+const testMongoDBInstance_classic_transform_to_prepaid = `
+data "alicloud_mongodb_zones" "default" {}
+resource "alicloud_mongodb_instance" "default" {
+  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
+  engine_version      = "3.4"
+  db_instance_storage = 10
+  db_instance_class   = "dds.mongo.mid"
+  auto_renew 		  = "false"
+  instance_charge_type = "PrePaid"
 }`
 
 const testMongoDBInstance_classic_ssl_action = `

@@ -1,5 +1,5 @@
 ---
-subcategory: "IOT"
+subcategory: "Internet of Things (Iot)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_iot_service"
 sidebar_current: "docs-alicloud-datasource-iot-service"

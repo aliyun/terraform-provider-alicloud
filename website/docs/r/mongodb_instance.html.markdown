@@ -68,7 +68,7 @@ The following arguments are supported:
 * `replication_factor` - (Optional) Number of replica set nodes. Valid values: [1, 3, 5, 7]
 * `storage_engine` (Optional, ForceNew) Storage engine: WiredTiger or RocksDB. System Default value: WiredTiger.
 * `name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
-* `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, System default to `PostPaid`. It can be modified from `PostPaid` to `PrePaid` after version 1.63.0.
+* `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, System default to `PostPaid`. **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version 1.63.0.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. System default to 1.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. it supports multiple zone.
 If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of them.
@@ -91,7 +91,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
     
 * `ssl_action` - (Optional, Available in v1.78.0+) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate.
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
-
+* `auto_renew` - (Optional, Available in v1.141.0+) Auto renew for prepaid, true of false. Default is false.
 -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
 ## Attributes Reference
@@ -102,6 +102,17 @@ The following attributes are exported:
 * `retention_period` - Instance log backup retention days. Available in 1.42.0+.
 * `replica_set_name` - The name of the mongo replica set
 * `ssl_status` - Status of the SSL feature. `Open`: SSL is turned on; `Closed`: SSL is turned off.
+* `replica_sets` - Replica set instance information. The details see Block replica_sets. **NOTE:** Available in v1.140+.
+
+#### replica_sets
+The replica_sets supports the following:
+* `vswitch_id` - The virtual switch ID to launch DB instances in one VPC.
+* `connection_port` - The connection port of the node.
+* `replica_set_role` - The role of the node. Valid values: `Primary`,`Secondary`.
+* `connection_domain` - The connection address of the node.
+* `vpc_cloud_instance_id` - VPC instance ID.
+* `network_type` - The network type of the node. Valid values: `Classic`,`VPC`.
+* `vpc_id` - The private network ID of the node.
 
 ### Timeouts
 

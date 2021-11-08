@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Monitor"
+subcategory: "Cloud Monitor Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cms_monitor_groups"
 sidebar_current: "docs-alicloud-datasource-cms-monitor-groups"

@@ -142,7 +142,7 @@ The x_forwarded_for mapping supports the following:
 
 ## Listener fields and protocol mapping
 
-load balance support 4 protocal to listen on, they are `http`,`https`,`tcp`,`udp`, the every listener support which portocal following:
+load balance support 4 protocol to listen on, they are `http`,`https`,`tcp`,`udp`, the every listener support which portocal following:
 
 listener parameter | support protocol | value range |
 ------------- | ------------- | ------------- | 
