@@ -68,6 +68,8 @@ func TestAccAlicloudEssScalingconfigurationsDataSource(t *testing.T) {
 			"configurations.0.internet_max_bandwidth_out":    CHECKSET,
 			"configurations.0.internet_charge_type":          CHECKSET,
 			"configurations.0.data_disks.#":                  "0",
+			"configurations.0.instance_name":                 "instance_name",
+			"configurations.0.host_name":                     "hostname",
 		}
 	}
 
@@ -119,6 +121,8 @@ resource "alicloud_ess_scaling_configuration" "default"{
 	system_disk_category = "cloud_essd"
 	system_disk_performance_level = "PL1"
 	force_delete = true
+	instance_name = "instance_name"
+	host_name = "hostname"
 }
 
 data "alicloud_ess_scaling_configurations" "default"{

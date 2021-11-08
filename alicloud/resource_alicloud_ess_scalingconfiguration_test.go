@@ -422,6 +422,16 @@ func TestAccAlicloudEssScalingConfigurationPerformanceLevel(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"host_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"host_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"data_disk": []map[string]string{{
 						"size":                 "20",
 						"category":             "cloud_essd",
