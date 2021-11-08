@@ -1,4 +1,9 @@
 ## 1.143.0 (Unreleased)
+
+ENHANCEMENTS:
+- resource/alicloud_ess_scalingconfiguration: Adds new attributes host_name
+- datasource/alicloud_ess_scalingconfigurations: Adds new attributes host_name, instance_name
+
 ## 1.142.0 (November 7, 2021)
 
 - **New Resource:** `alicloud_ecd_user` ([#4126](https://github.com/aliyun/terraform-provider-alicloud/issues/4126))

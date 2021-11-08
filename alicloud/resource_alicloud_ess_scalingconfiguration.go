@@ -287,6 +287,10 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"host_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -518,6 +522,11 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		d.SetPartial("instance_name")
 	}
 
+	if d.HasChange("host_name") {
+		request.HostName = d.Get("host_name").(string)
+		d.SetPartial("host_name")
+	}
+
 	if d.HasChange("tags") {
 		if v, ok := d.GetOk("tags"); ok {
 			tags := "{"
@@ -679,6 +688,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("override", d.Get("override").(bool))
 	d.Set("password_inherit", object.PasswordInherit)
 	d.Set("resource_group_id", object.ResourceGroupId)
+	d.Set("host_name", object.HostName)
 
 	if sg, ok := d.GetOk("security_group_id"); ok && sg.(string) != "" {
 		d.Set("security_group_id", object.SecurityGroupId)
@@ -944,6 +954,10 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 
 	if v, ok := d.GetOk("instance_name"); ok && v.(string) != "" {
 		request.InstanceName = v.(string)
+	}
+
+	if v, ok := d.GetOk("host_name"); ok && v.(string) != "" {
+		request.HostName = v.(string)
 	}
 
 	return request, nil

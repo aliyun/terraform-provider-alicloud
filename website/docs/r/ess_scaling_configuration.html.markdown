@@ -131,6 +131,7 @@ The following arguments are supported:
 * `kms_encrypted_password` - (Optional, ForceNew, Available in 1.60.0+) An KMS encrypts password used to a db account. If the `password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.60.0+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `resource_group_id` - (Optional, Available in 1.135.0+) ID of resource group.
+* `host_name` - (Optional, Available in 1.143.0+) Hostname of an ECS instance.
 
 -> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
 
