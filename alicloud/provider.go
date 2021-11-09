@@ -598,6 +598,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_pvtz_resolver_zones":                         dataSourceAlicloudPvtzResolverZones(),
 			"alicloud_pvtz_rules":                                  dataSourceAlicloudPvtzRules(),
 			"alicloud_ecd_bundles":                                 dataSourceAlicloudEcdBundles(),
+			"alicloud_simple_application_server_disks":             dataSourceAlicloudSimpleApplicationServerDisks(),
+			"alicloud_simple_application_server_snapshots":         dataSourceAlicloudSimpleApplicationServerSnapshots(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1079,6 +1081,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_pvtz_endpoint":                                        resourceAlicloudPvtzEndpoint(),
 			"alicloud_pvtz_rule":                                            resourceAlicloudPvtzRule(),
 			"alicloud_pvtz_rule_attachment":                                 resourceAlicloudPvtzRuleAttachment(),
+			"alicloud_simple_application_server_snapshot":                   resourceAlicloudSimpleApplicationServerSnapshot(),
 		},
 
 		ConfigureFunc: providerConfigure,
