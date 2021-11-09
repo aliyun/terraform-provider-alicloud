@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -27,13 +28,15 @@ func resourceAlicloudCloudSsoAccessConfiguration() *schema.Resource {
 				Computed: true,
 			},
 			"access_configuration_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-z0-9-]{1,64}$`), "The name of the resource. The name must be 2 to 64 characters in length and can contain lower case letters, digits, and hyphens (-)."),
 			},
 			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(0, 1024),
 			},
 			"directory_id": {
 				Type:     schema.TypeString,

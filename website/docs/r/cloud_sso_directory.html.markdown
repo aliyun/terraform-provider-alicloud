@@ -22,8 +22,8 @@ For information about Cloud SSO Directory and how to use it, see [What is Direct
 Basic Usage
 
 ```terraform
-resource "alicloud_cloud_sso_directory" "example" {
-  directory_name = "example_value"
+resource "alicloud_cloud_sso_directory" "default" {
+  directory_name = "example-value"
 }
 
 ```

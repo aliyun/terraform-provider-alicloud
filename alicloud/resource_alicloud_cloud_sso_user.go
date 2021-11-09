@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -23,8 +24,9 @@ func resourceAlicloudCloudSsoUser() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(0, 1024),
 			},
 			"directory_id": {
 				Type:     schema.TypeString,
@@ -32,9 +34,10 @@ func resourceAlicloudCloudSsoUser() *schema.Resource {
 				ForceNew: true,
 			},
 			"display_name": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Sensitive:    true,
+				ValidateFunc: validation.StringLenBetween(0, 256),
 			},
 			"email": {
 				Type:      schema.TypeString,
@@ -42,14 +45,16 @@ func resourceAlicloudCloudSsoUser() *schema.Resource {
 				Sensitive: true,
 			},
 			"first_name": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Sensitive:    true,
+				ValidateFunc: validation.StringLenBetween(0, 64),
 			},
 			"last_name": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Sensitive:    true,
+				ValidateFunc: validation.StringLenBetween(0, 64),
 			},
 			"status": {
 				Type:         schema.TypeString,
@@ -62,10 +67,11 @@ func resourceAlicloudCloudSsoUser() *schema.Resource {
 				Computed: true,
 			},
 			"user_name": {
-				Type:      schema.TypeString,
-				Required:  true,
-				ForceNew:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				Sensitive:    true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[\w-.@]{1,64}$`), "The name of the resource. The name must be 1 to 64 characters in length and  can contain letters, digits, underscores (_), and hyphens (-)."),
 			},
 		},
 	}
