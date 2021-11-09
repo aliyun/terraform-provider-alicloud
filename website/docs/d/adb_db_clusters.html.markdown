@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_adb_db_clusters" "example" {
-    description_regex = "example"
+  description_regex = "example"
 }
 
 output "first_adb_db_cluster_id" {

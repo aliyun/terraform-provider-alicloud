@@ -17,10 +17,10 @@ This data source provides a list of Alidns Domain Records in an Alibaba Cloud ac
 
 ```terraform 
 data "alicloud_alidns_records" "records_ds" {
-  domain_name       = "xiaozhu.top"
-  ids               = [1978593525779****]
-  type              = "A"
-  output_file       = "records.txt"
+  domain_name = "xiaozhu.top"
+  ids         = ["1978593525779****"]
+  type        = "A"
+  output_file = "records.txt"
 }
 
 output "first_record_id" {

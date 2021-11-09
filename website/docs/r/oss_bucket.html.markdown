@@ -107,12 +107,12 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
     enabled = true
 
     transitions {
-        days =         "3"
-        storage_class= "IA"
+      days          = "3"
+      storage_class = "IA"
     }
     transitions {
-        days=         "30"
-        storage_class= "Archive"
+      days          = "30"
+      storage_class = "Archive"
     }
   }
 }
@@ -128,11 +128,11 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
 
     transitions {
       created_before_date = "2020-11-11"
-      storage_class = "IA"
+      storage_class       = "IA"
     }
     transitions {
       created_before_date = "2021-11-11"
-      storage_class = "Archive"
+      storage_class       = "Archive"
     }
   }
 }
@@ -166,21 +166,21 @@ resource "alicloud_oss_bucket" "bucket-versioning-lifecycle" {
     enabled = true
 
     expiration {
-        expired_object_delete_marker = true
+      expired_object_delete_marker = true
     }
 
     noncurrent_version_expiration {
-        days = 240
+      days = 240
     }
 
     noncurrent_version_transition {
-        days          = 180
-        storage_class = "Archive"
+      days          = 180
+      storage_class = "Archive"
     }
-    
+
     noncurrent_version_transition {
-        days          = 60
-        storage_class = "IA"
+      days          = 60
+      storage_class = "IA"
     }
   }
 }
@@ -280,10 +280,10 @@ Set bucket accelerate configuration
 
 ```terraform
 resource "alicloud_oss_bucket" "bucket-accelerate" {
-  bucket          = "bucket_name"
+  bucket = "bucket_name"
 
   transfer_acceleration {
-	  enabled = false
+    enabled = false
   }
 }
 ```

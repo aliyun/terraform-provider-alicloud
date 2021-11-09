@@ -37,23 +37,23 @@ output "cloud_sso_user_id_2" {
 }
 
 data "alicloud_cloud_sso_users" "provisionType" {
-	directory_id = "example_value"
-	ids          = ["example_value-1"]
-	provision_type =  "Manual"
+  directory_id   = "example_value"
+  ids            = ["example_value-1"]
+  provision_type = "Manual"
 }
 output "cloud_sso_user_id_3" {
-	value = data.alicloud_cloud_sso_users.provisionType.users.0.id
+  value = data.alicloud_cloud_sso_users.provisionType.users.0.id
 }
 
 data "alicloud_cloud_sso_users" "status" {
-	directory_id = "example_value"
-	ids          = ["example_value-1"]
-	status       = "Enabled"
+  directory_id = "example_value"
+  ids          = ["example_value-1"]
+  status       = "Enabled"
 }
 output "cloud_sso_user_id_4" {
-	value = data.alicloud_cloud_sso_users.status.users.0.id
+  value = data.alicloud_cloud_sso_users.status.users.0.id
 }
-            
+
 ```
 
 ## Argument Reference

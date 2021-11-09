@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_quick_bi_users" "ids" {
-	ids = ["example_id"]
+  ids = ["example_id"]
 }
 output "quick_bi_user_id_1" {
   value = data.alicloud_quick_bi_users.ids.users.0.id

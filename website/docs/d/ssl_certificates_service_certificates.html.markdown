@@ -19,12 +19,12 @@ Basic Usage
 
 ```terraform
 data "alicloud_cas_certificates" "certs" {
-	name_regex  = "^cas"
-	ids = ["Certificate Id"]
+  name_regex = "^cas"
+  ids        = ["Certificate Id"]
 }
 
 output "cert" {
-	value = data.alicloud_cas_certificates.certs.certificates.0.id
+  value = data.alicloud_cas_certificates.certs.certificates.0.id
 }
 ```
 

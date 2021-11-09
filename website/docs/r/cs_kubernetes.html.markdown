@@ -54,8 +54,8 @@ resource "alicloud_vswitch" "vswitches" {
 
 resource "alicloud_cs_kubernetes" "k8s" {
   count                 = 1
-  master_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)): length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
-  worker_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)): length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
+  master_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
+  worker_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
   master_instance_types = var.master_instance_types
   worker_instance_types = var.worker_instance_types
   worker_number         = var.worker_number
@@ -68,14 +68,14 @@ resource "alicloud_cs_kubernetes" "k8s" {
   pod_cidr              = var.pod_cidr
   service_cidr          = var.service_cidr
   # version can not be defined in variables.tf. Options: 1.16.6-aliyun.1|1.14.8-aliyun.1
-  version               = "1.16.6-aliyun.1"
+  version = "1.16.6-aliyun.1"
   dynamic "addons" {
-      for_each = var.cluster_addons
-      content {
-        name                    = lookup(addons.value, "name", var.cluster_addons)
-        config                  = lookup(addons.value, "config", var.cluster_addons)
-        disabled                = lookup(addons.value, "disabled", var.cluster_addons)
-      }
+    for_each = var.cluster_addons
+    content {
+      name     = lookup(addons.value, "name", var.cluster_addons)
+      config   = lookup(addons.value, "config", var.cluster_addons)
+      disabled = lookup(addons.value, "disabled", var.cluster_addons)
+    }
   }
 }
 ```

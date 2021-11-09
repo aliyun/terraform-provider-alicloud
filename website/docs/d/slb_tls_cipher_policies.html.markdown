@@ -19,14 +19,14 @@ Basic Usage
 
 ```terraform
 data "alicloud_slb_tls_cipher_policies" "ids" {
-  ids                  = ["example_value-1", "example_value-2"]
+  ids = ["example_value-1", "example_value-2"]
 }
 output "slb_tls_cipher_policy_id_1" {
   value = data.alicloud_slb_tls_cipher_policies.ids.policies.0.id
 }
 
 data "alicloud_slb_tls_cipher_policies" "nameRegex" {
-  name_regex           = "^My-TlsCipherPolicy"
+  name_regex = "^My-TlsCipherPolicy"
 }
 output "slb_tls_cipher_policy_id_2" {
   value = data.alicloud_slb_tls_cipher_policies.nameRegex.policies.0.id

@@ -19,8 +19,8 @@ Basic Usage
 
 ```terraform
 data "alicloud_config_aggregators" "example" {
-  ids         = ["ca-3ce2626622af0005****"]
-  name_regex  = "the_resource_name"
+  ids        = ["ca-3ce2626622af0005****"]
+  name_regex = "the_resource_name"
 }
 
 output "first_config_aggregator_id" {

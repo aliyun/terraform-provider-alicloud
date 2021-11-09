@@ -19,7 +19,7 @@ For information about IOT and how to use it, see [What is IOT](https://www.aliba
 
 ```terraform
 data "alicloud_iot_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

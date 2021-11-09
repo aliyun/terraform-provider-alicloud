@@ -29,8 +29,8 @@ resource "alicloud_cen_instance" "default" {
 }
 
 resource "alicloud_cen_transit_router" "default" {
-  name       = var.name
-  cen_id     = alicloud_cen_instance.default.id
+  name   = var.name
+  cen_id = alicloud_cen_instance.default.id
 }
 ```
 ## Argument Reference

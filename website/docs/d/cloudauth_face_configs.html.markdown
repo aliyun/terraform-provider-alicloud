@@ -19,19 +19,19 @@ Basic Usage
 
 ```terraform
 resource "alicloud_cloudauth_face_config" "default" {
-	biz_name = "example-value"
-	biz_type = "example-value"
+  biz_name = "example-value"
+  biz_type = "example-value"
 }
 
 data "alicloud_cloudauth_face_configs" "default" {
-	ids = [alicloud_cloudauth_face_config.default.id]
-	name_regex = alicloud_cloudauth_face_config.default.biz_name
+  ids        = [alicloud_cloudauth_face_config.default.id]
+  name_regex = alicloud_cloudauth_face_config.default.biz_name
 }
 
 output "face_config" {
-	value = data.alicloud_cloudauth_face_configs.default.configs.0
+  value = data.alicloud_cloudauth_face_configs.default.configs.0
 }
-            
+
 ```
 
 ## Argument Reference

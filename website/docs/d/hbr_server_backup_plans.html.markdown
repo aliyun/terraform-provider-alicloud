@@ -25,8 +25,8 @@ data "alicloud_instances" "default" {
 
 data "alicloud_hbr_server_backup_plans" "ids" {
   filters {
-    key      = "instanceId"
-    values   = [data.alicloud_instances.default.instances.0.id]
+    key    = "instanceId"
+    values = [data.alicloud_instances.default.instances.0.id]
   }
 }
 

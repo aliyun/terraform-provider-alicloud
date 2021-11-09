@@ -24,7 +24,7 @@ data "alicloud_scdn_domains" "nameRegex" {
 output "scdn_domain_id" {
   value = data.alicloud_scdn_domains.nameRegex.domains.0.id
 }
-            
+
 ```
 
 ## Argument Reference

@@ -24,12 +24,12 @@ Basic Usage
 ```terraform
 data "alicloud_cloud_sso_directories" "default" {}
 resource "alicloud_cloud_sso_directory" "default" {
-  count             = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
-  directory_name    = "example_value"
+  count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
+  directory_name = "example_value"
 }
 resource "alicloud_cloud_sso_user" "example" {
   directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
-  user_name = "example_value"
+  user_name    = "example_value"
 }
 
 ```

@@ -29,7 +29,7 @@ data "alicloud_alb_server_groups" "nameRegex" {
 output "alb_server_group_id_2" {
   value = data.alicloud_alb_server_groups.nameRegex.groups.0.id
 }
-            
+
 ```
 
 ## Argument Reference

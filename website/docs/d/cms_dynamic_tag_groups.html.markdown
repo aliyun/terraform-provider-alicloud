@@ -19,27 +19,27 @@ Basic Usage
 
 ```terraform
 variable "name" {
-	default = "example_value"
+  default = "example_value"
 }
 resource "alicloud_cms_alarm_contact_group" "default" {
-	alarm_contact_group_name = var.name
-	describe                 = "example_value"
-	enable_subscribed        = true
+  alarm_contact_group_name = var.name
+  describe                 = "example_value"
+  enable_subscribed        = true
 }
 resource "alicloud_cms_dynamic_tag_group" "default" {
-	contact_group_list = [alicloud_cms_alarm_contact_group.default.id]
-	tag_key            = "your_tag_key"
-	match_express {
-		tag_value                = "your_tag_value"
-		tag_value_match_function = "all"
-	}
+  contact_group_list = [alicloud_cms_alarm_contact_group.default.id]
+  tag_key            = "your_tag_key"
+  match_express {
+    tag_value                = "your_tag_value"
+    tag_value_match_function = "all"
+  }
 }
 data "alicloud_cms_dynamic_tag_groups" "ids" {
-	ids = [alicloud_cms_dynamic_tag_group. default.id]
+  ids = [alicloud_cms_dynamic_tag_group.default.id]
 }
 output "cms_dynamic_tag_group_id_1" {
-	value = data.alicloud_cms_dynamic_tag_groups.ids.groups.0.id
-} 
+  value = data.alicloud_cms_dynamic_tag_groups.ids.groups.0.id
+}
 ```
 
 ## Argument Reference

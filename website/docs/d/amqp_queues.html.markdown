@@ -18,7 +18,7 @@ This data source provides the Amqp Queues of the current Alibaba Cloud user.
 Basic Usage
 
 ```terraform
-data "alicloud_amqp_queues" "ids" { 
+data "alicloud_amqp_queues" "ids" {
   instance_id       = "amqp-abc12345"
   virtual_host_name = "my-VirtualHost"
   ids               = ["my-Queue-1", "my-Queue-2"]
@@ -35,7 +35,7 @@ data "alicloud_amqp_queues" "nameRegex" {
 output "amqp_queue_id_2" {
   value = data.alicloud_amqp_queues.nameRegex.queues.0.id
 }
-            
+
 ```
 
 ## Argument Reference

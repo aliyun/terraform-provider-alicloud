@@ -33,7 +33,7 @@ data "alicloud_bastionhost_user_groups" "nameRegex" {
 output "bastionhost_user_group_id_2" {
   value = data.alicloud_bastionhost_user_groups.nameRegex.groups.0.id
 }
-            
+
 ```
 
 ## Argument Reference

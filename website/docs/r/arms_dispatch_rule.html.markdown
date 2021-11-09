@@ -37,7 +37,7 @@ resource "alicloud_arms_dispatch_rule" "default" {
     group_interval  = 15
     repeat_interval = 100
     grouping_fields = [
-      "alertname"]
+    "alertname"]
   }
   label_match_expression_grid {
     label_match_expression_groups {

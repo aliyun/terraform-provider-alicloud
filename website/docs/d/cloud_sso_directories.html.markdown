@@ -33,7 +33,7 @@ data "alicloud_cloud_sso_directories" "nameRegex" {
 output "cloud_sso_directory_id_2" {
   value = data.alicloud_cloud_sso_directories.nameRegex.directories.0.id
 }
-            
+
 ```
 
 ## Argument Reference

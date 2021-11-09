@@ -21,37 +21,37 @@ Basic Usage
 
 ```terraform
 resource "alicloud_dts_synchronization_instance" "default" {
-  payment_type                        = "PayAsYouGo"
-  source_endpoint_engine_name         = "PolarDB"
-  source_endpoint_region              = "cn-hangzhou"
-  destination_endpoint_engine_name    = "ADB30"
-  destination_endpoint_region         = "cn-hangzhou"
-  instance_class                      = "small"
-  sync_architecture                   = "oneway"
+  payment_type                     = "PayAsYouGo"
+  source_endpoint_engine_name      = "PolarDB"
+  source_endpoint_region           = "cn-hangzhou"
+  destination_endpoint_engine_name = "ADB30"
+  destination_endpoint_region      = "cn-hangzhou"
+  instance_class                   = "small"
+  sync_architecture                = "oneway"
 }
 
 resource "alicloud_dts_synchronization_job" "default" {
-  dts_instance_id                     = alicloud_dts_synchronization_instance.default.id
-  dts_job_name                        = "tf-testAccCase1"
-  source_endpoint_instance_type       = "PolarDB"
-  source_endpoint_instance_id         = "pc-xxxxxxxx"
-  source_endpoint_engine_name         = "PolarDB"
-  source_endpoint_region              = "cn-hangzhou"
-  source_endpoint_database_name       = "tf-testacc"
-  source_endpoint_user_name           = "root"
-  source_endpoint_password            = "password"
-  destination_endpoint_instance_type  = "ads"
-  destination_endpoint_instance_id    = "am-xxxxxxxx"
-  destination_endpoint_engine_name    = "ADB30"
-  destination_endpoint_region         = "cn-hangzhou"
-  destination_endpoint_database_name  = "tf-testacc"
-  destination_endpoint_user_name      = "root"
-  destination_endpoint_password       = "password"
-  db_list                             = "{\"tf-testacc\":{\"name\":\"tf-test\",\"all\":true,\"state\":\"normal\"}}"
-  structure_initialization            = "true"
-  data_initialization                 = "true"
-  data_synchronization                = "true"
-  status                              = "Synchronizing"
+  dts_instance_id                    = alicloud_dts_synchronization_instance.default.id
+  dts_job_name                       = "tf-testAccCase1"
+  source_endpoint_instance_type      = "PolarDB"
+  source_endpoint_instance_id        = "pc-xxxxxxxx"
+  source_endpoint_engine_name        = "PolarDB"
+  source_endpoint_region             = "cn-hangzhou"
+  source_endpoint_database_name      = "tf-testacc"
+  source_endpoint_user_name          = "root"
+  source_endpoint_password           = "password"
+  destination_endpoint_instance_type = "ads"
+  destination_endpoint_instance_id   = "am-xxxxxxxx"
+  destination_endpoint_engine_name   = "ADB30"
+  destination_endpoint_region        = "cn-hangzhou"
+  destination_endpoint_database_name = "tf-testacc"
+  destination_endpoint_user_name     = "root"
+  destination_endpoint_password      = "password"
+  db_list                            = "{\"tf-testacc\":{\"name\":\"tf-test\",\"all\":true,\"state\":\"normal\"}}"
+  structure_initialization           = "true"
+  data_initialization                = "true"
+  data_synchronization               = "true"
+  status                             = "Synchronizing"
 }
 ```
 
@@ -107,7 +107,7 @@ The following arguments supported:
 1. The expiration time cannot be changed after the work of the annual and monthly subscription suspended;
 2. After the pay-as-you-go type job suspended, your job configuration fee will still be charged;
 3. If the task suspended for more than 6 hours, the task will not start successfully.
-4. Suspending the task will only stop writing to the target library, but will still continue to obtain the incremental log of the source, so that the task can be quickly resumed after the suspension is cancelled. Therefore, some resources of the source library, such as bandwidth resources, will continue to be occupied during the period.
+4. Suspending the task will only stop writing to the target library, but will still continue to obtain the incremental log of the source, so that the task can be quickly resumed after the suspension is canceled. Therefore, some resources of the source library, such as bandwidth resources, will continue to be occupied during the period.
 5. Charges will continue during the task suspension period. If you need to stop charging, please release the instance
 6. When a DTS instance suspended for more than 7 days, the instance cannot be resumed, and the status will change from suspended to failed.
 

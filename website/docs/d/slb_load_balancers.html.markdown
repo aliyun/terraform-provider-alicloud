@@ -19,9 +19,9 @@ This data source provides the server load balancers of the current Alibaba Cloud
 data "alicloud_slb_load_balancers" "example" {
   name_regex = "sample_slb"
   tags = {
-      tagKey1 = "tagValue1",
-      tagKey2 = "tagValue2"
-    }
+    tagKey1 = "tagValue1",
+    tagKey2 = "tagValue2"
+  }
 }
 
 output "first_slb_id" {

@@ -21,11 +21,11 @@ Basic Usage
 
 ```terraform
 data "alicloud_cr_endpoint_acl_service" "example" {
-	endpoint_type = "internet"
-	enable        = true
-	instance_id   = "example_id"
-	module_name   = "Registry"
-}           
+  endpoint_type = "internet"
+  enable        = true
+  instance_id   = "example_id"
+  module_name   = "Registry"
+}
 ```
 
 ## Argument Reference

@@ -22,7 +22,7 @@ data "alicloud_cloud_firewall_instances" "ids" {}
 output "cloud_firewall_instance_id_1" {
   value = data.alicloud_cloud_firewall_instances.ids.instances.0.id
 }
-            
+
 ```
 
 ## Argument Reference

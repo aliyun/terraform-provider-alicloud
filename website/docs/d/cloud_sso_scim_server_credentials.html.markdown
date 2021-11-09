@@ -27,7 +27,7 @@ data "alicloud_cloud_sso_scim_server_credentials" "ids" {
 }
 output "cloud_sso_scim_server_credential_id_1" {
   value = data.alicloud_cloud_sso_scim_server_credentials.ids.credentials.0.id
-} 
+}
 ```
 
 ## Argument Reference

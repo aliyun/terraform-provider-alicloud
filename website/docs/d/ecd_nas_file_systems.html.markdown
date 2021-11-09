@@ -20,30 +20,30 @@ Basic Usage
 ```terraform
 
 resource "alicloud_ecd_simple_office_site" "default" {
-	cidr_block             = "172.16.0.0/12"
-	desktop_access_type    = "Internet"
-	office_site_name       = "your_office_site_name"
-	enable_internet_access = false
+  cidr_block             = "172.16.0.0/12"
+  desktop_access_type    = "Internet"
+  office_site_name       = "your_office_site_name"
+  enable_internet_access = false
 }
 
 resource "alicloud_ecd_nas_file_system" "default" {
-	description          = "your_description"
-	office_site_id       = alicloud_ecd_simple_office_site.default.id
-	nas_file_system_name = "your_nas_file_system_name"
+  description          = "your_description"
+  office_site_id       = alicloud_ecd_simple_office_site.default.id
+  nas_file_system_name = "your_nas_file_system_name"
 }
 
 data "alicloud_ecd_nas_file_systems" "ids" {}
 output "ecd_nas_file_system_id_1" {
-	value = data.alicloud_ecd_nas_file_systems.ids.systems.0.id
+  value = data.alicloud_ecd_nas_file_systems.ids.systems.0.id
 }
 
 data "alicloud_ecd_nas_file_systems" "nameRegex" {
-	name_regex = alicloud_ecd_nas_file_system.default.nas_file_system_name
+  name_regex = alicloud_ecd_nas_file_system.default.nas_file_system_name
 }
 output "ecd_nas_file_system_id_2" {
-	value = data.alicloud_ecd_nas_file_systems.nameRegex.systems.0.id
+  value = data.alicloud_ecd_nas_file_systems.nameRegex.systems.0.id
 }
-            
+
 ```
 
 ## Argument Reference

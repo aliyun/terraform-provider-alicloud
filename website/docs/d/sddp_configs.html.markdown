@@ -19,17 +19,17 @@ Basic Usage
 
 ```terraform
 resource "alicloud_sddp_config" "default" {
-	code = "access_failed_cnt"
-	value = 10
+  code  = "access_failed_cnt"
+  value = 10
 }
 data "alicloud_sddp_configs" "default" {
-	ids = [alicloud_sddp_config.default.id]
-	output_file = "./t.json"
+  ids         = [alicloud_sddp_config.default.id]
+  output_file = "./t.json"
 }
 output "sddp_config_id" {
-	value = data.alicloud_sddp_configs.default.ids
+  value = data.alicloud_sddp_configs.default.ids
 }
-            
+
 ```
 
 ## Argument Reference

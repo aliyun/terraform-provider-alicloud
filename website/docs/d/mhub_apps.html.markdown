@@ -19,13 +19,13 @@ Basic Usage
 
 ```terraform
 variable "name" {
-	default = "example_value"
+  default = "example_value"
 }
-resource "alicloud_mhub_app" "default"{
-	app_name = var.name
-	product_id = alicloud_mhub_product.default.id
-	package_name = "com.test.android"
-	type = "2"
+resource "alicloud_mhub_app" "default" {
+  app_name     = var.name
+  product_id   = alicloud_mhub_product.default.id
+  package_name = "com.test.android"
+  type         = "2"
 }
 data "alicloud_mhub_apps" "ids" {}
 output "mhub_app_id_1" {
@@ -38,7 +38,7 @@ data "alicloud_mhub_apps" "nameRegex" {
 output "mhub_app_id_2" {
   value = data.alicloud_mhub_apps.nameRegex.apps.0.id
 }
-            
+
 ```
 
 ## Argument Reference

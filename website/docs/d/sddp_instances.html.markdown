@@ -20,9 +20,9 @@ Basic Usage
 ```terraform
 data "alicloud_sddp_instances" "default" {}
 output "sddp_instance_id" {
-	value = data.alicloud_sddp_instances.default.instances.0
+  value = data.alicloud_sddp_instances.default.instances.0
 }
-            
+
 ```
 
 ## Argument Reference

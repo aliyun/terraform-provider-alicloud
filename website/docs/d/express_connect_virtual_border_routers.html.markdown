@@ -31,19 +31,19 @@ output "express_connect_virtual_border_router_id_2" {
 }
 
 data "alicloud_express_connect_virtual_border_routers" "filter" {
-	filter {
-		key = "PhysicalConnectionId"
-		values = ["pc-xxxx1"]
-	}
-	filter {
-		key = "VbrId"
-		values = ["vbr-xxxx1", "vbr-xxxx2"]
-	}
+  filter {
+    key    = "PhysicalConnectionId"
+    values = ["pc-xxxx1"]
+  }
+  filter {
+    key    = "VbrId"
+    values = ["vbr-xxxx1", "vbr-xxxx2"]
+  }
 }
 output "express_connect_virtual_border_router_id_3" {
-	value = data.alicloud_express_connect_virtual_border_routers.filter.routers.0.id
+  value = data.alicloud_express_connect_virtual_border_routers.filter.routers.0.id
 }
-            
+
 ```
 
 ## Argument Reference

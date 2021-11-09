@@ -19,13 +19,13 @@ Basic Usage
 
 ```terraform
 data "alicloud_ecd_simple_office_sites" "default" {
-	ids         = ["example_id"]
-	status      = "REGISTERED"
+  ids    = ["example_id"]
+  status = "REGISTERED"
 }
 output "desktop_access_type" {
-	value = data.alicloud_ecd_simple_office_sites.default.sites.0.desktop_access_type
+  value = data.alicloud_ecd_simple_office_sites.default.sites.0.desktop_access_type
 }
-            
+
 ```
 
 ## Argument Reference

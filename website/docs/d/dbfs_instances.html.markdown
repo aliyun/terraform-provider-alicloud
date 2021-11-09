@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_dbfs_instances" "ids" {
-	ids = ["example_id"]
+  ids = ["example_id"]
 }
 output "dbfs_instance_id_1" {
   value = data.alicloud_dbfs_instances.ids.instances.0.id
@@ -31,7 +31,7 @@ data "alicloud_dbfs_instances" "nameRegex" {
 output "dbfs_instance_id_2" {
   value = data.alicloud_dbfs_instances.nameRegex.instances.0.id
 }
-            
+
 ```
 
 ## Argument Reference

@@ -21,8 +21,8 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ram_role" "role" {
-  name     = "example_role_name"
-  document = <<EOF
+  name        = "example_role_name"
+  document    = <<EOF
   {
     "Statement": [
       {
@@ -42,7 +42,7 @@ resource "alicloud_ram_role" "role" {
   force       = true
 }
 resource "alicloud_imm_project" "example" {
-  project = "example_name"
+  project      = "example_name"
   service_role = alicloud_ram_role.role.name
 }
 ```

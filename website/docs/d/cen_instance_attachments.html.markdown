@@ -17,7 +17,7 @@ This data source provides Cen Instance Attachments of the current Alibaba Cloud 
 
 ```terraform
 data "alicloud_cen_instance_attachments" "example" {
-    instance_id = "cen-o40h17ll9w********"
+  instance_id = "cen-o40h17ll9w********"
 }
 
 output "the_first_attachmented_instance_id" {

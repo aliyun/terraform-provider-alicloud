@@ -18,18 +18,18 @@ This data source provides the Ehpc Job Templates of the current Alibaba Cloud us
 Basic Usage
 
 ```terraform
-resource "alicloud_ehpc_job_template" "default"{
-	job_template_name =  "example_value"
-	command_line=       "./LammpsTest/lammps.pbs"
+resource "alicloud_ehpc_job_template" "default" {
+  job_template_name = "example_value"
+  command_line      = "./LammpsTest/lammps.pbs"
 }
-data "alicloud_ehpc_job_templates" "ids"{
-	ids = [alicloud_ehpc_job_template.default.id]
+data "alicloud_ehpc_job_templates" "ids" {
+  ids = [alicloud_ehpc_job_template.default.id]
 }
 output "ehpc_job_template_id_1" {
-	value = data.alicloud_ehpc_job_templates.ids.id
+  value = data.alicloud_ehpc_job_templates.ids.id
 }
 
-            
+
 ```
 
 ## Argument Reference

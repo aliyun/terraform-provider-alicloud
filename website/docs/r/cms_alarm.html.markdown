@@ -26,10 +26,10 @@ resource "alicloud_cms_alarm" "basic" {
     device     = "/dev/vda1,/dev/vdb1"
   }
   escalations_critical {
-    statistics = "Average"
+    statistics          = "Average"
     comparison_operator = "<="
-    threshold = 35
-    times = 2
+    threshold           = 35
+    times               = 2
   }
   period             = 900
   contact_groups     = ["test-group"]

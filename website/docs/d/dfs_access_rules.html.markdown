@@ -25,7 +25,7 @@ data "alicloud_dfs_access_rules" "ids" {
 output "dfs_access_rule_id_1" {
   value = data.alicloud_dfs_access_rules.ids.rules.0.id
 }
-            
+
 ```
 
 ## Argument Reference

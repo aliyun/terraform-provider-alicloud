@@ -35,30 +35,30 @@ output "vpc_nat_ip_cidr_id_2" {
 }
 
 data "alicloud_vpc_nat_ip_cidrs" "status" {
-	nat_gateway_id = "example_value"
-	ids            = ["example_value-1"]
-	status         = "Available",
+  nat_gateway_id = "example_value"
+  ids            = ["example_value-1"]
+  status         = "Available"
 }
 output "vpc_nat_ip_cidr_id_3" {
-	value = data.alicloud_vpc_nat_ip_cidrs.status.cidrs.0.id
+  value = data.alicloud_vpc_nat_ip_cidrs.status.cidrs.0.id
 }
 
 data "alicloud_vpc_nat_ip_cidrs" "natIpCidr" {
-	nat_gateway_id = "example_value"
-	nat_ip_cidrs   = ["example_value-1"]
+  nat_gateway_id = "example_value"
+  nat_ip_cidrs   = ["example_value-1"]
 }
 output "vpc_nat_ip_cidr_id_4" {
-	value = data.alicloud_vpc_nat_ip_cidrs.natIpCidr.cidrs.0.id
+  value = data.alicloud_vpc_nat_ip_cidrs.natIpCidr.cidrs.0.id
 }
 
 data "alicloud_vpc_nat_ip_cidrs" "atIpCidrName" {
-	nat_gateway_id   = "example_value"
-	nat_ip_cidr_name = ["example_value-1"]
+  nat_gateway_id   = "example_value"
+  nat_ip_cidr_name = ["example_value-1"]
 }
 output "vpc_nat_ip_cidr_id_5" {
-	value = data.alicloud_vpc_nat_ip_cidrs.atIpCidrName.cidrs.0.id
+  value = data.alicloud_vpc_nat_ip_cidrs.atIpCidrName.cidrs.0.id
 }
-            
+
 ```
 
 ## Argument Reference

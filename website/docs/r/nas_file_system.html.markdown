@@ -26,18 +26,18 @@ resource "alicloud_nas_file_system" "foo" {
   protocol_type = "NFS"
   storage_type  = "Performance"
   description   = "tf-testAccNasConfig"
-  encrypt_type = "1"
+  encrypt_type  = "1"
 }
 ```
 
 ```terraform
 resource "alicloud_nas_file_system" "foo" {
-  file_system_type   = "extreme"
-  protocol_type = "NFS"
-  zone_id = "cn-hangzhou-f"
-  storage_type  = "standard"
-  description   = "tf-testAccNasConfig"
-  capacity = "100"
+  file_system_type = "extreme"
+  protocol_type    = "NFS"
+  zone_id          = "cn-hangzhou-f"
+  storage_type     = "standard"
+  description      = "tf-testAccNasConfig"
+  capacity         = "100"
 }
 ```
 

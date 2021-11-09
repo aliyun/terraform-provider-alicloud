@@ -19,15 +19,15 @@ Filters support regular expression for the cluster name, searches by clusterId, 
 ```terraform
 data "alicloud_polardb_clusters" "polardb_clusters_ds" {
   description_regex = "pc-\\w+"
-  status     = "Running"
+  status            = "Running"
 }
 
 data "alicloud_polardb_endpoints" "default" {
-  db_cluster_id    = data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id
+  db_cluster_id = data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id
 }
 
 output "endpoint" {
-    value = data.alicloud_polardb_endpoints.default.endpoints[0].db_endpoint_id
+  value = data.alicloud_polardb_endpoints.default.endpoints[0].db_endpoint_id
 }
 ```
 

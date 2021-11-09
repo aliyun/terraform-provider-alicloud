@@ -19,14 +19,14 @@ Basic Usage
 
 ```terraform
 data "alicloud_simple_application_server_plans" "example" {
-	memory    = 1
-	bandwidth = 3
-	disk_size = 40
-	flow      = 6
-	core      = 2
+  memory    = 1
+  bandwidth = 3
+  disk_size = 40
+  flow      = 6
+  core      = 2
 }
 output "simple_application_server_plan_id_1" {
-	value = data.alicloud_simple_application_server_plans.ids.plans.0.id
+  value = data.alicloud_simple_application_server_plans.ids.plans.0.id
 }
 
 ```

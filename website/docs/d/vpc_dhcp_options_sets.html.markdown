@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_vpc_dhcp_options_sets" "ids" {
-	ids = ["example_value"]
+  ids = ["example_value"]
 }
 output "vpc_dhcp_options_set_id_1" {
   value = data.alicloud_vpc_dhcp_options_sets.ids.sets.0.id
@@ -40,7 +40,7 @@ output "vpc_dhcp_options_set_id_3" {
 }
 
 data "alicloud_vpc_dhcp_options_sets" "domainName" {
-  ids = ["example_value"]
+  ids         = ["example_value"]
   domain_name = "example.com"
 }
 output "vpc_dhcp_options_set_id_4" {
@@ -48,13 +48,13 @@ output "vpc_dhcp_options_set_id_4" {
 }
 
 data "alicloud_vpc_dhcp_options_sets" "status" {
-  ids = ["example_value"]
+  ids    = ["example_value"]
   status = "Available"
 }
 output "vpc_dhcp_options_set_id_5" {
   value = data.alicloud_vpc_dhcp_options_sets.status.sets.0.id
 }
-            
+
 ```
 
 ## Argument Reference

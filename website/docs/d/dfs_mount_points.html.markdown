@@ -25,7 +25,7 @@ data "alicloud_dfs_mount_points" "ids" {
 output "dfs_mount_point_id_1" {
   value = data.alicloud_dfs_mount_points.ids.points.0.id
 }
-            
+
 ```
 
 ## Argument Reference

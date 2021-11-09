@@ -22,7 +22,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_resource_manager_policy" "example" {
-  policy_name = "tftest"
+  policy_name     = "tftest"
   policy_document = <<EOF
 		{
 			"Statement": [{
@@ -36,7 +36,7 @@ resource "alicloud_resource_manager_policy" "example" {
 }
 
 resource "alicloud_resource_manager_policy_version" "example" {
-  policy_name = alicloud_resource_manager_policy.example.policy_name
+  policy_name     = alicloud_resource_manager_policy.example.policy_name
   policy_document = <<EOF
 		{
 			"Statement": [{

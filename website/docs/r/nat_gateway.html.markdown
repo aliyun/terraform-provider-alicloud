@@ -35,23 +35,23 @@ resource "alicloud_vpc" "enhanced" {
   cidr_block = "10.0.0.0/8"
 }
 
-data "alicloud_enhanced_nat_available_zones" "enhanced"{
+data "alicloud_enhanced_nat_available_zones" "enhanced" {
 }
 
 resource "alicloud_vswitch" "enhanced" {
-  vswitch_name      = var.name
-  zone_id           = data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id
-  cidr_block        = "10.10.0.0/20"
-  vpc_id            = alicloud_vpc.enhanced.id
+  vswitch_name = var.name
+  zone_id      = data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id
+  cidr_block   = "10.10.0.0/20"
+  vpc_id       = alicloud_vpc.enhanced.id
 }
 
 resource "alicloud_nat_gateway" "enhanced" {
-  depends_on           = [alicloud_vswitch.enhanced]
-  vpc_id               = alicloud_vpc.enhanced.id
-  nat_gateway_name     = var.name
-  payment_type         = "PayAsYouGo"
-  vswitch_id           = alicloud_vswitch.enhanced.id
-  nat_type             = "Enhanced"
+  depends_on       = [alicloud_vswitch.enhanced]
+  vpc_id           = alicloud_vpc.enhanced.id
+  nat_gateway_name = var.name
+  payment_type     = "PayAsYouGo"
+  vswitch_id       = alicloud_vswitch.enhanced.id
+  nat_type         = "Enhanced"
 }
 ```
 
@@ -72,19 +72,19 @@ resource "alicloud_vpc" "foo" {
 }
 
 resource "alicloud_vswitch" "foo1" {
-  depends_on        = [alicloud_vpc.foo]
-  vswitch_name      = var.name
-  zone_id           = data.alicloud_enhanced_nat_available_zones.enhanced.zones[1].zone_id
-  cidr_block        = "10.10.0.0/20"
-  vpc_id            = alicloud_vpc.foo.id
+  depends_on   = [alicloud_vpc.foo]
+  vswitch_name = var.name
+  zone_id      = data.alicloud_enhanced_nat_available_zones.enhanced.zones[1].zone_id
+  cidr_block   = "10.10.0.0/20"
+  vpc_id       = alicloud_vpc.foo.id
 }
 
 resource "alicloud_nat_gateway" "main" {
-  depends_on           = [alicloud_vpc.foo,alicloud_vswitch.foo1]
-  vpc_id               = alicloud_vpc.foo.id
-  nat_gateway_name     = var.name
-  nat_type             = "Enhanced"
-  vswitch_id           = alicloud_vswitch.foo1.id
+  depends_on       = [alicloud_vpc.foo, alicloud_vswitch.foo1]
+  vpc_id           = alicloud_vpc.foo.id
+  nat_gateway_name = var.name
+  nat_type         = "Enhanced"
+  vswitch_id       = alicloud_vswitch.foo1.id
 }
 ```
 

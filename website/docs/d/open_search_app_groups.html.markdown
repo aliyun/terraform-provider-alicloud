@@ -19,23 +19,23 @@ Basic Usage
 
 ```terraform
 variable "name" {
-	default = "tf_testacc"
+  default = "tf_testacc"
 }
 resource "alicloud_open_search_app_group" "default" {
-	app_group_name = var.name
-	payment_type   = "PayAsYouGo"
-	type           = "standard"
-	quota {
-		doc_size         = 1
-		compute_resource = 20
-		spec             = "opensearch.share.common"
-	}
+  app_group_name = var.name
+  payment_type   = "PayAsYouGo"
+  type           = "standard"
+  quota {
+    doc_size         = 1
+    compute_resource = 20
+    spec             = "opensearch.share.common"
+  }
 }
 data "alicloud_open_search_app_groups" "default" {
-	ids         = [alicloud_open_search_app_group.default.id]
+  ids = [alicloud_open_search_app_group.default.id]
 }
 output "app_groups" {
-	value = data.alicloud_open_search_app_groups.default.groups
+  value = data.alicloud_open_search_app_groups.default.groups
 }
 ```
 

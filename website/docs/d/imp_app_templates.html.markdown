@@ -29,7 +29,7 @@ data "alicloud_imp_app_templates" "nameRegex" {
 output "imp_app_template_id_2" {
   value = data.alicloud_imp_app_templates.nameRegex.templates.0.id
 }
-            
+
 ```
 
 ## Argument Reference

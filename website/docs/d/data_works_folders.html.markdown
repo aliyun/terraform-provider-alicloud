@@ -19,19 +19,19 @@ Basic Usage
 
 ```terraform
 resource "alicloud_data_works_folder" "default" {
-	project_id = "xxxx"
-	folder_path = "Business Flow/tfTestAcc/folderDi"
+  project_id  = "xxxx"
+  folder_path = "Business Flow/tfTestAcc/folderDi"
 }
 
 data "alicloud_data_works_folders" "ids" {
-	ids        = [alicloud_data_works_folder.default.folder_id]
-	project_id = alicloud_data_works_folder.default.project_id
-	parent_folder_path = "Business Flow/tfTestAcc/folderDi"
+  ids                = [alicloud_data_works_folder.default.folder_id]
+  project_id         = alicloud_data_works_folder.default.project_id
+  parent_folder_path = "Business Flow/tfTestAcc/folderDi"
 }
 
 output "data_works_folder_id_1" {
   value = data.alicloud_data_works_folders.ids.folders.0.id
-}  
+}
 ```
 
 ## Argument Reference

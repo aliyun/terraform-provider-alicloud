@@ -19,25 +19,25 @@ Basic Usage
 
 ```terraform
 variable "ConfigMapName" {
-	default = "examplename"
+  default = "examplename"
 }
 resource "alicloud_sae_namespace" "example" {
-	namespace_id   = "cn-hangzhou:yourname"
-	namespace_name = "example_value"
-	namespace_description = "your_description"
+  namespace_id          = "cn-hangzhou:yourname"
+  namespace_name        = "example_value"
+  namespace_description = "your_description"
 }
 resource "alicloud_sae_config_map" "example" {
-	data         = jsonencode({"env.home": "/root", "env.shell": "/bin/sh"})
-	name         = var.ConfigMapName
-	namespace_id = alicloud_sae_namespace.example.namespace_id
+  data         = jsonencode({ "env.home" : "/root", "env.shell" : "/bin/sh" })
+  name         = var.ConfigMapName
+  namespace_id = alicloud_sae_namespace.example.namespace_id
 }
 data "alicloud_sae_config_maps" "nameRegex" {
-	namespace_id = alicloud_sae_namespace.example.namespace_id
-	name_regex   = "^example"
+  namespace_id = alicloud_sae_namespace.example.namespace_id
+  name_regex   = "^example"
 }
 output "sae_config_map_id" {
-	value = data.alicloud_sae_config_maps.nameRegex.maps.0.id
-}           
+  value = data.alicloud_sae_config_maps.nameRegex.maps.0.id
+}
 ```
 
 ## Argument Reference

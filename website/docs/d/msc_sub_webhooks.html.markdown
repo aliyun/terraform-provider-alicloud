@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_msc_sub_webhooks" "ids" {
-	ids = ["example_id"]
+  ids = ["example_id"]
 }
 output "msc_sub_webhook_id_1" {
   value = data.alicloud_msc_sub_webhooks.ids.webhooks.0.id
@@ -31,7 +31,7 @@ data "alicloud_msc_sub_webhooks" "nameRegex" {
 output "msc_sub_webhook_id_2" {
   value = data.alicloud_msc_sub_webhooks.nameRegex.webhooks.0.id
 }
-            
+
 ```
 
 ## Argument Reference

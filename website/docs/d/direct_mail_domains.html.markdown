@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_direct_mail_domains" "ids" {
-	ids = ["example_id"]
+  ids = ["example_id"]
 }
 output "direct_mail_domain_id_1" {
   value = data.alicloud_direct_mail_domains.ids.domains.0.id
@@ -33,14 +33,14 @@ output "direct_mail_domain_id_2" {
 }
 
 data "alicloud_direct_mail_domains" "example" {
-  status = "1"
+  status   = "1"
   key_word = "^my-Domain"
-  ids = ["example_id"]
+  ids      = ["example_id"]
 }
 output "direct_mail_domain_id_3" {
   value = data.alicloud_direct_mail_domains.example.domains.0.id
 }
-            
+
 ```
 
 ## Argument Reference
