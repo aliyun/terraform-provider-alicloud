@@ -71,17 +71,32 @@ resource "alicloud_instance" "default" {
   system_disk_category       = "cloud_efficiency"
   vswitch_id                 = alicloud_vswitch.default.id
 }
+data "alicloud_resource_manager_resource_groups" "default" {
+}
 
 resource "alicloud_alb_server_group" "default" {
   protocol          = "HTTP"
-  vpc_id            = alicloud_vpc.vpcs.0.id
+  vpc_id            = alicloud_vpc.default.id
   server_group_name = var.name
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
   health_check_config {
-    health_check_enabled = "false"
+    health_check_connect_port = "46325"
+    health_check_enabled      = true
+    health_check_host         = "tf-testAcc.com"
+    health_check_codes        = ["http_2xx", "http_3xx", "http_4xx"]
+    health_check_http_version = "HTTP1.1"
+    health_check_interval     = "2"
+    health_check_method       = "HEAD"
+    health_check_path         = "/tf-testAcc"
+    health_check_protocol     = "HTTP"
+    health_check_timeout      = 5
+    healthy_threshold         = 3
+    unhealthy_threshold       = 3
   }
   sticky_session_config {
-    sticky_session_enabled = "false"
+    sticky_session_enabled = true
+    cookie                 = "tf-testAcc"
+    sticky_session_type    = "Server"
   }
   tags = {
     Created = "TF"
@@ -94,9 +109,7 @@ resource "alicloud_alb_server_group" "default" {
     server_type = "Ecs"
     weight      = 10
   }
-
 }
-
 
 ```
 
