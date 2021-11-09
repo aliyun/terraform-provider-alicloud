@@ -25,7 +25,7 @@ Basic Usage
 
 ```terraform
 variable name {
-  default = "example_name"
+  default = "example-name"
 }
 
 data alicloud_cloud_sso_directories default {}

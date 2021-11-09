@@ -3,7 +3,10 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -22,8 +25,9 @@ func resourceAlicloudCloudSsoGroup() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(0, 1024),
 			},
 			"directory_id": {
 				Type:     schema.TypeString,
@@ -35,8 +39,9 @@ func resourceAlicloudCloudSsoGroup() *schema.Resource {
 				Computed: true,
 			},
 			"group_name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[\w-.]{1,128}$`), "The name of the resource. The name must be 1 to 128 characters in length and  can contain letters, digits, underscores (_), and hyphens (-)."),
 			},
 		},
 	}

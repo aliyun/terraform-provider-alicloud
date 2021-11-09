@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -23,8 +24,9 @@ func resourceAlicloudCloudSsoDirectory() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"directory_name": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-z0-9-]{1,64}$`), "The name of the resource. The name must be 2 to 64 characters in length and can contain lower case letters, digits, and hyphens (-)."),
 			},
 			"mfa_authentication_status": {
 				Type:         schema.TypeString,
@@ -118,7 +120,7 @@ func resourceAlicloudCloudSsoDirectoryRead(d *schema.ResourceData, meta interfac
 		SAMLIdentityProviderConfigurationSli := make([]map[string]interface{}, 0)
 		SAMLIdentityProviderConfigurationMap := make(map[string]interface{})
 		SAMLIdentityProviderConfigurationMap["sso_status"] = SAMLIdentityProviderConfiguration.(map[string]interface{})["SSOStatus"]
-		if v, ok := SAMLIdentityProviderConfiguration.(map[string]interface{})["EncodedMetadataDocument"]; ok && SAMLIdentityProviderConfiguration.(map[string]interface{})["SSOStatus"].(string) == "Enabled" {
+		if v, ok := SAMLIdentityProviderConfiguration.(map[string]interface{})["EncodedMetadataDocument"]; ok {
 			SAMLIdentityProviderConfigurationMap["encoded_metadata_document"] = v
 		}
 		SAMLIdentityProviderConfigurationSli = append(SAMLIdentityProviderConfigurationSli, SAMLIdentityProviderConfigurationMap)
@@ -238,14 +240,16 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 	setExternalSAMLIdentityProviderReq := map[string]interface{}{
 		"DirectoryId": d.Id(),
 	}
-	if !d.IsNewResource() && d.HasChange("saml_identity_provider_configuration") {
+	if d.HasChange("saml_identity_provider_configuration") {
 		update = true
 		if v, ok := d.GetOk("saml_identity_provider_configuration"); ok {
 			for _, setExternalSAMLIdentityProvider := range v.(*schema.Set).List() {
 				setExternalSAMLIdentityProviderArg := setExternalSAMLIdentityProvider.(map[string]interface{})
-				setExternalSAMLIdentityProviderReq["SSOStatus"] = setExternalSAMLIdentityProviderArg["sso_status"]
+				if v, ok := setExternalSAMLIdentityProviderArg["sso_status"]; ok && v != "" {
+					setExternalSAMLIdentityProviderReq["SSOStatus"] = v
+				}
 				if v, ok := setExternalSAMLIdentityProviderArg["encoded_metadata_document"]; ok && v != "" {
-					setExternalSAMLIdentityProviderReq["EncodedMetadataDocument"] = setExternalSAMLIdentityProviderArg["encoded_metadata_document"]
+					setExternalSAMLIdentityProviderReq["EncodedMetadataDocument"] = v
 				}
 			}
 		}
@@ -272,6 +276,7 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		d.SetPartial("saml_identity_provider_configuration")
 	}
 	d.Partial(false)
 	return resourceAlicloudCloudSsoDirectoryRead(d, meta)
