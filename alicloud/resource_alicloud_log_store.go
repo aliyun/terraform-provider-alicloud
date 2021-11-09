@@ -345,7 +345,6 @@ func resourceAlicloudLogStoreDelete(d *schema.ResourceData, meta interface{}) er
 			return nil, slsClient.DeleteLogStore(parts[0], parts[1])
 		})
 		if err != nil {
-			fmt.Printf("===\n%v\n", err)
 			if code, ok := err.(*sls.Error); ok {
 				if "LogStoreNotExist" == code.Code {
 					return nil
