@@ -606,6 +606,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_storage_gateway_gateway_block_volumes": dataSourceAlicloudCloudStorageGatewayGatewayBlockVolumes(),
 			"alicloud_direct_mail_tags":                            dataSourceAlicloudDirectMailTags(),
 			"alicloud_cloud_storage_gateway_gateway_file_shares":   dataSourceAlicloudCloudStorageGatewayGatewayFileShares(),
+			"alicloud_ecd_desktops":                                dataSourceAlicloudEcdDesktops(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1094,6 +1095,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_storage_gateway_gateway_block_volume":           resourceAlicloudCloudStorageGatewayGatewayBlockVolume(),
 			"alicloud_direct_mail_tag":                                      resourceAlicloudDirectMailTag(),
 			"alicloud_cloud_storage_gateway_gateway_file_share":             resourceAlicloudCloudStorageGatewayGatewayFileShare(),
+			"alicloud_ecd_desktop":                                          resourceAlicloudEcdDesktop(),
 		},
 
 		ConfigureFunc: providerConfigure,

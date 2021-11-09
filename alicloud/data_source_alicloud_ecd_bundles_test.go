@@ -40,15 +40,16 @@ func TestAccAlicloudEcdBundlesDataSource(t *testing.T) {
 			"bundles.0.description":              "",
 			"bundles.0.desktop_type":             CHECKSET,
 			"bundles.0.desktop_type_attribute.#": CHECKSET,
-			"bundles.0.desktop_type_attribute.0.cpu_count":   CHECKSET,
-			"bundles.0.desktop_type_attribute.0.gpu_count":   CHECKSET,
-			"bundles.0.desktop_type_attribute.0.gpu_spec":    CHECKSET,
+			"bundles.0.desktop_type_attribute.0.cpu_count": CHECKSET,
+			"bundles.0.desktop_type_attribute.0.gpu_count": CHECKSET,
+			//todo : The field does not necessarily have a value, so the note
+			//"bundles.0.desktop_type_attribute.0.gpu_spec":    CHECKSET,
 			"bundles.0.desktop_type_attribute.0.memory_size": CHECKSET,
-			"bundles.0.disks.#":                              CHECKSET,
-			"bundles.0.disks.0.disk_size":                    CHECKSET,
-			"bundles.0.disks.0.disk_type":                    CHECKSET,
-			"bundles.0.image_id":                             CHECKSET,
-			"bundles.0.os_type":                              CHECKSET,
+			"bundles.0.disks.#":           CHECKSET,
+			"bundles.0.disks.0.disk_size": CHECKSET,
+			"bundles.0.disks.0.disk_type": CHECKSET,
+			"bundles.0.image_id":          CHECKSET,
+			"bundles.0.os_type":           CHECKSET,
 		}
 	}
 	var fakeAlicloudEcdBundlesDataSourceNameMapFunc = func(rand int) map[string]string {
