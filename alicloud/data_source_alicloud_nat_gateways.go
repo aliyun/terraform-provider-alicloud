@@ -64,8 +64,8 @@ func dataSourceAlicloudNatGateways() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      "Small",
-				ValidateFunc: validation.StringInSlice([]string{"Large", "Middle", "Small", "XLarge.1"}, false),
+				Default:      "",
+				ValidateFunc: validation.StringInSlice([]string{"Large", "Middle", "Small", "XLarge.1", ""}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
