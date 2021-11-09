@@ -69,3 +69,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `line` - ISP line of the record. 
   * `status` - Status of the record.
   * `locked` - Indicates whether the record is locked.
+  * `remark` - (Available {version_placeholder}+) Remark of the record.
