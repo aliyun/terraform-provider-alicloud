@@ -20,23 +20,23 @@ Basic Usage
 ```terraform
 
 resource "alicloud_ecd_simple_office_site" "default" {
-	cidr_block          = "172.16.0.0/12"
-	desktop_access_type = "Internet"
-	office_site_name    = "example_value"
+  cidr_block          = "172.16.0.0/12"
+  desktop_access_type = "Internet"
+  office_site_name    = "example_value"
 }
 
 resource "alicloud_ecd_network_package" "default" {
-	bandwidth      = "10"
-	office_site_id = alicloud_ecd_simple_office_site.default.id
+  bandwidth      = "10"
+  office_site_id = alicloud_ecd_simple_office_site.default.id
 }
 
 data "alicloud_ecd_network_packages" "default" {
-	ids = [alicloud_ecd_network_package.default.id]
+  ids = [alicloud_ecd_network_package.default.id]
 }
 output "ecd_network_package_id_1" {
-	value = data.alicloud_ecd_network_packages.default.packages.0.id
+  value = data.alicloud_ecd_network_packages.default.packages.0.id
 }
-            
+
 ```
 
 ## Argument Reference

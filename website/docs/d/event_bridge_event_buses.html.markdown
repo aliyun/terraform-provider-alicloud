@@ -29,7 +29,7 @@ data "alicloud_event_bridge_event_buses" "nameRegex" {
 output "event_bridge_event_bus_id_2" {
   value = data.alicloud_event_bridge_event_buses.nameRegex.buses.0.id
 }
-            
+
 ```
 
 ## Argument Reference

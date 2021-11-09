@@ -22,7 +22,7 @@ data "alicloud_iot_device_groups" "ids" {}
 output "iot_device_group_id_1" {
   value = data.alicloud_iot_device_groups.ids.groups.0.id
 }
-            
+
 ```
 
 ## Argument Reference

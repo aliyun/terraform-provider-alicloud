@@ -19,12 +19,12 @@ Basic Usage
 
 ```terraform
 data "alicloud_imm_projects" "ids" {
-	ids = ["example_id"]
+  ids = ["example_id"]
 }
 output "imm_project_id_1" {
   value = data.alicloud_imm_projects.ids.projects.0.id
 }
-            
+
 ```
 
 ## Argument Reference

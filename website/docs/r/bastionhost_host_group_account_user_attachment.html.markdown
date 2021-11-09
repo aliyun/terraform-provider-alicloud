@@ -27,7 +27,7 @@ resource "alicloud_bastionhost_host" "default" {
   source               = "Local"
 }
 resource "alicloud_bastionhost_host_account" "default" {
-  count = 3
+  count             = 3
   instance_id       = alicloud_bastionhost_host.default.instance_id
   host_account_name = "example_value-${count.index}"
   host_id           = alicloud_bastionhost_host.default.host_id

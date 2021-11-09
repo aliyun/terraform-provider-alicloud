@@ -19,7 +19,7 @@ For information about MNS and how to use it, see [What is MNS](https://www.aliba
 
 ```terraform
 data "alicloud_mns_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

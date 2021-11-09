@@ -45,7 +45,7 @@ data "alicloud_vpc_ipv6_addresses" "status" {
 output "vpc_ipv6_address_id_4" {
   value = data.alicloud_vpc_ipv6_addresses.status.addresses.0.id
 }
-            
+
 ```
 
 ## Argument Reference

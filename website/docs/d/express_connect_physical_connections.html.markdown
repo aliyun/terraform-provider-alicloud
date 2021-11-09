@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_express_connect_physical_connections" "ids" {
-	ids = ["pc-2345678"]
+  ids = ["pc-2345678"]
 }
 output "express_connect_physical_connection_id_1" {
   value = data.alicloud_express_connect_physical_connections.ids.connections.0.id
@@ -31,7 +31,7 @@ data "alicloud_express_connect_physical_connections" "nameRegex" {
 output "express_connect_physical_connection_id_2" {
   value = data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id
 }
-            
+
 ```
 
 ## Argument Reference

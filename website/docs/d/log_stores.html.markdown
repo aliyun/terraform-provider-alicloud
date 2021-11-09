@@ -19,8 +19,8 @@ Basic Usage
 
 ```terraform
 data "alicloud_log_stores" "example" {
-  project    = "the_project_name"
-  ids        = ["the_store_name"]
+  project = "the_project_name"
+  ids     = ["the_store_name"]
 }
 
 output "first_log_store_id" {

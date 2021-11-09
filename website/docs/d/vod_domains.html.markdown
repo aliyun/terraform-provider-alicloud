@@ -19,29 +19,29 @@ Basic Usage
 
 ```terraform
 resource "alicloud_vod_domain" "default" {
-	domain_name = "your_domain_name"
-	scope       = "domestic"
-	sources {
-		source_type    = "domain"
-		source_content = "your_source_content"
-		source_port    = "80"
-	}
-	tags = {
-		key1 = "value1"
-		key2 = "value2"
-	}
+  domain_name = "your_domain_name"
+  scope       = "domestic"
+  sources {
+    source_type    = "domain"
+    source_content = "your_source_content"
+    source_port    = "80"
+  }
+  tags = {
+    key1 = "value1"
+    key2 = "value2"
+  }
 }
 
 data "alicloud_vod_domains" "default" {
-	ids = [alicloud_vod_domain.default.id]
-	tags = {
-		key1 = "value1"
-		key2 = "value2"
-	}
+  ids = [alicloud_vod_domain.default.id]
+  tags = {
+    key1 = "value1"
+    key2 = "value2"
+  }
 }
 output "vod_domain" {
-	value = data.alicloud_vod_domains.default.domains.0
-}   
+  value = data.alicloud_vod_domains.default.domains.0
+}
 
 ```
 

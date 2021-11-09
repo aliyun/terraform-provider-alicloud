@@ -19,12 +19,12 @@ Basic Usage
 
 ```terraform
 data "alicloud_waf_certificates" "default" {
-	ids         = ["your_certificate_id"]
-	instance_id = "your_instance_id"
-	domain      = "your_domain_name"
+  ids         = ["your_certificate_id"]
+  instance_id = "your_instance_id"
+  domain      = "your_domain_name"
 }
 output "waf_certificate" {
-	value = data.alicloud_waf_certificates.default.certificates.0
+  value = data.alicloud_waf_certificates.default.certificates.0
 }
 
 ```

@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_cen_route_services" "example" {
-   cen_id = "cen-7qthudw0ll6jmc****"
+  cen_id = "cen-7qthudw0ll6jmc****"
 }
 
 output "first_cen_route_service_id" {

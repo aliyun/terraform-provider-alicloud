@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_service_mesh_service_meshes" "ids" {
-	ids = ["example_id"]
+  ids = ["example_id"]
 }
 output "service_mesh_service_mesh_id_1" {
   value = data.alicloud_service_mesh_service_meshes.ids.meshes.0.id
@@ -33,13 +33,13 @@ output "service_mesh_service_mesh_id_2" {
 }
 
 data "alicloud_service_mesh_service_meshes" "status" {
-  ids = ["example_id"]
+  ids    = ["example_id"]
   status = "running"
 }
 output "service_mesh_service_mesh_id_3" {
   value = data.alicloud_service_mesh_service_meshes.status.meshes.0.id
 }
-            
+
 ```
 
 ## Argument Reference

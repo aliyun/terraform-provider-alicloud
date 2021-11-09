@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_cms_metric_rule_templates" "ids" {
-	ids = ["example_value"]
+  ids = ["example_value"]
 }
 output "cms_metric_rule_template_id_1" {
   value = data.alicloud_cms_metric_rule_templates.ids.templates.0.id
@@ -45,7 +45,7 @@ data "alicloud_cms_metric_rule_templates" "template_id" {
 output "cms_metric_rule_template_id_4" {
   value = data.alicloud_cms_metric_rule_templates.nameRegex.templates.0.id
 }
-            
+
 ```
 
 ## Argument Reference

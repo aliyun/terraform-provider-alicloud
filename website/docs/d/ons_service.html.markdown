@@ -19,7 +19,7 @@ For information about ONS and how to use it, see [What is ONS](https://help.aliy
 
 ```terraform
 data "alicloud_ons_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

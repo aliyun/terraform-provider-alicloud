@@ -36,10 +36,10 @@ resource "alicloud_vpc" "example" {
 }
 
 resource "alicloud_vswitch" "example" {
-  vpc_id            = alicloud_vpc.example.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.example.zones[0].id
-  name              = var.name
+  vpc_id     = alicloud_vpc.example.id
+  cidr_block = "172.16.0.0/24"
+  zone_id    = data.alicloud_zones.example.zones[0].id
+  name       = var.name
 }
 
 resource "alicloud_db_instance" "example" {
@@ -63,10 +63,10 @@ resource "alicloud_vpc" "example" {
 }
 
 resource "alicloud_vswitch" "example" {
-  vpc_id            = alicloud_vpc.example.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.example.zones.0.id
-  name              = "vpc-123456"
+  vpc_id     = alicloud_vpc.example.id
+  cidr_block = "172.16.0.0/24"
+  zone_id    = data.alicloud_zones.example.zones.0.id
+  name       = "vpc-123456"
 }
 
 resource "alicloud_db_instance" "default" {
@@ -109,11 +109,11 @@ resource "alicloud_vpc" "example" {
 }
 
 resource "alicloud_vswitch" "example" {
-  count             = 2
-  vpc_id            = alicloud_vpc.example.id
-  cidr_block        = format("172.16.%d.0/24", count.index+1)
-  zone_id           = data.alicloud_zones.example.zones[count.index].id
-  name              = format("vswich_%d", var.name, count.index)
+  count      = 2
+  vpc_id     = alicloud_vpc.example.id
+  cidr_block = format("172.16.%d.0/24", count.index + 1)
+  zone_id    = data.alicloud_zones.example.zones[count.index].id
+  name       = format("vswich_%d", var.name, count.index)
 }
 
 resource "alicloud_db_instance" "example" {
@@ -149,11 +149,11 @@ resource "alicloud_vpc" "example" {
 }
 
 resource "alicloud_vswitch" "example" {
-  count             = length(data.alicloud_zones.example.zones.0.multi_zone_ids)
-  vpc_id            = alicloud_vpc.example.id
-  cidr_block        = format("172.16.%d.0/24", count.index+1)
-  zone_id           = data.alicloud_zones.example.zones.0.multi_zone_ids[count.index]
-  name              = format("vswitch_%d", count.index)
+  count      = length(data.alicloud_zones.example.zones.0.multi_zone_ids)
+  vpc_id     = alicloud_vpc.example.id
+  cidr_block = format("172.16.%d.0/24", count.index + 1)
+  zone_id    = data.alicloud_zones.example.zones.0.multi_zone_ids[count.index]
+  name       = format("vswitch_%d", count.index)
 }
 
 resource "alicloud_db_instance" "this" {
@@ -185,11 +185,11 @@ resource "alicloud_vpc" "example" {
 }
 
 resource "alicloud_vswitch" "example" {
-  count             = 3
-  vpc_id            = alicloud_vpc.example.id
-  cidr_block        = format("172.16.%d.0/24", count.index+1)
-  zone_id           = data.alicloud_zones.example.zones[count.index].id
-  name              = format("vswich_%d", var.name, count.index)
+  count      = 3
+  vpc_id     = alicloud_vpc.example.id
+  cidr_block = format("172.16.%d.0/24", count.index + 1)
+  zone_id    = data.alicloud_zones.example.zones[count.index].id
+  name       = format("vswich_%d", var.name, count.index)
 }
 
 resource "alicloud_db_instance" "example" {

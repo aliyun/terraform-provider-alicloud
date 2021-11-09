@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_ecs_deployment_sets" "ids" {
-	ids = ["example_id"]
+  ids = ["example_id"]
 }
 output "ecs_deployment_set_id_1" {
   value = data.alicloud_ecs_deployment_sets.ids.sets.0.id
@@ -31,7 +31,7 @@ data "alicloud_ecs_deployment_sets" "nameRegex" {
 output "ecs_deployment_set_id_2" {
   value = data.alicloud_ecs_deployment_sets.nameRegex.sets.0.id
 }
-            
+
 ```
 
 ## Argument Reference

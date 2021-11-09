@@ -28,8 +28,8 @@ resource "alicloud_cen_instance" "cen" {
 }
 
 resource "alicloud_cen_transit_router" "default" {
-  name       = var.name
-  cen_id     = alicloud_cen_instance.cen.id
+  name   = var.name
+  cen_id = alicloud_cen_instance.cen.id
 }
 
 resource "alicloud_cen_transit_router_route_table" "default" {

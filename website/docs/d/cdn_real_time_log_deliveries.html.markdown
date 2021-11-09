@@ -24,7 +24,7 @@ data "alicloud_cdn_real_time_log_deliveries" "example" {
 output "cdn_real_time_log_delivery_1" {
   value = data.alicloud_cdn_real_time_log_deliveries.example.deliveries.0.id
 }
-            
+
 ```
 
 ## Argument Reference

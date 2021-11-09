@@ -27,18 +27,18 @@ resource "alicloud_amqp_instance" "professional" {
   support_eip    = true
   max_eip_tps    = 128
   payment_type   = "Subscription"
-  period = 1
+  period         = 1
 }
 
 resource "alicloud_amqp_instance" "vip" {
   instance_type  = "vip"
   max_tps        = 5000
   queue_capacity = 50
-  storage_size = 700
+  storage_size   = 700
   support_eip    = true
   max_eip_tps    = 128
   payment_type   = "Subscription"
-  period = 1
+  period         = 1
 }
 ```
 

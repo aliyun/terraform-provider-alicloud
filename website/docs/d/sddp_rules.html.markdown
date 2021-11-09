@@ -19,18 +19,18 @@ Basic Usage
 
 ```terraform
 resource "alicloud_sddp_rule" "default" {
-	category=  "0"
-	content=   "content"
-	rule_name= "rule_name"
-	risk_level_id = "4"
-	product_code = "ODPS"
+  category      = "0"
+  content       = "content"
+  rule_name     = "rule_name"
+  risk_level_id = "4"
+  product_code  = "ODPS"
 }
 
 data "alicloud_sddp_rules" "default" {
-	ids = [alicloud_sddp_rule.default.id]
+  ids = [alicloud_sddp_rule.default.id]
 }
 output "sddp_rule_id" {
-	value = data.alicloud_sddp_rules.default.id
+  value = data.alicloud_sddp_rules.default.id
 }
 ```
 

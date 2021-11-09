@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_dfs_access_groups" "ids" {
- ids = ["example_id"]	
+  ids = ["example_id"]
 }
 output "dfs_access_group_id_1" {
   value = data.alicloud_dfs_access_groups.ids.groups.0.id
@@ -31,7 +31,7 @@ data "alicloud_dfs_access_groups" "nameRegex" {
 output "dfs_access_group_id_2" {
   value = data.alicloud_dfs_access_groups.nameRegex.groups.0.id
 }
-            
+
 ```
 
 ## Argument Reference

@@ -18,7 +18,7 @@ If you do not have an existing cluster, you need to create an ACK cluster throug
 
 ```terraform
 resource "alicloud_cs_autoscaling_config" "default" {
-  cluster_id                = alicloud_cs_managed_kubernetes.default.0.id
+  cluster_id = alicloud_cs_managed_kubernetes.default.0.id
   // configure auto scaling
   cool_down_duration        = "10m"
   unneeded_duration         = "10m"

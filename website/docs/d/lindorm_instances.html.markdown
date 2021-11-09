@@ -29,7 +29,7 @@ data "alicloud_lindorm_instances" "nameRegex" {
 output "lindorm_instance_id_2" {
   value = data.alicloud_lindorm_instances.nameRegex.instances.0.id
 }
-            
+
 ```
 
 ## Argument Reference

@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_express_connect_access_points" "ids" {
-	ids = ["ap-cn-hangzhou-yh-C"]
+  ids = ["ap-cn-hangzhou-yh-C"]
 }
 output "express_connect_access_point_id_1" {
   value = data.alicloud_express_connect_access_points.ids.points.0.id
@@ -31,7 +31,7 @@ data "alicloud_express_connect_access_points" "nameRegex" {
 output "express_connect_access_point_id_2" {
   value = data.alicloud_express_connect_access_points.nameRegex.points.0.id
 }
-            
+
 ```
 
 ## Argument Reference

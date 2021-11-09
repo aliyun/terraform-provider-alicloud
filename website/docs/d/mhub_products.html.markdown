@@ -19,11 +19,11 @@ Basic Usage
 
 ```terraform
 variable "name" {
-	default = "example_value"
+  default = "example_value"
 }
 
-resource "alicloud_mhub_product" "default"{
-	product_name = var.name
+resource "alicloud_mhub_product" "default" {
+  product_name = var.name
 }
 data "alicloud_mhub_products" "ids" {}
 output "mhub_product_id_1" {
@@ -36,7 +36,7 @@ data "alicloud_mhub_products" "nameRegex" {
 output "mhub_product_id_2" {
   value = data.alicloud_mhub_products.nameRegex.products.0.id
 }
-            
+
 ```
 
 ## Argument Reference

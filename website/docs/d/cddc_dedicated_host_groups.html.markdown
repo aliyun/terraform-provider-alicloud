@@ -19,10 +19,10 @@ Basic Usage
 
 ```terraform
 data "alicloud_cddc_dedicated_host_groups" "default" {
-	engine = "MongoDB"
+  engine = "MongoDB"
 }
 output "cddc_dedicated_host_group_id" {
-	value = data.alicloud_cddc_dedicated_host_groups.default.id
+  value = data.alicloud_cddc_dedicated_host_groups.default.id
 }
 ```
 

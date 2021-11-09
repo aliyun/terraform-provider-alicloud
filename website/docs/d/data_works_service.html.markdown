@@ -19,7 +19,7 @@ For information about DataWorks and how to use it, see [What is DataWorks](https
 
 ```terraform
 data "alicloud_data_works_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

@@ -22,7 +22,7 @@ data "alicloud_sae_instance_specifications" "ids" {}
 output "sae_instance_specification_id_1" {
   value = data.alicloud_sae_instance_specifications.ids.specifications.0.id
 }
-            
+
 ```
 
 ## Argument Reference

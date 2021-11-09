@@ -22,8 +22,8 @@ Basic Usage
 
 ```terraform
 resource "alicloud_vpc" "foo" {
-  cidr_block     = "172.16.0.0/12"
-  vpc_name       = "vpc-example-name"
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = "vpc-example-name"
 }
 
 resource "alicloud_route_table" "foo" {

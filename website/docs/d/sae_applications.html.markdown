@@ -19,47 +19,47 @@ Basic Usage
 
 ```terraform
 variable "name" {
-	default = "tf-testacc"
+  default = "tf-testacc"
 }
 data "alicloud_zones" "default" {
-	available_resource_creation = "VSwitch"
+  available_resource_creation = "VSwitch"
 }
 resource "alicloud_vpc" "vpc" {
-	vpc_name   = "tf_testacc"
-	cidr_block = "172.16.0.0/12"
+  vpc_name   = "tf_testacc"
+  cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "vsw" {
-	vpc_id            = alicloud_vpc.vpc.id
-	cidr_block        = "172.16.0.0/24"
-	zone_id           = data.alicloud_zones.default.zones[0].id
-	vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.vpc.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_sae_namespace" "default" {
-	namespace_description = var.name
-	namespace_id = "cn-hangzhou:tfacctest"
-	namespace_name = var.name
+  namespace_description = var.name
+  namespace_id          = "cn-hangzhou:tfacctest"
+  namespace_name        = var.name
 }
 
 resource "alicloud_sae_application" "default" {
-	app_description= "tf-testaccDescription"
-	app_name=        "tf-testaccAppName131"
-	namespace_id=    alicloud_sae_namespace.default.id
-	image_url=     "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5"
-	package_type=    "Image"
-	vswitch_id=      alicloud_vswitch.vsw.id
-	timezone =     "Asia/Beijing"
-	replicas=        "5"
-	cpu=             "500"
-	memory =          "2048"
+  app_description = "tf-testaccDescription"
+  app_name        = "tf-testaccAppName131"
+  namespace_id    = alicloud_sae_namespace.default.id
+  image_url       = "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5"
+  package_type    = "Image"
+  vswitch_id      = alicloud_vswitch.vsw.id
+  timezone        = "Asia/Beijing"
+  replicas        = "5"
+  cpu             = "500"
+  memory          = "2048"
 }
-data "alicloud_sae_applications" "default"{
-	ids = [alicloud_sae_application.default.id]
+data "alicloud_sae_applications" "default" {
+  ids = [alicloud_sae_application.default.id]
 }
 output "sae_application_id" {
-	value = data.alicloud_sae_applications.default.applications.0.id
-} 
+  value = data.alicloud_sae_applications.default.applications.0.id
+}
 ```
 
 ## Argument Reference

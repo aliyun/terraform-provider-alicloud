@@ -33,7 +33,7 @@ data "alicloud_amqp_virtual_hosts" "nameRegex" {
 output "amqp_virtual_host_id_2" {
   value = data.alicloud_amqp_virtual_hosts.nameRegex.hosts.0.id
 }
-            
+
 ```
 
 ## Argument Reference

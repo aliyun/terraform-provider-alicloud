@@ -19,27 +19,27 @@ Basic Usage
 
 ```terraform
 variable "name" {
-	default = "tf-testAccOrganizations-Organizations"
+  default = "tf-testAccOrganizations-Organizations"
 }
 
-resource "alicloud_rdc_organization" "default"{
-	organization_name = var.name
-	source =            var.name
+resource "alicloud_rdc_organization" "default" {
+  organization_name = var.name
+  source            = var.name
 }
 data "alicloud_rdc_organizations" "ids" {
-	ids = [alicloud_rdc_organization.default.id]
+  ids = [alicloud_rdc_organization.default.id]
 }
 output "rdc_organization_id_1" {
-	value = data.alicloud_rdc_organizations.ids.id
+  value = data.alicloud_rdc_organizations.ids.id
 }
 
 data "alicloud_rdc_organizations" "nameRegex" {
   name_regex = "^my-Organization"
 }
 output "rdc_organization_id_2" {
-	value = data.alicloud_rdc_organizations.nameRegex.id
+  value = data.alicloud_rdc_organizations.nameRegex.id
 }
-            
+
 ```
 
 ## Argument Reference

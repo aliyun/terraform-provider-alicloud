@@ -28,10 +28,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  vswitch_name      = "vswitch"
-  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 4, 4)
-  zone_id           = data.alicloud_zones.default.ids.0
+  vpc_id       = alicloud_vpc.default.id
+  vswitch_name = "vswitch"
+  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 4, 4)
+  zone_id      = data.alicloud_zones.default.ids.0
 }
 
 resource "alicloud_network_acl" "default" {
@@ -57,7 +57,7 @@ resource "alicloud_network_acl" "default" {
   resources {
     resource_id   = alicloud_vswitch.default.id
     resource_type = "VSwitch"
-   }
+  }
 }
 ```
 

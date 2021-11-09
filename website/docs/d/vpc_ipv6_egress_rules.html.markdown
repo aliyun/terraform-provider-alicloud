@@ -35,21 +35,21 @@ output "vpc_ipv6_egress_rule_id_2" {
 }
 
 data "alicloud_vpc_ipv6_egress_rules" "status" {
-	ipv6_gateway_id = "example_value"
-	status          = "Available"
+  ipv6_gateway_id = "example_value"
+  status          = "Available"
 }
 output "vpc_ipv6_egress_rule_id_3" {
-	value = data.alicloud_vpc_ipv6_egress_rules.status.rules.0.id
+  value = data.alicloud_vpc_ipv6_egress_rules.status.rules.0.id
 }
 
 data "alicloud_vpc_ipv6_egress_rules" "ipv6EgressRuleName" {
-	ipv6_gateway_id       = "example_value"
-	ipv6_egress_rule_name = "example_value"
+  ipv6_gateway_id       = "example_value"
+  ipv6_egress_rule_name = "example_value"
 }
 output "vpc_ipv6_egress_rule_id_4" {
-	value = data.alicloud_vpc_ipv6_egress_rules.ipv6EgressRuleName.rules.0.id
+  value = data.alicloud_vpc_ipv6_egress_rules.ipv6EgressRuleName.rules.0.id
 }
-            
+
 ```
 
 ## Argument Reference

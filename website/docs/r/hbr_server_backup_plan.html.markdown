@@ -31,8 +31,8 @@ resource "alicloud_hbr_server_backup_plan" "example" {
   schedule                    = "I|1602673264|PT2H"
   retention                   = 1
   detail {
-    app_consistent     = true
-    snapshot_group     = true
+    app_consistent = true
+    snapshot_group = true
   }
   disabled = false
 }

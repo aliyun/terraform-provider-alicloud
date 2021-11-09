@@ -33,7 +33,7 @@ data "alicloud_gpdb_accounts" "nameRegex" {
 output "gpdb_account_id_2" {
   value = data.alicloud_gpdb_accounts.nameRegex.accounts.0.id
 }
-            
+
 ```
 
 ## Argument Reference

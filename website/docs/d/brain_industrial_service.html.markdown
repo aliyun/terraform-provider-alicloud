@@ -17,7 +17,7 @@ Using this data source can open Brain Industrial service automatically. If the s
 
 ```terraform
 data "alicloud_brain_industrial_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

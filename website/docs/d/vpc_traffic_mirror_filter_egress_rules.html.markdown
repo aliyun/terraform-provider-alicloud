@@ -34,7 +34,7 @@ data "alicloud_vpc_traffic_mirror_filter_egress_rules" "status" {
 output "vpc_traffic_mirror_filter_egress_rule_id_2" {
   value = data.alicloud_vpc_traffic_mirror_filter_egress_rules.status.rules.0.id
 }
-            
+
 ```
 
 ## Argument Reference

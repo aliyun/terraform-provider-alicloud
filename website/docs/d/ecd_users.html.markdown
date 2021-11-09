@@ -19,16 +19,16 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ecd_user" "default" {
-	end_user_id = "example_value"
-	email       = "your_email"
-	phone       = "your_phone"
-	password    = "your_password"
+  end_user_id = "example_value"
+  email       = "your_email"
+  phone       = "your_phone"
+  password    = "your_password"
 }
 data "alicloud_ecd_users" "ids" {}
 output "ecd_user_id_1" {
-	value = data.alicloud_ecd_users.ids.users.0.id
+  value = data.alicloud_ecd_users.ids.users.0.id
 }
-            
+
 ```
 
 ## Argument Reference

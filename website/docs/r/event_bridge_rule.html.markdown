@@ -30,9 +30,9 @@ resource "alicloud_event_bridge_rule" "example" {
   description    = "test"
   filter_pattern = "{\"source\":[\"crmabc.newsletter\"],\"type\":[\"UserSignUp\", \"UserLogin\"]}"
   targets {
-    target_id           = "tf-test"
-    endpoint            = "acs:mns:cn-hangzhou:118938335****:queues/tf-test"
-    type                = "acs.mns.queue"
+    target_id = "tf-test"
+    endpoint  = "acs:mns:cn-hangzhou:118938335****:queues/tf-test"
+    type      = "acs.mns.queue"
     param_list {
       resource_key = "queue"
       form         = "CONSTANT"
