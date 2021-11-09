@@ -36,6 +36,7 @@ output "alb_server_group_id_2" {
 
 The following arguments are supported:
 
+* `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `ids` - (Optional, ForceNew, Computed)  A list of Server Group IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Server Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
