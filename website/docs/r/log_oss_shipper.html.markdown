@@ -34,7 +34,7 @@ resource "alicloud_log_store" "example" {
 }
 resource "alicloud_log_oss_shipper" "example" {
   project_name    = alicloud_log_project.example.name
-  logstore_name   = alicloud_log_logstore.example.name
+  logstore_name   = alicloud_log_store.example.name
   shipper_name    = "oss_shipper_name"
   oss_bucket      = "test_bucket"
   oss_prefix      = "root"

@@ -31,6 +31,31 @@ resource "alicloud_log_store" "example" {
   append_meta           = true
 }
 ```
+Encrypt Usage
+```
+resource "alicloud_log_project" "example" {
+  name        = "tf-log"
+  description = "created by terraform"
+}
+
+resource "alicloud_log_store" "example" {
+  project               = alicloud_log_project.example.name
+  name                  = "tf-log-store"
+  shard_count           = 3
+  auto_split            = true
+  max_split_shard_count = 60
+  append_meta           = true
+  encrypt_conf {
+    enable              = true
+    encrypt_type        = "default"
+    user_cmk_info {
+      cmk_key_id        = "your_cmk_key_id"
+      arn               = "your_role_arn"
+      region_id         = "you_cmk_region_id"
+    }
+  }
+}
+```
 
 ## Module Support
 
@@ -52,10 +77,21 @@ The following arguments are supported:
 * `encrypt_conf` (ForceNew, Optional, Available in 1.124.0+) Encrypted storage of data, providing data static protection capability, only supported at creation time.
   * `enable` (Optional) enable encryption. Default `false`
   * `encrypt_type` (Optional) Supported encryption type, only supports `default(AES)`,` m4`
-  * `user_cmk_info` (Optional) User bring your own key (BYOK) encryption.[Refer to details](https://www.alibabacloud.com/help/zh/doc-detail/187853.htm?spm=a2c63.p38356.b99.673.cafa2b38qBskFV)
-    * `cmk_key_id` (Required) User master key id
-    * `arn` (Required) role arn
-    * `region_id` (Required) Region id where the  user master key id is located
+  * `user_cmk_info` (Optional) User bring your own key (BYOK) encryption [Refer to details](https://www.alibabacloud.com/help/zh/doc-detail/187853.htm), the format is as follows:
+    
+    ```
+    {
+      "cmk_key_id": "your_cmk_key_id",
+      "arn":        "your_role_arn",
+      "region_id":  "you_cmk_region_id"
+    }
+    ```
+#### Block user_cmk_info
+The user_cmk_info mapping supports the following:
+
+* `cmk_key_id` (Required) User master key id.
+* `arn` (Required) role arn.
+* `region_id` (Required) Region id where the  user master key id is located.
 
 ## Attributes Reference
 
@@ -70,6 +106,7 @@ The following attributes are exported:
 * `max_split_shard_count` - The maximum number of shards for automatic split.
 * `append_meta` - Determines whether to append log meta automatically.
 * `enable_web_tracking` - Determines whether to enable Web Tracking.
+* `encrypt_conf` - Encryption configuration of logstore.
 
 ### Timeouts
 
