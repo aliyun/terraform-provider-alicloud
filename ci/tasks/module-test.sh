@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 
-para=$1
 provider_dir="$(pwd)"
 diffFiles=$(git diff --name-only HEAD~ HEAD)
 rm -rf ./terraform_test
@@ -17,12 +16,12 @@ do
     fi
     fileName=(${fileName//\.go/_test\.go })
     checkResourceName=$(grep "resourceId := \"alicloud_.*.default\""  ${fileName} | grep -Eo 'alicloud[a-z_]*'| head -n +1)
-    echo -e "\033[33m[Info]\033[0m file name = ${fileName} Resource Name = ${checkResourceName} parameter = ${para}"
+    echo -e "\033[33m[Info]\033[0m file name = ${fileName} Resource Name = ${checkResourceName}"
     cd "${test_dir}" || exit
     make build || exit
     chmod +rx ./bin/terraform_test || exit
     chmod +rx ./scripts/module.sh  || exit
-    ./bin/terraform_test  module_test -r="${checkResourceName}" -p="${para}"|| exit
+    ./bin/terraform_test  module_test -r="${checkResourceName}" || exit
   fi
 done
 
