@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
-: {terraform_version:?}
+terraform_version=$1
 
 
 provider_dir="$(pwd)"

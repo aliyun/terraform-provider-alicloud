@@ -2,7 +2,7 @@
 platform: linux
 image_resource:
   type: registry-image
-  source: {repository: golang, tag: 1.16.4}
+  source: {repository: golang, tag: 1.16.0}
 groups:
   - name: All
     jobs:
@@ -35,7 +35,6 @@ jobs:
         trigger: true
       - get: terraform_module_test
         trigger: false
-      - get:
       - task: point-to-module-ci-test
         config:
           platform: linux
@@ -52,5 +51,5 @@ jobs:
               - |
                 ls -al
                 cd terraform-provider-alicloud
-                ./ci/tasks/module-test.sh
+                ./ci/tasks/module-test.sh "0.13.7"
 
