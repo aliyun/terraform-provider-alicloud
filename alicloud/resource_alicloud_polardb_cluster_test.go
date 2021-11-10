@@ -308,6 +308,16 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"creation_category": "Normal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"creation_category": "Normal",
+					}),
+				),
+			},
 		},
 	})
 

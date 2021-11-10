@@ -55,10 +55,9 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Default:      "Upgrade",
 			},
 			"db_node_count": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(2, 16),
-				Default:      2,
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -190,7 +189,33 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
-
+			"creation_category": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{string(CreationCategoryNormal), string(CreationCategoryBasic), string(CreationCategoryArchive)}, false),
+				Optional:     true,
+			},
+			"creation_option": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{string(CreationOptionNormal), string(CloneFromPolarDB), string(CloneFromRDS), string(MigrationFromRDS), string(CreateGdnStandby)}, false),
+				Optional:     true,
+				Default:      CreationOptionNormal,
+			},
+			"source_resource_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"gdn_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"clone_data_point": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{string(LATEST), string(BackupID), string(Timestamp)}, false),
+				Optional:     true,
+				Default:      LATEST,
+			},
 			"tags": tagsSchema(),
 		},
 	}
@@ -600,6 +625,8 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("db_node_class", cluster.DBNodeClass)
 	d.Set("db_node_count", len(clusterAttribute.DBNodes))
 	d.Set("resource_group_id", clusterAttribute.ResourceGroupId)
+	d.Set("creation_category", clusterAttribute.Category)
+
 	tags, err := polarDBService.DescribeTags(d.Id(), "cluster")
 	if err != nil {
 		return WrapError(err)
@@ -714,6 +741,35 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (*polar
 	request.DBNodeClass = d.Get("db_node_class").(string)
 	request.DBClusterDescription = d.Get("description").(string)
 	request.ClientToken = buildClientToken(request.GetActionName())
+	request.CreationCategory = d.Get("creation_category").(string)
+	request.CloneDataPoint = d.Get("clone_data_point").(string)
+
+	if d.Get("creation_option") == "CloneFromPolarDB" {
+		request.SourceResourceId = d.Get("source_resource_id").(string)
+
+	}
+
+	if d.Get("creation_option") == "CloneFromRDS" {
+		request.CloneDataPoint = "LATEST"
+	}
+
+	if d.Get("creation_option") == "CloneFromRDS" || d.Get("creation_option") == "MigrationFromRDS" {
+		if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
+			if v, ok := d.GetOk("db_version"); ok && (v.(string) == "5.6" || v.(string) == "5.7") {
+				request.CreationOption = d.Get("creation_option").(string)
+				request.SourceResourceId = d.Get("source_resource_id").(string)
+			}
+		}
+	} else if d.Get("creation_option") == "CreateGdnStandby" {
+		if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
+			if v, ok := d.GetOk("db_version"); ok && v.(string) == "8.0" {
+				request.CreationOption = d.Get("creation_option").(string)
+				request.GDNId = d.Get("gdn_id").(string)
+			}
+		}
+	} else {
+		request.CreationOption = d.Get("creation_option").(string)
+	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
 		request.ResourceGroupId = v.(string)

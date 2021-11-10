@@ -505,6 +505,32 @@ const (
 	KubernetesNodeWorker = ResourceType("Worker")
 )
 
+type CreationCategory string
+
+const (
+	CreationCategoryNormal  = CreationCategory("Normal")
+	CreationCategoryBasic   = CreationCategory("Basic")
+	CreationCategoryArchive = CreationCategory("Archive")
+)
+
+type CreationOption string
+
+const (
+	CreationOptionNormal = CreationOption("Normal")
+	CloneFromPolarDB     = CreationOption("CloneFromPolarDB")
+	CloneFromRDS         = CreationOption("CloneFromRDS")
+	MigrationFromRDS     = CreationOption("MigrationFromRDS")
+	CreateGdnStandby     = CreationOption("CreateGdnStandby")
+)
+
+type CloneDataPoint string
+
+const (
+	LATEST    = CloneDataPoint("LATEST")
+	BackupID  = CloneDataPoint("BackupID")
+	Timestamp = CloneDataPoint("Timestamp")
+)
+
 func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {
 	pagination.PageSize = pageSize
 	pagination.PageNumber = pageNumber
