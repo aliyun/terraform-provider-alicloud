@@ -14,6 +14,7 @@ do
         echo -e "\033[33m[SKIPPED]\033[0m skipping the file $fileName, continue..."
         continue
     fi
+    echo "${fileName}"
     fileName=(${fileName//\.go/_test\.go })
     checkResourceName=$(grep "resourceId := \"alicloud_.*.default\""  ${fileName} | grep -Eo 'alicloud[a-z_]*'| head -n +1)
     echo -e "\033[33m[Info]\033[0m file name = ${fileName} Resource Name = ${checkResourceName}"

@@ -1,3 +1,8 @@
+---
+platform: linux
+image_resource:
+  type: registry-image
+  source: {repository: golang, tag: 1.16.4}
 groups:
   - name: All
     jobs:
@@ -16,25 +21,35 @@ resources:
         - go.mod
         - main.go
 
+  - name: terraform_module_test
+    type: git
+    source:
+      uri: https://github.com/Wanghx0991/terraform_test.git
+      branch: master
+
 jobs:
   - name: point-to-module-test
 #    serial: true
     plan:
       - get: terraform-provider-alicloud
         trigger: true
+      - get: terraform_module_test
+        trigger: false
       - task: point-to-module-ci-test
         config:
           platform: linux
           image_resource:
             type: registry-image
-            source:
-              repository: busybox
+            source: {repository: golang, tag: 1.16.0}
           inputs:
           - name: terraform-provider-alicloud
+          - name: terraform_module_test
           run:
             path: sh
             args:
               - -cx
               - |
                 ls -al
-                ./terraform-provider-alicloud/ci/tasks/module-test.sh
+                cd terraform-provider-alicloud
+                ./ci/tasks/module-test.sh
+
