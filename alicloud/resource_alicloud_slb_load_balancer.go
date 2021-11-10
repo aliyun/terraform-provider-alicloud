@@ -16,7 +16,6 @@ func resourceAlicloudSlbLoadBalancer() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudSlbLoadBalancerCreate,
 		Read:   resourceAlicloudSlbLoadBalancerRead,
-
 		Update: resourceAlicloudSlbLoadBalancerUpdate,
 		Delete: resourceAlicloudSlbLoadBalancerDelete,
 		Importer: &schema.ResourceImporter{

@@ -10,8 +10,8 @@ inputs:
 
 run:
   path: terraform-provider-alicloud/ci/tasks/build-package.sh
-params:
-  terraform_provider_bucket_name:   ""
-  terraform_provider_bucket_region: ""
-  terraform_provider_access_key:      ""
-  terraform_provider_secret_key:      ""
+#params:
+#  terraform_provider_bucket_name:   ""
+#  terraform_provider_bucket_region: ""
+#  terraform_provider_access_key:      ""
+#  terraform_provider_secret_key:      ""

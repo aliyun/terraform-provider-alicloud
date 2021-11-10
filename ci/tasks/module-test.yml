@@ -11,18 +11,18 @@ inputs:
 
 run:
   path: terraform-provider-alicloud/ci/tasks/module-test.sh
-params:
-  ALICLOUD_ACCESS_KEY:   ""
-  ALICLOUD_SECRET_KEY:   ""
-  ALICLOUD_REGION:       ""
-  ALICLOUD_ACCOUNT_ID:   ""
-  DING_TALK_TOKEN:       ""
-  BUCKET_NAME:           "terraform-ci"
-  BUCKET_REGION:         "cn-beijing"
-  ALICLOUD_RESOURCE_GROUP_ID : ""
-  ALICLOUD_WAF_INSTANCE_ID: ""
-  CONCOURSE_TARGET: ""
-  CONCOURSE_TARGET_URL: ""
-  CONCOURSE_TARGET_USER: ""
-  CONCOURSE_TARGET_PASSWORD: ""
-  TRIGGER_TARGET_PIPELINE: ""
+#params:
+#  ALICLOUD_ACCESS_KEY:   ""
+#  ALICLOUD_SECRET_KEY:   ""
+#  ALICLOUD_REGION:       ""
+#  ALICLOUD_ACCOUNT_ID:   ""
+#  DING_TALK_TOKEN:       ""
+#  BUCKET_NAME:           "terraform-ci"
+#  BUCKET_REGION:         "cn-beijing"
+#  ALICLOUD_RESOURCE_GROUP_ID : ""
+#  ALICLOUD_WAF_INSTANCE_ID: ""
+#  CONCOURSE_TARGET: ""
+#  CONCOURSE_TARGET_URL: ""
+#  CONCOURSE_TARGET_USER: ""
+#  CONCOURSE_TARGET_PASSWORD: ""
+#  TRIGGER_TARGET_PIPELINE: ""
