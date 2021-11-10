@@ -35,6 +35,7 @@ jobs:
         trigger: true
       - get: terraform_module_test
         trigger: false
+      - get:
       - task: point-to-module-ci-test
         config:
           platform: linux

@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 
+set -e
+: {terraform_version:?}
+
 
 provider_dir="$(pwd)"
 diffFiles=$(git diff --name-only HEAD~ HEAD)
 rm -rf ./terraform_test
 git clone https://github.com/Wanghx0991/terraform_test
 test_dir="$( cd ./terraform_test && pwd )"
+
+wget -qN https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip
+unzip -o terraform_${terraform_version}_linux_amd64.zip -d /usr/bin
+
 
 for fileName in ${diffFiles[*]};
 do
