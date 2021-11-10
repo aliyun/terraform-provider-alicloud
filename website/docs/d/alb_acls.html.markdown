@@ -29,7 +29,7 @@ data "alicloud_alb_acls" "nameRegex" {
 output "alb_acl_id_2" {
   value = data.alicloud_alb_acls.nameRegex.acls.0.id
 }
-            
+
 ```
 
 ## Argument Reference

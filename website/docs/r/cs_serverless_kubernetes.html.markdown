@@ -46,10 +46,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vswitch_name      = var.name
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "10.1.1.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.1.1.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_cs_serverless_kubernetes" "serverless" {
@@ -60,12 +60,12 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
   endpoint_public_access_enabled = true
   deletion_protection            = false
 
-  load_balancer_spec             = "slb.s2.small"
-  time_zone                      = "Asia/Shanghai" 
-  service_cidr                   = "172.21.0.0/20"
-  service_discovery_types        = ["PrivateZone"]
+  load_balancer_spec      = "slb.s2.small"
+  time_zone               = "Asia/Shanghai"
+  service_cidr            = "172.21.0.0/20"
+  service_discovery_types = ["PrivateZone"]
   # Enable log service, A project named k8s-log-{ClusterID} will be automatically created
-  logging_type                   = "SLS"
+  logging_type = "SLS"
   # Select an existing sls project
   # sls_project_name             = ""
 

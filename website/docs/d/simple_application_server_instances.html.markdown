@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_simple_application_server_instances" "ids" {
-	ids = ["example_id"]
+  ids = ["example_id"]
 }
 output "simple_application_server_instance_id_1" {
   value = data.alicloud_simple_application_server_instances.ids.instances.0.id
@@ -31,7 +31,7 @@ data "alicloud_simple_application_server_instances" "nameRegex" {
 output "simple_application_server_instance_id_2" {
   value = data.alicloud_simple_application_server_instances.nameRegex.instances.0.id
 }
-            
+
 ```
 
 ## Argument Reference

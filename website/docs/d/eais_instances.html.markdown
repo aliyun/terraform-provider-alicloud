@@ -18,8 +18,8 @@ This data source provides the Eais Instances of the current Alibaba Cloud user.
 Basic Usage
 
 ```terraform
-data "alicloud_eais_instances" "ids" { 
-	id = ["example_id"]
+data "alicloud_eais_instances" "ids" {
+  id = ["example_id"]
 }
 output "eais_instance_id_1" {
   value = data.alicloud_eais_instances.ids.instances.0.id

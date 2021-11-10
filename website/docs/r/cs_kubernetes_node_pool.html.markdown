@@ -38,26 +38,26 @@ variable "name" {
   default = "tf-test"
 }
 data "alicloud_zones" default {
-  available_resource_creation  = "VSwitch"
+  available_resource_creation = "VSwitch"
 }
 data "alicloud_instance_types" "default" {
-  availability_zone            = data.alicloud_zones.default.zones.0.id
-  cpu_core_count               = 2
-  memory_size                  = 4
-  kubernetes_node_role         = "Worker"
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  cpu_core_count       = 2
+  memory_size          = 4
+  kubernetes_node_role = "Worker"
 }
 resource "alicloud_vpc" "default" {
-  name                         = var.name
-  cidr_block                   = "10.1.0.0/21"
+  vpc_name   = var.name
+  cidr_block = "10.1.0.0/21"
 }
 resource "alicloud_vswitch" "default" {
-  vswitch_name                 = var.name
-  vpc_id                       = alicloud_vpc.default.id
-  cidr_block                   = "10.1.1.0/24"
-  availability_zone            = "data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.1.1.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 resource "alicloud_key_pair" "default" {
-  key_name                     = var.name
+  key_pair_name = var.name
 }
 resource "alicloud_cs_managed_kubernetes" "default" {
   name                         = var.name
@@ -77,17 +77,17 @@ Create a node pool.
 
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                         = var.name
-  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
-  vswitch_ids                  = [alicloud_vswitch.default.id]
-  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
-  
-  system_disk_category         = "cloud_efficiency"
-  system_disk_size             = 40
-  key_name                     = alicloud_key_pair.default.key_name
+  name           = var.name
+  cluster_id     = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids    = [alicloud_vswitch.default.id]
+  instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
+
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  key_name             = alicloud_key_pair.default.key_name
 
   # you need to specify the number of nodes in the node pool, which can be 0
-  node_count                   = 1
+  node_count = 1
 }
 ```
 
@@ -95,25 +95,25 @@ Create a managed node pool. If you need to enable maintenance window, you need t
 
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                         = var.name
-  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
-  vswitch_ids                  = [alicloud_vswitch.default.id]
-  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
-  system_disk_category         = "cloud_efficiency"
-  system_disk_size             = 40
-  
+  name                 = var.name
+  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+
   # only key_name is supported in the management node pool
-  key_name                     = alicloud_key_pair.default.key_name
+  key_name = alicloud_key_pair.default.key_name
 
   # you need to specify the number of nodes in the node pool, which can be zero
-  node_count                   = 1
+  node_count = 1
 
   # management node pool configuration.
   management {
-    auto_repair      = true
-    auto_upgrade     = true
-    surge            = 1
-    max_unavailable  = 1
+    auto_repair     = true
+    auto_upgrade    = true
+    surge           = 1
+    max_unavailable = 1
   }
 
 }
@@ -123,19 +123,19 @@ Enable automatic scaling for the node pool. `scaling_config` is required.
 
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                         = var.name
-  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
-  vswitch_ids                  = [alicloud_vswitch.default.id]
-  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
-  system_disk_category         = "cloud_efficiency"
-  system_disk_size             = 40
-  key_name                     = alicloud_key_pair.default.key_name
+  name                 = var.name
+  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  key_name             = alicloud_key_pair.default.key_name
 
   # automatic scaling node pool configuration.
   # With auto-scaling is enabled, the nodes in the node pool will be labeled with `k8s.aliyun.com=true` to prevent system pods such as coredns, metrics-servers from being scheduled to elastic nodes, and to prevent node shrinkage from causing business abnormalities.
   scaling_config {
-    min_size      = 1
-    max_size      = 10
+    min_size = 1
+    max_size = 10
   }
 
 }
@@ -145,25 +145,25 @@ Enable automatic scaling for managed node pool.
 
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                         = var.name
-  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
-  vswitch_ids                  = [alicloud_vswitch.default.id]
-  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
-  system_disk_category         = "cloud_efficiency"
-  system_disk_size             = 40
-  key_name                     = alicloud_key_pair.default.key_name
+  name                 = var.name
+  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  key_name             = alicloud_key_pair.default.key_name
   # management node pool configuration.
   management {
-    auto_repair      = true
-    auto_upgrade     = true
-    surge            = 1
-    max_unavailable  = 1
+    auto_repair     = true
+    auto_upgrade    = true
+    surge           = 1
+    max_unavailable = 1
   }
   # enable auto-scaling
   scaling_config {
-    min_size         = 1
-    max_size         = 10
-    type             = "cpu"
+    min_size = 1
+    max_size = 10
+    type     = "cpu"
   }
   # Rely on auto-scaling configuration, please create auto-scaling configuration through alicloud_cs_autoscaling_config first.
   depends_on = [alicloud_cs_autoscaling_config.default]
@@ -173,13 +173,13 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 Create a `PrePaid` node pool.
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                         = var.name
-  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
-  vswitch_ids                  = [alicloud_vswitch.default.id]
-  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
-  system_disk_category         = "cloud_efficiency"
-  system_disk_size             = 40
-  key_name                     = alicloud_key_pair.default.key_name
+  name                 = var.name
+  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  key_name             = alicloud_key_pair.default.key_name
   # use PrePaid
   instance_charge_type = "PrePaid"
   period               = 1
@@ -188,13 +188,13 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   auto_renew_period    = 1
 
   # open cloud monitor
-  install_cloud_monitor        = true
-  
+  install_cloud_monitor = true
+
   # enable auto-scaling
   scaling_config {
-    min_size         = 1
-    max_size         = 10
-    type             = "cpu"
+    min_size = 1
+    max_size = 10
+    type     = "cpu"
   }
 }
 ```
@@ -202,24 +202,24 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 Create a node pool with spot instance.
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                         = var.name
-  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
-  vswitch_ids                  = [alicloud_vswitch.default.id]
-  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
-  
-  system_disk_category         = "cloud_efficiency"
-  system_disk_size             = 40
-  key_name                     = alicloud_key_pair.default.key_name
+  name           = var.name
+  cluster_id     = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids    = [alicloud_vswitch.default.id]
+  instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
+
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  key_name             = alicloud_key_pair.default.key_name
 
   # you need to specify the number of nodes in the node pool, which can be 0
-  node_count                   = 1
+  node_count = 1
 
   # spot config
   spot_strategy = "SpotWithPriceLimit"
-  spot_price_limit  {
-    instance_type = data.alicloud_instance_types.default.instance_types.0.id"
-    # Different instance types have different price caps 
-    price_limit   = "0.70"
+  spot_price_limit {
+    instance_type = data.alicloud_instance_types.default.instance_types.0.id
+    # Different instance types have different price caps
+    price_limit = "0.70"
   }
 }
 ```
@@ -227,23 +227,23 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 Use Spot instances to create a node pool with auto-scaling enabled 
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                         = var.name
-  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
-  vswitch_ids                  = [alicloud_vswitch.default.id]
-  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
-  system_disk_category         = "cloud_efficiency"
-  system_disk_size             = 40
-  key_name                     = alicloud_key_pair.default.key_name
+  name                 = var.name
+  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  key_name             = alicloud_key_pair.default.key_name
 
   # automatic scaling node pool configuration.
   scaling_config {
-    min_size      = 1
-    max_size      = 10
-    type          = "spot"
+    min_size = 1
+    max_size = 10
+    type     = "spot"
   }
   # spot price config
   spot_strategy = "SpotWithPriceLimit"
-  spot_price_limit  {
+  spot_price_limit {
     instance_type = data.alicloud_instance_types.default.instance_types.0.id
     price_limit   = "0.70"
   }
@@ -253,19 +253,20 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 Create a node pool with platform as Windows 
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                         = "windows-np"
-  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
-  vswitch_ids                  = [alicloud_vswitch.default.id]
-  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
-  system_disk_category         = "cloud_efficiency"
-  system_disk_size             = 40
-  instance_charge_type         = "PostPaid"
-  node_count                   = 1
+  name                 = "windows-np"
+  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  instance_charge_type = "PostPaid"
+  node_count           = 1
 
   // if the instance platform is windows, the password is requered.
-  password                     = "Hello1234"
+  password = "Hello1234"
   platform = "Windows"
   image_id = "${window_image_id}"
+}
 ```
 
 Add an existing node to the node pool
@@ -274,18 +275,18 @@ In order to distinguish automatically created nodes, it is recommended that exis
 
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                         = "existing-node"
-  cluster_id                   = alicloud_cs_managed_kubernetes.default.0.id
-  vswitch_ids                  = [alicloud_vswitch.default.id]
-  instance_types               = [data.alicloud_instance_types.default.instance_types.0.id]
-  system_disk_category         = "cloud_efficiency"
-  system_disk_size             = 40
-  instance_charge_type         = "PostPaid"
+  name                 = "existing-node"
+  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  instance_charge_type = "PostPaid"
 
   # add existing node to nodepool
-  instances          = ["instance_id_01","instance_id_02", "instance_id_03"]
+  instances = ["instance_id_01", "instance_id_02", "instance_id_03"]
   # default is false
-  format_disk        = false
+  format_disk = false
   # default is true
   keep_instance_name = true
 }

@@ -19,75 +19,75 @@ Basic Usage
 
 ```terraform
 data "alicloud_vpc_traffic_mirror_sessions" "ids" {
-	ids = ["example_id"]
+  ids = ["example_id"]
 }
 output "vpc_traffic_mirror_session_id_1" {
-	value = data.alicloud_vpc_traffic_mirror_sessions.ids.sessions.0.id
+  value = data.alicloud_vpc_traffic_mirror_sessions.ids.sessions.0.id
 }
 
 data "alicloud_vpc_traffic_mirror_sessions" "nameRegex" {
-	name_regex = "^my-TrafficMirrorSession"
+  name_regex = "^my-TrafficMirrorSession"
 }
 output "vpc_traffic_mirror_session_id_2" {
-	value = data.alicloud_vpc_traffic_mirror_sessions.nameRegex.sessions.0.id
+  value = data.alicloud_vpc_traffic_mirror_sessions.nameRegex.sessions.0.id
 }
 
 data "alicloud_vpc_traffic_mirror_sessions" "enabled" {
-	ids     = ["example_id"]
-	enabled = "false"
+  ids     = ["example_id"]
+  enabled = "false"
 }
 output "vpc_traffic_mirror_session_id_3" {
-	value = data.alicloud_vpc_traffic_mirror_sessions.enabled.sessions.0.id
+  value = data.alicloud_vpc_traffic_mirror_sessions.enabled.sessions.0.id
 }
 
 data "alicloud_vpc_traffic_mirror_sessions" "priority" {
-	ids      = ["example_id"]
-	priority = "1"
+  ids      = ["example_id"]
+  priority = "1"
 }
 output "vpc_traffic_mirror_session_id_4" {
-	value = data.alicloud_vpc_traffic_mirror_sessions.priority.sessions.0.id
+  value = data.alicloud_vpc_traffic_mirror_sessions.priority.sessions.0.id
 }
 
 data "alicloud_vpc_traffic_mirror_sessions" "filterId" {
-	ids                      = ["example_id"]
-	traffic_mirror_filter_id = "example_value"
+  ids                      = ["example_id"]
+  traffic_mirror_filter_id = "example_value"
 }
 output "vpc_traffic_mirror_session_id_5" {
-	value = data.alicloud_vpc_traffic_mirror_sessions.filterId.sessions.0.id
+  value = data.alicloud_vpc_traffic_mirror_sessions.filterId.sessions.0.id
 }
 
 data "alicloud_vpc_traffic_mirror_sessions" "sessionName" {
-	ids                         = ["example_id"]
-	traffic_mirror_session_name = "example_value"
+  ids                         = ["example_id"]
+  traffic_mirror_session_name = "example_value"
 }
 output "vpc_traffic_mirror_session_id_6" {
-	value = data.alicloud_vpc_traffic_mirror_sessions.sessionName.sessions.0.id
+  value = data.alicloud_vpc_traffic_mirror_sessions.sessionName.sessions.0.id
 }
 
 data "alicloud_vpc_traffic_mirror_sessions" "sourceId" {
-	ids                      = ["example_id"]
-	traffic_mirror_source_id = "example_value"
+  ids                      = ["example_id"]
+  traffic_mirror_source_id = "example_value"
 }
 output "vpc_traffic_mirror_session_id_7" {
-	value = data.alicloud_vpc_traffic_mirror_sessions.sourceId.sessions.0.id
+  value = data.alicloud_vpc_traffic_mirror_sessions.sourceId.sessions.0.id
 }
 
 data "alicloud_vpc_traffic_mirror_sessions" "targetId" {
-	ids                      = ["example_id"]
-	traffic_mirror_target_id = "example_value"
+  ids                      = ["example_id"]
+  traffic_mirror_target_id = "example_value"
 }
 output "vpc_traffic_mirror_session_id_8" {
-	value = data.alicloud_vpc_traffic_mirror_sessions.targetId.sessions.0.id
+  value = data.alicloud_vpc_traffic_mirror_sessions.targetId.sessions.0.id
 }
 
 data "alicloud_vpc_traffic_mirror_sessions" "status" {
-	ids    = ["example_id"]
-	status = "Created"
+  ids    = ["example_id"]
+  status = "Created"
 }
 output "vpc_traffic_mirror_session_id_9" {
-	value = data.alicloud_vpc_traffic_mirror_sessions.status.sessions.0.id
+  value = data.alicloud_vpc_traffic_mirror_sessions.status.sessions.0.id
 }
-            
+
 ```
 
 ## Argument Reference

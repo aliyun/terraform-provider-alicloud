@@ -23,7 +23,7 @@ data "alicloud_security_center_groups" "nameRegex" {
 }
 output "security_center_groups" {
   value = data.alicloud_security_center_groups.nameRegex.groups.0.id
-}     
+}
 ```
 
 ## Argument Reference

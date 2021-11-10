@@ -41,8 +41,8 @@ resource "alicloud_cen_instance" "cen" {
 }
 
 resource "alicloud_transit_router" "tr" {
-  name       = var.name
-  cen_id     = alicloud_cen_instance.cen.id
+  name   = var.name
+  cen_id = alicloud_cen_instance.cen.id
 }
 
 resource "alicloud_cen_transit_router_vbr_attachment" "foo" {

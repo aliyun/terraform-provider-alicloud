@@ -17,7 +17,7 @@ This data source provides CEN Transit Router peer attachments available to the u
 
 ```terraform
 data "alicloud_cen_transit_router_peer_attachments" "default" {
-  cen_id    = "cen-id1"
+  cen_id = "cen-id1"
 }
 
 output "first_transit_router_peer_attachments_transit_router_attachment_resource_type" {

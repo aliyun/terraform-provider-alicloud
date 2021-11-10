@@ -18,8 +18,8 @@ Provides a RAM Role resource.
 ```terraform
 # Create a new RAM Role.
 resource "alicloud_ram_role" "role" {
-  name     = "testrole"
-  document = <<EOF
+  name        = "testrole"
+  document    = <<EOF
   {
     "Statement": [
       {

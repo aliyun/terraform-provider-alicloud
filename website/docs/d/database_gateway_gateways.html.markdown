@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_database_gateway_gateways" "ids" {
-	ids = ["example_id"]
+  ids = ["example_id"]
 }
 output "database_gateway_gateway_id_1" {
   value = data.alicloud_database_gateway_gateways.ids.gateways.0.id
@@ -31,7 +31,7 @@ data "alicloud_database_gateway_gateways" "nameRegex" {
 output "database_gateway_gateway_id_2" {
   value = data.alicloud_database_gateway_gateways.nameRegex.gateways.0.id
 }
-            
+
 ```
 
 ## Argument Reference

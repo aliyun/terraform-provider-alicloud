@@ -17,9 +17,9 @@ This data source provides user-available access groups. Use when you can create 
 
 ```terraform
 data "alicloud_nas_access_groups" "example" {
-  name_regex  = "^foo"
-  access_group_type  = "Classic"
-  description = "tf-testAccAccessGroupsdatasource"
+  name_regex        = "^foo"
+  access_group_type = "Classic"
+  description       = "tf-testAccAccessGroupsdatasource"
 }
 
 output "alicloud_nas_access_groups_id" {

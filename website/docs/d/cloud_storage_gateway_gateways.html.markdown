@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_cloud_storage_gateway_storage_bundle" "example" {
-	storage_bundle_name = "example_value"
+  storage_bundle_name = "example_value"
 }
 data "alicloud_cloud_storage_gateway_gateways" "nameRegex" {
   storage_bundle_id = alicloud_cloud_storage_gateway_storage_bundle.example.id
@@ -28,7 +28,7 @@ data "alicloud_cloud_storage_gateway_gateways" "nameRegex" {
 output "cloud_storage_gateway_gateway_id" {
   value = data.alicloud_cloud_storage_gateway_gateways.nameRegex.gateways.0.id
 }
-            
+
 ```
 
 ## Argument Reference

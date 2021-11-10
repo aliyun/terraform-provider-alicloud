@@ -14,6 +14,8 @@ import (
 func resourceAlicloudVswitch() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudVswitchCreate,
+
+
 		Read:   resourceAlicloudVswitchRead,
 		Update: resourceAlicloudVswitchUpdate,
 		Delete: resourceAlicloudVswitchDelete,

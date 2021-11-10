@@ -1,4 +1,4 @@
-gate---
+---
 subcategory: "Cloud Storage Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cloud_storage_gateway_gateway_smb_user"
@@ -46,8 +46,8 @@ resource "alicloud_cloud_storage_gateway_gateway" "default" {
 }
 
 resource "alicloud_cloud_storage_gateway_gateway_smb_user" "default" {
-  username = "your_username"
-  password = "password"
+  username   = "your_username"
+  password   = "password"
   gateway_id = alicloud_cloud_storage_gateway_gateway.default.id
 }
 

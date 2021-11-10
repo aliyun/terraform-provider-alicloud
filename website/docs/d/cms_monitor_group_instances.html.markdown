@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_cms_monitor_group_instanceses" "example" {
-  ids      = ["example_value"]
+  ids = ["example_value"]
 }
 
 output "first_cms_monitor_group_instances_id" {

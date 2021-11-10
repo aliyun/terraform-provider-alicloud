@@ -23,7 +23,7 @@ data "alicloud_config_delivery_channels" "example" {
   name_regex = "tftest"
 }
 
-output "first_config_delivery_channel_id"{
+output "first_config_delivery_channel_id" {
   value = data.alicloud_config_delivery_channels.example.channels.0.id
 }
 ```

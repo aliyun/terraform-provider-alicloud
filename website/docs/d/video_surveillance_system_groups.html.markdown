@@ -19,18 +19,18 @@ Basic Usage
 
 ```terraform
 resource "alicloud_video_surveillance_system_group" "default" {
-	group_name   = "groupname"
-	in_protocol  = "rtmp"
-	out_protocol = "flv"
-	play_domain  = "your_plan_domain"
-	push_domain  = "your_push_domain"
+  group_name   = "groupname"
+  in_protocol  = "rtmp"
+  out_protocol = "flv"
+  play_domain  = "your_plan_domain"
+  push_domain  = "your_push_domain"
 }
 data "alicloud_video_surveillance_system_groups" "default" {
-	ids         = [alicloud_video_surveillance_system_group.default.id]
+  ids = [alicloud_video_surveillance_system_group.default.id]
 }
 output "vs_group" {
-	value = data.alicloud_video_surveillance_system_groups.default.ids.0
-} 
+  value = data.alicloud_video_surveillance_system_groups.default.ids.0
+}
 ```
 
 ## Argument Reference

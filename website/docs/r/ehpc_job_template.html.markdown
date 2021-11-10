@@ -20,9 +20,9 @@ For information about Ehpc Job Template and how to use it, see [What is Job Temp
 Basic Usage
 
 ```terraform
-resource "alicloud_ehpc_job_template" "default"{
-  job_template_name =  "example_value"
-  command_line=       "./LammpsTest/lammps.pbs"
+resource "alicloud_ehpc_job_template" "default" {
+  job_template_name = "example_value"
+  command_line      = "./LammpsTest/lammps.pbs"
 }
 
 ```

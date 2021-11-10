@@ -27,7 +27,7 @@ cluster-autoscaler in Kubernetes Cluster.
 
 ```terraform
 variable "name" {
-  default     = "autoscaler"
+  default = "autoscaler"
 }
 
 data "alicloud_vpcs" "default" {}
@@ -47,17 +47,17 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name                 = var.name
-  vpc_id               = data.alicloud_vpcs.default.vpcs.0.id
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.vpcs.0.id
 }
 
 resource "alicloud_ess_scaling_group" "default" {
-  scaling_group_name   = var.name
-  
-  min_size             = var.min_size
-  max_size             = var.max_size
-  vswitch_ids          = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0] 
-  removal_policies     = ["OldestInstance", "NewestInstance"]
+  scaling_group_name = var.name
+
+  min_size         = var.min_size
+  max_size         = var.max_size
+  vswitch_ids      = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
+  removal_policies = ["OldestInstance", "NewestInstance"]
 }
 
 resource "alicloud_ess_scaling_configuration" "default" {
@@ -72,16 +72,16 @@ resource "alicloud_ess_scaling_configuration" "default" {
 
   # ... ignore the change about tags and user_data
   lifecycle {
-    ignore_changes = [tags,user_data]
+    ignore_changes = [tags, user_data]
   }
 
 }
 
 resource "alicloud_cs_kubernetes_autoscaler" "default" {
-  cluster_id              = data.alicloud_cs_managed_kubernetes_clusters.default.clusters.0.id
+  cluster_id = data.alicloud_cs_managed_kubernetes_clusters.default.clusters.0.id
   nodepools {
-    id                    = alicloud_ess_scaling_group.default.id
-    labels                = "a=b"
+    id     = alicloud_ess_scaling_group.default.id
+    labels = "a=b"
   }
 
   utilization             = var.utilization

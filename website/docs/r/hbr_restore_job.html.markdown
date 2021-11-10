@@ -64,14 +64,14 @@ resource "alicloud_hbr_restore_job" "nasJob" {
 }
 
 resource "alicloud_hbr_restore_job" "ossJob" {
-  snapshot_hash  = data.alicloud_hbr_snapshots.oss_snapshots.snapshots.0.snapshot_hash
-  vault_id       = data.alicloud_hbr_oss_backup_plans.default.plans.0.vault_id
-  source_type    = "OSS"
-  restore_type   = "OSS"
-  snapshot_id    = data.alicloud_hbr_snapshots.oss_snapshots.snapshots.0.snapshot_id
-  target_bucket  = data.alicloud_hbr_oss_backup_plans.default.plans.0.bucket
-  target_prefix  = ""
-  options        = <<EOF
+  snapshot_hash = data.alicloud_hbr_snapshots.oss_snapshots.snapshots.0.snapshot_hash
+  vault_id      = data.alicloud_hbr_oss_backup_plans.default.plans.0.vault_id
+  source_type   = "OSS"
+  restore_type  = "OSS"
+  snapshot_id   = data.alicloud_hbr_snapshots.oss_snapshots.snapshots.0.snapshot_id
+  target_bucket = data.alicloud_hbr_oss_backup_plans.default.plans.0.bucket
+  target_prefix = ""
+  options       = <<EOF
     {"includes":[], "excludes":[]}
   EOF
 }

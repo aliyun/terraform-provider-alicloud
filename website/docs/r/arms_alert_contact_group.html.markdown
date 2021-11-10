@@ -28,7 +28,7 @@ resource "alicloud_arms_alert_contact" "example" {
 }
 resource "alicloud_arms_alert_contact_group" "example" {
   alert_contact_group_name = "example_value"
-  contact_ids = [alicloud_arms_alert_contact.example.id]
+  contact_ids              = [alicloud_arms_alert_contact.example.id]
 }
 
 ```

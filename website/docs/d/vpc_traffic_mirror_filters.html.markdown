@@ -45,7 +45,7 @@ data "alicloud_vpc_traffic_mirror_filters" "status" {
 output "vpc_traffic_mirror_filter_id_4" {
   value = data.alicloud_vpc_traffic_mirror_filters.status.filters.0.id
 }
-            
+
 ```
 
 ## Argument Reference

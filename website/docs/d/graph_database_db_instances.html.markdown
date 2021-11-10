@@ -26,7 +26,7 @@ output "graph_database_db_instance_id_1" {
 }
 
 data "alicloud_graph_database_db_instances" "status" {
-  ids = ["example_id"]
+  ids    = ["example_id"]
   status = "Running"
 }
 output "graph_database_db_instance_id_2" {
@@ -34,13 +34,13 @@ output "graph_database_db_instance_id_2" {
 }
 
 data "alicloud_graph_database_db_instances" "description" {
-  ids = ["example_id"]
+  ids                     = ["example_id"]
   db_instance_description = "example_value"
 }
 output "graph_database_db_instance_id_3" {
   value = data.alicloud_graph_database_db_instances.description.instances.0.id
 }
-            
+
 ```
 
 ## Argument Reference

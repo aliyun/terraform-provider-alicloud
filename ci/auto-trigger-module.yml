@@ -1,0 +1,40 @@
+groups:
+  - name: All
+    jobs:
+      - point-to-module-test
+
+
+resources:
+  - name: terraform-provider-alicloud
+    type: git
+    source:
+      uri: https://github.com/Wanghx0991/terraform-provider-alicloud.git
+      branch: master
+      paths:
+        - alicloud/*
+        - vendor/*
+        - go.mod
+        - main.go
+
+jobs:
+  - name: point-to-module-test
+#    serial: true
+    plan:
+      - get: terraform-provider-alicloud
+        trigger: true
+      - task: point-to-module-ci-test
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: busybox
+          inputs:
+          - name: terraform-provider-alicloud
+          run:
+            path: sh
+            args:
+              - -cx
+              - |
+                ls -al
+                ./terraform-provider-alicloud/ci/tasks/module-test.sh

@@ -19,24 +19,24 @@ Basic Usage
 
 ```terraform
 resource "alicloud_click_house_db_cluster" "default" {
-	db_cluster_version    =  "20.3.10.75"
-	category=                "Basic"
-	db_cluster_class =        "S8"
-	db_cluster_network_type= "vpc"
-	db_node_group_count=     "1"
-	payment_type=            "PayAsYouGo"
-	db_node_storage=         "500"
-	storage_type=            "cloud_essd"
-	vswitch_id=              "your_vswitch_id"
+  db_cluster_version      = "20.3.10.75"
+  category                = "Basic"
+  db_cluster_class        = "S8"
+  db_cluster_network_type = "vpc"
+  db_node_group_count     = "1"
+  payment_type            = "PayAsYouGo"
+  db_node_storage         = "500"
+  storage_type            = "cloud_essd"
+  vswitch_id              = "your_vswitch_id"
 }
 
 data "alicloud_click_house_db_clusters" "default" {
-	ids = [alicloud_click_house_db_cluster.default.id]
+  ids = [alicloud_click_house_db_cluster.default.id]
 }
 output "db_cluster" {
-	value = data.alicloud_click_house_db_clusters.default.ids.0
+  value = data.alicloud_click_house_db_clusters.default.ids.0
 }
-            
+
 ```
 
 ## Argument Reference

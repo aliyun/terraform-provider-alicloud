@@ -16,10 +16,10 @@ Filters support regular expression for the instance name, searches by tags, and 
 
 ```terraform
 data "alicloud_kvstore_instances" "default" {
-    name_regex = "testname"
+  name_regex = "testname"
 }
 output "first_instance_name" {
-    value = data.alicloud_kvstore_instances.default.instances.0.name
+  value = data.alicloud_kvstore_instances.default.instances.0.name
 }
 ```
 

@@ -58,8 +58,8 @@ resource "alicloud_oss_bucket_object" "default" {
 }
 
 resource "alicloud_ram_role" "default" {
-  name     = var.name
-  document = <<EOF
+  name        = var.name
+  document    = <<EOF
         {
           "Statement": [
             {

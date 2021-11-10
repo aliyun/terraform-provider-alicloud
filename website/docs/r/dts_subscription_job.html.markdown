@@ -33,15 +33,15 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name       = var.name
-  cidr_block     = "172.16.0.0/16"
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_db_instance" "instance" {
@@ -84,22 +84,22 @@ data "alicloud_vswitches" "default_1" {
 }
 
 resource "alicloud_dts_subscription_job" "default" {
-    dts_job_name                        = var.name
-    payment_type                        = "PostPaid"
-    source_endpoint_engine_name         = "MySQL"
-    source_endpoint_region              = "cn-hangzhou"
-    source_endpoint_instance_type       = "RDS"
-    source_endpoint_instance_id         = alicloud_db_instance.instance.id
-    source_endpoint_database_name       = "tfaccountpri_0"
-    source_endpoint_user_name           = "tftestprivilege"
-    source_endpoint_password            = "Test12345"
-    db_list                             = <<EOF
+  dts_job_name                       = var.name
+  payment_type                       = "PostPaid"
+  source_endpoint_engine_name        = "MySQL"
+  source_endpoint_region             = "cn-hangzhou"
+  source_endpoint_instance_type      = "RDS"
+  source_endpoint_instance_id        = alicloud_db_instance.instance.id
+  source_endpoint_database_name      = "tfaccountpri_0"
+  source_endpoint_user_name          = "tftestprivilege"
+  source_endpoint_password           = "Test12345"
+  db_list                            = <<EOF
         {"dtstestdata": {"name": "tfaccountpri_0", "all": true}}
     EOF
-    subscription_instance_network_type  = "vpc"
-    subscription_instance_vpc_id        = data.alicloud_vpcs.default1.ids[0]
-    subscription_instance_vswitch_id    = data.alicloud_vswitches.default_1.ids[0]
-    status                              = "Normal"
+  subscription_instance_network_type = "vpc"
+  subscription_instance_vpc_id       = data.alicloud_vpcs.default1.ids[0]
+  subscription_instance_vswitch_id   = data.alicloud_vswitches.default_1.ids[0]
+  status                             = "Normal"
 }
 ```
 

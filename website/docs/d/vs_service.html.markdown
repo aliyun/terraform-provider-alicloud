@@ -19,7 +19,7 @@ For information about Video Surveillance System and how to use it, see [What is 
 
 ```terraform
 data "alicloud_vs_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

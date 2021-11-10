@@ -28,9 +28,9 @@ resource "alicloud_waf_certificate" "default" {
   certificate      = "your_certificate"
 }
 resource "alicloud_waf_certificate" "default2" {
-  instance_id      = "your_instance_id"
-  domain           = "your_domain_name"
-  certificate_id   = "your_certificate_id"
+  instance_id    = "your_instance_id"
+  domain         = "your_domain_name"
+  certificate_id = "your_certificate_id"
 }
 ```
 

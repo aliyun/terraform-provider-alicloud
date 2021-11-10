@@ -20,14 +20,14 @@ For information about ALB Security Policy and how to use it, see [What is Securi
 Basic Usage
 
 ```terraform
-variable "name" {	
-	default = "testAccSecurityPolicy"
+variable "name" {
+  default = "testAccSecurityPolicy"
 }
 
 resource "alicloud_alb_security_policy" "default" {
-	security_policy_name= var.name
-	tls_versions=  ["TLSv1.0"]
-	ciphers= ["ECDHE-ECDSA-AES128-SHA","AES256-SHA"]
+  security_policy_name = var.name
+  tls_versions         = ["TLSv1.0"]
+  ciphers              = ["ECDHE-ECDSA-AES128-SHA", "AES256-SHA"]
 }
 
 ```

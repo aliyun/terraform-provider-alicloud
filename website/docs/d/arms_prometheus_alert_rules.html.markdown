@@ -33,7 +33,7 @@ data "alicloud_arms_prometheus_alert_rules" "nameRegex" {
 output "arms_prometheus_alert_rule_id_2" {
   value = data.alicloud_arms_prometheus_alert_rules.nameRegex.rules.0.id
 }
-            
+
 ```
 
 ## Argument Reference

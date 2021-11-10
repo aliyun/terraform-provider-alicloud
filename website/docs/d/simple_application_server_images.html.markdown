@@ -19,10 +19,10 @@ Basic Usage
 
 ```terraform
 data "alicloud_simple_application_server_images" "instanceImageType" {
-instance_image_type = "system"
+  instance_image_type = "system"
 }
 output "simple_application_server_image_id_1" {
-value = data.alicloud_simple_application_server_images.ids.images.0.id
+  value = data.alicloud_simple_application_server_images.ids.images.0.id
 }
 ```
 

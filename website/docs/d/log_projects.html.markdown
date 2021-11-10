@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_log_projects" "example" {
-  ids        = ["the_project_name"]
+  ids = ["the_project_name"]
 }
 
 output "first_log_project_id" {

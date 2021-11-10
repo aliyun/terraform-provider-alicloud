@@ -16,8 +16,8 @@ Provides a RAM Role attachment resource.
 ```terraform
 # Create a RAM Role Policy attachment.
 resource "alicloud_ram_role" "role" {
-  name     = "roleName"
-  document = <<EOF
+  name        = "roleName"
+  document    = <<EOF
     {
       "Statement": [
         {
@@ -35,12 +35,12 @@ resource "alicloud_ram_role" "role" {
     }
     EOF
   description = "this is a role test."
-  force = true
+  force       = true
 }
 
 resource "alicloud_ram_policy" "policy" {
-  name = "policyName"
-  document = <<EOF
+  name        = "policyName"
+  document    = <<EOF
   {
     "Statement": [
       {

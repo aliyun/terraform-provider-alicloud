@@ -29,7 +29,7 @@ data "alicloud_ecp_key_pairs" "nameRegex" {
 output "ecp_key_pair_id_2" {
   value = data.alicloud_ecp_key_pairs.nameRegex.pairs.0.id
 }
-            
+
 ```
 
 ## Argument Reference

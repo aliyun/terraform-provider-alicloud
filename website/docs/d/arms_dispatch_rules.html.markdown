@@ -29,7 +29,7 @@ data "alicloud_arms_dispatch_rules" "nameRegex" {
 output "arms_dispatch_rule_id_2" {
   value = data.alicloud_arms_dispatch_rules.nameRegex.rules.0.id
 }
-            
+
 ```
 
 ## Argument Reference

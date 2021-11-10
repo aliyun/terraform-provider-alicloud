@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_fnf_flow" "example" {
-  definition = <<EOF
+  definition  = <<EOF
   version: v1beta1
   type: flow
   steps:

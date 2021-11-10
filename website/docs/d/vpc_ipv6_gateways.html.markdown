@@ -47,7 +47,7 @@ data "alicloud_vpc_ipv6_gateways" "status" {
 output "vpc_ipv6_gateway_id_4" {
   value = data.alicloud_vpc_ipv6_gateways.status.gateways.0.id
 }
-            
+
 ```
 
 ## Argument Reference

@@ -19,7 +19,7 @@ For information about Privatelink and how to use it, see [What is Privatelink](h
 
 ```terraform
 data "alicloud_privatelink_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

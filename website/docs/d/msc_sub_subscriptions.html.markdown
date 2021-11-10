@@ -22,7 +22,7 @@ data "alicloud_msc_sub_subscriptions" "default" {}
 output "msc_sub_subscription_id_1" {
   value = data.alicloud_msc_sub_subscriptions.default.subscriptions.0.id
 }
-            
+
 ```
 
 ## Argument Reference

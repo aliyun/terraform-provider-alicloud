@@ -22,8 +22,8 @@ resource "alicloud_ram_group" "group" {
 }
 
 resource "alicloud_ram_policy" "policy" {
-  name     = "policyName"
-  document = <<EOF
+  name        = "policyName"
+  document    = <<EOF
     {
       "Statement": [
         {
@@ -42,7 +42,7 @@ resource "alicloud_ram_policy" "policy" {
     }
   EOF
   description = "this is a policy test"
-  force = true
+  force       = true
 }
 
 resource "alicloud_ram_group_policy_attachment" "attach" {
