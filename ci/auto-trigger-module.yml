@@ -2,7 +2,7 @@ groups:
   - name: All
     jobs:
       - build-terraform-provider-package
-      - point-to-point-ci-test
+      - point-to-module-ci-test
 
 shared:
   - &clone-provider
@@ -25,7 +25,7 @@ shared:
 
   - &run
     task: terraform ci
-    file: terraform-provider-alicloud/ci/tasks/ci-test.yml
+    file: terraform-provider-alicloud/ci/tasks/module-test.yml
     params:
       ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
       ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
@@ -49,7 +49,7 @@ jobs:
           - *get-aliyun-cli
       - <<: *build
 
-  - name: point-to-point-ci-test
+  - name: point-to-module-ci-test
     serial: true
     plan:
       - get: terraform-provider-alicloud
@@ -64,7 +64,7 @@ resources:
   - name: terraform-provider-alicloud
     type: git
     source:
-      uri: https://github.com/aliyun/terraform-provider-alicloud.git
+      uri: https://github.com/Wanghx0991/terraform-provider-alicloud.git
       branch: master
       paths:
         - alicloud/*
