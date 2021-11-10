@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 
 set -e
-terraform_version=$1
 
+: ${ALICLOUD_ACCESS_KEY:?}
+: ${ALICLOUD_SECRET_KEY:?}
+: ${ALICLOUD_REGION:?}
+: ${TERRAFORM_VERSION:?}
+
+export ALICLOUD_ACCESS_KEY=${ALICLOUD_ACCESS_KEY}
+export ALICLOUD_SECRET_KEY=${ALICLOUD_SECRET_KEY}
+export ALICLOUD_REGION=${ALICLOUD_REGION}
 
 provider_dir="$(pwd)"
 diffFiles=$(git diff --name-only HEAD~ HEAD)
@@ -10,8 +17,10 @@ rm -rf ./terraform_test
 git clone https://github.com/Wanghx0991/terraform_test
 test_dir="$( cd ./terraform_test && pwd )"
 
-wget "https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
-unzip -o terraform_${terraform_version}_linux_amd64.zip -d /usr/bin
+wget "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip" || exit 1
+unzip -o terraform_"${TERRAFORM_VERSION}"_linux_amd64.zip -d /usr/bin || exit 1
+
+terraform init || exit 1
 
 
 for fileName in ${diffFiles[*]};
