@@ -89,30 +89,28 @@ The following arguments are supported:
 -> **NOTE:** `encrypt_new_tables` Polardb MySQL 8.0 cluster, after TDE and Automatic Encryption are enabled, all newly created tables are automatically encrypted in the cluster.
 * `security_group_ids` - (Optional, Available in 1.128.0+) The ID of the security group. Separate multiple security groups with commas (,). You can add a maximum of three security groups to a cluster.
 -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~20 minutes. Please make full preparation before changing them.
-* `creation_option` - (Optional, Available in 1.141.0+) The method that is used to create a cluster. Valid values:
-    - Normal: creates a new PolarDB cluster. 
-    - CloneFromPolarDB: clones data from an existing PolarDB cluster to a new PolarDB cluster.
-    - CloneFromRDS: clones data from an existing ApsaraDB RDS for MySQL instance to a new PolarDB cluster.
-    - MigrationFromRDS: migrates data from an existing ApsaraDB RDS for MySQL instance to a new PolarDB cluster. By default, the created PolarDB cluster is in read-only mode, and the binary logging feature is enabled.
-    - CreateGdnStandby: creates a secondary cluster. For more information about how to perform this operation in the console, see Add a secondary cluster.
-    - The default value is Normal.
--> **NOTE:** If DBType is set to MySQL and DBVersion is set to 5.6 or 5.7, this parameter can be set to CloneFromRDS or MigrationFromRDS. If DBType is set to MySQL and DBVersion is set to 8.0, this parameter can be set to CreateGdnStandby.
-* `creation_category`The edition of the PolarDB service. Valid values:
-  - Normal: Cluster Edition
-  - Basic: Single Node
-  - Archive: Archive Database 
+* `creation_option` - (Optional, Available in 1.143.0+) The method that is used to create a cluster. Valid values:
+  - `Normal`: creates a new PolarDB cluster. 
+  - `CloneFromPolarDB`: clones data from an existing PolarDB cluster to a new PolarDB cluster.
+  - `CloneFromRDS`: clones data from an existing ApsaraDB RDS for MySQL instance to a new PolarDB cluster.
+  - `MigrationFromRDS`: migrates data from an existing ApsaraDB RDS for MySQL instance to a new PolarDB cluster. By default, the created PolarDB cluster is in read-only mode, and the binary logging feature is enabled.
+  - `CreateGdnStandby`: creates a secondary cluster. For more information about how to perform this operation in the console, see Add a secondary cluster.
+-> **NOTE:** The default value is Normal. If DBType is set to MySQL and DBVersion is set to 5.6 or 5.7, this parameter can be set to CloneFromRDS or MigrationFromRDS. If DBType is set to MySQL and DBVersion is set to 8.0, this parameter can be set to CreateGdnStandby.
+* `creation_category` - (Optional, Available in 1.143.0+) The edition of the PolarDB service. Valid values:
+  - `Normal`: Cluster Edition
+  - `Basic`: Single Node
+  - `Archive`: Archive Database 
 -> **NOTE:** You can set this parameter to Basic only when DBType is set to MySQL and DBVersion is set to 5.6, 5.7, or 8.0. You can set this parameter to Archive only when DBType is set to MySQL and DBVersion is set to 8.0.
-* `source_resource_id`The ID of the source RDS instance or the ID of the source PolarDB cluster. This parameter is required only when CreationOption is set to MigrationFromRDS, CloneFromRDS, or CloneFromPolarDB.
+* `source_resource_id` - (Optional, Available in 1.143.0+) The ID of the source RDS instance or the ID of the source PolarDB cluster. This parameter is required only when CreationOption is set to MigrationFromRDS, CloneFromRDS, or CloneFromPolarDB.
   - If CreationOption is set to MigrationFromRDS or CloneFromRDS, you must set this parameter to the ID of the source RDS instance. The source RDS instance is of the ApsaraDB RDS for MySQL 5.6 or 5.7 High-availability Edition, and storage is local SSD.
   - If CreationOption is set to CloneFromPolarDB, you must set this parameter to the ID of the source PolarDB cluster. By default, the value of DBType of the destination cluster must be the same as that of the source cluster. For example, if a MySQL 8.0 cluster is used as the source cluster, you must set DBType to MySQL and DBVersion to 8.0 for the destination cluster.
-* `gdn_id`The ID of the global database network (GDN). 
+* `gdn_id` - (Optional, Available in 1.143.0+) The ID of the global database network (GDN). 
 -> **NOTE:** This parameter is required if CreationOption is set to CreateGdnStandby.
-* `clone_data_point`The time point of data to be cloned. Valid values:
-  - LATEST: The data of the latest point in time is cloned.
-  - BackupID: Specify the ID of a backup set.
-  - Timestamp: Specify a point in time in the past. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
-  - The default value is LATEST.
--> **NOTE:** If CreationOption is set to CloneFromRDS, the value of this parameter must be LATEST.
+* `clone_data_point` - (Optional, Available in 1.143.0+) The time point of data to be cloned. Valid values:
+  - `LATEST`: The data of the latest point in time is cloned.
+  - `BackupID`: Specify the ID of a backup set.
+  - `Timestamp`: Specify a point in time in the past. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
+-> **NOTE:** default value is LATEST.  If CreationOption is set to CloneFromRDS, the value of this parameter must be LATEST.
 ### Block db_cluster_ip_array
 
 The db_cluster_ip_array mapping supports the following:

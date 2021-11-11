@@ -244,6 +244,12 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
+		categoryConf := BuildStateConf([]string{}, []string{"Normal", "Basic", "Archive"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, polarDBService.PolarDBClusterCategoryRefreshFunc(d.Id(), []string{}))
+		if _, err := categoryConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
 	return resourceAlicloudPolarDBClusterUpdate(d, meta)
 }
 
@@ -625,7 +631,9 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("db_node_class", cluster.DBNodeClass)
 	d.Set("db_node_count", len(clusterAttribute.DBNodes))
 	d.Set("resource_group_id", clusterAttribute.ResourceGroupId)
-	d.Set("creation_category", clusterAttribute.Category)
+	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
+		d.Set("creation_category", clusterAttribute.Category)
+	}
 
 	tags, err := polarDBService.DescribeTags(d.Id(), "cluster")
 	if err != nil {
