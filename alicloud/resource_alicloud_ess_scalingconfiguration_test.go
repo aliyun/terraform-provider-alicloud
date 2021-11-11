@@ -49,10 +49,12 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
 					"password":          "123-abcABC",
+					"resource_group_id": "${alicloud_resource_manager_resource_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"password_inherit": "false",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -331,6 +333,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 						"image_id":                         REGEXMATCH + "^ubuntu",
 						"override":                         "true",
 						"password_inherit":                 "false",
+						"resource_group_id":                REMOVEKEY,
 					}),
 				),
 			},
@@ -497,6 +500,16 @@ func TestAccAlicloudEssScalingConfigurationMulti(t *testing.T) {
 					testAccCheck(nil),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${alicloud_resource_manager_resource_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
 		},
 	})
 }
@@ -511,6 +524,11 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 	
 	resource "alicloud_key_pair" "default" {
   		key_pair_name = "${var.name}"
+	}
+
+	resource "alicloud_resource_manager_resource_group" "default" {
+	  resource_group_name = "${var.name}"
+	  display_name        = "${var.name}"
 	}
 
 	resource "alicloud_ram_role" "default" {
