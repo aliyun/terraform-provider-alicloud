@@ -600,6 +600,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_bundles":                                 dataSourceAlicloudEcdBundles(),
 			"alicloud_simple_application_server_disks":             dataSourceAlicloudSimpleApplicationServerDisks(),
 			"alicloud_simple_application_server_snapshots":         dataSourceAlicloudSimpleApplicationServerSnapshots(),
+			"alicloud_simple_application_server_custom_images":     dataSourceAlicloudSimpleApplicationServerCustomImages(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1082,6 +1083,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_pvtz_rule":                                            resourceAlicloudPvtzRule(),
 			"alicloud_pvtz_rule_attachment":                                 resourceAlicloudPvtzRuleAttachment(),
 			"alicloud_simple_application_server_snapshot":                   resourceAlicloudSimpleApplicationServerSnapshot(),
+			"alicloud_simple_application_server_custom_image":               resourceAlicloudSimpleApplicationServerCustomImage(),
 		},
 
 		ConfigureFunc: providerConfigure,
