@@ -208,3 +208,48 @@ func (s *SwasOpenService) SimpleApplicationServerSnapshotStateRefreshFunc(id str
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
+func (s *SwasOpenService) DescribeSimpleApplicationServerCustomImage(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewSwasClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListImages"
+	request := map[string]interface{}{
+		"RegionId":  s.client.RegionId,
+		"ImageIds":  fmt.Sprintf(`["%s"]`, id),
+		"ImageType": "custom",
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Images", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Images", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("SimpleApplicationServer", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["ImageId"]) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("SimpleApplicationServer", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
