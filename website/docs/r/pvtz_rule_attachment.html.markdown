@@ -73,16 +73,16 @@ resource "alicloud_pvtz_rule" "default" {
   }
 }
 
-resource "alicloud_vpc" "default" {
+resource "alicloud_vpc" "default_rule" {
   vpc_name   = var.name
-  cidr_block = "172.16.0.0/16"
+  cidr_block = "192.16.1.0/16"
 }
 
 resource "alicloud_pvtz_rule_attachment" "default" {
   rule_id = alicloud_pvtz_rule.default.id
   vpcs {
     region_id = "cn-shanghai"
-    vpc_id    = alicloud_vpc.default.id
+    vpc_id    = alicloud_vpc.default_rule.id
   }
 }
 

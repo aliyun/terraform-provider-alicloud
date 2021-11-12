@@ -5,11 +5,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudPvtzRulesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
+	checkoutSupportedRegions(t, true, connectivity.PvtzResolverRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudPvtzRulesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_pvtz_rule.default.id}"]`,

@@ -12,6 +12,7 @@ import (
 func TestAccAlicloudPrivateZoneRule_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pvtz_rule.default"
+	checkoutSupportedRegions(t, true, connectivity.PvtzResolverRegions)
 	ra := resourceAttrInit(resourceId, AlicloudPrivateZoneRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}

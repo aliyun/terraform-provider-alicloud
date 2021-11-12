@@ -112,6 +112,7 @@ func testSweepPrivateZoneEndpoint(region string) error {
 func TestAccAlicloudPrivateZoneEndpoint_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pvtz_endpoint.default"
+	checkoutSupportedRegions(t, true, connectivity.PvtzResolverRegions)
 	ra := resourceAttrInit(resourceId, AlicloudPrivateZoneEndpointMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}

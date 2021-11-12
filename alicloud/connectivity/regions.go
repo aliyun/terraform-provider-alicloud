@@ -156,3 +156,4 @@ var VpcTrafficMirrorSupportRegions = []Region{Qingdao, Huhehaote, Shenzhen, Hong
 var EcdUserSupportRegions = []Region{Shanghai}
 var VpcIpv6GatewaySupportRegions = []Region{Qingdao, Beijing, Zhangjiakou, Huhehaote, WuLanChaBu, Hangzhou, Shanghai, Shenzhen, GuangZhou, Hongkong, ChengDu, HeYuan, APSouthEast1, APSouthEast6, USEast1, EUCentral1}
 var CmsDynamicTagGroupSupportRegions = []Region{Shanghai}
+var PvtzResolverRegions = []Region{Beijing, Zhangjiakou, Huhehaote, ChengDu, Hangzhou, Shanghai, Shenzhen, GuangZhou, Hongkong, APSouthEast5, EUWest1, APSouth1, USEast1, ShanghaiFinance, ShenZhenFinance}

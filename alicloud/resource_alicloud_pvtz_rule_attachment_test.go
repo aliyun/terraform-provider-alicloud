@@ -12,6 +12,7 @@ import (
 func TestAccAlicloudPrivateZoneRuleAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pvtz_rule_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.PvtzResolverRegions)
 	ra := resourceAttrInit(resourceId, AlicloudPrivateZoneRuleAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -89,7 +90,7 @@ variable "region" {
 resource "alicloud_vpc" "default" {
   count      = 3
   vpc_name   = var.name
-  cidr_block = cidrsubnet("172.16.0.0/16", 8, count.index)
+  cidr_block = cidrsubnet("172.16.0.0/12", 8, count.index)
 }
 
 data "alicloud_pvtz_resolver_zones" "default" {
@@ -98,7 +99,7 @@ data "alicloud_pvtz_resolver_zones" "default" {
 
 resource "alicloud_vswitch" "default" {
   count      = 2
-  vpc_id     = alicloud_vpc.default.id
+  vpc_id     = alicloud_vpc.default.2.id
   cidr_block = cidrsubnet(alicloud_vpc.default.2.cidr_block, 8, count.index)
   zone_id    = data.alicloud_pvtz_resolver_zones.default.zones[count.index].zone_id
 }

@@ -5,11 +5,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudPvtzResolverZonesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100, 999)
+	checkoutSupportedRegions(t, true, connectivity.PvtzResolverRegions)
 	regionIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudPvtzResolverZonesDataSourceName(rand, map[string]string{}),
 		fakeConfig:  "",
