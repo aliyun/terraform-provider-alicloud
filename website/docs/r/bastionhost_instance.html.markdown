@@ -45,6 +45,7 @@ The following arguments are supported:
 * `security_group_ids` - (Required) security group IDs configured to Bastionhost.
 * `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional, Available in v1.87.0+) The Id of resource group which the Bastionhost Instance belongs. If not set, the resource is created in the default resource group.
+* `enable_public_access` - (Optional, Available in v1.143.0+)  Whether to Enable the public internet access to a specified Bastionhost instance. The valid values: `true`, `false`.
 
 ## Attributes Reference
 

@@ -35,19 +35,19 @@ resource "alicloud_bastionhost_host" "example" {
 
 The following arguments are supported:
 
-* `active_address_type` - (Required) Specify the new create a host of address types. Valid values: Public: the IP address of a Public network Private: Private network address.
+* `active_address_type` - (Required) Specify the new create a host of address types. Valid values: `Public`: the IP address of a Public network. `Private`: Private network address.
 * `comment` - (Optional) Specify a host of notes, supports up to 500 characters.
 * `host_name` - (Required) Specify the new create a host name of the supports up to 128 characters.
-* `host_private_address` - (Optional) Specify the new create a host of the private network address, it is possible to use the domain name or IP ADDRESS.
+* `host_private_address` - (Optional) Specify the new create a host of the private network address, it is possible to use the domain name or IP ADDRESS. **NOTE:**  This parameter is required if the `active_address_type` parameter is set to `Private`.
 * `host_public_address` - (Optional) Specify the new create a host of the IP address of a public network, it is possible to use the domain name or IP ADDRESS.
 * `instance_id` - (Required, ForceNew) Specify the new create a host where the Bastion host ID of.
 * `instance_region_id` - (Optional) The instance region id.
-* `os_type` - (Required) Specify the new create the host's operating system. Valid values: Linux Windows.
+* `os_type` - (Required) Specify the new create the host's operating system. Valid values: `Linux`,`Windows`.
 * `source` - (Required, ForceNew) Specify the new create a host of source. Valid values: 
-  * Local: localhost 
-  * Ecs:ECS instance 
-  * Rds:RDS exclusive cluster host.
-* `source_instance_id` - (Optional, ForceNew) Specify the newly created ECS instance ID or dedicated cluster host ID.
+  * `Local`: localhost 
+  * `Ecs`:ECS instance 
+  * `Rds`:RDS exclusive cluster host.
+* `source_instance_id` - (Optional, ForceNew) Specify the newly created ECS instance ID or dedicated cluster host ID. **NOTE:** This parameter is required if the `source` parameter is set to `Ecs` or `Rds`.
 
 ## Attributes Reference
 
