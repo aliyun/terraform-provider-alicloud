@@ -110,7 +110,7 @@ The following arguments are supported:
   - `LATEST`: The data of the latest point in time is cloned.
   - `BackupID`: Specify the ID of a backup set.
   - `Timestamp`: Specify a point in time in the past. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
--> **NOTE:** default value is LATEST.  If CreationOption is set to CloneFromRDS, the value of this parameter must be LATEST.
+-> **NOTE:** If CreationOption is set to CloneFromRDS, the value of this parameter must be LATEST.
 ### Block db_cluster_ip_array
 
 The db_cluster_ip_array mapping supports the following:
