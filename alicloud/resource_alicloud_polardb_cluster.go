@@ -193,6 +193,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{string(CreationCategoryNormal), string(CreationCategoryBasic), string(CreationCategoryArchive)}, false),
 				Optional:     true,
+				Computed:     true,
 			},
 			"creation_option": {
 				Type:         schema.TypeString,
@@ -214,7 +215,6 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{string(LATEST), string(BackupID), string(Timestamp)}, false),
 				Optional:     true,
-				Default:      LATEST,
 			},
 			"tags": tagsSchema(),
 		},

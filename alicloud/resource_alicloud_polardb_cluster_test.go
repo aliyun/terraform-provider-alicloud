@@ -104,7 +104,7 @@ func testSweepPolarDBClusters(region string) error {
 
 func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
-	//var ips []map[string]interface{}
+	var ips []map[string]interface{}
 	name := "tf-testAccPolarDBClusterUpdate"
 	resourceId := "alicloud_polardb_cluster.default"
 	var basicMap = map[string]string{
@@ -158,7 +158,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type", "CreationOption", "GDNId", "SourceResourceId", "CloneDataPoint", "creation_category"},
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "gdn_id", "source_resource_id", "clone_data_point"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -170,144 +170,144 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 					}),
 				),
 			},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"maintain_time": "16:00Z-17:00Z",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"maintain_time": "16:00Z-17:00Z",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"db_node_count": "3",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"db_node_count": "3",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"collector_status": "Enable",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"collector_status": "Enable",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"db_node_count": "2",
-			//		"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.1.db_node_class}",
-			//		"modify_type":   "Upgrade",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"db_node_count": "2",
-			//			"db_node_class": CHECKSET,
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"security_ips": []string{"10.168.1.12", "100.69.7.112"},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.12,100.69.7.112"),
-			//		testAccCheck(map[string]string{
-			//			"connection_string": REGEXMATCH + clusterConnectionStringRegexp,
-			//			"security_ips.#":    "2",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"db_cluster_ip_array": []map[string]interface{}{{
-			//			"db_cluster_ip_array_name": "test_ips1",
-			//			"security_ips":             []string{"10.168.1.12"},
-			//		}, {
-			//			"db_cluster_ip_array_name": "test_ips2",
-			//			"security_ips":             []string{"100.69.7.112"},
-			//		}},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"db_cluster_ip_array.#": "2",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"tags": map[string]string{
-			//			"Created": "TF",
-			//			"For":     "acceptance Test",
-			//		},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"tags.%":       "2",
-			//			"tags.Created": "TF",
-			//			"tags.For":     "acceptance Test",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"tags": REMOVEKEY,
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"tags.%":       REMOVEKEY,
-			//			"tags.Created": REMOVEKEY,
-			//			"tags.For":     REMOVEKEY,
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"description":   "tf-testaccPolarDBClusterUpdate1",
-			//		"maintain_time": "02:00Z-03:00Z",
-			//		"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.2.db_node_class}",
-			//		"modify_type":   "Upgrade",
-			//		"security_ips":  []string{"10.168.1.13", "100.69.7.113"},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"description":    "tf-testaccPolarDBClusterUpdate1",
-			//			"maintain_time":  "02:00Z-03:00Z",
-			//			"db_node_class":  CHECKSET,
-			//			"security_ips.#": "2",
-			//		}),
-			//		testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.13,100.69.7.113"),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"tde_status":         "Enabled",
-			//		"encrypt_new_tables": "ON",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"tde_status":         "Enabled",
-			//			"encrypt_new_tables": "ON",
-			//		}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"security_group_ids": "${alicloud_security_group.default.*.id}",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"security_group_ids.#": "2",
-			//		}),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_time": "16:00Z-17:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_time": "16:00Z-17:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_count": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_node_count": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"collector_status": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"collector_status": "Enable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_count": "2",
+					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.1.db_node_class}",
+					"modify_type":   "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_node_count": "2",
+						"db_node_class": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": []string{"10.168.1.12", "100.69.7.112"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.12,100.69.7.112"),
+					testAccCheck(map[string]string{
+						"connection_string": REGEXMATCH + clusterConnectionStringRegexp,
+						"security_ips.#":    "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name": "test_ips1",
+						"security_ips":             []string{"10.168.1.12"},
+					}, {
+						"db_cluster_ip_array_name": "test_ips2",
+						"security_ips":             []string{"100.69.7.112"},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_ip_array.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":   "tf-testaccPolarDBClusterUpdate1",
+					"maintain_time": "02:00Z-03:00Z",
+					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.2.db_node_class}",
+					"modify_type":   "Upgrade",
+					"security_ips":  []string{"10.168.1.13", "100.69.7.113"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":    "tf-testaccPolarDBClusterUpdate1",
+						"maintain_time":  "02:00Z-03:00Z",
+						"db_node_class":  CHECKSET,
+						"security_ips.#": "2",
+					}),
+					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.13,100.69.7.113"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status":         "Enabled",
+					"encrypt_new_tables": "ON",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":         "Enabled",
+						"encrypt_new_tables": "ON",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_ids": "${alicloud_security_group.default.*.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_ids.#": "2",
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"creation_category": "Normal",
