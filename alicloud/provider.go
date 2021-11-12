@@ -596,6 +596,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_simple_application_server_firewall_rules":    dataSourceAlicloudSimpleApplicationServerFirewallRules(),
 			"alicloud_pvtz_endpoints":                              dataSourceAlicloudPvtzEndpoints(),
 			"alicloud_pvtz_resolver_zones":                         dataSourceAlicloudPvtzResolverZones(),
+			"alicloud_pvtz_rules":                                  dataSourceAlicloudPvtzRules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1075,6 +1076,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipv6_internet_bandwidth":                          resourceAlicloudVpcIpv6InternetBandwidth(),
 			"alicloud_simple_application_server_firewall_rule":              resourceAlicloudSimpleApplicationServerFirewallRule(),
 			"alicloud_pvtz_endpoint":                                        resourceAlicloudPvtzEndpoint(),
+			"alicloud_pvtz_rule":                                            resourceAlicloudPvtzRule(),
+			"alicloud_pvtz_rule_attachment":                                 resourceAlicloudPvtzRuleAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
