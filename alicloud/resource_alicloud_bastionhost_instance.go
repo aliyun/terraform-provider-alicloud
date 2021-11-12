@@ -2,14 +2,15 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
 	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -61,6 +62,11 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"enable_public_access": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -170,7 +176,7 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 	d.Set("license_code", instance["LicenseCode"])
 	d.Set("vswitch_id", instance["VswitchId"])
 	d.Set("security_group_ids", instance["AuthorizedSecurityGroups"])
-
+	d.Set("enable_public_access", instance["PublicNetworkAccess"])
 	tags, err := BastionhostService.DescribeTags(d.Id(), nil, TagResourceInstance)
 	if err != nil {
 		return WrapError(err)
@@ -205,12 +211,7 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		d.SetPartial("resource_group_id")
 	}
 
-	if d.IsNewResource() {
-		d.Partial(false)
-		return resourceAlicloudBastionhostInstanceRead(d, meta)
-	}
-
-	if d.HasChange("license_code") {
+	if !d.IsNewResource() && d.HasChange("license_code") {
 		params := map[string]string{
 			"LicenseCode": "license_code",
 		}
@@ -224,7 +225,7 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		d.SetPartial("license_code")
 	}
 
-	if d.HasChange("security_group_ids") {
+	if !d.IsNewResource() && d.HasChange("security_group_ids") {
 		securityGroupIds := d.Get("security_group_ids").([]interface{})
 		sgs := make([]string, 0, len(securityGroupIds))
 		for _, rawSecurityGroupId := range securityGroupIds {
@@ -238,6 +239,30 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("security_group_ids")
+	}
+
+	if d.HasChange("enable_public_access") {
+		client := meta.(*connectivity.AliyunClient)
+		BastionhostService := YundunBastionhostService{client}
+		instance, err := BastionhostService.DescribeBastionhostInstance(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		target := strconv.FormatBool(d.Get("enable_public_access").(bool))
+		if strconv.FormatBool(instance["PublicNetworkAccess"].(bool)) != target {
+			if target == "false" {
+				err := BastionhostService.DisableInstancePublicAccess(d.Id())
+				if err != nil {
+					return WrapError(err)
+				}
+			} else {
+				err := BastionhostService.EnableInstancePublicAccess(d.Id())
+				if err != nil {
+					return WrapError(err)
+				}
+			}
+		}
+		d.SetPartial("enable_public_access")
 	}
 
 	d.Partial(false)
