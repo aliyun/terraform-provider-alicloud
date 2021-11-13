@@ -1,8 +1,39 @@
 ## 1.143.0 (Unreleased)
 
+- **New Resource:** `alicloud_vpc_ipv6_internet_bandwidth` [GH-4176]
+- **New Resource:** `alicloud_pvtz_endpoint` [GH-4177]
+- **New Resource:** `alicloud_simple_application_server_firewall_rule` [GH-4183]
+- **New Resource:** `alicloud_pvtz_rule_attachment` [GH-4185]
+- **New Resource:** `alicloud_pvtz_rules` [GH-4185]
+- **New Resource:** `alicloud_simple_application_server_snapshot` [GH-4196]
+- **New Resource:** `alicloud_simple_application_server_custom_image` [GH-4205]
+- **New Data Source:** `alicloud_vpc_ipv6_internet_bandwidths` [GH-4176]
+- **New Data Source:** `alicloud_pvtz_endpoints` [GH-4177]
+- **New Data Source:** `alicloud_pvtz_resolver_zones` [GH-4177]  
+- **New Data Source:** `alicloud_simple_application_server_firewall_rules` [GH-4183]
+- **New Data Source:** `alicloud_pvtz_rules` [GH-4185]
+- **New Data Source:** `alicloud_simple_application_server_snapshots` [GH-4196]
+- **New Data Source:** `alicloud_simple_application_server_disks` [GH-4196]
+- **New Data Source:** `alicloud_ecd_bundles` [GH-4202]
+- **New Data Source:** `alicloud_simple_application_server_custom_images` [GH-4205]
+
 ENHANCEMENTS:
-- resource/alicloud_ess_scalingconfiguration: Adds new attributes host_name
-- datasource/alicloud_ess_scalingconfigurations: Adds new attributes host_name, instance_name
+- resource/alicloud_ess_scalingconfiguration: Adds new attributes host_name [GH-4180]
+- resource/alicloud_cloud_sso_access_configuration: add regular check resource/alicloud_cloud_sso_directory : add regular check, Support separate update of saml_identity_provider_configuration property [GH-4193]
+- resource/alicloud_cloud_sso_group: add regular check resource/alicloud_cloud_sso_user: add regular chec [GH-4193]
+- resource/bastionhost_instance: Add new field enable_public_access [GH-4206]
+- resource/alicloud_simple_application_server_custom_image_test:Optimize test cases. [GH-4208]
+- resource/alicloud_simple_application_server_snapshot_test:Optimize test cases. [GH-4208]
+- Github WorkFlow: Add markdown-terraform-format && markdown-terraform-validate [GH-4184]
+- Github WorkFlow: Add markdown-terraform-format [GH-4190]
+- docs/alicloud_log_store: Improves its documentation [GH-4186]
+
+BUG FIXES:
+
+- resource/alicloud_db_clone_instances:fix bug about not filter securityIps by DBInstanceIPArrayName [GH-4182]
+- datasource/alicloud_alb_server_groups: Fix the issue of enable_details export error [GH-4181]
+- doc/alicloud_cloud_storage_gateway_gateway_smb_user: Fixes the title error [GH-4187]
+- bug/alicloud_cms_monitor_group_instances: Fix the problem that cannot be imported when the number of instances exceeds 30 [GH-4203]
 
 ## 1.142.0 (November 7, 2021)
 
