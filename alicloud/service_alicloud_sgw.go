@@ -279,3 +279,62 @@ func (s *SgwService) CloudStorageGatewayTaskStateRefreshFunc(id, taskId string, 
 		return object, fmt.Sprint(object["StateCode"]), nil
 	}
 }
+
+func (s *SgwService) DescribeCloudStorageGatewayGatewayCacheDisk(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewHcsSgwClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeGatewayCaches"
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"GatewayId": parts[0],
+	}
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"GatewayNotExist"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway:Gateway:CacheDisk", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$.Caches.Cache", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Caches.Cache", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway", id)), NotFoundWithResponse, response)
+	}
+	for _, v := range v.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["CacheId"]) == parts[1] {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudStorageGateway", id)), NotFoundWithResponse, response)
+	}
+	return object, nil
+}
