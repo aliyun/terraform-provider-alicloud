@@ -1088,6 +1088,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_simple_application_server_custom_image":               resourceAlicloudSimpleApplicationServerCustomImage(),
 			"alicloud_cloud_storage_gateway_gateway_cache_disk":             resourceAlicloudCloudStorageGatewayGatewayCacheDisk(),
 			"alicloud_cloud_storage_gateway_gateway_logging":                resourceAlicloudCloudStorageGatewayGatewayLogging(),
+			"alicloud_cloud_storage_gateway_gateway_block_volume":           resourceAlicloudCloudStorageGatewayGatewayBlockVolume(),
 		},
 
 		ConfigureFunc: providerConfigure,
