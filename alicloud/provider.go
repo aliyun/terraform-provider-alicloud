@@ -601,6 +601,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_simple_application_server_disks":             dataSourceAlicloudSimpleApplicationServerDisks(),
 			"alicloud_simple_application_server_snapshots":         dataSourceAlicloudSimpleApplicationServerSnapshots(),
 			"alicloud_simple_application_server_custom_images":     dataSourceAlicloudSimpleApplicationServerCustomImages(),
+			"alicloud_cloud_storage_gateway_gateway_loggings":      dataSourceAlicloudCloudStorageGatewayGatewayLoggings(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1084,6 +1085,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_pvtz_rule_attachment":                                 resourceAlicloudPvtzRuleAttachment(),
 			"alicloud_simple_application_server_snapshot":                   resourceAlicloudSimpleApplicationServerSnapshot(),
 			"alicloud_simple_application_server_custom_image":               resourceAlicloudSimpleApplicationServerCustomImage(),
+			"alicloud_cloud_storage_gateway_gateway_logging":                resourceAlicloudCloudStorageGatewayGatewayLogging(),
 		},
 
 		ConfigureFunc: providerConfigure,
