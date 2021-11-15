@@ -26,7 +26,7 @@ func resourceAlicloudMscSubContact() *schema.Resource {
 			"contact_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z]{2,12}$`), "The name must be 2 to 12 characters in length, and can contain uppercase and lowercase letters."),
+				ValidateFunc: validation.StringLenBetween(2, 12),
 			},
 			"email": {
 				Type:         schema.TypeString,
