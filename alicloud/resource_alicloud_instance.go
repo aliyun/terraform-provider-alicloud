@@ -406,6 +406,11 @@ func resourceAliyunInstance() *schema.Resource {
 					return diff
 				},
 			},
+			"hpc_cluster_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -513,7 +518,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("credit_specification", instance.CreditSpecification)
 	d.Set("auto_release_time", instance.AutoReleaseTime)
 	d.Set("tags", ecsService.tagsToMap(instance.Tags.Tag))
-
+	d.Set("hpc_cluster_id", instance.HpcClusterId)
 	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
 	} else {
@@ -1125,6 +1130,11 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		}
 		request.DataDisk = &dataDiskRequests
 	}
+
+	if v, ok := d.GetOk("hpc_cluster_id"); ok {
+		request.HpcClusterId = v.(string)
+	}
+
 	return request, nil
 }
 
