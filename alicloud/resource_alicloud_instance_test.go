@@ -1549,6 +1549,128 @@ func TestAccAlicloudEcsInstanceMulti(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudEcsInstanceHpcCluster(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceHpcCluster%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcHpcClusterIDDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EcsSccSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_efficiency",
+					"instance_name":                 "${var.name}",
+					"key_name":                      "${alicloud_key_pair.default.key_name}",
+					"spot_strategy":                 "NoSpot",
+					"spot_price_limit":              "0",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"hpc_cluster_id":                "${alicloud_ecs_hpc_cluster.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":  name,
+						"key_name":       name,
+						"hpc_cluster_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func resourceInstanceVpcHpcClusterIDDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_instance_types" "default" {
+  instance_type_family = "ecs.sccg7"
+  network_type = "Vpc"
+}
+data "alicloud_images" "default" {
+  name_regex  = "^aliyun_3_x64_20G_scc*"
+  owners      = "system"
+}
+
+data "alicloud_instance_types" "essd" {
+ 	cpu_core_count    = 2
+	memory_size       = 4
+ 	system_disk_category = "cloud_essd"
+}
+resource "alicloud_ecs_hpc_cluster" "default" {
+  name          = "${var.name}"
+  description   = "For Terraform Test"
+}
+resource "alicloud_vpc" "default" {
+  vpc_name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  zone_id = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+  vswitch_name              = "${var.name}"
+}
+resource "alicloud_security_group" "default" {
+  count = "2"
+  name   = "${var.name}"
+  vpc_id = "${alicloud_vpc.default.id}"
+}
+resource "alicloud_security_group_rule" "default" {
+	count = 2
+  	type = "ingress"
+  	ip_protocol = "tcp"
+  	nic_type = "intranet"
+  	policy = "accept"
+  	port_range = "22/22"
+  	priority = 1
+  	security_group_id = "${element(alicloud_security_group.default.*.id,count.index)}"
+  	cidr_ip = "172.16.0.0/24"
+}
+
+variable "name" {
+	default = "%s"
+}
+
+resource "alicloud_key_pair" "default" {
+	key_pair_name = "${var.name}"
+}
+resource "alicloud_kms_key" "key" {
+        description             = var.name
+        pending_window_in_days  = "7"
+        status               = "Enabled"
+}
+
+`, name)
+}
+
 func resourceInstanceVpcConfigDependence(name string) string {
 	return fmt.Sprintf(`
 data "alicloud_instance_types" "default" {

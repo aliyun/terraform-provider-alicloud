@@ -55,6 +55,7 @@ var ValidRegions = []Region{
 
 var EcsClassicSupportedRegions = []Region{Shenzhen, Shanghai, Beijing, Qingdao, Hangzhou, Hongkong, USWest1, APSouthEast1}
 var EcsSpotNoSupportedRegions = []Region{APSouth1}
+var EcsSccSupportedRegions = []Region{Shanghai, Beijing, Zhangjiakou}
 var SlbGuaranteedSupportedRegions = []Region{Qingdao, Beijing, Hangzhou, Shanghai, Shenzhen, Zhangjiakou, Huhehaote, APSouthEast1, USEast1}
 var DrdsSupportedRegions = []Region{Beijing, Shenzhen, Hangzhou, Qingdao, Hongkong, Shanghai, Huhehaote, Zhangjiakou, APSouthEast1}
 var DrdsClassicNoSupportedRegions = []Region{Hongkong}
