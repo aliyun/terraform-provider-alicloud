@@ -30,10 +30,10 @@ resource "alicloud_msc_sub_contact" "default" {
 
 The following arguments are supported:
 
-* `contact_name` - (Required) The User's Contact Name. **Note:** The name must be 2 to 12 characters in length, and can contain uppercase and lowercase letters.
+* `contact_name` - (Required) The User's Contact Name. **Note:** The name must be 2 to 12 characters in length.
 * `email` - (Required) The User's Contact Email Address.
 * `mobile` - (Required) The User's Telephone.
-* `position` - (Required, ForceNew) The User's Position. Valid values: `CEO`, `Technical Director`, `Maintenance Director`, `Project Director`,`Finance Director` and `Others`.
+* `position` - (Required, ForceNew) The User's Position. Valid values: `CEO`, `Technical Director`, `Maintenance Director`, `Project Director`,`Finance Director` and `Other`.
 
 ## Attributes Reference
 
