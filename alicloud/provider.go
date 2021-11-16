@@ -601,6 +601,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_simple_application_server_disks":             dataSourceAlicloudSimpleApplicationServerDisks(),
 			"alicloud_simple_application_server_snapshots":         dataSourceAlicloudSimpleApplicationServerSnapshots(),
 			"alicloud_simple_application_server_custom_images":     dataSourceAlicloudSimpleApplicationServerCustomImages(),
+			"alicloud_cloud_storage_gateway_stocks":                dataSourceAlicloudCloudStorageGatewayStocks(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
