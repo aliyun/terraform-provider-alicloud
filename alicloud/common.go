@@ -348,6 +348,15 @@ func convertJsonStringToStringList(src interface{}) (result []interface{}) {
 	return
 }
 
+func convertJsonStringToMap(configured string) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(configured), &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // Convert the result for an array and returns a comma separate
 func convertListToCommaSeparate(configured []interface{}) string {
 	if len(configured) < 1 {
