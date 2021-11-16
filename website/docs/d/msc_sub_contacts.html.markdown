@@ -57,4 +57,4 @@ The following attributes are exported in addition to the arguments listed above:
     * `last_email_verification_time_stamp` - Last Verification Email Transmission Time.
     * `last_mobile_verification_time_stamp` - The Pieces of Authentication SMS Sending Time.
     * `mobile` - The User's Telephone.
-    * `position` - The User's Position. Valid values: `CEO`, `Technical Director`, `Maintenance Director`, `Project Director`,`Finance Director` and `Others`.
+    * `position` - The User's Position. Valid values: `CEO`, `Technical Director`, `Maintenance Director`, `Project Director`,`Finance Director` and `Other`.
