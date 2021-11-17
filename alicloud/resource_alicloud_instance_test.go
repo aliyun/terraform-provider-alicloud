@@ -1671,6 +1671,113 @@ resource "alicloud_kms_key" "key" {
 `, name)
 }
 
+func TestAccAlicloudEcsInstancSecondaryIps(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcSecondaryIps)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${data.alicloud_security_groups.default.groups.0.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"system_disk_category":          "cloud_essd",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"host_name":                     "test",
+					"internet_charge_type":          "PayByTraffic",
+					"instance_charge_type":          "PostPaid",
+					"password":                      "Tftest123",
+					"user_data":                     "I_am_user_data",
+					"security_enhancement_strategy": "Active",
+					"internet_max_bandwidth_out":    "5",
+					"secondary_private_ips": []string{
+						"172.25.160.1",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_id":                      CHECKSET,
+						"vswitch_id":                    CHECKSET,
+						"secondary_private_ips.#":       "1",
+						"password":                      "Tftest123",
+						"internet_max_bandwidth_out":    "5",
+						"public_ip":                     CHECKSET,
+						"security_enhancement_strategy": "Active",
+						"system_disk_category":          "cloud_essd",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_private_ips": []string{
+						"172.25.160.3",
+						"172.25.160.7",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_private_ips.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "security_enhancement_strategy", "dry_run"},
+			},
+		},
+	})
+}
+
+func resourceInstanceVpcSecondaryIps(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  owners      = "system"
+}
+data "alicloud_security_groups" "default" {
+}
+
+data "alicloud_instance_types" "default" {
+	instance_type_family = "ecs.g6e"
+	network_type = "Vpc"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids[0]
+}
+
+`, name)
+}
+
 func resourceInstanceVpcConfigDependence(name string) string {
 	return fmt.Sprintf(`
 data "alicloud_instance_types" "default" {
