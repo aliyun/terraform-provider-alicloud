@@ -609,6 +609,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_desktops":                                dataSourceAlicloudEcdDesktops(),
 			"alicloud_cloud_storage_gateway_express_syncs":         dataSourceAlicloudCloudStorageGatewayExpressSyncs(),
 			"alicloud_oos_applications":                            dataSourceAlicloudOosApplications(),
+			"alicloud_eci_virtual_nodes":                           dataSourceAlicloudEciVirtualNodes(),
+			"alicloud_eci_zones":                                   dataSourceAlicloudEciZones(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1101,6 +1103,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_storage_gateway_express_sync":                   resourceAlicloudCloudStorageGatewayExpressSync(),
 			"alicloud_cloud_storage_gateway_express_sync_share_attachment":  resourceAlicloudCloudStorageGatewayExpressSyncShareAttachment(),
 			"alicloud_oos_application":                                      resourceAlicloudOosApplication(),
+			"alicloud_eci_virtual_node":                                     resourceAlicloudEciVirtualNode(),
 		},
 
 		ConfigureFunc: providerConfigure,
