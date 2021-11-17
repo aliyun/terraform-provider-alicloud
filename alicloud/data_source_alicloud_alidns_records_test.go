@@ -113,6 +113,7 @@ func TestAccAlicloudAlidnsRecordsDataSource(t *testing.T) {
 			"records.0.priority":  "0",
 			"records.0.line":      "default",
 			"records.0.status":    "ENABLE",
+			"records.0.remark":    "tf-testacc",
 		}
 	}
 
@@ -142,6 +143,7 @@ resource "alicloud_alidns_record" "default" {
   domain_name = "${alicloud_dns_domain.default.domain_name}"
   rr = "alimail"
   type = "CNAME"
+  remark = "tf-testacc"
   value = "mail.mxhichin.com"
 }
 `, name)
