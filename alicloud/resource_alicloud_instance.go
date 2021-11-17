@@ -411,6 +411,13 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"secondary_private_ips": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -613,6 +620,27 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		//	d.Set("period", period)
 		//}
 		d.Set("period_unit", periodUnit)
+	}
+	networkInterfaceId := ""
+	for _, obj := range instance.NetworkInterfaces.NetworkInterface {
+		if obj.Type == "Primary" {
+			networkInterfaceId = obj.NetworkInterfaceId
+			break
+		}
+	}
+	if len(networkInterfaceId) != 0 {
+		object, err := ecsService.DescribeNetworkInterface(networkInterfaceId)
+		if err != nil {
+			return WrapError(err)
+		}
+		secondaryPrivateIpsSli := make([]string, 0)
+		fmt.Println(object, secondaryPrivateIpsSli)
+		for _, obj := range object.PrivateIpSets.PrivateIpSet {
+			if !obj.Primary {
+				secondaryPrivateIpsSli = append(secondaryPrivateIpsSli, obj.PrivateIpAddress)
+			}
+		}
+		d.Set("secondary_private_ips", secondaryPrivateIpsSli)
 	}
 
 	return nil
@@ -879,6 +907,71 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("renewal_status")
 		d.SetPartial("auto_renew_period")
+	}
+
+	if d.HasChange("secondary_private_ips") {
+		client := meta.(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
+		instance, err := ecsService.DescribeInstance(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		networkInterfaceId := ""
+		for _, obj := range instance.NetworkInterfaces.NetworkInterface {
+			if obj.Type == "Primary" {
+				networkInterfaceId = obj.NetworkInterfaceId
+				break
+			}
+		}
+		oraw, nraw := d.GetChange("secondary_private_ips")
+		remove := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
+		create := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
+		if len(remove) > 0 {
+			action := "UnassignPrivateIpAddresses"
+			request := map[string]interface{}{
+				"RegionId":           client.RegionId,
+				"NetworkInterfaceId": networkInterfaceId,
+				"ClientToken":        buildClientToken(action),
+			}
+
+			for index, val := range remove {
+				request[fmt.Sprintf("PrivateIpAddress.%d", index+1)] = val
+			}
+
+			conn, err := client.NewEcsClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(action, response, request)
+			d.SetPartial("secondary_private_ips")
+		}
+		if len(create) > 0 {
+			action := "AssignPrivateIpAddresses"
+			request := map[string]interface{}{
+				"RegionId":           client.RegionId,
+				"NetworkInterfaceId": networkInterfaceId,
+				"ClientToken":        buildClientToken(action),
+			}
+
+			for index, val := range create {
+				request[fmt.Sprintf("PrivateIpAddress.%d", index+1)] = val
+			}
+			conn, err := client.NewEcsClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(action, response, request)
+			d.SetPartial("secondary_private_ips")
+		}
+
 	}
 
 	d.Partial(false)
