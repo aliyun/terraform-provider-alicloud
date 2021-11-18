@@ -244,6 +244,74 @@ func testAccRamRoleCreateConfig(rand int) string {
 	}`, defaultRegionToTest, rand)
 }
 
+func TestAccAlicloudRamRole_Description(t *testing.T) {
+	var v *ram.GetRoleResponse
+	resourceId := "alicloud_ram_role.default"
+	ra := resourceAttrInit(resourceId, ramRoleMap)
+	serviceFunc := func() interface{} {
+		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRamRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRamRoleCreateConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"description": "this is a test"}),
+				),
+			},
+			{
+				Config: testAccRamRoleUpdateDescription(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"description": "this is a test_update"}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+		},
+	})
+}
+
+func testAccRamRoleUpdateDescription(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_role" "default" {
+	  name = "tf-testAcc%sRamRoleConfig-%d"
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "apigateway.aliyuncs.com", 
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
+	  description = "this is a test_update"
+	  force = true
+	}`, defaultRegionToTest, rand)
+}
+
 func testAccRamRoleMaxSessionDurationConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_role" "default" {

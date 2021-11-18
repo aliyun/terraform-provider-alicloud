@@ -109,8 +109,8 @@ The following arguments are supported:
 * `health_check_interval` - (Optional) Time interval of health checks. It is required when `health_check` is on. Valid value range: [1-50] in seconds. Default to 2.
 * `health_check_http_code` - (Optional) Regular health check HTTP status code. Multiple codes are segmented by “,”. It is required when `health_check` is on. Default to `http_2xx`.  Valid values are: `http_2xx`,  `http_3xx`, `http_4xx` and `http_5xx`.
 * `health_check_method` - (Optional, Available in 1.70.0+) HealthCheckMethod used for health check.`http` and `https` support regions ap-northeast-1, ap-southeast-1, ap-southeast-2, ap-southeast-3, us-east-1, us-west-1, eu-central-1, ap-south-1, me-east-1, cn-huhehaote, cn-zhangjiakou, ap-southeast-5, cn-shenzhen, cn-hongkong, cn-qingdao, cn-chengdu, eu-west-1, cn-hangzhou", cn-beijing, cn-shanghai.This function does not support the TCP protocol .
-* `ssl_certificate_id` - (Deprecated) It has been deprecated from 1.59.0 and using `server_certificate_id` instead. 
-* `server_certificate_id` - (Optional, Available in 1.59.0+) SLB Server certificate ID. It is required when `protocol` is `https`.
+* `ssl_certificate_id` - (Deprecated) SLB Server certificate ID. It has been deprecated from 1.59.0 and using `server_certificate_id` instead. 
+* `server_certificate_id` - (Optional, Available in 1.59.0+) SLB Server certificate ID. It is required when `protocol` is `https`. The `server_certificate_id` is also required when the value of the `ssl_certificate_id`  is Empty.
 * `ca_certificate_id` - (Optional, Available in 1.104) SLB CA certificate ID. Only when `protocol` is `https` can be specified.
 * `gzip` - (Optional) Whether to enable "Gzip Compression". If enabled, files of specific file types will be compressed, otherwise, no files will be compressed. Default to true. Available in v1.13.0+.
 * `x_forwarded_for` - (Optional) Whether to set additional HTTP Header field "X-Forwarded-For" (documented below). Available in v1.13.0+.
