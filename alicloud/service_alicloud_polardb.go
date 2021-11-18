@@ -990,7 +990,7 @@ func (s *PolarDBService) WaitForCluster(id string, status Status, timeout int) e
 	return nil
 }
 
-func (s *PolarDBService) DescribeDBSecurityIps(clusterId string) (ips []string, err error) {
+func (s *PolarDBService) DescribeDBSecurityIps(clusterId string, dbClusterIPArrayName string) (ips []string, err error) {
 
 	request := polardb.CreateDescribeDBClusterAccessWhitelistRequest()
 	request.RegionId = s.client.RegionId
@@ -1009,7 +1009,7 @@ func (s *PolarDBService) DescribeDBSecurityIps(clusterId string) (ips []string, 
 	var ipstr, separator string
 	ipsMap := make(map[string]string)
 	for _, ip := range resp.Items.DBClusterIPArray {
-		if ip.DBClusterIPArrayAttribute != "hidden" {
+		if ip.DBClusterIPArrayName == dbClusterIPArrayName {
 			ipstr += separator + ip.SecurityIps
 			separator = COMMA_SEPARATED
 		}
