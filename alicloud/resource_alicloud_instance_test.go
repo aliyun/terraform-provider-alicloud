@@ -1698,7 +1698,7 @@ func TestAccAlicloudEcsInstancSecondaryIps(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"image_id":                      "${data.alicloud_images.default.images.0.id}",
-					"security_groups":               []string{"${data.alicloud_security_groups.default.groups.0.id}"},
+					"security_groups":               []string{"${alicloud_security_group.default.id}"},
 					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"system_disk_category":          "cloud_essd",
 					"vswitch_id":                    "${data.alicloud_vswitches.default.vswitches.0.id}",
@@ -1710,7 +1710,7 @@ func TestAccAlicloudEcsInstancSecondaryIps(t *testing.T) {
 					"security_enhancement_strategy": "Active",
 					"internet_max_bandwidth_out":    "5",
 					"secondary_private_ips": []string{
-						"172.25.160.1",
+						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)}",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1729,8 +1729,8 @@ func TestAccAlicloudEcsInstancSecondaryIps(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"secondary_private_ips": []string{
-						"172.25.160.3",
-						"172.25.160.7",
+						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 3)}",
+						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 7)}",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1759,7 +1759,9 @@ data "alicloud_images" "default" {
   name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners      = "system"
 }
-data "alicloud_security_groups" "default" {
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.ids[0]
 }
 
 data "alicloud_instance_types" "default" {
