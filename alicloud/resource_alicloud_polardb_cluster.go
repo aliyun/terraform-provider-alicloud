@@ -567,7 +567,11 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
-	ips, err := polarDBService.DescribeDBSecurityIps(d.Id())
+	dbClusterIPArrayName := "default"
+	if v, ok := d.GetOk("db_cluster_ip_array_name"); ok {
+		dbClusterIPArrayName = v.(string)
+	}
+	ips, err := polarDBService.DescribeDBSecurityIps(d.Id(), dbClusterIPArrayName)
 	if err != nil {
 		return WrapError(err)
 	}
