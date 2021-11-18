@@ -26,8 +26,8 @@ resource "alicloud_pvtz_zone" "foo" {
 
 The following arguments are supported:
 
-* `name` - (Optional, ForceNew, Deprecated in v1.107.0+) The name of the Private Zone.
-* `zone_name` - (Optional, ForceNew) The zone_name of the Private Zone.
+* `name` - (Optional, ForceNew, Deprecated in v1.107.0+) The name of the Private Zone. The `name` has been deprecated from provider version 1.107.0. Please use 'zone_name' instead.
+* `zone_name` - (Optional, ForceNew) The zone_name of the Private Zone. The `zone_name` is required when the value of the `name`  is Empty.
 * `remark` - (Optional) The remark of the Private Zone.
 * `proxy_pattern` - (Optional, Available in 1.69.0+) The recursive DNS proxy. Valid values:
     - ZONE: indicates that the recursive DNS proxy is disabled.
