@@ -25,12 +25,11 @@ func dataSourceAlicloudEcdCommands() *schema.Resource {
 			"content_encoding": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      "PlainText",
 				ValidateFunc: validation.StringInSlice([]string{"Base64", "PlainText"}, false),
 			},
-			"include_output": {
-				Type:     schema.TypeBool,
+			"desktop_id": {
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
@@ -45,7 +44,7 @@ func dataSourceAlicloudEcdCommands() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Failed", "Finished", "PartialFailed", "Pending", "Running", "Stopped", "Stopping", "Success"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Pending", "Failed", "PartialFailed", "Running", "Stopped", "Stopping", "Finished", "Success"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -150,9 +149,13 @@ func dataSourceAlicloudEcdCommandsRead(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("content_encoding"); ok {
 		request["ContentEncoding"] = v
 	}
-	if v, ok := d.GetOkExists("include_output"); ok {
-		request["IncludeOutput"] = v
+
+	if v, ok := d.GetOk("desktop_id"); ok {
+		request["DesktopId"] = v
 	}
+
+	request["IncludeOutput"] = "true"
+
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("status"); ok {
 		request["InvokeStatus"] = v
