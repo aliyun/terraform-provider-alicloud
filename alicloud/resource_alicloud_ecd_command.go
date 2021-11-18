@@ -37,8 +37,6 @@ func resourceAlicloudEcdCommand() *schema.Resource {
 			"content_encoding": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Base64", "PlainText"}, false),
 			},
 			"desktop_id": {
@@ -60,6 +58,7 @@ func resourceAlicloudEcdCommand() *schema.Resource {
 
 func resourceAlicloudEcdCommandCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ecdService := EcdService{client}
 	var response map[string]interface{}
 	action := "RunCommand"
 	request := make(map[string]interface{})
@@ -95,7 +94,10 @@ func resourceAlicloudEcdCommandCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.SetId(fmt.Sprint(response["InvokeId"]))
-
+	stateConf := BuildStateConf([]string{}, []string{"Success"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ecdService.EcdCommandStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 	return resourceAlicloudEcdCommandUpdate(d, meta)
 }
 func resourceAlicloudEcdCommandRead(d *schema.ResourceData, meta interface{}) error {
@@ -114,54 +116,22 @@ func resourceAlicloudEcdCommandRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("command_content", string(commandContent))
 	d.Set("command_type", object["CommandType"])
 	d.Set("status", object["InvocationStatus"])
-	mapping := map[string]interface{}{}
-	invokeDesktops := make([]map[string]interface{}, 0)
+	temp1 := map[string]interface{}{}
 	if invokeDesktopsList, ok := object["InvokeDesktops"].([]interface{}); ok {
 		for _, v := range invokeDesktopsList {
 			if m1, ok := v.(map[string]interface{}); ok {
-				temp1 := map[string]interface{}{
+				temp1 = map[string]interface{}{
 					"desktop_id": m1["DesktopId"],
 				}
-				invokeDesktops = append(invokeDesktops, temp1)
 			}
 		}
 	}
-	mapping["invoke_desktops"] = invokeDesktops
-
-	d.Set("desktop_id", mapping)
+	d.Set("desktop_id", temp1["desktop_id"])
 	return nil
 }
 func resourceAlicloudEcdCommandUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	action := "StopInvocation"
-	var response map[string]interface{}
-	conn, err := client.NewGwsecdClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	request := map[string]interface{}{
-		"InvokeId": d.Id(),
-	}
-
-	request["DesktopId.1"] = d.Get("desktop_id")
-	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	return resourceAlicloudEcdCommandRead(d, meta)
+	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
+	return nil
 }
 func resourceAlicloudEcdCommandDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not delete operation."))
