@@ -912,6 +912,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	if d.HasChange("secondary_private_ips") {
 		client := meta.(*connectivity.AliyunClient)
 		ecsService := EcsService{client}
+		var response map[string]interface{}
 		instance, err := ecsService.DescribeInstance(d.Id())
 		if err != nil {
 			return WrapError(err)
@@ -942,7 +943,19 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			if err != nil {
 				return WrapError(err)
 			}
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
@@ -956,7 +969,6 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 				"NetworkInterfaceId": networkInterfaceId,
 				"ClientToken":        buildClientToken(action),
 			}
-
 			for index, val := range create {
 				request[fmt.Sprintf("PrivateIpAddress.%d", index+1)] = val
 			}
@@ -964,11 +976,22 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			if err != nil {
 				return WrapError(err)
 			}
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			addDebug(action, response, request)
 			d.SetPartial("secondary_private_ips")
 		}
 
