@@ -1339,7 +1339,7 @@ func (s *PolarDBService) ModifyDBAccessWhitelistSecurityIps(d *schema.ResourceDa
 	return nil
 }
 
-func (s *PolarDBService) DBClusterIPArrays(d *schema.ResourceData, attribute string) error {
+func (s *PolarDBService) DBClusterIPArrays(d *schema.ResourceData, attribute string, dbClusterIPArrayName string) error {
 	request := polardb.CreateDescribeDBClusterAccessWhitelistRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = d.Id()
@@ -1356,7 +1356,7 @@ func (s *PolarDBService) DBClusterIPArrays(d *schema.ResourceData, attribute str
 	dbClusterIPArray := response.Items.DBClusterIPArray
 	var dbClusterIPArrays = make([]map[string]interface{}, 0, len(dbClusterIPArray))
 	for _, i := range dbClusterIPArray {
-		if i.DBClusterIPArrayAttribute != "hidden" && i.DBClusterIPArrayName != "default" {
+		if i.DBClusterIPArrayName == dbClusterIPArrayName {
 			l := map[string]interface{}{
 				"db_cluster_ip_array_name": i.DBClusterIPArrayName,
 				"security_ips":             convertPolarDBIpsSetToString(i.SecurityIps),
