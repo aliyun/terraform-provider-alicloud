@@ -94,8 +94,8 @@ github.com/aliyun/alibaba-cloud-sdk-go v1.61.1264 h1:67Ky9Wy6qmYRBrS9DRxlXRYgosN
 github.com/aliyun/alibaba-cloud-sdk-go v1.61.1264/go.mod h1:9CMdKNL3ynIGPpfTcdwTvIm8SGuAZYYC4jFVSSvE1YQ=
 github.com/aliyun/aliyun-datahub-sdk-go v0.1.5 h1:c2TFcJ5PjkqkHr2use7Av2wHB8jVgoKxX1gmLDsysR4=
 github.com/aliyun/aliyun-datahub-sdk-go v0.1.5/go.mod h1:GwtZxKUD+aLBrtlkEcyPNAx+jRkBioEC7EKOlQ26lTc=
-github.com/aliyun/aliyun-log-go-sdk v0.1.21 h1:mreDTFTmqv1I5VG5HNNu9DLQ3Kv3Y2c9hsjbeCOFvF4=
-github.com/aliyun/aliyun-log-go-sdk v0.1.21/go.mod h1:aBG0R+MWRTgvlIODQkz+a3/RM9bQYKsmSbKdbIx4vpc=
+github.com/aliyun/aliyun-log-go-sdk v0.1.27 h1:fXtaOAcdR3DsqN9GZkfJue8B2Dba0TV+8Ahwq4o+y5g=
+github.com/aliyun/aliyun-log-go-sdk v0.1.27/go.mod h1:aBG0R+MWRTgvlIODQkz+a3/RM9bQYKsmSbKdbIx4vpc=
 github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58 h1:hX1oYyN7d0y7GHwli6trhovosNAKo9f60uC3FPHMjoQ=
 github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58/go.mod h1:eD/mEH7SwtLSwI9p8fP9VTH2cYM3wFSY1WNaxEdLIFU=
 github.com/aliyun/aliyun-oss-go-sdk v2.1.8+incompatible h1:hLUNPbx10wawWW7DeNExvTrlb90db3UnnNTFKHZEFhE=
@@ -165,8 +165,6 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/deckarep/golang-set v1.7.1 h1:SCQV0S6gTtp6itiFrTqI+pfmJ4LN85S1YzhDf9rTHJQ=
 github.com/deckarep/golang-set v1.7.1/go.mod h1:93vsz/8Wt4joVM7c2AVqh+YRMiUSc14yDtF28KmMOgQ=
-github.com/denverdino/aliyungo v0.0.0-20210518071019-eb3bbb144d8a h1:J9+NI0ywi1btTOYseLdmr/H3XxutbC4m2bU48kKpwVs=
-github.com/denverdino/aliyungo v0.0.0-20210518071019-eb3bbb144d8a/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
 github.com/denverdino/aliyungo v0.0.0-20210910083501-4f11020c0bfb h1:w0Y6orfArgN0EGUOXqa3heTmPwUzZS9oV79ddQqkVP4=
 github.com/denverdino/aliyungo v0.0.0-20210910083501-4f11020c0bfb/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
 github.com/denverdino/aliyungo v0.0.0-20211122042034-c78a9788662a h1:86hp5rVR3OECcLLlL04b8qlysYJkV/d5Xv7vPZMAUX4=
