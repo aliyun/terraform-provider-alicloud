@@ -123,31 +123,6 @@ func dnsPriorityDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 	return d.Get("type").(string) != "MX"
 }
 
-func slbInternetDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if internet, ok := d.GetOk("address_type"); ok && internet.(string) == "internet" {
-		return true
-	}
-	if internet, ok := d.GetOkExists("internet"); ok && internet.(bool) {
-		return true
-	}
-	return false
-}
-
-func slbInternetChargeTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	// Uniform all internet chare type value and be compatible with previous lower value.
-	if strings.ToLower(old) == strings.ToLower(new) {
-		return true
-	}
-	return !slbInternetDiffSuppressFunc(k, old, new, d)
-}
-
-func slbBandwidthDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if slbInternetDiffSuppressFunc(k, old, new, d) && strings.ToLower(d.Get("internet_charge_type").(string)) == strings.ToLower(string(PayByBandwidth)) {
-		return false
-	}
-	return true
-}
-
 func slbAclDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if status, ok := d.GetOk("acl_status"); ok && status.(string) == string(OnFlag) {
 		return false
@@ -277,16 +252,6 @@ func PostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 
 func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if strings.ToLower(d.Get("instance_charge_type").(string)) == "prepaid" && d.Get("auto_renew").(bool) {
-		return false
-	}
-	return true
-}
-
-func PostPaidAndRenewalDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if PostPaidDiffSuppressFunc(k, old, new, d) {
-		return true
-	}
-	if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
 		return false
 	}
 	return true
@@ -473,13 +438,6 @@ func vpnSslConnectionsDiffSuppressFunc(k, old, new string, d *schema.ResourceDat
 	return false
 }
 
-func slbDeleteProtectionSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if PayType(d.Get("instance_charge_type").(string)) == PrePaid {
-		return true
-	}
-	return false
-}
-
 func slbRuleStickySessionTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	listenerSync := slbRuleListenerSyncDiffSuppressFunc(k, old, new, d)
 	if session, ok := d.GetOk("sticky_session"); !listenerSync && ok && session.(string) == string(OnFlag) {
@@ -517,13 +475,6 @@ func slbRuleListenerSyncDiffSuppressFunc(k, old, new string, d *schema.ResourceD
 		return false
 	}
 	return true
-}
-
-func slbAddressDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if v, ok := d.GetOk("internet"); ok && v.(bool) {
-		return true
-	}
-	return false
 }
 
 func kmsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
