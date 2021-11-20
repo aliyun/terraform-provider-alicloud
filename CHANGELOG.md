@@ -1,4 +1,34 @@
 ## 1.144.0 (Unreleased)
+
+- **New Resource:** `alicloud_direct_mail_tag` [GH-4178]
+- **New Resource:** `alicloud_ecd_desktop` [GH-4199]
+- **New Resource:** `alicloud_cloud_storage_gateway_gateway_cache_disk` [GH-4217]
+- **New Resource:** `alicloud_cloud_storage_gateway_gateway_logging` [GH-4227] 
+- **New Resource:** `alicloud_cloud_storage_gateway_gateway_file_share` [GH-4231] 
+- **New Resource:** `alicloud_cloud_storage_gateway_gateway_block_volume` [GH-4234]
+- **New Resource:** `alicloud_cloud_storage_gateway_express_sync` [GH-4239]
+- **New Resource:** `alicloud_cloud_storage_gateway_express_sync_share_attachment` [GH-4239]
+- **New Data Source:** `alicloud_direct_mail_tags` [GH-4178]
+- **New Data Source:** `alicloud_ecd_desktops` [GH-4199]
+- **New Data Source:** `alicloud_cloud_storage_gateway_gateway_cache_disks` [GH-4217]
+- **New Data Source:** `data_source_alicloud_cloud_storage_gateway_stocks` [GH-4224]  
+- **New Data Source:** `alicloud_cloud_storage_gateway_gateway_file_shares` [GH-4231]
+- **New Data Source:** `alicloud_cloud_storage_gateway_gateway_block_volumes` [GH-4234]
+- **New Data Source:** `alicloud_cloud_storage_gateway_express_syncs` [GH-4239]
+
+ENHANCEMENTS:
+
+- resource/alicloud_ram_role: Support updating the filed description [GH-4212]
+- resource/alicloud_instance: Support configuring the filed hpc_cluster_id [GH-4214]
+- resource/alicloud_msc_sub_contact: Support setting Chinese contact name,Change position to take Others to Other [GH-4221]
+- resource/alicloud_instance: Supports configuring the secondary_private_ips for primary network interface [GH-4223]
+- resource/alicloud_instance: Support the secondary_private_ips 's retry process [GH-4228]
+- docs: Improves the Config's available region in the documentation [GH-4238]
+
+BUG FIXES:
+
+resource/alicloud_slb_listener: Fixes the importing diff error caused by delete_protection_validation and health_check_http_code default value [GH-4240]
+
 ## 1.143.0 (November 14, 2021)
 
 - **New Resource:** `alicloud_vpc_ipv6_internet_bandwidth` ([#4176](https://github.com/aliyun/terraform-provider-alicloud/issues/4176))
@@ -19,6 +49,7 @@
 - **New Data Source:** `alicloud_simple_application_server_custom_images` ([#4205](https://github.com/aliyun/terraform-provider-alicloud/issues/4205))
 
 ENHANCEMENTS:
+
 - resource/alicloud_ess_scalingconfiguration: Adds new attributes host_name ([#4180](https://github.com/aliyun/terraform-provider-alicloud/issues/4180))
 - resource/alicloud_cloud_sso_access_configuration: add regular check resource/alicloud_cloud_sso_directory : add regular check, Support separate update of saml_identity_provider_configuration property ([#4193](https://github.com/aliyun/terraform-provider-alicloud/issues/4193))
 - resource/alicloud_cloud_sso_group: add regular check resource/alicloud_cloud_sso_user: add regular chec ([#4193](https://github.com/aliyun/terraform-provider-alicloud/issues/4193))
