@@ -208,6 +208,7 @@ func resourceAlicloudVpcRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return WrapError(err)
 	}
+	d.Set("resource_group_id", describeRouteTableListObject["ResourceGroupId"])
 	d.Set("route_table_id", describeRouteTableListObject["RouteTableId"])
 	d.Set("router_table_id", describeRouteTableListObject["RouteTableId"])
 	return nil
