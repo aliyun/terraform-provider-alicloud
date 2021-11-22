@@ -67,6 +67,26 @@ func dataSourceAlicloudClickHouseDbClusters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"db_cluster_access_white_list": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"db_cluster_ip_array_attribute": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"db_cluster_ip_array_name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"security_ip_list": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
 						"db_cluster_description": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -318,6 +338,28 @@ func dataSourceAlicloudClickHouseDbClustersRead(d *schema.ResourceData, meta int
 		}
 		id := fmt.Sprint(object["DBClusterId"])
 		clickhouseService := ClickhouseService{client}
+		getResp1, err := clickhouseService.DescribeDBClusterAccessWhiteList(id)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		iPArray := make([]map[string]interface{}, 0)
+		if iPArrayList, ok := getResp1["DBClusterAccessWhiteList"].(map[string]interface{})["IPArray"].([]interface{}); ok {
+			for _, v := range iPArrayList {
+				if m1, ok := v.(map[string]interface{}); ok {
+					if m1["DBClusterIPArrayName"].(string) == "default" {
+						continue
+					}
+					temp1 := map[string]interface{}{
+						"db_cluster_ip_array_attribute": m1["DBClusterIPArrayAttribute"],
+						"db_cluster_ip_array_name":      m1["DBClusterIPArrayName"],
+						"security_ip_list":              m1["SecurityIPList"],
+					}
+					iPArray = append(iPArray, temp1)
+				}
+			}
+		}
+		mapping["db_cluster_access_white_list"] = iPArray
 		getResp, err := clickhouseService.DescribeClickHouseDbCluster(id)
 		if err != nil {
 			return WrapError(err)

@@ -28,6 +28,26 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability"}, false),
 				ForceNew:     true,
 			},
+			"db_cluster_access_white_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"db_cluster_ip_array_attribute": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"db_cluster_ip_array_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"security_ip_list": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"db_cluster_class": {
 				Type:         schema.TypeString,
 				ForceNew:     true,
@@ -215,6 +235,30 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 	d.Set("payment_type", convertClickHouseDbClusterPaymentTypeResponse(object["PayType"].(string)))
 	d.Set("storage_type", convertClickHouseDbClusterStorageTypeResponse(object["StorageType"].(string)))
 	d.Set("vswitch_id", object["VSwitchId"])
+	d.Set("zone_id", object["ZoneId"])
+	describeDBClusterAccessWhiteListObject, err := clickhouseService.DescribeDBClusterAccessWhiteList(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if dBClusterAccessWhiteListMap, ok := describeDBClusterAccessWhiteListObject["DBClusterAccessWhiteList"].(map[string]interface{}); ok && dBClusterAccessWhiteListMap != nil {
+		if iPArrayList, ok := dBClusterAccessWhiteListMap["IPArray"]; ok && iPArrayList != nil {
+			dBClusterAccessWhiteListMaps := make([]map[string]interface{}, 0)
+			for _, iPArrayListItem := range iPArrayList.([]interface{}) {
+				if v, ok := iPArrayListItem.(map[string]interface{}); ok {
+					if v["DBClusterIPArrayName"].(string) == "default" {
+						continue
+					}
+					iPArrayListItemMap := make(map[string]interface{})
+					iPArrayListItemMap["db_cluster_ip_array_attribute"] = v["DBClusterIPArrayAttribute"]
+					iPArrayListItemMap["db_cluster_ip_array_name"] = v["DBClusterIPArrayName"]
+					iPArrayListItemMap["security_ip_list"] = v["SecurityIPList"]
+					dBClusterAccessWhiteListMaps = append(dBClusterAccessWhiteListMaps, iPArrayListItemMap)
+				}
+			}
+			d.Set("db_cluster_access_white_list", dBClusterAccessWhiteListMaps)
+		}
+	}
+
 	return nil
 }
 func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -289,6 +333,89 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("maintain_time")
+	}
+	if d.HasChange("db_cluster_access_white_list") {
+
+		oraw, nraw := d.GetChange("db_cluster_access_white_list")
+		remove := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
+		create := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
+		if len(remove) > 0 {
+			removeWhiteListReq := map[string]interface{}{
+				"DBClusterId": d.Id(),
+				"ModifyMode":  "Delete",
+			}
+
+			for _, whiteList := range remove {
+				whiteListArg := whiteList.(map[string]interface{})
+				removeWhiteListReq["DBClusterIPArrayAttribute"] = whiteListArg["db_cluster_ip_array_attribute"]
+				removeWhiteListReq["DBClusterIPArrayName"] = whiteListArg["db_cluster_ip_array_name"]
+				removeWhiteListReq["SecurityIps"] = whiteListArg["security_ip_list"]
+
+				action := "ModifyDBClusterAccessWhiteList"
+				conn, err := client.NewClickhouseClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request["ClientToken"] = buildClientToken("ModifyDBClusterAccessWhiteList")
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, removeWhiteListReq, &util.RuntimeOptions{})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, removeWhiteListReq)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+		if len(create) > 0 {
+			createWhiteListReq := map[string]interface{}{
+				"DBClusterId": d.Id(),
+				"ModifyMode":  "Append",
+			}
+
+			for _, whiteList := range create {
+				whiteListArg := whiteList.(map[string]interface{})
+				createWhiteListReq["DBClusterIPArrayAttribute"] = whiteListArg["db_cluster_ip_array_attribute"]
+				createWhiteListReq["DBClusterIPArrayName"] = whiteListArg["db_cluster_ip_array_name"]
+				createWhiteListReq["SecurityIps"] = whiteListArg["security_ip_list"]
+
+				action := "ModifyDBClusterAccessWhiteList"
+				conn, err := client.NewClickhouseClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request["ClientToken"] = buildClientToken("ModifyDBClusterAccessWhiteList")
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, createWhiteListReq, &util.RuntimeOptions{})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, createWhiteListReq)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+		d.SetPartial("db_cluster_access_white_list")
 	}
 	if d.HasChange("status") {
 		clickhouseService := ClickhouseService{client}

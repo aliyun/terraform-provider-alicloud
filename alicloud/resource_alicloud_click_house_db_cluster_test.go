@@ -285,6 +285,92 @@ func TestAccAlicloudClickHouseDBCluster_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudClickHouseDBCluster_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_click_house_db_cluster.default"
+	ra := resourceAttrInit(resourceId, AlicloudClickHouseDBClusterMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeClickHouseDbCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudClickHouseDBClusterBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_version":      "20.3.10.75",
+					"category":                "Basic",
+					"db_cluster_class":        "S8",
+					"db_cluster_network_type": "vpc",
+					"db_node_group_count":     "1",
+					"payment_type":            "PayAsYouGo",
+					"db_node_storage":         "100",
+					"storage_type":            "cloud_essd",
+					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"db_cluster_access_white_list": []map[string]interface{}{
+						{
+							"db_cluster_ip_array_attribute": "test1",
+							"db_cluster_ip_array_name":      "test1",
+							"security_ip_list":              "192.168.0.1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_version":             "20.3.10.75",
+						"category":                       "Basic",
+						"db_cluster_class":               "S8",
+						"db_cluster_network_type":        "vpc",
+						"db_node_group_count":            "1",
+						"payment_type":                   "PayAsYouGo",
+						"db_node_storage":                "100",
+						"storage_type":                   "cloud_essd",
+						"vswitch_id":                     CHECKSET,
+						"db_cluster_access_white_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_access_white_list": []map[string]interface{}{
+						{
+							"db_cluster_ip_array_attribute": "test2",
+							"db_cluster_ip_array_name":      "test2",
+							"security_ip_list":              "192.168.0.3",
+						},
+						{
+							"db_cluster_ip_array_attribute": "test1",
+							"db_cluster_ip_array_name":      "test1",
+							"security_ip_list":              "192.168.0.2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_access_white_list.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"db_cluster_class", "db_node_group_count", "db_cluster_version"},
+			},
+		},
+	})
+}
+
 var AlicloudClickHouseDBClusterMap0 = map[string]string{
 	"db_cluster_version":      CHECKSET,
 	"category":                CHECKSET,
