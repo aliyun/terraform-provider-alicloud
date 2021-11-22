@@ -30,6 +30,11 @@ resource "alicloud_click_house_db_cluster" "default" {
   db_node_storage         = "500"
   storage_type            = "cloud_essd"
   vswitch_id              = "your_vswitch_id"
+  db_cluster_access_white_list {
+    db_cluster_ip_array_attribute = "test"
+    db_cluster_ip_array_name      = "test"
+    security_ip_list              = "192.168.0.1"
+  }
 }
 
 ```
@@ -56,6 +61,15 @@ The following arguments are supported:
 * `db_cluster_description` - (Optional) The DBCluster description.
 * `status` - (Optional, Computed) The status of the resource. Valid values: `Running`,`Creating`,`Deleting`,`Restarting`,`Preparing`,.
 * `maintain_time` - (Optional) The maintenance window of DBCluster. Valid format: `hh:mmZ-hh:mm Z`.
+* `db_cluster_access_white_list` - (Optional, Available in v1.145.0+) The db cluster access white list.
+
+#### Block db_cluster_access_white_list
+
+The db_cluster_access_white_list supports the following:
+
+* `db_cluster_ip_array_attribute` - (Optional) Whitelist grouping attribute.
+* `db_cluster_ip_array_name` - (Optional) Whitelist group name.
+* `security_ip_list` - (Optional) The IP address list under the whitelist group.
 
 ## Attributes Reference
 

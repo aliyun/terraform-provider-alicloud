@@ -92,3 +92,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `vpc_id` - The VPC ID of the DBCluster.
     * `vswitch_id` - The vswitch id of the DBCluster.
     * `zone_id` - The zone ID of the DBCluster.
+    * `db_cluster_access_white_list` - The db cluster access white list.
+        * `db_cluster_ip_array_attribute` - Whitelist grouping attribute.
+        * `db_cluster_ip_array_name` - Whitelist group name.
+        * `security_ip_list` - The IP address list under the whitelist group.
