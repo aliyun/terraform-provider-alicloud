@@ -261,6 +261,76 @@ func TestAccAlicloudConfigRule_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudConfigRule_status(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_rule.default"
+	ra := resourceAttrInit(resourceId, ConfigRuleMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccConfigRule%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ConfigRuleBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_name":                 name,
+					"risk_level":                "1",
+					"resource_types_scope":      []string{"ACS::ECS::Instance"},
+					"config_rule_trigger_types": "ConfigurationItemChangeNotification",
+					"source_identifier":         "ecs-instances-in-vpc",
+					"source_owner":              "ALIYUN",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_name":                 name,
+						"risk_level":                "1",
+						"resource_types_scope.#":    "1",
+						"config_rule_trigger_types": "ConfigurationItemChangeNotification",
+						"source_identifier":         "ecs-instances-in-vpc",
+						"source_owner":              "ALIYUN",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "INACTIVE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "INACTIVE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "ACTIVE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "ACTIVE",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+			},
+		},
+	})
+}
+
 var ConfigRuleMap = map[string]string{}
 
 func ConfigRuleBasicdependence(name string) string {
