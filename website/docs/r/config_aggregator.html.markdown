@@ -36,7 +36,9 @@ The following arguments are supported:
 
 * `aggregator_accounts` - (Required) The information of account in aggregator.
 * `aggregator_name` - (Required) The name of aggregator.
-* `aggregator_type` - (Optional, ForceNew) The type of aggregator. Valid values: `CUSTOM`, `RD`.
+* `aggregator_type` - (Optional, ForceNew) The type of aggregator. Valid values: `CUSTOM`, `RD`. The Default value: `CUSTOM`.
+  * `CUSTOM` - The custom account group.
+  * `RD` - The global account group.
 * `description` - (Required) The description of aggregator.
 
 #### Block aggregator_accounts

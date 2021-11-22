@@ -31,8 +31,10 @@ resource "alicloud_config_configuration_recorder" "example" {
 
 The following arguments are supported:
 
-* `enterprise_edition` - (Optional, ForceNew) - Whether to use the enterprise version configuration audit. Valid values: `true` and `fales`. Default value `false`.
+* `enterprise_edition` - (Optional) - Whether to use the enterprise version configuration audit. Valid values: `true` and `false`. Default value `false`. For enterprise accounts, We recommend you to use the resource [alicloud_config_aggregator](https://www.terraform.io/docs/providers/alicloud/r/config_aggregator.html).
 * `resource_types` - (Optional) A list of resource types to be monitored. [Resource types that support Cloud Config.](https://www.alibabacloud.com/help/en/doc-detail/127411.htm)
+  * If you use an ordinary account, the `resource_types` supports the update operation after the process of creation is completed.
+  * If you use a enterprise account, the `resource_types` does not support updating. 
 
 ## Attributes Reference
 

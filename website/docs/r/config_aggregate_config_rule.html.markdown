@@ -64,6 +64,7 @@ The following arguments are supported:
 * `risk_level` - (Required) The risk level of the resources that are not compliant with the rule. Valid values:  `1`: critical `2`: warning `3`: info.
 * `tag_key_scope` - (Optional) The rule monitors the tag key, only applies to rules created based on managed rules.
 * `tag_value_scope` - (Optional) The rule monitors the tag value, use with the TagKeyScope options. only applies to rules created based on managed rules.
+* `status` - (Optional, Available in v1.145.0+) The rule status. The valid values: `ACTIVE`, `INACTIVE`.
 
 ## Attributes Reference
 

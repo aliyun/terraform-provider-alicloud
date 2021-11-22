@@ -20,6 +20,7 @@ func TestAccAlicloudConfigConfigurationRecorder_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
+			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -27,9 +28,13 @@ func TestAccAlicloudConfigConfigurationRecorder_basic(t *testing.T) {
 		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{}),
+				Config: testAccConfig(map[string]interface{}{
+					"enterprise_edition": "true",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"enterprise_edition": "true",
+					}),
 				),
 			},
 			{
