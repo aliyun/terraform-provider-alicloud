@@ -88,9 +88,10 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				ConflictsWith: []string{"password", "key_name"},
 			},
 			"security_group_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'security_group_id' has been deprecated from provider version 1.145.0. New field 'security_group_ids' instead",
 			},
 			"system_disk_category": {
 				Type:     schema.TypeString,
@@ -114,6 +115,7 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"AliyunLinux", "Windows", "CentOS", "WindowsCore"}, false),
+				Deprecated:   "Field 'platform' has been deprecated from provider version 1.145.0. New field 'image_type' instead",
 			},
 			"image_id": {
 				Type:     schema.TypeString,
@@ -404,6 +406,35 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
+			},
+			"security_group_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				MaxItems: 5,
+				Computed: true,
+				ForceNew: true,
+			},
+			"image_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"AliyunLinux", "AliyunLinux3", "AliyunLinux3Arm64", "AliyunLinuxUEFI", "CentOS", "Windows", "WindowsCore", "AliyunLinux Qboot", "ContainerOS"}, false),
+			},
+			"runtime_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"runtime_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -759,6 +790,10 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("internet_charge_type", object.InternetChargeType)
 	d.Set("internet_max_bandwidth_out", object.InternetMaxBandwidthOut)
 	d.Set("install_cloud_monitor", object.CmsEnabled)
+	d.Set("image_type", object.ScalingGroup.ImageType)
+	d.Set("security_group_ids", object.ScalingGroup.SecurityGroupIds)
+	d.Set("runtime_name", object.Runtime)
+	d.Set("runtime_version", object.RuntimeVersion)
 	if object.InstanceChargeType == "PrePaid" {
 		d.Set("period", object.Period)
 		d.Set("period_unit", object.PeriodUnit)
@@ -985,6 +1020,22 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 	}
 	if v, ok := d.GetOk("internet_max_bandwidth_out"); ok {
 		creationArgs.InternetMaxBandwidthOut = v.(int)
+	}
+
+	if v, ok := d.GetOk("security_group_ids"); ok {
+		creationArgs.SecurityGroupIds = expandStringList(v.([]interface{}))
+	}
+
+	if v, ok := d.GetOk("image_type"); ok {
+		creationArgs.ImageType = v.(string)
+	}
+
+	// runtime
+	if v, ok := d.GetOk("runtime_name"); ok {
+		creationArgs.Runtime = v.(string)
+	}
+	if v, ok := d.GetOk("runtime_version"); ok {
+		creationArgs.RuntimeVersion = v.(string)
 	}
 
 	return creationArgs, nil

@@ -311,8 +311,8 @@ The following arguments are supported:
   * `size` - The size of a data disk, Its valid value range [40~32768] in GB. Default to `40`.
   * `encrypted` - Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
   * `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
-* `security_group_id` - (Optional) The security group id for worker node. 
-* `platform` - (Optional, Available in 1.127.0+) The platform. One of `AliyunLinux`, `Windows`, `CentOS`, `WindowsCore`. If you select `Windows` or `WindowsCore`, the `passord` is required.
+* `security_group_id` - (Optional, Deprecated) The security group id for worker node. 
+* `platform` - (Optional, Deprecated, Available in 1.127.0+) The platform. One of `AliyunLinux`, `Windows`, `CentOS`, `WindowsCore`. If you select `Windows` or `WindowsCore`, the `passord` is required.
 * `image_id` - (Optional) Custom Image support. Must based on CentOS7 or AliyunLinux2.
 * `node_name_mode` - (Optional) Each node name consists of a prefix, an IP substring, and a suffix. For example "customized,aliyun.com,5,test", if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test.
 * `user_data` - (Optional) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
@@ -341,6 +341,10 @@ The following arguments are supported:
 * `instances` - (Optional, Available in 1.127.0+) The instance list. Add existing nodes under the same cluster VPC to the node pool. 
 * `keep_instance_name` - (Optional, Available in 1.127.0+) Add an existing instance to the node pool, whether to keep the original instance name. It is recommended to set to `true`.
 * `format_disk` - (Optional, Available in 1.127.0+) After you select this check box, if data disks have been attached to the specified ECS instances and the file system of the last data disk is uninitialized, the system automatically formats the last data disk to ext4 and mounts the data disk to /var/lib/docker and /var/lib/kubelet. The original data on the disk will be cleared. Make sure that you back up data in advance. If no data disk is mounted on the ECS instance, no new data disk will be purchased. Default is `false`.
+* `security_group_ids` - (Optional, Available in 1.145.0+) Multiple security groups can be configured for A node pool. If both `security_group_ids` and `security_group_id` are configured, `security_group_ids` takes effect.
+* `image_type` - (Optional, Available in 1.145.0+) The image type, Instead of `platform`. One of `AliyunLinux`, `AliyunLinux3`, `AliyunLinux3Arm64`, `AliyunLinuxUEFI`, `CentOS`, `Windows`,`WindowsCore`,`AliyunLinux Qboot`,`ContainerOS`. If you select `Windows` or `WindowsCore`, the `passord` is required.
+* `runtime_name` - (Optional, ForceNew, Available in 1.145.0+) The runtime name of containers. If not set, the cluster runtime will be used as the node pool runtime. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm).
+* `runtime_version` - (Optional, ForceNew, Available in 1.145.0+) The runtime version of containers. If not set, the cluster runtime will be used as the node pool runtime.
 
 #### tags
 

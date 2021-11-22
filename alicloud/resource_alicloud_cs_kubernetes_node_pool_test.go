@@ -52,6 +52,10 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 					"data_disks":            []map[string]string{{"size": "100", "category": "cloud_ssd"}},
 					"tags":                  map[string]interface{}{"Created": "TF", "Foo": "Bar"},
 					"management":            []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "0"}},
+					"security_group_ids":    []string{"${alicloud_security_group.resource_group_id}"},
+					"runtime":               "containerd",
+					"runtime_version":       "1.4.8",
+					"image_type":            "CentOS",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -75,6 +79,10 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"management.0.auto_upgrade":    "true",
 						"management.0.surge":           "0",
 						"management.0.max_unavailable": "0",
+						"security_group_ids":           CHECKSET,
+						"runtime":                      "containerd",
+						"runtime_version":              "1.4.8",
+						"image_type":                   "CentOS",
 					}),
 				),
 			},
@@ -468,6 +476,11 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_key_pair" "default" {
 	key_name                   = var.name
+}
+
+resource "alicloud_security_group" "group" {
+  name   = var.name
+  vpc_id = alicloud_vpc.vpc.id
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
