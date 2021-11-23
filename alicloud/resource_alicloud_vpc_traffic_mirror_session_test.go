@@ -281,6 +281,66 @@ func TestAccAlicloudVPCTrafficMirrorSession_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudVPCTrafficMirrorSession_basic1(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.VpcTrafficMirrorSupportRegions)
+	resourceId := "alicloud_vpc_traffic_mirror_session.default"
+	ra := resourceAttrInit(resourceId, AlicloudVPCTrafficMirrorSessionMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcTrafficMirrorSession")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-vpctrafficmirrorsession-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVPCTrafficMirrorSessionBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithEnvVariable(t, "ALICLOUD_USE_HOLOGRAPHIC_ACCOUNT")
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"priority":                           "1",
+					"traffic_mirror_session_description": "${var.name}",
+					"traffic_mirror_session_name":        "${var.name}",
+					"traffic_mirror_target_id":           "${data.alicloud_ecs_network_interfaces.default.ids.0}",
+					"traffic_mirror_source_ids":          []string{"${data.alicloud_ecs_network_interfaces.default.ids.1}"},
+					"traffic_mirror_filter_id":           "${alicloud_vpc_traffic_mirror_filter.default.0.id}",
+					"traffic_mirror_target_type":         "NetworkInterface",
+					"dry_run":                            "false",
+					"enabled":                            "true",
+					"virtual_network_id":                 "10",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"priority":                           "1",
+						"traffic_mirror_session_description": name,
+						"traffic_mirror_session_name":        name,
+						"traffic_mirror_target_id":           CHECKSET,
+						"traffic_mirror_source_ids.#":        "1",
+						"traffic_mirror_filter_id":           CHECKSET,
+						"traffic_mirror_target_type":         "NetworkInterface",
+						"dry_run":                            "false",
+						"enabled":                            "true",
+						"virtual_network_id":                 "10",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
 var AlicloudVPCTrafficMirrorSessionMap0 = map[string]string{
 	"dry_run": NOSET,
 	"status":  CHECKSET,
