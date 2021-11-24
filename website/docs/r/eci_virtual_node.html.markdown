@@ -13,7 +13,7 @@ Provides a ECI Virtual Node resource.
 
 For information about ECI Virtual Node and how to use it, see [What is Virtual Node](https://www.alibabacloud.com/help/en/doc-detail/89129.html).
 
--> **NOTE:** Available in v1.144.0+.
+-> **NOTE:** Available in v1.145.0+.
 
 ## Example Usage
 

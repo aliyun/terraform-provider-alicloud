@@ -13,7 +13,7 @@ Provides a Cloud SSO Access Configuration resource.
 
 For information about Cloud SSO Access Configuration and how to use it, see [What is Access Configuration](https://www.alibabacloud.com/help/en/doc-detail/266737.html).
 
--> **NOTE:** Available in v1.140.0+.
+-> **NOTE:** Available in v1.145.0+.
 
 -> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
 
@@ -58,7 +58,7 @@ resource "alicloud_cloud_sso_access_configuration" "default" {
 
 The following arguments are supported:
 
-* `access_configuration_name` - (Optional, ForceNew, ForceNew) The AccessConfigurationName of the Access Configuration.
+* `access_configuration_name` - (Required, ForceNew) The AccessConfigurationName of the Access Configuration. The name of the resource. The name must be 2 to 64 characters in length and can contain letters, digits, and hyphens (-).
 * `description` - (Optional) The Description of the  Access Configuration.
 * `directory_id` - (Required, ForceNew) The ID of the Directory.
 * `permission_policies` - (Optional) The Policy List. See the following `Block permission_policies`.
@@ -73,8 +73,8 @@ The following arguments are supported:
 The permission_policies supports the following: 
 
 * `permission_policy_document` - (Optional, Sensitive) The Content of Policy.
-* `permission_policy_name` - (Optional) The Policy Name of policy.
-* `permission_policy_type` - (Optional) The Policy Type of policy. Valid values: `System`, `Inline`.
+* `permission_policy_name` - (Required) The Policy Name of policy. The name of the resource. The name must be 1 to 32 characters in length and can contain letters, digits, and hyphens (-).
+* `permission_policy_type` - (Required) The Policy Type of policy. Valid values: `System`, `Inline`.
 
 ## Attributes Reference
 

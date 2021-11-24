@@ -58,12 +58,13 @@ func resourceAlicloudCloudSsoAccessConfiguration() *schema.Resource {
 							Sensitive: true,
 						},
 						"permission_policy_name": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-z0-9-]{1,32}$`), "The name of the resource. The name must be 1 to 32 characters in length and can contain letters, digits, and hyphens (-)."),
 						},
 						"permission_policy_type": {
 							Type:         schema.TypeString,
-							Optional:     true,
+							Required:     true,
 							ValidateFunc: validation.StringInSlice([]string{"System", "Inline"}, false),
 						},
 					},
@@ -372,7 +373,7 @@ func resourceAlicloudCloudSsoAccessConfigurationDelete(d *schema.ResourceData, m
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"DeletionConflict.AccessConfiguration.Provisioning", "DeletionConflict.AccessConfiguration.AccessAssignment"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

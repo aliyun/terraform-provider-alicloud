@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Eci Virtual Nodes of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.144.0+.
+-> **NOTE:** Available in v1.145.0+.
 
 ## Example Usage
 
