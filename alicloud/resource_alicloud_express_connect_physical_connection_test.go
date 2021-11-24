@@ -348,6 +348,64 @@ func TestAccAlicloudExpressConnectPhysicalConnection_intl(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudExpressConnectPhysicalConnection_domesic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_express_connect_physical_connection.default"
+	ra := resourceAttrInit(resourceId, AlicloudExpressConnectPhysicalConnectionMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeExpressConnectPhysicalConnection")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectphysicalconnection%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectPhysicalConnectionBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou, connectivity.Beijing, connectivity.Shanghai})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					// currently， not all access points are available
+					//"access_point_id":          "${data.alicloud_express_connect_access_points.default.ids.0}",
+					"access_point_id":          getAccessPointId(),
+					"type":                     "VPC",
+					"peer_location":            "testacc12345",
+					"physical_connection_name": "${var.name}",
+					"description":              "${var.name}",
+					"line_operator":            "CU",
+					"port_type":                "1000Base-LX",
+					"bandwidth":                "10",
+					"circuit_code":             "longtel001",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_point_id":          CHECKSET,
+						"type":                     "VPC",
+						"peer_location":            "testacc12345",
+						"physical_connection_name": name,
+						"description":              name,
+						"line_operator":            "CU",
+						"port_type":                "1000Base-LX",
+						"bandwidth":                "10",
+						"circuit_code":             "longtel001",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudExpressConnectPhysicalConnectionMap0 = map[string]string{
 	"status":                           CHECKSET,
 	"redundant_physical_connection_id": "",
