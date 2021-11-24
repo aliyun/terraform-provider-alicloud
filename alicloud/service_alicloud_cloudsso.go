@@ -580,27 +580,26 @@ func (s *CloudssoService) DescribeCloudSsoAccessAssignment(id string) (object ma
 		return nil, WrapError(err)
 	}
 	action := "ListAccessAssignments"
-	parts, err := ParseResourceId(id, 4)
+	parts, err := ParseResourceId(id, 6)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
 	request := map[string]interface{}{
-		"AccessConfigurationId": parts[1],
 		"DirectoryId":           parts[0],
-		"PrincipalId":           parts[3],
-		"TargetId":              parts[2],
+		"AccessConfigurationId": parts[1],
+		"TargetType":            parts[2],
+		"TargetId":              parts[3],
+		"PrincipalType":         parts[4],
+		"PrincipalId":           parts[5],
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-
 			if NeedRetry(err) {
-
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -622,7 +621,7 @@ func (s *CloudssoService) DescribeCloudSsoAccessAssignment(id string) (object ma
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", id)), NotFoundWithResponse, response)
 	} else {
-		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["PrincipalId"]) != parts[3] {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["PrincipalId"]) != parts[5] {
 			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", id)), NotFoundWithResponse, response)
 		}
 	}

@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the available zones with the Application Load Balancer (ALB) Instance of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.132.0+.
+-> **NOTE:** Available in v1.145.0+.
 
 ## Example Usage
 
