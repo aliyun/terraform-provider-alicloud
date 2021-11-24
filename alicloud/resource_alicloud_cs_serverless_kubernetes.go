@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
-	"strings"
 	"time"
 
 	roacs "github.com/alibabacloud-go/cs-20151215/v2/client"
@@ -361,6 +360,11 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	client := meta.(*connectivity.AliyunClient)
 	csService := CsService{client}
 	invoker := NewInvoker()
+	rosClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+	}
+
 	object, err := csService.DescribeCsServerlessKubernetes(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -370,10 +374,18 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 
+	vswitchIds := []string{}
+	resources, _ := rosClient.DescribeClusterResources(tea.String(d.Id()))
+	for _, resource := range resources.Body {
+		if tea.StringValue(resource.ResourceType) == "VSWITCH" {
+			vswitchIds = append(vswitchIds, tea.StringValue(resource.InstanceId))
+		}
+	}
+
 	d.Set("name", object.Name)
 	d.Set("vpc_id", object.VpcId)
 	d.Set("vswitch_id", object.VSwitchId)
-	d.Set("vswitch_ids", strings.Split(object.VSwitchId, ","))
+	d.Set("vswitch_ids", vswitchIds)
 	d.Set("security_group_id", object.SecurityGroupId)
 	d.Set("deletion_protection", object.DeletionProtection)
 	d.Set("version", object.CurrentVersion)

@@ -1682,8 +1682,8 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	// Configure control plane log. Effective only in the professional managed cluster
 	if v, ok := d.GetOk("control_plane_log_components"); ok {
 		creationArgs.ControlplaneComponents = expandStringList(v.([]interface{}))
-		// ttl default is 30s
-		creationArgs.ControlplaneLogTTL = "30s"
+		// ttl default is 30 days
+		creationArgs.ControlplaneLogTTL = "30"
 	}
 	if v, ok := d.GetOk("control_plane_log_ttl"); ok {
 		creationArgs.ControlplaneLogTTL = v.(string)

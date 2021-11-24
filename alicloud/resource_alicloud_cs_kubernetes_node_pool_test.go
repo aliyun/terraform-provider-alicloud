@@ -52,6 +52,10 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 					"data_disks":            []map[string]string{{"size": "100", "category": "cloud_ssd"}},
 					"tags":                  map[string]interface{}{"Created": "TF", "Foo": "Bar"},
 					"management":            []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "0"}},
+					"security_group_ids":    []string{"${alicloud_security_group.group.id}", "${alicloud_security_group.group1.id}"},
+					"runtime_name":          "containerd",
+					"runtime_version":       "1.4.8",
+					"image_type":            "CentOS",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -75,6 +79,10 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"management.0.auto_upgrade":    "true",
 						"management.0.surge":           "0",
 						"management.0.max_unavailable": "0",
+						"security_group_ids.#":         "2",
+						"runtime_name":                 "containerd",
+						"runtime_version":              "1.4.8",
+						"image_type":                   "CentOS",
 					}),
 				),
 			},
@@ -457,6 +465,14 @@ data "alicloud_instance_types" "default" {
 resource "alicloud_vpc" "default" {
   vpc_name                     = var.name
   cidr_block                   = "10.1.0.0/21"
+}
+
+resource "alicloud_security_group" "group" {
+  vpc_id = alicloud_vpc.default.id
+}
+
+resource "alicloud_security_group" "group1" {
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_vswitch" "default" {
