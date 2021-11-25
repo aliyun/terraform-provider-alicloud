@@ -140,6 +140,126 @@ func TestAccAlicloudVpcForwardEntry_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudVpcForwardEntry_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_forward_entry.default"
+	ra := resourceAttrInit(resourceId, AlicloudForwardEntryMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeForwardEntry")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sforwardentry%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudForwardEntryBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"forward_table_id":   "${alicloud_nat_gateway.default.forward_table_ids}",
+					"external_ip":        "${alicloud_eip_address.default.0.ip_address}",
+					"external_port":      `80`,
+					"internal_ip":        "172.16.0.3",
+					"internal_port":      `8080`,
+					"ip_protocol":        "tcp",
+					"forward_entry_name": name,
+					"port_break":         "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"forward_table_id":   CHECKSET,
+						"external_ip":        CHECKSET,
+						"external_port":      "80",
+						"internal_ip":        "172.16.0.3",
+						"internal_port":      "8080",
+						"ip_protocol":        "tcp",
+						"forward_entry_name": name,
+						"port_break":         "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"port_break"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudVpcForwardEntry_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_forward_entry.default"
+	ra := resourceAttrInit(resourceId, AlicloudForwardEntryMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeForwardEntry")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sforwardentry%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudForwardEntryBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"forward_table_id": "${alicloud_nat_gateway.default.forward_table_ids}",
+					"external_ip":      "${alicloud_eip_address.default.0.ip_address}",
+					"external_port":    `80`,
+					"internal_ip":      "172.16.0.3",
+					"internal_port":    `8080`,
+					"ip_protocol":      "tcp",
+					"name":             name,
+					"port_break":       "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"forward_table_id": CHECKSET,
+						"external_ip":      CHECKSET,
+						"external_port":    "80",
+						"internal_ip":      "172.16.0.3",
+						"internal_port":    "8080",
+						"ip_protocol":      "tcp",
+						"name":             name,
+						"port_break":       "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name + "update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"port_break"},
+			},
+		},
+	})
+}
+
 var AlicloudForwardEntryMap0 = map[string]string{
 	"port_break": "false",
 }
