@@ -10,7 +10,7 @@ description: |-
 # alicloud\_config\_delivery\_channel
 
 Provides a a Alicloud Config Delivery Channel resource. You can receive configuration audit event changes by configuring OSS, MNS and SLS services provided by Alibaba Cloud.
-For information about Alicloud Config Delivery Channel and how to use it, see [What is Delivery Channel](https://www.alibabacloud.com/help/en/doc-detail/156854.htm).
+For information about Alicloud Config Delivery Channel and how to use it, see [What is Delivery Channel](https://www.alibabacloud.com/help/en/doc-detail/307022.html).
 
 -> **NOTE:** Available in v1.99.0+.
 
