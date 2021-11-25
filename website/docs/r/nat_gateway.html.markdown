@@ -18,7 +18,6 @@ If you want to add public IP, you can use resource 'alicloud_eip_association' to
 
 -> **NOTE:** From version 1.7.1, this resource has deprecated bandwidth packages.
 But, in order to manage stock bandwidth packages, version 1.13.0 re-support configuring 'bandwidth_packages'.
-    
 
 ## Example Usage
 
@@ -87,6 +86,13 @@ resource "alicloud_nat_gateway" "main" {
   vswitch_id       = alicloud_vswitch.foo1.id
 }
 ```
+
+### Deleting `alicloud_nat_gateway` or removing it from your configuration
+
+The `alicloud_nat_gateway` resource allows you to manage `payment_type = "Subscription"` or `instance_charge_type = "Prepaid"` nat gateway, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration
+will remove it from your statefile and management, but will not destroy the Nat Gateway.
+You can resume managing the subscription nat gateway via the AlibabaCloud Console.
 
 ## Argument Reference
 

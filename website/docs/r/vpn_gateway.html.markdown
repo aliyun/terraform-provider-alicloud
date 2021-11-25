@@ -42,9 +42,9 @@ resource "alicloud_vpn_gateway" "foo" {
 }
 ```
 
-### Deleting alicloud_vpn_gateway or removing it from your configuration
+### Deleting `alicloud_vpn_gateway` or removing it from your configuration
 
-The alicloud_vpn_gateway resource allows you to manage instance_charge_type = "Prepaid" vpn gateway, but Terraform cannot destroy it.
+The `alicloud_vpn_gateway` resource allows you to manage `instance_charge_type = "Prepaid"` vpn gateway, but Terraform cannot destroy it.
 Deleting the subscription resource or removing it from your configuration
 will remove it from your state file and management, but will not destroy the VPN Gateway.
 You can resume managing the subscription vpn gateway via the AlibabaCloud Console.
