@@ -10,7 +10,7 @@ description: |-
 # alicloud\_config\_rule
 
 Provides a a Alicloud Config Rule resource. Cloud Config checks the validity of resources based on rules. You can create rules to evaluate resources as needed.
-For information about Alicloud Config Rule and how to use it, see [What is Alicloud Config Rule](https://www.alibabacloud.com/help/en/doc-detail/127388.htm).
+For information about Alicloud Config Rule and how to use it, see [What is Alicloud Config Rule](https://www.alibabacloud.com/help/doc-detail/154216.html).
 
 -> **NOTE:** Available in v1.99.0+.
 
@@ -47,7 +47,7 @@ The following arguments are supported:
 * `region_ids_scope` - (Optional, Available in v1.124.1+) The rule monitors region IDs, separated by commas, only applies to rules created based on managed rules.
 * `resource_group_ids_scope` - (Optional, Available in v1.124.1+) The rule monitors resource group IDs, separated by commas, only applies to rules created based on managed rules.
 * `tag_key_scope` - (Optional, Available in v1.124.1+) The rule monitors the tag key, only applies to rules created based on managed rules.
-* `tag_value_scope` - (Optional, Available in v1.124.1+) The rule monitors the tag value, use with the TagKeyScope options. only applies to rules created based on managed rules.
+* `tag_value_scope` - (Optional, Available in v1.124.1+) The rule monitors the tag value, use with the `tag_key_scope` options. only applies to rules created based on managed rules.
 * `rule_name` - (Required, ForceNew) The name of the Config Rule. 
 * `description` - (Optional) The description of the Config Rule.
 * `risk_level` - (Required) The risk level of the Config Rule. Valid values: `1`: Critical ,`2`: Warning , `3`: Info.

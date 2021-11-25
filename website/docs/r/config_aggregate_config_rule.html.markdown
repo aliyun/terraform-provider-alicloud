@@ -11,7 +11,7 @@ description: |-
 
 Provides a Cloud Config Aggregate Config Rule resource.
 
-For information about Cloud Config Aggregate Config Rule and how to use it, see [What is Aggregate Config Rule](https://help.aliyun.com/).
+For information about Cloud Config Aggregate Config Rule and how to use it, see [What is Aggregate Config Rule](https://www.alibabacloud.com/help/doc-detail/154216.html).
 
 -> **NOTE:** Available in v1.124.0+.
 
@@ -32,7 +32,7 @@ resource "alicloud_config_aggregator" "example" {
 
 resource "alicloud_config_aggregate_config_rule" "example" {
   aggregate_config_rule_name = "tf-testaccconfig1234"
-  aggregator_id              = alicloud_config_aggregator.example.aggregator_id
+  aggregator_id              = alicloud_config_aggregator.example.id
   config_rule_trigger_types  = "ConfigurationItemChangeNotification"
   source_owner               = "ALIYUN"
   source_identifier          = "ecs-cpu-min-count-limit"
@@ -63,7 +63,8 @@ The following arguments are supported:
 * `resource_types_scope` - (Required) Resource types to be evaluated. [Alibaba Cloud services that support Cloud Config.](https://www.alibabacloud.com/help/en/doc-detail/127411.htm)
 * `risk_level` - (Required) The risk level of the resources that are not compliant with the rule. Valid values:  `1`: critical `2`: warning `3`: info.
 * `tag_key_scope` - (Optional) The rule monitors the tag key, only applies to rules created based on managed rules.
-* `tag_value_scope` - (Optional) The rule monitors the tag value, use with the TagKeyScope options. only applies to rules created based on managed rules.
+* `tag_value_scope` - (Optional) The rule monitors the tag value, use with the `tag_key_scope` options. only applies to rules created based on managed rules.
+* `status` - (Optional, Available in v1.145.0+) The rule status. The valid values: `ACTIVE`, `INACTIVE`.
 
 ## Attributes Reference
 

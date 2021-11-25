@@ -11,7 +11,7 @@ description: |-
 
 Provides a Cloud Config Aggregate Compliance Pack resource.
 
-For information about Cloud Config Aggregate Compliance Pack and how to use it, see [What is Aggregate Compliance Pack](https://help.aliyun.com/).
+For information about Cloud Config Aggregate Compliance Pack and how to use it, see [What is Aggregate Compliance Pack](https://www.alibabacloud.com/help/en/doc-detail/194753.html).
 
 -> **NOTE:** Available in v1.124.0+.
 

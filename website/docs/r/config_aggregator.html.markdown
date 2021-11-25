@@ -11,6 +11,8 @@ description: |-
 
 Provides a Cloud Config Aggregator resource.
 
+For information about Cloud Config Aggregate Config Rule and how to use it, see [What is Aggregator](https://www.alibabacloud.com/help/en/doc-detail/211197.html).
+
 -> **NOTE:** Available in v1.124.0+.
 
 ## Example Usage
@@ -36,7 +38,9 @@ The following arguments are supported:
 
 * `aggregator_accounts` - (Required) The information of account in aggregator.
 * `aggregator_name` - (Required) The name of aggregator.
-* `aggregator_type` - (Optional, ForceNew) The type of aggregator. Valid values: `CUSTOM`, `RD`.
+* `aggregator_type` - (Optional, ForceNew) The type of aggregator. Valid values: `CUSTOM`, `RD`. The Default value: `CUSTOM`.
+  * `CUSTOM` - The custom account group.
+  * `RD` - The global account group.
 * `description` - (Required) The description of aggregator.
 
 #### Block aggregator_accounts

@@ -337,6 +337,83 @@ func TestAccAlicloudConfigAggregateConfigRule_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudConfigAggregateConfigRule_status(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregate_config_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateConfigRuleMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregateConfigRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigaggregateconfigrule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateConfigRuleBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregate_config_rule_name": "${var.name}",
+					"aggregator_id":              "${data.alicloud_config_aggregators.default.ids.0}",
+					"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+					"source_owner":               "ALIYUN",
+					"source_identifier":          "ecs-cpu-min-count-limit",
+					"risk_level":                 `1`,
+					"resource_types_scope":       []string{"ACS::ECS::Instance"},
+					"input_parameters": map[string]string{
+						"cpuCount": "4",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregate_config_rule_name": name,
+						"risk_level":                 "1",
+						"resource_types_scope.#":     "1",
+						"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+						"source_owner":               "ALIYUN",
+						"source_identifier":          "ecs-cpu-min-count-limit",
+						"input_parameters.%":         "1",
+						"input_parameters.cpuCount":  "4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "INACTIVE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "INACTIVE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "ACTIVE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "ACTIVE",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudConfigAggregateConfigRuleMap0 = map[string]string{
 	"aggregate_config_rule_name":  CHECKSET,
 	"aggregator_id":               CHECKSET,
