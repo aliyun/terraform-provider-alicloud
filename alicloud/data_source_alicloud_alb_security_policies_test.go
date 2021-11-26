@@ -21,6 +21,14 @@ func TestAccAlicloudAlbSecurityPoliciesDataSource(t *testing.T) {
 			"ids": `["${alicloud_alb_security_policy.default.id}_fake"]`,
 		}),
 	}
+	policyIdsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudAlbSecurityPolicieDataSourceName(rand, map[string]string{
+			"security_policy_ids": `["${alicloud_alb_security_policy.default.id}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudAlbSecurityPolicieDataSourceName(rand, map[string]string{
+			"security_policy_ids": `["${alicloud_alb_security_policy.default.id}_fake"]`,
+		}),
+	}
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAlbSecurityPolicieDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_alb_security_policy.default.security_policy_name}"`,
@@ -29,14 +37,48 @@ func TestAccAlicloudAlbSecurityPoliciesDataSource(t *testing.T) {
 			"name_regex": `"${alicloud_alb_security_policy.default.security_policy_name}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
+	policyNameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAlbSecurityPolicieDataSourceName(rand, map[string]string{
-			"ids":        `["${alicloud_alb_security_policy.default.id}"]`,
-			"name_regex": `"${alicloud_alb_security_policy.default.security_policy_name}"`,
+			"security_policy_name": `"${alicloud_alb_security_policy.default.security_policy_name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAlbSecurityPolicieDataSourceName(rand, map[string]string{
-			"ids":        `["${alicloud_alb_security_policy.default.id}_fake"]`,
-			"name_regex": `"${alicloud_alb_security_policy.default.security_policy_name}_fake"`,
+			"security_policy_name": `"${alicloud_alb_security_policy.default.security_policy_name}_fake"`,
+		}),
+	}
+	groupIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudAlbSecurityPolicieDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_alb_security_policy.default.id}"]`,
+			"resource_group_id": `"${alicloud_alb_security_policy.default.resource_group_id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudAlbSecurityPolicieDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_alb_security_policy.default.id}"]`,
+			"resource_group_id": `"${alicloud_alb_security_policy.default.resource_group_id}_fake"`,
+		}),
+	}
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudAlbSecurityPolicieDataSourceName(rand, map[string]string{
+			"ids":    `["${alicloud_alb_security_policy.default.id}"]`,
+			"status": `"Available"`,
+		}),
+		fakeConfig: testAccCheckAlicloudAlbSecurityPolicieDataSourceName(rand, map[string]string{
+			"ids":    `["${alicloud_alb_security_policy.default.id}"]`,
+			"status": `"Configuring"`,
+		}),
+	}
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudAlbSecurityPolicieDataSourceName(rand, map[string]string{
+			"ids":                  `["${alicloud_alb_security_policy.default.id}"]`,
+			"name_regex":           `"${alicloud_alb_security_policy.default.security_policy_name}"`,
+			"security_policy_ids":  `["${alicloud_alb_security_policy.default.id}"]`,
+			"security_policy_name": `"${alicloud_alb_security_policy.default.security_policy_name}"`,
+			"resource_group_id":    `"${alicloud_alb_security_policy.default.resource_group_id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudAlbSecurityPolicieDataSourceName(rand, map[string]string{
+			"ids":                  `["${alicloud_alb_security_policy.default.id}_fake"]`,
+			"name_regex":           `"${alicloud_alb_security_policy.default.security_policy_name}_fake"`,
+			"security_policy_ids":  `["${alicloud_alb_security_policy.default.id}_fake"]`,
+			"security_policy_name": `"${alicloud_alb_security_policy.default.security_policy_name}_fake"`,
+			"resource_group_id":    `"${alicloud_alb_security_policy.default.resource_group_id}_fake"`,
 		}),
 	}
 
@@ -47,6 +89,10 @@ func TestAccAlicloudAlbSecurityPoliciesDataSource(t *testing.T) {
 			"policies.0.security_policy_name": fmt.Sprintf("tf-testAccSecurityPolicy-%d", rand),
 			"policies.0.tls_versions.#":       "1",
 			"policies.0.ciphers.#":            "2",
+			"policies.0.resource_group_id":    CHECKSET,
+			"policies.0.id":                   CHECKSET,
+			"policies.0.security_policy_id":   CHECKSET,
+			"policies.0.status":               "Available",
 		}
 	}
 	var fakeDataAlicloudAlbSecurityPoliciesSourceNameMapFunc = func(rand int) map[string]string {
@@ -63,7 +109,7 @@ func TestAccAlicloudAlbSecurityPoliciesDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
 	}
-	alicloudAlbSecurityPolicyCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	alicloudAlbSecurityPolicyCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, policyIdsConf, nameRegexConf, policyNameConf, groupIdConf, statusConf, allConf)
 }
 func testAccCheckAlicloudAlbSecurityPolicieDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
