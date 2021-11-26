@@ -29,7 +29,6 @@ func resourceAlicloudConfigAggregateCompliancePack() *schema.Resource {
 			"aggregate_compliance_pack_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"aggregator_id": {
 				Type:     schema.TypeString,
@@ -301,6 +300,11 @@ func resourceAlicloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData,
 		update = true
 	}
 	request["RiskLevel"] = d.Get("risk_level")
+
+	if d.HasChange("aggregate_compliance_pack_name") {
+		update = true
+	}
+	request["CompliancePackName"] = d.Get("aggregate_compliance_pack_name")
 	if update {
 		action := "UpdateAggregateCompliancePack"
 		conn, err := client.NewConfigClient()
