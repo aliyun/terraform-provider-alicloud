@@ -275,6 +275,64 @@ func TestAccAlicloudEcsDisk_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudEcsDisk_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_disk.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsDisk")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsdisk%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsDiskBasic1Dependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disk_name":    name,
+					"size":         "500",
+					"payment_type": "Subscription",
+					"instance_id":  "${alicloud_instance.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disk_name":    name,
+						"zone_id":      CHECKSET,
+						"size":         "500",
+						"instance_id":  CHECKSET,
+						"payment_type": "Subscription",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"advanced_features", "type", "dedicated_block_storage_cluster_id", "dry_run", "encrypt_algorithm", "storage_set_id", "storage_set_partition_number"},
+			},
+		},
+	})
+}
+
 var AlicloudEcsDiskMap = map[string]string{
 	"payment_type":      "PayAsYouGo",
 	"performance_level": "",
@@ -292,6 +350,50 @@ resource "alicloud_kms_key" "key" {
 	description             = var.name
 	pending_window_in_days  = "7"
 	key_state               = "Enabled"
+}
+`, name)
+}
+
+func AlicloudEcsDiskBasic1Dependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+			default = "%s"
+		}
+data "alicloud_instance_types" "default" {
+  cpu_core_count       = 2
+  memory_size          = 4
+  instance_charge_type = "PrePaid"
+}
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  owners      = "system"
+}
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+}
+resource "alicloud_security_group" "default" {
+  name        = var.name
+  vpc_id      = data.alicloud_vswitches.default.vswitches.0.vpc_id
+}
+resource "alicloud_instance" "default" {
+  image_id                      = data.alicloud_images.default.images.0.id
+  security_groups               = [alicloud_security_group.default.id]
+  instance_type                 = data.alicloud_instance_types.default.instance_types.0.id
+  system_disk_category          = "cloud_efficiency"
+  instance_name                 = var.name
+  spot_strategy                 = "NoSpot"
+  spot_price_limit              = "0"
+  security_enhancement_strategy = "Active"
+  user_data                     = "I_am_user_data"
+  instance_charge_type          = "PrePaid"
+  period                        = 1
+  vswitch_id                    = data.alicloud_vswitches.default.ids.0
+  force_delete                  = true
 }
 `, name)
 }
