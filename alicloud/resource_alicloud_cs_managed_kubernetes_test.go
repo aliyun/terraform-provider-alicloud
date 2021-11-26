@@ -114,7 +114,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"name", "new_nat_gateway", "pod_cidr",
 					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca", "force_update",
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
-					"worker_instance_charge_type", "worker_instance_types", "log_config",
+					"worker_instance_charge_type", "worker_instance_types", "log_config", "worker_number",
 					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes",
 					"cpu_policy", "proxy_mode", "cluster_domain", "custom_san", "node_port_range", "os_type", "platform", "timezone", "runtime", "taints", "encryption_provider_key", "rds_instances", "load_balancer_spec"},
 			},
@@ -281,7 +281,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 					"worker_instance_charge_type", "worker_instance_types", "log_config", "tags", "worker_data_disk_category", "worker_data_disk_size",
 					"master_vswitch_ids", "worker_number", "worker_vswitch_ids", "exclude_autoscaler_nodes", "cpu_policy", "proxy_mode", "cluster_domain",
 					"custom_san", "node_port_range", "os_type", "platform", "timezone", "runtime", "worker_disk_snapshot_policy_id", "worker_disk_performance_level",
-					"taints", "encryption_provider_key", "worker_data_disks", "rds_instances", "load_balancer_spec"},
+					"taints", "encryption_provider_key", "worker_data_disks", "rds_instances", "load_balancer_spec", "worker_number"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -412,7 +412,7 @@ func TestAccAlicloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 					"node_cidr_mask", "vswitch_ids", "worker_disk_category", "worker_disk_size", "control_plane_log_components",
 					"worker_instance_charge_type", "worker_instance_types", "os_type", "platform", "timezone", "password",
 					"exclude_autoscaler_nodes", "install_cloud_monitor", "proxy_mode", "slb_internet_enabled", "worker_vswitch_ids",
-					"cpu_policy", "enable_ssh", "is_enterprise_security_group",
+					"cpu_policy", "enable_ssh", "is_enterprise_security_group", "worker_number",
 				},
 			},
 		},

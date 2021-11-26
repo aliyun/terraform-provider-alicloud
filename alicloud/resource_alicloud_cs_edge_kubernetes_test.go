@@ -154,7 +154,7 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
 					"install_cloud_monitor", "force_update", "node_cidr_mask", "slb_internet_enabled", "worker_disk_category",
-					"worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config",
+					"worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config", "worker_number",
 					"worker_vswitch_ids", "proxy_mode", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},
 			},
 			{
@@ -293,7 +293,7 @@ func TestAccAlicloudEdgeKubernetes_essd(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
+				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password", "worker_number",
 					"install_cloud_monitor", "force_update", "node_cidr_mask", "worker_number", "slb_internet_enabled", "tags", "worker_disk_category",
 					"worker_disk_size", "worker_instance_charge_type", "worker_disk_snapshot_policy_id", "worker_instance_types", "log_config",
 					"worker_vswitch_ids", "proxy_mode", "worker_disk_performance_level", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},
