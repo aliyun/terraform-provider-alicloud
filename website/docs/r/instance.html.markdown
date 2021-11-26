@@ -209,6 +209,7 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
 * `status` - (Optional 1.85.0+) The instance status. Valid values: ["Running", "Stopped"]. You can control the instance start and stop through this parameter. Default to `Running`.
 * `hpc_cluster_id` - (Optional, ForceNew, Available in 1.144.0+) The ID of the Elastic High Performance Computing (E-HPC) cluster to which to assign the instance.
 * `secondary_private_ips` - (Optional, Available in 1.144.0+) A list of Secondary private IP addresses which is selected from within the CIDR block of the VSwitch.
+* `secondary_private_ip_address_count` - (Optional, Available in 1.145.0+) The number of private IP addresses to be automatically assigned from within the CIDR block of the vswitch. **NOTE:** To assign secondary private IP addresses, you must specify `secondary_private_ips` or `secondary_private_ip_address_count` but not both.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
