@@ -76,7 +76,7 @@ resource "alicloud_config_aggregate_compliance_pack" "default" {
 
 The following arguments are supported:
 
-* `aggregate_compliance_pack_name` - (Required, ForceNew)The name of compliance package name.
+* `aggregate_compliance_pack_name` - (Required)The name of compliance package name. **NOTE:** the `aggregate_compliance_pack_name` supports modification since V1.145.0.
 * `aggregator_id` - (Required, ForceNew)The ID of aggregator.
 * `compliance_pack_template_id` - (Optional form v1.141.0, ForceNew)The Template ID of compliance package.
 * `config_rules` - (Optional, Computed, Deprecated form v1.141.0) A list of Config Rules.
