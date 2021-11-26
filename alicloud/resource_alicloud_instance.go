@@ -417,6 +417,14 @@ func resourceAliyunInstance() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+				Computed:      true,
+				ConflictsWith: []string{"secondary_private_ip_address_count"},
+			},
+			"secondary_private_ip_address_count": {
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"secondary_private_ips"},
 			},
 		},
 	}
@@ -629,18 +637,18 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		}
 	}
 	if len(networkInterfaceId) != 0 {
-		object, err := ecsService.DescribeNetworkInterface(networkInterfaceId)
+		object, err := ecsService.DescribeEcsNetworkInterface(networkInterfaceId)
 		if err != nil {
 			return WrapError(err)
 		}
-		secondaryPrivateIpsSli := make([]string, 0)
-		fmt.Println(object, secondaryPrivateIpsSli)
-		for _, obj := range object.PrivateIpSets.PrivateIpSet {
-			if !obj.Primary {
-				secondaryPrivateIpsSli = append(secondaryPrivateIpsSli, obj.PrivateIpAddress)
+		secondaryPrivateIpsSli := make([]interface{}, 0, len(object["PrivateIpSets"].(map[string]interface{})["PrivateIpSet"].([]interface{})))
+		for _, v := range object["PrivateIpSets"].(map[string]interface{})["PrivateIpSet"].([]interface{}) {
+			if !v.(map[string]interface{})["Primary"].(bool) {
+				secondaryPrivateIpsSli = append(secondaryPrivateIpsSli, v.(map[string]interface{})["PrivateIpAddress"])
 			}
 		}
 		d.Set("secondary_private_ips", secondaryPrivateIpsSli)
+		d.Set("secondary_private_ip_address_count", len(secondaryPrivateIpsSli))
 	}
 
 	return nil
@@ -993,6 +1001,95 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 			d.SetPartial("secondary_private_ips")
+		}
+
+	}
+
+	if d.HasChange("secondary_private_ip_address_count") {
+		client := meta.(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
+		var response map[string]interface{}
+		instance, err := ecsService.DescribeInstance(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		// query for the Primary NetworkInterfaceId
+		networkInterfaceId := ""
+		for _, obj := range instance.NetworkInterfaces.NetworkInterface {
+			if obj.Type == "Primary" {
+				networkInterfaceId = obj.NetworkInterfaceId
+				break
+			}
+		}
+		privateIpList := expandStringList(d.Get("secondary_private_ips").(*schema.Set).List())
+		oldIpsCount, newIpsCount := d.GetChange("secondary_private_ip_address_count")
+		if oldIpsCount != nil && newIpsCount != nil && newIpsCount != len(privateIpList) {
+			diff := newIpsCount.(int) - oldIpsCount.(int)
+			if diff > 0 {
+				action := "AssignPrivateIpAddresses"
+				request := map[string]interface{}{
+					"RegionId":                       client.RegionId,
+					"NetworkInterfaceId":             networkInterfaceId,
+					"ClientToken":                    buildClientToken(action),
+					"SecondaryPrivateIpAddressCount": diff,
+				}
+				conn, err := client.NewEcsClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				d.SetPartial("secondary_private_ip_address_count")
+			}
+			if diff < 0 {
+				diff *= -1
+				action := "UnassignPrivateIpAddresses"
+				request := map[string]interface{}{
+					"RegionId":           client.RegionId,
+					"NetworkInterfaceId": networkInterfaceId,
+					"ClientToken":        buildClientToken(action),
+				}
+				for index, val := range privateIpList[:diff] {
+					request[fmt.Sprintf("PrivateIpAddress.%d", index+1)] = val
+				}
+
+				conn, err := client.NewEcsClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				addDebug(action, response, request)
+				d.SetPartial("secondary_private_ip_address_count")
+			}
 		}
 
 	}

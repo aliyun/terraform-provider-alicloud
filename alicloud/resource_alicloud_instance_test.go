@@ -1703,6 +1703,7 @@ func TestAccAlicloudEcsInstancSecondaryIps(t *testing.T) {
 					"system_disk_category":          "cloud_essd",
 					"vswitch_id":                    "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"host_name":                     "test",
+					"instance_name":                 "${var.name}",
 					"internet_charge_type":          "PayByTraffic",
 					"instance_charge_type":          "PostPaid",
 					"password":                      "Tftest123",
@@ -1718,6 +1719,7 @@ func TestAccAlicloudEcsInstancSecondaryIps(t *testing.T) {
 						"image_id":                      CHECKSET,
 						"vswitch_id":                    CHECKSET,
 						"secondary_private_ips.#":       "1",
+						"instance_name":                 name,
 						"password":                      "Tftest123",
 						"internet_max_bandwidth_out":    "5",
 						"public_ip":                     CHECKSET,
@@ -1744,6 +1746,90 @@ func TestAccAlicloudEcsInstancSecondaryIps(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"password", "security_enhancement_strategy", "dry_run"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudEcsInstancSecondaryIpCount(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcSecondaryIps)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                           "${data.alicloud_images.default.images.0.id}",
+					"security_groups":                    []string{"${alicloud_security_group.default.id}"},
+					"instance_type":                      "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"system_disk_category":               "cloud_essd",
+					"vswitch_id":                         "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"host_name":                          "test",
+					"instance_name":                      "${var.name}",
+					"internet_charge_type":               "PayByTraffic",
+					"instance_charge_type":               "PostPaid",
+					"password":                           "Tftest123",
+					"user_data":                          "I_am_user_data",
+					"security_enhancement_strategy":      "Active",
+					"internet_max_bandwidth_out":         "5",
+					"secondary_private_ip_address_count": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_id":                           CHECKSET,
+						"vswitch_id":                         CHECKSET,
+						"instance_name":                      name,
+						"password":                           "Tftest123",
+						"internet_max_bandwidth_out":         "5",
+						"public_ip":                          CHECKSET,
+						"security_enhancement_strategy":      "Active",
+						"system_disk_category":               "cloud_essd",
+						"secondary_private_ip_address_count": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_private_ip_address_count": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_private_ip_address_count": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_private_ip_address_count": "0"},
+				),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_private_ip_address_count": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "security_enhancement_strategy", "secondary_private_ip_address_count", "dry_run"},
 			},
 		},
 	})
