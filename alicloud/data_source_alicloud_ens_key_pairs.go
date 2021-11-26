@@ -158,7 +158,6 @@ func dataSourceAlicloudEnsKeyPairsRead(d *schema.ResourceData, meta interface{})
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		fmt.Println(err)
 		return WrapError(err)
 	}
 

@@ -422,7 +422,7 @@ func parseSecurityRuleId(d *schema.ResourceData, meta interface{}, index int) (r
 	parts := strings.Split(d.Id(), ":")
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Printf("Panicing %s\r\n", e)
+			log.Printf("Panicing %s\r\n", e)
 			result = ""
 		}
 	}()
