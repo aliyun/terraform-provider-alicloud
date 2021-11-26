@@ -39,7 +39,7 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic(t *testing.T) {
 					"peer_location":            "testacc12345",
 					"physical_connection_name": "${var.name}",
 					"description":              "${var.name}",
-					"line_operator":            "CT",
+					"line_operator":            "CU",
 					"port_type":                "1000Base-LX",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -49,7 +49,7 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic(t *testing.T) {
 						"peer_location":            "testacc12345",
 						"physical_connection_name": name,
 						"description":              name,
-						"line_operator":            "CT",
+						"line_operator":            "CU",
 						"port_type":                "1000Base-LX",
 					}),
 				),
@@ -359,7 +359,7 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sexpressconnectphysicalconnection%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectPhysicalConnectionBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectPhysicalConnectionBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -373,27 +373,29 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					// currently， not all access points are available
 					//"access_point_id":          "${data.alicloud_express_connect_access_points.default.ids.0}",
-					"access_point_id":          getAccessPointId(),
-					"type":                     "VPC",
-					"peer_location":            "testacc12345",
-					"physical_connection_name": "${var.name}",
-					"description":              "${var.name}",
-					"line_operator":            "CU",
-					"port_type":                "1000Base-LX",
-					"bandwidth":                "10",
-					"circuit_code":             "longtel001",
+					"access_point_id":                  getAccessPointId(),
+					"redundant_physical_connection_id": "${data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id}",
+					"type":                             "VPC",
+					"peer_location":                    "testacc12345",
+					"physical_connection_name":         name,
+					"description":                      "${var.name}",
+					"line_operator":                    "CU",
+					"port_type":                        "10GBase-LR",
+					"bandwidth":                        "10",
+					"circuit_code":                     "longtel001",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"access_point_id":          CHECKSET,
-						"type":                     "VPC",
-						"peer_location":            "testacc12345",
-						"physical_connection_name": name,
-						"description":              name,
-						"line_operator":            "CU",
-						"port_type":                "1000Base-LX",
-						"bandwidth":                "10",
-						"circuit_code":             "longtel001",
+						"access_point_id":                  CHECKSET,
+						"redundant_physical_connection_id": CHECKSET,
+						"type":                             "VPC",
+						"peer_location":                    "testacc12345",
+						"physical_connection_name":         name,
+						"description":                      name,
+						"line_operator":                    "CU",
+						"port_type":                        "10GBase-LR",
+						"bandwidth":                        "10",
+						"circuit_code":                     "longtel001",
 					}),
 				),
 			},
@@ -420,5 +422,22 @@ variable "name" {
 data "alicloud_express_connect_access_points" "default" {
 	status = "recommended"
 }
+`, name)
+}
+
+func AlicloudExpressConnectPhysicalConnectionBasicDependence1(name string) string {
+	return fmt.Sprintf(` 
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_express_connect_access_points" "default" {
+	status = "recommended"
+}
+
+data "alicloud_express_connect_physical_connections" "nameRegex" {
+  name_regex = "^preserved-NODELETING"
+}
+
 `, name)
 }

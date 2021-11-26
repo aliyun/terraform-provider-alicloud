@@ -114,7 +114,7 @@ var AccessPointNamePrefixMap = map[string]string{
 var AccessPointIdMap = map[string]string{
 	string(connectivity.Hangzhou):     "ap-cn-hangzhou-yh-B",
 	string(connectivity.Beijing):      "ap-cn-beijing-cy-A",
-	string(connectivity.Shanghai):     "ap-cn-shanghai-bs-D",
+	string(connectivity.Shanghai):     "ap-cn-shanghai-pd-D",
 	string(connectivity.APSouthEast1): "ap-sg-singpore-A",
 	string(connectivity.EUCentral1):   "ap-eu-frankfurt-B",
 }
