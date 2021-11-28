@@ -1,4 +1,34 @@
 ## 1.145.0 (Unreleased)
+
+- **New Resource:** `alicloud_ros_stack_instance` [GH-4258]
+- **New Resource:** `alicloud_eci_virtual_node` [GH-4266]
+- **New Resource:** `alicloud_oos_application` [GH-4271]
+- **New Data Source:** `alicloud_oos_applications` [GH-4271]  
+- **New Data Source:** `alicloud_eci_virtual_nodes` [GH-4266]  
+- **New Data Source:** `alicloud_ros_stack_instances` [GH-4258]
+- **New Data Source:** `alicloud_eci_zones` [GH-4266]
+
+ENHANCEMENTS:
+
+- resource/config_rule: Support configuring the specified field status [GH-4242]
+- resource/alicloud_click_house_db_cluster: Add db_cluster_access_white_list attribute. [GH-4247]
+- resource/config_aggregate_config_rule: Support updating the filed status [GH-4250]
+- resource/alicloud_cloud_sso_access_configuration: Modify the parametrs permission_policy_name and permission_policy_type as required parameters. [GH-4263]
+- resource/alicloud_cloud_sso_access_assignment: Optimize the logic of resource acquisition. [GH-4263]
+- resource/cloud_storage_gateway_gateway_file_share_test: Refine test cases. [GH-4264]
+- resource/alicloud_cs_kubernetes_node_pool: Support multi security groups. [GH-4267]
+- resource/alicloud_instance: Support configuring the filed secondary_private_ip_address_count [GH-4270]
+- resource/config_aggregate_compliance_pack: Support updating the filed aggregate_compliance_pack_name [GH-4282]
+- datasource/alicloud_images: Adds two attribute image_id and image_name [GH-4285]  
+
+BUG FIXES:
+
+- resource/alicloud_ecs_disk: Fixes the InvalidParameter error when modifying the disk charge type [GH-4284]
+- resource/alicloud_cs_serverless_kubernetes: fix vswitch_ids returns null [GH-4267]
+- resource/alicloud_cs_managed_kubernetes: Fix the inconsistency of the number of cluster nodes [GH-4279]
+- data_source/alb_security_policies: Fixing query errors; Refine test cases. [GH-4283]
+- doc/cloud_storage_gateway_gateway_cache_disk: Fix formatting errors. [GH-4264]
+
 ## 1.144.0 (November 21, 2021)
 
 - **New Resource:** `alicloud_direct_mail_tag` ([#4178](https://github.com/aliyun/terraform-provider-alicloud/issues/4178))
