@@ -1,0 +1,65 @@
+---
+groups:
+  - name: All
+    jobs:
+      - verify-terraform-prev
+
+shared:
+  - &validate
+    task: validate
+    file: terraform-provider-alicloud/ci/tasks/module-test.yml
+    params: &validate-params
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
+      ALICLOUD_REGION: {{alicloud_region}}
+      terraform_version: {{terraform_version}}
+  - &clone-provider
+    get: terraform-provider-alicloud
+    resource: terraform-provider-alicloud
+    trigger: true
+  - &build
+    task: build
+    file: terraform-provider-alicloud/ci/tasks/build-package.yml
+    params:
+      terraform_provider_access_key: {{alicloud_access_key}}
+      terraform_provider_secret_key: {{alicloud_secret_key}}
+      terraform_provider_bucket_name: {{terraform_provider_bucket_name}}
+      terraform_provider_bucket_region: {{terraform_provider_bucket_region}}
+
+
+
+jobs:
+  - name: verify-terraform-prev
+    serial: true
+    plan:
+      - <<: *clone-provider
+      - get: aliyun-cli
+        trigger: false
+        resource: aliyun-cli
+      - <<: *validate
+        params:
+          <<: *validate-params
+          terraform_version: "0.13.7"
+          Stage: "prev"
+      - <<: *validate
+        params:
+          <<: *validate-params
+          terraform_version: "0.13.7"
+          Stage: "next"
+
+
+resources:
+  - name: terraform-provider-alicloud
+    type: git
+    source:
+      uri: https://github.com/Wanghx0991/terraform-provider-alicloud.git
+      branch: master
+  - name: aliyun-cli
+    type: s3
+    source:
+      access_key_id: {{aliyun_cli_access_key}}
+      secret_access_key: {{aliyun_cli_secret_key}}
+      bucket: {{aliyun_cli_bucket}}
+      regexp: .*-cli-linux-3\.0\.(\d+)-amd64\.tgz
+      region_name: {{aliyun_cli_region}}
+      endpoint: oss-((aliyun_cli_region)).aliyuncs.com
