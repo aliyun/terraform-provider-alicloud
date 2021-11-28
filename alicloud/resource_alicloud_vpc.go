@@ -113,6 +113,7 @@ func resourceAlicloudVpc() *schema.Resource {
 func resourceAlicloudVpcCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
+	fmt.Println("test")
 	var response map[string]interface{}
 	action := "CreateVpc"
 	request := make(map[string]interface{})
