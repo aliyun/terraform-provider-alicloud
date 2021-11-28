@@ -385,7 +385,7 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	requestId = response.RequestId
 
 	if len(response.AvailableZones.AvailableZone) < 1 {
-		err = WrapError(Error("There are no availability resources in the region: %s. RequestId: %s.", client.RegionId, requestId))
+		err = WrapError(Error("There are no available zones in the API DescribeAvailableResource response: %#v.", response))
 		return
 	}
 
@@ -409,19 +409,19 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	}
 	if zoneId != "" {
 		if !valid {
-			err = WrapError(Error("Availability zone %s status is not available in the region %s. Expected availability zones: %s. RequestId: %s.",
-				zoneId, client.RegionId, strings.Join(expectedZones, ", "), requestId))
+			err = WrapError(Error("Availability zone %s status is not available in the region %s. Expected availability zones: %s. \nDescribeAvailableResource response: %#v.",
+				zoneId, client.RegionId, strings.Join(expectedZones, ", "), response))
 			return
 		}
 		if soldout {
-			err = WrapError(Error("Availability zone %s status is sold out in the region %s. Expected availability zones: %s. RequestId: %s.",
-				zoneId, client.RegionId, strings.Join(expectedZones, ", "), requestId))
+			err = WrapError(Error("Availability zone %s status is sold out in the region %s. Expected availability zones: %s. \nDescribeAvailableResource response: %#v.",
+				zoneId, client.RegionId, strings.Join(expectedZones, ", "), response))
 			return
 		}
 	}
 
 	if len(validZones) <= 0 {
-		err = WrapError(Error("There is no availability resources in the region %s. Please choose another region. RequestId: %s.", client.RegionId, response.RequestId))
+		err = WrapError(Error("There is no availability resources in the region %s. Please choose another region. \nDescribeAvailableResource response: %#v.", client.RegionId, response))
 		return
 	}
 
