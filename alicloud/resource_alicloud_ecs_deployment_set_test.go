@@ -189,6 +189,54 @@ func TestAccAlicloudECSDeploymentSet_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudECSDeploymentSet_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_deployment_set.default"
+	ra := resourceAttrInit(resourceId, AlicloudECSDeploymentSetMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsDeploymentSet")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsdeploymentset%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECSDeploymentSetBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"strategy":                              "Availability",
+					"domain":                                "Default",
+					"granularity":                           "Host",
+					"deployment_set_name":                   name,
+					"description":                           name,
+					"on_unable_to_redeploy_failed_instance": "CancelMembershipAndStart",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"strategy":            "Availability",
+						"domain":              "Default",
+						"granularity":         "Host",
+						"deployment_set_name": name,
+						"description":         name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"on_unable_to_redeploy_failed_instance"},
+			},
+		},
+	})
+}
+
 var AlicloudECSDeploymentSetMap0 = map[string]string{}
 
 func AlicloudECSDeploymentSetBasicDependence0(name string) string {
