@@ -30,6 +30,7 @@ output "cddc_dedicated_host_group_id" {
 
 The following arguments are supported:
 
+* `name_regex` - (Optional, ForceNew, Available in 1.147.0+) A regex string to filter results by Dedicated Host Group name.
 * `engine` - (Optional, ForceNew) Database Engine Type.
 * `ids` - (Optional, ForceNew, Computed)  A list of Dedicated Host Group IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -38,6 +39,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `names` - A list of Dedicated Host Group names.
 * `groups` - A list of Cddc Dedicated Host Groups. Each element contains the following attributes:
 	* `allocation_policy` -  The policy that is used to allocate resources in the dedicated cluster. Valid values:`Evenly`,`Intensively`
 	* `bastion_instance_id` - The Bastion Instance id of the Dedicated Host Group.
