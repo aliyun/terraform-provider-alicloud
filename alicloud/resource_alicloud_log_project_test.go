@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/denverdino/aliyungo/cs"
 	"log"
 	"strings"
 	"testing"
+
+	"github.com/denverdino/aliyungo/cs"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"

@@ -20,19 +20,32 @@ func TestAccAlicloudCddcDedicatedHostGroupsDataSource(t *testing.T) {
 			"ids": `["${alicloud_cddc_dedicated_host_group.default.id}_fake"]`,
 		}),
 	}
-
-	allConf := dataSourceTestAccConfig{
+	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCddcDedicatedHostGroupsDataSourceName(rand, map[string]string{
-			"ids":    `["${alicloud_cddc_dedicated_host_group.default.id}"]`,
-			"engine": `"MySQL"`,
+			"ids":        `["${alicloud_cddc_dedicated_host_group.default.id}"]`,
+			"name_regex": `"${alicloud_cddc_dedicated_host_group.default.dedicated_host_group_desc}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCddcDedicatedHostGroupsDataSourceName(rand, map[string]string{
-			"ids":    `["${alicloud_cddc_dedicated_host_group.default.id}_fake"]`,
-			"engine": `"MySQL_fake"`,
+			"ids":        `["${alicloud_cddc_dedicated_host_group.default.id}_fake"]`,
+			"name_regex": `"${alicloud_cddc_dedicated_host_group.default.dedicated_host_group_desc}_fake"`,
+		}),
+	}
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCddcDedicatedHostGroupsDataSourceName(rand, map[string]string{
+			"ids":        `["${alicloud_cddc_dedicated_host_group.default.id}"]`,
+			"engine":     `"MySQL"`,
+			"name_regex": `"${alicloud_cddc_dedicated_host_group.default.dedicated_host_group_desc}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudCddcDedicatedHostGroupsDataSourceName(rand, map[string]string{
+			"ids":        `["${alicloud_cddc_dedicated_host_group.default.id}_fake"]`,
+			"engine":     `"MySQL_fake"`,
+			"name_regex": `"${alicloud_cddc_dedicated_host_group.default.dedicated_host_group_desc}_fake"`,
 		}),
 	}
 	var existAlicloudCddcDedicatedHostGroupsNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
+			"names.#":                            "1",
+			"names.0":                            fmt.Sprintf("tf-testAccName-%d", rand),
 			"ids.#":                              "1",
 			"groups.#":                           "1",
 			"groups.0.engine":                    "mysql",
@@ -59,7 +72,7 @@ func TestAccAlicloudCddcDedicatedHostGroupsDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.CddcSupportRegions)
 	}
-	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, allConf)
+	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudCddcDedicatedHostGroupsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
