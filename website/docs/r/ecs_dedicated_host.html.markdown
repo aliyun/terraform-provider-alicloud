@@ -44,6 +44,12 @@ resource "alicloud_ecs_dedicated_host" "default" {
   sale_cycle = "Month"
 }
 ```
+### Deleting alicloud_ecs_dedicated_host or removing it from your configuration
+
+The alicloud_ecs_dedicated_host resource allows you to manage payment_type = "PrePaid" dedicated host, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration
+will remove it from your state file and management, but will not destroy the Dedicated Host.
+You can resume managing the subscription dedicated host via the AlibabaCloud Console.
 
 ## Argument Reference
 
