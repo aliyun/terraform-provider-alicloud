@@ -158,3 +158,4 @@ var EcdUserSupportRegions = []Region{Shanghai}
 var VpcIpv6GatewaySupportRegions = []Region{Qingdao, Beijing, Zhangjiakou, Huhehaote, WuLanChaBu, Hangzhou, Shanghai, Shenzhen, GuangZhou, Hongkong, ChengDu, HeYuan, APSouthEast1, APSouthEast6, USEast1, EUCentral1}
 var CmsDynamicTagGroupSupportRegions = []Region{Shanghai}
 var OOSApplicationSupportRegions = []Region{Hangzhou}
+var DTSSupportRegions = []Region{Hangzhou, APSouth1, ShenZhenFinance, CnNorth2Gov1, Qingdao, ShanghaiFinance, USWest1, APNorthEast1, Beijing, Hongkong, APSouthEast1, APSouthEast3, EUCentral1, APSouthEast5, Shenzhen, APSouthEast2, Huhehaote, USEast1, Zhangjiakou, EUWest1, MEEast1, Shanghai}

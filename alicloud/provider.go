@@ -616,6 +616,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ros_regions":                                 dataSourceAlicloudRosRegions(),
 			"alicloud_ecs_dedicated_host_clusters":                 dataSourceAlicloudEcsDedicatedHostClusters(),
 			"alicloud_oos_application_groups":                      dataSourceAlicloudOosApplicationGroups(),
+			"alicloud_dts_consumer_channels":                       dataSourceAlicloudDtsConsumerChannels(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1112,6 +1113,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ros_stack_instance":                                   resourceAlicloudRosStackInstance(),
 			"alicloud_ecs_dedicated_host_cluster":                           resourceAlicloudEcsDedicatedHostCluster(),
 			"alicloud_oos_application_group":                                resourceAlicloudOosApplicationGroup(),
+			"alicloud_dts_consumer_channel":                                 resourceAlicloudDtsConsumerChannel(),
 		},
 
 		ConfigureFunc: providerConfigure,
