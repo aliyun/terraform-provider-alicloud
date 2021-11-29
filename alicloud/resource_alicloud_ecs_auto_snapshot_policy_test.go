@@ -290,3 +290,76 @@ func TestAccAlicloudSnapshotPolicyMulti(t *testing.T) {
 		},
 	})
 }
+
+func TestAccAlicloudEcsAutoSnapshotPolicyBasic1(t *testing.T) {
+
+	resourceId := "alicloud_ecs_auto_snapshot_policy.default"
+	randInt := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccSnapshotPolicyBasic%d", randInt)
+	basicMap := map[string]string{
+		"name":              name,
+		"repeat_weekdays.#": "1",
+		"retention_days":    "-1",
+		"time_points.#":     "1",
+	}
+	var v map[string]interface{}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return ""
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                            name,
+					"repeat_weekdays":                 []string{"1"},
+					"retention_days":                  "-1",
+					"time_points":                     []string{"1"},
+					"copied_snapshots_retention_days": "2",
+					"enable_cross_region_copy":        "true",
+					"target_copy_regions":             []string{"cn-beijing"},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                            name,
+						"repeat_weekdays.#":               "1",
+						"retention_days":                  "-1",
+						"time_points.#":                   "1",
+						"copied_snapshots_retention_days": "2",
+						"enable_cross_region_copy":        "true",
+						"target_copy_regions.#":           "1",
+						"tags.%":                          "2",
+						"tags.Created":                    "TF",
+						"tags.For":                        "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
