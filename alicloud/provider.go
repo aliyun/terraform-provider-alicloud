@@ -617,6 +617,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_dedicated_host_clusters":                 dataSourceAlicloudEcsDedicatedHostClusters(),
 			"alicloud_oos_application_groups":                      dataSourceAlicloudOosApplicationGroups(),
 			"alicloud_dts_consumer_channels":                       dataSourceAlicloudDtsConsumerChannels(),
+			"alicloud_emr_clusters":                                dataSourceAlicloudEmrClusters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
