@@ -28,8 +28,11 @@ variable "creation" {
   default = "Rds"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_db_zones" "default" {}
+
+data "alicloud_db_instance_classes" "default" {
+  engine         = "MySQL"
+  engine_version = "5.6"
 }
 
 data "alicloud_vpcs" "default" {
@@ -38,13 +41,13 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids[0]
-  zone_id = data.alicloud_zones.default.zones[0].id
+  zone_id = data.alicloud_db_zones.default.zones[0].id
 }
 
-resource "alicloud_db_instance" "instance" {
+resource "alicloud_db_instance" "default" {
   engine           = "MySQL"
   engine_version   = "5.6"
-  instance_type    = "rds.mysql.s1.small"
+  instance_type    = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
   instance_storage = "10"
   vswitch_id       = data.alicloud_vswitches.default.ids[0]
   instance_name    = var.name
