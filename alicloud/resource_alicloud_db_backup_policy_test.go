@@ -164,6 +164,16 @@ func TestAccAlicloudRdsDBBackupPolicyMySql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"released_keep_policy": "Lastest",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"released_keep_policy": "Lastest",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_id":                     "${alicloud_db_instance.default.id}",
 					"preferred_backup_period":         []string{"Tuesday", "Monday", "Wednesday"},
 					"preferred_backup_time":           "13:00Z-14:00Z",
