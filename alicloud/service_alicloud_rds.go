@@ -681,6 +681,11 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 		archiveBackupKeepPolicy = v.(string)
 	}
 
+	releasedKeepPolicy := ""
+	if v, ok := d.GetOk("released_keep_policy"); ok {
+		releasedKeepPolicy = v.(string)
+	}
+
 	instance, err := s.DescribeDBInstance(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -700,6 +705,7 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			"CompressType":          compressType,
 			"BackupPolicyMode":      "DataBackupPolicy",
 			"SourceIp":              s.client.SourceIp,
+			"ReleasedKeepPolicy":    releasedKeepPolicy,
 		}
 		if instance["Engine"] == "SQLServer" && logBackupFrequency == "LogInterval" {
 			request["LogBackupFrequency"] = logBackupFrequency
