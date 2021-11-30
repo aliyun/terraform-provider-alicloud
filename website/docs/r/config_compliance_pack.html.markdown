@@ -63,7 +63,7 @@ resource "alicloud_config_compliance_pack" "default" {
 
 The following arguments are supported:
 
-* `compliance_pack_name` - (Required, ForceNew) The Compliance Package Name.
+* `compliance_pack_name` - (Required) The Compliance Package Name. . **NOTE:** the `compliance_pack_name` supports modification since V1.146.0.
 * `compliance_pack_template_id` - (Optional, ForceNew) Compliance Package Template Id.
 * `config_rules` - (Optional form v1.141.0, Computed, Deprecated form v1.141.0) A list of Config Rules.
 * `config_rule_ids` - (Optional, Computed, Available in v1.141.0) A list of Config Rule IDs.

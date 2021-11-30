@@ -340,98 +340,97 @@ func resourceAlicloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData,
 		d.SetPartial("config_rules")
 	}
 
-	if _, ok := d.GetOk("config_rule_ids"); ok {
-		if d.HasChange("config_rule_ids") {
+	if d.HasChange("config_rule_ids") {
 
-			oraw, nraw := d.GetChange("config_rule_ids")
-			remove := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
-			create := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
-			parts, err := ParseResourceId(d.Id(), 2)
+		oraw, nraw := d.GetChange("config_rule_ids")
+		remove := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
+		create := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
+		parts, err := ParseResourceId(d.Id(), 2)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		if len(remove) > 0 {
+			removeRulesReq := map[string]interface{}{
+				"AggregatorId":     parts[0],
+				"CompliancePackId": parts[1],
+			}
+
+			ruleMaps := make([]interface{}, 0)
+			for _, rule := range remove {
+				ruleArg := rule.(map[string]interface{})
+				ruleMaps = append(ruleMaps, ruleArg["config_rule_id"].(string))
+			}
+			removeRulesReq["ConfigRuleIds"] = convertListToCommaSeparate(ruleMaps)
+
+			action := "DetachAggregateConfigRuleToCompliancePack"
+			conn, err := client.NewConfigClient()
 			if err != nil {
 				return WrapError(err)
 			}
-
-			if len(remove) > 0 {
-				removeRulesReq := map[string]interface{}{
-					"AggregatorId":     parts[0],
-					"CompliancePackId": parts[1],
-				}
-
-				ruleMaps := make([]interface{}, 0)
-				for _, rule := range remove {
-					ruleArg := rule.(map[string]interface{})
-					ruleMaps = append(ruleMaps, ruleArg["config_rule_id"].(string))
-				}
-				removeRulesReq["ConfigRuleIds"] = convertListToCommaSeparate(ruleMaps)
-
-				action := "DetachAggregateConfigRuleToCompliancePack"
-				conn, err := client.NewConfigClient()
+			removeRulesReq["ClientToken"] = buildClientToken("DetachAggregateConfigRuleToCompliancePack")
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, removeRulesReq, &runtime)
 				if err != nil {
-					return WrapError(err)
-				}
-				removeRulesReq["ClientToken"] = buildClientToken("DetachAggregateConfigRuleToCompliancePack")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, removeRulesReq, &runtime)
-					if err != nil {
-						if NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
 					}
-					return nil
-				})
-				addDebug(action, response, removeRulesReq)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return resource.NonRetryableError(err)
 				}
+				return nil
+			})
+			addDebug(action, response, removeRulesReq)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-
-			if len(create) > 0 {
-				addRulesReq := map[string]interface{}{
-					"AggregatorId":     parts[0],
-					"CompliancePackId": parts[1],
-				}
-
-				ruleMaps := make([]interface{}, 0)
-				for _, rule := range create {
-					ruleArg := rule.(map[string]interface{})
-					ruleMaps = append(ruleMaps, ruleArg["config_rule_id"].(string))
-				}
-				addRulesReq["ConfigRuleIds"] = convertListToCommaSeparate(ruleMaps)
-
-				action := "AttachAggregateConfigRuleToCompliancePack"
-				conn, err := client.NewConfigClient()
-				if err != nil {
-					return WrapError(err)
-				}
-				addRulesReq["ClientToken"] = buildClientToken("AttachAggregateConfigRuleToCompliancePack")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, addRulesReq, &runtime)
-					if err != nil {
-						if NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, addRulesReq)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-			}
-
-			d.SetPartial("config_rule_ids")
 		}
+
+		if len(create) > 0 {
+			addRulesReq := map[string]interface{}{
+				"AggregatorId":     parts[0],
+				"CompliancePackId": parts[1],
+			}
+
+			ruleMaps := make([]interface{}, 0)
+			for _, rule := range create {
+				ruleArg := rule.(map[string]interface{})
+				ruleMaps = append(ruleMaps, ruleArg["config_rule_id"].(string))
+			}
+			addRulesReq["ConfigRuleIds"] = convertListToCommaSeparate(ruleMaps)
+
+			action := "AttachAggregateConfigRuleToCompliancePack"
+			conn, err := client.NewConfigClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			addRulesReq["ClientToken"] = buildClientToken("AttachAggregateConfigRuleToCompliancePack")
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, addRulesReq, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, addRulesReq)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+
+		d.SetPartial("config_rule_ids")
 	}
+
 	d.Partial(false)
 	return resourceAlicloudConfigAggregateCompliancePackRead(d, meta)
 }
