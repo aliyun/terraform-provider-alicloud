@@ -660,6 +660,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_storage_capacity_units":                  dataSourceAlicloudEcsStorageCapacityUnits(),
 			"alicloud_dbfs_snapshots":                              dataSourceAlicloudDbfsSnapshots(),
 			"alicloud_msc_sub_contact_verification_message":        dataSourceAlicloudMscSubContactVerificationMessage(),
+			"alicloud_dts_migration_jobs":                          dataSourceAlicloudDtsMigrationJobs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1206,6 +1207,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nas_recycle_bin":                                      resourceAlicloudNasRecycleBin(),
 			"alicloud_dbfs_snapshot":                                        resourceAlicloudDbfsSnapshot(),
 			"alicloud_dbfs_instance_attachment":                             resourceAlicloudDbfsInstanceAttachment(),
+			"alicloud_dts_migration_job":                                    resourceAlicloudDtsMigrationJob(),
+			"alicloud_dts_migration_instance":                               resourceAlicloudDtsMigrationInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
