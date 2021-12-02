@@ -42,6 +42,12 @@ The following arguments are supported:
     `5`: Medium 1.
     `8`: Medium 2.
     `10`: Medium 3.
+
+* `auto_renew_duration` - (Optional, Available in v1.146.0+) Auto renewal period of an instance, in the unit of month. The value range is 1-12.
+* `renewal_status` - (Optional, Available in v1.146.0+) Whether to renew an accelerator automatically or not. Default to "Normal". Valid values:
+    - `AutoRenewal`: Enable auto renewal.
+    - `Normal`: Disable auto renewal.
+    - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
     
 ### Timeouts
 
