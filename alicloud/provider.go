@@ -619,6 +619,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dts_consumer_channels":                       dataSourceAlicloudDtsConsumerChannels(),
 			"alicloud_emr_clusters":                                dataSourceAlicloudEmrClusters(),
 			"alicloud_ecd_images":                                  dataSourceAlicloudEcdImages(),
+			"alicloud_oos_patch_baselines":                         dataSourceAlicloudOosPatchBaselines(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1117,6 +1118,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oos_application_group":                                resourceAlicloudOosApplicationGroup(),
 			"alicloud_dts_consumer_channel":                                 resourceAlicloudDtsConsumerChannel(),
 			"alicloud_ecd_image":                                            resourceAlicloudEcdImage(),
+			"alicloud_oos_patch_baseline":                                   resourceAlicloudOosPatchBaseline(),
 		},
 
 		ConfigureFunc: providerConfigure,
