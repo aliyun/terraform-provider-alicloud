@@ -36,22 +36,21 @@ func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
 					"source_endpoint_region":           "cn-hangzhou",
 					"destination_endpoint_engine_name": "MySQL",
 					"destination_endpoint_region":      "cn-hangzhou",
-					"instance_class":                   "small",
-					"sync_architecture":                "bidirectional",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"payment_type":      "PayAsYouGo",
-						"instance_class":    "small",
-						"sync_architecture": "bidirectional",
+						"payment_type":                     "PayAsYouGo",
+						"source_endpoint_engine_name":      "MySQL",
+						"source_endpoint_region":           "cn-hangzhou",
+						"destination_endpoint_engine_name": "MySQL",
+						"destination_endpoint_region":      "cn-hangzhou",
 					}),
 				),
 			},
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"destination_endpoint_region", "source_endpoint_engine_name", "source_endpoint_region", "destination_endpoint_engine_name",
-					"database_count", "status", "quantity", "sync_architecture", "auto_start", "compute_unit", "period", "used_time", "auto_pay", "order_type", "synchronization_direction"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"database_count", "status", "quantity", "sync_architecture", "auto_start", "compute_unit", "period", "used_time", "auto_pay", "order_type", "synchronization_direction"},
 			},
 		},
 	})
