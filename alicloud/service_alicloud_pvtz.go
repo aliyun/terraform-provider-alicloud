@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -17,7 +18,7 @@ type PvtzService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *PvtzService) DescribePvtzZone(id string) (object map[string]interface{}, err error) {
+func (s *PvtzService) DescribePvtzZoneBasic(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewPvtzClient()
 	if err != nil {
@@ -438,5 +439,52 @@ func (s *PvtzService) DescribePvtzRuleAttachment(id string) (object map[string]i
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
 	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *PvtzService) DescribeSyncEcsHostTask(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewPvtzClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeSyncEcsHostTask"
+	request := map[string]interface{}{
+		"ZoneId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"System.Busy", "Ecs.SyncTask.NotExists", "ServiceUnavailable", "Throttling.User"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("PvtzZone", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *PvtzService) DescribePvtzZone(id string) (object map[string]interface{}, err error) {
+	object, err = s.DescribePvtzZoneBasic(id)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	syncObj, err := s.DescribeSyncEcsHostTask(id)
+	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_pvtz_zone pvtzService.DescribeSyncEcsHostTask Failed!!! %s", err)
+			return object, nil
+		}
+		return nil, WrapError(err)
+	}
+	object["SyncHostTask"] = syncObj
 	return object, nil
 }

@@ -36,6 +36,15 @@ The following arguments are supported:
 * `user_client_ip` - (Optional, Available in 1.69.0+) The IP address of the client.
 * `lang` - (Optional, Available in 1.69.0+) The language. Valid values: "zh", "en", "jp".
 * `resource_group_id` - (Optional, ForceNew, Available in v1.86.0+) The Id of resource group which the Private Zone belongs.
+* `sync_status` - (Optional, Available in 1.146.0+) The status of the host synchronization task. Valid values:  `ON`,`OFF`.
+* `user_info` - (Optional, Available in 1.146.0+) The user information of the host synchronization task. The details see Block `user_info`.
+
+#### user_info
+
+The user_info supports the following:
+* `user_id` - (Optional, Available in 1.146.0+) The user ID belonging to the region is used for cross-account synchronization scenarios.
+* `region_ids` - (Optional, Available in 1.146.0+) The list of the region IDs.
+
 
 ## Attributes Reference
 
