@@ -78,8 +78,9 @@ func TestAccAlicloudConfigAggregateConfigRulesDataSource(t *testing.T) {
 			"names.#":                             "1",
 			"rules.#":                             "1",
 			"rules.0.account_id":                  CHECKSET,
-			"rules.0.compliance.#":                "0",
+			"rules.0.compliance.#":                "1",
 			"rules.0.compliance_pack_id":          "",
+			"rules.0.aggregator_id":               CHECKSET,
 			"rules.0.config_rule_arn":             CHECKSET,
 			"rules.0.id":                          CHECKSET,
 			"rules.0.config_rule_id":              CHECKSET,
@@ -116,6 +117,7 @@ func TestAccAlicloudConfigAggregateConfigRulesDataSource(t *testing.T) {
 		testAccPreCheck(t)
 		testAccPreCheckEnterpriseAccountEnabled(t)
 	}
+
 	alicloudConfigAggregateConfigRulesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, aggregateConfigRuleNameConf, nameRegexConf, riskLevelConf, statusConf, allConf)
 }
 func testAccCheckAlicloudConfigAggregateConfigRulesDataSourceName(rand int, attrMap map[string]string) string {
