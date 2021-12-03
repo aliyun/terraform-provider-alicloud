@@ -2339,7 +2339,9 @@ func (client *AliyunClient) NewGaplusClient() (*rpc.Client, error) {
 	endpoint := ""
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
+			endpoint = "ga.cn-hangzhou.aliyuncs.com"
+			client.config.Endpoints[productCode] = endpoint
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
 	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {

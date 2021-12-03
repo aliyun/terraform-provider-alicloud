@@ -79,9 +79,10 @@ func resourceAlicloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
-	if v, ok := d.GetOk("accelerator_name"); ok {
-		request["Name"] = v
-	}
+	// there is an api bug that the name can not effect
+	//if v, ok := d.GetOk("accelerator_name"); ok {
+	//	request["Name"] = v
+	//}
 	request["AutoPay"] = true
 	if v, ok := d.GetOkExists("auto_use_coupon"); ok {
 		request["AutoUseCoupon"] = v
@@ -188,7 +189,7 @@ func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 	updateAcceleratorReq := map[string]interface{}{
 		"AcceleratorId": d.Id(),
 	}
-	if !d.IsNewResource() && d.HasChange("accelerator_name") {
+	if d.HasChange("accelerator_name") {
 		update = true
 		if v, ok := d.GetOk("accelerator_name"); ok {
 			updateAcceleratorReq["Name"] = v
@@ -218,7 +219,7 @@ func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		request["ClientToken"] = buildClientToken("UpdateAccelerator")
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, updateAcceleratorReq, &runtime)
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
