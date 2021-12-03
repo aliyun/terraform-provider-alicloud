@@ -285,7 +285,7 @@ func TestAccAlicloudPvtzZone_syncTask(t *testing.T) {
 	ra := resourceAttrInit(resourceId, pvtzZoneBasicMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribePvtzZoneWithSyncHostTask")
+	}, "DescribePvtzZone")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
