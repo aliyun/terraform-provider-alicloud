@@ -74,6 +74,10 @@ func dataSourceAlicloudOosApplicationGroups() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"update_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"deploy_region_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -188,6 +192,7 @@ func dataSourceAlicloudOosApplicationGroupsRead(d *schema.ResourceData, meta int
 			"description":            object["Description"],
 			"import_tag_key":         object["ImportTagKey"],
 			"import_tag_value":       object["ImportTagValue"],
+			"update_time":            object["UpdateDate"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["Name"])
