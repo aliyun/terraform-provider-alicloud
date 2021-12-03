@@ -51,7 +51,8 @@ func TestAccAlicloudOosApplicationGroupsDataSource(t *testing.T) {
 			"groups.0.import_tag_key":         fmt.Sprintf("tf-testAccApplicationGroup-%d", rand),
 			"groups.0.import_tag_value":       fmt.Sprintf("tf-testAccApplicationGroup-%d", rand),
 			"groups.0.create_time":            CHECKSET,
-			"groups.0.cms_group_id":           CHECKSET,
+			"groups.0.update_time":            CHECKSET,
+			"groups.0.cms_group_id":           "",
 			"groups.0.id":                     CHECKSET,
 		}
 	}

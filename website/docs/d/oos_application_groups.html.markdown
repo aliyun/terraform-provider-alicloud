@@ -52,13 +52,13 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Application Group names.
 * `groups` - A list of Oos Application Groups. Each element contains the following attributes:
-	* `application_group_name` - The name of the Application group.
-	* `application_name` - The name of the Application.
-	* `cms_group_id` - The ID of the cloud monitor group.
-	* `create_time` - The Creation time of the resource.
-	* `deploy_region_id` - The region ID of the deployment.
-	* `description` - Application group description information.
-	* `id` - The ID of the Application Group. Its value is same as Queue Name.
-	* `import_tag_key` - Label key.
-	* `import_tag_value` - Label value.
-.
+  * `application_group_name` - The name of the Application group.
+  * `application_name` - The name of the Application.
+  * `cms_group_id` - The ID of the cloud monitor group.
+  * `create_time` - The Creation time of the resource.
+  * `update_time` - The Update time of the resource.
+  * `deploy_region_id` - The region ID of the deployment.
+  * `description` - Application group description information.
+  * `id` - The ID of the Application Group. Its value is same as Queue Name.
+  * `import_tag_key` - Label key.
+  * `import_tag_value` - Label value.
