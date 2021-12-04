@@ -1,4 +1,57 @@
 ## 1.146.0 (Unreleased)
+
+- **New Resource:** `alicloud_ecs_dedicated_host_cluster` [GH-4275]
+- **New Resource:** `alicloud_oos_application_group` [GH-4299]
+- **New Resource:** `alicloud_dts_consumer_channel` [GH-4290]
+- **New Resource:** `alicloud_ecd_image` [GH-4204]
+- **New Resource:** `alicloud_oos_patch_baseline` [GH-4305]
+- **New Data Source:** `alicloud_oos_patch_baselines` [GH-4305]
+- **New Data Source:** `alicloud_ecd_images` [GH-4204]	
+- **New Data Source:** `alicloud_emr_clusters` [GH-4301]
+- **New Data Source:** `alicloud_dts_consumer_channels` [GH-4290]	
+- **New Data Source:** `alicloud_oos_application_groups` [GH-4299]	
+- **New Data Source:** `alicloud_ecs_dedicated_host_clusters` [GH-4275]
+
+ENHANCEMENTS:
+
+- resource/alicloud_pvtz_zone: Support updating the filed user_info and sync_status [GH-4300]
+- resource/alicloud_config_compliance_pack: Support updating the filed compliance_pack_name [GH-4295]
+- resource/alicloud_ga_accelerator: Adds new attributes renewal_status and auto_renew_duration to supports auto renew [GH-4306]
+- resource/alicloud_dts_synchronization_instance: replace api DescribeSynchronizationJobs to new api DescribeDtsJobDetail [GH-4298]
+- resource/alicloud_ram_user: Update the error message [GH-4075]	
+- datasource/alicloud_oos_application_groups: Adds output variable update_time. [GH-4312]
+- datasource/alicloud_config_aggregate_config_rules: add the Attributes aggregator_id, compliance [GH-4304]
+- datasource/alicloud_config_config_rules: removed the fields member_id, multi_account [GH-4304]	
+- testcase: Adds new testcase for resource alicloud_vpc_dhcp_options_set [GH-4251]
+- testcase: Adds new testcase for resource alicloud_vpc_flow_log [GH-4252]
+- testcase: Add new testcase for resource alicloud_vpc_traffic_mirror_filter [GH-4254]
+- testcase: Add new testcase for resource alicloud_vpc_traffic_mirror_filter_egress_rule [GH-4255]
+- testcase: Adds new testcase for resource alicloud_vpc_traffic_mirror_filter_ingress_rule [GH-4256]
+- testcase: Add new testcases for resource alicloud_vpc [GH-4257]
+- testcase: Add new testcase for resource alicloud_vpc_nat_ip [GH-4259]
+- testcase: Adds new test case for resource alicloud_vpc_nat_ip_cidr [GH-4261]	
+- testcase: Adds new test case for resource alicloud_havip [GH-4269]
+- testcase: Adds new test case for resource alicloud_network_acl [GH-4273]	
+- testcase: Adds new test case for resource alicloud_route_table [GH-4274]	
+- testcase: Adds new test case for resource alicloud_vswitch [GH-4277]	
+- testcase: Adds new testcase for resource alicloud_vpc_traffic_mirror_session [GH-4281]	
+- testcase: Adds new unit test case for resource alicloud_vpc [GH-4314]
+- testcase: Adds new test case for resource alicloud_ecs_key_pair [GH-4303]
+- testcase: Adds a new test case for resource alicloud_ecs_deployment_set [GH-4292]	
+- testcase: Adds a new test case for resource alicloud_ecs_command [GH-4289]
+- testcase: Adds a new test case for resource alicloud_ecs_auto_snapshot_policy [GH-4288]	
+- testcase: Adds a new test case for resource alicloud_eip_address [GH-4265]
+- testcase: Adds a new test case for resource alicloud_forward_entry [GH-4268]	
+- docs/alicloud_dts_synchronization_job: Improves its docs on attribute dts_job_name [GH-4311]	
+- doc/alicloud_cloud_sso_user: Document optimization doc/alicloud_cloud_sso_directory: Document optimization [GH-4309]
+- docs/alicloud_cs_managed_kubernetes: Corrects the misspelled words [GH-4248]
+
+BUG FIXES:
+
+- resource/alicloud_ga_accelerator: Fixes the InvalidRegionId error when getting the its endpoint [GH-4310]
+- resource/alicloud_polardb_db_instance: Fixes the setting security_ips bug without filtering hidden values [GH-4233]
+- resource/alicloud_ga_bandwidth_package,alicloud_ga_ip_set: Fix the GreaterThanGa.IpSetBandwidth error [GH-4307]
+
 ## 1.145.0 (November 28, 2021)
 
 - **New Resource:** `alicloud_ros_stack_instance` ([#4258](https://github.com/aliyun/terraform-provider-alicloud/issues/4258))
