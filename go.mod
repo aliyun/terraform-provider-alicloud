@@ -2,6 +2,7 @@ module github.com/aliyun/terraform-provider-alicloud
 
 require (
 	github.com/PaesslerAG/jsonpath v0.1.1
+	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alibabacloud-go/cs-20151215/v2 v2.4.4
 	github.com/alibabacloud-go/darabonba-openapi v0.1.5
 	github.com/alibabacloud-go/tea v1.1.17
@@ -38,6 +39,7 @@ require (
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
+	github.com/stretchr/testify v1.7.0
 	github.com/valyala/fasthttp v1.22.0 // indirect
 	golang.org/x/net v0.0.0-20210226101413-39120d07d75e
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
