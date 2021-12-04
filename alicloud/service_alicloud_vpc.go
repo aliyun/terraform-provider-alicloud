@@ -1276,7 +1276,7 @@ func (s *VpcService) ignoreTag(t vpc.TagResource) bool {
 	return false
 }
 
-func (s *VpcService) setInstanceSecondaryCidrBlocks(d *schema.ResourceData) error {
+func (s *VpcService) SetInstanceSecondaryCidrBlocks(d *schema.ResourceData) error {
 	if d.HasChange("secondary_cidr_blocks") {
 		oraw, nraw := d.GetChange("secondary_cidr_blocks")
 		removed := oraw.([]interface{})

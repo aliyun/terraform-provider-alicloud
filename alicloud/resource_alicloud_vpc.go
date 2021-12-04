@@ -218,7 +218,11 @@ func resourceAlicloudVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 	vpcService := VpcService{client}
 	var response map[string]interface{}
 	d.Partial(true)
-	if err := vpcService.setInstanceSecondaryCidrBlocks(d); err != nil {
+	if err := vpcService.SetInstanceSecondaryCidrBlocks(d); err != nil {
+		return WrapError(err)
+	}
+	conn, err := client.NewVpcClient()
+	if err != nil {
 		return WrapError(err)
 	}
 
@@ -240,10 +244,6 @@ func resourceAlicloudVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 	moveResourceGroupReq["ResourceType"] = "vpc"
 	if update {
 		action := "MoveResourceGroup"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, moveResourceGroupReq, &util.RuntimeOptions{})
@@ -289,10 +289,6 @@ func resourceAlicloudVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 			modifyVpcAttributeReq["EnableIPv6"] = d.Get("enable_ipv6")
 		}
 		action := "ModifyVpcAttribute"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, modifyVpcAttributeReq, &util.RuntimeOptions{})

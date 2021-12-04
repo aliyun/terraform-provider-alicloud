@@ -2,14 +2,22 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/agiledragon/gomonkey"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/stretchr/testify/assert"
 	"log"
+	"os"
+	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -530,4 +538,430 @@ data "alicloud_resource_manager_resource_groups" "default" {
   name_regex = "terraformci"
 }
 `)
+}
+
+func TestAccAlicloudVpc_unit(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	d, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, nil)
+	dCreate.MarkNewResource()
+	for key, value := range map[string]interface{}{
+		"cidr_block":        "cidr_block",
+		"description":       "description",
+		"dry_run":           false,
+		"enable_ipv6":       false,
+		"resource_group_id": "resource_group_id",
+		"vpc_name":          "vpc_name",
+		"name":              "name",
+		"user_cidrs":        []interface{}{"user_cidrs_1", "user_cidrs_2"},
+	} {
+		err := dCreate.Set(key, value)
+		assert.Nil(t, err)
+		err = d.Set(key, value)
+		assert.Nil(t, err)
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		"Vpcs": map[string]interface{}{
+			"Vpc": []interface{}{
+				map[string]interface{}{
+					"VpcId": "MockId",
+					"UserCidrs": map[string]interface{}{
+						"UserCidr": "UserCidr",
+					},
+					"CidrBlock":     "cidr_block",
+					"Description":   "description",
+					"Ipv6CidrBlock": "ipv6_cidr_block",
+					"VRouterId":     "v_router_id",
+					"SecondaryCidrBlocks": map[string]interface{}{
+						"SecondaryCidrBlock": "secondary_cidr_blocks",
+					},
+					"Status": "Available",
+					"Tags": map[string]interface{}{
+						"key": "value",
+					},
+					"UserCidr": "user_cidrs",
+					"VpcName":  "vpc_name",
+				},
+			},
+		},
+		//DescribeRouteTableList
+		"Code": "200",
+		"RouterTableList": map[string]interface{}{
+			"RouterTableListType": []interface{}{
+				map[string]interface{}{
+					"RouteTableType": "System",
+				},
+			},
+		},
+	}
+
+	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
+		"RetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:    String(errorCode),
+				Data:    String(errorCode),
+				Message: String(errorCode),
+			}
+		},
+		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:    String(errorCode),
+				Data:    String(errorCode),
+				Message: String(errorCode),
+			}
+		},
+		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			result["VpcId"] = "MockId"
+			return result, nil
+		},
+		"UpdateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"DeleteNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+	}
+	// Create
+	t.Run("CreateClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudVpcCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("CreateAbnormal", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["Normal"]("")
+		})
+		err := resourceAlicloudVpcCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("CreateNormal", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAlicloudVpcCreate(dCreate, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	// Update
+	t.Run("UpdateClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+
+		err := resourceAlicloudVpcUpdate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("UpdateMoveResourceGroupAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"resource_group_id"} {
+			diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: "OldValue", New: "NewValue"})
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, diff)
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["Normal"]("")
+		})
+		err := resourceAlicloudVpcUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("UpdateMoveResourceGroupNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"resource_group_id"} {
+			diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: "", New: "NewValue"})
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, diff)
+		resourceData1.SetId("MockId")
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAlicloudVpcUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+	t.Run("UpdateModifyVpcAttributeAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"cidr_block", "description", "vpc_name", "name"} {
+			diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: "OldValue", New: "NewValue"})
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, diff)
+		resourceData1.SetId("MockId")
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["Normal"]("")
+		})
+		err := resourceAlicloudVpcUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("UpdateModifyVpcAttributeNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"cidr_block", "description", "vpc_name", "name", "enable_ipv6", "tags"} {
+			switch p["alicloud_vpc"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(d.State(), diff)
+		resourceData1.SetId("MockId")
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAlicloudVpcUpdate(resourceData1, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+	t.Run("UpdateSetInstanceSecondaryCidrBlocksAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"cidr_block", "description", "vpc_name", "name", "enable_ipv6", "tags"} {
+			switch p["alicloud_vpc"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, diff)
+		resourceData1.SetId("MockId")
+		retryFlag := false
+		noRetryFlag := false
+		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		patcheDescribeRouteTableList := gomonkey.ApplyMethod(reflect.TypeOf(&VpcService{}), "SetInstanceSecondaryCidrBlocks", func(*VpcService, *schema.ResourceData) error {
+			_, err := responseMock["NoRetryError"]("NoRetryError")
+			return err
+		})
+		err := resourceAlicloudVpcUpdate(resourceData1, rawClient)
+		patcheDorequest.Reset()
+		patcheDescribeRouteTableList.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("UpdateSetResourceTagsAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"cidr_block", "description", "vpc_name", "name", "enable_ipv6", "tags"} {
+			switch p["alicloud_vpc"].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			}
+		}
+		resourceData1, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, diff)
+		resourceData1.SetId("MockId")
+		retryFlag := false
+		noRetryFlag := false
+		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		patcheSetResourceTags := gomonkey.ApplyMethod(reflect.TypeOf(&VpcService{}), "SetResourceTags", func(*VpcService, *schema.ResourceData, string) error {
+			_, err := responseMock["NoRetryError"]("NoRetryError")
+			return err
+		})
+		err := resourceAlicloudVpcUpdate(resourceData1, rawClient)
+		patcheDorequest.Reset()
+		patcheSetResourceTags.Reset()
+		assert.NotNil(t, err)
+	})
+
+	// Delete
+	t.Run("DeleteClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudVpcDelete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("DeleteMockAbnormal", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				// delete方法里,一直重试,直到超时
+				//retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceAlicloudVpcDelete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("DeleteMockNormal", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Forbidden.VpcNotFound")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceAlicloudVpcDelete(d, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+	t.Run("DeleteMockNormal", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Forbidden.VpcNotFound")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceAlicloudVpcDelete(d, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	// Read
+	t.Run("ReadDescribeRouteTableListAbnormal", func(t *testing.T) {
+		d.SetId("MockId")
+		d.Set("cidr_block", "cidr_block")
+		d.Set("description", "description")
+		d.Set("dry_run", false)
+		d.Set("enable_ipv6", false)
+		d.Set("resource_group_id", "resource_group_id")
+		d.Set("resource_group_id", []string{"resource_group_id_1", "resource_group_id_2"})
+		d.Set("vpc_name", "vpc_name")
+		d.Set("name", "name")
+		d.Set("user_cidrs", []interface{}{"user_cidrs_1", "user_cidrs_2"})
+		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			retryFlag := false
+			noRetryFlag := true
+			if retryFlag {
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		patcheDescribeRouteTableList := gomonkey.ApplyMethod(reflect.TypeOf(&VpcService{}), "DescribeRouteTableList", func(*VpcService, string) (map[string]interface{}, error) {
+			return responseMock["NoRetryError"]("NoRetryError")
+		})
+		err := resourceAlicloudVpcRead(d, rawClient)
+		patcheDorequest.Reset()
+		patcheDescribeRouteTableList.Reset()
+		assert.NotNil(t, err)
+	})
 }
