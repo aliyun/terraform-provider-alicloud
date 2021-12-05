@@ -734,6 +734,10 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 			update = true
 		}
 	}
+	// skip http listener_forward
+	if d.Get("listener_forward").(string) == string(OnFlag) {
+		update = false
+	}
 
 	if update {
 		var request *requests.CommonRequest
