@@ -36,24 +36,20 @@ func resourceAlicloudCloudSsoUser() *schema.Resource {
 			"display_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Sensitive:    true,
 				ValidateFunc: validation.StringLenBetween(0, 256),
 			},
 			"email": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"first_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Sensitive:    true,
 				ValidateFunc: validation.StringLenBetween(0, 64),
 			},
 			"last_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Sensitive:    true,
 				ValidateFunc: validation.StringLenBetween(0, 64),
 			},
 			"status": {
@@ -70,7 +66,6 @@ func resourceAlicloudCloudSsoUser() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				Sensitive:    true,
 				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[\w-.@]{1,64}$`), "The name of the resource. The name must be 1 to 64 characters in length and  can contain letters, digits, underscores (_), and hyphens (-)."),
 			},
 		},
@@ -287,7 +282,7 @@ func resourceAlicloudCloudSsoUserDelete(d *schema.ResourceData, meta interface{}
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"DeletionConflict.User.AccessAssigment"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

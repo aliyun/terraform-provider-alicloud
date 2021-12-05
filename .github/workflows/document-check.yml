@@ -56,6 +56,15 @@ jobs:
           go get -t github.com/katbyte/terrafmt
           terrafmt diff ./website --check --pattern '*.markdown'
 
+  basic-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.16.7'
+      - run: bash scripts/basic-check.sh
+
 #  terraform-validate:
 #    runs-on: ubuntu-latest
 #    steps:

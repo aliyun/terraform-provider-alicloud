@@ -187,6 +187,52 @@ func TestAccAlicloudVpcHavip_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudVpcHavip_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_havip.default"
+	ra := resourceAttrInit(resourceId, AlicloudHavipMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHavip")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%shavip%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHavipBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_id":  "${alicloud_vswitch.default.id}",
+					"description": name,
+					"havip_name":  name,
+					"ip_address":  "${cidrhost(alicloud_vswitch.default.cidr_block, 3)}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_id":  CHECKSET,
+						"description": name,
+						"havip_name":  name,
+						"ip_address":  CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudHavipMap0 = map[string]string{}
 
 func AlicloudHavipBasicDependence0(name string) string {

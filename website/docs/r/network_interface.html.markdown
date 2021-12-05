@@ -46,7 +46,7 @@ resource "alicloud_security_group" "group" {
 }
 
 resource "alicloud_network_interface" "default" {
-  name              = "${var.name}%d"
+  name              = var.name
   vswitch_id        = alicloud_vswitch.vswitch.id
   security_groups   = [alicloud_security_group.group.id]
   private_ip        = "192.168.0.2"

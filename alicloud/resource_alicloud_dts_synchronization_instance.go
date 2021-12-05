@@ -37,7 +37,6 @@ func resourceAlicloudDtsSynchronizationInstance() *schema.Resource {
 			"sync_architecture": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"bidirectional", "oneway"}, false),
 			},
 			"destination_endpoint_engine_name": {
@@ -175,8 +174,17 @@ func resourceAlicloudDtsSynchronizationInstanceRead(d *schema.ResourceData, meta
 		}
 		return WrapError(err)
 	}
-	d.Set("instance_class", object["SynchronizationJobClass"])
+
+	d.Set("instance_class", object["DtsJobClass"])
 	d.Set("payment_type", convertDtsSyncPaymentTypeResponse(object["PayType"]))
+	if v, ok := object["SourceEndpoint"].(map[string]interface{}); ok {
+		d.Set("source_endpoint_engine_name", v["EngineName"])
+		d.Set("source_endpoint_region", v["Region"])
+	}
+	if v, ok := object["DestinationEndpoint"].(map[string]interface{}); ok {
+		d.Set("destination_endpoint_engine_name", v["EngineName"])
+		d.Set("destination_endpoint_region", v["Region"])
+	}
 	return nil
 }
 func resourceAlicloudDtsSynchronizationInstanceUpdate(d *schema.ResourceData, meta interface{}) error {

@@ -8,7 +8,7 @@ on:
 
 jobs:
   formatter:
-    name: Go Format Check
+    name: go format check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -21,7 +21,7 @@ jobs:
           gofmt-flags: '-l -d'
   labeler:
     runs-on: ubuntu-latest
-    name: Label the PR size
+    name: label the pr size
     steps:
       - uses: codelytv/pr-size-labeler@v1
         with:

@@ -11,7 +11,7 @@ description: |-
 
 Provides a Application Load Balancer (ALB) Listener resource.
 
-For information about Application Load Balancer (ALB) Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/doc-detail/214348.htm).
+For information about Application Load Balancer (ALB) Listener and how to use it, see [What is Listener](https://help.aliyun.com/).
 
 -> **NOTE:** Available in v1.133.0+.
 

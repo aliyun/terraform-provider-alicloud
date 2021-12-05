@@ -35,16 +35,14 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew) A list of Config Rule IDs.
 * `status` - (Optional, ForceNew, Available in 1.124.1+) The status of the config rule, valid values: `ACTIVE`, `DELETING`, `EVALUATING` and `INACTIVE`. 
 * `rule_name` - (Optional, ForceNew, Available in 1.124.1+) The name of config rule.
-* `multi_account` - (Optional, ForceNew) Whether the enterprise management account queries the rule details of member accounts.
-* `member_id` - (Optional, ForceNew) The ID of the member account to which the rule to be queried belongs. The default is empty. When `multi_account` is set to true, this parameter is valid.
+* `multi_account` - (Optional, ForceNew,Removed) Field `multi_account` has been removed from provider version 1.146.0. Please Use the Resource `alicloud_config_aggregate_config_rule`.
+* `member_id` - (Optional, ForceNew,Removed) Field `multi_account` has been removed from provider version 1.146.0. Please Use the Resource `alicloud_config_aggregate_config_rule`.
 * `risk_level` - (Optional, ForceNew) The risk level of Config Rule. Valid values: `1`: Critical ,`2`: Warning , `3`: Info.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by rule name.
 * `message_type` - (Optional, ForceNew,  Available in v1.104.0+, Remove) Field `message_type` has been removed from provider version 1.124.1.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `config_rule_state` - (Optional, ForceNew, Deprecated) Field `config_rule_state` has been deprecated from provider version 1.124.1. New field `status` instead.
-
--> **NOTE:** When you use the personal version to configure auditing, please ignore `multi_account` and `member_id`.
 
 ## Attributes Reference
 
@@ -64,7 +62,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `risk_level`- The risk level of the Config Rule.
     * `rule_name`- The name of the Config Rule.
     * `event_source` - Event source of the Config Rule.
-    * `scope_compliance_resource_id` - The ID of the resource to be evaluated.
+    * `scope_compliance_resource_id` - (Removed)  Field `scope_compliance_resource_id` has been removed from provider version 1.124.1. Please use 'exclude_resource_ids_scope' instead. 
     * `scope_compliance_resource_types` - The types of the resources to be evaluated against the rule.
     * `source_detail_message_type` - Rule trigger mechanism.
     * `source_maximum_execution_frequency` - Rule execution cycle. 

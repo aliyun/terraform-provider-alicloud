@@ -990,7 +990,7 @@ func (s *PolarDBService) WaitForCluster(id string, status Status, timeout int) e
 	return nil
 }
 
-func (s *PolarDBService) DescribeDBSecurityIps(clusterId string) (ips []string, err error) {
+func (s *PolarDBService) DescribeDBSecurityIps(clusterId string, dbClusterIPArrayName string) (ips []string, err error) {
 
 	request := polardb.CreateDescribeDBClusterAccessWhitelistRequest()
 	request.RegionId = s.client.RegionId
@@ -1009,7 +1009,7 @@ func (s *PolarDBService) DescribeDBSecurityIps(clusterId string) (ips []string, 
 	var ipstr, separator string
 	ipsMap := make(map[string]string)
 	for _, ip := range resp.Items.DBClusterIPArray {
-		if ip.DBClusterIPArrayAttribute != "hidden" {
+		if ip.DBClusterIPArrayName == dbClusterIPArrayName {
 			ipstr += separator + ip.SecurityIps
 			separator = COMMA_SEPARATED
 		}
@@ -1339,7 +1339,7 @@ func (s *PolarDBService) ModifyDBAccessWhitelistSecurityIps(d *schema.ResourceDa
 	return nil
 }
 
-func (s *PolarDBService) DBClusterIPArrays(d *schema.ResourceData, attribute string) error {
+func (s *PolarDBService) DBClusterIPArrays(d *schema.ResourceData, attribute string, dbClusterIPArrayName string) error {
 	request := polardb.CreateDescribeDBClusterAccessWhitelistRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = d.Id()
@@ -1356,7 +1356,7 @@ func (s *PolarDBService) DBClusterIPArrays(d *schema.ResourceData, attribute str
 	dbClusterIPArray := response.Items.DBClusterIPArray
 	var dbClusterIPArrays = make([]map[string]interface{}, 0, len(dbClusterIPArray))
 	for _, i := range dbClusterIPArray {
-		if i.DBClusterIPArrayAttribute != "hidden" && i.DBClusterIPArrayName != "default" {
+		if i.DBClusterIPArrayName == dbClusterIPArrayName {
 			l := map[string]interface{}{
 				"db_cluster_ip_array_name": i.DBClusterIPArrayName,
 				"security_ips":             convertPolarDBIpsSetToString(i.SecurityIps),

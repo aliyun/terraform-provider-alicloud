@@ -385,7 +385,7 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	requestId = response.RequestId
 
 	if len(response.AvailableZones.AvailableZone) < 1 {
-		err = WrapError(Error("There are no availability resources in the region: %s. RequestId: %s.", client.RegionId, requestId))
+		err = WrapError(Error("There are no available zones in the API DescribeAvailableResource response: %#v.", response))
 		return
 	}
 
@@ -409,19 +409,19 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	}
 	if zoneId != "" {
 		if !valid {
-			err = WrapError(Error("Availability zone %s status is not available in the region %s. Expected availability zones: %s. RequestId: %s.",
-				zoneId, client.RegionId, strings.Join(expectedZones, ", "), requestId))
+			err = WrapError(Error("Availability zone %s status is not available in the region %s. Expected availability zones: %s. \nDescribeAvailableResource response: %#v.",
+				zoneId, client.RegionId, strings.Join(expectedZones, ", "), response))
 			return
 		}
 		if soldout {
-			err = WrapError(Error("Availability zone %s status is sold out in the region %s. Expected availability zones: %s. RequestId: %s.",
-				zoneId, client.RegionId, strings.Join(expectedZones, ", "), requestId))
+			err = WrapError(Error("Availability zone %s status is sold out in the region %s. Expected availability zones: %s. \nDescribeAvailableResource response: %#v.",
+				zoneId, client.RegionId, strings.Join(expectedZones, ", "), response))
 			return
 		}
 	}
 
 	if len(validZones) <= 0 {
-		err = WrapError(Error("There is no availability resources in the region %s. Please choose another region. RequestId: %s.", client.RegionId, response.RequestId))
+		err = WrapError(Error("There is no availability resources in the region %s. Please choose another region. \nDescribeAvailableResource response: %#v.", client.RegionId, response))
 		return
 	}
 
@@ -2229,4 +2229,60 @@ func (s *EcsService) DescribeEcsDeploymentSet(id string) (object map[string]inte
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
+}
+
+func (s *EcsService) DescribeEcsDedicatedHostCluster(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDedicatedHostClusters"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"PageNumber": 1,
+		"PageSize":   PageSizeLarge,
+	}
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+		v, err := jsonpath.Get("$.DedicatedHostClusters.DedicatedHostCluster", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DedicatedHostClusters.DedicatedHostCluster", response)
+		}
+		if len(v.([]interface{})) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+		}
+		for _, v := range v.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["DedicatedHostClusterId"]) == id {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+		if len(v.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+	}
+	return
 }

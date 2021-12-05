@@ -24,8 +24,8 @@ func resourceAlicloudCloudSsoAccessAssignment() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"access_configuration_id": {
@@ -89,7 +89,7 @@ func resourceAlicloudCloudSsoAccessAssignmentCreate(d *schema.ResourceData, meta
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -101,7 +101,7 @@ func resourceAlicloudCloudSsoAccessAssignmentCreate(d *schema.ResourceData, meta
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_sso_access_assignment", action, AlibabaCloudSdkGoERROR)
 	}
-	d.SetId(fmt.Sprint(request["DirectoryId"], ":", request["AccessConfigurationId"], ":", request["TargetId"], ":", request["PrincipalId"]))
+	d.SetId(fmt.Sprint(request["DirectoryId"], ":", request["AccessConfigurationId"], ":", request["TargetType"], ":", request["TargetId"], ":", request["PrincipalType"], ":", request["PrincipalId"]))
 
 	v, err := jsonpath.Get("$.Task", response)
 	if err != nil {
@@ -119,7 +119,7 @@ func resourceAlicloudCloudSsoAccessAssignmentCreate(d *schema.ResourceData, meta
 func resourceAlicloudCloudSsoAccessAssignmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudssoService := CloudssoService{client}
-	object, err := cloudssoService.DescribeCloudSsoAccessAssignment(d.Id())
+	_, err := cloudssoService.DescribeCloudSsoAccessAssignment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cloud_sso_access_assignment cloudssoService.DescribeCloudSsoAccessAssignment Failed!!! %s", err)
@@ -128,16 +128,18 @@ func resourceAlicloudCloudSsoAccessAssignmentRead(d *schema.ResourceData, meta i
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 4)
+
+	parts, err := ParseResourceId(d.Id(), 6)
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("access_configuration_id", parts[1])
 	d.Set("directory_id", parts[0])
-	d.Set("principal_id", parts[3])
-	d.Set("target_id", parts[2])
-	d.Set("principal_type", object["PrincipalType"])
-	d.Set("target_type", object["TargetType"])
+	d.Set("access_configuration_id", parts[1])
+	d.Set("target_type", parts[2])
+	d.Set("target_id", parts[3])
+	d.Set("principal_type", parts[4])
+	d.Set("principal_id", parts[5])
+
 	return nil
 }
 func resourceAlicloudCloudSsoAccessAssignmentUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -146,7 +148,7 @@ func resourceAlicloudCloudSsoAccessAssignmentUpdate(d *schema.ResourceData, meta
 }
 func resourceAlicloudCloudSsoAccessAssignmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 4)
+	parts, err := ParseResourceId(d.Id(), 6)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -157,24 +159,25 @@ func resourceAlicloudCloudSsoAccessAssignmentDelete(d *schema.ResourceData, meta
 		return WrapError(err)
 	}
 	request := map[string]interface{}{
-		"AccessConfigurationId": parts[1],
 		"DirectoryId":           parts[0],
-		"PrincipalId":           parts[3],
-		"TargetId":              parts[2],
+		"AccessConfigurationId": parts[1],
+		"TargetType":            parts[2],
+		"TargetId":              parts[3],
+		"PrincipalType":         parts[4],
+		"PrincipalId":           parts[5],
 	}
 
 	if v, ok := d.GetOk("deprovision_strategy"); ok {
 		request["DeprovisionStrategy"] = v
+	} else {
+		request["DeprovisionStrategy"] = "DeprovisionForLastAccessAssignmentOnAccount"
 	}
-	request["DeprovisionStrategy"] = "DeprovisionForLastAccessAssignmentOnAccount"
-	request["PrincipalType"] = d.Get("principal_type")
-	request["TargetType"] = d.Get("target_type")
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -193,7 +196,7 @@ func resourceAlicloudCloudSsoAccessAssignmentDelete(d *schema.ResourceData, meta
 	}
 	response = v.(map[string]interface{})
 	cloudssoService := CloudssoService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cloudssoService.CloudssoServiceAccessAssignmentStateRefreshFunc(fmt.Sprint(request["DirectoryId"]), fmt.Sprint(response["TaskId"]), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Success"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cloudssoService.CloudssoServiceAccessAssignmentStateRefreshFunc(fmt.Sprint(request["DirectoryId"]), fmt.Sprint(response["TaskId"]), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

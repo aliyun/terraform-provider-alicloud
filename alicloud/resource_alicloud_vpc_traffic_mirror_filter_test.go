@@ -180,6 +180,51 @@ func TestAccAlicloudVPCTrafficMirrorFilter_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudVPCTrafficMirrorFilter_basic1(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.VpcTrafficMirrorSupportRegions)
+	resourceId := "alicloud_vpc_traffic_mirror_filter.default"
+	ra := resourceAttrInit(resourceId, AlicloudVPCTrafficMirrorFilterMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcTrafficMirrorFilter")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccvpctrafficmirrorfilter%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVPCTrafficMirrorFilterBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"traffic_mirror_filter_name":        "${var.name}",
+					"traffic_mirror_filter_description": "${var.name}",
+					"dry_run":                           "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"traffic_mirror_filter_name":        name,
+						"traffic_mirror_filter_description": name,
+						"dry_run":                           "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
 var AlicloudVPCTrafficMirrorFilterMap0 = map[string]string{
 	"status":                     CHECKSET,
 	"dry_run":                    NOSET,

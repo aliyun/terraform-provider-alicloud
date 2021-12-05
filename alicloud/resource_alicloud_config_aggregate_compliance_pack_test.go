@@ -199,7 +199,7 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"aggregator_id":                  "${data.alicloud_config_aggregators.default.ids.0}",
 					"aggregate_compliance_pack_name": name,
-					"compliance_pack_template_id":    "ct-3d20ff4e06a30027f76e",
+					"compliance_pack_template_id":    "${data.alicloud_config_compliance_packs.example.packs.0.compliance_pack_template_id}",
 					"config_rules": []map[string]interface{}{
 						{
 							"managed_rule_identifier": "ecs-snapshot-retention-days",
@@ -218,7 +218,7 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"aggregator_id":                  CHECKSET,
 						"aggregate_compliance_pack_name": name,
-						"compliance_pack_template_id":    "ct-3d20ff4e06a30027f76e",
+						"compliance_pack_template_id":    CHECKSET,
 						"config_rules.#":                 "1",
 						"description":                    name,
 						"risk_level":                     "1",
@@ -352,6 +352,72 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudConfigAggregateCompliancePack_UpdatePackName(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregate_compliance_pack.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateCompliancePackMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregateCompliancePack")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigaggregatecompliancepack%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateCompliancePackBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_id":                  "${data.alicloud_config_aggregators.default.ids.0}",
+					"aggregate_compliance_pack_name": name,
+					"compliance_pack_template_id":    "${data.alicloud_config_compliance_packs.example.packs.0.compliance_pack_template_id}",
+					"config_rules": []map[string]interface{}{
+						{
+							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
+						},
+					},
+					"description": name,
+					"risk_level":  "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_id":                  CHECKSET,
+						"aggregate_compliance_pack_name": name,
+						"compliance_pack_template_id":    CHECKSET,
+						"config_rules.#":                 "1",
+						"description":                    name,
+						"risk_level":                     "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+
+					"aggregate_compliance_pack_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregate_compliance_pack_name": name + "_update",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+			},
+		},
+	})
+}
+
 var AlicloudConfigAggregateCompliancePackMap0 = map[string]string{
 	"aggregator_id":                  CHECKSET,
 	"aggregate_compliance_pack_name": CHECKSET,
@@ -367,7 +433,8 @@ func AlicloudConfigAggregateCompliancePackBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
-
+data "alicloud_config_compliance_packs" "example" {
+}
 data "alicloud_config_aggregators" "default" {}
 
 `, name)
@@ -448,6 +515,16 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"config_rule_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config_rule_ids": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config_rule_ids.#": "0",
 					}),
 				),
 			},

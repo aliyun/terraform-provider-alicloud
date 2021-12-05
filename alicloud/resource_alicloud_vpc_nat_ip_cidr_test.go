@@ -86,6 +86,54 @@ func TestAccAlicloudVPCNatIpCidr_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudVPCNatIpCidr_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_nat_ip_cidr.default"
+	ra := resourceAttrInit(resourceId, AlicloudVPCNatIpCidrMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcNatIpCidr")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcnatipcidr%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVPCNatIpCidrBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"nat_ip_cidr":             "192.168.0.0/16",
+					"nat_gateway_id":          "${alicloud_nat_gateway.default.id}",
+					"nat_ip_cidr_description": "${var.name}",
+					"nat_ip_cidr_name":        "${var.name}",
+					"dry_run":                 "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"nat_ip_cidr":             "192.168.0.0/16",
+						"nat_gateway_id":          CHECKSET,
+						"nat_ip_cidr_description": name,
+						"nat_ip_cidr_name":        name,
+						"dry_run":                 "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
 var AlicloudVPCNatIpCidrMap0 = map[string]string{
 	"nat_gateway_id": CHECKSET,
 	"nat_ip_cidr":    CHECKSET,

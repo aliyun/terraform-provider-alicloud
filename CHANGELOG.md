@@ -1,4 +1,36 @@
-## 1.145.0 (Unreleased)
+## 1.146.0 (Unreleased)
+## 1.145.0 (November 28, 2021)
+
+- **New Resource:** `alicloud_ros_stack_instance` ([#4258](https://github.com/aliyun/terraform-provider-alicloud/issues/4258))
+- **New Resource:** `alicloud_eci_virtual_node` ([#4266](https://github.com/aliyun/terraform-provider-alicloud/issues/4266))
+- **New Resource:** `alicloud_oos_application` ([#4271](https://github.com/aliyun/terraform-provider-alicloud/issues/4271))
+- **New Data Source:** `alicloud_oos_applications` ([#4271](https://github.com/aliyun/terraform-provider-alicloud/issues/4271))  
+- **New Data Source:** `alicloud_eci_virtual_nodes` ([#4266](https://github.com/aliyun/terraform-provider-alicloud/issues/4266))  
+- **New Data Source:** `alicloud_ros_stack_instances` ([#4258](https://github.com/aliyun/terraform-provider-alicloud/issues/4258))
+- **New Data Source:** `alicloud_eci_zones` ([#4266](https://github.com/aliyun/terraform-provider-alicloud/issues/4266))
+
+ENHANCEMENTS:
+
+- provider: Adds TF_APPEND_USER_AGENT environment variables to support setting custom user-agent ([#4287](https://github.com/aliyun/terraform-provider-alicloud/issues/4287))
+- resource/config_rule: Support configuring the specified field status ([#4242](https://github.com/aliyun/terraform-provider-alicloud/issues/4242))
+- resource/alicloud_click_house_db_cluster: Add db_cluster_access_white_list attribute. ([#4247](https://github.com/aliyun/terraform-provider-alicloud/issues/4247))
+- resource/config_aggregate_config_rule: Support updating the filed status ([#4250](https://github.com/aliyun/terraform-provider-alicloud/issues/4250))
+- resource/alicloud_cloud_sso_access_configuration: Modify the parametrs permission_policy_name and permission_policy_type as required parameters. ([#4263](https://github.com/aliyun/terraform-provider-alicloud/issues/4263))
+- resource/alicloud_cloud_sso_access_assignment: Optimize the logic of resource acquisition. ([#4263](https://github.com/aliyun/terraform-provider-alicloud/issues/4263))
+- resource/cloud_storage_gateway_gateway_file_share_test: Refine test cases. ([#4264](https://github.com/aliyun/terraform-provider-alicloud/issues/4264))
+- resource/alicloud_cs_kubernetes_node_pool: Support multi security groups. ([#4267](https://github.com/aliyun/terraform-provider-alicloud/issues/4267))
+- resource/alicloud_instance: Support configuring the filed secondary_private_ip_address_count ([#4270](https://github.com/aliyun/terraform-provider-alicloud/issues/4270))
+- resource/config_aggregate_compliance_pack: Support updating the filed aggregate_compliance_pack_name ([#4282](https://github.com/aliyun/terraform-provider-alicloud/issues/4282))
+- datasource/alicloud_images: Adds two attribute image_id and image_name ([#4285](https://github.com/aliyun/terraform-provider-alicloud/issues/4285))  
+
+BUG FIXES:
+
+- resource/alicloud_ecs_disk: Fixes the InvalidParameter error when modifying the disk charge type ([#4284](https://github.com/aliyun/terraform-provider-alicloud/issues/4284))
+- resource/alicloud_cs_serverless_kubernetes: fix vswitch_ids returns null ([#4267](https://github.com/aliyun/terraform-provider-alicloud/issues/4267))
+- resource/alicloud_cs_managed_kubernetes: Fix the inconsistency of the number of cluster nodes ([#4279](https://github.com/aliyun/terraform-provider-alicloud/issues/4279))
+- data_source/alb_security_policies: Fixing query errors; Refine test cases. ([#4283](https://github.com/aliyun/terraform-provider-alicloud/issues/4283))
+- doc/cloud_storage_gateway_gateway_cache_disk: Fix formatting errors. ([#4264](https://github.com/aliyun/terraform-provider-alicloud/issues/4264))
+
 ## 1.144.0 (November 21, 2021)
 
 - **New Resource:** `alicloud_direct_mail_tag` ([#4178](https://github.com/aliyun/terraform-provider-alicloud/issues/4178))

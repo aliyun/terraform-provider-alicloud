@@ -37,6 +37,8 @@ The following arguments are supported:
     * `UnAvailable`: The image is unavailable.
     * `CreateFailed`: The image failed to be created.
     * `Deprecated`: The image is discontinued.
+* `image_id` - (Optional, Available in 1.145.0+) The ID of the image.
+* `image_name` - (Optional, Available in 1.145.0+) The name of the image.
 * `snapshot_id` - (Optional, Available in 1.95.0+) The ID of the snapshot used to create the custom image.
 * `resource_group_id` - (Optional, Available in 1.95.0+) The ID of the resource group to which the custom image belongs.
 * `image_family` - (Optional, Available in 1.95.0+) The name of the image family. You can set this parameter to query images of the specified image family. This parameter is empty by default.

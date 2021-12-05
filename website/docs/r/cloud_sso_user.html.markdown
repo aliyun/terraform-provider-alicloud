@@ -43,12 +43,12 @@ The following arguments are supported:
 
 * `description` - (Optional) The description of user.
 * `directory_id` - (Required, ForceNew) The ID of the Directory.
-* `display_name` - (Optional, Sensitive) The display name of user.
-* `email` - (Optional, Sensitive) The User's Contact Email Address.
-* `first_name` - (Optional, Sensitive) The first name of user.
-* `last_name` - (Optional, Sensitive) The last name of user.
+* `display_name` - (Optional) The display name of user.
+* `email` - (Optional) The User's Contact Email Address.
+* `first_name` - (Optional) The first name of user.
+* `last_name` - (Optional) The last name of user.
 * `status` - (Optional) The status of user. Valid values: `Disabled`, `Enabled`.
-* `user_name` - (Required from 1.141.0, ForceNew, Sensitive) The name of user.
+* `user_name` - (Required from 1.141.0, ForceNew) The name of user.
 
 ## Attributes Reference
 

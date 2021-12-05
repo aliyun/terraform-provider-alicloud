@@ -1206,7 +1206,7 @@ func refreshParameters(d *schema.ResourceData, meta interface{}) error {
 	m := make(map[string]interface{})
 	err = json.Unmarshal([]byte(object.Config), &m)
 	if err != nil {
-		fmt.Println(err)
+		return WrapError(err)
 	}
 
 	for k, v := range m {
