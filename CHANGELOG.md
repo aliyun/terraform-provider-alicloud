@@ -1,56 +1,61 @@
-## 1.146.0 (Unreleased)
+## 1.147.0 (Unreleased)
+## 1.146.0 (December 05, 2021)
 
-- **New Resource:** `alicloud_ecs_dedicated_host_cluster` [GH-4275]
-- **New Resource:** `alicloud_oos_application_group` [GH-4299]
-- **New Resource:** `alicloud_dts_consumer_channel` [GH-4290]
-- **New Resource:** `alicloud_ecd_image` [GH-4204]
-- **New Resource:** `alicloud_oos_patch_baseline` [GH-4305]
-- **New Data Source:** `alicloud_oos_patch_baselines` [GH-4305]
-- **New Data Source:** `alicloud_ecd_images` [GH-4204]	
-- **New Data Source:** `alicloud_emr_clusters` [GH-4301]
-- **New Data Source:** `alicloud_dts_consumer_channels` [GH-4290]	
-- **New Data Source:** `alicloud_oos_application_groups` [GH-4299]	
-- **New Data Source:** `alicloud_ecs_dedicated_host_clusters` [GH-4275]
+- **New Resource:** `alicloud_ecs_dedicated_host_cluster` ([#4275](https://github.com/aliyun/terraform-provider-alicloud/issues/4275))
+- **New Resource:** `alicloud_oos_application_group` ([#4299](https://github.com/aliyun/terraform-provider-alicloud/issues/4299))
+- **New Resource:** `alicloud_dts_consumer_channel` ([#4290](https://github.com/aliyun/terraform-provider-alicloud/issues/4290))
+- **New Resource:** `alicloud_ecd_image` ([#4204](https://github.com/aliyun/terraform-provider-alicloud/issues/4204))
+- **New Resource:** `alicloud_oos_patch_baseline` ([#4305](https://github.com/aliyun/terraform-provider-alicloud/issues/4305))
+- **New Resource:** `alicloud_ecd_command` ([#4244](https://github.com/aliyun/terraform-provider-alicloud/issues/4244))  
+- **New Data Source:** `alicloud_oos_patch_baselines` ([#4305](https://github.com/aliyun/terraform-provider-alicloud/issues/4305))
+- **New Data Source:** `alicloud_ecd_images` ([#4204](https://github.com/aliyun/terraform-provider-alicloud/issues/4204))	
+- **New Data Source:** `alicloud_emr_clusters` ([#4301](https://github.com/aliyun/terraform-provider-alicloud/issues/4301))
+- **New Data Source:** `alicloud_dts_consumer_channels` ([#4290](https://github.com/aliyun/terraform-provider-alicloud/issues/4290))	
+- **New Data Source:** `alicloud_oos_application_groups` ([#4299](https://github.com/aliyun/terraform-provider-alicloud/issues/4299))	
+- **New Data Source:** `alicloud_ecs_dedicated_host_clusters` ([#4275](https://github.com/aliyun/terraform-provider-alicloud/issues/4275))
+- **New Data Source:** `alicloud_ecd_commands` ([#4244](https://github.com/aliyun/terraform-provider-alicloud/issues/4244))  
 
 ENHANCEMENTS:
 
-- resource/alicloud_pvtz_zone: Support updating the filed user_info and sync_status [GH-4300]
-- resource/alicloud_config_compliance_pack: Support updating the filed compliance_pack_name [GH-4295]
-- resource/alicloud_ga_accelerator: Adds new attributes renewal_status and auto_renew_duration to supports auto renew [GH-4306]
-- resource/alicloud_dts_synchronization_instance: replace api DescribeSynchronizationJobs to new api DescribeDtsJobDetail [GH-4298]
-- resource/alicloud_ram_user: Update the error message [GH-4075]	
-- datasource/alicloud_oos_application_groups: Adds output variable update_time. [GH-4312]
-- datasource/alicloud_config_aggregate_config_rules: add the Attributes aggregator_id, compliance [GH-4304]
-- datasource/alicloud_config_config_rules: removed the fields member_id, multi_account [GH-4304]	
-- testcase: Adds new testcase for resource alicloud_vpc_dhcp_options_set [GH-4251]
-- testcase: Adds new testcase for resource alicloud_vpc_flow_log [GH-4252]
-- testcase: Add new testcase for resource alicloud_vpc_traffic_mirror_filter [GH-4254]
-- testcase: Add new testcase for resource alicloud_vpc_traffic_mirror_filter_egress_rule [GH-4255]
-- testcase: Adds new testcase for resource alicloud_vpc_traffic_mirror_filter_ingress_rule [GH-4256]
-- testcase: Add new testcases for resource alicloud_vpc [GH-4257]
-- testcase: Add new testcase for resource alicloud_vpc_nat_ip [GH-4259]
-- testcase: Adds new test case for resource alicloud_vpc_nat_ip_cidr [GH-4261]	
-- testcase: Adds new test case for resource alicloud_havip [GH-4269]
-- testcase: Adds new test case for resource alicloud_network_acl [GH-4273]	
-- testcase: Adds new test case for resource alicloud_route_table [GH-4274]	
-- testcase: Adds new test case for resource alicloud_vswitch [GH-4277]	
-- testcase: Adds new testcase for resource alicloud_vpc_traffic_mirror_session [GH-4281]	
-- testcase: Adds new unit test case for resource alicloud_vpc [GH-4314]
-- testcase: Adds new test case for resource alicloud_ecs_key_pair [GH-4303]
-- testcase: Adds a new test case for resource alicloud_ecs_deployment_set [GH-4292]	
-- testcase: Adds a new test case for resource alicloud_ecs_command [GH-4289]
-- testcase: Adds a new test case for resource alicloud_ecs_auto_snapshot_policy [GH-4288]	
-- testcase: Adds a new test case for resource alicloud_eip_address [GH-4265]
-- testcase: Adds a new test case for resource alicloud_forward_entry [GH-4268]	
-- docs/alicloud_dts_synchronization_job: Improves its docs on attribute dts_job_name [GH-4311]	
-- doc/alicloud_cloud_sso_user: Document optimization doc/alicloud_cloud_sso_directory: Document optimization [GH-4309]
-- docs/alicloud_cs_managed_kubernetes: Corrects the misspelled words [GH-4248]
+- resource/alicloud_pvtz_zone: Support updating the filed user_info and sync_status ([#4300](https://github.com/aliyun/terraform-provider-alicloud/issues/4300))
+- resource/alicloud_config_compliance_pack: Support updating the filed compliance_pack_name ([#4295](https://github.com/aliyun/terraform-provider-alicloud/issues/4295))
+- resource/alicloud_ga_accelerator: Adds new attributes renewal_status and auto_renew_duration to supports auto renew ([#4306](https://github.com/aliyun/terraform-provider-alicloud/issues/4306))
+- resource/alicloud_dts_synchronization_instance: replace api DescribeSynchronizationJobs to new api DescribeDtsJobDetail ([#4298](https://github.com/aliyun/terraform-provider-alicloud/issues/4298))
+- resource/alicloud_ram_user: Update the error message ([#4075](https://github.com/aliyun/terraform-provider-alicloud/issues/4075))	
+- datasource/alicloud_oos_application_groups: Adds output variable update_time. ([#4312](https://github.com/aliyun/terraform-provider-alicloud/issues/4312))
+- datasource/alicloud_config_aggregate_config_rules: add the Attributes aggregator_id, compliance ([#4304](https://github.com/aliyun/terraform-provider-alicloud/issues/4304))
+- datasource/alicloud_config_config_rules: removed the fields member_id, multi_account ([#4304](https://github.com/aliyun/terraform-provider-alicloud/issues/4304))	
+- testcase: Adds new testcase for resource alicloud_vpc_dhcp_options_set ([#4251](https://github.com/aliyun/terraform-provider-alicloud/issues/4251))
+- testcase: Adds new testcase for resource alicloud_vpc_flow_log ([#4252](https://github.com/aliyun/terraform-provider-alicloud/issues/4252))
+- testcase: Add new testcase for resource alicloud_vpc_traffic_mirror_filter ([#4254](https://github.com/aliyun/terraform-provider-alicloud/issues/4254))
+- testcase: Add new testcase for resource alicloud_vpc_traffic_mirror_filter_egress_rule ([#4255](https://github.com/aliyun/terraform-provider-alicloud/issues/4255))
+- testcase: Adds new testcase for resource alicloud_vpc_traffic_mirror_filter_ingress_rule ([#4256](https://github.com/aliyun/terraform-provider-alicloud/issues/4256))
+- testcase: Add new testcases for resource alicloud_vpc ([#4257](https://github.com/aliyun/terraform-provider-alicloud/issues/4257))
+- testcase: Add new testcase for resource alicloud_vpc_nat_ip ([#4259](https://github.com/aliyun/terraform-provider-alicloud/issues/4259))
+- testcase: Adds new test case for resource alicloud_vpc_nat_ip_cidr ([#4261](https://github.com/aliyun/terraform-provider-alicloud/issues/4261))	
+- testcase: Adds new test case for resource alicloud_havip ([#4269](https://github.com/aliyun/terraform-provider-alicloud/issues/4269))
+- testcase: Adds new test case for resource alicloud_network_acl ([#4273](https://github.com/aliyun/terraform-provider-alicloud/issues/4273))	
+- testcase: Adds new test case for resource alicloud_route_table ([#4274](https://github.com/aliyun/terraform-provider-alicloud/issues/4274))	
+- testcase: Adds new test case for resource alicloud_vswitch ([#4277](https://github.com/aliyun/terraform-provider-alicloud/issues/4277))	
+- testcase: Adds new testcase for resource alicloud_vpc_traffic_mirror_session ([#4281](https://github.com/aliyun/terraform-provider-alicloud/issues/4281))	
+- testcase: Adds new unit test case for resource alicloud_vpc ([#4314](https://github.com/aliyun/terraform-provider-alicloud/issues/4314))
+- testcase: Adds new test case for resource alicloud_ecs_key_pair ([#4303](https://github.com/aliyun/terraform-provider-alicloud/issues/4303))
+- testcase: Adds a new test case for resource alicloud_ecs_deployment_set ([#4292](https://github.com/aliyun/terraform-provider-alicloud/issues/4292))	
+- testcase: Adds a new test case for resource alicloud_ecs_command ([#4289](https://github.com/aliyun/terraform-provider-alicloud/issues/4289))
+- testcase: Adds a new test case for resource alicloud_ecs_auto_snapshot_policy ([#4288](https://github.com/aliyun/terraform-provider-alicloud/issues/4288))	
+- testcase: Adds a new test case for resource alicloud_eip_address ([#4265](https://github.com/aliyun/terraform-provider-alicloud/issues/4265))
+- testcase: Adds a new test case for resource alicloud_forward_entry ([#4268](https://github.com/aliyun/terraform-provider-alicloud/issues/4268))	
+- testcase: Improves the log project sweeper test case ([#4317](https://github.com/aliyun/terraform-provider-alicloud/issues/4317))  
+- docs/alicloud_dts_synchronization_job: Improves its docs on attribute dts_job_name ([#4311](https://github.com/aliyun/terraform-provider-alicloud/issues/4311))	
+- doc/alicloud_cloud_sso_user: Document optimization doc/alicloud_cloud_sso_directory: Document optimization ([#4309](https://github.com/aliyun/terraform-provider-alicloud/issues/4309))
+- docs/alicloud_cs_managed_kubernetes: Corrects the misspelled words ([#4248](https://github.com/aliyun/terraform-provider-alicloud/issues/4248))
+- docs/alicloud_sae_application:Support updating the filed replicas ([#4316](https://github.com/aliyun/terraform-provider-alicloud/issues/4316))
 
 BUG FIXES:
 
-- resource/alicloud_ga_accelerator: Fixes the InvalidRegionId error when getting the its endpoint [GH-4310]
-- resource/alicloud_polardb_db_instance: Fixes the setting security_ips bug without filtering hidden values [GH-4233]
-- resource/alicloud_ga_bandwidth_package,alicloud_ga_ip_set: Fix the GreaterThanGa.IpSetBandwidth error [GH-4307]
+- resource/alicloud_ga_accelerator: Fixes the InvalidRegionId error when getting the its endpoint ([#4310](https://github.com/aliyun/terraform-provider-alicloud/issues/4310))
+- resource/alicloud_polardb_db_instance: Fixes the setting security_ips bug without filtering hidden values ([#4233](https://github.com/aliyun/terraform-provider-alicloud/issues/4233))
+- resource/alicloud_ga_bandwidth_package,alicloud_ga_ip_set: Fix the GreaterThanGa.IpSetBandwidth error ([#4307](https://github.com/aliyun/terraform-provider-alicloud/issues/4307))
 
 ## 1.145.0 (November 28, 2021)
 
