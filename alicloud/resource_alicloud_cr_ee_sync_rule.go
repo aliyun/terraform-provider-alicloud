@@ -189,6 +189,7 @@ func resourceAlicloudCrEESyncRuleDelete(d *schema.ResourceData, meta interface{}
 	request.RegionId = crService.client.RegionId
 	request.InstanceId = parts[0]
 	request.SyncRuleId = parts[2]
+	fmt.Println("teset")
 	raw, err := crService.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 		return creeClient.DeleteRepoSyncRule(request)
 	})

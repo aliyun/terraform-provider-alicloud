@@ -11,7 +11,7 @@ description: |-
 
 Provides a ECD Command resource.
 
-For information about ECD Command and how to use it, see [What is Command](https://help.aliyun.com/document_detail/188382.html).
+For information about ECD Command and how to use it, see [What is Command](https://help.aliyun.com/).
 
 -> **NOTE:** Available in v1.146.0+.
 
