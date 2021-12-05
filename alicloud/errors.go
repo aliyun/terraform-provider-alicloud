@@ -386,5 +386,6 @@ const FailedGetAttributeMsg = "Getting resource %s attribute by path %s failed!!
 
 const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n\n"
 const FailedToReachTargetStatus = "Failed to reach target status. Current status is %s."
+const FailedToReachTargetStatusWithResponse = FailedToReachTargetStatus + " Response: %s"
 const FailedToReachTargetAttribute = "Failed to reach value for target attribute. Current value is %s."
 const RequiredWhenMsg = "attribute '%s' is required when '%s' is %v"
