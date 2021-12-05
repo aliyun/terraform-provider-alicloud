@@ -11,14 +11,14 @@ do
     "d" | "r")
       grep "https://help.aliyun.com/)\.$" "$doc" > /dev/null
       if [[ "$?" == "0" ]]; then
-        echo "Doc = ${doc}"
+        echo -e "\033[31mDoc =${doc}: Please filled the file with the correct cloud product link! \033[0m"
         error=true
       fi
       ;;
     "alicloud")
       grep "fmt.Println" "$doc" > /dev/null
       if [[ "$?" == "0" ]]; then
-        echo "Doc = ${doc}"
+        echo -e "\033[31mFile =${doc}: Please Remove the fmt.Println Method! \033[0m"
         error=true
       fi
     ;;
