@@ -101,7 +101,7 @@ The following arguments are supported:
 * `post_start` - (Optional) Execute the script after startup, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}.
 * `pre_stop` - (Optional) Execute the script before stopping, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}.
 * `readiness` - (Optional) Application startup status checks, containers that fail multiple health checks will be shut down and restarted. Containers that do not pass the health check will not receive SLB traffic. For example: {`exec`:{`command`:[`sh`,"-c","cat /home/admin/start.sh"]},`initialDelaySeconds`:30,`periodSeconds`:30,"timeoutSeconds ":2}. Valid values: `command`, `initialDelaySeconds`, `periodSeconds`, `timeoutSeconds`.
-* `replicas` - (Required, ForceNew) Initial number of instances.
+* `replicas` - (Required) Initial number of instances. **NOTE:** the `replicas` supports modification since V1.139.0.
 * `security_group_id` - (Optional) Security group ID.
 * `sls_configs` - (Optional) SLS  configuration.
 * `status` - (Optional, Computed) The status of the resource. Valid values: `RUNNING`, `STOPPED`.
