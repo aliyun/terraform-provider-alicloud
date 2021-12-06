@@ -1125,6 +1125,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oos_patch_baseline":                                   resourceAlicloudOosPatchBaseline(),
 			"alicloud_ecd_command":                                          resourceAlicloudEcdCommand(),
 			"alicloud_cddc_dedicated_host":                                  resourceAlicloudCddcDedicatedHost(),
+			"alicloud_oos_service_setting":                                  resourceAlicloudOosServiceSetting(),
 		},
 
 		ConfigureFunc: providerConfigure,
