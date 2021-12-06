@@ -44,6 +44,7 @@ The following arguments are supported:
 * `application_name` - (Required) The name of the application.
 * `description` - (Optional) Application group description information.
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
+* `tags` - (Optional) The tag of the resource.
 
 ## Attributes Reference
 
