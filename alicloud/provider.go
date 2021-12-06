@@ -624,6 +624,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cddc_zones":                                  dataSourceAlicloudCddcZones(),
 			"alicloud_cddc_host_ecs_level_infos":                   dataSourceAlicloudCddcHostEcsLevelInfos(),
 			"alicloud_cddc_dedicated_hosts":                        dataSourceAlicloudCddcDedicatedHosts(),
+			"alicloud_oos_parameters":                              dataSourceAlicloudOosParameters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1126,6 +1127,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_command":                                          resourceAlicloudEcdCommand(),
 			"alicloud_cddc_dedicated_host":                                  resourceAlicloudCddcDedicatedHost(),
 			"alicloud_oos_service_setting":                                  resourceAlicloudOosServiceSetting(),
+			"alicloud_oos_parameter":                                        resourceAlicloudOosParameter(),
 		},
 
 		ConfigureFunc: providerConfigure,
