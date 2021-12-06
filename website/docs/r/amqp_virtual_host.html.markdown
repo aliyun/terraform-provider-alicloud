@@ -11,7 +11,7 @@ description: |-
 
 Provides a RabbitMQ (AMQP) Virtual Host resource.
 
-For information about RabbitMQ (AMQP) Virtual Host and how to use it, see [What is Virtual Host](https://help.aliyun.com/).
+For information about RabbitMQ (AMQP) Virtual Host and how to use it, see [What is Virtual Host](https://www.alibabacloud.com/help/product/100989.html).
 
 -> **NOTE:** Available in v1.126.0+.
 
