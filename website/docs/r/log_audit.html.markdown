@@ -44,6 +44,11 @@ resource "alicloud_log_audit" "example" {
     "rds_perf_enabled" = "false",
     "rds_perf_collection_policy" = "",
     "rds_perf_ttl" = "180",
+    "vpc_flow_enabled" = "false",
+    "vpc_flow_ttl" = "7",
+    "vpc_flow_collection_policy" = "",
+    "vpc_sync_enabled" = "true",
+    "vpc_sync_ttl" = "180",
     "polardb_enabled" = "true",
     "polardb_audit_collection_policy" = "",
     "polardb_ttl" = "180",
@@ -78,6 +83,11 @@ resource "alicloud_log_audit" "example" {
     "ddos_coo_access_enabled" = "false",
     "ddos_coo_access_ttl" = "180",
     "ddos_coo_access_ti_enabled" = "false",
+    "ddos_bgp_access_enabled" = "false",
+    "ddos_bgp_access_ttl" = "180",
+    "ddos_dip_access_enabled" = "false",
+    "ddos_dip_access_ttl" = "180",
+    "ddos_dip_access_ti_enabled" = "false",
     "sas_crack_enabled" = "true",
     "sas_dns_enabled" = "true",
     "sas_http_enabled" = "true",
@@ -174,7 +184,7 @@ The following arguments are supported:
     - `actiontrail_ti_enabled`- (Optional) Actiontrail action log threat intelligence detection swtich. Default false.
     - `oss_access_enabled` - (Optional) Access log switch of OSS. Default false.
     
-    - `oss_access_ttl` - (Optional) Access log TTL of OSS. Default 180.
+    - `oss_access_ttl` - (Optional) Regional Access log TTL of OSS. Default 7.
     - `oss_sync_enabled` - (Optional) OSS synchronization to central configuration switch. Default true.
     
     - `oss_sync_ttl` - (Optional) OSS synchronization to central TTL. Default 180.
@@ -197,7 +207,11 @@ The following arguments are supported:
     
     - `rds_perf_collection_policy` - (Optional) RDS performance log collection policy script. Default empty.
     - `rds_perf_ttl` - (Optional) RDS performance log TTL. Default 180.
-    
+    - `vpc_flow_enabled` - (Optional) Flow log of VPC. Default false.
+    - `vpc_flow_ttl` - (Optional) Regional flow log TTL of VPC. Default 7.
+    - `vpc_flow_collection_policy` - (Optional) VPC flow log collection policy script. Default empty.
+    - `vpc_sync_enabled` - (Optional) VPC synchronization to central configuration switch. Default true.
+    - `vpc_sync_ttl` - (Optional) VPC synchronization to central TTL. Default 180.
     - `polardb_enabled` - (Optional) PolarDB audit log switch. Default false.
     - `polardb_audit_collection_policy` - (Optional) PolarDB audit log collection policy script. Default empty.
     
@@ -213,10 +227,10 @@ The following arguments are supported:
     - `polardb_perf_collection_policy` - (Optional) PolarDB performance log collection policy script. Default empty.
     - `polardb_perf_ttl` - (Optional) PolarDB performance log TTL. Default 180.
     
-    - `ddrds_audit_enabled` - (Optional) PolarDB-X audit log switch. Default false.
+    - `drds_audit_enabled` - (Optional) PolarDB-X audit log switch. Default false.
     - `rds_audit_collection_policy` - (Optional) PolarDB-X  audit log collection policy script. Default empty.
     
-    - `drds_audit_ttl` - (Optional) PolarDB-X  audit log ttl. Default 180.
+    - `drds_audit_ttl` - (Optional) Regional PolarDB-X  audit log ttl. Default 7.
     - `drds_sync_enabled` - (Optional) PolarDB-X synchronization to central configuration switch. Default true.
     
     - `drds_sync_ttl` - (Optional) PolarDB-X synchronization to central TTL. Default 180.
@@ -225,7 +239,7 @@ The following arguments are supported:
     - `slb_access_enabled` - (Optional) Slb log switch. Default false.
     - `slb_access_collection_policy` - (Optional) Slb log collection policy script. Default empty.
     
-    - `slb_access_ttl` - (Optional) Slb centralized ttl. Default 180.
+    - `slb_access_ttl` - (Optional) Regional Slb access log ttl. Default 7.
     - `slb_sync_enabled` - (Optional) Slb sync to center switch. Default true.
     
     - `slb_sync_ttl` - (Optional) Slb sync to center switch. Default 180.
@@ -244,11 +258,16 @@ The following arguments are supported:
     - `cloudfirewall_ttl` - (Optional) Cloudfirewall log ttl.Default 180.
     
     - `cloudfirewall_ti_enabled` - (Optional) Cloudfirewall log threat intelligence detection swtich. Default false.
-    - `ddos_coo_access_enabled` - (Optional) DDoS (New BGP) access log switch. Default false.
+    - `ddos_coo_access_enabled` - (Optional) Anti-DDoS Pro(New BGP) access log switch. Default false.
     
-    - `ddos_coo_access_ttl` - (Optional) DDoS (New BGP) access log ttl. Default 180.
-    - `ddos_coo_access_ti_enabled` - (Optional) DDoS (New BGP) access log threat intelligence detection swtich. Default false.
+    - `ddos_coo_access_ttl` - (Optional) Anti-DDoS Pro (New BGP) access log ttl. Default 180.
+    - `ddos_coo_access_ti_enabled` - (Optional) Anti-DDoS Pro (New BGP) access log threat intelligence detection swtich. Default false.
+    - `ddos_bgp_access_enabled` - (Optional) Anti-DDoS (Origin) access log switch. Default false.
+    - `ddos_bgp_access_ttl` - (Optional) Anti-DDoS (Origin) access log ttl. Default 180.
+    - `ddos_dip_access_enabled` - (Optional) Anti-DDoS Premium access log switch. Default false.
     
+    - `ddos_dip_access_ttl` - (Optional) Anti-DDoS Premium access log ttl. Default 180.
+    - `ddos_dip_access_ti_enabled` - (Optional) Anti-DDoS Premium access log threat intelligence detection swtich. Default false.
     - `sas_ttl` - (Optional) Cloud Security Center centralized ttl. Default 180.
     - `sas_process_enabled` - (Optional) Cloud Security Center process startup log switch. Default false.
     
