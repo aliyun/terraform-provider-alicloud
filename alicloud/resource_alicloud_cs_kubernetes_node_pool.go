@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/base64"
 	"fmt"
+	"log"
 	"regexp"
 	"time"
 
@@ -721,7 +722,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 			addDebug("UpdateKubernetesNodePool", resoponse, resizeRequestMap)
 		}
 
-		stateConf := BuildStateConf([]string{"scaling", "updating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+		stateConf := BuildStateConf([]string{"scaling", "updating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -746,6 +747,21 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 			removeNodePoolNodes(d, meta, parts, oldValue, newValue)
 		}
 	}
+
+	_ = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		log.Printf("[DEBUG] Start retry fetch node pool info: %s", d.Id())
+		nodePoolDetail, err := csService.DescribeCsKubernetesNodePool(d.Id())
+		if err != nil {
+			return resource.NonRetryableError(err)
+		}
+
+		if nodePoolDetail.TotalNodes != d.Get("node_count").(int) {
+			time.Sleep(20 * time.Second)
+			return resource.RetryableError(Error("[ERROR] The number of nodes is inconsistent %s", d.Id()))
+		}
+
+		return resource.NonRetryableError(Error("[DEBUG] The number of nodes is the same"))
+	})
 
 	update = false
 	d.Partial(false)
