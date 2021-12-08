@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_vs_service"
 sidebar_current: "docs-alicloud-datasource-video-surveillance-system-service"
 description: |-
-  Provides a list of Video Surveillance System Groups to the user.
+  Provides a list of Video Surveillance System service to the user.
 ---
 
 # alicloud\_vs\_service
@@ -14,6 +14,8 @@ Using this data source can open Video Surveillance System service automatically.
 For information about Video Surveillance System and how to use it, see [What is VS](https://help.aliyun.com/product/108765.html).
 
 -> **NOTE:** Available in v1.116.0+
+
+-> **NOTE:** The Video Surveillance System service is not support in the international site.
 
 ## Example Usage
 
