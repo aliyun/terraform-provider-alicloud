@@ -15,6 +15,8 @@ For information about SAE and how to use it, see [What is SAE](https://help.aliy
 
 -> **NOTE:** Available in v1.120.0+
 
+-> **NOTE:** The SAE service is not support in the international site.
+
 ## Example Usage
 
 ```
