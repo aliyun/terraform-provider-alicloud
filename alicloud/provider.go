@@ -1142,6 +1142,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_access_configuration_provisioning":          resourceAlicloudCloudSsoAccessConfigurationProvisioning(),
 			"alicloud_mongodb_account":                                      resourceAlicloudMongodbAccount(),
 			"alicloud_mongodb_serverless_instance":                          resourceAlicloudMongodbServerlessInstance(),
+			"alicloud_ecs_session_manager_status":                           resourceAlicloudEcsSessionManagerStatus(),
 		},
 
 		ConfigureFunc: providerConfigure,
