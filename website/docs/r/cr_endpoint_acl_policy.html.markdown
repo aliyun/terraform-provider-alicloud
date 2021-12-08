@@ -44,6 +44,7 @@ resource "alicloud_cr_endpoint_acl_policy" "default" {
   description   = var.name
   module_name   = "Registry"
   endpoint_type = "internet"
+  depends_on    = [data.alicloud_cr_endpoint_acl_service.default]
 }
 ```
 
@@ -62,6 +63,13 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID of Endpoint Acl Policy. The value formats as `<instance_id>:<endpoint_type>:<entry>`.
+
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when create the Acl Policy.
+* `delete` - (Defaults to 10 mins) Used when delete the Acl Policy.
 
 ## Import
 
