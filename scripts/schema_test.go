@@ -4,11 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud"
-	set "github.com/deckarep/golang-set"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	log "github.com/sirupsen/logrus"
-	"github.com/waigani/diffparser"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -16,6 +11,12 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud"
+	set "github.com/deckarep/golang-set"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	log "github.com/sirupsen/logrus"
+	"github.com/waigani/diffparser"
 )
 
 func init() {
