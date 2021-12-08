@@ -218,6 +218,7 @@ func TestAccAlicloudECSDedicatedHostCluster_basic1(t *testing.T) {
 					"zone_id":                     "${data.alicloud_zones.default.zones.0.id}",
 					"description":                 "${var.name}",
 					"dedicated_host_cluster_name": "${var.name}",
+					"dry_run":                     "false",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "DDH_Cluster_Test",
@@ -231,6 +232,7 @@ func TestAccAlicloudECSDedicatedHostCluster_basic1(t *testing.T) {
 						"tags.%":                      "2",
 						"tags.Created":                "TF",
 						"tags.For":                    "DDH_Cluster_Test",
+						"dry_run":                     "false",
 					}),
 				),
 			},
