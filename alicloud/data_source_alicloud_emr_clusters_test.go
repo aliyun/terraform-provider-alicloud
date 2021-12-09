@@ -275,6 +275,215 @@ func TestAccAlicloudEmrClustersDataSource(t *testing.T) {
 	}
 	alicloudEmrClustersCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, clusterNameConf, clusterTypeListConf, createTypeListConf, defaultStatusConf, depositTypeConf, isDescConf, machineTypeConf, resourceGroupIdConf, statusListConf, vpcIdConf, allConf)
 }
+
+func TestAccAlicloudEmrClustersDataSource1(t *testing.T) {
+	rand := acctest.RandInt()
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"enable_details": "false",
+		}),
+		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}_fake"]`,
+			"enable_details": "false",
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"name_regex":     `"${alicloud_emr_cluster.default.name}"`,
+			"enable_details": "false",
+		}),
+		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"name_regex":     `"${alicloud_emr_cluster.default.name}_fake"`,
+			"enable_details": "false",
+		}),
+	}
+
+	clusterNameConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"cluster_name":   `"${alicloud_emr_cluster.default.name}"`,
+			"enable_details": "false",
+		}),
+		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"cluster_name":   `"${alicloud_emr_cluster.default.name}_fake"`,
+			"enable_details": "false",
+		}),
+	}
+
+	clusterTypeListConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_emr_cluster.default.id}"]`,
+			"cluster_type_list": `["HADOOP","KAFKA"]`,
+			"enable_details":    "false",
+		}),
+		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_emr_cluster.default.id}"]`,
+			"cluster_type_list": `["ZOOKPEER","CLICKHOSUE"]`,
+			"enable_details":    "false",
+		}),
+	}
+
+	createTypeListConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"create_type":    `"MANUAL"`,
+			"enable_details": "false",
+		}),
+		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"create_type":    `"ON-DEMAND"`,
+			"enable_details": "false",
+		}),
+	}
+
+	defaultStatusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"default_status": `"true"`,
+			"enable_details": "false",
+		}),
+	}
+
+	depositTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"deposit_type":   `"HALF_MANAGED"`,
+			"enable_details": "false",
+		}),
+	}
+
+	isDescConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"is_desc":        `"false"`,
+			"enable_details": "false",
+		}),
+	}
+
+	machineTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"machine_type":   `"ECS"`,
+			"enable_details": "false",
+		}),
+		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"machine_type":   `"DOCKER"`,
+			"enable_details": "false",
+		}),
+	}
+
+	resourceGroupIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_emr_cluster.default.id}"]`,
+			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}"`,
+			"enable_details":    "false",
+		}),
+		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_emr_cluster.default.id}"]`,
+			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}_fake"`,
+			"enable_details":    "false",
+		}),
+	}
+
+	statusListConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"status_list":    `["CREATING","IDLE"]`,
+			"enable_details": "false",
+		}),
+		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"status_list":    `["ABNORMAL","RELEASING"]`,
+			"enable_details": "false",
+		}),
+	}
+
+	vpcIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"vpc_id":         `"${data.alicloud_vpcs.default.ids.0}"`,
+			"enable_details": "false",
+		}),
+		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
+			"vpc_id":         `"${data.alicloud_vpcs.default.ids.0}_fake"`,
+			"enable_details": "false",
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_emr_cluster.default.id}"]`,
+			"name_regex":        `"${alicloud_emr_cluster.default.name}"`,
+			"cluster_type_list": `["HADOOP","KAFKA"]`,
+			"create_type":       `"MANUAL"`,
+			"deposit_type":      `"HALF_MANAGED"`,
+			"machine_type":      `"ECS"`,
+			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}"`,
+			"status_list":       `["CREATING","IDLE"]`,
+			"default_status":    `"true"`,
+			"is_desc":           `"false"`,
+			"vpc_id":            `"${data.alicloud_vpcs.default.ids.0}"`,
+			"enable_details":    "false",
+		}),
+		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
+			"ids":               `["${alicloud_emr_cluster.default.id}_fake"]`,
+			"name_regex":        `"${alicloud_emr_cluster.default.name}_fake"`,
+			"cluster_type_list": `["ZOOKPEER","CLICKHOSUE"]`,
+			"create_type":       `"ON-DEMAND"`,
+			"machine_type":      `"DOCKER"`,
+			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}_fake"`,
+			"status_list":       `["ABNORMAL","RELEASING"]`,
+			"vpc_id":            `"${data.alicloud_vpcs.default.ids.0}_fake"`,
+			"enable_details":    "false",
+		}),
+	}
+
+	var existAlicloudEmrClustersDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                            "1",
+			"clusters.#":                       "1",
+			"ids.0":                            CHECKSET,
+			"names.#":                          "1",
+			"clusters.0.id":                    CHECKSET,
+			"clusters.0.cluster_id":            CHECKSET,
+			"clusters.0.cluster_name":          fmt.Sprintf("tf-testAccClusters-%d", rand),
+			"clusters.0.create_resource":       "ECM_EMR",
+			"clusters.0.create_time":           CHECKSET,
+			"clusters.0.deposit_type":          "HALF_MANAGED",
+			"clusters.0.expired_time":          CHECKSET,
+			"clusters.0.machine_type":          "ECS",
+			"clusters.0.meta_store_type":       CHECKSET,
+			"clusters.0.payment_type":          CHECKSET,
+			"clusters.0.period":                CHECKSET,
+			"clusters.0.running_time":          CHECKSET,
+			"clusters.0.status":                "IDLE",
+			"clusters.0.type":                  CHECKSET,
+			"clusters.0.has_uncompleted_order": CHECKSET,
+			"clusters.0.tags.%":                "2",
+			"clusters.0.tags.Created":          "TF",
+			"clusters.0.tags.For":              "acceptance test",
+		}
+	}
+	var fakeAlicloudEmrClustersDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":      "0",
+			"names.#":    "0",
+			"clusters.#": "0",
+		}
+	}
+	var alicloudEmrClustersCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_emr_clusters.default",
+		existMapFunc: existAlicloudEmrClustersDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAlicloudEmrClustersDataSourceNameMapFunc,
+	}
+	alicloudEmrClustersCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, clusterNameConf, clusterTypeListConf, createTypeListConf, defaultStatusConf, depositTypeConf, isDescConf, machineTypeConf, resourceGroupIdConf, statusListConf, vpcIdConf, allConf)
+}
+
 func testAccCheckAlicloudEmrClustersDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {

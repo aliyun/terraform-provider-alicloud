@@ -203,6 +203,14 @@ func dataSourceAlicloudEmrClusters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"has_uncompleted_order": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 						"extra_info": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -636,19 +644,21 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":              fmt.Sprint(object["Id"]),
-			"cluster_id":      fmt.Sprint(object["Id"]),
-			"cluster_name":    object["Name"],
-			"create_resource": object["CreateResource"],
-			"create_time":     fmt.Sprint(object["CreateTime"]),
-			"deposit_type":    object["DepositType"],
-			"expired_time":    fmt.Sprint(object["ExpiredTime"]),
-			"machine_type":    object["MachineType"],
-			"meta_store_type": object["MetaStoreType"],
-			"payment_type":    object["ChargeType"],
-			"period":          formatInt(object["Period"]),
-			"running_time":    formatInt(object["RunningTime"]),
-			"status":          object["Status"],
+			"id":                    fmt.Sprint(object["Id"]),
+			"cluster_id":            fmt.Sprint(object["Id"]),
+			"cluster_name":          object["Name"],
+			"create_resource":       object["CreateResource"],
+			"create_time":           fmt.Sprint(object["CreateTime"]),
+			"deposit_type":          object["DepositType"],
+			"expired_time":          fmt.Sprint(object["ExpiredTime"]),
+			"machine_type":          object["MachineType"],
+			"meta_store_type":       object["MetaStoreType"],
+			"payment_type":          object["ChargeType"],
+			"period":                formatInt(object["Period"]),
+			"running_time":          formatInt(object["RunningTime"]),
+			"status":                object["Status"],
+			"type":                  object["Type"],
+			"has_uncompleted_order": object["HasUncompletedOrder"],
 		}
 
 		tags := make(map[string]interface{})
@@ -663,8 +673,13 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 			}
 		}
 		mapping["tags"] = tags
-		ids = append(ids, fmt.Sprint(mapping["id"]))
-		names = append(names, object["Name"])
+
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			ids = append(ids, fmt.Sprint(mapping["id"]))
+			names = append(names, object["Name"])
+			s = append(s, mapping)
+			continue
+		}
 
 		id := fmt.Sprint(object["Id"])
 		emrService := EmrService{client}
@@ -859,6 +874,8 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 		}
 		mapping["tags"] = tagsToMap(getResp2)
 
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["Name"])
 		s = append(s, mapping)
 	}
 
