@@ -84,7 +84,7 @@ func resourceAlicloudAdbAccountCreate(d *schema.ResourceData, meta interface{}) 
 
 	password := d.Get("account_password").(string)
 	kmsPassword := d.Get("kms_encrypted_password").(string)
-	fmt.Println("11")
+	fmt.Println("111")
 	if password == "" && kmsPassword == "" {
 		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
 	}
