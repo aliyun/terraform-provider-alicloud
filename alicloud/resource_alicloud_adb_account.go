@@ -38,13 +38,13 @@ func resourceAlicloudAdbAccount() *schema.Resource {
 
 			"account_password": {
 				Type:      schema.TypeString,
-				Optional:  true,
+				Required:  true,
 				Sensitive: true,
 			},
 
 			"kms_encrypted_password": {
 				Type:             schema.TypeString,
-				Optional:         true,
+				Required:         true,
 				DiffSuppressFunc: kmsDiffSuppressFunc,
 			},
 
@@ -84,7 +84,7 @@ func resourceAlicloudAdbAccountCreate(d *schema.ResourceData, meta interface{}) 
 
 	password := d.Get("account_password").(string)
 	kmsPassword := d.Get("kms_encrypted_password").(string)
-
+	fmt.Println("11")
 	if password == "" && kmsPassword == "" {
 		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
 	}

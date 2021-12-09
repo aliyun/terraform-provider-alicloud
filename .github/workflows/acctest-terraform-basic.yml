@@ -44,3 +44,17 @@ jobs:
           make fmtcheck
 
 
+
+  field-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: '3'
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.16.7'
+      - run: |
+          sudo mkdir -p "${GOPATH}/src/github.com/aliyun"
+          chmod +rwx scripts/version_check.sh
+          sudo bash scripts/version_check.sh

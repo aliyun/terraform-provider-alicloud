@@ -146,7 +146,7 @@ func resourceAlicloudConfigRule() *schema.Resource {
 			},
 			"tag_key_scope": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"tag_value_scope": {
 				Type:     schema.TypeString,
