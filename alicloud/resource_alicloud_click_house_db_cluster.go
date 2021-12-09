@@ -21,6 +21,10 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(60 * time.Minute),
+			Update: schema.DefaultTimeout(60 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"category": {
 				Type:         schema.TypeString,
@@ -206,7 +210,7 @@ func resourceAlicloudClickHouseDbClusterCreate(d *schema.ResourceData, meta inte
 	}
 
 	d.SetId(fmt.Sprint(response["DBClusterId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Creating", "Deleting", "Restarting", "Preparing", "Running"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, clickhouseService.ClickHouseDbClusterStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{"Creating", "Deleting", "Restarting", "Preparing"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickhouseService.ClickHouseDbClusterStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -356,7 +360,6 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 				if err != nil {
 					return WrapError(err)
 				}
-				request["ClientToken"] = buildClientToken("ModifyDBClusterAccessWhiteList")
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -394,7 +397,6 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 				if err != nil {
 					return WrapError(err)
 				}
-				request["ClientToken"] = buildClientToken("ModifyDBClusterAccessWhiteList")
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -454,7 +456,7 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 			}
 			d.SetPartial("status")
 		}
-		stateConf := BuildStateConf([]string{"RESTARTING"}, []string{"Running"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, clickhouseService.ClickHouseDbClusterStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{"RESTARTING"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickhouseService.ClickHouseDbClusterStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}

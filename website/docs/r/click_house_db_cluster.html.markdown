@@ -77,6 +77,13 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of DBCluster.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 60 mins) Used when creating the Click House DBCluster (until it reaches the initial `Running` status).
+* `update` - (Defaults to 60 mins) Used when update the Click House DBCluster.
+
 ## Import
 
 Click House DBCluster can be imported using the id, e.g.
