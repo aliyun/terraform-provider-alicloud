@@ -628,6 +628,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oos_state_configurations":                    dataSourceAlicloudOosStateConfigurations(),
 			"alicloud_oos_secret_parameters":                       dataSourceAlicloudOosSecretParameters(),
 			"alicloud_click_house_backup_policies":                 dataSourceAlicloudClickHouseBackupPolicies(),
+			"alicloud_cloud_sso_service":                           dataSourceAlicloudCloudSsoService(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
