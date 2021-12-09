@@ -384,12 +384,17 @@ var AlicloudClickHouseDBClusterMap0 = map[string]string{
 
 func AlicloudClickHouseDBClusterBasicDependence0(name string) string {
 	return fmt.Sprintf(`
+data "alicloud_click_house_regions" "default" {	
+  current = true
+}
+
 data "alicloud_vpcs" "default"	{
-	name_regex = "default-NODELETING"
+  name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {
- vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  zone_id = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
 }
 variable "name" {
   default = "%s"
