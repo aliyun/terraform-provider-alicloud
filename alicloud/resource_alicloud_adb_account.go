@@ -68,7 +68,7 @@ func resourceAlicloudAdbAccount() *schema.Resource {
 
 			"account_description": {
 				Type:     schema.TypeString,
-				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
