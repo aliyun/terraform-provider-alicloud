@@ -646,6 +646,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_gtm_instances":                        dataSourceAlicloudAlidnsGtmInstances(),
 			"alicloud_vpc_bgp_groups":                              dataSourceAlicloudVpcBgpGroups(),
 			"alicloud_nas_snapshots":                               dataSourceAlicloudNasSnapshots(),
+			"alicloud_hbr_replication_vault_regions":               dataSourceAlicloudHbrReplicationVaultRegions(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1175,6 +1176,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_bgp_group":                                        resourceAlicloudVpcBgpGroup(),
 			"alicloud_ram_security_preference":                              resourceAlicloudRamSecurityPreference(),
 			"alicloud_nas_snapshot":                                         resourceAlicloudNasSnapshot(),
+			"alicloud_hbr_replication_vault":                                resourceAlicloudHbrReplicationVault(),
 		},
 
 		ConfigureFunc: providerConfigure,
