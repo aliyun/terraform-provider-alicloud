@@ -113,6 +113,8 @@ github.com/aliyun/credentials-go/credentials/response
 github.com/aliyun/credentials-go/credentials/utils
 # github.com/aliyun/fc-go-sdk v0.0.0-20200925033337-c013428cbe21
 github.com/aliyun/fc-go-sdk
+# github.com/aliyun/terraform-provider-alicloud-prev v0.0.0 => /Users/wanghx/go/src/github.com/aliyun/terraform-provider-alicloud-prev
+github.com/aliyun/terraform-provider-alicloud-prev/alicloud
 # github.com/andybalholm/brotli v1.0.1
 github.com/andybalholm/brotli
 # github.com/apparentlymart/go-cidr v1.0.1

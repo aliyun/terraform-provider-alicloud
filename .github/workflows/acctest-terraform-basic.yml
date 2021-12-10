@@ -12,35 +12,49 @@ on:
       - alicloud/*.go
 
 jobs:
-  build:
-    name: Build
+  #  Build:
+  #    runs-on: ubuntu-latest
+  #    steps:
+  #      - uses: actions/checkout@v2
+  #      - name: Set up Go Version
+  #        uses: actions/setup-go@v2
+  #        with:
+  #          go-version: '1.16.7'
+  #
+  #      - name: Get dependencies
+  #        run: |
+  #          go get golang.org/x/tools/cmd/goimports
+  #          go mod tidy
+  #
+  #      - name: vet
+  #        run: |
+  #          make vet
+  #
+  #      - name: fmt
+  #        run: |
+  #          make fmt
+  #
+  #      - name: test
+  #        run: |
+  #          make test
+  #
+  #      - name: fmtcheck
+  #        run: |
+  #          make fmtcheck
+
+  field-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Go Version
-        uses: actions/setup-go@37335c7bb261b353407cff977110895fa0b4f7d8
         with:
-          go-version: ^1.16
-
-      - name: Get dependencies
+          fetch-depth: '3'
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.16.7'
+      - name: mkdir
         run: |
-          go get golang.org/x/tools/cmd/goimports
-          go mod tidy
-
-      - name: vet
+          sudo mkdir -p "${GOPATH}/src/github.com/aliyun"
+          chmod +rwx scripts/version_check.sh
+      - name: Field Check
         run: |
-          make vet
-
-      - name: fmt
-        run: |
-          make fmt
-
-      - name: test
-        run: |
-          make test
-
-      - name: fmtcheck
-        run: |
-          make fmtcheck
-
-
+          sudo bash scripts/version_check.sh

@@ -42,20 +42,6 @@ jobs:
           locale: "US"
           path: ./website/docs
 
-  terrafmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - run: echo "GO_VERSION=$(cat .go-version)" >> $GITHUB_ENV
-      - uses: actions/setup-go@v2
-        with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: terrafmt
-        run: |
-          export PATH=$PATH:$(go env GOPATH)/bin
-          go get -t github.com/katbyte/terrafmt
-          terrafmt diff ./website --check --pattern '*.markdown'
-
   basic-check:
     runs-on: ubuntu-latest
     steps:
@@ -65,7 +51,11 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '1.16.7'
-      - run: bash scripts/basic-check.sh
+      - name: Basic Check
+        run: |
+#           including terrafmt && some document check
+          sudo bash scripts/basic-check.sh
+
 
 #  terraform-validate:
 #    runs-on: ubuntu-latest
@@ -88,5 +78,3 @@ jobs:
 #          if [[ "$?" == "1" ]]; then
 #            echo "Please Check the Terraform Grammer" && exit 1
 #          fi
-
-

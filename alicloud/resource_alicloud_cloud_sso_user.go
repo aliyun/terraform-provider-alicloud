@@ -25,7 +25,7 @@ func resourceAlicloudCloudSsoUser() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"description": {
 				Type:         schema.TypeString,
-				Optional:     true,
+				Required:     true,
 				ValidateFunc: validation.StringLenBetween(0, 1024),
 			},
 			"directory_id": {
