@@ -1835,6 +1835,88 @@ func TestAccAlicloudEcsInstancSecondaryIpCount(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudEcsInstanc_AutoRelaseTimeUpdate(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcSecondaryIps)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"system_disk_category":          "cloud_essd",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"host_name":                     "test",
+					"instance_name":                 "${var.name}",
+					"internet_charge_type":          "PayByTraffic",
+					"instance_charge_type":          "PostPaid",
+					"password":                      "Tftest123",
+					"user_data":                     "I_am_user_data",
+					"security_enhancement_strategy": "Active",
+					"auto_release_time":             time.Now().Add(1 * time.Hour).Format("2006-01-02T15:04:05Z"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_id":                      CHECKSET,
+						"vswitch_id":                    CHECKSET,
+						"instance_name":                 name,
+						"password":                      "Tftest123",
+						"security_enhancement_strategy": "Active",
+						"system_disk_category":          "cloud_essd",
+						"auto_release_time":             CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_release_time": time.Now().Add(2 * time.Hour).Format("2006-01-02T15:04:05Z"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_release_time": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_release_time": "",
+				},
+				),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_release_time": "",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "security_enhancement_strategy", "secondary_private_ip_address_count", "dry_run"},
+			},
+		},
+	})
+}
+
 func resourceInstanceVpcSecondaryIps(name string) string {
 	return fmt.Sprintf(`
 variable "name" {

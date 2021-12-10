@@ -771,7 +771,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
-	if d.HasChange("auto_release_time") {
+	if !d.IsNewResource() && d.HasChange("auto_release_time") {
 		request := ecs.CreateModifyInstanceAutoReleaseTimeRequest()
 		request.InstanceId = d.Id()
 		request.RegionId = client.RegionId
