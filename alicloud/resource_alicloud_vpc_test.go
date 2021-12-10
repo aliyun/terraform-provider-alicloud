@@ -631,6 +631,10 @@ func TestAccAlicloudVpc_unit(t *testing.T) {
 			result := ReadMockResponse
 			return result, nil
 		},
+		"ReadNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
 	}
 	// Create
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
@@ -917,7 +921,7 @@ func TestAccAlicloudVpc_unit(t *testing.T) {
 		patches.Reset()
 		assert.Nil(t, err)
 	})
-	t.Run("DeleteMockNormal", func(t *testing.T) {
+	t.Run("DeleteIsExpectedErrorsMockNormal", func(t *testing.T) {
 		retryFlag := false
 		noRetryFlag := false
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
@@ -955,7 +959,7 @@ func TestAccAlicloudVpc_unit(t *testing.T) {
 			} else if noRetryFlag {
 				return responseMock["NoRetryError"]("NonRetryableError")
 			}
-			return responseMock["CreateNormal"]("")
+			return responseMock["ReadNormal"]("")
 		})
 		patcheDescribeRouteTableList := gomonkey.ApplyMethod(reflect.TypeOf(&VpcService{}), "DescribeRouteTableList", func(*VpcService, string) (map[string]interface{}, error) {
 			return responseMock["NoRetryError"]("NoRetryError")
