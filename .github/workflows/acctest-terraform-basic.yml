@@ -54,7 +54,7 @@ jobs:
       - name: mkdir
         run: |
           sudo mkdir -p "${GOPATH}/src/github.com/aliyun"
-          chmod +rwx scripts/version_check.sh
+          chmod +rwx scripts/field_check.sh
       - name: Field Check
         run: |
           sudo bash scripts/field_check.sh
