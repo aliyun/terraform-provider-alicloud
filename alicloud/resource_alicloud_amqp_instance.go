@@ -213,6 +213,7 @@ func resourceAlicloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 			}
 			if IsExpectedErrors(err, []string{"NotApplicable"}) {
 				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				request["ProductType"] = "ons_onsproxy_public_intl"
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
