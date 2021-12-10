@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/pull_requests.yml
+      - .github/acctest-terraform-lint.yml
       - alicloud/*.go
 jobs:
   golangci-lint-review-log:
