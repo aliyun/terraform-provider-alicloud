@@ -1,4 +1,36 @@
 ## 1.147.0 (Unreleased)
+
+- **New Resource:** `alicloud_rds_clone_db_instance ` [GH-4260]
+- **New Resource:** `alicloud_cddc_dedicated_host` [GH-4297]
+- **New Resource:** `alicloud_oos_service_setting` [GH-4321]
+- **New Resource:** `alicloud_oos_parameter` [GH-4327]
+- **New Resource:** `alicloud_oos_state_configuration` [GH-4323]
+- **New Resource:** `alicloud_oos_secret_parameter` [GH-4328]
+- **New Resource:** `alicloud_click_house_backup_policy` [GH-4341]
+- **New Data Source:** `alicloud_click_house_backup_policies` [GH-4341]
+- **New Data Source:** `alicloud_oos_secret_parameters` [GH-4328]	
+- **New Data Source:** `alicloud_oos_state_configurations` [GH-4323]
+- **New Data Source:** `alicloud_oos_parameters` [GH-4327]	
+- **New Data Source:** `alicloud_cddc_dedicated_hosts` [GH-4297]
+- **New Data Source:** `alicloud_cddc_zones` [GH-4297]
+- **New Data Source:** `alicloud_cddc_host_ecs_level_infos` [GH-4297]
+
+ENHANCEMENTS:
+
+- resource/alicloud_instance: add the condition of the filed auto_release_time during updating [GH-4346]
+- resource/alicloud_amqp_instance: Supports create instance using international account [GH-4345]
+- resource/alicloud_db_backup_policy,add new attribute released_keep_policy to support modify released_keep_policy. [GH-4294]
+- resource/alicloud_cs_kubernetes_node_pool: enhanced the consistency of node count [GH-4330]
+- testcase: Adds new unit test case for resource alicloud_vswitch [GH-4347]
+- docs/brain_industrial_service,datahub_service,edas_service,mns_service,sae_service,vs_service,alidns_instance,amqp_instance,cloud_firewall_instance,sddp_instance : Update the support situation at the international site [GH-4332]	
+- doc/alicloud_log_audit: Add new parameter vpc_flow_enabled,vpc_flow_ttl,vpc_flow_collection_policy,vpc_sync_enabled,vpc_sync_ttl,ddos_bgp_access_enabled,ddos_bgp_access_ttl,ddos_dip_access_enabled,ddos_dip_access_ttl,ddos_dip_access_ti_enabled, Update the default value of oss_access_ttl,drds_audit_ttl,slb_access_ttl, Correct the parameter drds_audit_enabled [GH-4322]
+- Github WorkFlow: Add Some Basic Checks in PR [GH-4319]
+- Revert New Resource alicloud_rds_clone_db_instance [GH-4326]
+
+BUG FIXES:
+
+- datasource/alicloud_emr_clusters: Fix the issue that the enable_details query is invalid [GH-4340]
+
 ## 1.146.0 (December 05, 2021)
 
 - **New Resource:** `alicloud_ecs_dedicated_host_cluster` ([#4275](https://github.com/aliyun/terraform-provider-alicloud/issues/4275))
