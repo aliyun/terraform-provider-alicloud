@@ -57,4 +57,4 @@ jobs:
           chmod +rwx scripts/version_check.sh
       - name: Field Check
         run: |
-          sudo bash scripts/version_check.sh
+          sudo bash scripts/field_check.sh
