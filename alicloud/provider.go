@@ -632,6 +632,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mongodb_audit_policies":                      dataSourceAlicloudMongodbAuditPolicies(),
 			"alicloud_mongodb_accounts":                            dataSourceAlicloudMongodbAccounts(),
 			"alicloud_mongodb_serverless_instances":                dataSourceAlicloudMongodbServerlessInstances(),
+			"alicloud_cddc_dedicated_host_accounts":                dataSourceAlicloudCddcDedicatedHostAccounts(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1143,6 +1144,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mongodb_account":                                      resourceAlicloudMongodbAccount(),
 			"alicloud_mongodb_serverless_instance":                          resourceAlicloudMongodbServerlessInstance(),
 			"alicloud_ecs_session_manager_status":                           resourceAlicloudEcsSessionManagerStatus(),
+			"alicloud_cddc_dedicated_host_account":                          resourceAlicloudCddcDedicatedHostAccount(),
 		},
 
 		ConfigureFunc: providerConfigure,

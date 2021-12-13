@@ -50,6 +50,7 @@ The following arguments are supported:
 * `host_replace_policy` - (Optional) The policy based on which the system handles host failures. Valid values:`Auto`,`Manual`
 * `mem_allocation_ratio` - (Optional) The Memory Allocation Ratio of the Dedicated Host Group.
 * `vpc_id` - (Required, ForceNew) The virtual private cloud (VPC) ID of the dedicated cluster.
+* `open_permission` - (Optional, Computed, ForceNew, Available in v1.148.0+) Whether to enable the feature that allows you to have OS permissions on the hosts in the dedicated cluster. Valid values: `true` and `false`.
 
 ## Attributes Reference
 
