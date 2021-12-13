@@ -102,6 +102,7 @@ func TestAccAlicloudClickHouseDbClusterDataSource(t *testing.T) {
 			"clusters.0.vpc_cloud_instance_id":    CHECKSET,
 			"clusters.0.vpc_id":                   CHECKSET,
 			"clusters.0.zone_id":                  CHECKSET,
+			"clusters.0.control_version":          CHECKSET,
 		}
 	}
 	var fakeAlicloudClickHouseDbClusterDataSourceNameMapFunc = func(rand int) map[string]string {

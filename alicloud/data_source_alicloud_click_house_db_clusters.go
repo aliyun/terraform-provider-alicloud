@@ -219,6 +219,10 @@ func dataSourceAlicloudClickHouseDbClusters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"control_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -327,6 +331,7 @@ func dataSourceAlicloudClickHouseDbClustersRead(d *schema.ResourceData, meta int
 			"vpc_cloud_instance_id":   object["VpcCloudInstanceId"],
 			"vpc_id":                  object["VpcId"],
 			"zone_id":                 object["ZoneId"],
+			"control_version":         object["ControlVersion"],
 		}
 		if val, exist := object["IsExpired"]; exist {
 			object["is_expired"] = val.(bool)
