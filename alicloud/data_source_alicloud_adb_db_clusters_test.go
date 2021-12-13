@@ -86,6 +86,7 @@ func TestAccAlicloudAdbDbClustersDataSource(t *testing.T) {
 			"clusters.0.db_cluster_category": "MixedStorage",
 			"clusters.0.maintain_time":       "23:00Z-00:00Z",
 			"clusters.0.security_ips.#":      "2",
+			"clusters.0.mode":                "flexible",
 		}
 	}
 

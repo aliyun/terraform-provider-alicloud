@@ -87,3 +87,4 @@ The following attributes are exported in addition to the arguments listed above:
 	* `vpc_id` - The vpc id.
 	* `vswitch_id` - The vswitch id.
 	* `zone_id` - The zone ID  of the resource.
+	* `mode` - The lock mode of the cluster.	

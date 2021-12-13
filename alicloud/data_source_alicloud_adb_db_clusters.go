@@ -229,6 +229,10 @@ func dataSourceAlicloudAdbDbClusters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"mode": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -365,6 +369,7 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 			"vpc_id":                  object["VPCId"],
 			"vswitch_id":              object["VSwitchId"],
 			"zone_id":                 object["ZoneId"],
+			"mode":                    object["Mode"],
 		}
 		descriptions = append(descriptions, object["DBClusterDescription"].(string))
 
