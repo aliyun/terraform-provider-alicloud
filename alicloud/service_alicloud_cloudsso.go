@@ -656,12 +656,15 @@ func (s *CloudssoService) GetTaskStatus(directoryId, taskId string) (object map[
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, fmt.Sprintf(directoryId, ":", taskId), action, AlibabaCloudSdkGoERROR)
+		if IsExpectedErrors(err, []string{"EntityNotExists.Task"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", fmt.Sprint(directoryId, ":", taskId))), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, fmt.Sprint(directoryId, ":", taskId), action, AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.TaskStatus", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, fmt.Sprintf(directoryId, ":", taskId), "$.TaskStatus", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, fmt.Sprint(directoryId, ":", taskId), "$.TaskStatus", response)
 	}
 	object = v.(map[string]interface{})
 	return object, nil
@@ -685,4 +688,180 @@ func (s *CloudssoService) CloudssoServiceAccessAssignmentStateRefreshFunc(direct
 		}
 		return object, fmt.Sprint(object["Status"]), nil
 	}
+}
+
+func (s *CloudssoService) DescribeCloudSsoAccessConfigurationProvisioning(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCloudssoClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListAccessConfigurationProvisionings"
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"AccessConfigurationId": parts[1],
+		"DirectoryId":           parts[0],
+		"TargetId":              parts[3],
+		"TargetType":            parts[2],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.AccessConfigurationProvisioning"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:AccessConfigurationProvisioning", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.AccessConfigurationProvisionings", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AccessConfigurationProvisionings", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["TargetId"]) != parts[3] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *CloudssoService) CloudssoServiceAccessConfigurationProvisioningStateRefreshFunc(directoryId, taskId string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.GetTaskStatus(directoryId, taskId)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprintf(directoryId, ":", taskId)))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *CloudssoService) CloudssoServicAccessConfigurationProvisioning(directoryId, accessConfigurationId, targetType, targetId string) (err error) {
+	var response map[string]interface{}
+	action := "ProvisionAccessConfiguration"
+	request := make(map[string]interface{})
+	conn, err := s.client.NewCloudssoClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	request["DirectoryId"] = directoryId
+	request["AccessConfigurationId"] = accessConfigurationId
+	request["TargetType"] = targetType
+	request["TargetId"] = targetId
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_sso_access_configuration_provisioning", action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Tasks", response)
+	if err != nil || len(v.([]interface{})) < 1 {
+		return WrapErrorf(err, IdMsg, fmt.Sprint(directoryId, ":", accessConfigurationId, ":", targetType, ":", targetId))
+	}
+	response = v.([]interface{})[0].(map[string]interface{})
+	_, err = s.GetTaskStatus(fmt.Sprint(request["DirectoryId"]), fmt.Sprint(response["TaskId"]))
+	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
+		return WrapError(err)
+	}
+	stateConf := BuildStateConf([]string{}, []string{"Success"}, 10*time.Minute, 5*time.Second, s.CloudssoServiceAccessConfigurationProvisioningStateRefreshFunc(fmt.Sprint(request["DirectoryId"]), fmt.Sprint(response["TaskId"]), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, fmt.Sprint(directoryId, ":", accessConfigurationId, ":", targetType, ":", targetId))
+	}
+	return nil
+}
+
+func (s *CloudssoService) DescribeCloudSsoAccessConfigurationProvisionings(directoryId, accessConfigurationId string) (objects []map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCloudssoClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	action := "ListAccessConfigurationProvisionings"
+	request := map[string]interface{}{
+		"AccessConfigurationId": accessConfigurationId,
+		"DirectoryId":           directoryId,
+		"MaxResults":            PageSizeMedium,
+	}
+
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return objects, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cloud_sso_access_configuration", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.AccessConfigurationProvisionings", response)
+		if err != nil {
+			return objects, WrapErrorf(err, FailedGetAttributeMsg, action, "$.AccessConfigurationProvisionings", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			objects = append(objects, item)
+		}
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+
+	return objects, nil
 }

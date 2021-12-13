@@ -205,7 +205,7 @@ func resourceAlicloudCloudSsoAccessConfigurationUpdate(d *schema.ResourceData, m
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, RemovePermissionPolicyFromAccessConfigurationReq, &util.RuntimeOptions{})
 					if err != nil {
-						if NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -243,7 +243,7 @@ func resourceAlicloudCloudSsoAccessConfigurationUpdate(d *schema.ResourceData, m
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, AddPermissionPolicyFromAccessConfigurationReq, &util.RuntimeOptions{})
 					if err != nil {
-						if NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -255,6 +255,20 @@ func resourceAlicloudCloudSsoAccessConfigurationUpdate(d *schema.ResourceData, m
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
+			}
+		}
+
+		// Provisioning access configuration when permission policies has changed.
+		cloudssoService := CloudssoService{client}
+		objects, err := cloudssoService.DescribeCloudSsoAccessConfigurationProvisionings(fmt.Sprint(parts[0]), fmt.Sprint(parts[1]))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		for _, object := range objects {
+			err = cloudssoService.CloudssoServicAccessConfigurationProvisioning(fmt.Sprint(parts[0]), fmt.Sprint(parts[1]), fmt.Sprint(object["TargetType"]), fmt.Sprint(object["TargetId"]))
+			if err != nil {
+				return WrapError(err)
 			}
 		}
 	}
@@ -294,7 +308,7 @@ func resourceAlicloudCloudSsoAccessConfigurationUpdate(d *schema.ResourceData, m
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, updateAccessConfigurationReq, &util.RuntimeOptions{})
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -343,7 +357,7 @@ func resourceAlicloudCloudSsoAccessConfigurationDelete(d *schema.ResourceData, m
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, RemovePermissionPolicyFromAccessConfigurationReq, &util.RuntimeOptions{})
 					if err != nil {
-						if NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"OperationConflict.Task"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -373,7 +387,7 @@ func resourceAlicloudCloudSsoAccessConfigurationDelete(d *schema.ResourceData, m
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"DeletionConflict.AccessConfiguration.Provisioning", "DeletionConflict.AccessConfiguration.AccessAssignment"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"DeletionConflict.AccessConfiguration.Provisioning", "DeletionConflict.AccessConfiguration.AccessAssignment", "OperationConflict.Task", "DeletionConflict.AccessConfiguration.Task"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
