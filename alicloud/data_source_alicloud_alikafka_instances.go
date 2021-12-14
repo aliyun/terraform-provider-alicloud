@@ -120,18 +120,6 @@ func dataSourceAlicloudAlikafkaInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"expired_time": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"msg_retain": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"ssl_end_point": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 					},
 				},
 			},
@@ -224,9 +212,6 @@ func alikafkaInstancesDecriptionAttributes(d *schema.ResourceData, instancesInfo
 			"security_group":  item.SecurityGroup,
 			"service_version": item.UpgradeServiceDetailInfo.Current2OpenSourceVersion,
 			"config":          item.AllConfig,
-			"expired_time":    item.ExpiredTime,
-			"msg_retain":      item.MsgRetain,
-			"ssl_end_point":   item.SslEndPoint,
 		}
 
 		ids = append(ids, item.InstanceId)

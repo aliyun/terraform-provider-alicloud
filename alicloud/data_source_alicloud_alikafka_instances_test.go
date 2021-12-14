@@ -64,9 +64,6 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 			"instances.0.vpc_id":          CHECKSET,
 			"instances.0.zone_id":         CHECKSET,
 			"instances.0.end_point":       CHECKSET,
-			"instances.0.expired_time":    CHECKSET,
-			"instances.0.msg_retain":      CHECKSET,
-			"instances.0.ssl_end_point":   CHECKSET,
 		}
 	}
 

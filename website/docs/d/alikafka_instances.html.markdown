@@ -87,8 +87,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `security_group` - The security group of the instance.
   * `service_version` - The kafka openSource version of the instance.
   * `config` - The config the instance.
-  * `expired_time` - The expired time  of the instance.
-  * `msg_retain` - The msg retain of the instance.
-  * `ssl_end_point` - The SSL end point of the instance.
 
 

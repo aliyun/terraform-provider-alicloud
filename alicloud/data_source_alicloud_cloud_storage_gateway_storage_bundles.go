@@ -67,10 +67,6 @@ func dataSourceAlicloudCloudStorageGatewayStorageBundles() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"create_time": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 					},
 				},
 			},
@@ -153,7 +149,6 @@ func dataSourceAlicloudCloudStorageGatewayStorageBundlesRead(d *schema.ResourceD
 			"id":                  fmt.Sprint(object["StorageBundleId"]),
 			"storage_bundle_id":   fmt.Sprint(object["StorageBundleId"]),
 			"storage_bundle_name": object["Name"],
-			"create_time":         object["CreatedTime"],
 		}
 		ids = append(ids, fmt.Sprint(object["StorageBundleId"]))
 		names = append(names, object["Name"])

@@ -46,7 +46,6 @@ func TestAccAlicloudCloudStorageGatewayStorageBundlesDataSource(t *testing.T) {
 			"bundles.0.id":                  CHECKSET,
 			"bundles.0.storage_bundle_id":   CHECKSET,
 			"bundles.0.storage_bundle_name": fmt.Sprintf("tf-testAccStorageBundle-%d", rand),
-			"bundles.0.create_time":         CHECKSET,
 		}
 	}
 	var fakeAlicloudCloudStorageGatewayStorageBundlesDataSourceNameMapFunc = func(rand int) map[string]string {
