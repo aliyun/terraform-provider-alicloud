@@ -93,6 +93,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `vswitch_id` - The vswitch id of the DBCluster.
     * `zone_id` - The zone ID of the DBCluster.
     * `control_version` - The control version of the DBCluster.
+    * `status` - The status of the DBCluster. Valid values: `Running`,`Creating`,`Deleting`,`Restarting`,`Preparing`.
     * `db_cluster_access_white_list` - The db cluster access white list.
         * `db_cluster_ip_array_attribute` - Whitelist grouping attribute.
         * `db_cluster_ip_array_name` - Whitelist group name.
