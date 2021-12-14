@@ -663,6 +663,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_db_read_write_splitting_connection": resourceAlicloudDBReadWriteSplittingConnection(),
 			"alicloud_db_instance":                        resourceAlicloudDBInstance(),
 			"alicloud_rds_backup":                         resourceAlicloudRdsBackup(),
+			"alicloud_rds_clone_db_instance":              resourceAlicloudRdsCloneDbInstance(),
 			"alicloud_mongodb_instance":                   resourceAlicloudMongoDBInstance(),
 			"alicloud_mongodb_sharding_instance":          resourceAlicloudMongoDBShardingInstance(),
 			"alicloud_gpdb_instance":                      resourceAlicloudGpdbInstance(),
