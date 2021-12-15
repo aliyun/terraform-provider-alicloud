@@ -39,7 +39,6 @@ resource "alicloud_cloud_firewall_control_policy" "example" {
 The following arguments are supported:
 
 * `acl_action` - (Required) The action that Cloud Firewall performs on the traffic. Valid values: `accept`, `drop`, `log`.
-* `acl_uuid` - (Optional, ForceNew, Available in v1.129.0+) The unique ID of the access control policy.
 * `application_name` - (Required) The application type that the access control policy supports.If `direction` is `in`, the valid value is `ANY`. If `direction` is `out`, the valid values are `ANY`, `HTTP`, `HTTPS`, `MQTT`, `Memcache`, `MongoDB`, `MySQL`, `RDP`, `Redis`, `SMTP`, `SMTPS`, `SSH`, `SSL`, `VNC`.
 * `description` - (Required) The description of the access control policy.
 * `dest_port` - (Optional) The destination port defined in the access control policy. 
@@ -61,6 +60,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID of Control Policy. The value formats as `<acl_uuid>:<direction>`.
+* `acl_uuid` - (Available in v1.148.0+) The unique ID of the access control policy.
 
 ## Import
 
