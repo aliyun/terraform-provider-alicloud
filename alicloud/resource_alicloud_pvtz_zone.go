@@ -87,6 +87,7 @@ func resourceAlicloudPvtzZone() *schema.Resource {
 			"user_info": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"user_id": {
@@ -94,7 +95,7 @@ func resourceAlicloudPvtzZone() *schema.Resource {
 							Optional: true,
 						},
 						"region_ids": {
-							Type:     schema.TypeList,
+							Type:     schema.TypeSet,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
@@ -202,6 +203,11 @@ func resourceAlicloudPvtzZoneRead(d *schema.ResourceData, meta interface{}) erro
 }
 func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	pvtzService := PvtzService{client}
+	conn, err := client.NewPvtzClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -221,10 +227,6 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 			request["UserClientIp"] = d.Get("user_client_ip")
 		}
 		action := "SetProxyPattern"
-		conn, err := client.NewPvtzClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -259,10 +261,6 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 			updateZoneRemarkReq["UserClientIp"] = d.Get("user_client_ip")
 		}
 		action := "UpdateZoneRemark"
-		conn, err := client.NewPvtzClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, updateZoneRemarkReq, &util.RuntimeOptions{})
@@ -295,7 +293,7 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 	if v, ok := d.GetOk("user_info"); ok {
 		for _, raw := range v.(*schema.Set).List() {
 			obj := raw.(map[string]interface{})
-			for index, val := range obj["region_ids"].([]interface{}) {
+			for index, val := range obj["region_ids"].(*schema.Set).List() {
 				UpdateSyncEcsHostTaskReq[fmt.Sprintf("Region.%d.UserId", index+1)] = obj["user_id"]
 				UpdateSyncEcsHostTaskReq[fmt.Sprintf("Region.%d.RegionId", index+1)] = val
 			}
@@ -305,15 +303,31 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 		if _, ok := d.GetOk("lang"); ok {
 			updateZoneRemarkReq["Lang"] = d.Get("lang")
 		}
-		action := "UpdateSyncEcsHostTask"
-		conn, err := client.NewPvtzClient()
-		if err != nil {
-			return WrapError(err)
+		if _, ok := d.GetOk("user_info"); !ok {
+			object, err := pvtzService.DescribePvtzZone(d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+			if v, ok := object["SyncHostTask"]; ok && v != nil {
+				syncObject := v.(map[string]interface{})
+				for _, raw := range syncObject["EcsRegions"].(map[string]interface{})["EcsRegion"].([]interface{}) {
+					obj := raw.(map[string]interface{})
+					for index, region := range obj["RegionIds"].(map[string]interface{})["RegionId"].([]interface{}) {
+						UpdateSyncEcsHostTaskReq[fmt.Sprintf("Region.%d.UserId", index+1)] = obj["user_id"]
+						UpdateSyncEcsHostTaskReq[fmt.Sprintf("Region.%d.RegionId", index+1)] = region
+					}
+				}
+			}
 		}
+		action := "UpdateSyncEcsHostTask"
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, UpdateSyncEcsHostTaskReq, &util.RuntimeOptions{})
 			if err != nil {
+				if IsExpectedErrors(err, []string{"MissingRegion"}) {
+					log.Printf("[DEBUG] Resource alicloud_private_zone_zone UpdateSyncEcsHostTask Missed Region!!! %s", err)
+					return nil
+				}
 				if IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
