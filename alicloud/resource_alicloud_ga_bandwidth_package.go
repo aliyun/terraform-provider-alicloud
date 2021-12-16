@@ -82,7 +82,6 @@ func resourceAlicloudGaBandwidthPackage() *schema.Resource {
 			"duration": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
