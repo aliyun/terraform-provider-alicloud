@@ -277,7 +277,10 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
     - Cover: Use the value of the SecurityIps parameter to overwrite the existing entries in the IP address whitelist.
     - Append: Add the IP addresses and CIDR blocks that are specified in the SecurityIps parameter to the IP address whitelist.
     - Delete: Delete IP addresses and CIDR blocks that are specified in the SecurityIps parameter from the IP address whitelist. You must retain at least one IP address or CIDR block.
-* `security_ip_mode` - (Optional, Available in 1.62.1+)  Valid values are `normal`, `safety`, Default to `normal`. support `safety` switch to high security access mode 
+* `security_ip_mode` - (Optional, Available in 1.62.1+)  Valid values are `normal`, `safety`, Default to `normal`. support `safety` switch to high security access mode.
+* `fresh_white_list_readins` - (Optional, Available in 1.148.0+) The read-only instances to which you want to synchronize the IP address whitelist.
+  * If the instance is attached with a read-only instance, you can use this parameter to synchronize the IP address whitelist to the read-only instance. If the instance is attached with multiple read-only instances, the read-only instances must be separated by commas (,).
+  * If the instance is not attached with a read-only instance, this parameter is empty.
 * `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) .
 * `force_restart` - (Optional, Available in 1.75.0+) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `tags` - (Optional) A mapping of tags to assign to the resource.

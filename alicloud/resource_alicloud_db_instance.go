@@ -396,6 +396,10 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"None", "Lastest", "All"}, false),
 			},
+			"fresh_white_list_readins": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -906,6 +910,9 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		if v, ok := d.GetOk("modify_mode"); ok && v.(string) != "" {
 			request["ModifyMode"] = v
+		}
+		if v, ok := d.GetOk("fresh_white_list_readins"); ok && v.(string) != "" {
+			request["FreshWhiteListReadins"] = v
 		}
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
