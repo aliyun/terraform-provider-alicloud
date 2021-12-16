@@ -103,11 +103,11 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_same_region(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"source_region_ids":                      []string{"${var.child_region}"},
-					"source_instance_ids":                    []string{"${alicloud_vpc.vpc01.id}"},
-					"source_route_table_ids":                 []string{"${alicloud_vpc.vpc01.router_table_id}"},
-					"destination_instance_ids":               []string{"${alicloud_vpc.vpc00.id}"},
-					"destination_route_table_ids":            []string{"${alicloud_vpc.vpc00.router_table_id}"},
-					"destination_cidr_blocks":                []string{"${alicloud_vpc.vpc00.cidr_block}"},
+					"source_instance_ids":                    []string{"${data.alicloud_vpcs.vpc.ids.0}"},
+					"source_route_table_ids":                 []string{"${data.alicloud_vpcs.vpc.vpcs.0.route_table_id}"},
+					"destination_instance_ids":               []string{"${data.alicloud_vpcs.vpc.ids.0}"},
+					"destination_route_table_ids":            []string{"${data.alicloud_vpcs.vpc.vpcs.0.route_table_id}"},
+					"destination_cidr_blocks":                []string{"${data.alicloud_vpcs.vpc.vpcs.0.cidr_block}"},
 					"match_community_set":                    []string{"65501:1"},
 					"match_asns":                             []string{"65501"},
 					"operate_community_set":                  []string{"65501:1"},
@@ -234,11 +234,11 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_different_region(t *testing
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"source_region_ids":                      []string{"${var.vpc_region_01}"},
-					"source_instance_ids":                    []string{"${alicloud_vpc.vpc01.id}"},
-					"source_route_table_ids":                 []string{"${alicloud_vpc.vpc01.router_table_id}"},
-					"destination_instance_ids":               []string{"${alicloud_vpc.vpc00.id}"},
-					"destination_route_table_ids":            []string{"${alicloud_vpc.vpc00.router_table_id}"},
-					"destination_cidr_blocks":                []string{"${alicloud_vpc.vpc00.cidr_block}"},
+					"source_instance_ids":                    []string{"${data.alicloud_vpcs.vpc01.ids.0}"},
+					"source_route_table_ids":                 []string{"${data.alicloud_vpcs.vpc01.vpcs.0.route_table_id}"},
+					"destination_instance_ids":               []string{"${data.alicloud_vpcs.vpc00.ids.0}"},
+					"destination_route_table_ids":            []string{"${data.alicloud_vpcs.vpc00.vpcs.0.route_table_id}"},
+					"destination_cidr_blocks":                []string{"${data.alicloud_vpcs.vpc00.vpcs.0.cidr_block}"},
 					"match_community_set":                    []string{"65501:1"},
 					"match_asns":                             []string{"65501"},
 					"operate_community_set":                  []string{"65501:1"},
@@ -274,11 +274,11 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_different_region(t *testing
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"source_region_ids":                      []string{"${var.vpc_region_00}"},
-					"source_instance_ids":                    []string{"${alicloud_vpc.vpc00.id}"},
-					"source_route_table_ids":                 []string{"${alicloud_vpc.vpc00.router_table_id}"},
-					"destination_instance_ids":               []string{"${alicloud_vpc.vpc01.id}"},
-					"destination_route_table_ids":            []string{"${alicloud_vpc.vpc01.router_table_id}"},
-					"destination_cidr_blocks":                []string{"${alicloud_vpc.vpc01.cidr_block}"},
+					"source_instance_ids":                    []string{"${data.alicloud_vpcs.vpc00.ids.0}"},
+					"source_route_table_ids":                 []string{"${data.alicloud_vpcs.vpc00.vpcs.0.route_table_id}"},
+					"destination_instance_ids":               []string{"${data.alicloud_vpcs.vpc01.ids.0}"},
+					"destination_route_table_ids":            []string{"${data.alicloud_vpcs.vpc01.vpcs.0.route_table_id}"},
+					"destination_cidr_blocks":                []string{"${data.alicloud_vpcs.vpc01.vpcs.0.cidr_block}"},
 					"match_community_set":                    []string{"65500:1"},
 					"match_asns":                             []string{"65500"},
 					"operate_community_set":                  []string{"65500:1"},
@@ -372,29 +372,23 @@ variable "child_region" {
 }
 
 resource "alicloud_cen_instance" "default" {
-	name = "${var.name}"
+	cen_instance_name = "${var.name}"
 }
 
-resource "alicloud_vpc" "vpc00" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vpc" "vpc01" {
-	name = "${var.name}"
-	cidr_block = "192.168.0.0/16"
+data "alicloud_vpcs" "vpc" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_cen_instance_attachment" "default00" {
 	instance_id = "${alicloud_cen_instance.default.id}"
-	child_instance_id = "${alicloud_vpc.vpc00.id}"
+	child_instance_id = "${data.alicloud_vpcs.vpc.ids.0}"
 	child_instance_type = "VPC"
 	child_instance_region_id = "${var.child_region}"
 }
 
 resource "alicloud_cen_instance_attachment" "default01" {
 	instance_id = "${alicloud_cen_instance.default.id}"
-	child_instance_id = "${alicloud_vpc.vpc01.id}"
+	child_instance_id = "${data.alicloud_vpcs.vpc.ids.0}"
 	child_instance_type = "VPC"
 	child_instance_region_id = "${var.child_region}"
 }
@@ -417,7 +411,7 @@ variable "vpc_region_01" {
 }
 
 resource "alicloud_cen_instance" "default" {
-	name = "${var.name}"
+	cen_instance_name = "${var.name}"
 }
 
 provider "alicloud" {
@@ -430,28 +424,26 @@ provider "alicloud" {
 	region = "${var.vpc_region_01}"
 }
 
-resource "alicloud_vpc" "vpc00" {
+data "alicloud_vpcs" "vpc00" {
 	provider = "alicloud.vpc00_region"
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
+	name_regex = "default-NODELETING"
 }
 
-resource "alicloud_vpc" "vpc01" {
+data "alicloud_vpcs" "vpc01" {
 	provider = "alicloud.vpc01_region"
-	name = "${var.name}"
-	cidr_block = "192.168.0.0/16"
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_cen_instance_attachment" "default00" {
 	instance_id = "${alicloud_cen_instance.default.id}"
-	child_instance_id = "${alicloud_vpc.vpc00.id}"
+	child_instance_id = "${data.alicloud_vpcs.vpc00.ids.0}"
 	child_instance_type = "VPC"
 	child_instance_region_id = "${var.vpc_region_00}"
 }
 
 resource "alicloud_cen_instance_attachment" "default01" {
 	instance_id = "${alicloud_cen_instance.default.id}"
-	child_instance_id = "${alicloud_vpc.vpc01.id}"
+	child_instance_id = "${data.alicloud_vpcs.vpc01.ids.0}"
 	child_instance_type = "VPC"
 	child_instance_region_id = "${var.vpc_region_01}"
 }

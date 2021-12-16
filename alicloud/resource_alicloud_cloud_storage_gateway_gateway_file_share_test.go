@@ -733,16 +733,24 @@ data "alicloud_cloud_storage_gateway_stocks" "default" {
 gateway_class = "Standard"
 }
 
-resource "alicloud_vpc" "vpc" {
-vpc_name   = var.name
-cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_cloud_storage_gateway_stocks.default.stocks.0.zone_id
 }
 
-resource "alicloud_vswitch" "default" {
-vpc_id       = alicloud_vpc.vpc.id
-cidr_block   = "172.16.0.0/21"
-zone_id      = data.alicloud_cloud_storage_gateway_stocks.default.stocks.0.zone_id
-vswitch_name = var.name
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_cloud_storage_gateway_stocks.default.stocks.0.zone_id
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
@@ -754,7 +762,7 @@ description              = "tf-acctestDesalone"
 gateway_class            = "Standard"
 type                     = "File"
 payment_type             = "PayAsYouGo"
-vswitch_id               = alicloud_vswitch.default.id
+vswitch_id               = local.vswitch_id
 release_after_expiration = true
 public_network_bandwidth = 10
 storage_bundle_id        = alicloud_cloud_storage_gateway_storage_bundle.default.id

@@ -160,16 +160,24 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 
-resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_hbase_zones.default.ids.0
 }
 
-resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  name = "${var.name}"
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_hbase_zones.default.ids.0
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -179,9 +187,9 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
-  cidr_block = "172.20.0.0/24"
+  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
   image_id = "${data.alicloud_images.main.images.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
+  vswitch_id = local.vswitch_id
 }
 
 resource "alicloud_cs_application" "basic" {
@@ -215,7 +223,7 @@ resource "alicloud_cs_application" "env" {
 func testAccCSApplication_updateBefore(web string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAccCSApplication-update"
+	default = "tf-testAccCSApplication-basic"
 }
 data "alicloud_images" main {
   most_recent = true
@@ -231,16 +239,24 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 
-resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_hbase_zones.default.ids.0
 }
 
-resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  name = "${var.name}"
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_hbase_zones.default.ids.0
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -250,9 +266,9 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
-  cidr_block = "172.20.0.0/24"
+  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
   image_id = "${data.alicloud_images.main.images.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
+  vswitch_id = local.vswitch_id
 }
 
 resource "alicloud_cs_application" "basic" {
@@ -271,7 +287,7 @@ resource "alicloud_cs_application" "basic" {
 func testAccCSApplication_updateBlueGreen(java string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAccCSApplication-update"
+	default = "tf-testAccCSApplication-basic"
 }
 data "alicloud_images" main {
 	most_recent = true
@@ -287,16 +303,24 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 
-resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_hbase_zones.default.ids.0
 }
 
-resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  name = "${var.name}"
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_hbase_zones.default.ids.0
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -306,9 +330,9 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
-  cidr_block = "172.20.0.0/24"
+  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
   image_id = "${data.alicloud_images.main.images.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
+  vswitch_id = local.vswitch_id
 }
 
 resource "alicloud_cs_application" "basic" {
@@ -328,7 +352,7 @@ resource "alicloud_cs_application" "basic" {
 func testAccCSApplication_updateConfirm(java string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAccCSApplication-update"
+	default = "tf-testAccCSApplication-basic"
 }
 data "alicloud_images" main {
 	most_recent = true
@@ -344,16 +368,24 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 
-resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_hbase_zones.default.ids.0
 }
 
-resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  name = "${var.name}"
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_hbase_zones.default.ids.0
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -363,9 +395,9 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
-  cidr_block = "172.20.0.0/24"
+  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
   image_id = "${data.alicloud_images.main.images.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
+  vswitch_id = local.vswitch_id
 }
 
 resource "alicloud_cs_application" "basic" {

@@ -260,8 +260,8 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                  name,
-					"master_vswitch_ids":    []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default.id}", "${alicloud_vswitch.default.id}"},
-					"worker_vswitch_ids":    []string{"${alicloud_vswitch.default.id}"},
+					"master_vswitch_ids":    []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
+					"worker_vswitch_ids":    []string{"${local.vswitch_id}"},
 					"master_instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"worker_instance_types": []string{"${data.alicloud_instance_types.default1.instance_types.0.id}"},
 					"worker_number":         "1",
@@ -434,8 +434,8 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                  name,
-					"master_vswitch_ids":    []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default.id}", "${alicloud_vswitch.default.id}"},
-					"worker_vswitch_ids":    []string{"${alicloud_vswitch.default.id}"},
+					"master_vswitch_ids":    []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
+					"worker_vswitch_ids":    []string{"${local.vswitch_id}"},
 					"master_instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"worker_instance_types": []string{"${data.alicloud_instance_types.default1.instance_types.0.id}"},
 					"worker_number":         "1",
@@ -576,7 +576,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 					"enable_ssh":          "true",
 					"deletion_protection": "true",
 					// master args
-					"master_vswitch_ids":             []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default.id}", "${alicloud_vswitch.default.id}"},
+					"master_vswitch_ids":             []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
 					"master_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"master_disk_category":           "cloud_essd",
 					"master_disk_size":               "100",
@@ -584,7 +584,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 					"master_disk_snapshot_policy_id": "${alicloud_snapshot_policy.default.id}",
 					// worker args
 					"worker_number":                  "1",
-					"worker_vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"worker_vswitch_ids":             []string{"${local.vswitch_id}"},
 					"worker_instance_types":          []string{"${data.alicloud_instance_types.default1.instance_types.0.id}"},
 					"worker_disk_category":           "cloud_essd",
 					"worker_disk_size":               "100",
@@ -661,7 +661,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					// worker args
 					"worker_number":                  "2",
-					"worker_vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"worker_vswitch_ids":             []string{"${local.vswitch_id}"},
 					"worker_instance_types":          []string{"${data.alicloud_instance_types.default1.instance_types.0.id}"},
 					"worker_disk_category":           "cloud_essd",
 					"worker_disk_size":               "120",
@@ -693,59 +693,67 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 
 func resourceCSKubernetesConfigDependence(name string) string {
 	return fmt.Sprintf(`
-	variable "name" {
-		default = "%s"
-	}
-	data "alicloud_zones" default {
-	  available_resource_creation = "VSwitch"
-	}
-	
-	data "alicloud_instance_types" "default" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		cpu_core_count = 2
-		memory_size = 4
-		kubernetes_node_role = "Master"
-	}
-	
-	data "alicloud_instance_types" "default1" {
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		instance_type_family = "ecs.c6"
-		cpu_core_count = 2
-		memory_size = 4
-		kubernetes_node_role = "Worker"
-	}
+variable "name" {
+  default = "%s"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
 
-	data "alicloud_resource_manager_resource_groups" "default" {}
+data "alicloud_instance_types" "default" {
+  availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+  cpu_core_count       = 2
+  memory_size          = 4
+  kubernetes_node_role = "Master"
+}
 
-	resource "alicloud_vpc" "default" {
-	  name = "${var.name}"
-	  cidr_block = "10.1.0.0/21"
-	}
-	
-	resource "alicloud_vswitch" "default" {
-	  name = "${var.name}"
-	  vpc_id = "${alicloud_vpc.default.id}"
-	  cidr_block = "10.1.1.0/24"
-	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	}
-	
-	resource "alicloud_db_instance" "default" {
-	  engine               = "MySQL"
-	  engine_version       = "5.6"
-	  instance_type        = "rds.mysql.s2.large"
-	  instance_storage     = "30"
-	  instance_charge_type = "Postpaid"
-	  instance_name        = "${var.name}"
-	  vswitch_id           = alicloud_vswitch.default.id
-	  monitoring_period    = "60"
-	}
+data "alicloud_instance_types" "default1" {
+  availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+  instance_type_family = "ecs.c6"
+  cpu_core_count       = 2
+  memory_size          = 4
+  kubernetes_node_role = "Worker"
+}
 
-	resource "alicloud_snapshot_policy" "default" {
-	  name            = "${var.name}"
-	  repeat_weekdays = ["1", "2", "3"]
-	  retention_days  = -1
-	  time_points     = ["1", "22", "23"]
-	}
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id  = "${data.alicloud_vpcs.default.ids.0}"
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+	
+resource "alicloud_db_instance" "default" {
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  instance_type        = "rds.mysql.s2.large"
+  instance_storage     = "30"
+  instance_charge_type = "Postpaid"
+  instance_name        = "tf-testacckubernetes"
+  vswitch_id           = local.vswitch_id
+  monitoring_period    = "60"
+}
+
+resource "alicloud_snapshot_policy" "default" {
+  name            = "${var.name}"
+  repeat_weekdays = ["1", "2", "3"]
+  retention_days  = -1
+  time_points     = ["1", "22", "23"]
+}
 	`, name)
 }
 
@@ -755,7 +763,7 @@ func resourceCSKubernetesConfigDependence_multiAZ(name string) string {
 		default = "%s"
 	}
 
-	data "alicloud_zones" default {
+	data "alicloud_zones" "default"" {
 	  available_resource_creation = "VSwitch"
 	}
 
