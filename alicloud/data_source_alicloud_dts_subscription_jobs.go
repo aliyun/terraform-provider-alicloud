@@ -321,7 +321,9 @@ func dataSourceAlicloudDtsSubscriptionJobsRead(d *schema.ResourceData, meta inte
 
 		var jsonData map[string]interface{}
 		json.Unmarshal([]byte(object["Reserved"].(string)), &jsonData)
-		mapping["subscription_instance_network_type"] = strings.ToLower(jsonData["netType"].(string))
+		if v, ok := jsonData["netType"].(string); ok {
+			mapping["subscription_instance_network_type"] = strings.ToLower(v)
+		}
 		mapping["subscription_instance_vpc_id"] = jsonData["vpcId"]
 		mapping["subscription_instance_vswitch_id"] = jsonData["vswitchId"]
 
