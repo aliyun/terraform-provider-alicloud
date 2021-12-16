@@ -50,6 +50,6 @@ The following attributes are exported in addition to the arguments listed above:
     * `delivery_channel_id` - The ID of the delivery channel.
     * `delivery_channel_name` - The name of the delivery channel.
     * `delivery_channel_target_arn` - The ARN of the delivery destination.
-    * `delivery_channel_type` - The type of the delivery method.
-    * `description` - The description of the delivery method.
-    * `status` - The status of the delivery method.
+    * `delivery_channel_type` - The type of the delivery channel.
+    * `description` - The description of the delivery channel.
+    * `status` - The status of the delivery channel.

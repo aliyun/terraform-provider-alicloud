@@ -27,7 +27,8 @@ func resourceAlicloudConfigAggregator() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"aggregator_accounts": {
 				Type:     schema.TypeSet,
-				Required: true,
+				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"account_id": {

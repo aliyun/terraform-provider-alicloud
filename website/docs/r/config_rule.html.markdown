@@ -52,17 +52,15 @@ The following arguments are supported:
 * `description` - (Optional) The description of the Config Rule.
 * `risk_level` - (Required) The risk level of the Config Rule. Valid values: `1`: Critical ,`2`: Warning , `3`: Info.
 * `source_owner` - (Required, ForceNew) Specifies whether you or Alibaba Cloud owns and manages the rule. Valid values: `CUSTOM_FC`: The rule is a custom rule and you own the rule. `ALIYUN`: The rule is a managed rule and Alibaba Cloud owns the rule.
-* `source_identifier` - (Required, ForceNew) The identifier of the rule. For a managed rule, the value is the name of the managed rule. For a custom rule, the value is the ARN of the custom rule. Using managed rules, refer to [List of Managed rules.](https://www.alibabacloud.com/help/en/doc-detail/127404.htm)
+* `source_identifier` - (Required, ForceNew) The identifier of the rule. For a managed rule, the value is the identifier of the managed rule. For a custom rule, the value is the ARN of the custom rule. Using managed rules, refer to [List of Managed rules.](https://www.alibabacloud.com/help/en/doc-detail/127404.htm)
 * `input_parameters` - (Optional) Threshold value for managed rule triggering. 
-* `source_detail_message_type` - (Required, Deprecated) Field `source_detail_message_type` has been deprecated from provider version 1.124.1. New field `config_rule_trigger_types` instead.
+* `source_detail_message_type` - (Optional, Deprecated) Field `source_detail_message_type` has been deprecated from provider version 1.124.1. New field `config_rule_trigger_types` instead.
 * `source_maximum_execution_frequency` - (Optional, Deprecated) Field `source_maximum_execution_frequency` has been deprecated from provider version 1.124.1. New field `maximum_execution_frequency` instead.
 * `scope_compliance_resource_types` - (Required, Deprecated) Field `scope_compliance_resource_types` has been deprecated from provider version 1.124.1. New field `resource_types_scope` instead.
 * `multi_account` - (Optional, ForceNew, Removed) Field `multi_account` has been removed from provider version 1.124.1. 
 * `member_id` - (Optional, ForceNew, Removed) Field `member_id` has been removed from provider version 1.124.1. 
 * `scope_compliance_resource_id` - (Optional, Removed) Field `scope_compliance_resource_id` has been removed from provider version 1.124.1. 
 * `status` - (Optional, Available in v1.145.0+) The rule status. The valid values: `ACTIVE`, `INACTIVE`.
-
--> **NOTE:** When you use the personal version to configure auditing, please ignore `multi_account` and `member_id`.
 
 ## Attributes Reference
 

@@ -36,7 +36,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of aggregator ids.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by aggregator name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid Values: `Creating`, `Normal`, `Deleting`.
+* `status` - (Optional, ForceNew) The status of the resource. Valid Values:  `0`: creating `1`: normal `2`: deleting.
 
 ## Attributes Reference
 

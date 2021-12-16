@@ -38,7 +38,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `recorders` - A list of Config Configuration Recorders. Each element contains the following attributes:
     * `id` - The ID of the Config Configuration Recorder. Value as the `account_id`.
     * `account_id`- The ID of the Alicloud account.
-    * `organization_enable_status` - Status of resource monitoring.
+    * `organization_enable_status` - Enterprise version configuration audit enabled status.
     * `organization_master_id` - The ID of the Enterprise management account.
     * `resource_types` - A list of resource types to be monitored.
-    * `status` - Enterprise version configuration audit enabled status.
+    * `status` - Status of resource monitoring.

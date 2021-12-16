@@ -66,7 +66,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `scope_compliance_resource_types` - The types of the resources to be evaluated against the rule.
     * `source_detail_message_type` - Rule trigger mechanism.
     * `source_maximum_execution_frequency` - Rule execution cycle. 
-    * `source_identifier`- The name of the custom rule or managed rule.
+    * `source_identifier`- The identifier of the managed rule or the arn of the custom function.
     * `source_owner`- The source owner of the Config Rule.
     * `compliance` - The information about the compliance evaluations based on the rule.
         * `compliance_type` - The compliance evaluation result of the target resources.
@@ -75,7 +75,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `exclude_resource_ids_scope` - (Available in 1.124.1+) The scope of exclude of resource ids.
     * `maximum_execution_frequency` - (Available in 1.124.1+) The frequency of maximum execution.
     * `region_ids_scope` - (Available in 1.124.1+) The scope of region ids.
-    * `resource_group_ids_scope` - (Available in 1.124.1+) The scope of resource ids.
+    * `resource_group_ids_scope` - (Available in 1.124.1+) The scope of resource group ids.
     * `resource_types_scope` - (Available in 1.124.1+) The scope of resource types.
     * `status` - (Available in 1.124.1+) The status of config rule.
     * `tag_key_scope` - (Available in 1.124.1+) The scope of tag key.
