@@ -34,7 +34,7 @@ The following arguments are supported:
 * `accelerator_name` - (Optional) The Name of the GA instance.
 * `auto_use_coupon` - (Optional) Use coupons to pay bills automatically. Default value is `false`. Valid value: `true`: Use, `false`: Not used.
 * `description` - (Optional) Descriptive information of the global acceleration instance.
-* `duration` - (Required, ForceNew) The duration. The value range is 1-9.
+* `duration` - (Required) The duration. The value range is 1-9.
 * `spec` - (Required) The instance type of the GA instance. Specification of global acceleration instance, value:
     `1`: Small 1.
     `2`: Small 2.
