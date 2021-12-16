@@ -41,8 +41,8 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - This ID of Config Configuration Recorder. Value as alicloud account ID.
-* `status` - Enterprise version configuration audit enabled status. Values: `REGISTRABLE`: Not registered, `BUILDING`: Under construction, `REGISTERED`: Registered and `REBUILDING`: Rebuilding.
-* `organization_enable_status` - Status of resource monitoring. Values: `REGISTRABLE`: Not enabled, `BUILDING`: Building and `REGISTERED`: Enabled.
+* `status` - Status of resource monitoring. Values: `REGISTRABLE`: Not registered, `BUILDING`: Under construction, `REGISTERED`: Registered and `REBUILDING`: Rebuilding.
+* `organization_enable_status` - Enterprise version configuration audit enabled status. Values: `REGISTRABLE`: Not enabled, `BUILDING`: Building and `REGISTERED`: Enabled.
 * `organization_master_id` - The ID of the Enterprise management account.
 
 ### Timeouts

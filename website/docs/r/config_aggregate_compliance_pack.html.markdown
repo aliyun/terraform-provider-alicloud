@@ -82,7 +82,7 @@ The following arguments are supported:
 * `config_rules` - (Optional, Computed, Deprecated form v1.141.0) A list of Config Rules.
 * `config_rule_ids` - (Optional, Computed, Available in v1.141.0) A list of Config Rule IDs.
 * `description` - (Required) The description of compliance package.
-* `risk_level` - (Required) The Risk Level. Valid values: `1`, `2`, `3`.
+* `risk_level` - (Required) The Risk Level. Valid values: `1`: critical `2`: warning `3`: info.
 
 #### Block config_rules
 
@@ -109,7 +109,7 @@ The config_rule_parameters supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID of Aggregate Compliance Pack. The value is formatted `<aggregator_id>:<aggregator_compliance_pack_id>`.
-* `status` - The status of the resource.
+* `status` - The status of the resource. The valid values: `CREATING`, `ACTIVE`.
 
 ### Timeouts
 

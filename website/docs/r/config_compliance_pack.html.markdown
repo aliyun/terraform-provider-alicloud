@@ -95,7 +95,7 @@ The config_rule_parameters supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Compliance Pack.
-* `status` - The status of the resource.
+* `status` -  The status of the resource. The valid values: `CREATING`, `ACTIVE`.
 
 ### Timeouts
 

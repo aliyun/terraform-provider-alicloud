@@ -48,7 +48,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `names` - A list of Config Aggregate Compliance Pack names.
 * `packs` - A list of Config Aggregate Compliance Packs. Each element contains the following attributes:
 	* `account_id` - The Aliyun User Id.
-	* `aggregator_compliance_pack_id` - The first ID of the resource.
+	* `aggregator_compliance_pack_id` - The Aggregate Compliance Package Id.
 	* `aggregate_compliance_pack_name` -The Aggregate Compliance Package Name.
 	* `compliance_pack_template_id` - The template ID of the Compliance Package.
 	* `config_rules` - A list of The Aggregate Compliance Package Rules.
