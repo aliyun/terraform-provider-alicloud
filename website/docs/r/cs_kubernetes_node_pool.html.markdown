@@ -29,6 +29,8 @@ This resource will help you to manage node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.127.0, support for adding existing nodes to the node pool. In order to distinguish automatically created nodes, it is recommended that existing nodes be placed separately in a node pool for management. 
 
+-> **NOTE:** From version 1.149.0, support for specifying deploymentSet for node pools. 
+
 ## Example Usage
 
 The managed cluster configuration,
@@ -306,6 +308,7 @@ The following arguments are supported:
 * `kms_encrypted_password` - (Required) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `system_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `system_disk_size` - (Optional) The system disk category of worker node. Its valid value range [40~500] in GB. Default to `120`.
+* `system_disk_performance_level` - (Optional) The performance of system disk, only valid for ESSD disk. You have to specify one of `PL0` `PL1` `PL2` `PL3` fields.
 * `data_disks` - (Optional) The data disk configurations of worker nodes, such as the disk type and disk size. 
   * `category` - The type of the data disks. Valid values:`cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`.
   * `size` - The size of a data disk, Its valid value range [40~32768] in GB. Default to `40`.
@@ -345,6 +348,7 @@ The following arguments are supported:
 * `image_type` - (Optional, Available in 1.145.0+) The image type, instead of `platform`. This field cannot be modified. One of `AliyunLinux`, `AliyunLinux3`, `AliyunLinux3Arm64`, `AliyunLinuxUEFI`, `CentOS`, `Windows`,`WindowsCore`,`AliyunLinux Qboot`,`ContainerOS`. If you select `Windows` or `WindowsCore`, the `passord` is required.
 * `runtime_name` - (Optional, ForceNew, Available in 1.145.0+) The runtime name of containers. If not set, the cluster runtime will be used as the node pool runtime. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm).
 * `runtime_version` - (Optional, ForceNew, Available in 1.145.0+) The runtime version of containers. If not set, the cluster runtime will be used as the node pool runtime.
+* `deployment_set_id` - (Optional, ForceNew, Available in 1.149.0+) The deployment set of node pool. Specify the deploymentSet to ensure that the nodes in the node pool can be distributed on different physical machines.
 
 #### tags
 
@@ -386,6 +390,7 @@ The following attributes are exported:
 * `cluster_id` - The cluster id.
 * `name` - The name of the nodepool.
 * `vswitch_ids` - The vswitches used by node pool workers.
+* `vpc_id` - The VPC of the nodes in the node pool.
 * `image_id` - The image used by node pool workers.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
 * `scaling_group_id` - (Available in 1.105.0+) Id of the Scaling Group.

@@ -435,6 +435,12 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"deployment_set_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -808,6 +814,7 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("security_group_ids", object.ScalingGroup.SecurityGroupIds)
 	d.Set("runtime_name", object.Runtime)
 	d.Set("runtime_version", object.RuntimeVersion)
+	d.Set("deployment_set_id", object.DeploymentSetId)
 	if object.InstanceChargeType == "PrePaid" {
 		d.Set("period", object.Period)
 		d.Set("period_unit", object.PeriodUnit)
@@ -976,6 +983,10 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 			creationArgs.AutoRenew = d.Get("auto_renew").(bool)
 			creationArgs.AutoRenewPeriod = d.Get("auto_renew_period").(int)
 		}
+	}
+
+	if v, ok := d.GetOk("deployment_set_id"); ok {
+		creationArgs.DeploymentSetId = v.(string)
 	}
 
 	if v, ok := d.GetOk("install_cloud_monitor"); ok {
