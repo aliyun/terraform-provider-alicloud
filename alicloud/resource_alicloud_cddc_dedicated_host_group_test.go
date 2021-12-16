@@ -33,7 +33,7 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine": "Redis",
-					"vpc_id": "${alicloud_vpc.vpc.id}",
+					"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -165,7 +165,7 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine": "SQLServer",
-					"vpc_id": "${alicloud_vpc.vpc.id}",
+					"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -287,7 +287,7 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic2(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine": "MySQL",
-					"vpc_id": "${alicloud_vpc.vpc.id}",
+					"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -409,7 +409,7 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic3(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine": "PostgreSQL",
-					"vpc_id": "${alicloud_vpc.vpc.id}",
+					"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -531,7 +531,7 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic4(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine": "MongoDB",
-					"vpc_id": "${alicloud_vpc.vpc.id}",
+					"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -639,9 +639,8 @@ func AlicloudCDDCDedicatedHostGroupBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
-resource "alicloud_vpc" "vpc" {
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 

@@ -38,7 +38,7 @@ func TestAccAlicloudCmsMonitorGroupInstances_basic(t *testing.T) {
 					"instances": []map[string]string{
 						{
 							"category":      "vpc",
-							"instance_id":   "${alicloud_vpc.default.id}",
+							"instance_id":   "${data.alicloud_vpcs.vpc.ids.0}",
 							"instance_name": "tf-testaccvpcname",
 							"region_id":     os.Getenv("ALICLOUD_REGION"),
 						},
@@ -61,7 +61,7 @@ func TestAccAlicloudCmsMonitorGroupInstances_basic(t *testing.T) {
 					"instances": []map[string]string{
 						{
 							"category":      "vpc",
-							"instance_id":   "${alicloud_vpc.default.id}",
+							"instance_id":   "${data.alicloud_vpcs.vpc.ids.0}",
 							"instance_name": "tf-testaccvpcname",
 							"region_id":     os.Getenv("ALICLOUD_REGION"),
 						},
@@ -91,9 +91,9 @@ func AlicloudCmsMonitorGroupInstancesBasicDependence(name string) string {
 variable "name" {
   default = "%s"
 }
-resource "alicloud_vpc" "default" {
-cidr_block = "192.168.0.0/16"
-name = var.name
+
+data "alicloud_vpcs" "vpc" {
+  name_regex = "default-NODELETING"
 }
 resource "alicloud_cms_monitor_group" "default" {
 monitor_group_name = var.name

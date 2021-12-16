@@ -93,22 +93,18 @@ data "alicloud_instance_types" "default" {
 	eni_amount = 3
 }
 
-resource "alicloud_vpc" "default" {
-    vpc_name = "${var.name}"
-    cidr_block = "192.168.0.0/24"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
-
-resource "alicloud_vswitch" "default" {
-    vswitch_name = "${var.name}"
-    cidr_block = "192.168.0.0/24"
-    zone_id = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_security_group" "default" {
   name = "tf-test"
   description = "New security group"
-  vpc_id = alicloud_vpc.default.id
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 
@@ -125,7 +121,7 @@ resource "alicloud_instance" "default" {
   image_id        = data.alicloud_images.default.images.0.id
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   security_groups = [alicloud_security_group.default.id]
-  vswitch_id = alicloud_vswitch.default.id
+  vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
 }
 
 
@@ -135,10 +131,10 @@ data "alicloud_resource_manager_resource_groups" "default"{
 
 resource "alicloud_ecs_network_interface" "default" {
     network_interface_name = "${var.name}"
-    vswitch_id = alicloud_vswitch.default.id
+    vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
     security_group_ids = [alicloud_security_group.default.id]
 	description = "Basic test"
-	primary_ip_address = "192.168.0.2"
+	primary_ip_address = cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)
 	tags = {
 		Created = "TF",
 		For =    "Test",

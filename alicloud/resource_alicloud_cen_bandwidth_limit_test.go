@@ -215,16 +215,14 @@ provider "alicloud" {
     region = "cn-shanghai"
 }
 
-resource "alicloud_vpc" "default" {
-  provider = "alicloud.fra"
-  vpc_name = "${var.name}"
-  cidr_block = "192.168.0.0/16"
+data "alicloud_vpcs" "default" {
+	provider = "alicloud.fra"
+	name_regex = "default-NODELETING"
 }
 
-resource "alicloud_vpc" "default1" {
-  provider = "alicloud.sh"
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default1" {
+	provider = "alicloud.sh"
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_cen_instance" "default" {
@@ -247,14 +245,14 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_id = "${data.alicloud_vpcs.default.ids.0}"
     child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_id = "${data.alicloud_vpcs.default1.ids.0}"
     child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
@@ -289,16 +287,14 @@ provider "alicloud" {
     region = "cn-shanghai"
 }
 
-resource "alicloud_vpc" "default" {
-  provider = "alicloud.fra"
-  vpc_name = "${var.name}"
-  cidr_block = "192.168.0.0/16"
+data "alicloud_vpcs" "default" {
+	provider = "alicloud.fra"
+	name_regex = "default-NODELETING"
 }
 
-resource "alicloud_vpc" "default1" {
-  provider = "alicloud.sh"
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default1" {
+	provider = "alicloud.sh"
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_cen_instance" "default" {
@@ -321,14 +317,14 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_id = "${data.alicloud_vpcs.default.ids.0}"
     child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_id = "${data.alicloud_vpcs.default1.ids.0}"
     child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
@@ -368,23 +364,23 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 
-resource "alicloud_vpc" "default" {
-  provider = "alicloud.fra"
-  vpc_name = "${var.name}"
-  cidr_block = "192.168.0.0/16"
+
+data "alicloud_vpcs" "default" {
+	provider = "alicloud.fra"
+	name_regex = "default-NODELETING"
 }
 
-resource "alicloud_vpc" "default1" {
-  provider = "alicloud.sh"
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default1" {
+	provider = "alicloud.sh"
+	name_regex = "default-NODELETING"
 }
 
-resource "alicloud_vpc" "default2" {
-  provider = "alicloud.hz"
-  vpc_name = "${var.name}"
-  cidr_block = "192.168.0.0/16"
+data "alicloud_vpcs" "default2" {
+	provider = "alicloud.hz"
+	name_regex = "default-NODELETING"
 }
+
+
 
 resource "alicloud_cen_instance" "default" {
     name = "${var.name}"
@@ -405,21 +401,21 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_id = "${data.alicloud_vpcs.default.ids.0}"
     child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_id = "${data.alicloud_vpcs.default1.ids.0}"
     child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
 
 resource "alicloud_cen_instance_attachment" "default2" {
     instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default2.id}"
+    child_instance_id = "${data.alicloud_vpcs.default2.ids.0}"
     child_instance_type = "VPC"
     child_instance_region_id = "cn-hangzhou"
 }

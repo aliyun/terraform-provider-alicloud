@@ -160,16 +160,12 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 
-resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
-
-resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  name = "${var.name}"
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_hbase_zones.default.ids.0
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -181,7 +177,7 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   disk_size = 20
   cidr_block = "172.20.0.0/24"
   image_id = "${data.alicloud_images.main.images.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
+  vswitch_id = "${data.alicloud_vswitches.default.vswitches.0.id}"
 }
 
 resource "alicloud_cs_application" "basic" {
@@ -231,16 +227,12 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 
-resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
-
-resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  name = "${var.name}"
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_hbase_zones.default.ids.0
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -252,7 +244,7 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   disk_size = 20
   cidr_block = "172.20.0.0/24"
   image_id = "${data.alicloud_images.main.images.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
+  vswitch_id = "${data.alicloud_vswitches.default.vswitches.0.id}"
 }
 
 resource "alicloud_cs_application" "basic" {
@@ -287,16 +279,12 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 
-resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
-
-resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  name = "${var.name}"
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_hbase_zones.default.ids.0
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -308,7 +296,7 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   disk_size = 20
   cidr_block = "172.20.0.0/24"
   image_id = "${data.alicloud_images.main.images.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
+  vswitch_id = "${data.alicloud_vswitches.default.vswitches.0.id}"
 }
 
 resource "alicloud_cs_application" "basic" {
@@ -344,16 +332,12 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 
-resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
-
-resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  name = "${var.name}"
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_hbase_zones.default.ids.0
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
@@ -365,7 +349,7 @@ resource "alicloud_cs_swarm" "cs_vpc" {
   disk_size = 20
   cidr_block = "172.20.0.0/24"
   image_id = "${data.alicloud_images.main.images.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
+  vswitch_id = "${data.alicloud_vswitches.default.vswitches.0.id}"
 }
 
 resource "alicloud_cs_application" "basic" {

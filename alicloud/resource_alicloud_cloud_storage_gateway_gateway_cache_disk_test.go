@@ -80,16 +80,12 @@ data "alicloud_cloud_storage_gateway_stocks" "default" {
   gateway_class = "Standard"
 }
 
-resource "alicloud_vpc" "vpc" {
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
-
-resource "alicloud_vswitch" "default" {
-  vpc_id       = alicloud_vpc.vpc.id
-  cidr_block   = "172.16.0.0/21"
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
   zone_id      = data.alicloud_cloud_storage_gateway_stocks.default.stocks.0.zone_id
-  vswitch_name = var.name
 }
 
 resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
@@ -101,7 +97,7 @@ resource "alicloud_cloud_storage_gateway_gateway" "default" {
   gateway_class            = "Standard"
   type                     = "File"
   payment_type             = "PayAsYouGo"
-  vswitch_id               = alicloud_vswitch.default.id
+  vswitch_id               = data.alicloud_vswitches.default.vswitches.0.id
   release_after_expiration = true
   public_network_bandwidth = 10
   storage_bundle_id        = alicloud_cloud_storage_gateway_storage_bundle.default.id
