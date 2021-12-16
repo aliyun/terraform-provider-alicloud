@@ -56,6 +56,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 					"runtime_name":          "containerd",
 					"runtime_version":       "1.4.8",
 					"image_type":            "CentOS",
+					"deployment_set_id":     "${alicloud_ecs_deployment_set.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -83,6 +84,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"runtime_name":                 "containerd",
 						"runtime_version":              "1.4.8",
 						"image_type":                   "CentOS",
+						"deployment_set_id":            CHECKSET,
 					}),
 				),
 			},
@@ -484,6 +486,13 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_key_pair" "default" {
 	key_name                   = var.name
+}
+
+resource "alicloud_ecs_deployment_set" "default" {
+  strategy            = "Availability"
+  domain              = "Default"
+  granularity         = "Host"
+  deployment_set_name = var.name
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
