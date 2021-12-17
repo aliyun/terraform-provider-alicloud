@@ -1054,3 +1054,22 @@ func FirstLower(s string) string {
 	}
 	return strings.ToLower(s[:1]) + s[1:]
 }
+
+// SplitSlice Divides the slice into blocks of the specified size
+func SplitSlice(xs []interface{}, chunkSize int) [][]interface{} {
+	if len(xs) == 0 {
+		return nil
+	}
+	divided := make([][]interface{}, (len(xs)+chunkSize-1)/chunkSize)
+	prev := 0
+	i := 0
+	till := len(xs) - chunkSize
+	for prev < till {
+		next := prev + chunkSize
+		divided[i] = xs[prev:next]
+		prev = next
+		i++
+	}
+	divided[i] = xs[prev:]
+	return divided
+}
