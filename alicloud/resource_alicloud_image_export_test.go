@@ -65,28 +65,26 @@ data "alicloud_instance_types" "default" {
 	memory_size       = 2
 }
 data "alicloud_images" "default" {
- name_regex  = "^ubuntu"
+ name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
  owners      = "system"
 }
-resource "alicloud_vpc" "default" {
- vpc_name       = "${var.name}"
- cidr_block = "172.16.0.0/16"
+
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
-resource "alicloud_vswitch" "default" {
- vpc_id            = "${alicloud_vpc.default.id}"
- cidr_block        = "172.16.0.0/24"
- availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
- name              = "${var.name}"
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
 resource "alicloud_security_group" "default" {
  name   = "${var.name}"
- vpc_id = "${alicloud_vpc.default.id}"
+ vpc_id = data.alicloud_vpcs.default.ids.0
 }
 resource "alicloud_instance" "default" {
  image_id = "${data.alicloud_images.default.ids[0]}"
  instance_type = "${data.alicloud_instance_types.default.ids[0]}"
  security_groups = "${[alicloud_security_group.default.id]}"
- vswitch_id = "${alicloud_vswitch.default.id}"
+ vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
  instance_name = "${var.name}"
 }
 resource "alicloud_image" "default" {
