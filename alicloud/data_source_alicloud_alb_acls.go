@@ -244,17 +244,13 @@ func dataSourceAlicloudAlbAclsRead(d *schema.ResourceData, meta interface{}) err
 		}
 
 		aclEntries := make([]map[string]interface{}, 0)
-		if aclEntriesList, ok := getResp["$"].(map[string]interface{})["AclEntries"].([]interface{}); ok {
-			for _, v := range aclEntriesList {
-				if m1, ok := v.(map[string]interface{}); ok {
-					temp1 := map[string]interface{}{
-						"description": m1["Description"],
-						"entry":       m1["Entry"],
-						"status":      m1["Status"],
-					}
-					aclEntries = append(aclEntries, temp1)
-				}
+		for _, v := range getResp {
+			temp1 := map[string]interface{}{
+				"description": v["Description"],
+				"entry":       v["Entry"],
+				"status":      v["Status"],
 			}
+			aclEntries = append(aclEntries, temp1)
 		}
 		mapping["acl_entries"] = aclEntries
 		s = append(s, mapping)

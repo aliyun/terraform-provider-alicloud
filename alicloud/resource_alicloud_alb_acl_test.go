@@ -159,11 +159,151 @@ func TestAccAlicloudALBAcl_basic0(t *testing.T) {
 							"description": name,
 							"entry":       "10.0.0.0/23",
 						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/25",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/26",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/27",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/28",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/29",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/10",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/11",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/12",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/13",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/14",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/15",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/16",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/17",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/18",
+						},
+						{
+							"description": name,
+							"entry":       "10.0.0.0/19",
+						},
+						{
+							"description": name,
+							"entry":       "11.0.0.0/10",
+						},
+						{
+							"description": name,
+							"entry":       "11.0.0.0/11",
+						},
+						{
+							"description": name,
+							"entry":       "11.0.0.0/12",
+						},
+						{
+							"description": name,
+							"entry":       "11.0.0.0/13",
+						},
+						{
+							"description": name,
+							"entry":       "11.0.0.0/14",
+						},
+						{
+							"description": name,
+							"entry":       "11.0.0.0/15",
+						},
+						{
+							"description": name,
+							"entry":       "11.0.0.0/16",
+						},
+						{
+							"description": name,
+							"entry":       "11.0.0.0/17",
+						},
+						{
+							"description": name,
+							"entry":       "11.0.0.0/18",
+						},
+						{
+							"description": name,
+							"entry":       "11.0.0.0/19",
+						},
+						{
+							"description": name,
+							"entry":       "12.0.0.0/10",
+						},
+						{
+							"description": name,
+							"entry":       "12.0.0.0/11",
+						},
+						{
+							"description": name,
+							"entry":       "12.0.0.0/12",
+						},
+						{
+							"description": name,
+							"entry":       "12.0.0.0/13",
+						},
+						{
+							"description": name,
+							"entry":       "12.0.0.0/14",
+						},
+						{
+							"description": name,
+							"entry":       "12.0.0.0/15",
+						},
+						{
+							"description": name,
+							"entry":       "12.0.0.0/16",
+						},
+						{
+							"description": name,
+							"entry":       "12.0.0.0/17",
+						},
+						{
+							"description": name,
+							"entry":       "12.0.0.0/18",
+						},
+						{
+							"description": name,
+							"entry":       "12.0.0.0/19",
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"acl_entries.#": "2",
+						"acl_entries.#": "37",
 					}),
 				),
 			},

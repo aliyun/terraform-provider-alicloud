@@ -15,7 +15,7 @@ type AlbService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *AlbService) ListAclEntries(id string) (object map[string]interface{}, err error) {
+func (s *AlbService) ListAclEntries(id string) (objects []map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewAlbClient()
 	if err != nil {
@@ -23,30 +23,48 @@ func (s *AlbService) ListAclEntries(id string) (object map[string]interface{}, e
 	}
 	action := "ListAclEntries"
 	request := map[string]interface{}{
-		"AclId": id,
+		"AclId":      id,
+		"MaxResults": PageSizeLarge,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ResourceNotFound.Acl"}) {
+				return objects, WrapErrorf(Error(GetNotFoundMessage("ALB:Acl", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			}
+			return objects, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"ResourceNotFound.Acl"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ALB:Acl", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		resp, err := jsonpath.Get("$.AclEntries", response)
+		if formatInt(response["TotalCount"]) != 0 && err != nil {
+			return objects, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AclEntries", response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			objects = append(objects, item)
+		}
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
 	}
-	return response, nil
+	return objects, nil
 }
 
 func (s *AlbService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
