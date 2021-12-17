@@ -32,7 +32,7 @@ func TestAccAlicloudCsgGateway_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"storage_bundle_id": "${alicloud_cloud_storage_gateway_storage_bundle.default.id}",
-					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"type":              "Iscsi",
 					"payment_type":      "PayAsYouGo",
 					"location":          "Cloud",
@@ -258,20 +258,17 @@ variable "name" {
   default = "%s"
 }
 
-resource "alicloud_vpc" "vpc" {
-  vpc_name   = "tf_test_foo"
-  cidr_block = "172.16.0.0/12"
-}
 
 data "alicloud_zones" "default"{
   available_resource_creation = "VSwitch"
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.vpc.id
-  cidr_block        = "172.16.0.0/21"
-  zone_id           = data.alicloud_zones.default.zones[1].id
-  vswitch_name      = var.name
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_zones.default.zones[1].id
 }
 
 resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
