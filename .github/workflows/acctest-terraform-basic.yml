@@ -12,15 +12,14 @@ on:
       - alicloud/*.go
 
 jobs:
-  build:
-    name: Build
+  Build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Set up Go Version
-        uses: actions/setup-go@37335c7bb261b353407cff977110895fa0b4f7d8
+        uses: actions/setup-go@v2
         with:
-          go-version: ^1.16
+          go-version: '1.16.7'
 
       - name: Get dependencies
         run: |
@@ -43,4 +42,18 @@ jobs:
         run: |
           make fmtcheck
 
-
+  Field-Check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: '3'
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.16.7'
+      - name: grant permissions
+        run: |
+          chmod +rwx scripts/field_check.sh
+      - name: Field Check
+        run: |
+          sudo bash scripts/field_check.sh
