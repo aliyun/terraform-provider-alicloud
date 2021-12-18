@@ -41,11 +41,11 @@ func TestAccAlicloudEcsImageCopyBasic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"provider":         "alicloud.sh",
-					"source_image_id":  "${alicloud_image.default.id}",
-					"source_region_id": "cn-hangzhou",
-					"description":      fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
-					"image_name":       name,
+					"provider":              "alicloud.sh",
+					"source_image_id":       "${alicloud_image.default.id}",
+					"destination_region_id": "cn-hangzhou",
+					"description":           fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
+					"image_name":            name,
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test123",

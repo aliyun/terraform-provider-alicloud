@@ -29,10 +29,10 @@ func resourceAliCloudImageCopy() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"source_region_id": {
+			"destination_region_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
-				Required: true,
+				Optional: true,
 			},
 			"name": {
 				Type:       schema.TypeString,
@@ -79,13 +79,23 @@ func resourceAliCloudImageCopyCreate(d *schema.ResourceData, meta interface{}) e
 	ecsService := EcsService{client}
 
 	request := ecs.CreateCopyImageRequest()
-	request.RegionId = d.Get("source_region_id").(string)
+	request.RegionId = client.RegionId
 	request.ImageId = d.Get("source_image_id").(string)
-	request.DestinationRegionId = client.RegionId
-	request.DestinationImageName = d.Get("image_name").(string)
-	request.DestinationDescription = d.Get("description").(string)
-	request.Encrypted = requests.NewBoolean(d.Get("encrypted").(bool))
-	request.KMSKeyId = d.Get("kms_key_id").(string)
+	if v, ok := d.GetOk("destination_region_id"); ok && v.(string) != "" {
+		request.DestinationRegionId = v.(string)
+	}
+	if v, ok := d.GetOk("image_name"); ok && v.(string) != "" {
+		request.DestinationImageName = v.(string)
+	}
+	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
+		request.DestinationDescription = v.(string)
+	}
+	if v, ok := d.GetOk("kms_key_id"); ok && v.(string) != "" {
+		request.KMSKeyId = v.(string)
+	}
+	if v, ok := d.GetOk("encrypted"); ok {
+		request.Encrypted = requests.NewBoolean(v.(bool))
+	}
 	tags := d.Get("tags").(map[string]interface{})
 	if tags != nil && len(tags) > 0 {
 		imageTags := make([]ecs.CopyImageTag, 0, len(tags))
