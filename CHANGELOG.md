@@ -1,41 +1,42 @@
-## 1.148.0 (Unreleased)
+## 1.149.0 (Unreleased)
+## 1.148.0 (December 19, 2021)
 
-- **New Resource:** `alicloud_mongodb_audit_policy` [GH-4368]
-- **New Resource:** `cloud_sso_access_configuration_provisioning` [GH-4369]
-- **New Resource:** `alicloud_mongodb_account` [GH-4375]
-- **New Resource:** `alicloud_mongodb_serverless_instance` [GH-4365]
-- **New Resource:** `ecs_session_manager_status` [GH-4337]
-- **New Resource:** `cddc_dedicated_host_account` [GH-4358]
-- **New Data Source:** `cddc_dedicated_host_accounts` [GH-4365]	
-- **New Data Source:** `alicloud_mongodb_serverless_instances` [GH-4365]	
-- **New Data Source:** `alicloud_mongodb_accounts` [GH-4375]	
-- **New Data Source:** `alicloud_mongodb_audit_policies` [GH-4368]
-- **New Data Source:** `cloud_sso_service` [GH-4367]
+- **New Resource:** `alicloud_mongodb_audit_policy` ([#4368](https://github.com/aliyun/terraform-provider-alicloud/issues/4368))
+- **New Resource:** `cloud_sso_access_configuration_provisioning` ([#4369](https://github.com/aliyun/terraform-provider-alicloud/issues/4369))
+- **New Resource:** `alicloud_mongodb_account` ([#4375](https://github.com/aliyun/terraform-provider-alicloud/issues/4375))
+- **New Resource:** `alicloud_mongodb_serverless_instance` ([#4365](https://github.com/aliyun/terraform-provider-alicloud/issues/4365))
+- **New Resource:** `ecs_session_manager_status` ([#4337](https://github.com/aliyun/terraform-provider-alicloud/issues/4337))
+- **New Resource:** `cddc_dedicated_host_account` ([#4358](https://github.com/aliyun/terraform-provider-alicloud/issues/4358))
+- **New Data Source:** `cddc_dedicated_host_accounts` ([#4365](https://github.com/aliyun/terraform-provider-alicloud/issues/4365))
+- **New Data Source:** `alicloud_mongodb_serverless_instances` ([#4365](https://github.com/aliyun/terraform-provider-alicloud/issues/4365))	
+- **New Data Source:** `alicloud_mongodb_accounts` ([#4375](https://github.com/aliyun/terraform-provider-alicloud/issues/4375))	
+- **New Data Source:** `alicloud_mongodb_audit_policies` ([#4368](https://github.com/aliyun/terraform-provider-alicloud/issues/4368))
+- **New Data Source:** `cloud_sso_service` ([#4367](https://github.com/aliyun/terraform-provider-alicloud/issues/4367))
 	
 ENHANCEMENTS:
 
-- resource/alicloud_pvtz_zone: Support update sync_status without user_info [GH-4372]
-- resource/alicloud_db_instance Add new attribute fresh_white_list_readins to support read-only instances to which you want to synchronize the IP address whitelist. [GH-4379]
-- resource/alicloud_cddc_dedicated_host_group: Added support for the field open_permission [GH-4358]
-- datasource/alicloud_alikafka_instances: Adds new attribute expired_time,msg_retain,ssl_end_point [GH-4352]
-- datasource/alicloud_cen_instances: Adds new attribute creation_time [GH-4349]
-- datasource/alicloud_ddoscoo_instances: Adds new attribute remark,ip_mode,debt_status,edition,ip_version,status,enabled,expire_time,create_time [GH-4352]
-- datasource/alicloud_adb_db_clusters: Adds new attribute mode [GH-4354]
-- datasource/alicloud_click_house_db_clusters: Adds new attribute control_version [GH-4355]
-- datasource/alicloud_cloud_storage_gateway_storage_bundles: Adds new attribute create_time [GH-4359]
-- datasource/alicloud_click_house_db_clusters: Adds new attribute status [GH-4362]
-- datasource/alicloud_sae_service: Add error code. datasource/alicloud_cen_instances: Adds new attribute create_time. [GH-4364]	
-- doc/alicloud_cloud_firewall_control_policy: document optimization [GH-4366]
-- doc/alicloud_cloud_dts_subscription_job: document optimization [GH-4373]
-- doc/alicloud_ga_accelerator,alicloud_ga_bandwidth_package: Optimize the documentation [GH-4377]
-- doc/config: Optimize the config documentation resource/alicloud_config_aggregator: changed the field aggregator_accounts from Required into optional [GH-4374]
-- docs/alb_acl: Optimize document. [GH-4380]
+- resource/alicloud_pvtz_zone: Support update sync_status without user_info ([#4372](https://github.com/aliyun/terraform-provider-alicloud/issues/4372))
+- resource/alicloud_db_instance Add new attribute fresh_white_list_readins to support read-only instances to which you want to synchronize the IP address whitelist. ([#4379](https://github.com/aliyun/terraform-provider-alicloud/issues/4379))
+- resource/alicloud_cddc_dedicated_host_group: Added support for the field open_permission ([#4358](https://github.com/aliyun/terraform-provider-alicloud/issues/4358))
+- datasource/alicloud_alikafka_instances: Adds new attribute expired_time,msg_retain,ssl_end_point ([#4352](https://github.com/aliyun/terraform-provider-alicloud/issues/4352))
+- datasource/alicloud_cen_instances: Adds new attribute creation_time ([#4349](https://github.com/aliyun/terraform-provider-alicloud/issues/4349))
+- datasource/alicloud_ddoscoo_instances: Adds new attribute remark,ip_mode,debt_status,edition,ip_version,status,enabled,expire_time,create_time ([#4352](https://github.com/aliyun/terraform-provider-alicloud/issues/4352))
+- datasource/alicloud_adb_db_clusters: Adds new attribute mode ([#4354](https://github.com/aliyun/terraform-provider-alicloud/issues/4354))
+- datasource/alicloud_click_house_db_clusters: Adds new attribute control_version ([#4355](https://github.com/aliyun/terraform-provider-alicloud/issues/4355))
+- datasource/alicloud_cloud_storage_gateway_storage_bundles: Adds new attribute create_time ([#4359](https://github.com/aliyun/terraform-provider-alicloud/issues/4359))
+- datasource/alicloud_click_house_db_clusters: Adds new attribute status ([#4362](https://github.com/aliyun/terraform-provider-alicloud/issues/4362))
+- datasource/alicloud_sae_service: Add error code. datasource/alicloud_cen_instances: Adds new attribute create_time. ([#4364](https://github.com/aliyun/terraform-provider-alicloud/issues/4364))	
+- doc/alicloud_cloud_firewall_control_policy: document optimization ([#4366](https://github.com/aliyun/terraform-provider-alicloud/issues/4366))
+- doc/alicloud_cloud_dts_subscription_job: document optimization ([#4373](https://github.com/aliyun/terraform-provider-alicloud/issues/4373))
+- doc/alicloud_ga_accelerator,alicloud_ga_bandwidth_package: Optimize the documentation ([#4377](https://github.com/aliyun/terraform-provider-alicloud/issues/4377))
+- doc/config: Optimize the config documentation resource/alicloud_config_aggregator: changed the field aggregator_accounts from Required into optional ([#4374](https://github.com/aliyun/terraform-provider-alicloud/issues/4374))
+- docs/alb_acl: Optimize document. ([#4380](https://github.com/aliyun/terraform-provider-alicloud/issues/4380))
 
 BUG FIXES:
 
-- resource/alicloud_alb_acl: Fixed the limit on the number of IP entries. [GH-4380]
-- datasource/alicloud_alb_acls: Fix query bug for acl_entries. [GH-4380]
-- datasource/alicloud_adb_db_clusters: Fix the problem of test case failure. [GH-4364]
+- resource/alicloud_alb_acl: Fixed the limit on the number of IP entries. ([#4380](https://github.com/aliyun/terraform-provider-alicloud/issues/4380))
+- datasource/alicloud_alb_acls: Fix query bug for acl_entries. ([#4380](https://github.com/aliyun/terraform-provider-alicloud/issues/4380))
+- datasource/alicloud_adb_db_clusters: Fix the problem of test case failure. ([#4364](https://github.com/aliyun/terraform-provider-alicloud/issues/4364))
 
 ## 1.147.0 (December 12, 2021)
 
