@@ -309,6 +309,17 @@ data "alicloud_vswitches" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
 	zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
 resource "alicloud_security_group" "default" {
   name = "${var.name}"
   vpc_id = data.alicloud_vpcs.default.ids.0
@@ -330,7 +341,7 @@ resource "alicloud_instance" "default" {
   availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
-  vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
+  vswitch_id = local.vswitch_id
 }
 resource "alicloud_instance" "new" {
   image_id = "${data.alicloud_images.default.images.0.id}"
@@ -343,7 +354,7 @@ resource "alicloud_instance" "new" {
   availability_zone = "${data.alicloud_instance_types.new.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
-  vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
+  vswitch_id = local.vswitch_id
 }
 resource "alicloud_network_interface_attachment" "default" {
 	count = 1
@@ -352,7 +363,7 @@ resource "alicloud_network_interface_attachment" "default" {
 }
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = "${var.name}"
-  vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
+  vswitch_id = local.vswitch_id
   load_balancer_spec  = "slb.s2.small"
 }
 `, name)
@@ -380,6 +391,17 @@ data "alicloud_vswitches" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
 	zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
 resource "alicloud_security_group" "default" {
   name = "${var.name}"
   vpc_id = data.alicloud_vpcs.default.ids.0
@@ -395,7 +417,7 @@ resource "alicloud_instance" "default" {
   availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
-  vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
+  vswitch_id = local.vswitch_id
 }
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = "${var.name}"
@@ -427,6 +449,17 @@ data "alicloud_vswitches" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
 	zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
 resource "alicloud_security_group" "default" {
   name = "${var.name}"
   vpc_id = data.alicloud_vpcs.default.ids.0
@@ -442,11 +475,11 @@ resource "alicloud_instance" "default" {
   availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
-  vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
+  vswitch_id = local.vswitch_id
 }
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = "${var.name}"
-  vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
+  vswitch_id = local.vswitch_id
   load_balancer_spec = "slb.s1.small"
 }
 `)
