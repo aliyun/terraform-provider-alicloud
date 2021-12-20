@@ -2,13 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -45,14 +43,15 @@ func testSweepRdcOrganization(region string) error {
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-03"), StringPointer("AK"), nil, request, &runtime)
 
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_rdc_organizations", action, AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] %s got an error: %s", action, err)
+		return nil
 	}
 	resp, err := jsonpath.Get("$.Object", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Object", response)
+		log.Printf("[ERROR] %s parsing response got an error: %s", action, err)
+		return nil
 	}
 
-	sweeped := false
 	result, _ := resp.([]interface{})
 
 	for _, v := range result {
@@ -71,7 +70,6 @@ func testSweepRdcOrganization(region string) error {
 			log.Printf("[INFO] Skipping organization: %s (%s)", name, id)
 			continue
 		}
-		sweeped = true
 		log.Printf("[INFO] Deleting organization: %s (%s)", name, id)
 		action = "DeleteDevopsOrganization"
 		request = map[string]interface{}{
@@ -83,12 +81,6 @@ func testSweepRdcOrganization(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete organization(%s (%s)): %s", name, id, err)
 		}
-
-		if sweeped {
-			// Waiting 5 seconds to ensure snapshot have been deleted.
-			time.Sleep(5 * time.Second)
-		}
-		log.Printf("[INFO] Delete organization success: %s ", item["Id"].(string))
 	}
 
 	return nil

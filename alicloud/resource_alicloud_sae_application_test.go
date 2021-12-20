@@ -47,12 +47,13 @@ func testSweepSaeApplication(region string) error {
 	runtime.SetAutoretry(true)
 	response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_sae_namespace", action, AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] %s got an error: %s", action, err)
+		return nil
 	}
 	if respBody, isExist := response["body"]; isExist {
 		response = respBody.(map[string]interface{})
 	} else {
-		return WrapError(fmt.Errorf("%s failed, response: %v", "AlicloudSaeNameSpaceRead", response))
+		return nil
 	}
 	resp, err := jsonpath.Get("$.Data", response)
 	if err != nil {

@@ -35,7 +35,8 @@ func testSweepDirectMailReceivers(region string) error {
 	}
 	conn, err := client.NewDmClient()
 	if err != nil {
-		return WrapError(err)
+		log.Println(WrapError(err))
+		return nil
 	}
 	action := "QueryReceiverByParam"
 	request := map[string]interface{}{

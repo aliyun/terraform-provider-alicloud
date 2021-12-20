@@ -58,7 +58,8 @@ func testSweepScdnDomain(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_scdn_domains", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] %s got an error: %s", action, err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.Domains.PageData", response)
 		if err != nil {

@@ -2,13 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -33,7 +31,6 @@ func testSweepEcsSnapshots(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"SnapshotForImage-stemcell-bosh-alicloud-kvm-ubuntu",
 	}
 	action := "DescribeSnapshots"
 
@@ -58,7 +55,6 @@ func testSweepEcsSnapshots(region string) error {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Snapshots.Snapshot", response)
 		}
 
-		sweeped := false
 		result, _ := resp.([]interface{})
 
 		for _, v := range result {
@@ -77,10 +73,9 @@ func testSweepEcsSnapshots(region string) error {
 				log.Printf("[INFO] Skipping snapshot: %s (%s)", name, id)
 				continue
 			}
-			sweeped = true
 			log.Printf("[INFO] Deleting snapshot: %s (%s)", name, id)
 			action = "DeleteSnapshot"
-			request = map[string]interface{}{
+			request := map[string]interface{}{
 				"SnapshotId": item["SnapshotId"],
 			}
 
@@ -90,10 +85,6 @@ func testSweepEcsSnapshots(region string) error {
 				log.Printf("[ERROR] Failed to delete snapshot(%s (%s)): %s", name, id, err)
 			}
 
-			if sweeped {
-				// Waiting 5 seconds to ensure snapshot have been deleted.
-				time.Sleep(5 * time.Second)
-			}
 			log.Printf("[INFO] Delete snapshot success: %s ", item["SnapshotId"].(string))
 		}
 		if len(result) < PageSizeLarge {

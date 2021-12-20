@@ -45,12 +45,13 @@ func testSweepEdasK8sCluster(region string) error {
 	})
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve edas cluster in service list: %s", err)
+		return nil
 	}
 
 	listClusterResponse, _ := raw.(*edas.ListClusterResponse)
 	if listClusterResponse.Code != 200 {
 		log.Printf("[ERROR] Failed to retrieve edas cluster in service list: %s", listClusterResponse.Message)
-		return WrapError(Error(listClusterResponse.Message))
+		return nil
 	}
 
 	for _, v := range listClusterResponse.ClusterList.Cluster {

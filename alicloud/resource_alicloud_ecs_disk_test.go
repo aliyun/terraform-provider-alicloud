@@ -5,7 +5,6 @@ import (
 	"log"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -37,20 +36,20 @@ func testAlicloudEcsDisk(region string) error {
 		"PageNumber": 1,
 		"RegionId":   client.RegionId,
 	}
-	action := "DescribeDisks"
 
 	var response map[string]interface{}
 	conn, err := client.NewEcsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	sweeped := false
 	for {
+		action := "DescribeDisks"
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecs_disks", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] %s got an error: %s", action, err)
+			return nil
 		}
 		addDebug(action, response, request)
 
@@ -72,7 +71,6 @@ func testAlicloudEcsDisk(region string) error {
 				log.Printf("[INFO] Skipping Disk: %s", item["DiskName"].(string))
 				continue
 			}
-			sweeped = true
 			action = "DeleteDisk"
 			request := map[string]interface{}{
 				"DiskId":   item["DiskId"],
@@ -88,9 +86,6 @@ func testAlicloudEcsDisk(region string) error {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
-	}
-	if sweeped {
-		time.Sleep(5 * time.Second)
 	}
 	return nil
 }
