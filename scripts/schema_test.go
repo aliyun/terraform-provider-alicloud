@@ -98,7 +98,7 @@ func CompatibilityRule(prev, current map[string]map[string]interface{}, fileName
 		_, exist2 := current[filedName]["Required"]
 		if exist1 && exist2 {
 			res = true
-			log.Errorf("[Incompatible Change]: there should not change attribute %v to required from optional in the file %v!",fileName,filedName)
+			log.Errorf("[Incompatible Change]: there should not change attribute %v to required from optional in the file %v!", fileName, filedName)
 		}
 		// Type changed
 		_, exist1 = obj["Type"]
@@ -238,6 +238,7 @@ func parseResource(resourceName string) (*Resource, error) {
 			continue
 		}
 		if attribRegex.MatchString(line) {
+			argumentFlag = false
 			attrFlag = true
 			continue
 		}
@@ -258,7 +259,7 @@ func parseResource(resourceName string) (*Resource, error) {
 		if attrFlag {
 			if secondLevelRegex.MatchString(line) {
 				attrFlag = false
-				continue
+				break
 			}
 			attributesMatched := attributeFieldRegex.FindAllStringSubmatch(line, 1)
 			for _, attributeParsed := range attributesMatched {
@@ -302,19 +303,19 @@ func consistencyCheck(doc map[string]interface{}, resource map[string]*schema.Sc
 		res = true
 		record := set.NewSet()
 		for field, _ := range doc {
-			if field == "id"{
-				delete(doc,field)
+			if field == "id" {
+				delete(doc, field)
 				continue
 			}
-			if _, exist := resource[field];exist {
+			if _, exist := resource[field]; exist {
 				delete(doc, field)
 				delete(resource, field)
-			}else if !exist{
+			} else if !exist {
 				// the field existed in Document,but not existed in resource
 				record.Add(field)
 			}
 		}
-		if len(resource) != 0{
+		if len(resource) != 0 {
 			for field, _ := range resource {
 				// the field existed in resource,but not existed in document
 				record.Add(field)
