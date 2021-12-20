@@ -82,7 +82,7 @@ func TestAccAlicloudDdoscooInstanceDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeDdoscooInstanceMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithTime(t, []int{1, 15})
+		testAccPreCheckWithTime(t, []int{15})
 		testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 
 	}
