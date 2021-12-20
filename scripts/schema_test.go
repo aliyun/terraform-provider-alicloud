@@ -238,6 +238,7 @@ func parseResource(resourceName string) (*Resource, error) {
 			continue
 		}
 		if attribRegex.MatchString(line) {
+			argumentFlag = false
 			attrFlag = true
 			continue
 		}
@@ -258,7 +259,7 @@ func parseResource(resourceName string) (*Resource, error) {
 		if attrFlag {
 			if secondLevelRegex.MatchString(line) {
 				attrFlag = false
-				continue
+				break
 			}
 			attributesMatched := attributeFieldRegex.FindAllStringSubmatch(line, 1)
 			for _, attributeParsed := range attributesMatched {
