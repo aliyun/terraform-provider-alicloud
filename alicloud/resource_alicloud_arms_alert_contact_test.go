@@ -34,7 +34,6 @@ func testSweepArmsAlertContact(region string) error {
 		"tf_testacc",
 	}
 
-	action := "SearchAlertContact"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["PageSize"] = PageSizeLarge
@@ -45,10 +44,11 @@ func testSweepArmsAlertContact(region string) error {
 		return WrapError(err)
 	}
 	for {
+		action := "SearchAlertContact"
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
@@ -61,7 +61,8 @@ func testSweepArmsAlertContact(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_arms_alert_contacts", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] %s got an error: %s", action, err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.PageBean.Contacts", response)
 		if err != nil {

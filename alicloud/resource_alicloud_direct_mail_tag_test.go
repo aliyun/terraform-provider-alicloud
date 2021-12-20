@@ -48,7 +48,8 @@ func testSweepDirectMailTag(region string) error {
 	var response map[string]interface{}
 	conn, err := client.NewDmClient()
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		log.Println(WrapError(err))
+		return nil
 	}
 	for {
 		runtime := util.RuntimeOptions{}

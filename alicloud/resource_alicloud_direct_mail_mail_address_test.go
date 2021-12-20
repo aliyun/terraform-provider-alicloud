@@ -41,7 +41,8 @@ func testSweepDirectMailAddress(region string) error {
 	var response map[string]interface{}
 	conn, err := client.NewDmClient()
 	if err != nil {
-		return WrapError(err)
+		log.Println(WrapError(err))
+		return nil
 	}
 
 	for {

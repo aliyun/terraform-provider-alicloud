@@ -47,7 +47,8 @@ func testSweepDeviceGroup(region string) error {
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_iot_device_group", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] %s got an error: %#v", action, err)
+			return nil
 		}
 		addDebug(action, response, request)
 

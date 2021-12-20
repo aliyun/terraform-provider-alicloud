@@ -2,13 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
@@ -36,7 +34,6 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 	}
 	request := make(map[string]interface{})
 	var response map[string]interface{}
-	action := "DescribeAutoSnapshotPolicyEx"
 	conn, err := client.NewEcsClient()
 	if err != nil {
 		return WrapError(err)
@@ -45,6 +42,7 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 	request["PageNumber"] = 1
 	request["RegionId"] = client.RegionId
 	for {
+		action := "DescribeAutoSnapshotPolicyEx"
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
@@ -55,7 +53,6 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AutoSnapshotPolicies.AutoSnapshotPolicy", response)
 		}
-		sweeped := false
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
@@ -69,7 +66,6 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 				log.Printf("[INFO] Skipping Ecs SnapShot Policy: %s (%s)", item["AutoSnapshotPolicyName"], item["AutoSnapshotPolicyId"])
 				continue
 			}
-			sweeped = true
 			action = "DeleteAutoSnapshotPolicy"
 			request := map[string]interface{}{
 				"autoSnapshotPolicyId": item["AutoSnapshotPolicyId"],
@@ -77,11 +73,8 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 			}
 			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Ecs SnapShot Policy (%s (%s)): %s", item["AutoSnapshotPolicyName"].(string), item["InstanceId"].(string), err)
-			}
-			if sweeped {
-				// Waiting 30 seconds to ensure these Ecs SnapShot Policy have been deleted.
-				time.Sleep(30 * time.Second)
+				log.Printf("[ERROR] Failed to delete Ecs SnapShot Policy (%s (%s)): %s", item["AutoSnapshotPolicyName"], item["InstanceId"], err)
+				continue
 			}
 			log.Printf("[INFO] Delete Ecs SnapShot Policy success: %s ", item["AutoSnapshotPolicyId"].(string))
 		}
