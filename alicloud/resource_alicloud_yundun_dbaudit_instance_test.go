@@ -135,7 +135,7 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 					"description":       "${var.name}",
 					"plan_code":         "alpha.professional",
 					"period":            "1",
-					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"vswitch_id":        "${local.vswitch_id}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -272,7 +272,7 @@ func TestAccAlicloudYundunDbauditInstance_Multi(t *testing.T) {
 					"description": "${var.name}-${count.index}",
 					"plan_code":   "alpha.professional",
 					"period":      "1",
-					"vswitch_id":  "${alicloud_vswitch.default.id}",
+					"vswitch_id":  "${local.vswitch_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -296,16 +296,24 @@ func resourceDbauditInstanceDependence(name string) string {
 				default = "%s"
 			  }
 
-			  resource "alicloud_vpc" "default" {
-				name = "${var.name}"
-				cidr_block = "172.16.0.0/12"
+			  data "alicloud_vpcs" "default" {
+				  name_regex = "default-NODELETING"
 			  }
-
-			  resource "alicloud_vswitch" "default" {
-				vpc_id = "${alicloud_vpc.default.id}"
-				cidr_block = "172.16.0.0/21"
-				availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-				vswitch_name = "${var.name}"
+			  data "alicloud_vswitches" "default" {
+				  vpc_id = data.alicloud_vpcs.default.ids.0
+				  zone_id      = data.alicloud_zones.default.zones.0.id
+			  }
+			
+			  resource "alicloud_vswitch" "vswitch" {
+			    count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+			    vpc_id            = data.alicloud_vpcs.default.ids.0
+			    cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+			    zone_id           = data.alicloud_zones.default.zones.0.id
+			    vswitch_name      = var.name
+			  }
+			
+			  locals {
+			    vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 			  }
 			
 			  provider "alicloud" {

@@ -155,7 +155,7 @@ func TestAccAlicloudEcsNetworkInterface_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"network_interface_name": name,
-					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"vswitch_id":             "${local.vswitch_id}",
 					"security_group_ids":     []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
@@ -175,7 +175,7 @@ func TestAccAlicloudEcsNetworkInterface_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"private_ip_addresses": []string{"192.168.0.3", "192.168.0.5", "192.168.0.6"},
+					"private_ip_addresses": []string{"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 3)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 7)}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -230,7 +230,7 @@ func TestAccAlicloudEcsNetworkInterface_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"private_ip_addresses": []string{"192.168.0.3", "192.168.0.5"},
+					"private_ip_addresses": []string{"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 3)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 7)}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -240,7 +240,7 @@ func TestAccAlicloudEcsNetworkInterface_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"private_ip_addresses":   []string{"192.168.0.3", "192.168.0.5", "192.168.0.6", "192.168.0.8"},
+					"private_ip_addresses":   []string{"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 3)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 5)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 6)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 8)}"},
 					"network_interface_name": name,
 					"description":            "Test For Terraform Update",
 					"queue_number":           "2",
@@ -289,10 +289,10 @@ func TestAccAlicloudEcsNetworkInterface_primary_ip_address(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"network_interface_name": name,
-					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"vswitch_id":             "${local.vswitch_id}",
 					"security_group_ids":     []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"primary_ip_address":     "192.168.0.2",
+					"primary_ip_address":     "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -300,7 +300,7 @@ func TestAccAlicloudEcsNetworkInterface_primary_ip_address(t *testing.T) {
 						"vswitch_id":             CHECKSET,
 						"security_group_ids.#":   "1",
 						"resource_group_id":      CHECKSET,
-						"primary_ip_address":     "192.168.0.2",
+						"primary_ip_address":     CHECKSET,
 					}),
 				),
 			},
@@ -311,11 +311,11 @@ func TestAccAlicloudEcsNetworkInterface_primary_ip_address(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"primary_ip_address": "192.168.0.4",
+					"primary_ip_address": "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 7)}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"primary_ip_address": "192.168.0.4",
+						"primary_ip_address": CHECKSET,
 					}),
 				),
 			},
@@ -347,7 +347,7 @@ func TestAccAlicloudEcsNetworkInterface_secondary_private_ip_address_count(t *te
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"network_interface_name": name,
-					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"vswitch_id":             "${local.vswitch_id}",
 					"security_group_ids":     []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
@@ -405,25 +405,33 @@ variable "name" {
   default = "%s"
 }
 
-resource "alicloud_vpc" "default" {
-    name = "${var.name}"
-    cidr_block = "192.168.0.0/24"
-}
-
 data "alicloud_zones" "default" {
     available_resource_creation= "VSwitch"
 }
 
-resource "alicloud_vswitch" "default" {
-    vswitch_name = "${var.name}"
-    cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_security_group" "default" {
     name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    vpc_id = data.alicloud_vpcs.default.ids.0
 }
 data "alicloud_resource_manager_resource_groups" "default"{
 	status = "OK"
