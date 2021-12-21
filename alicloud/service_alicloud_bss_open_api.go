@@ -39,6 +39,7 @@ func (s *BssOpenApiService) QueryAvailableInstances(id, productCode, productType
 			}
 			if IsExpectedErrors(err, []string{"NotApplicable"}) {
 				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
