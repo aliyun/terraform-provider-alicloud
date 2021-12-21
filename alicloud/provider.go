@@ -637,6 +637,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_chart_namespaces":                         dataSourceAlicloudCrChartNamespaces(),
 			"alicloud_fnf_executions":                              dataSourceAlicloudFnFExecutions(),
 			"alicloud_cr_chart_repositories":                       dataSourceAlicloudCrChartRepositories(),
+			"alicloud_mongodb_sharding_network_public_addresses":   dataSourceAlicloudMongodbShardingNetworkPublicAddresses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1154,6 +1155,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_chart_namespace":                                   resourceAlicloudCrChartNamespace(),
 			"alicloud_fnf_execution":                                        resourceAlicloudFnFExecution(),
 			"alicloud_cr_chart_repository":                                  resourceAlicloudCrChartRepository(),
+			"alicloud_mongodb_sharding_network_public_address":              resourceAlicloudMongodbShardingNetworkPublicAddress(),
 		},
 
 		ConfigureFunc: providerConfigure,
