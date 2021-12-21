@@ -78,7 +78,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID of Sharding Network Public Address. The value formats as `<db_instance_id>:<node_id>`.
-* `addresses` - An array that consists of the endpoints of ApsaraDB for MongoDB instances.
+* `network_address` - An array that consists of the endpoints of ApsaraDB for MongoDB instances.
   * `network_type` - The network type.
   * `network_address` - The endpoint of the instance.
   * `node_type` - The type of the node.
