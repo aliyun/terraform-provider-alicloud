@@ -127,7 +127,7 @@ func TestAccAlicloudBastionhostInstance_basic(t *testing.T) {
 					"description":        "${var.name}",
 					"license_code":       "bhah_ent_50_asset",
 					"period":             "1",
-					"vswitch_id":         "${alicloud_vswitch.default.id}",
+					"vswitch_id":         "${local.vswitch_id}",
 					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
@@ -281,7 +281,7 @@ func TestAccAlicloudBastionhostInstance_PublicAccess(t *testing.T) {
 					"license_code":         "bhah_ent_50_asset",
 					"period":               "1",
 					"description":          "${var.name}",
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"vswitch_id":           "${local.vswitch_id}",
 					"security_group_ids":   []string{"${alicloud_security_group.default.0.id}"},
 					"enable_public_access": "true",
 				}),
@@ -326,23 +326,31 @@ func resourceBastionhostInstanceDependence(name string) string {
 				variable "name" {
 				  default = "%s"
 				}
-				
-				resource "alicloud_vpc" "default" {
-				  vpc_name       = "${var.name}"
-				  cidr_block = "172.16.0.0/12"
+
+				data "alicloud_vpcs" "default" {
+					name_regex = "default-NODELETING"
+				}
+				data "alicloud_vswitches" "default" {
+					vpc_id = data.alicloud_vpcs.default.ids.0
+					zone_id = data.alicloud_zones.default.zones.0.id
 				}
 				
-				resource "alicloud_vswitch" "default" {
-				  vpc_id            = "${alicloud_vpc.default.id}"
-				  cidr_block        = "172.16.0.0/21"
-				  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-				  vswitch_name              = "${var.name}"
+				resource "alicloud_vswitch" "vswitch" {
+				  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+				  vpc_id            = data.alicloud_vpcs.default.ids.0
+				  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+				  zone_id           = data.alicloud_zones.default.zones.0.id
+				  vswitch_name      = var.name
+				}
+				
+				locals {
+				  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 				}
 				
 				resource "alicloud_security_group" "default" {
 				  count  = 2
 				  name   = "${var.name}"
-				  vpc_id = "${alicloud_vpc.default.id}"
+				  vpc_id = data.alicloud_vpcs.default.ids.0
 				}
 				
 				provider "alicloud" {
