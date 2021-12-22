@@ -35,6 +35,8 @@ The following arguments are supported:
 * `mobile` - (Required) The User's Telephone.
 * `position` - (Required, ForceNew) The User's Position. Valid values: `CEO`, `Technical Director`, `Maintenance Director`, `Project Director`,`Finance Director` and `Other`.
 
+-> **NOTE:** When the user creates a contact, the user should use `alicloud_msc_sub_contact_verification_message` to receive the verification message and confirm it.
+
 ## Attributes Reference
 
 The following attributes are exported:
