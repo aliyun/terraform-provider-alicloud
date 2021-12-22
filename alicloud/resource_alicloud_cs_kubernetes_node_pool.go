@@ -580,9 +580,8 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.CmsEnabled = d.Get("install_cloud_monitor").(bool)
 	}
 
-	if d.HasChange("unschedulable") {
-		update = true
-		args.Unschedulable = d.Get("unschedulable").(bool)
+	if v, ok := d.GetOk("unschedulable"); ok {
+		args.Unschedulable = v.(bool)
 	}
 
 	if d.HasChange("instance_types") {
