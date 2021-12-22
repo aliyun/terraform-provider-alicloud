@@ -84,25 +84,35 @@ variable "name" {
 	default = "tf-testAccDataTransitRouterVpcAttachment-%d"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name = var.name
-  cidr_block = "192.168.0.0/16"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
-
-resource "alicloud_vswitch" "default_master" {
-  vswitch_name = var.name
-  vpc_id = alicloud_vpc.default.id
-  cidr_block = "192.168.1.0/24"
-  zone_id = "cn-hangzhou-h"
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id = "cn-hangzhou-h"
 }
-
-resource "alicloud_vswitch" "default_slave" {
-  vswitch_name = var.name
-  vpc_id = alicloud_vpc.default.id
-  cidr_block = "192.168.2.0/24"
-  zone_id = "cn-hangzhou-i"
+data "alicloud_vswitches" "default_master" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id = "cn-hangzhou-i"
 }
-
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = "cn-hangzhou-h"
+  vswitch_name      = var.name
+}
+resource "alicloud_vswitch" "vswitch_master" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = "cn-hangzhou-i"
+  vswitch_name      = var.name
+}
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id_master = length(data.alicloud_vswitches.default_master.ids) > 0 ? data.alicloud_vswitches.default_master.ids[0] : concat(alicloud_vswitch.vswitch_master.*.id, [""])[0]
+}
 resource "alicloud_cen_instance" "default" {
   cen_instance_name = var.name
   protection_level = "REDUCED"
@@ -115,14 +125,14 @@ cen_id= alicloud_cen_instance.default.id
 resource "alicloud_cen_transit_router_vpc_attachment" "default" {
   cen_id = alicloud_cen_instance.default.id
   transit_router_id = alicloud_cen_transit_router.default.transit_router_id
-  vpc_id = alicloud_vpc.default.id
+  vpc_id = data.alicloud_vpcs.default.ids.0
   zone_mappings {
     zone_id = "cn-hangzhou-h"
-    vswitch_id = alicloud_vswitch.default_master.id
+    vswitch_id = local.vswitch_id_master
   }
   zone_mappings {
     zone_id = "cn-hangzhou-i"
-    vswitch_id = alicloud_vswitch.default_slave.id
+    vswitch_id = local.vswitch_id
   }
   transit_router_attachment_description = "descp"
   transit_router_attachment_name = var.name

@@ -12,7 +12,7 @@ func TestAccAlicloudSslVpnClientCertsDataSourceBasic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	preCheck := func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithAccountSiteType(t, IntlSite)
+		testAccPreCheckWithTime(t, []int{1})
 	}
 
 	idsConfig := dataSourceTestAccConfig{

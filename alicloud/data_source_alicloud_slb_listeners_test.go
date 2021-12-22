@@ -318,21 +318,29 @@ data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  vswitch_id = local.vswitch_id
   load_balancer_spec = "slb.s1.small"
 }
 
@@ -464,21 +472,29 @@ data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  vswitch_id = local.vswitch_id
   load_balancer_spec = "slb.s1.small"
 }
 
@@ -519,21 +535,29 @@ data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  vswitch_id = local.vswitch_id
   load_balancer_spec = "slb.s1.small"
 }
 
