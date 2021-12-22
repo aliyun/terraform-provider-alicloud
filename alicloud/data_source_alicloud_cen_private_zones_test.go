@@ -109,13 +109,12 @@ variable "name" {
 resource "alicloud_cen_instance" "default" {
   name = var.name
 }
-resource "alicloud_vpc" "default" {
-  name       = var.name
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 resource "alicloud_cen_instance_attachment" "default" {
   instance_id              = alicloud_cen_instance.default.id
-  child_instance_id        = alicloud_vpc.default.id
+  child_instance_id        = data.alicloud_vpcs.default.ids.0
   child_instance_type      = "VPC"
   child_instance_region_id = "%[2]s"
 }
@@ -124,7 +123,7 @@ resource "alicloud_cen_private_zone" "default" {
   access_region_id = "%[2]s"
   cen_id           = alicloud_cen_instance.default.id
   host_region_id   = "%[2]s"
-  host_vpc_id      = alicloud_vpc.default.id
+  host_vpc_id      = data.alicloud_vpcs.default.ids.0
   depends_on       = [alicloud_cen_instance_attachment.default]
 }
 

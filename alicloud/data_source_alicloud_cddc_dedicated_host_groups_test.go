@@ -84,14 +84,13 @@ func testAccCheckAlicloudCddcDedicatedHostGroupsDataSourceName(rand int, attrMap
 variable "name" {	
 	default = "tf-testAccName-%d"
 }
-resource "alicloud_vpc" "vpc" {
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_cddc_dedicated_host_group" "default" {
 	engine = "MySQL"
-	vpc_id = alicloud_vpc.vpc.id
+	vpc_id = data.alicloud_vpcs.default.ids.0
 	cpu_allocation_ratio = 101
 	mem_allocation_ratio = 50
 	disk_allocation_ratio = 200
