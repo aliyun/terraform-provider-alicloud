@@ -636,6 +636,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cddc_dedicated_host_accounts":                dataSourceAlicloudCddcDedicatedHostAccounts(),
 			"alicloud_cr_chart_namespaces":                         dataSourceAlicloudCrChartNamespaces(),
 			"alicloud_fnf_executions":                              dataSourceAlicloudFnFExecutions(),
+			"alicloud_msc_sub_contact_verification_message":        dataSourceAlicloudMscSubContactVerificationMessage(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
