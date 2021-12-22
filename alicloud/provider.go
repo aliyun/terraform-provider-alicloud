@@ -659,6 +659,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nas_data_flows":                              dataSourceAlicloudNasDataFlows(),
 			"alicloud_ecs_storage_capacity_units":                  dataSourceAlicloudEcsStorageCapacityUnits(),
 			"alicloud_dbfs_snapshots":                              dataSourceAlicloudDbfsSnapshots(),
+			"alicloud_msc_sub_contact_verification_message":        dataSourceAlicloudMscSubContactVerificationMessage(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
