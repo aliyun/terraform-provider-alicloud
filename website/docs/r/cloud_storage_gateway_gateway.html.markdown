@@ -59,7 +59,7 @@ The following arguments are supported:
 
 * `description` - (Optional)  the description of gateway.
 * `gateway_class` - (Optional) the gateway class. the valid values: `Basic`, `Standard`,`Enhanced`,`Advanced`
-* `gateway_name` - (Required) the name of gateway.
+* `gateway_name` - (Optional) the name of gateway.
 * `location` - (Required, ForceNew) gateway location. the valid values: `Cloud`, `On_Premise`.
 * `payment_type` - (Optional) The Payment type of gateway. The valid value: `PayAsYouGo`.
 * `public_network_bandwidth` - (Optional) The public network bandwidth of gateway. Valid values between `5` and `200`. Defaults to `5`.

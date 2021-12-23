@@ -114,6 +114,7 @@ func resourceAlicloudCloudStorageGatewayGatewayCreate(d *schema.ResourceData, me
 	}
 	request["Location"] = d.Get("location")
 	request["Name"] = d.Get("gateway_name")
+	fmt.Sprintf("gateway_name = %d\n", request["Name"])
 	if v, ok := d.GetOk("payment_type"); ok {
 		request["PostPaid"] = convertCsgGatewayPaymentTypeReq(v.(string))
 	}

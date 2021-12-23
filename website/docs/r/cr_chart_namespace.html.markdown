@@ -48,12 +48,12 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The resource ID of Chart Namespace. The value formats as `<instance_id>:<namespace_name>`.
+* `id` - The resource ID of Chart Namespace. The value formats as `<namespace_name>:<instance_id>`.
 
 ## Import
 
 CR Chart Namespace can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_cr_chart_namespace.example <instance_id>:<namespace_name>
+$ terraform import alicloud_cr_chart_namespace.example <namespace_name>:<instance_id>
 ```

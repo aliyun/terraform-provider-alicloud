@@ -425,6 +425,7 @@ func (s *PolarDBService) WaitForPolarDBEndpoints(d *schema.ResourceData, status 
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
+	return "", nil
 }
 
 func (s *PolarDBService) DescribePolarDBConnection(id string) (*polardb.Address, error) {

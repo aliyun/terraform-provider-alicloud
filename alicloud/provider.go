@@ -636,7 +636,6 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cddc_dedicated_host_accounts":                dataSourceAlicloudCddcDedicatedHostAccounts(),
 			"alicloud_cr_chart_namespaces":                         dataSourceAlicloudCrChartNamespaces(),
 			"alicloud_fnf_executions":                              dataSourceAlicloudFnFExecutions(),
-			"alicloud_cr_chart_repositories":                       dataSourceAlicloudCrChartRepositories(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1153,7 +1152,6 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cddc_dedicated_host_account":                          resourceAlicloudCddcDedicatedHostAccount(),
 			"alicloud_cr_chart_namespace":                                   resourceAlicloudCrChartNamespace(),
 			"alicloud_fnf_execution":                                        resourceAlicloudFnFExecution(),
-			"alicloud_cr_chart_repository":                                  resourceAlicloudCrChartRepository(),
 		},
 
 		ConfigureFunc: providerConfigure,

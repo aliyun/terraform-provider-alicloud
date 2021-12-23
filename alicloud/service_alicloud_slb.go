@@ -675,6 +675,7 @@ func (s *SlbService) WaitForSlbDomainExtension(id string, status Status, timeout
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, Null, string(status), ProviderERROR)
 		}
 	}
+	return nil
 }
 
 func (s *SlbService) setInstanceTags(d *schema.ResourceData, resourceType TagResourceType) error {
