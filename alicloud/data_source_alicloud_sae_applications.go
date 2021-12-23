@@ -423,7 +423,7 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 		if v, ok := getResp["MinReadyInstances"]; ok && fmt.Sprint(v) != "0" {
 			mapping["min_ready_instances"] = formatInt(v)
 		}
-		mapping["mount_desc"] = getResp["MountDesc"]
+		mapping["mount_desc"], _ = convertArrayObjectToJsonString(getResp["MountDesc"])
 		mapping["mount_host"] = getResp["MountHost"]
 		mapping["nas_id"] = getResp["NasId"]
 		mapping["oss_ak_id"] = getResp["OssAkId"]
