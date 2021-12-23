@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"log"
 	"time"
 
@@ -9,62 +10,65 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudCrChartNamespace() *schema.Resource {
+func resourceAlicloudCrChartRepository() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCrChartNamespaceCreate,
-		Read:   resourceAlicloudCrChartNamespaceRead,
-		Update: resourceAlicloudCrChartNamespaceUpdate,
-		Delete: resourceAlicloudCrChartNamespaceDelete,
+		Create: resourceAlicloudCrChartRepositoryCreate,
+		Read:   resourceAlicloudCrChartRepositoryRead,
+		Update: resourceAlicloudCrChartRepositoryUpdate,
+		Delete: resourceAlicloudCrChartRepositoryDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"auto_create_repo": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Computed: true,
-			},
-			"default_repo_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PRIVATE", "PUBLIC"}, false),
-			},
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"namespace_name": {
+			"repo_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"repo_namespace_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"repo_type": {
+				Type:         schema.TypeString,
+				Computed:     true,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PRIVATE", "PUBLIC"}, false),
+			},
+			"summary": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudCrChartNamespaceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCrChartRepositoryCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	action := "CreateChartNamespace"
+	action := "CreateChartRepository"
 	request := make(map[string]interface{})
 	conn, err := client.NewAcrClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	if v, ok := d.GetOkExists("auto_create_repo"); ok {
-		request["AutoCreateRepo"] = v
-	}
-	if v, ok := d.GetOk("default_repo_type"); ok {
-		request["DefaultRepoType"] = v
-	}
 	request["InstanceId"] = d.Get("instance_id")
-	request["NamespaceName"] = d.Get("namespace_name")
-	request["RegionId"] = client.RegionId
+	request["RepoName"] = d.Get("repo_name")
+	request["RepoNamespaceName"] = d.Get("repo_namespace_name")
+	if v, ok := d.GetOk("repo_type"); ok {
+		request["RepoType"] = v
+	}
+	if v, ok := d.GetOk("summary"); ok {
+		request["Summary"] = v
+	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -79,65 +83,68 @@ func resourceAlicloudCrChartNamespaceCreate(d *schema.ResourceData, meta interfa
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_chart_namespace", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_chart_repository", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["NamespaceName"]))
-	return resourceAlicloudCrChartNamespaceRead(d, meta)
+	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["RepoNamespaceName"], ":", request["RepoName"]))
+
+	return resourceAlicloudCrChartRepositoryRead(d, meta)
 }
-func resourceAlicloudCrChartNamespaceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCrChartRepositoryRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	crService := CrService{client}
-	object, err := crService.DescribeCrChartNamespace(d.Id())
+	object, err := crService.DescribeCrChartRepository(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cr_chart_namespace crService.DescribeCrChartNamespace Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_cr_chart_repository crService.DescribeCrChartRepository Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		return WrapError(err)
 	}
+	d.Set("repo_name", parts[2])
+	d.Set("repo_namespace_name", parts[1])
 	d.Set("instance_id", parts[0])
-	d.Set("namespace_name", parts[1])
-	d.Set("auto_create_repo", object["AutoCreateRepo"])
-	d.Set("default_repo_type", object["DefaultRepoType"])
+	d.Set("repo_type", object["RepoType"])
+	d.Set("summary", object["Summary"])
 	return nil
 }
-func resourceAlicloudCrChartNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCrChartRepositoryUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewAcrClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		return WrapError(err)
 	}
 	update := false
 	request := map[string]interface{}{
-		"InstanceId":    parts[0],
-		"NamespaceName": parts[1],
+		"RepoName":          parts[2],
+		"RepoNamespaceName": parts[1],
+		"InstanceId":        parts[0],
 	}
-	request["RegionId"] = client.RegionId
-	if d.HasChange("auto_create_repo") {
+
+	if d.HasChange("repo_type") {
 		update = true
-		if v, ok := d.GetOkExists("auto_create_repo"); ok {
-			request["AutoCreateRepo"] = v
-		}
 	}
-	if d.HasChange("default_repo_type") {
+	if v, ok := d.GetOk("repo_type"); ok {
+		request["RepoType"] = v
+	}
+	if d.HasChange("summary") {
 		update = true
-		if v, ok := d.GetOk("default_repo_type"); ok {
-			request["DefaultRepoType"] = v
+		if v, ok := d.GetOk("summary"); ok {
+			request["Summary"] = v
 		}
 	}
 	if update {
-		action := "UpdateChartNamespace"
+		action := "UpdateChartRepository"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -155,26 +162,27 @@ func resourceAlicloudCrChartNamespaceUpdate(d *schema.ResourceData, meta interfa
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudCrChartNamespaceRead(d, meta)
+	return resourceAlicloudCrChartRepositoryRead(d, meta)
 }
-func resourceAlicloudCrChartNamespaceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCrChartRepositoryDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		return WrapError(err)
 	}
-	action := "DeleteChartNamespace"
+	action := "DeleteChartRepository"
 	var response map[string]interface{}
 	conn, err := client.NewAcrClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request := map[string]interface{}{
-		"InstanceId":    parts[0],
-		"NamespaceName": parts[1],
+		"RepoName":          parts[2],
+		"RepoNamespaceName": parts[1],
+		"InstanceId":        parts[0],
 	}
 
-	request["RegionId"] = client.RegionId
+	request["InstanceId"] = d.Get("instance_id")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

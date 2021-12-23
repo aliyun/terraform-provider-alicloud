@@ -33,6 +33,9 @@ The following arguments are supported:
 
 * `code` - (Optional, ForceNew) Abnormal Alarm General Configuration Module by Using the Encoding. Valid values: `access_failed_cnt`, `access_permission_exprie_max_days`, `log_datasize_avg_days`.
 * `description` - (Optional) Abnormal Alarm General Description of the Configuration Item.
+* `lang` - (Optional) The language of the request and response. Valid values: `zh`,`en`.
+  * `zh`: Chinese.
+  * `en`: English.
 * `value` - (Optional) The Specified Exception Alarm Generic by Using the Value. Code Different Values for This Parameter the Specific Meaning of Different:
       * `access_failed_cnt`: Value Represents the Non-Authorized Resource Repeatedly Attempts to Access the Threshold. 
       * `access_permission_exprie_max_days`: Value Represents the Permissions during Periods of Inactivity Exceeding a Threshold. 
