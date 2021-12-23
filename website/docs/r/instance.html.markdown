@@ -210,6 +210,8 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
 * `hpc_cluster_id` - (Optional, ForceNew, Available in 1.144.0+) The ID of the Elastic High Performance Computing (E-HPC) cluster to which to assign the instance.
 * `secondary_private_ips` - (Optional, Available in 1.144.0+) A list of Secondary private IP addresses which is selected from within the CIDR block of the VSwitch.
 * `secondary_private_ip_address_count` - (Optional, Available in 1.145.0+) The number of private IP addresses to be automatically assigned from within the CIDR block of the vswitch. **NOTE:** To assign secondary private IP addresses, you must specify `secondary_private_ips` or `secondary_private_ip_address_count` but not both.
+* `deployment_set_id` - (Optional, Available in 1.149.0+) The ID of the deployment set to which to deploy the instance.
+
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
@@ -225,23 +227,26 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
 
 -> **NOTE:** From version 1.7.0, instance's type can be changed. When it is changed, the instance will reboot to make the change take effect.
 
-### Timeouts
-
--> **NOTE:** Available in 1.46.0+.
-
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 10 mins) Used when creating the instance (until it reaches the initial `Running` status). 
-`Note`: There are extra at most 2 minutes used to retry to avoid some needless API errors, and it is not in the timeouts configure.
-* `update` - (Defaults to 10 mins) Used when stopping and starting the instance when necessary during update - e.g. when changing instance type, password, image, vswitch and private IP.
-* `delete` - (Defaults to 20 mins) Used when terminating the instance. `Note`: There are extra at most 5 minutes used to retry to avoid some needless API errors, and it is not in the timeouts configure.
-
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The instance ID.
 * `public_ip` - The instance public ip.
+* `deployment_set_group_no` - (Optional, Available in 1.149.0+) The group number of the instance in a deployment set when the deployment set is use.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.46.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the instance (until it reaches the initial `Running` status).
+  `Note`: There are extra at most 2 minutes used to retry to avoid some needless API errors, and it is not in the timeouts configure.
+* `update` - (Defaults to 10 mins) Used when stopping and starting the instance when necessary during update - e.g. when changing instance type, password, image, vswitch and private IP.
+* `delete` - (Defaults to 20 mins) Used when terminating the instance. `Note`: There are extra at most 5 minutes used to retry to avoid some needless API errors, and it is not in the timeouts configure.
+
+
 
 ## Import
 
