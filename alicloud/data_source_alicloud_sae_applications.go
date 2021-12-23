@@ -428,7 +428,7 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 		mapping["nas_id"] = getResp["NasId"]
 		mapping["oss_ak_id"] = getResp["OssAkId"]
 		mapping["oss_ak_secret"] = getResp["OssAkSecret"]
-		mapping["oss_mount_descs"] = getResp["OssMountDescs"]
+		mapping["oss_mount_descs"], _ = convertArrayObjectToJsonString(getResp["OssMountDescs"])
 		mapping["package_type"] = getResp["PackageType"]
 		mapping["package_url"] = getResp["PackageUrl"]
 		mapping["package_version"] = getResp["PackageVersion"]
