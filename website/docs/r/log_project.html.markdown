@@ -46,6 +46,14 @@ The following attributes are exported:
 * `description` - Log project description.
 * `tags` - Log project tags.
 
+### Timeouts
+
+-> **NOTE:** Available in 1.126.0+
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 3 mins) Used when create the log project.
+
 ## Import
 
 Log project can be imported using the id or name, e.g.

@@ -99,14 +99,14 @@ func dataSourceGaForwardingRulesConfigDependence(name string) string {
 	 }
 	 protocol="HTTP"
 	}
-	resource "alicloud_eip" "example" {
+	resource "alicloud_eip_address" "example" {
 	 bandwidth            = "10"
 	 internet_charge_type = "PayByBandwidth"
 	}
 	resource "alicloud_ga_endpoint_group" "example" {
 	 accelerator_id = data.alicloud_ga_accelerators.default.ids.0
 	 endpoint_configurations {
-	   endpoint = alicloud_eip.example.ip_address
+	   endpoint = alicloud_eip_address.example.ip_address
 	   type     = "PublicIp"
 	   weight   = "20"
 	 }

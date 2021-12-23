@@ -10,7 +10,6 @@ import (
 func TestAccAlicloudCrEEReposDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	repoName := fmt.Sprintf("tf-testacc-cr-ee-repo-%d", rand)
-	namespaceName := fmt.Sprintf("tf-testacc-cr-ee-ns-%d", rand)
 	resourceId := "data.alicloud_cr_ee_repos.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, fmt.Sprint(rand),
@@ -65,7 +64,7 @@ func TestAccAlicloudCrEEReposDataSource(t *testing.T) {
 			"names.0":             repoName,
 			"repos.#":             "1",
 			"repos.0.instance_id": CHECKSET,
-			"repos.0.namespace":   namespaceName,
+			"repos.0.namespace":   repoName,
 			"repos.0.id":          CHECKSET,
 			"repos.0.name":        repoName,
 			"repos.0.summary":     "test summary",
@@ -86,10 +85,8 @@ func TestAccAlicloudCrEEReposDataSource(t *testing.T) {
 		existMapFunc: existCrEEReposMapFunc,
 		fakeMapFunc:  fakeCrEEReposMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithCrEE(t)
-	}
-	crEEReposCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+
+	crEEReposCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceCrEEReposConfigDependence(name string) string {
@@ -99,11 +96,12 @@ func dataSourceCrEEReposConfigDependence(name string) string {
 	}
 
 	data "alicloud_cr_ee_instances" "default" {
+		name_regex = "^tf-testacc"
 	}
 	
 	resource "alicloud_cr_ee_namespace" "default" {
 		instance_id = "${data.alicloud_cr_ee_instances.default.ids.0}"
-		name = "tf-testacc-cr-ee-ns-%s"
+		name = var.name
 		auto_create	= true
 		default_visibility = "PRIVATE"
 	}
@@ -117,5 +115,5 @@ func dataSourceCrEEReposConfigDependence(name string) string {
 		detail = "test detail"
 	}
 
-	`, name, name)
+	`, name)
 }

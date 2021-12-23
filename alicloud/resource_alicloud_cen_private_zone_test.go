@@ -34,10 +34,9 @@ func TestAccAlicloudCenPrivateZone_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"access_region_id": defaultRegionToTest,
-					"cen_id":           "${alicloud_cen_instance.default.id}",
+					"cen_id":           "${alicloud_cen_instance_attachment.default.instance_id}",
 					"host_region_id":   defaultRegionToTest,
-					"host_vpc_id":      "${alicloud_vpc.default.id}",
-					"depends_on":       []string{"alicloud_cen_instance_attachment.default"},
+					"host_vpc_id":      "${alicloud_cen_instance_attachment.default.child_instance_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -78,9 +77,6 @@ resource "alicloud_cen_instance_attachment" "default" {
 	child_instance_id = "${alicloud_vpc.default.id}"
 	child_instance_type = "VPC"
 	child_instance_region_id = "%s"
-  	depends_on = [
-		"alicloud_cen_instance.default",
-		"alicloud_vpc.default"]
 }
 `, name, defaultRegionToTest)
 }

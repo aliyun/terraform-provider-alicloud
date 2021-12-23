@@ -94,7 +94,7 @@ func TestAccAlicloudWafInstancesDataSource(t *testing.T) {
 
 	var perCheck = func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithWafInstanceSetting(t)
+		testAccPreCheckWithEnvVariable(t, "ALICLOUD_WAF_INSTANCE_ID")
 	}
 
 	wafInstancesRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, perCheck, idsConf, statusConf, instanceSourceConf, resourceGroupIdConf, allConf)

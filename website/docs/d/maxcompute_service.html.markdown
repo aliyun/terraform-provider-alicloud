@@ -21,7 +21,7 @@ For information about Maxcompute and how to use it, see [What is Maxcompute](htt
 
 ```terraform
 data "alicloud_maxcompute_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

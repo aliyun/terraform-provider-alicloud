@@ -71,12 +71,14 @@ func (client *Client) CreateQosPolicyWithCallback(request *CreateQosPolicyReques
 // CreateQosPolicyRequest is the request struct for api CreateQosPolicy
 type CreateQosPolicyRequest struct {
 	*requests.RpcRequest
+	DpiGroupIds          *[]string        `position:"Query" name:"DpiGroupIds"  type:"Repeated"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	SourcePortRange      string           `position:"Query" name:"SourcePortRange"`
 	SourceCidr           string           `position:"Query" name:"SourceCidr"`
 	Description          string           `position:"Query" name:"Description"`
 	StartTime            string           `position:"Query" name:"StartTime"`
 	DestCidr             string           `position:"Query" name:"DestCidr"`
+	DpiSignatureIds      *[]string        `position:"Query" name:"DpiSignatureIds"  type:"Repeated"`
 	QosId                string           `position:"Query" name:"QosId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	IpProtocol           string           `position:"Query" name:"IpProtocol"`
@@ -91,19 +93,21 @@ type CreateQosPolicyRequest struct {
 // CreateQosPolicyResponse is the response struct for api CreateQosPolicy
 type CreateQosPolicyResponse struct {
 	*responses.BaseResponse
-	RequestId       string `json:"RequestId" xml:"RequestId"`
-	QosId           string `json:"QosId" xml:"QosId"`
-	QosPolicyId     string `json:"QosPolicyId" xml:"QosPolicyId"`
-	Description     string `json:"Description" xml:"Description"`
-	Priority        int    `json:"Priority" xml:"Priority"`
-	SourceCidr      string `json:"SourceCidr" xml:"SourceCidr"`
-	DestCidr        string `json:"DestCidr" xml:"DestCidr"`
-	IpProtocol      string `json:"IpProtocol" xml:"IpProtocol"`
-	SourcePortRange string `json:"SourcePortRange" xml:"SourcePortRange"`
-	DestPortRange   string `json:"DestPortRange" xml:"DestPortRange"`
-	StartTime       string `json:"StartTime" xml:"StartTime"`
-	EndTime         string `json:"EndTime" xml:"EndTime"`
-	Name            string `json:"Name" xml:"Name"`
+	Description     string                           `json:"Description" xml:"Description"`
+	EndTime         string                           `json:"EndTime" xml:"EndTime"`
+	RequestId       string                           `json:"RequestId" xml:"RequestId"`
+	QosPolicyId     string                           `json:"QosPolicyId" xml:"QosPolicyId"`
+	SourcePortRange string                           `json:"SourcePortRange" xml:"SourcePortRange"`
+	SourceCidr      string                           `json:"SourceCidr" xml:"SourceCidr"`
+	Priority        int                              `json:"Priority" xml:"Priority"`
+	StartTime       string                           `json:"StartTime" xml:"StartTime"`
+	DestPortRange   string                           `json:"DestPortRange" xml:"DestPortRange"`
+	Name            string                           `json:"Name" xml:"Name"`
+	DestCidr        string                           `json:"DestCidr" xml:"DestCidr"`
+	QosId           string                           `json:"QosId" xml:"QosId"`
+	IpProtocol      string                           `json:"IpProtocol" xml:"IpProtocol"`
+	DpiGroupIds     DpiGroupIdsInCreateQosPolicy     `json:"DpiGroupIds" xml:"DpiGroupIds"`
+	DpiSignatureIds DpiSignatureIdsInCreateQosPolicy `json:"DpiSignatureIds" xml:"DpiSignatureIds"`
 }
 
 // CreateCreateQosPolicyRequest creates a request to invoke CreateQosPolicy API

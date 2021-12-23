@@ -4,7 +4,11 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -21,7 +25,9 @@ func resourceAlicloudCrEEInstance() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"payment_type": {
 				Type:         schema.TypeString,
@@ -76,6 +82,24 @@ func resourceAlicloudCrEEInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"kms_encrypted_password": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: kmsDiffSuppressFunc,
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
+			},
 		},
 	}
 }
@@ -129,7 +153,17 @@ func resourceAlicloudCrEEInstanceCreate(d *schema.ResourceData, meta interface{}
 	request.Parameter = &parameters
 
 	raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.CreateInstance(request)
+		resp, errCreate := bssopenapiClient.CreateInstance(request)
+		if errCreate != nil {
+			// if account site is international, should route to  ap-southeast-1
+			if serverErr, ok := errCreate.(*errors.ServerError); ok && serverErr.ErrorCode() == "NotApplicable" {
+				request.RegionId = "ap-southeast-1"
+				request.Domain = "business.ap-southeast-1.aliyuncs.com"
+				request.ProductType = "acr_ee_public_intl"
+				resp, errCreate = bssopenapiClient.CreateInstance(request)
+			}
+		}
+		return resp, errCreate
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_ee_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -139,9 +173,16 @@ func resourceAlicloudCrEEInstanceCreate(d *schema.ResourceData, meta interface{}
 	if !response.Success {
 		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_cr_ee_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
 	d.SetId(fmt.Sprintf("%v", response.Data.InstanceId))
 
-	return resourceAlicloudCrEEInstanceRead(d, meta)
+	crService := &CrService{client}
+	stateConf := BuildStateConf([]string{"PENDING", "STARTING"}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 15*time.Second, crService.InstanceStatusRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return resourceAlicloudCrEEInstanceUpdate(d, meta)
 }
 
 func resourceAlicloudCrEEInstanceRead(d *schema.ResourceData, meta interface{}) error {
@@ -168,7 +209,21 @@ func resourceAlicloudCrEEInstanceRead(d *schema.ResourceData, meta interface{}) 
 	request.ProductType = "acr_ee_public_cn"
 	request.InstanceIDs = resp.InstanceId
 	raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.QueryAvailableInstances(request)
+		resp, errQuery := bssopenapiClient.QueryAvailableInstances(request)
+		regionRedirect := false
+		if serverErr, ok := errQuery.(*errors.ServerError); ok && serverErr.ErrorCode() == "NotApplicable" {
+			regionRedirect = true
+		} else if !resp.Success && strings.Contains(resp.Message, "code=40001") {
+			regionRedirect = true
+		}
+		if regionRedirect {
+			// if account site is international, should route to  ap-southeast-1
+			request.RegionId = "ap-southeast-1"
+			request.Domain = "business.ap-southeast-1.aliyuncs.com"
+			request.ProductType = "acr_ee_public_intl"
+			resp, errQuery = bssopenapiClient.QueryAvailableInstances(request)
+		}
+		return resp, errQuery
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_ee_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -193,6 +248,43 @@ func resourceAlicloudCrEEInstanceRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAlicloudCrEEInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	response := &cr_ee.ResetLoginPasswordResponse{}
+	request := cr_ee.CreateResetLoginPasswordRequest()
+	request.InstanceId = d.Id()
+	action := request.GetActionName()
+
+	if d.HasChanges("password", "kms_encrypted_password") {
+		password := d.Get("password").(string)
+		kmsPassword := d.Get("kms_encrypted_password").(string)
+
+		if password == "" && kmsPassword == "" {
+			return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+		}
+
+		if password != "" {
+			request.Password = password
+		} else {
+			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
+			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			request.Password = decryptResp
+		}
+
+		raw, err := client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+			return creeClient.ResetLoginPassword(request)
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		response, _ = raw.(*cr_ee.ResetLoginPasswordResponse)
+		if !response.ResetLoginPasswordIsSuccess {
+			return WrapErrorf(fmt.Errorf(response.Code), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
 	return resourceAlicloudCrEEInstanceRead(d, meta)
 }
 

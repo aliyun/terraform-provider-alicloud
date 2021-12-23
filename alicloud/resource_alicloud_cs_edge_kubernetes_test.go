@@ -106,7 +106,7 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 					"name":                        name,
 					"worker_vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
 					"worker_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"version":                     "1.12.6-aliyunedge.2",
+					"version":                     "1.16.9-aliyunedge.1",
 					"worker_number":               "1",
 					"password":                    "Test12345",
 					"pod_cidr":                    "172.20.0.0/16",
@@ -131,7 +131,7 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                          name,
-						"version":                       "1.12.6-aliyunedge.2",
+						"version":                       "1.16.9-aliyunedge.1",
 						"worker_number":                 "1",
 						"password":                      "Test12345",
 						"pod_cidr":                      "172.20.0.0/16",
@@ -154,7 +154,7 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
 					"install_cloud_monitor", "force_update", "node_cidr_mask", "slb_internet_enabled", "worker_disk_category",
-					"worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config",
+					"worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config", "worker_number",
 					"worker_vswitch_ids", "proxy_mode", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},
 			},
 			{
@@ -189,13 +189,13 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"version":       "1.14.8-aliyunedge.1",
+					"version":       "1.18.8-aliyunedge.1",
 					"name":          "modified-edge-cluster-again",
 					"worker_number": "3",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version":       "1.14.8-aliyunedge.1",
+						"version":       "1.18.8-aliyunedge.1",
 						"name":          "modified-edge-cluster-again",
 						"worker_number": "3",
 					}),
@@ -293,7 +293,7 @@ func TestAccAlicloudEdgeKubernetes_essd(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
+				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password", "worker_number",
 					"install_cloud_monitor", "force_update", "node_cidr_mask", "worker_number", "slb_internet_enabled", "tags", "worker_disk_category",
 					"worker_disk_size", "worker_instance_charge_type", "worker_disk_snapshot_policy_id", "worker_instance_types", "log_config",
 					"worker_vswitch_ids", "proxy_mode", "worker_disk_performance_level", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},

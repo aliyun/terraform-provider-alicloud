@@ -74,6 +74,7 @@ type DescribeBindableSmartAccessGatewaysRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	CcnId                string           `position:"Query" name:"CcnId"`
 	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -86,10 +87,10 @@ type DescribeBindableSmartAccessGatewaysRequest struct {
 // DescribeBindableSmartAccessGatewaysResponse is the response struct for api DescribeBindableSmartAccessGateways
 type DescribeBindableSmartAccessGatewaysResponse struct {
 	*responses.BaseResponse
-	RequestId           string                                                   `json:"RequestId" xml:"RequestId"`
 	TotalCount          int                                                      `json:"TotalCount" xml:"TotalCount"`
-	PageNumber          int                                                      `json:"PageNumber" xml:"PageNumber"`
 	PageSize            int                                                      `json:"PageSize" xml:"PageSize"`
+	RequestId           string                                                   `json:"RequestId" xml:"RequestId"`
+	PageNumber          int                                                      `json:"PageNumber" xml:"PageNumber"`
 	SmartAccessGateways SmartAccessGatewaysInDescribeBindableSmartAccessGateways `json:"SmartAccessGateways" xml:"SmartAccessGateways"`
 }
 

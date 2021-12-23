@@ -80,9 +80,10 @@ type CreateDiskRequest struct {
 	ResourceGroupId           string           `position:"Query" name:"ResourceGroupId"`
 	DiskCategory              string           `position:"Query" name:"DiskCategory"`
 	StorageSetPartitionNumber requests.Integer `position:"Query" name:"StorageSetPartitionNumber"`
+	MultiAttach               string           `position:"Query" name:"MultiAttach"`
 	Tag                       *[]CreateDiskTag `position:"Query" name:"Tag"  type:"Repeated"`
-	Arn                       *[]CreateDiskArn `position:"Query" name:"Arn"  type:"Repeated"`
 	AdvancedFeatures          string           `position:"Query" name:"AdvancedFeatures"`
+	Arn                       *[]CreateDiskArn `position:"Query" name:"Arn"  type:"Repeated"`
 	ResourceOwnerAccount      string           `position:"Query" name:"ResourceOwnerAccount"`
 	PerformanceLevel          string           `position:"Query" name:"PerformanceLevel"`
 	OwnerAccount              string           `position:"Query" name:"OwnerAccount"`
@@ -92,12 +93,13 @@ type CreateDiskRequest struct {
 	Size                      requests.Integer `position:"Query" name:"Size"`
 	Encrypted                 requests.Boolean `position:"Query" name:"Encrypted"`
 	ZoneId                    string           `position:"Query" name:"ZoneId"`
+	StorageClusterId          string           `position:"Query" name:"StorageClusterId"`
 	KMSKeyId                  string           `position:"Query" name:"KMSKeyId"`
 }
 
 // CreateDiskTag is a repeated param struct in CreateDiskRequest
 type CreateDiskTag struct {
-	Value string `name:"Value"`
+	Value string `name:"value"`
 	Key   string `name:"Key"`
 }
 
@@ -111,8 +113,8 @@ type CreateDiskArn struct {
 // CreateDiskResponse is the response struct for api CreateDisk
 type CreateDiskResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	DiskId    string `json:"DiskId" xml:"DiskId"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 	OrderId   string `json:"OrderId" xml:"OrderId"`
 }
 

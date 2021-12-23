@@ -64,6 +64,9 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 			"instances.0.vpc_id":          CHECKSET,
 			"instances.0.zone_id":         CHECKSET,
 			"instances.0.end_point":       CHECKSET,
+			"instances.0.expired_time":    CHECKSET,
+			"instances.0.msg_retain":      CHECKSET,
+			"instances.0.ssl_end_point":   CHECKSET,
 		}
 	}
 
@@ -81,35 +84,37 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 	}
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
-		testAccPreCheckWithNoDefaultVswitch(t)
 	}
 	alikafkaInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceAlikafkaInstancesConfigDependence(name string) string {
 	return fmt.Sprintf(`
-		variable "name" {
-		 default = "%v"
-		}
+variable "name" {
+ default = "%v"
+}
 
-        data "alicloud_vswitches" "default" {
-		  is_default = "true"
-		}
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
 
-		resource "alicloud_security_group" "default" {
-		  name   = var.name
-		  vpc_id = "${data.alicloud_vswitches.default.vswitches.0.vpc_id}"
-		}
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = "${data.alicloud_vswitches.default.vswitches.0.vpc_id}"
+}
 
-		resource "alicloud_alikafka_instance" "default" {
-          name = "${var.name}"
-		  topic_quota = "50"
-		  disk_type = "1"
-		  disk_size = "500"
-		  deploy_type = "5"
-		  io_max = "20"
-          vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-          security_group = "${alicloud_security_group.default.id}"
-		}
-		`, name)
+resource "alicloud_alikafka_instance" "default" {
+  name = "${var.name}"
+  topic_quota = "50"
+  disk_type = "1"
+  disk_size = "500"
+  deploy_type = "5"
+  io_max = "20"
+  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
+  security_group = "${alicloud_security_group.default.id}"
+}
+`, name)
 }

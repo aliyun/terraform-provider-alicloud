@@ -51,6 +51,8 @@ type ScalingGroup struct {
 	DesiredCapacity                     int                     `json:"DesiredCapacity" xml:"DesiredCapacity"`
 	GroupDeletionProtection             bool                    `json:"GroupDeletionProtection" xml:"GroupDeletionProtection"`
 	ScaleOutAmountCheck                 bool                    `json:"ScaleOutAmountCheck" xml:"ScaleOutAmountCheck"`
+	Weighted                            bool                    `json:"Weighted" xml:"Weighted"`
+	TotalInstanceCount                  int                     `json:"TotalInstanceCount" xml:"TotalInstanceCount"`
 	CurrentHostName                     string                  `json:"CurrentHostName" xml:"CurrentHostName"`
 	VSwitchIds                          VSwitchIds              `json:"VSwitchIds" xml:"VSwitchIds"`
 	RemovalPolicies                     RemovalPolicies         `json:"RemovalPolicies" xml:"RemovalPolicies"`
@@ -59,4 +61,5 @@ type ScalingGroup struct {
 	SuspendedProcesses                  SuspendedProcesses      `json:"SuspendedProcesses" xml:"SuspendedProcesses"`
 	VServerGroups                       VServerGroups           `json:"VServerGroups" xml:"VServerGroups"`
 	LaunchTemplateOverrides             LaunchTemplateOverrides `json:"LaunchTemplateOverrides" xml:"LaunchTemplateOverrides"`
+	AlbServerGroups                     AlbServerGroups         `json:"AlbServerGroups" xml:"AlbServerGroups"`
 }

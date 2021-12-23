@@ -89,7 +89,7 @@ func TestAccAlicloudWafDomainsDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithWafInstanceSetting(t)
+		testAccPreCheckWithEnvVariable(t, "ALICLOUD_WAF_INSTANCE_ID")
 	}
 	WafDomainsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }

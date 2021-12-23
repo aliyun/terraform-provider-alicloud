@@ -32,7 +32,6 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -41,17 +40,23 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                 name,
-					"cluster_id":           "${alicloud_cs_managed_kubernetes.default.0.id}",
-					"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
-					"instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"node_count":           "1",
-					"key_name":             "${alicloud_key_pair.default.key_name}",
-					"system_disk_category": "cloud_efficiency",
-					"system_disk_size":     "40",
-					"data_disks":           []map[string]string{{"size": "100", "category": "cloud_ssd"}},
-					"tags":                 map[string]interface{}{"Created": "TF", "Foo": "Bar"},
-					"management":           []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "0"}},
+					"name":                  name,
+					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
+					"vswitch_ids":           []string{"${alicloud_vswitch.default.id}"},
+					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"node_count":            "1",
+					"key_name":              "${alicloud_key_pair.default.key_name}",
+					"system_disk_category":  "cloud_efficiency",
+					"system_disk_size":      "40",
+					"install_cloud_monitor": "false",
+					"data_disks":            []map[string]string{{"size": "100", "category": "cloud_ssd"}},
+					"tags":                  map[string]interface{}{"Created": "TF", "Foo": "Bar"},
+					"management":            []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "0"}},
+					"security_group_ids":    []string{"${alicloud_security_group.group.id}", "${alicloud_security_group.group1.id}"},
+					"runtime_name":          "containerd",
+					"runtime_version":       "1.4.8",
+					"image_type":            "CentOS",
+					"deployment_set_id":     "${alicloud_ecs_deployment_set.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -63,6 +68,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"key_name":                     CHECKSET,
 						"system_disk_category":         "cloud_efficiency",
 						"system_disk_size":             "40",
+						"install_cloud_monitor":        "false",
 						"data_disks.#":                 "1",
 						"data_disks.0.size":            "100",
 						"data_disks.0.category":        "cloud_ssd",
@@ -74,6 +80,11 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"management.0.auto_upgrade":    "true",
 						"management.0.surge":           "0",
 						"management.0.max_unavailable": "0",
+						"security_group_ids.#":         "2",
+						"runtime_name":                 "containerd",
+						"runtime_version":              "1.4.8",
+						"image_type":                   "CentOS",
+						"deployment_set_id":            CHECKSET,
 					}),
 				),
 			},
@@ -151,29 +162,35 @@ func TestAccAlicloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                 name,
-					"cluster_id":           "${alicloud_cs_managed_kubernetes.default.0.id}",
-					"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
-					"instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"key_name":             "${alicloud_key_pair.default.key_name}",
-					"system_disk_category": "cloud_efficiency",
-					"system_disk_size":     "40",
-					"scaling_config":       []map[string]string{{"min_size": "1", "max_size": "10", "type": "cpu", "is_bond_eip": "true", "eip_internet_charge_type": "PayByBandwidth", "eip_bandwidth": "5"}},
+					"name":                  name,
+					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
+					"vswitch_ids":           []string{"${alicloud_vswitch.default.id}"},
+					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"key_name":              "${alicloud_key_pair.default.key_name}",
+					"system_disk_category":  "cloud_efficiency",
+					"system_disk_size":      "40",
+					"install_cloud_monitor": "false",
+					"platform":              "AliyunLinux",
+					"scaling_policy":        "release",
+					"scaling_config":        []map[string]string{{"min_size": "1", "max_size": "10", "type": "cpu", "is_bond_eip": "true", "eip_internet_charge_type": "PayByBandwidth", "eip_bandwidth": "5"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                                      name,
-						"cluster_id":                                CHECKSET,
-						"vswitch_ids.#":                             "1",
-						"instance_types.#":                          "1",
-						"key_name":                                  CHECKSET,
-						"system_disk_category":                      "cloud_efficiency",
-						"system_disk_size":                          "40",
-						"scaling_config.#":                          "1",
-						"scaling_config.0.min_size":                 "1",
-						"scaling_config.0.max_size":                 "10",
-						"scaling_config.0.type":                     "cpu",
-						"scaling_config.0.is_bond_eip":              "true",
+						"name":                         name,
+						"cluster_id":                   CHECKSET,
+						"vswitch_ids.#":                "1",
+						"instance_types.#":             "1",
+						"key_name":                     CHECKSET,
+						"system_disk_category":         "cloud_efficiency",
+						"system_disk_size":             "40",
+						"install_cloud_monitor":        "false",
+						"platform":                     "AliyunLinux",
+						"scaling_policy":               "release",
+						"scaling_config.#":             "1",
+						"scaling_config.0.min_size":    "1",
+						"scaling_config.0.max_size":    "10",
+						"scaling_config.0.type":        "cpu",
+						"scaling_config.0.is_bond_eip": "true",
 						"scaling_config.0.eip_internet_charge_type": "PayByBandwidth",
 						"scaling_config.0.eip_bandwidth":            "5",
 					}),
@@ -188,10 +205,14 @@ func TestAccAlicloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 			// check: update config
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"platform":       "AliyunLinux",
+					"scaling_policy": "release",
 					"scaling_config": []map[string]string{{"min_size": "1", "max_size": "20", "type": "cpu", "is_bond_eip": "true", "eip_internet_charge_type": "PayByBandwidth", "eip_bandwidth": "5"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"platform":                                  "AliyunLinux",
+						"scaling_policy":                            "release",
 						"scaling_config.#":                          "1",
 						"scaling_config.0.min_size":                 "1",
 						"scaling_config.0.max_size":                 "20",
@@ -448,6 +469,14 @@ resource "alicloud_vpc" "default" {
   cidr_block                   = "10.1.0.0/21"
 }
 
+resource "alicloud_security_group" "group" {
+  vpc_id = alicloud_vpc.default.id
+}
+
+resource "alicloud_security_group" "group1" {
+  vpc_id = alicloud_vpc.default.id
+}
+
 resource "alicloud_vswitch" "default" {
   vswitch_name                 = var.name
   vpc_id                       = alicloud_vpc.default.id
@@ -457,6 +486,13 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_key_pair" "default" {
 	key_name                   = var.name
+}
+
+resource "alicloud_ecs_deployment_set" "default" {
+  strategy            = "Availability"
+  domain              = "Default"
+  granularity         = "Host"
+  deployment_set_name = var.name
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {

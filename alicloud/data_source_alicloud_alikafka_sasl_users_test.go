@@ -52,35 +52,43 @@ func TestAccAlicloudAlikafkaSaslUsersDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheckWithAlikafkaAclEnable(t)
 		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
-		testAccPreCheckWithNoDefaultVswitch(t)
 	}
 	alikafkaSaslUsersCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
 
 func dataSourceAlikafkaSaslUsersConfigDependence(name string) string {
 	return fmt.Sprintf(`
-		variable "name" {
-		 default = "%v"
-		}
+variable "name" {
+ default = "%v"
+}
 
-        data "alicloud_vswitches" "default" {
-		  is_default = "true"
-		}
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
 
-		resource "alicloud_alikafka_instance" "default" {
-          name = "${var.name}"
-		  topic_quota = "50"
-		  disk_type = "1"
-		  disk_size = "500"
-		  deploy_type = "5"
-		  io_max = "20"
-          vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
-		}
-		
-		resource "alicloud_alikafka_sasl_user" "default" {
-		  instance_id = "${alicloud_alikafka_instance.default.id}"
-		  username = "${var.name}"
-		  password = "password"
-		}
-		`, name)
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_alikafka_instance" "default" {
+  name = "${var.name}"
+  topic_quota = "50"
+  disk_type = "1"
+  disk_size = "500"
+  deploy_type = "5"
+  io_max = "20"
+  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
+  security_group = alicloud_security_group.default.id
+}
+
+resource "alicloud_alikafka_sasl_user" "default" {
+  instance_id = "${alicloud_alikafka_instance.default.id}"
+  username = "${var.name}"
+  password = "password"
+}
+`, name)
 }

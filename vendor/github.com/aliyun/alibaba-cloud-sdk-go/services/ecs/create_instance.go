@@ -82,6 +82,7 @@ type CreateInstanceRequest struct {
 	PrivatePoolOptionsMatchCriteria string                    `position:"Query" name:"PrivatePoolOptions.MatchCriteria"`
 	HostName                        string                    `position:"Query" name:"HostName"`
 	Password                        string                    `position:"Query" name:"Password"`
+	SystemDisk                      string                    `position:"Query" name:"SystemDisk"`
 	DeploymentSetGroupNo            requests.Integer          `position:"Query" name:"DeploymentSetGroupNo"`
 	StorageSetPartitionNumber       requests.Integer          `position:"Query" name:"StorageSetPartitionNumber"`
 	Tag                             *[]CreateInstanceTag      `position:"Query" name:"Tag"  type:"Repeated"`
@@ -110,6 +111,7 @@ type CreateInstanceRequest struct {
 	IoOptimized                     string                    `position:"Query" name:"IoOptimized"`
 	SecurityGroupId                 string                    `position:"Query" name:"SecurityGroupId"`
 	InternetMaxBandwidthOut         requests.Integer          `position:"Query" name:"InternetMaxBandwidthOut"`
+	HibernationOptionsConfigured    requests.Boolean          `position:"Query" name:"HibernationOptions.Configured"`
 	Description                     string                    `position:"Query" name:"Description"`
 	SystemDiskCategory              string                    `position:"Query" name:"SystemDisk.Category"`
 	CapacityReservationId           string                    `position:"Query" name:"CapacityReservationId"`
@@ -141,7 +143,7 @@ type CreateInstanceRequest struct {
 
 // CreateInstanceTag is a repeated param struct in CreateInstanceRequest
 type CreateInstanceTag struct {
-	Value string `name:"Value"`
+	Value string `name:"value"`
 	Key   string `name:"Key"`
 }
 
@@ -161,6 +163,7 @@ type CreateInstanceDataDisk struct {
 	PerformanceLevel   string `name:"PerformanceLevel"`
 	EncryptAlgorithm   string `name:"EncryptAlgorithm"`
 	Description        string `name:"Description"`
+	StorageClusterId   string `name:"StorageClusterId"`
 	Category           string `name:"Category"`
 	KMSKeyId           string `name:"KMSKeyId"`
 	Device             string `name:"Device"`
@@ -172,8 +175,8 @@ type CreateInstanceResponse struct {
 	*responses.BaseResponse
 	RequestId  string  `json:"RequestId" xml:"RequestId"`
 	InstanceId string  `json:"InstanceId" xml:"InstanceId"`
-	TradePrice float64 `json:"TradePrice" xml:"TradePrice"`
 	OrderId    string  `json:"OrderId" xml:"OrderId"`
+	TradePrice float64 `json:"TradePrice" xml:"TradePrice"`
 }
 
 // CreateCreateInstanceRequest creates a request to invoke CreateInstance API

@@ -46,10 +46,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vswitch_name      = var.name
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "10.1.1.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.1.1.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_cs_serverless_kubernetes" "serverless" {
@@ -60,12 +60,12 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
   endpoint_public_access_enabled = true
   deletion_protection            = false
 
-  load_balancer_spec             = "slb.s2.small"
-  time_zone                      = "Asia/Shanghai" 
-  service_cidr                   = "172.21.0.0/20"
-  service_discovery_types        = ["PrivateZone"]
+  load_balancer_spec      = "slb.s2.small"
+  time_zone               = "Asia/Shanghai"
+  service_cidr            = "172.21.0.0/20"
+  service_discovery_types = ["PrivateZone"]
   # Enable log service, A project named k8s-log-{ClusterID} will be automatically created
-  logging_type                   = "SLS"
+  logging_type = "SLS"
   # Select an existing sls project
   # sls_project_name             = ""
 
@@ -120,6 +120,7 @@ The following arguments are supported:
 * `service_cidr` - (Optional, ForceNew, Available in 1.123.1+) CIDR block of the service network. The specified CIDR block cannot overlap with that of the VPC or those of the ACK clusters that are deployed in the VPC. The CIDR block cannot be modified after the cluster is created.
 * `logging_type` - (ForceNew, Available in 1.123.1+) Enable log service, Valid value `SLS`. 
 * `sls_project_name` - (ForceNew, Available in 1.123.1+) If you use an existing SLS project, you must specify `sls_project_name`.
+* `retain_resources` - (Optional, Available in 1.141.0+) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 
 #### addons 
 It is a new field since 1.91.0. You can specific network plugin,log component,ingress component and so on. 

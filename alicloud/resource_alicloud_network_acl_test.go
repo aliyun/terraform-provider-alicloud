@@ -153,7 +153,7 @@ func testSweepNetworkAcl(region string) error {
 	return nil
 }
 
-func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
+func TestAccAlicloudVpcNetworkAcl_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_network_acl.default"
 	ra := resourceAttrInit(resourceId, AlicloudNetworkAclMap0)
@@ -176,11 +176,13 @@ func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_id": "${alicloud_vpc.default.id}",
+					"vpc_id":           "${alicloud_vpc.default.id}",
+					"network_acl_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id": CHECKSET,
+						"vpc_id":           CHECKSET,
+						"network_acl_name": name,
 					}),
 				),
 			},
@@ -305,7 +307,6 @@ func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
 							"protocol":               "tcp",
 						},
 					},
-					"resources": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -313,9 +314,62 @@ func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
 						"network_acl_name":      name,
 						"ingress_acl_entries.#": "1",
 						"egress_acl_entries.#":  "1",
-						"resources.#":           REMOVEKEY,
 					}),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudVpcNetworkAcl_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_network_acl.default"
+	ra := resourceAttrInit(resourceId, AlicloudNetworkAclMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNetworkAcl")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snetworkacl%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNetworkAclBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":      "${alicloud_vpc.default.id}",
+					"name":        name,
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":      CHECKSET,
+						"name":        name,
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name + "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

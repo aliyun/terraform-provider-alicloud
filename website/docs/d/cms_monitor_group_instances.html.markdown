@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Monitor"
+subcategory: "Cloud Monitor Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cms_monitor_group_instances"
 sidebar_current: "docs-alicloud-datasource-cms-monitor-group-instances"
@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_cms_monitor_group_instanceses" "example" {
-  ids      = ["example_value"]
+  ids = ["example_value"]
 }
 
 output "first_cms_monitor_group_instances_id" {

@@ -235,11 +235,38 @@ func (s *RdsService) DescribeParameters(id string) (map[string]interface{}, erro
 	return response, err
 }
 
+func (s *RdsService) SetTimeZone(d *schema.ResourceData) error {
+	targetParameterName := ""
+	engine := d.Get("engine")
+	if engine == string(MySQL) {
+		targetParameterName = "default_time_zone"
+	} else if engine == string(PostgreSQL) {
+		targetParameterName = "timezone"
+	}
+
+	if targetParameterName != "" {
+		paramsRes, err := s.DescribeParameters(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		parameters := paramsRes["RunningParameters"].(map[string]interface{})["DBInstanceParameter"].([]interface{})
+		for _, item := range parameters {
+			item := item.(map[string]interface{})
+			parameterName := item["ParameterName"]
+
+			if parameterName == targetParameterName {
+				d.Set("db_time_zone", item["ParameterValue"])
+				break
+			}
+		}
+	}
+	return nil
+}
+
 func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string) error {
 	var param []map[string]interface{}
 	documented, ok := d.GetOk(attribute)
 	if !ok {
-		d.Set(attribute, param)
 		return nil
 	}
 	object, err := s.DescribeParameters(d.Id())
@@ -280,8 +307,10 @@ func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string)
 			}
 		}
 	}
-	if err := d.Set(attribute, param); err != nil {
-		return WrapError(err)
+	if len(param) > 0 {
+		if err := d.Set(attribute, param); err != nil {
+			return WrapError(err)
+		}
 	}
 	return nil
 }
@@ -365,6 +394,10 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 			allConfig[key] = value
 		}
 		if err := s.WaitForDBParameter(d.Id(), DefaultTimeoutMedium, allConfig); err != nil {
+			return WrapError(err)
+		}
+		// wait instance status is Normal after modifying
+		if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -648,6 +681,11 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 		archiveBackupKeepPolicy = v.(string)
 	}
 
+	releasedKeepPolicy := ""
+	if v, ok := d.GetOk("released_keep_policy"); ok {
+		releasedKeepPolicy = v.(string)
+	}
+
 	instance, err := s.DescribeDBInstance(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -667,6 +705,7 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			"CompressType":          compressType,
 			"BackupPolicyMode":      "DataBackupPolicy",
 			"SourceIp":              s.client.SourceIp,
+			"ReleasedKeepPolicy":    releasedKeepPolicy,
 		}
 		if instance["Engine"] == "SQLServer" && logBackupFrequency == "LogInterval" {
 			request["LogBackupFrequency"] = logBackupFrequency
@@ -761,7 +800,30 @@ func (s *RdsService) DescribeDBSecurityIps(instanceId string) ([]interface{}, er
 	return response["Items"].(map[string]interface{})["DBInstanceIPArray"].([]interface{}), nil
 }
 
-func (s *RdsService) GetSecurityIps(instanceId string) ([]string, error) {
+func (s *RdsService) DescribeParameterTemplates(instanceId, engine, engineVersion string) ([]interface{}, error) {
+	action := "DescribeParameterTemplates"
+	request := map[string]interface{}{
+		"RegionId":      s.client.RegionId,
+		"DBInstanceId":  instanceId,
+		"Engine":        engine,
+		"EngineVersion": engineVersion,
+		"SourceIp":      s.client.SourceIp,
+	}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	return response["Parameters"].(map[string]interface{})["TemplateRecord"].([]interface{}), nil
+}
+
+func (s *RdsService) GetSecurityIps(instanceId string, dbInstanceIpArrayName string) ([]string, error) {
 	object, err := s.DescribeDBSecurityIps(instanceId)
 	if err != nil {
 		return nil, WrapError(err)
@@ -771,11 +833,10 @@ func (s *RdsService) GetSecurityIps(instanceId string) ([]string, error) {
 	ipsMap := make(map[string]string)
 	for _, ip := range object {
 		ip := ip.(map[string]interface{})
-		if ip["DBInstanceIPArrayAttribute"] == "hidden" {
-			continue
+		if ip["DBInstanceIPArrayName"].(string) == dbInstanceIpArrayName {
+			ips += separator + ip["SecurityIPList"].(string)
+			separator = COMMA_SEPARATED
 		}
-		ips += separator + ip["SecurityIPList"].(string)
-		separator = COMMA_SEPARATED
 	}
 
 	for _, ip := range strings.Split(ips, COMMA_SEPARATED) {
@@ -821,6 +882,48 @@ func (s *RdsService) DescribeSecurityGroupConfiguration(id string) ([]string, er
 
 func (s *RdsService) DescribeDBInstanceSSL(id string) (map[string]interface{}, error) {
 	action := "DescribeDBInstanceSSL"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": id,
+		"SourceIp":     s.client.SourceIp,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	return response, nil
+}
+
+func (s *RdsService) DescribeDBInstanceEncryptionKey(id string) (map[string]interface{}, error) {
+	action := "DescribeDBInstanceEncryptionKey"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": id,
+		"SourceIp":     s.client.SourceIp,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	return response, nil
+}
+
+func (s *RdsService) DescribeHASwitchConfig(id string) (map[string]interface{}, error) {
+	action := "DescribeHASwitchConfig"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"DBInstanceId": id,
@@ -1031,7 +1134,7 @@ func (s *RdsService) WaitForDBInstance(id string, status Status, timeout int) er
 				return WrapError(err)
 			}
 		}
-		if object != nil && strings.ToLower(object["DBInstanceStatus"].(string)) == strings.ToLower(string(status)) {
+		if object != nil && strings.ToLower(fmt.Sprint(object["DBInstanceStatus"])) == strings.ToLower(string(status)) {
 			break
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
@@ -1342,25 +1445,28 @@ func (s *RdsService) flattenDBSecurityIPs(list []interface{}) []map[string]inter
 
 func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 	if d.HasChange("tags") {
-		oraw, nraw := d.GetChange("tags")
-		o := oraw.(map[string]interface{})
-		n := nraw.(map[string]interface{})
-		remove, add := diffRdsTags(o, n)
-
-		if len(remove) > 0 {
-			conn, err := s.client.NewRdsClient()
-			if err != nil {
-				return WrapError(err)
+		added, removed := parsingTags(d)
+		conn, err := s.client.NewRdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
 			}
-			action := "UntagResources"
+		}
+		if len(removedTagKeys) > 0 {
+			action := "UnTagResources"
 			request := map[string]interface{}{
-				"ResourceId":   &[]string{d.Id()},
-				"ResourceType": "INSTANCE",
-				"TagKey":       &remove,
 				"RegionId":     s.client.RegionId,
+				"ResourceType": "INSTANCE",
+				"ResourceId.1": d.Id(),
 				"SourceIp":     s.client.SourceIp,
 			}
-
+			for i, key := range removedTagKeys {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
 			wait := incrementalWait(1*time.Second, 2*time.Second)
 			runtime := util.RuntimeOptions{}
 			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
@@ -1380,19 +1486,20 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 			}
 		}
 
-		if len(add) > 0 {
-			conn, err := s.client.NewRdsClient()
-			if err != nil {
-				return WrapError(err)
-			}
+		if len(added) > 0 {
 			action := "TagResources"
 			request := map[string]interface{}{
-				"ResourceId":   &[]string{d.Id()},
-				"Tag":          &add,
-				"ResourceType": "INSTANCE",
 				"RegionId":     s.client.RegionId,
-				"SourceIp":     s.client.SourceIp,
+				"ResourceType": "INSTANCE",
+				"ResourceId.1": d.Id(),
 			}
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = value
+				count++
+			}
+
 			wait := incrementalWait(1*time.Second, 2*time.Second)
 			runtime := util.RuntimeOptions{}
 			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
@@ -1622,7 +1729,6 @@ func (s *RdsService) RdsAccountStateRefreshFunc(id string, failStates []string) 
 			}
 			return nil, "", WrapError(err)
 		}
-
 		for _, failState := range failStates {
 			if object["AccountStatus"].(string) == failState {
 				return object, object["AccountStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["AccountStatus"].(string)))
@@ -1630,4 +1736,196 @@ func (s *RdsService) RdsAccountStateRefreshFunc(id string, failStates []string) 
 		}
 		return object, object["AccountStatus"].(string), nil
 	}
+}
+
+func (s *RdsService) DescribeRdsBackup(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeBackups"
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"SourceIp":     s.client.SourceIp,
+		"BackupId":     parts[1],
+		"DBInstanceId": parts[0],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Items.Backup", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.Backup", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *RdsService) DescribeBackupTasks(id string, backupJobId string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeBackupTasks"
+	request := map[string]interface{}{
+		"SourceIp":     s.client.SourceIp,
+		"DBInstanceId": id,
+		"BackupJobId":  backupJobId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Items.BackupJob", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.BackupJob", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["BackupJobId"]) != backupJobId {
+			return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *RdsService) RdsBackupStateRefreshFunc(id string, backupJobId string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeBackupTasks(id, backupJobId)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["BackupStatus"] == failState {
+				return object, object["BackupStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["BackupStatus"]))
+			}
+		}
+		return object, object["BackupStatus"].(string), nil
+	}
+}
+
+func (s *RdsService) DescribeDBInstanceHAConfig(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDBInstanceHAConfig"
+	request := map[string]interface{}{
+		"SourceIp":     s.client.SourceIp,
+		"DBInstanceId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *RdsService) DescribeRdsCloneDbInstance(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDBInstanceAttribute"
+	request := map[string]interface{}{
+		"SourceIp":     s.client.SourceIp,
+		"DBInstanceId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Items.DBInstanceAttribute", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DBInstanceId"]) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }

@@ -88,7 +88,7 @@ provider "alicloud" {
 
 resource "alicloud_vpc" "third" {
   provider   = alicloud.eu
-  name       = "the-thrid-vpc"
+  name       = "the-third-vpc"
   cidr_block = "172.16.0.0/16"
 }
 

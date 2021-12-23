@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSecurityGroupRulesDataSourceWithDirection(t *testing.T) {
+func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithDirection(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -40,7 +41,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithDirection(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSecurityGroupRulesDataSourceWithGroupId(t *testing.T) {
+func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithGroupId(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -73,7 +74,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithGroupId(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
+func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EcsClassicSupportedRegions)
@@ -81,7 +82,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNic_Type,
+				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNicType,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_security_group_rules.egress"),
 					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.egress", "rules.#", "1"),
@@ -106,7 +107,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSecurityGroupRulesDataSourceWithPolicy(t *testing.T) {
+func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithPolicy(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -140,7 +141,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithPolicy(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSecurityGroupRulesDataSourceWithIp_Protocol(t *testing.T) {
+func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithIp_Protocol(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -173,7 +174,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithIp_Protocol(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSecurityGroupRulesDataSourceEmpty(t *testing.T) {
+func TestAccAlicloudEcsSecurityGroupRulesDataSourceEmpty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -279,7 +280,7 @@ data "alicloud_security_group_rules" "egress" {
 }
 `
 
-const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNic_Type = `
+const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNicType = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig1"
 }

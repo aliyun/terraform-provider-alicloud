@@ -17,16 +17,16 @@ package smartag
 
 // Strategy is a nested struct in smartag response
 type Strategy struct {
-	CreateTime            int64  `json:"CreateTime" xml:"CreateTime"`
-	InstanceId            string `json:"InstanceId" xml:"InstanceId"`
-	SmartAGId             string `json:"SmartAGId" xml:"SmartAGId"`
-	HcInstanceId          string `json:"HcInstanceId" xml:"HcInstanceId"`
-	SourceType            string `json:"SourceType" xml:"SourceType"`
-	DestCidrBlock         string `json:"DestCidrBlock" xml:"DestCidrBlock"`
-	RouteSource           string `json:"RouteSource" xml:"RouteSource"`
-	RouteDistribution     string `json:"RouteDistribution" xml:"RouteDistribution"`
 	Status                string `json:"Status" xml:"Status"`
-	IsConflict            bool   `json:"IsConflict" xml:"IsConflict"`
 	StrategyPublishStatus string `json:"StrategyPublishStatus" xml:"StrategyPublishStatus"`
+	RouteDistribution     string `json:"RouteDistribution" xml:"RouteDistribution"`
+	CreateTime            int64  `json:"CreateTime" xml:"CreateTime"`
+	SmartAGId             string `json:"SmartAGId" xml:"SmartAGId"`
+	SourceType            string `json:"SourceType" xml:"SourceType"`
+	IsConflict            bool   `json:"IsConflict" xml:"IsConflict"`
+	InstanceId            string `json:"InstanceId" xml:"InstanceId"`
+	DestCidrBlock         string `json:"DestCidrBlock" xml:"DestCidrBlock"`
 	ConflictInfo          string `json:"ConflictInfo" xml:"ConflictInfo"`
+	HcInstanceId          string `json:"HcInstanceId" xml:"HcInstanceId"`
+	RouteSource           string `json:"RouteSource" xml:"RouteSource"`
 }

@@ -38,7 +38,7 @@ func TestAccAlicloudCmsMonitorGroupInstances_basic(t *testing.T) {
 					"instances": []map[string]string{
 						{
 							"category":      "vpc",
-							"instance_id":   "${alicloud_vpc.default.id}",
+							"instance_id":   "${data.alicloud_vpcs.vpc.ids.0}",
 							"instance_name": "tf-testaccvpcname",
 							"region_id":     os.Getenv("ALICLOUD_REGION"),
 						},
@@ -61,7 +61,7 @@ func TestAccAlicloudCmsMonitorGroupInstances_basic(t *testing.T) {
 					"instances": []map[string]string{
 						{
 							"category":      "vpc",
-							"instance_id":   "${alicloud_vpc.default.id}",
+							"instance_id":   "${data.alicloud_vpcs.vpc.ids.0}",
 							"instance_name": "tf-testaccvpcname",
 							"region_id":     os.Getenv("ALICLOUD_REGION"),
 						},
@@ -91,29 +91,38 @@ func AlicloudCmsMonitorGroupInstancesBasicDependence(name string) string {
 variable "name" {
   default = "%s"
 }
-resource "alicloud_vpc" "default" {
-cidr_block = "192.168.0.0/16"
-name = var.name
+
+data "alicloud_vpcs" "vpc" {
+  name_regex = "default-NODELETING"
 }
 resource "alicloud_cms_monitor_group" "default" {
 monitor_group_name = var.name
 }
 
-data "alicloud_vpcs" "default" {
-  is_default = true
-}
 data "alicloud_vswitches" "default" {
-  ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
+  ids = [data.alicloud_vpcs.vpc.vpcs.0.vswitch_ids.0]
 }
+
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.vpc.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.vpc.vpcs[0].cidr_block, 8, 8)
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = var.name
   load_balancer_spec = "slb.s2.small"
-  vswitch_id = data.alicloud_vswitches.default.ids.0
+  vswitch_id = local.vswitch_id
 }
 resource "alicloud_slb_load_balancer" "default1" {
   load_balancer_name = "${var.name}1"
   load_balancer_spec = "slb.s2.small"
-  vswitch_id = data.alicloud_vswitches.default.ids.0
+  vswitch_id = local.vswitch_id
 }
 `, name)
 }

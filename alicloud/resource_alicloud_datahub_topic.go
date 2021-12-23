@@ -101,11 +101,11 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 func resourceAliyunDatahubTopicCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	t := &datahub.Topic{
+	t := &datahub.GetTopicResult{
 		ProjectName: d.Get("project_name").(string),
 		TopicName:   d.Get("name").(string),
 		ShardCount:  d.Get("shard_count").(int),
-		Lifecycle:   d.Get("life_cycle").(int),
+		LifeCycle:   d.Get("life_cycle").(int),
 		Comment:     d.Get("comment").(string),
 	}
 
@@ -124,9 +124,16 @@ func resourceAliyunDatahubTopicCreate(d *schema.ResourceData, meta interface{}) 
 
 	var requestInfo *datahub.DataHub
 
-	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-		requestInfo = dataHubClient
-		return nil, dataHubClient.CreateTopic(t)
+	raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
+		requestInfo = dataHubClient.(*datahub.DataHub)
+		return dataHubClient.CreateTopicWithPara(t.ProjectName, t.TopicName, &datahub.CreateTopicParameter{
+			ShardCount:   t.ShardCount,
+			LifeCycle:    t.LifeCycle,
+			Comment:      t.Comment,
+			RecordType:   t.RecordType,
+			RecordSchema: t.RecordSchema,
+			ExpandMode:   t.ExpandMode,
+		})
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_datahub_topic", "CreateTopic", AliyunDatahubSdkGo)
@@ -153,14 +160,14 @@ func resourceAliyunDatahubTopicRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("name", object.TopicName)
 	d.Set("project_name", object.ProjectName)
 	d.Set("shard_count", object.ShardCount)
-	d.Set("life_cycle", object.Lifecycle)
+	d.Set("life_cycle", object.LifeCycle)
 	d.Set("comment", object.Comment)
 	d.Set("record_type", object.RecordType.String())
 	if object.RecordSchema != nil {
 		d.Set("record_schema", recordSchemaToMap(object.RecordSchema.Fields))
 	}
-	d.Set("create_time", datahub.Uint64ToTimeString(object.CreateTime))
-	d.Set("last_modify_time", datahub.Uint64ToTimeString(object.LastModifyTime))
+	d.Set("create_time", strconv.FormatInt(object.CreateTime, 10))
+	d.Set("last_modify_time", strconv.FormatInt(object.LastModifyTime, 10))
 	return nil
 }
 
@@ -179,9 +186,9 @@ func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) 
 
 		var requestInfo *datahub.DataHub
 
-		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-			requestInfo = dataHubClient
-			return nil, dataHubClient.UpdateTopic(projectName, topicName, lifeCycle, topicComment)
+		raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
+			requestInfo = dataHubClient.(*datahub.DataHub)
+			return dataHubClient.UpdateTopic(projectName, topicName, topicComment)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateTopic", AliyunDatahubSdkGo)
@@ -200,9 +207,9 @@ func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) 
 			if err != nil {
 				return resource.NonRetryableError(err)
 			}
-			if object.Comment != topicComment || object.Lifecycle != lifeCycle {
+			if object.Comment != topicComment || object.LifeCycle != lifeCycle {
 				return resource.RetryableError(fmt.Errorf("waiting for updating topic %s comment and lifecycle finished timwout. "+
-					"current comment is %s and lifecycle is %d", d.Id(), object.Comment, object.Lifecycle))
+					"current comment is %s and lifecycle is %d", d.Id(), object.Comment, object.LifeCycle))
 			}
 			return nil
 		})
@@ -226,9 +233,9 @@ func resourceAliyunDatahubTopicDelete(d *schema.ResourceData, meta interface{}) 
 	var requestInfo *datahub.DataHub
 
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-			requestInfo = dataHubClient
-			return nil, dataHubClient.DeleteTopic(projectName, topicName)
+		raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
+			requestInfo = dataHubClient.(*datahub.DataHub)
+			return dataHubClient.DeleteTopic(projectName, topicName)
 		})
 		if err != nil {
 			if isRetryableDatahubError(err) {

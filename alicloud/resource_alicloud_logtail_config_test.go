@@ -118,12 +118,6 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"input_detail"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"log_sample": "test-logtail-update",
 				}),
@@ -161,6 +155,12 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 						"log_sample":   REMOVEKEY,
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"input_detail"},
 			},
 		},
 	})
@@ -202,6 +202,33 @@ func TestAccAlicloudLogTail_plugin(t *testing.T) {
 						"name":         name,
 						"input_type":   "plugin",
 						"input_detail": "{\"plugin\":{\"inputs\":[{\"detail\":{\"ExcludeEnv\":null,\"ExcludeLabel\":null,\"IncludeEnv\":null,\"IncludeLabel\":null,\"Stderr\":true,\"Stdout\":true},\"type\":\"service_docker_stdout\"}]}}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_sample": "test-logtail-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_sample": "test-logtail-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"project":      "${alicloud_log_project.default.name}",
+					"logstore":     "${alicloud_log_store.default.name}",
+					"input_type":   "plugin",
+					"name":         name,
+					"output_type":  "LogService",
+					"input_detail": `{\"plugin\":{\"inputs\":[{\"detail\":{\"ExcludeEnv\":null,\"ExcludeLabel\":null,\"IncludeEnv\":null,\"IncludeLabel\":null,\"Stderr\":true,\"Stdout\":true},\"type\":\"service_docker_stdout\"}]}}`,
+					"log_sample":   REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"input_detail": "{\"plugin\":{\"inputs\":[{\"detail\":{\"ExcludeEnv\":null,\"ExcludeLabel\":null,\"IncludeEnv\":null,\"IncludeLabel\":null,\"Stderr\":true,\"Stdout\":true},\"type\":\"service_docker_stdout\"}]}}",
+						"log_sample":   REMOVEKEY,
 					}),
 				),
 			},

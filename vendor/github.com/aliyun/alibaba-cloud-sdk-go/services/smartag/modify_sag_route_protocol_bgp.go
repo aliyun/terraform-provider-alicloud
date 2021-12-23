@@ -77,6 +77,7 @@ type ModifySagRouteProtocolBgpRequest struct {
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	AdvertiseIps         string           `position:"Query" name:"AdvertiseIps"`
 	RouterId             string           `position:"Query" name:"RouterId"`
 	LocalAs              requests.Integer `position:"Query" name:"LocalAs"`
 	SmartAGId            string           `position:"Query" name:"SmartAGId"`

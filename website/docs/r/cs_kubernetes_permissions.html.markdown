@@ -31,26 +31,26 @@ variable "name" {
 }
 
 data "alicloud_zones" default {
-  available_resource_creation  = "VSwitch"
+  available_resource_creation = "VSwitch"
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone          = data.alicloud_zones.default.zones.0.id
-  cpu_core_count             = 2
-  memory_size                = 4
-  kubernetes_node_role       = "Worker"
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  cpu_core_count       = 2
+  memory_size          = 4
+  kubernetes_node_role = "Worker"
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name                     = var.name
-  cidr_block                   = "10.1.0.0/21"
+  vpc_name   = var.name
+  cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  vswitch_name                 = var.name
-  vpc_id                       = alicloud_vpc.default.id
-  cidr_block                   = "10.1.1.0/24"
-  availability_zone            = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = "10.1.1.0/24"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 # Create a managed cluster
@@ -86,7 +86,11 @@ resource "alicloud_ram_policy" "policy" {
   {
     "Statement": [
       {
-        "Action": "cs:Get*",
+        "Action": [
+          "cs:Get*",
+          "cs:List*",
+          "cs:Describe*"
+        ],
         "Effect": "Allow",
         "Resource": [
           "acs:cs:*:*:cluster/${alicloud_cs_managed_kubernetes.default.0.id}"
@@ -96,8 +100,8 @@ resource "alicloud_ram_policy" "policy" {
     "Version": "1"
   }
   EOF
-  description = "this is a policy test by tf"
-  force       = true
+  description     = "this is a policy test by tf"
+  force           = true
 }
 
 # Authorize the RAM user
@@ -118,7 +122,7 @@ resource "alicloud_cs_kubernetes_permissions" "default" {
     cluster     = alicloud_cs_managed_kubernetes.default.0.id
     role_type   = "cluster"
     role_name   = "dev"
-    namespace   =  ""
+    namespace   = ""
     is_custom   = false
     is_ram_role = false
   }
@@ -131,13 +135,16 @@ resource "alicloud_cs_kubernetes_permissions" "default" {
   #    is_custom   = false
   #    is_ram_role = false
   #  }
+  depends_on = [
+    alicloud_ram_user_policy_attachment.attach
+  ]
 }
 ```
 If you already have users and clusters, to complete RBAC authorization, you only need to run the following code to use Terraform. 
 ```terraform
 # Get RAM user ID 
 data "alicloud_ram_users" "users_ds" {
-    name_regex  = "your ram user name"
+  name_regex = "your ram user name"
 }
 
 # Create a new RAM Policy.
@@ -147,18 +154,22 @@ resource "alicloud_ram_policy" "policy" {
   {
     "Statement": [
       {
-        "Action": "cs:Get*",
+        "Action": [
+          "cs:Get*",
+          "cs:List*",
+          "cs:Describe*"
+        ],
         "Effect": "Allow",
         "Resource": [
-          "acs:cs:*:*:cluster/${target cluster ID}"
+          "acs:cs:*:*:cluster/${target_cluster_ID}"
         ]
       }
     ],
     "Version": "1"
   }
   EOF
-  description = "this is a policy test by tf"
-  force       = true
+  description     = "this is a policy test by tf"
+  force           = true
 }
 
 # Authorize the RAM user
@@ -177,7 +188,7 @@ resource "alicloud_cs_kubernetes_permissions" "default" {
     role_name   = "ops"
     is_custom   = false
     is_ram_role = false
-    namespace =  ""
+    namespace   = ""
   }
   permissions {
     cluster     = "target cluster id2"
@@ -185,8 +196,11 @@ resource "alicloud_cs_kubernetes_permissions" "default" {
     role_name   = "ops"
     is_custom   = false
     is_ram_role = false
-    namespace =  ""
+    namespace   = ""
   }
+  depends_on = [
+    alicloud_ram_user_policy_attachment.attach
+  ]
 }
 ```
 ### Remove user permissions
@@ -202,13 +216,13 @@ resource "alicloud_cs_kubernetes_permissions" "default" {
 
 The following arguments are supported.
 
-* `uid` - (Required, ForceNew) The ID of the RAM user.
+* `uid` - (Required, ForceNew) The ID of the Ram user, and it can also be the id of the Ram Role. If you use Ram Role id, you need to set `is_ram_role` to `true` during authorization.
 * `permissions` - (Required) A list of user permission.
   * `cluster` - (Required) The ID of the cluster that you want to manage.
   * `role_name` - (Required) Specifies the predefined role that you want to assign. Valid values `admin`, `ops`, `dev`, `restricted` and the custom cluster roles.
   * `role_type` - (Required) The authorization type. Valid values `cluster`, `namespace`.
   * `namespace` - (Optional) The namespace to which the permissions are scoped. This parameter is required only if you set role_type to namespace.
-  * `is_ram_role` - (Optional) Specifies whether the permissions are granted to a RAM role.
+  * `is_ram_role` - (Optional) Specifies whether the permissions are granted to a RAM role. When `uid` is ram role id, the value of `is_ram_role` must be `true`.
   * `is_custom` - (Optional) Specifies whether to perform a custom authorization. To perform a custom authorization, set `role_name` to a custom cluster role.
 
 ## Attributes Reference

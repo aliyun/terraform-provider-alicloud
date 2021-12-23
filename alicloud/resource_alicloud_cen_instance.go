@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -45,7 +45,7 @@ func resourceAlicloudCenInstance() *schema.Resource {
 			"protection_level": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "REDUCED",
+				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -58,43 +58,46 @@ func resourceAlicloudCenInstance() *schema.Resource {
 
 func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cbnService := CbnService{client}
-
-	request := cbn.CreateCreateCenRequest()
+	var response map[string]interface{}
+	action := "CreateCen"
+	request := make(map[string]interface{})
+	conn, err := client.NewCbnClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	if v, ok := d.GetOk("cen_instance_name"); ok {
-		request.Name = v.(string)
+		request["Name"] = v
 	} else if v, ok := d.GetOk("name"); ok {
-		request.Name = v.(string)
+		request["Name"] = v
 	}
-
 	if v, ok := d.GetOk("description"); ok {
-		request.Description = v.(string)
+		request["Description"] = v
 	}
-
 	if v, ok := d.GetOk("protection_level"); ok {
-		request.ProtectionLevel = v.(string)
+		request["ProtectionLevel"] = v
 	}
-
+	request["ClientToken"] = buildClientToken("CreateCen")
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.CreateCen(request)
-		})
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking"}) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*cbn.CreateCenResponse)
-		d.SetId(fmt.Sprintf("%v", response.CenId))
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_instance", action, AlibabaCloudSdkGoERROR)
 	}
+
+	d.SetId(fmt.Sprint(response["CenId"]))
+	cbnService := CbnService{client}
 	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cbnService.CenInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -114,22 +117,20 @@ func resourceAlicloudCenInstanceRead(d *schema.ResourceData, meta interface{}) e
 		}
 		return WrapError(err)
 	}
-	d.Set("cen_instance_name", object.Name)
-	d.Set("name", object.Name)
-	d.Set("description", object.Description)
-	d.Set("protection_level", object.ProtectionLevel)
-	d.Set("status", object.Status)
-
-	tags := make(map[string]string)
-	for _, t := range object.Tags.Tag {
-		tags[t.Key] = t.Value
+	d.Set("cen_instance_name", object["Name"])
+	d.Set("name", object["Name"])
+	d.Set("description", object["Description"])
+	d.Set("protection_level", object["ProtectionLevel"])
+	d.Set("status", object["Status"])
+	if v, ok := object["Tags"].(map[string]interface{}); ok {
+		d.Set("tags", tagsToMap(v["Tag"]))
 	}
-	d.Set("tags", tags)
 	return nil
 }
 func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
+	var response map[string]interface{}
 	d.Partial(true)
 
 	if d.HasChange("tags") {
@@ -139,38 +140,53 @@ func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("tags")
 	}
 	update := false
-	request := cbn.CreateModifyCenAttributeRequest()
-	request.CenId = d.Id()
-	if !d.IsNewResource() && d.HasChange("cen_instance_name") {
-		update = true
-		request.Name = d.Get("cen_instance_name").(string)
+	request := map[string]interface{}{
+		"CenId": d.Id(),
 	}
-	if !d.IsNewResource() && d.HasChange("name") {
+	if !d.IsNewResource() && (d.HasChange("cen_instance_name") || d.HasChange("name")) {
 		update = true
-		request.Name = d.Get("name").(string)
+		if v, ok := d.GetOk("cen_instance_name"); ok {
+			request["Name"] = v
+		} else if v, ok := d.GetOk("name"); ok {
+			request["Name"] = v
+		}
 	}
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
-		request.Description = d.Get("description").(string)
-	}
-	if !d.IsNewResource() && d.HasChange("name") {
-		update = true
-		request.Name = d.Get("name").(string)
+		if v, ok := d.GetOk("description"); ok {
+			request["Description"] = v
+		}
 	}
 	if !d.IsNewResource() && d.HasChange("protection_level") {
 		update = true
-		request.ProtectionLevel = d.Get("protection_level").(string)
+		if v, ok := d.GetOk("protection_level"); ok {
+			request["ProtectionLevel"] = v
+		}
 	}
 	if update {
-		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.ModifyCenAttribute(request)
-		})
-		addDebug(request.GetActionName(), raw)
+		action := "ModifyCenAttribute"
+		conn, err := client.NewCbnClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-		d.SetPartial("cen_instance_name")
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
 		d.SetPartial("name")
+		d.SetPartial("cen_instance_name")
 		d.SetPartial("description")
 		d.SetPartial("protection_level")
 	}
@@ -180,13 +196,19 @@ func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
-	request := cbn.CreateDeleteCenRequest()
-	request.CenId = d.Id()
+	action := "DeleteCen"
+	var response map[string]interface{}
+	conn, err := client.NewCbnClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"CenId": d.Id(),
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DeleteCen(request)
-		})
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -194,15 +216,14 @@ func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cbnService.CenInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {

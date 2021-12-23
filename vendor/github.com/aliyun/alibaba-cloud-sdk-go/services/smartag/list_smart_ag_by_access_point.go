@@ -84,8 +84,8 @@ type ListSmartAGByAccessPointRequest struct {
 // ListSmartAGByAccessPointResponse is the response struct for api ListSmartAGByAccessPoint
 type ListSmartAGByAccessPointResponse struct {
 	*responses.BaseResponse
-	RequestId           string               `json:"RequestId" xml:"RequestId"`
 	TotalCount          int                  `json:"TotalCount" xml:"TotalCount"`
+	RequestId           string               `json:"RequestId" xml:"RequestId"`
 	SmartAccessGateways []SmartAccessGateway `json:"SmartAccessGateways" xml:"SmartAccessGateways"`
 }
 

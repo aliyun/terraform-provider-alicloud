@@ -62,8 +62,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MinItems:         1,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				MinItems: 1,
 			},
 			"force_update": {
 				Type:     schema.TypeBool,
@@ -116,11 +115,10 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"iptables", "ipvs"}, false),
 			},
 			"worker_instance_charge_type": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
-				Default:          PostPaid,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
+				Default:      PostPaid,
 			},
 			"worker_data_disks": {
 				Optional: true,
@@ -169,22 +167,19 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 			},
 			// global configurations
 			"pod_cidr": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"service_cidr": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 
 			"node_cidr_mask": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          KubernetesClusterNodeCIDRMasksByDefault,
-				ValidateFunc:     validation.IntBetween(24, 28),
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      KubernetesClusterNodeCIDRMasksByDefault,
+				ValidateFunc: validation.IntBetween(24, 28),
 			},
 			"new_nat_gateway": {
 				Type:     schema.TypeBool,
@@ -192,23 +187,20 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Default:  true,
 			},
 			"password": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				Sensitive:        true,
-				ConflictsWith:    []string{"key_name"},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Sensitive:     true,
+				ConflictsWith: []string{"key_name"},
 			},
 			"key_name": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ConflictsWith:    []string{"password"},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"password"},
 			},
 			"install_cloud_monitor": {
-				Type:             schema.TypeBool,
-				Optional:         true,
-				Default:          true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
 			},
 			"version": {
 				Type:     schema.TypeString,
@@ -241,10 +233,9 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				},
 			},
 			"slb_internet_enabled": {
-				Type:             schema.TypeBool,
-				Optional:         true,
-				Default:          true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
 			},
 
 			"kube_config": {
@@ -278,6 +269,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			// computed parameters start
 			"certificate_authority": {
@@ -396,11 +388,17 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 						},
 					},
 				},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
+			},
+			"retain_resources": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}

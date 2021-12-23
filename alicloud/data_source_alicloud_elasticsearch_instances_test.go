@@ -74,10 +74,7 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 		existMapFunc: existElasticsearchMapFunc,
 		fakeMapFunc:  fakeElasticsearchMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	elasticsearchCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, descriptionRegexConf, idsConf, tagsConf, allConf)
+	elasticsearchCheckInfo.dataSourceTestCheck(t, rand, descriptionRegexConf, idsConf, tagsConf, allConf)
 }
 
 var existElasticsearchMapFunc = func(rand int) map[string]string {
@@ -117,7 +114,7 @@ variable "name" {
 
 data "alicloud_elasticsearch_zones" "default" {}
 data "alicloud_vpcs" "default" {
-  is_default = true
+  name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0

@@ -74,6 +74,7 @@ type CreateCloudConnectNetworkRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	Description          string           `position:"Query" name:"Description"`
 	SnatCidrBlock        string           `position:"Query" name:"SnatCidrBlock"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	IsDefault            requests.Boolean `position:"Query" name:"IsDefault"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -85,13 +86,14 @@ type CreateCloudConnectNetworkRequest struct {
 // CreateCloudConnectNetworkResponse is the response struct for api CreateCloudConnectNetwork
 type CreateCloudConnectNetworkResponse struct {
 	*responses.BaseResponse
-	RequestId     string `json:"RequestId" xml:"RequestId"`
-	CcnId         string `json:"CcnId" xml:"CcnId"`
-	Name          string `json:"Name" xml:"Name"`
-	Status        string `json:"Status" xml:"Status"`
-	Description   string `json:"Description" xml:"Description"`
-	SnatCidrBlock string `json:"SnatCidrBlock" xml:"SnatCidrBlock"`
-	CidrBlock     string `json:"CidrBlock" xml:"CidrBlock"`
+	Status          string `json:"Status" xml:"Status"`
+	Description     string `json:"Description" xml:"Description"`
+	RequestId       string `json:"RequestId" xml:"RequestId"`
+	CcnId           string `json:"CcnId" xml:"CcnId"`
+	CidrBlock       string `json:"CidrBlock" xml:"CidrBlock"`
+	SnatCidrBlock   string `json:"SnatCidrBlock" xml:"SnatCidrBlock"`
+	Name            string `json:"Name" xml:"Name"`
+	ResourceGroupId string `json:"ResourceGroupId" xml:"ResourceGroupId"`
 }
 
 // CreateCreateCloudConnectNetworkRequest creates a request to invoke CreateCloudConnectNetwork API

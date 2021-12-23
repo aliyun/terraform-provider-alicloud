@@ -46,7 +46,7 @@ func testSweepAlidnsDomainGroup(region string) error {
 		response, _ := raw.(*alidns.DescribeDomainGroupsResponse)
 		groups := response.DomainGroups.DomainGroup
 		for _, domainGroup := range groups {
-			if strings.HasPrefix(domainGroup.GroupName, "tf-testacc") {
+			if strings.HasPrefix(strings.ToLower(domainGroup.GroupName), "tf-testacc") {
 				allGroups = append(allGroups, domainGroup)
 			} else {
 				log.Printf("Skip %#v.", domainGroup)

@@ -9,6 +9,7 @@ set -e
 : ${ALICLOUD_ACCOUNT_SITE:="Domestic"}
 : ${TEST_CASE_CODE:?}
 : ${SWEEPER:?}
+: ${CHECKOUT_REGION:="false"}
 : ${ACCESS_URL:=""}
 : ${ACCESS_USER_NAME:=""}
 : ${ACCESS_PASSWORD:=""}
@@ -23,6 +24,7 @@ set -e
 : ${CONCOURSE_TARGET_PASSWORD:=""}
 : ${CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME:=""}
 : ${CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME:=""}
+: ${TRIGGER_TARGET_PIPELINE:=true}
 
 
 export ALICLOUD_ACCESS_KEY=${ALICLOUD_ACCESS_KEY}
@@ -32,6 +34,7 @@ export ALICLOUD_ACCOUNT_SITE=${ALICLOUD_ACCOUNT_SITE}
 export ALICLOUD_ASSUME_ROLE_ARN=acs:ram::${ALICLOUD_ACCOUNT_ID}:role/terraform-provider-assume-role
 export ALICLOUD_RESOURCE_GROUP_ID=${ALICLOUD_RESOURCE_GROUP_ID}
 export ALICLOUD_WAF_INSTANCE_ID=${ALICLOUD_WAF_INSTANCE_ID}
+export CHECKOUT_REGION=${CHECKOUT_REGION}
 #export DEBUG=terraform
 
 echo -e "Account Site: ${ALICLOUD_ACCOUNT_SITE}"
@@ -82,6 +85,10 @@ if [[ ${SWEEPER} = true ]]; then
         echo -e "TF_ACC=1 go test ./alicloud -v  -sweep=${ALICLOUD_REGION} -sweep-allow-failures=true"
         TF_ACC=1 go test ./alicloud -v  -sweep=${ALICLOUD_REGION} -sweep-allow-failures=true -timeout=60m
     fi
+    if [[ ${ALICLOUD_REGION} == "eu-central-1" ]]; then
+        echo -e "TF_ACC=1 go test ./alicloud -v  -sweep=ap-southeast-1 -sweep-run=${TEST_SWEEPER_CASE_CODE} -sweep-allow-failures=true"
+        TF_ACC=1 go test ./alicloud -v  -sweep=ap-southeast-1 -sweep-allow-failures=true -timeout=60m
+    fi
     echo -e "\n--------------- END ---------------"
     exit 0
 fi
@@ -101,17 +108,20 @@ touch $LOGPERREGION
 
 echo -e "\n---------------  Running ${TEST_CASE_CODE} Test Cases ---------------"
 TestRunPrefix="TestAccAlicloud${TEST_CASE_CODE}"
+RunTime=$(date "+%Y-%m-%d")
+echo $time2
+CoverProfileName="${TEST_CASE_CODE}-${RunTime}.out"
 if [[ ${TEST_CASE_CODE} == "All" ]]; then
   TestRunPrefix="TestAccAlicloud"
 fi
-echo -e "TF_ACC=1 go test ./alicloud -v -run=${TestRunPrefix} -timeout=7200m -cover"
+echo -e "TF_ACC=1 go test ./alicloud -v -run=${TestRunPrefix} -timeout=7200m -cover -coverprofile ${CoverProfileName}"
 
 PASSED=100%
 
 FILE_NAME=${ALICLOUD_REGION}-${TEST_CASE_CODE}
 FAIL_FLAG=false
 
-TF_ACC=1 go test ./alicloud -v -run=${TestRunPrefix} -timeout=7200m -cover | {
+TF_ACC=1 go test ./alicloud -v -run=${TestRunPrefix} -timeout=7200m -cover -coverprofile ${CoverProfileName} | {
 while read LINE
 do
     echo "$LINE" >> ${FILE_NAME}.log
@@ -174,6 +184,7 @@ echo "AccountType: $ALICLOUD_ACCOUNT_SITE; Product: $product; Resource: $TEST_CA
 
 aliyun oss cp ${FILE_NAME}.score oss://${BUCKET_NAME}/${FILE_NAME}.score -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
 aliyun oss cp ${FILE_NAME}.log oss://${BUCKET_NAME}/${FILE_NAME}.log -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
+aliyun oss cp ${CoverProfileName} oss://${BUCKET_NAME}/coverage/${ALICLOUD_REGION}/${CoverProfileName} -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
 
 RESULT=${RESULT}"$ALICLOUD_REGION      $TOTAL_COUNT          $FAILED_COUNT         $SKIP_COUNT          $PASS_COUNT        $PASSED\n"
 
@@ -201,7 +212,7 @@ exit ${EXITCODE}
 }
 
 ## If success, it should trigger an job in the China region
-if [[ ${ALICLOUD_REGION} != "cn-"* ]]; then
+if [[ ${TRIGGER_TARGET_PIPELINE} = true && ${ALICLOUD_REGION} != "cn-"* ]]; then
   echo -e "\nDownloading the fly ..."
   wget https://github.com/concourse/concourse/releases/download/v5.0.1/fly-5.0.1-linux-amd64.tgz
   tar -xzf fly-5.0.1-linux-amd64.tgz

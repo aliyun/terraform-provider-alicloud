@@ -89,7 +89,6 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
-		testAccPreCheckWithNoDefaultVpc(t)
 	}
 
 	drdsInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, descriptionRegexConf, idsConf, allConf)
@@ -104,7 +103,7 @@ func dataSourceDRDSInstancesConfigDependence(name string) string {
 		default = "%s"
 	}
 	data "alicloud_vpcs" "default"	{
-        is_default = "true"
+        name_regex = "default-NODELETING"
 	}
 	data "alicloud_vswitches" "default" {
 	  vpc_id = "${data.alicloud_vpcs.default.ids.0}"

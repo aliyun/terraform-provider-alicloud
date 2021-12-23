@@ -14,11 +14,11 @@ type DatahubService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *DatahubService) DescribeDatahubProject(id string) (*datahub.Project, error) {
+func (s *DatahubService) DescribeDatahubProject(id string) (*datahub.GetProjectResult, error) {
 	var requestInfo *datahub.DataHub
-	project := &datahub.Project{}
-	raw, err := s.client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-		requestInfo = dataHubClient
+	project := &datahub.GetProjectResult{}
+	raw, err := s.client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
+		requestInfo = dataHubClient.(*datahub.DataHub)
 		return dataHubClient.GetProject(id)
 	})
 	if err != nil {
@@ -32,7 +32,7 @@ func (s *DatahubService) DescribeDatahubProject(id string) (*datahub.Project, er
 		requestMap["ProjectName"] = id
 		addDebug("GetProject", raw, requestInfo, requestMap)
 	}
-	project, _ = raw.(*datahub.Project)
+	project, _ = raw.(*datahub.GetProjectResult)
 	if project == nil {
 		return project, WrapErrorf(Error(GetNotFoundMessage("DatahubProject", id)), NotFoundMsg, ProviderERROR)
 	}
@@ -55,14 +55,18 @@ func (s *DatahubService) WaitForDatahubProject(id string, status Status, timeout
 		}
 
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.String(), id, ProviderERROR)
+			objstringfy, err := convertArrayObjectToJsonString(object)
+			if err != nil {
+				return WrapError(err)
+			}
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, objstringfy, id, ProviderERROR)
 		}
 
 	}
 }
 
-func (s *DatahubService) DescribeDatahubSubscription(id string) (*datahub.Subscription, error) {
-	subscription := &datahub.Subscription{}
+func (s *DatahubService) DescribeDatahubSubscription(id string) (*datahub.GetSubscriptionResult, error) {
+	subscription := &datahub.GetSubscriptionResult{}
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		return subscription, WrapError(err)
@@ -71,8 +75,8 @@ func (s *DatahubService) DescribeDatahubSubscription(id string) (*datahub.Subscr
 
 	var requestInfo *datahub.DataHub
 
-	raw, err := s.client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-		requestInfo = dataHubClient
+	raw, err := s.client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
+		requestInfo = dataHubClient.(*datahub.DataHub)
 		return dataHubClient.GetSubscription(projectName, topicName, subId)
 	})
 	if err != nil {
@@ -88,7 +92,7 @@ func (s *DatahubService) DescribeDatahubSubscription(id string) (*datahub.Subscr
 		requestMap["SubId"] = subId
 		addDebug("GetProject", raw, requestInfo, requestMap)
 	}
-	subscription, _ = raw.(*datahub.Subscription)
+	subscription, _ = raw.(*datahub.GetSubscriptionResult)
 	if subscription == nil || subscription.TopicName != topicName || subscription.SubId != subId {
 		return subscription, WrapErrorf(Error(GetNotFoundMessage("DatahubSubscription", id)), NotFoundMsg, ProviderERROR)
 	}
@@ -123,8 +127,8 @@ func (s *DatahubService) WaitForDatahubSubscription(id string, status Status, ti
 	}
 }
 
-func (s *DatahubService) DescribeDatahubTopic(id string) (*datahub.Topic, error) {
-	topic := &datahub.Topic{}
+func (s *DatahubService) DescribeDatahubTopic(id string) (*datahub.GetTopicResult, error) {
+	topic := &datahub.GetTopicResult{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return topic, WrapError(err)
@@ -133,8 +137,8 @@ func (s *DatahubService) DescribeDatahubTopic(id string) (*datahub.Topic, error)
 
 	var requestInfo *datahub.DataHub
 
-	raw, err := s.client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-		requestInfo = dataHubClient
+	raw, err := s.client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
+		requestInfo = dataHubClient.(*datahub.DataHub)
 		return dataHubClient.GetTopic(projectName, topicName)
 	})
 	if err != nil {
@@ -149,7 +153,7 @@ func (s *DatahubService) DescribeDatahubTopic(id string) (*datahub.Topic, error)
 		requestMap["TopicName"] = topicName
 		addDebug("GetTopic", raw, requestInfo, requestMap)
 	}
-	topic, _ = raw.(*datahub.Topic)
+	topic, _ = raw.(*datahub.GetTopicResult)
 	if topic == nil {
 		return topic, WrapErrorf(Error(GetNotFoundMessage("DatahubTopic", id)), NotFoundMsg, ProviderERROR)
 	}
@@ -203,7 +207,7 @@ func getRecordSchema(typeMap map[string]interface{}) (recordSchema *datahub.Reco
 }
 
 func isRetryableDatahubError(err error) bool {
-	if e, ok := err.(datahub.DatahubError); ok && e.StatusCode >= 500 {
+	if e, ok := err.(*datahub.DatahubClientError); ok && e.StatusCode >= 500 {
 		return true
 	}
 

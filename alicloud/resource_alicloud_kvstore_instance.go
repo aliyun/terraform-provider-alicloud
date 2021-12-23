@@ -117,6 +117,10 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"dry_run": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"enable_backup_log": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -258,6 +262,10 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Disable", "Enable", "Update"}, false),
+			},
+			"secondary_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"security_group_id": {
 				Type:             schema.TypeString,
@@ -413,6 +421,10 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request.DedicatedHostGroupId = v.(string)
 	}
 
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request.DryRun = requests.NewBoolean(v.(bool))
+	}
+
 	if v, ok := d.GetOk("engine_version"); ok {
 		request.EngineVersion = v.(string)
 	}
@@ -446,7 +458,7 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 			if err != nil {
 				return WrapError(err)
 			}
-			request.Password = decryptResp.Plaintext
+			request.Password = decryptResp
 		}
 	}
 	if v, ok := d.GetOk("payment_type"); ok {
@@ -479,6 +491,10 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request.ZoneId = v.(string)
 	} else if v, ok := d.GetOk("availability_zone"); ok {
 		request.ZoneId = v.(string)
+	}
+
+	if v, ok := d.GetOk("secondary_zone_id"); ok {
+		request.SecondaryZoneId = v.(string)
 	}
 
 	vswitchId := Trim(d.Get("vswitch_id").(string))
@@ -569,6 +585,7 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("vpc_auth_mode", object.VpcAuthMode)
 	d.Set("zone_id", object.ZoneId)
 	d.Set("availability_zone", object.ZoneId)
+	d.Set("secondary_zone_id", object.SecondaryZoneId)
 	describeBackupPolicyObject, err := r_kvstoreService.DescribeBackupPolicy(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -612,7 +629,12 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapError(err)
 		}
-		d.Set("auto_renew", describeInstanceAutoRenewalAttributeObject.AutoRenew)
+		autoRenew, err := strconv.ParseBool(describeInstanceAutoRenewalAttributeObject.AutoRenew)
+		if err != nil {
+			// invalid request response
+			return WrapError(err)
+		}
+		d.Set("auto_renew", autoRenew)
 		d.Set("auto_renew_period", describeInstanceAutoRenewalAttributeObject.Duration)
 	}
 	//refresh parameters
@@ -839,6 +861,10 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		update = true
 		migrateToOtherZoneReq.VSwitchId = d.Get("vswitch_id").(string)
 	}
+	if !d.IsNewResource() && d.HasChange("secondary_zone_id") {
+		update = true
+		migrateToOtherZoneReq.SecondaryZoneId = d.Get("secondary_zone_id").(string)
+	}
 	if update {
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.MigrateToOtherZone(migrateToOtherZoneReq)
@@ -916,7 +942,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			if err != nil {
 				return WrapError(err)
 			}
-			modifyInstanceAttributeReq.NewPassword = decryptResp.Plaintext
+			modifyInstanceAttributeReq.NewPassword = decryptResp
 		}
 	}
 	if update {
@@ -993,7 +1019,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifySecurityIpsReq.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 120*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -1180,7 +1206,7 @@ func refreshParameters(d *schema.ResourceData, meta interface{}) error {
 	m := make(map[string]interface{})
 	err = json.Unmarshal([]byte(object.Config), &m)
 	if err != nil {
-		fmt.Println(err)
+		return WrapError(err)
 	}
 
 	for k, v := range m {

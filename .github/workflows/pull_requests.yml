@@ -1,0 +1,37 @@
+name: Pull Request Process
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/pull_requests.yml
+      - alicloud/*.go
+
+jobs:
+  formatter:
+    name: Go Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          fetch-depth: 0
+      - name: Golang Formatter
+        uses: Jerome1337/gofmt-action@v1.0.4
+        with:
+          gofmt-path: './alicloud'
+          gofmt-flags: '-l -d'
+  labeler:
+    runs-on: ubuntu-latest
+    name: Label the PR size
+    steps:
+      - uses: codelytv/pr-size-labeler@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          xs_max_size: '30'
+          s_max_size: '60'
+          m_max_size: '150'
+          l_max_size: '1500'
+          fail_if_xl: 'false'
+          message_if_xl: >
+            'This PR exceeds the recommended size of 1500 lines.
+            Please make sure you are NOT addressing multiple issues with one PR.
+            Note this PR might be rejected due to its size.’

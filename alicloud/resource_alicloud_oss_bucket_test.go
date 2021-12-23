@@ -139,12 +139,12 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 	}))
 	hashcode5 := strconv.Itoa(transitionsHash(map[string]interface{}{
 		"days":                0,
-		"created_before_date": "2020-11-11",
+		"created_before_date": "2023-11-11",
 		"storage_class":       "IA",
 	}))
 	hashcode6 := strconv.Itoa(transitionsHash(map[string]interface{}{
 		"days":                0,
-		"created_before_date": "2021-11-11",
+		"created_before_date": "2023-11-10",
 		"storage_class":       "Archive",
 	}))
 	hashcode7 := strconv.Itoa(expirationHash(map[string]interface{}{
@@ -322,11 +322,11 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 							"enabled": "true",
 							"transitions": []map[string]interface{}{
 								{
-									"created_before_date": "2020-11-11",
+									"created_before_date": "2023-11-11",
 									"storage_class":       "IA",
 								},
 								{
-									"created_before_date": "2021-11-11",
+									"created_before_date": "2023-11-10",
 									"storage_class":       "Archive",
 								},
 							},
@@ -381,9 +381,9 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 						"lifecycle_rule.3.id":      "rule4",
 						"lifecycle_rule.3.prefix":  "path4/",
 						"lifecycle_rule.3.enabled": "true",
-						"lifecycle_rule.3.transitions." + hashcode5 + ".created_before_date": "2020-11-11",
+						"lifecycle_rule.3.transitions." + hashcode5 + ".created_before_date": "2023-11-11",
 						"lifecycle_rule.3.transitions." + hashcode5 + ".storage_class":       string(oss.StorageIA),
-						"lifecycle_rule.3.transitions." + hashcode6 + ".created_before_date": "2021-11-11",
+						"lifecycle_rule.3.transitions." + hashcode6 + ".created_before_date": "2023-11-10",
 						"lifecycle_rule.3.transitions." + hashcode6 + ".storage_class":       string(oss.StorageArchive),
 
 						"lifecycle_rule.4.id":      "rule5",
@@ -545,7 +545,6 @@ func TestAccAlicloudOssBucketVersioning(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			//testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -674,7 +673,6 @@ func TestAccAlicloudOssBucketCheckSseRule(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.OssSseSupportedRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,

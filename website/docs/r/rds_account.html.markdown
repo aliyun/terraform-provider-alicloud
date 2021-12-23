@@ -33,15 +33,15 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_db_instance" "instance" {
@@ -53,9 +53,9 @@ resource "alicloud_db_instance" "instance" {
   instance_name    = var.name
 }
 resource "alicloud_rds_account" "account" {
-  instance_id = alicloud_db_instance.instance.id
-  name        = "tftestnormal12"
-  account_password    = "Test12345"
+  instance_id      = alicloud_db_instance.instance.id
+  name             = "tftestnormal12"
+  account_password = "Test12345"
 }
 
 ```
@@ -65,7 +65,7 @@ resource "alicloud_rds_account" "account" {
 The following arguments are supported:
 
 * `account_description` - (Optional) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
-* `account_name` - (Required, ForceNew) Operation account requiring a uniqueness check. It may consist of lower case letters, numbers, and underlines, and must start with a letter and end with letters or numbers, The length must be 2-32 characters.
+* `account_name` - (Required, ForceNew) Operation account requiring a uniqueness check. It may consist of lower case letters, numbers, and underlines, and must start with a letter and end with letters or numbers, The length must be 2-63 characters for PostgreSQL, otherwise the length must be 2-32 characters.
 * `account_password` - (Optional, Sensitive) Operation password. It may consist of letters, digits, or underlines, with a length of 6 to 32 characters. You have to specify one of `password` and `kms_encrypted_password` fields.
 * `account_type` - (Optional, Computed, ForceNew) Privilege type of account. Default to `Normal`.
     `Normal`: Common privilege.

@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Monitor"
+subcategory: "Cloud Monitor Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cms_alarm"
 sidebar_current: "docs-alicloud-resource-cms-alarm"
@@ -26,10 +26,10 @@ resource "alicloud_cms_alarm" "basic" {
     device     = "/dev/vda1,/dev/vdb1"
   }
   escalations_critical {
-    statistics = "Average"
+    statistics          = "Average"
     comparison_operator = "<="
-    threshold = 35
-    times = 2
+    threshold           = 35
+    times               = 2
   }
   period             = 900
   contact_groups     = ["test-group"]
@@ -55,7 +55,7 @@ The following arguments are supported:
 * `threshold` - It has been deprecated from provider version 1.94.0 and 'escalations_critical.threshold' instead.
 * `triggered_count` - It has been deprecated from provider version 1.94.0 and 'escalations_critical.times' instead.
 * `contact_groups` - (Required) List contact groups of the alarm rule, which must have been created on the console.
-* `effective_interval` - (Available in 1.50.0+) The interval of effecting alarm rule. It foramt as "hh:mm-hh:mm", like "0:00-4:00". Default to "00:00-23:59".
+* `effective_interval` - (Available in 1.50.0+) The interval of effecting alarm rule. It format as "hh:mm-hh:mm", like "0:00-4:00". Default to "00:00-23:59".
 * `start_time` - It has been deprecated from provider version 1.50.0 and 'effective_interval' instead.
 * `end_time` - It has been deprecated from provider version 1.50.0 and 'effective_interval' instead.
 * `silence_time` - Notification silence period in the alarm state, in seconds. Valid value range: [300, 86400]. Default to 86400
@@ -69,7 +69,7 @@ The following arguments are supported:
 
 The escalations_critical supports the following:
 
-* `statistics` - Critical level alarm statistics method.. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum"]. Default to "Average".
+* `statistics` - Critical level alarm statistics method. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum", "Value", "ErrorCodeMaximum", "Sum", "Count"]. Default to "Average".
 * `comparison_operator` - Critical level alarm comparison operator. Valid values: ["<=", "<", ">", ">=", "==", "!="]. Default to "==".
 * `threshold` - Critical level alarm threshold value, which must be a numeric value currently.
 * `times` - Critical level alarm retry times. Default to 3.
@@ -78,7 +78,7 @@ The escalations_critical supports the following:
 
 The escalations_warn supports the following:
 
-* `statistics` - Critical level alarm statistics method.. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum"]. Default to "Average".
+* `statistics` - Critical level alarm statistics method. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum", "Value", "ErrorCodeMaximum", "Sum", "Count"]. Default to "Average".
 * `comparison_operator` - Critical level alarm comparison operator. Valid values: ["<=", "<", ">", ">=", "==", "!="]. Default to "==".
 * `threshold` - Critical level alarm threshold value, which must be a numeric value currently.
 * `times` - Critical level alarm retry times. Default to 3.
@@ -87,7 +87,7 @@ The escalations_warn supports the following:
 
 The escalations_info supports the following:
 
-* `statistics` - Critical level alarm statistics method.. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum"]. Default to "Average".
+* `statistics` - Critical level alarm statistics method. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum", "Value", "ErrorCodeMaximum", "Sum", "Count"]. Default to "Average".
 * `comparison_operator` - Critical level alarm comparison operator. Valid values: ["<=", "<", ">", ">=", "==", "!="]. Default to "==".
 * `threshold` - Critical level alarm threshold value, which must be a numeric value currently.
 * `times` - Critical level alarm retry times. Default to 3.

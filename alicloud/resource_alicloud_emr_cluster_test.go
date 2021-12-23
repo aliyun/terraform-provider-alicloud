@@ -41,7 +41,7 @@ func testSweepEmrCluster(region string) error {
 	req.PageNumber = requests.Integer(strconv.Itoa(1))
 	req.PageSize = requests.Integer(strconv.Itoa(PageSizeMedium))
 	req.DefaultStatus = requests.Boolean(strconv.FormatBool(true))
-	vpcService := VpcService{client}
+	//vpcService := VpcService{client}
 	for {
 		raw, err := client.WithEmrClient(func(emrClient *emr.Client) (interface{}, error) {
 			return emrClient.ListClusters(req)
@@ -58,23 +58,23 @@ func testSweepEmrCluster(region string) error {
 		for _, v := range resp.Clusters.ClusterInfo {
 			skip := true
 			for _, prefix := range prefixes {
-				if strings.HasPrefix(v.ClusterId, prefix) {
+				if strings.HasPrefix(v.Id, prefix) {
 					skip = false
 				}
 			}
 			// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+			//if skip {
+			//	if need, err := vpcService.needSweepVpc(v., v.VSwitchId); err == nil {
+			//		skip = !need
+			//	}
+			//
+			//}
 			if skip {
-				if need, err := vpcService.needSweepVpc(v.VpcId, v.VSwitchId); err == nil {
-					skip = !need
-				}
-
-			}
-			if skip {
-				log.Printf("[INFO] Skipping emr: %s (%s)", v.Name, v.ClusterId)
+				log.Printf("[INFO] Skipping emr: %s (%s)", v.Name, v.Id)
 				continue
 			}
 			request := emr.CreateReleaseClusterRequest()
-			request.Id = v.ClusterId
+			request.Id = v.Id
 			request.ForceRelease = requests.NewBoolean(true)
 
 			raw, err := client.WithEmrClient(func(emrClient *emr.Client) (interface{}, error) {
@@ -82,7 +82,7 @@ func testSweepEmrCluster(region string) error {
 			})
 
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, v.ClusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, v.Id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)

@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Monitor"
+subcategory: "Cloud Monitor Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cms_monitor_group_instances"
 sidebar_current: "docs-alicloud-resource-cms-monitor-group-instances"
@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_vpc" "default" {
-  vpc_name       = "tf-testacc-vpcname"
+  vpc_name   = "tf-testacc-vpcname"
   cidr_block = "192.168.0.0/16"
 }
 

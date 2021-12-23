@@ -3,7 +3,7 @@ platform: linux
 
 image_resource:
   type: registry-image
-  source: {repository: golang, tag: 1.12.10}
+  source: {repository: golang, tag: 1.13.4}
 
 inputs:
   - name: terraform-provider-alicloud
@@ -25,3 +25,4 @@ params:
   CONCOURSE_TARGET_URL: ""
   CONCOURSE_TARGET_USER: ""
   CONCOURSE_TARGET_PASSWORD: ""
+  TRIGGER_TARGET_PIPELINE: ""

@@ -25,8 +25,6 @@ func TestAccAlicloudAdbBackupPolicy(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
-			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

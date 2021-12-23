@@ -60,7 +60,6 @@ const (
 	DDSCode             = ServiceCode("DDS")
 	GPDBCode            = ServiceCode("GPDB")
 	STSCode             = ServiceCode("STS")
-	CENCode             = ServiceCode("CEN")
 	KVSTORECode         = ServiceCode("KVSTORE")
 	POLARDBCode         = ServiceCode("POLARDB")
 	DATAHUBCode         = ServiceCode("DATAHUB")
@@ -182,7 +181,10 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 	if serviceCode == "" {
 		serviceCode = productCode
 	}
-	_, err := client.describeEndpointForService(serviceCode)
+	endpoint, err := client.describeEndpointForService(serviceCode)
+	if err == nil {
+		client.config.Endpoints[strings.ToLower(serviceCode)] = endpoint
+	}
 	return err
 }
 
@@ -241,6 +243,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 		return "", fmt.Errorf("Unable to initialize the location client: %#v", err)
 
 	}
+	defer locationClient.Shutdown()
 	locationClient.AppendUserAgent(Terraform, terraformVersion)
 	locationClient.AppendUserAgent(Provider, providerVersion)
 	locationClient.AppendUserAgent(Module, client.config.ConfigurationSource)
@@ -259,7 +262,6 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 		if endpointsResponse != nil && len(endpointsResponse.Endpoints.Endpoint) > 0 {
 			for _, e := range endpointsResponse.Endpoints.Endpoint {
 				if e.Type == "openAPI" {
-					client.config.Endpoints[strings.ToLower(serviceCode)] = e.Endpoint
 					endpointResult = e.Endpoint
 					return nil
 				}
@@ -282,12 +284,10 @@ var serviceCodeMapping = map[string]string{
 
 const (
 	OpenApiGatewayService          = "apigateway.cn-hangzhou.aliyuncs.com"
-	OpenSlsService                 = "sls.aliyuncs.com"
 	OpenOtsService                 = "ots.cn-hangzhou.aliyuncs.com"
 	OpenOssService                 = "oss-admin.aliyuncs.com"
 	OpenNasService                 = "nas.cn-hangzhou.aliyuncs.com"
 	OpenCdnService                 = "cdn.aliyuncs.com"
-	OpenBssService                 = "business.aliyuncs.com"
 	OpenKmsService                 = "kms.cn-hangzhou.aliyuncs.com"
 	OpenSaeService                 = "sae.cn-hangzhou.aliyuncs.com"
 	OpenCmsService                 = "metrics.cn-hangzhou.aliyuncs.com"
@@ -304,4 +304,10 @@ const (
 	OpenMaxcomputeService          = "maxcompute.aliyuncs.com"
 	OpenCloudStorageGatewayService = "sgw.cn-shanghai.aliyuncs.com"
 	DataWorksService               = "dataworks.aliyuncs.com"
+)
+
+const (
+	BssOpenAPIEndpointDomestic      = "business.aliyuncs.com"
+	BssOpenAPIEndpointInternational = "business.ap-southeast-1.aliyuncs.com"
+	EcdOpenAPIEndpointUser          = "eds-user.ap-southeast-1.aliyuncs.com"
 )

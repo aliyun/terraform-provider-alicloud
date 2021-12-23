@@ -41,7 +41,7 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"MSE_SC_1_2_200_c", "MSE_SC_2", "MSE_SC_4_8_200_c_4_200_c", "MSE_SC_8_16_200_c"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"MSE_SC_1_2_200_c", "MSE_SC_2_4_200_c", "MSE_SC_4_8_200_c", "MSE_SC_8_16_200_c"}, false),
 			},
 			"cluster_type": {
 				Type:         schema.TypeString,

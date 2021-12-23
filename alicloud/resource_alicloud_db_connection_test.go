@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDBConnectionConfigUpdate(t *testing.T) {
-	var v *rds.DBInstanceNetInfo
+func TestAccAlicloudRdsDBConnectionConfigMySQL(t *testing.T) {
+	var v map[string]interface{}
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccDBconnection%s", rand)
 	var basicMap = map[string]string{
@@ -42,7 +41,7 @@ func TestAccAlicloudDBConnectionConfigUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       "${alicloud_db_instance.instance.id}",
+					"instance_id":       "${alicloud_db_instance.default.id}",
 					"connection_prefix": fmt.Sprintf("tf-testacc%s", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -70,33 +69,63 @@ func TestAccAlicloudDBConnectionConfigUpdate(t *testing.T) {
 
 func resourceDBConnectionConfigDependence(name string) string {
 	return fmt.Sprintf(`
-	%s
-	variable "creation" {
-		default = "Rds"
-	}
+variable "name" {
+	default = "%s"
+}
+data "alicloud_db_zones" "default"{
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_charge_type = "PostPaid"
+	category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+}
 
-	variable "name" {
-		default = "%s"
-	}
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+    category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_charge_type = "PostPaid"
+}
 
-	data "alicloud_db_instance_engines" "default" {
-  		instance_charge_type = "PostPaid"
-  		engine               = "MySQL"
-  		engine_version       = "5.6"
-	}
+data "alicloud_vpcs" "default" {
+ name_regex = "^default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
 
-	data "alicloud_db_instance_classes" "default" {
- 	 	engine = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-		engine_version = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
-	}
+resource "alicloud_vswitch" "this" {
+ count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+ vswitch_name = var.name
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ zone_id = data.alicloud_db_zones.default.ids.0
+ cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+}
 
-	resource "alicloud_db_instance" "instance" {
-		engine = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-		engine_version = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
-		instance_type = "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}"
-		instance_storage = "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		instance_name = "${var.name}"
-	}
-	`, RdsCommonTestCase, name)
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
+
+resource "alicloud_security_group" "default" {
+	name   = var.name
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_db_instance" "default" {
+    engine = "MySQL"
+	engine_version = "8.0"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	vswitch_id = local.vswitch_id
+	instance_name = var.name
+}
+`, name)
 }

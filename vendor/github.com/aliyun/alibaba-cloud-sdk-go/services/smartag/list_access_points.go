@@ -83,8 +83,8 @@ type ListAccessPointsRequest struct {
 // ListAccessPointsResponse is the response struct for api ListAccessPoints
 type ListAccessPointsResponse struct {
 	*responses.BaseResponse
-	RequestId    string        `json:"RequestId" xml:"RequestId"`
 	TotalCount   int           `json:"TotalCount" xml:"TotalCount"`
+	RequestId    string        `json:"RequestId" xml:"RequestId"`
 	AccessPoints []AccessPoint `json:"AccessPoints" xml:"AccessPoints"`
 }
 

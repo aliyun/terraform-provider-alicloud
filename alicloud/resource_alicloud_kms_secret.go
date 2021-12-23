@@ -318,6 +318,9 @@ func resourceAlicloudKmsSecretDelete(d *schema.ResourceData, meta interface{}) e
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"Forbidden.ResourceNotFound"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil

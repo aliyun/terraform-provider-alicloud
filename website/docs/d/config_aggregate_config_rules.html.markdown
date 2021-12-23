@@ -42,7 +42,7 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Aggregate Config Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -62,11 +62,11 @@ The following attributes are exported in addition to the arguments listed above:
 	* `description` - The description of the rule.
 	* `id` - The ID of the Aggregate Config Rule.
 	* `config_rule_trigger_types` - The trigger types of config rules.
-	* `exclude_resource_ids_scope` - The types of the resources to be evaluated against the rule.
-    * `source_identifier`- The name of the custom rule or managed rule.
+	* `exclude_resource_ids_scope` - The id of the resources to be evaluated against the rule.
+    * `source_identifier`- The identifier of the managed rule or the arn of the custom function.
     * `source_owner`- The source owner of the Config Rule.
 	* `maximum_execution_frequency` - The frequency of the compliance evaluations.
-	* `region_ids_scope` - The Exclude ResourceId List.
+	* `region_ids_scope` - The scope of resource region ids.
 	* `resource_group_ids_scope` - The scope of resource group ids.
 	* `tag_key_scope` - The scope of tay key.
 	* `tag_value_scope` - The scope of tay value.

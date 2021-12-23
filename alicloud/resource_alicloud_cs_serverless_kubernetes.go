@@ -5,6 +5,9 @@ import (
 	"regexp"
 	"time"
 
+	roacs "github.com/alibabacloud-go/cs-20151215/v2/client"
+	"github.com/alibabacloud-go/tea/tea"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -65,9 +68,8 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MinItems:         1,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				ConflictsWith:    []string{"vswitch_id"},
+				MinItems:      1,
+				ConflictsWith: []string{"vswitch_id"},
 			},
 			"service_cidr": {
 				Type:     schema.TypeString,
@@ -89,7 +91,6 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Type:          schema.TypeBool,
 				Optional:      true,
 				ForceNew:      true,
-				Default:       false,
 				ConflictsWith: []string{"service_discovery_types"},
 				Deprecated:    "Field 'private_zone' has been deprecated from provider version 1.123.1. New field 'service_discovery_types' replace it.",
 			},
@@ -207,6 +208,13 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"retain_resources": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -295,10 +303,9 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 	}
 
 	if v, ok := d.GetOkExists("private_zone"); ok {
+		args.ServiceDiscoveryTypes = []string{}
 		if v.(bool) == true {
 			args.ServiceDiscoveryTypes = []string{"PrivateZone"}
-		} else {
-			args.ServiceDiscoveryTypes = []string{}
 		}
 	}
 
@@ -353,6 +360,11 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	client := meta.(*connectivity.AliyunClient)
 	csService := CsService{client}
 	invoker := NewInvoker()
+	rosClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+	}
+
 	object, err := csService.DescribeCsServerlessKubernetes(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -362,9 +374,18 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 
+	vswitchIds := []string{}
+	resources, _ := rosClient.DescribeClusterResources(tea.String(d.Id()))
+	for _, resource := range resources.Body {
+		if tea.StringValue(resource.ResourceType) == "VSWITCH" {
+			vswitchIds = append(vswitchIds, tea.StringValue(resource.InstanceId))
+		}
+	}
+
 	d.Set("name", object.Name)
 	d.Set("vpc_id", object.VpcId)
 	d.Set("vswitch_id", object.VSwitchId)
+	d.Set("vswitch_ids", vswitchIds)
 	d.Set("security_group_id", object.SecurityGroupId)
 	d.Set("deletion_protection", object.DeletionProtection)
 	d.Set("version", object.CurrentVersion)
@@ -470,25 +491,23 @@ func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta i
 }
 
 func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	csService := CsService{client}
-	var requestInfo *cs.Client
-	invoker := NewInvoker()
-	var response interface{}
-
-	if err := invoker.Run(func() error {
-		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return nil, csClient.DeleteCluster(d.Id())
-		})
-		response = raw
-		return err
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteCluster", DenverdinoAliyungo)
+	csService := CsService{meta.(*connectivity.AliyunClient)}
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
 	}
-	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["ClusterId"] = d.Id()
-		addDebug("DeleteCluster", response, requestInfo, requestMap)
+
+	args := &roacs.DeleteClusterRequest{}
+	if v := d.Get("retain_resources"); len(v.([]interface{})) > 0 {
+		args.RetainResources = tea.StringSlice(expandStringList(v.([]interface{})))
+	}
+
+	_, err = client.DeleteCluster(tea.String(d.Id()), args)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DeleteCluster", AliyunTablestoreGoSdk)
 	}
 
 	stateConf := BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, csService.CsServerlessKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))

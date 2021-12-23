@@ -158,6 +158,7 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 			"instances.0.security_ip_group_attribute": "",
 			"instances.0.security_ip_group_name":      CHECKSET,
 			"instances.0.security_ips.#":              "1",
+			"instances.0.secondary_zone_id":           "",
 		}
 	}
 
@@ -174,10 +175,7 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 		existMapFunc: existKvstoreInstanceMapFunc,
 		fakeMapFunc:  fakeKvstoreInstanceMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	kvstoreInstancesInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, nameRegexConf, idsConf, tagsConf, statusConf, paramsConf, allConf)
+	kvstoreInstancesInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, tagsConf, statusConf, paramsConf, allConf)
 }
 
 func dataSourceKvstoreInstancesDependence(name string) string {
@@ -186,7 +184,7 @@ func dataSourceKvstoreInstancesDependence(name string) string {
 		instance_charge_type = "PostPaid"
 	}
 	data "alicloud_vpcs" "default" {
-	  is_default = true
+	  name_regex = "default-NODELETING"
 	}
 	data "alicloud_vswitches" "default" {
 	  zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id

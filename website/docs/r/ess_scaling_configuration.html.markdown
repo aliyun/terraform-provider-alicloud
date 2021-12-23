@@ -26,7 +26,7 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-  availabilty_zone = data.alicloud_zones.default.zones[0].id
+  availability_zone = data.alicloud_zones.default.zones[0].id
   cpu_core_count    = 2
   memory_size       = 4
 }
@@ -112,6 +112,7 @@ The following arguments are supported:
 * `system_disk_name` - (Optional, Available in 1.92.0+) The name of the system disk. It must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-). Default value: null.
 * `system_disk_description` - (Optional, Available in 1.92.0+) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `system_disk_auto_snapshot_policy_id` - (Optional, Available in 1.92.0+) The id of auto snapshot policy for system disk.
+* `system_disk_performance_level` - (Optional, Available in 1.124.3+) The performance level of the ESSD used as the system disk.
 * `enable` - (Optional) Whether enable the specified scaling group(make it active) to which the current scaling configuration belongs.
 * `active` - (Optional) Whether active current scaling configuration in the specified scaling group. Default to `false`.
 * `substitute` - (Optional) The another scaling configuration which will be active automatically and replace current configuration when setting `active` to 'false'. It is invalid when `active` is 'true'.
@@ -129,6 +130,8 @@ The following arguments are supported:
 * `password` - (Optional, ForceNew, Available in 1.60.0+) The password of the ECS instance. The password must be 8 to 30 characters in length. It must contains at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. Special characters include `() ~!@#$%^&*-_+=\|{}[]:;'<>,.?/`, The password of Windows-based instances cannot start with a forward slash (/).
 * `kms_encrypted_password` - (Optional, ForceNew, Available in 1.60.0+) An KMS encrypts password used to a db account. If the `password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.60.0+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
+* `resource_group_id` - (Optional, Available in 1.135.0+) ID of resource group.
+* `host_name` - (Optional, Available in 1.143.0+) Hostname of an ECS instance.
 
 -> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
 
@@ -159,6 +162,7 @@ The datadisk mapping supports the following:
 * `name` - (Optional, Available in 1.92.0+) The name of data disk N. Valid values of N: 1 to 16. It must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-). Default value: null.
 * `description` - (Optional, Available in 1.92.0+) The description of data disk N. Valid values of N: 1 to 16. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `auto_snapshot_policy_id` - (Optional, Available in 1.92.0+) The id of auto snapshot policy for data disk.
+* `performance_level` - (Optional, Available in 1.124.3+) The performance level of the ESSD used as data disk.
 
 ## Attributes Reference
 

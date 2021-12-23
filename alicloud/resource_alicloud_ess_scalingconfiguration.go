@@ -189,6 +189,10 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"performance_level": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -274,6 +278,18 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 					return d.Get("kms_encrypted_password").(string) == ""
 				},
 				Elem: schema.TypeString,
+			},
+			"system_disk_performance_level": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"host_name": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 		},
 	}
@@ -469,6 +485,16 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		d.SetPartial("system_disk_auto_snapshot_policy_id")
 	}
 
+	if d.HasChange("system_disk_performance_level") {
+		request.SystemDiskPerformanceLevel = d.Get("system_disk_performance_level").(string)
+		d.SetPartial("system_disk_performance_level")
+	}
+
+	if d.HasChange("resource_group_id") {
+		request.ResourceGroupId = d.Get("resource_group_id").(string)
+		d.SetPartial("resource_group_id")
+	}
+
 	if d.HasChange("user_data") {
 		if v, ok := d.GetOk("user_data"); ok && v.(string) != "" {
 			_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
@@ -494,6 +520,11 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	if d.HasChange("instance_name") {
 		request.InstanceName = d.Get("instance_name").(string)
 		d.SetPartial("instance_name")
+	}
+
+	if d.HasChange("host_name") {
+		request.HostName = d.Get("host_name").(string)
+		d.SetPartial("host_name")
 	}
 
 	if d.HasChange("tags") {
@@ -525,6 +556,7 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 					DiskName:             pack["name"].(string),
 					Description:          pack["description"].(string),
 					AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
+					PerformanceLevel:     pack["performance_level"].(string),
 				}
 				createDataDisks = append(createDataDisks, dataDisk)
 			}
@@ -646,6 +678,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("system_disk_name", object.SystemDiskName)
 	d.Set("system_disk_description", object.SystemDiskDescription)
 	d.Set("system_disk_auto_snapshot_policy_id", object.SystemDiskAutoSnapshotPolicyId)
+	d.Set("system_disk_performance_level", object.SystemDiskPerformanceLevel)
 	d.Set("data_disk", essService.flattenDataDiskMappings(object.DataDisks.DataDisk))
 	d.Set("role_name", object.RamRoleName)
 	d.Set("key_name", object.KeyPairName)
@@ -654,6 +687,8 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("instance_name", object.InstanceName)
 	d.Set("override", d.Get("override").(bool))
 	d.Set("password_inherit", object.PasswordInherit)
+	d.Set("resource_group_id", object.ResourceGroupId)
+	d.Set("host_name", object.HostName)
 
 	if sg, ok := d.GetOk("security_group_id"); ok && sg.(string) != "" {
 		d.Set("security_group_id", object.SecurityGroupId)
@@ -781,7 +816,7 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 		if err != nil {
 			return nil, WrapError(err)
 		}
-		request.Password = decryptResp.Plaintext
+		request.Password = decryptResp
 	}
 
 	if securityGroupId == "" && (securityGroupIds == nil || len(securityGroupIds) == 0) {
@@ -860,6 +895,14 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 		request.SystemDiskAutoSnapshotPolicyId = v
 	}
 
+	if v := d.Get("system_disk_performance_level").(string); v != "" {
+		request.SystemDiskPerformanceLevel = v
+	}
+
+	if v := d.Get("resource_group_id").(string); v != "" {
+		request.ResourceGroupId = v
+	}
+
 	dds, ok := d.GetOk("data_disk")
 	if ok {
 		disks := dds.([]interface{})
@@ -877,6 +920,7 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 				DiskName:             pack["name"].(string),
 				Description:          pack["description"].(string),
 				AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
+				PerformanceLevel:     pack["performance_level"].(string),
 			}
 			createDataDisks = append(createDataDisks, dataDisk)
 		}
@@ -910,6 +954,10 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 
 	if v, ok := d.GetOk("instance_name"); ok && v.(string) != "" {
 		request.InstanceName = v.(string)
+	}
+
+	if v, ok := d.GetOk("host_name"); ok && v.(string) != "" {
+		request.HostName = v.(string)
 	}
 
 	return request, nil

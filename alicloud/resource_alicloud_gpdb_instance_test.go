@@ -108,7 +108,7 @@ func testSweepGpdbInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudGpdbInstance_classic(t *testing.T) {
+func SkipTestAccAlicloudGpdbInstance_classic(t *testing.T) {
 	var v gpdb.DBInstanceAttribute
 	resourceId := "alicloud_gpdb_instance.default"
 	serverFunc := func() interface{} {
@@ -134,10 +134,12 @@ func TestAccAlicloudGpdbInstance_classic(t *testing.T) {
 					"instance_class":       "gpdb.group.segsdx2",
 					"instance_group_count": "2",
 					"description":          "tf-testAccGpdbInstance_new",
+					"instance_charge_type": "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": fmt.Sprintf("tf-testAccGpdbInstance_new"),
+						"description":          fmt.Sprintf("tf-testAccGpdbInstance_new"),
+						"instance_charge_type": "PostPaid",
 					}),
 				),
 			},
@@ -219,7 +221,7 @@ func TestAccAlicloudGpdbInstance_classic(t *testing.T) {
 		}})
 }
 
-func TestAccAlicloudGpdbInstance_vpc(t *testing.T) {
+func SkipTestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 	var v gpdb.DBInstanceAttribute
 	resourceId := "alicloud_gpdb_instance.default"
 	serverFunc := func() interface{} {
@@ -234,7 +236,6 @@ func TestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -296,7 +297,7 @@ func resourceGpdbVpcConfigDependence(s string) string {
             default                = "tf-testAccGpdbInstance_vpc"
         }
 		data "alicloud_vpcs" "default" {
-			is_default = true
+			name_regex = "default-NODELETING"
 		}
 		data "alicloud_vswitches" "default" {
 		  vpc_id = data.alicloud_vpcs.default.ids.0

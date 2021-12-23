@@ -43,6 +43,10 @@ resource "alicloud_vswitch" "default" {
   zone_id           = data.alicloud_zones.default.zones[0].id
 }
 
+resource "alicloud_security_group" "default" {
+  vpc_id = alicloud_vpc.default.id
+}
+
 resource "alicloud_alikafka_instance" "default" {
   name        = var.instance_name
   topic_quota = "50"
@@ -51,6 +55,7 @@ resource "alicloud_alikafka_instance" "default" {
   deploy_type = "4"
   io_max      = "20"
   vswitch_id  = alicloud_vswitch.default.id
+  security_group = alicloud_security_group.default.id
 }
 ```
 

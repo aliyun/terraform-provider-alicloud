@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -77,13 +78,14 @@ func resourceAliyunDatahubSubscriptionCreate(d *schema.ResourceData, meta interf
 
 	var requestInfo *datahub.DataHub
 
-	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-		requestInfo = dataHubClient
+	raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
+		requestInfo = dataHubClient.(*datahub.DataHub)
 		return dataHubClient.CreateSubscription(projectName, topicName, subComment)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_datahub_subscription", "CreateSubscription", AliyunDatahubSdkGo)
 	}
+	subscriptionResult := raw.(*datahub.CreateSubscriptionResult)
 	if debugOn() {
 		requestMap := make(map[string]string)
 		requestMap["ProjectName"] = projectName
@@ -91,9 +93,7 @@ func resourceAliyunDatahubSubscriptionCreate(d *schema.ResourceData, meta interf
 		requestMap["SubComment"] = subComment
 		addDebug("CreateSubscription", raw, requestInfo, requestMap)
 	}
-	subId, _ := raw.(string)
-
-	d.SetId(fmt.Sprintf("%s%s%s%s%s", strings.ToLower(projectName), COLON_SEPARATED, strings.ToLower(topicName), COLON_SEPARATED, subId))
+	d.SetId(fmt.Sprintf("%s%s%s%s%s", strings.ToLower(projectName), COLON_SEPARATED, strings.ToLower(topicName), COLON_SEPARATED, subscriptionResult.SubId))
 	return resourceAliyunDatahubSubscriptionRead(d, meta)
 }
 
@@ -119,8 +119,8 @@ func resourceAliyunDatahubSubscriptionRead(d *schema.ResourceData, meta interfac
 	d.Set("topic_name", object.TopicName)
 	d.Set("sub_id", object.SubId)
 	d.Set("comment", object.Comment)
-	d.Set("create_time", datahub.Uint64ToTimeString(object.CreateTime))
-	d.Set("last_modify_time", datahub.Uint64ToTimeString(object.LastModifyTime))
+	d.Set("create_time", strconv.FormatInt(object.CreateTime, 10))
+	d.Set("last_modify_time", strconv.FormatInt(object.LastModifyTime, 10))
 	return nil
 }
 
@@ -137,9 +137,9 @@ func resourceAliyunDatahubSubscriptionUpdate(d *schema.ResourceData, meta interf
 
 		var requestInfo *datahub.DataHub
 
-		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-			requestInfo = dataHubClient
-			return nil, dataHubClient.UpdateSubscription(projectName, topicName, subId, subComment)
+		raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
+			requestInfo = dataHubClient.(*datahub.DataHub)
+			return dataHubClient.UpdateSubscription(projectName, topicName, subId, subComment)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateSubscription", AliyunDatahubSdkGo)
@@ -170,9 +170,9 @@ func resourceAliyunDatahubSubscriptionDelete(d *schema.ResourceData, meta interf
 	var requestInfo *datahub.DataHub
 
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-			requestInfo = dataHubClient
-			return nil, dataHubClient.DeleteSubscription(projectName, topicName, subId)
+		raw, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
+			requestInfo = dataHubClient.(*datahub.DataHub)
+			return dataHubClient.DeleteSubscription(projectName, topicName, subId)
 		})
 		if err != nil {
 			if isRetryableDatahubError(err) {

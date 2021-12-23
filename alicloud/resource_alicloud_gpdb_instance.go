@@ -113,8 +113,8 @@ func resourceAlicloudGpdbInstanceRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("security_ip_list", security_ips)
 	d.Set("create_time", instance.CreationTime)
-	d.Set("instance_charge_type", instance.PayType)
 	d.Set("tags", gpdbService.tagsToMap(instance.Tags.Tag))
+	d.Set("instance_charge_type", convertGpdbPayTypeResponse(instance.PayType))
 
 	return nil
 }
@@ -238,14 +238,13 @@ func buildGpdbCreateRequest(d *schema.ResourceData, meta interface{}) (*gpdb.Cre
 	request := gpdb.CreateCreateDBInstanceRequest()
 	request.RegionId = string(client.Region)
 	request.ZoneId = Trim(d.Get("availability_zone").(string))
-	request.PayType = d.Get("instance_charge_type").(string)
 	request.VSwitchId = Trim(d.Get("vswitch_id").(string))
 	request.DBInstanceDescription = d.Get("description").(string)
 	request.DBInstanceClass = Trim(d.Get("instance_class").(string))
 	request.DBInstanceGroupCount = Trim(d.Get("instance_group_count").(string))
 	request.Engine = Trim(d.Get("engine").(string))
 	request.EngineVersion = Trim(d.Get("engine_version").(string))
-
+	request.PayType = convertGpdbPayTypeRequest(d.Get("instance_charge_type").(string))
 	// Instance NetWorkType
 	request.InstanceNetworkType = string(Classic)
 	if request.VSwitchId != "" {
@@ -281,4 +280,24 @@ func buildGpdbCreateRequest(d *schema.ResourceData, meta interface{}) (*gpdb.Cre
 	request.ClientToken = buildClientToken(request.GetActionName())
 
 	return request, nil
+}
+
+func convertGpdbPayTypeRequest(source string) string {
+	switch source {
+	case string(PostPaid):
+		return string(Postpaid)
+	case string(PrePaid):
+		return string(Prepaid)
+	}
+	return source
+}
+
+func convertGpdbPayTypeResponse(source string) string {
+	switch source {
+	case string(Postpaid):
+		return string(PostPaid)
+	case string(Prepaid):
+		return string(PrePaid)
+	}
+	return source
 }

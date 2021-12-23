@@ -3,6 +3,6 @@ output "instance_id" {
 }
 
 output "ip_addresses" {
-  value = join(",", alicloud_eip.default.*.ip_address)
+  value = join(",", alicloud_eip_address.default.*.ip_address)
 }
 

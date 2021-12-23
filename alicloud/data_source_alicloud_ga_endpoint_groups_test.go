@@ -111,7 +111,7 @@ func dataSourceGaEndpointGroupsConfigDependence(name string) string {
 resource "alicloud_ga_endpoint_group" "default" {
   accelerator_id="${data.alicloud_ga_accelerators.default.ids.0}"
   endpoint_configurations{
-    endpoint=alicloud_eip.example.ip_address
+    endpoint=alicloud_eip_address.example.ip_address
     type="PublicIp"
     weight="20"
   }
@@ -130,7 +130,7 @@ resource "alicloud_ga_endpoint_group" "default" {
   traffic_percentage=20
   listener_id="${alicloud_ga_listener.default.id}"
 }
-resource "alicloud_eip" "example" {
+resource "alicloud_eip_address" "example" {
   bandwidth            = "10"
   internet_charge_type = "PayByBandwidth"
 }

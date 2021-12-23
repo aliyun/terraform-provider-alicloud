@@ -17,23 +17,23 @@ package smartag
 
 // DiagnoseResult is a nested struct in smartag response
 type DiagnoseResult struct {
-	TotalNumber      int        `json:"TotalNumber" xml:"TotalNumber"`
-	StoreType        string     `json:"StoreType" xml:"StoreType"`
-	MonitorVersion   string     `json:"MonitorVersion" xml:"MonitorVersion"`
-	DiagnoseId       string     `json:"DiagnoseId" xml:"DiagnoseId"`
-	EndTime          int        `json:"EndTime" xml:"EndTime"`
-	FinishedNumber   int        `json:"FinishedNumber" xml:"FinishedNumber"`
-	ReportSLSSuccess int        `json:"ReportSLSSuccess" xml:"ReportSLSSuccess"`
-	Parameters       string     `json:"Parameters" xml:"Parameters"`
 	Percent          int        `json:"Percent" xml:"Percent"`
-	UId              string     `json:"UId" xml:"UId"`
-	StartTime        int        `json:"StartTime" xml:"StartTime"`
+	SN               string     `json:"SN" xml:"SN"`
+	DiagnoseId       string     `json:"DiagnoseId" xml:"DiagnoseId"`
+	State            string     `json:"State" xml:"State"`
 	UserLevel        string     `json:"UserLevel" xml:"UserLevel"`
+	BoxVersion       string     `json:"BoxVersion" xml:"BoxVersion"`
 	InstanceId       string     `json:"InstanceId" xml:"InstanceId"`
 	BoxType          string     `json:"BoxType" xml:"BoxType"`
-	BoxVersion       string     `json:"BoxVersion" xml:"BoxVersion"`
-	SN               string     `json:"SN" xml:"SN"`
-	State            string     `json:"State" xml:"State"`
+	MonitorVersion   string     `json:"MonitorVersion" xml:"MonitorVersion"`
+	FinishedNumber   int        `json:"FinishedNumber" xml:"FinishedNumber"`
+	UId              string     `json:"UId" xml:"UId"`
+	EndTime          int        `json:"EndTime" xml:"EndTime"`
+	StartTime        int        `json:"StartTime" xml:"StartTime"`
+	Parameters       string     `json:"Parameters" xml:"Parameters"`
+	StoreType        string     `json:"StoreType" xml:"StoreType"`
+	ReportSLSSuccess int        `json:"ReportSLSSuccess" xml:"ReportSLSSuccess"`
+	TotalNumber      int        `json:"TotalNumber" xml:"TotalNumber"`
 	Level            Level      `json:"Level" xml:"Level"`
 	Statistics       Statistics `json:"Statistics" xml:"Statistics"`
 	Details          []Detail   `json:"Details" xml:"Details"`

@@ -1,17 +1,14 @@
 groups:
   - name: All
     jobs:
+      - All
       # ECS
       - Regions
       - Zones
-      - Images
-      - Instance
-#      - Disk
-      - SecurityGroup
-#      - KeyPair
-#      - NetworkInterface
-      - Snapshot
-      - LaunchTemplate
+      - Dataworks
+      - Hbr
+      - Sae
+      - EventBridge
       # ESS
       - Ess
       # Container Service
@@ -24,15 +21,13 @@ groups:
       - Oss
       # VPC
       - Vpc
-      - VSwitch
       - EIP
       - Elasticsearch
-      - RouteTable
-      - RouteEntry
-      - RouterInterface
-      - NatGateway
-      - Snat
-      - Forward
+      - Cddc
+      - Arms
+      - Scdn
+      - Lindorm
+      - Ecd
       - CommonBandwidth
       - Cen
       - Vpn
@@ -41,7 +36,7 @@ groups:
       - Slb
       # Database
       # Rds
-      - DB
+      - ALB
       - Rds
       # Redis and Memcache
       - KVStore
@@ -49,8 +44,8 @@ groups:
       - Gpdb
       # RAM
       - Ram
-      # Dns and Pvtz
-      - Dns
+      # Msc and Pvtz
+      - Msc
       # PrivateZone
       - Pvtz
       # Datahub
@@ -78,7 +73,7 @@ groups:
       # Actiontrail
       - Actiontrail
       # SSL Certificate
-      - CasCertificate
+      - SslCertificates
       # MongoDB
       - MongoDB
       # Ddoscoo
@@ -93,7 +88,7 @@ groups:
       # Smart Access Gateway
       - Sag
       - YundunDbaudit
-      - YundunBastionhost
+      - Bastionhost
       - Market
       - PolarDB
       - HBase
@@ -107,11 +102,21 @@ groups:
       - Ecs
       - Config
       - Alidns
-      - NetworkAcl
+      - MSE
       - Fnf
       - Ros
       - Privatelink
       - Tsdb
+      - Eci
+      - Oos
+      - Amqp
+      - CloudFirewall
+      - SDDP
+      - DirectMail
+      - SAS
+      - DFS
+      - Ehpc
+      - IMP
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -125,14 +130,11 @@ groups:
       # ECS
       - Regions
       - Zones
-      - Images
-      - Instance
-#      - Disk
-      - SecurityGroup
-#      - KeyPair
-#      - NetworkInterface
-      - Snapshot
-      - LaunchTemplate
+      - Dataworks
+      - Hbr
+      - Lindorm
+      - Sae
+      - EventBridge
       - Ecs
       # ESS
       - Ess
@@ -144,6 +146,8 @@ groups:
       - FC
       - Fnf
       - Ros
+      - Eci
+      - Oos
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -173,7 +177,7 @@ groups:
   - name: Databases
     jobs:
       # Database
-      - DB
+      - ALB
       - Rds
       - KVStore
       - DRDS
@@ -197,14 +201,12 @@ groups:
     jobs:
       # VPC
       - Vpc
-      - VSwitch
       - EIP
-      - RouteTable
-      - RouteEntry
-      - RouterInterface
-      - NatGateway
-      - Snat
-      - Forward
+      - Cddc
+      - Arms
+      - Scdn
+      - Lindorm
+      - Ecd
       - CommonBandwidth
       - Cen
       - Vpn
@@ -216,7 +218,7 @@ groups:
       # Cloud Connect network
       - CloudConnectNetwork
       - Sag
-      - NetworkAcl
+      - MSE
       - Privatelink
       - Sweeper-1
       - Sweeper-2
@@ -227,10 +229,11 @@ groups:
 
   - name: Domain & Hosting
     jobs:
-      # Dns and Pvtz
-      - Dns
+      # Msc and Pvtz
+      - Msc
       - Alidns
       - Pvtz
+      - IMP
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -276,6 +279,7 @@ groups:
       - Ons
       # Kafka
       - Alikafka
+      - Amqp
       - Edas
       - Sweeper-1
       - Sweeper-2
@@ -299,12 +303,12 @@ groups:
   - name: Security
     jobs:
       # SSL Certificate
-      - CasCertificate
+      - SslCertificates
       # Ddoscoo
       - Ddoscoo
       - Ddosbgp
       - YundunDbaudit
-      - YundunBastionhost
+      - Bastionhost
       - Waf
       - Sweeper-1
       - Sweeper-2
@@ -333,6 +337,7 @@ shared:
       ALICLOUD_ACCOUNT_SITE: {{alicloud_account_site}}
       TEST_CASE_CODE: ""
       SWEEPER: false
+      CHECKOUT_REGION: "true"
       ACCESS_URL: {{access_ci_url}}
       ACCESS_USER_NAME: {{access_ci_user_name}}
       ACCESS_PASSWORD: {{access_ci_password}}
@@ -410,6 +415,19 @@ jobs:
           <<: *run-params
           SWEEPER: true
           TEST_CASE_CODE: "-"
+
+  - name: All
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: false
+        resource: 00Tue
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "All"
 
   - name: Apigateway
     plan:
@@ -495,7 +513,7 @@ jobs:
           TEST_CASE_CODE: "Datahub"
           SWEEPER_CODE: "alicloud_datahub_project"
 
-  - name: DB
+  - name: ALB
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -506,8 +524,8 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "DB"
-          SWEEPER_CODE: "alicloud_db_instance"
+          TEST_CASE_CODE: "ALB"
+          SWEEPER_CODE: "alicloud_alb"
 
   - name: Rds
     plan:
@@ -523,21 +541,7 @@ jobs:
           TEST_CASE_CODE: "Rds"
           SWEEPER_CODE: "alicloud_db_instance"
 
-#  - name: Disk
-#    plan:
-#      - <<: *clone-provider
-#      - get: trigger
-#        trigger: false
-#        resource: 07Thu
-#      - aggregate:
-#          - *get-aliyun-cli
-#      - <<: *run
-#        params:
-#          <<: *run-params
-#          TEST_CASE_CODE: "Disk"
-#          SWEEPER_CODE: "alicloud_disk"
-
-  - name: Forward
+  - name: Amqp
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -548,9 +552,9 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Forward"
+          TEST_CASE_CODE: "Amqp"
 
-  - name: Dns
+  - name: Msc
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -561,7 +565,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Dns"
+          TEST_CASE_CODE: "Msc"
 
   - name: DRDS
     plan:
@@ -596,7 +600,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: false
-        resource: 12
+        resource: 12Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -605,19 +609,19 @@ jobs:
           TEST_CASE_CODE: "Ess"
           SWEEPER_CODE: "alicloud_ess_scalinggroup"
   #
-  - name: Instance
+  - name: Hbr
     plan:
       - <<: *clone-provider
       - get: trigger
         trigger: false
-        resource: 13
+        resource: 13Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Instance"
-          SWEEPER_CODE: "alicloud_instance"
+          TEST_CASE_CODE: "Hbr"
+          SWEEPER_CODE: "alicloud_hbr"
 
   - name: FC
     plan:
@@ -633,7 +637,7 @@ jobs:
           TEST_CASE_CODE: "FC"
           SWEEPER_CODE: "alicloud_fc_service"
 
-  - name: Images
+  - name: Dataworks
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -644,21 +648,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Images"
-
-#  - name: KeyPair
-#    plan:
-#      - <<: *clone-provider
-#      - get: trigger
-#        trigger: false
-#        resource: 16Thu
-#      - aggregate:
-#          - *get-aliyun-cli
-#      - <<: *run
-#        params:
-#          <<: *run-params
-#          TEST_CASE_CODE: "KeyPair"
-#          SWEEPER_CODE: "alicloud_key_pair"
+          TEST_CASE_CODE: "Dataworks"
 
   - name: Kms
     plan:
@@ -686,20 +676,6 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Log"
           SWEEPER_CODE: "alicloud_log_project"
-
-  - name: VSwitch
-    plan:
-      - <<: *clone-provider
-      - get: trigger
-        trigger: false
-        resource: 19Thu
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          TEST_CASE_CODE: "VSwitch"
-          SWEEPER_CODE: "alicloud_vswitch"
 
   - name: Zones
     plan:
@@ -733,27 +709,13 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: false
-        resource: 0130
+        resource: 0130Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
         params:
           <<: *run-params
           TEST_CASE_CODE: "Elasticsearch"
-
-  - name: NatGateway
-    plan:
-      - <<: *clone-provider
-      - get: trigger
-        trigger: false
-        resource: 0230Thu
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          TEST_CASE_CODE: "NatGateway"
-          SWEEPER_CODE: "alicloud_nat_gateway"
 
   - name: CR
     plan:
@@ -768,19 +730,19 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "CR"
 
-#  - name: NetworkInterface
-#    plan:
-#      - <<: *clone-provider
-#      - get: trigger
-#        trigger: false
-#        resource: 0430Thu
-#      - aggregate:
-#          - *get-aliyun-cli
-#      - <<: *run
-#        params:
-#          <<: *run-params
-#          TEST_CASE_CODE: "NetworkInterface"
-#          SWEEPER_CODE: "alicloud_network_interface"
+  #  - name: NetworkInterface
+  #    plan:
+  #      - <<: *clone-provider
+  #      - get: trigger
+  #        trigger: false
+  #        resource: 0430Thu
+  #      - aggregate:
+  #          - *get-aliyun-cli
+  #      - <<: *run
+  #        params:
+  #          <<: *run-params
+  #          TEST_CASE_CODE: "NetworkInterface"
+  #          SWEEPER_CODE: "alicloud_network_interface"
 
   - name: Oss
     plan:
@@ -851,7 +813,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Regions"
 
-  - name: RouteEntry
+  - name: Arms
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -862,10 +824,10 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "RouteEntry"
-          SWEEPER_CODE: "alicloud_route_entry"
+          TEST_CASE_CODE: "Arms"
+          SWEEPER_CODE: "alicloud_arms"
 
-  - name: RouteTable
+  - name: Cddc
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -876,10 +838,10 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "RouteTable"
-          SWEEPER_CODE: "alicloud_route_table"
+          TEST_CASE_CODE: "Cddc"
+          SWEEPER_CODE: "alicloud_cddc"
 
-  - name: RouterInterface
+  - name: Scdn
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -890,10 +852,10 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "RouterInterface"
-          SWEEPER_CODE: "alicloud_router_interface"
+          TEST_CASE_CODE: "Scdn"
+          SWEEPER_CODE: "alicloud_scdn_domain"
 
-  - name: SecurityGroup
+  - name: Lindorm
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -904,8 +866,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "SecurityGroup"
-          SWEEPER_CODE: "alicloud_security_group"
+          TEST_CASE_CODE: "Lindorm"
 
   - name: Slb
     plan:
@@ -920,19 +881,6 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Slb"
           SWEEPER_CODE: "alicloud_slb_load_balancer"
-
-  - name: Snat
-    plan:
-      - <<: *clone-provider
-      - get: trigger
-        trigger: false
-        resource: 1530Thu
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          TEST_CASE_CODE: "Snat"
 
   - name: SslVpn
     plan:
@@ -1013,7 +961,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Actiontrail"
 
-  - name: CasCertificate
+  - name: SslCertificates
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1024,7 +972,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "CasCertificate"
+          TEST_CASE_CODE: "SslCertificates"
 
   - name: MongoDB
     plan:
@@ -1052,7 +1000,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Ddoscoo"
 
-  - name: Snapshot
+  - name: Sae
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1063,9 +1011,9 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Snapshot"
+          TEST_CASE_CODE: "Sae"
 
-  - name: LaunchTemplate
+  - name: EventBridge
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1076,7 +1024,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "LaunchTemplate"
+          TEST_CASE_CODE: "EventBridge"
 
   - name: Cms
     plan:
@@ -1207,7 +1155,7 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "YundunDbaudit"
-  - name: YundunBastionhost
+  - name: Bastionhost
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1218,7 +1166,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "YundunBastionhost"
+          TEST_CASE_CODE: "Bastionhost"
 
   - name: Market
     plan:
@@ -1264,7 +1212,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: false
-        resource: 0130
+        resource: 0130Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1278,7 +1226,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: false
-        resource: 0230
+        resource: 0230Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1330,7 +1278,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: false
-        resource: 0630
+        resource: 0630Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1343,7 +1291,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: false
-        resource: 0730
+        resource: 0730Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1403,18 +1351,18 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Alidns"
 
-  - name: NetworkAcl
+  - name: MSE
     plan:
       - <<: *clone-provider
       - get: trigger
         trigger: false
-        resource: 1230
+        resource: 1230Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "NetworkAcl"
+          TEST_CASE_CODE: "MSE"
 
   - name: Fnf
     plan:
@@ -1455,6 +1403,19 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Privatelink"
 
+  - name: CloudFirewall
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: false
+        resource: 1630Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "CloudFirewall"
+
   - name: Tsdb
     plan:
       - <<: *clone-provider
@@ -1468,15 +1429,132 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Tsdb"
 
+  - name: Eci
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: false
+        resource: 1630
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Eci"
+
+  - name: Oos
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: false
+        resource: 1630Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Oos"
+
+  - name: Ecd
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: false
+        resource: 1630Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Ecd"
+
+  - name: SDDP
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: false
+        resource: 1730Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "SDDP"
+
+  - name: DirectMail
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: false
+        resource: 1830Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "DirectMail"
+
+  - name: SAS
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 01Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "SAS"
+
+  - name: DFS
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 02Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "DFS"
+
+  - name: Ehpc
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0230Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Ehpc"
+
+  - name: IMP
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0330Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "IMP"
+
   - name: SweeperAfter
     plan:
       - get: terraform-provider-alicloud
         resource: terraform-provider-alicloud
-        trigger: true
+        trigger: false
         passed: [
-            Instance, SecurityGroup, Ess, CS, FC,
-            Vpc, VSwitch, EIP, RouteTable, RouteEntry, RouterInterface, NatGateway, Snat, Forward, CommonBandwidth,
-            Slb, DB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, Snapshot, LaunchTemplate
+            Hbr, Ess, CS, FC, Ecs,
+            Vpc, EIP, Cddc, Arms, Scdn, Amqp, CommonBandwidth,
+            Slb, ALB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, Sae, EventBridge
         ]
       - aggregate:
           - *get-aliyun-cli
@@ -1493,9 +1571,6 @@ resources:
     source:
       uri: https://github.com/aliyun/terraform-provider-alicloud.git
       branch: master
-      skip_ssl_verification: true
-      paths:
-        - ci/tasks/*
 
   - name: aliyun-cli
     type: s3
@@ -1511,8 +1586,8 @@ resources:
     type: time
     source:
       start: 00:00 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
+      stop: 12:00 PM
+      days: [Sunday, Tuesday, Thursday]
       location: {{time_location}}
 
   #- name: 0030
@@ -1531,29 +1606,29 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 0130
-    type: time
-    source:
-      start: 01:30 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+  #  - name: 0130
+  #    type: time
+  #    source:
+  #      start: 01:30 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-#  - name: 02
-#    type: time
-#    source:
-#      start: 02:00 AM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 02
+  #    type: time
+  #    source:
+  #      start: 02:00 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-  - name: 0230
-    type: time
-    source:
-      start: 02:30 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+  #  - name: 0230
+  #    type: time
+  #    source:
+  #      start: 02:30 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
   - name: 03
     type: time
@@ -1563,13 +1638,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-#  - name: 0330
-#    type: time
-#    source:
-#      start: 03:30 AM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 0330
+  #    type: time
+  #    source:
+  #      start: 03:30 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
   - name: 04
     type: time
@@ -1603,61 +1678,61 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-#  - name: 06
-#    type: time
-#    source:
-#      start: 06:00 AM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 06
+  #    type: time
+  #    source:
+  #      start: 06:00 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-  - name: 0630
-    type: time
-    source:
-      start: 06:30 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+  #  - name: 0630
+  #    type: time
+  #    source:
+  #      start: 06:30 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-#  - name: 07
-#    type: time
-#    source:
-#      start: 07:00 AM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 07
+  #    type: time
+  #    source:
+  #      start: 07:00 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-  - name: 0730
-    type: time
-    source:
-      start: 07:30 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+  #  - name: 0730
+  #    type: time
+  #    source:
+  #      start: 07:30 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-#  - name: 08
-#    type: time
-#    source:
-#      start: 08:00 AM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 08
+  #    type: time
+  #    source:
+  #      start: 08:00 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-#  - name: 0830
-#    type: time
-#    source:
-#      start: 08:30 AM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 0830
+  #    type: time
+  #    source:
+  #      start: 08:30 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-#  - name: 09
-#    type: time
-#    source:
-#      start: 09:00 AM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 09
+  #    type: time
+  #    source:
+  #      start: 09:00 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
   - name: 0930
     type: time
@@ -1675,13 +1750,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-#  - name: 1030
-#    type: time
-#    source:
-#      start: 10:30 AM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 1030
+  #    type: time
+  #    source:
+  #      start: 10:30 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
   - name: 11
     type: time
@@ -1699,37 +1774,37 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-  - name: 12
-    type: time
-    source:
-      start: 12:00 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+  #  - name: 12
+  #    type: time
+  #    source:
+  #      start: 12:00 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-  - name: 1230
-    type: time
-    source:
-      start: 12:30 AM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+  #  - name: 1230
+  #    type: time
+  #    source:
+  #      start: 12:30 AM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-  - name: 13
-    type: time
-    source:
-      start: 01:00 PM
-      stop: 10:50 PM
-      #    days: [Sunday]
-      location: {{time_location}}
+  #  - name: 13
+  #    type: time
+  #    source:
+  #      start: 01:00 PM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-#  - name: 1330
-#    type: time
-#    source:
-#      start: 01:30 PM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 1330
+  #    type: time
+  #    source:
+  #      start: 01:30 PM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
   - name: 14
     type: time
@@ -1739,13 +1814,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-#  - name: 1430
-#    type: time
-#    source:
-#      start: 02:30 PM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 1430
+  #    type: time
+  #    source:
+  #      start: 02:30 PM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
   - name: 15
     type: time
@@ -1755,13 +1830,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-#  - name: 1530
-#    type: time
-#    source:
-#      start: 03:30 PM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 1530
+  #    type: time
+  #    source:
+  #      start: 03:30 PM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
   - name: 16
     type: time
@@ -1779,13 +1854,13 @@ resources:
       #    days: [Sunday]
       location: {{time_location}}
 
-#  - name: 17
-#    type: time
-#    source:
-#      start: 05:00 PM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 17
+  #    type: time
+  #    source:
+  #      start: 05:00 PM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
   #- name: 1730
   #  type: time
@@ -1819,29 +1894,29 @@ resources:
   #    #    days: [Sunday]
   #    location: {{time_location}}
 
-#  - name: 1930
-#    type: time
-#    source:
-#      start: 07:30 PM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 1930
+  #    type: time
+  #    source:
+  #      start: 07:30 PM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-#  - name: 20
-#    type: time
-#    source:
-#      start: 08:00 PM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 20
+  #    type: time
+  #    source:
+  #      start: 08:00 PM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
-#  - name: 2030
-#    type: time
-#    source:
-#      start: 08:30 PM
-#      stop: 10:50 PM
-#      #    days: [Sunday]
-#      location: {{time_location}}
+  #  - name: 2030
+  #    type: time
+  #    source:
+  #      start: 08:30 PM
+  #      stop: 10:50 PM
+  #      #    days: [Sunday]
+  #      location: {{time_location}}
 
   #apply to sweeper
   - name: 2230
@@ -1884,6 +1959,14 @@ resources:
       #    days: [Sunday, Monday, Tuesday, Saturday]
       location: {{time_location}}
 
+  - name: 00Tue
+    type: time
+    source:
+      start: 00:00 AM
+      stop: 10:50 PM
+      days: [Tuesday]
+      location: {{time_location}}
+
   - name: 00Thu
     type: time
     source:
@@ -1900,13 +1983,13 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
-#  - name: 0130Thu
-#    type: time
-#    source:
-#      start: 01:30 AM
-#      stop: 10:50 PM
-#      days: [Thursday]
-#      location: {{time_location}}
+  - name: 0130Thu
+    type: time
+    source:
+      start: 01:30 AM
+      stop: 10:50 PM
+      days: [Thursday]
+      location: {{time_location}}
 
   - name: 02Thu
     type: time
@@ -1940,13 +2023,13 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
-#  - name: 0430Thu
-#    type: time
-#    source:
-#      start: 04:30 AM
-#      stop: 10:50 PM
-#      days: [Thursday]
-#      location: {{time_location}}
+  #  - name: 0430Thu
+  #    type: time
+  #    source:
+  #      start: 04:30 AM
+  #      stop: 10:50 PM
+  #      days: [Thursday]
+  #      location: {{time_location}}
 
   - name: 0530Thu
     type: time
@@ -1972,13 +2055,13 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
-#  - name: 07Thu
-#    type: time
-#    source:
-#      start: 07:00 AM
-#      stop: 10:50 PM
-#      days: [Thursday]
-#      location: {{time_location}}
+  #  - name: 07Thu
+  #    type: time
+  #    source:
+  #      start: 07:00 AM
+  #      stop: 10:50 PM
+  #      days: [Thursday]
+  #      location: {{time_location}}
 
   - name: 0730Thu
     type: time
@@ -2096,13 +2179,13 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
-#  - name: 16Thu
-#    type: time
-#    source:
-#      start: 04:00 PM
-#      stop: 10:50 PM
-#      days: [Thursday]
-#      location: {{time_location}}
+  #  - name: 16Thu
+  #    type: time
+  #    source:
+  #      start: 04:00 PM
+  #      stop: 10:50 PM
+  #      days: [Thursday]
+  #      location: {{time_location}}
 
   - name: 1630Thu
     type: time
@@ -2136,13 +2219,21 @@ resources:
       days: [Thursday]
       location: {{time_location}}
 
-  - name: 19Thu
+  - name: 1830Thu
     type: time
     source:
-      start: 07:00 PM
+      start: 06:30 PM
       stop: 10:50 PM
       days: [Thursday]
       location: {{time_location}}
+
+  #  - name: 19Thu
+  #    type: time
+  #    source:
+  #      start: 07:00 PM
+  #      stop: 10:50 PM
+  #      days: [Thursday]
+  #      location: {{time_location}}
 
   - name: 1930Thu
     type: time

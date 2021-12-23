@@ -24,7 +24,6 @@ func TestAccAlicloudNasMountTarget_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -114,7 +113,7 @@ data "alicloud_nas_protocols" "example" {
 }
 
 data "alicloud_vpcs" "example" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "example" {

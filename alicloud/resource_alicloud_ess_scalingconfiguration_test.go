@@ -338,6 +338,130 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudEssScalingConfigurationPerformanceLevel(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.pl"
+	basicMap := map[string]string{
+		"scaling_group_id":  CHECKSET,
+		"instance_type":     CHECKSET,
+		"security_group_id": CHECKSET,
+		"image_id":          REGEXMATCH + "^ubuntu",
+		"override":          "false",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
+					"image_id":          "${data.alicloud_images.default.images.0.id}",
+					"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"security_group_id": "${alicloud_security_group.default.id}",
+					"force_delete":      "true",
+					"password":          "123-abcABC",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_inherit": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "password", "kms_encrypted_password", "kms_encryption_context"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"active": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"active": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_category": "cloud_essd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_category": "cloud_essd",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_performance_level": "PL1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_performance_level": "PL1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"host_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"host_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]string{{
+						"size":                 "20",
+						"category":             "cloud_essd",
+						"delete_with_instance": "false",
+						"encrypted":            "true",
+						"kms_key_id":           "${alicloud_kms_key.key.id}",
+						"name":                 "kms",
+						"description":          "kms",
+						"performance_level":    "PL1",
+					},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disk.#":                      "1",
+						"data_disk.0.size":                 "20",
+						"data_disk.0.category":             "cloud_essd",
+						"data_disk.0.delete_with_instance": "false",
+						"data_disk.0.encrypted":            "true",
+						"data_disk.0.kms_key_id":           CHECKSET,
+						"data_disk.0.name":                 "kms",
+						"data_disk.0.description":          "kms",
+						"data_disk.0.performance_level":    "PL1",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudEssScalingConfigurationMulti(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
@@ -436,7 +560,7 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 	resource "alicloud_kms_key" "key" {
-		description             = "Hello KMS"
+		description             = var.name
 		pending_window_in_days  = "7"
 		key_state               = "Enabled"
 	}

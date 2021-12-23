@@ -146,11 +146,15 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"vpc_id":           "${alicloud_vpc.default.id}",
 					"nat_gateway_name": "${var.name}",
+					"nat_type":         "Enhanced",
+					"vswitch_id":       "${alicloud_vswitch.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vpc_id":           CHECKSET,
 						"nat_gateway_name": name,
+						"nat_type":         "Enhanced",
+						"vswitch_id":       CHECKSET,
 					}),
 				),
 			},
@@ -219,6 +223,16 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"specification":    "Small",
 					"description":      name,
 					"nat_gateway_name": name,
@@ -226,17 +240,69 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 						"Created": "TF-update",
 						"For":     "Test-update",
 					},
+					"deletion_protection": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"specification":    "Small",
-						"description":      name,
-						"nat_gateway_name": name,
-						"tags.%":           "2",
-						"tags.Created":     "TF-update",
-						"tags.For":         "Test-update",
+						"specification":       "Small",
+						"description":         name,
+						"nat_gateway_name":    name,
+						"tags.%":              "2",
+						"tags.Created":        "TF-update",
+						"tags.For":            "Test-update",
+						"deletion_protection": "false",
 					}),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudNatGateway_NetworkType(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nat_gateway.default"
+	ra := resourceAttrInit(resourceId, AlicloudNatGatewayMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNatGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNatGatewayBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":               "${alicloud_vpc.default.id}",
+					"nat_gateway_name":     "${var.name}",
+					"nat_type":             "Enhanced",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"internet_charge_type": "PayByLcu",
+					"network_type":         "intranet",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":               CHECKSET,
+						"nat_gateway_name":     name,
+						"nat_type":             "Enhanced",
+						"internet_charge_type": "PayByLcu",
+						"vswitch_id":           CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "force"},
 			},
 		},
 	})
@@ -332,6 +398,16 @@ func TestAccAlicloudNatGateway_PayByLcu(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"specification":    "Small",
 					"description":      name,
 					"nat_gateway_name": name,
@@ -339,15 +415,17 @@ func TestAccAlicloudNatGateway_PayByLcu(t *testing.T) {
 						"Created": "TF-update",
 						"For":     "Test-update",
 					},
+					"deletion_protection": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"specification":    "",
-						"description":      name,
-						"nat_gateway_name": name,
-						"tags.%":           "2",
-						"tags.Created":     "TF-update",
-						"tags.For":         "Test-update",
+						"specification":       "",
+						"description":         name,
+						"nat_gateway_name":    name,
+						"tags.%":              "2",
+						"tags.Created":        "TF-update",
+						"tags.For":            "Test-update",
+						"deletion_protection": "false",
 					}),
 				),
 			},
@@ -369,6 +447,7 @@ var AlicloudNatGatewayMap0 = map[string]string{
 	"status":               "Available",
 	"tags.%":               "0",
 	"vswitch_id":           "",
+	"deletion_protection":  "false",
 }
 
 func AlicloudNatGatewayBasicDependence0(name string) string {
@@ -397,17 +476,18 @@ resource "alicloud_vswitch" "default" {
 }
 
 var AlicloudNatGatewayMap1 = map[string]string{
-	"description":       "",
-	"dry_run":           NOSET,
-	"force":             NOSET,
-	"forward_table_ids": CHECKSET,
-	"nat_type":          "Enhanced",
-	"payment_type":      "PayAsYouGo",
-	"period":            NOSET,
-	"snat_table_ids":    CHECKSET,
-	"specification":     "",
-	"status":            "Available",
-	"tags.%":            "0",
+	"description":         "",
+	"dry_run":             NOSET,
+	"force":               NOSET,
+	"forward_table_ids":   CHECKSET,
+	"nat_type":            "Enhanced",
+	"payment_type":        "PayAsYouGo",
+	"period":              NOSET,
+	"snat_table_ids":      CHECKSET,
+	"specification":       "",
+	"status":              "Available",
+	"tags.%":              "0",
+	"deletion_protection": "false",
 }
 
 func AlicloudNatGatewayBasicDependence1(name string) string {

@@ -72,8 +72,10 @@ func testSweepWafDomains(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve waf domain in service list: %s", err)
 		}
-		for _, item := range response["DomainNames"].([]interface{}) {
-			domainIds = append(domainIds, fmt.Sprintf(`%s:%s`, instanceId, item.(string)))
+		if response["DomainNames"] != nil {
+			for _, item := range response["DomainNames"].([]interface{}) {
+				domainIds = append(domainIds, fmt.Sprintf(`%s:%s`, instanceId, item.(string)))
+			}
 		}
 	}
 
@@ -124,7 +126,7 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithWafInstanceSetting(t)
+			testAccPreCheckWithEnvVariable(t, "ALICLOUD_WAF_INSTANCE_ID")
 		},
 		// module name
 		IDRefreshName: resourceId,

@@ -385,7 +385,7 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	requestId = response.RequestId
 
 	if len(response.AvailableZones.AvailableZone) < 1 {
-		err = WrapError(Error("There are no availability resources in the region: %s. RequestId: %s.", client.RegionId, requestId))
+		err = WrapError(Error("There are no available zones in the API DescribeAvailableResource response: %#v.", response))
 		return
 	}
 
@@ -409,19 +409,19 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	}
 	if zoneId != "" {
 		if !valid {
-			err = WrapError(Error("Availability zone %s status is not available in the region %s. Expected availability zones: %s. RequestId: %s.",
-				zoneId, client.RegionId, strings.Join(expectedZones, ", "), requestId))
+			err = WrapError(Error("Availability zone %s status is not available in the region %s. Expected availability zones: %s. \nDescribeAvailableResource response: %#v.",
+				zoneId, client.RegionId, strings.Join(expectedZones, ", "), response))
 			return
 		}
 		if soldout {
-			err = WrapError(Error("Availability zone %s status is sold out in the region %s. Expected availability zones: %s. RequestId: %s.",
-				zoneId, client.RegionId, strings.Join(expectedZones, ", "), requestId))
+			err = WrapError(Error("Availability zone %s status is sold out in the region %s. Expected availability zones: %s. \nDescribeAvailableResource response: %#v.",
+				zoneId, client.RegionId, strings.Join(expectedZones, ", "), response))
 			return
 		}
 	}
 
 	if len(validZones) <= 0 {
-		err = WrapError(Error("There is no availability resources in the region %s. Please choose another region. RequestId: %s.", client.RegionId, response.RequestId))
+		err = WrapError(Error("There is no availability resources in the region %s. Please choose another region. \nDescribeAvailableResource response: %#v.", client.RegionId, response))
 		return
 	}
 
@@ -657,6 +657,35 @@ func (s *EcsService) deleteImage(d *schema.ResourceData) error {
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutCreate), 3*time.Second, s.ImageStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	if v, ok := d.GetOk("delete_auto_snapshot"); ok && v.(bool) {
+		errs := map[string]error{}
+
+		for _, item := range object.DiskDeviceMappings.DiskDeviceMapping {
+			if item.SnapshotId == "" {
+				continue
+			}
+			request := ecs.CreateDeleteSnapshotRequest()
+			request.RegionId = s.client.RegionId
+			request.SnapshotId = item.SnapshotId
+			request.Force = requests.NewBoolean(true)
+			raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DeleteSnapshot(request)
+			})
+			if err != nil {
+				errs[item.SnapshotId] = err
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+		if len(errs) > 0 {
+			errParts := []string{"Errors while deleting associated snapshots:"}
+			for snapshotId, err := range errs {
+				errParts = append(errParts, fmt.Sprintf("%s: %s", snapshotId, err))
+			}
+			errParts = append(errParts, "These are no longer managed by Terraform and must be deleted manually.")
+			return WrapError(fmt.Errorf(strings.Join(errParts, "\n")))
+		}
 	}
 
 	return nil
@@ -2156,4 +2185,140 @@ func (s *EcsService) EcsNetworkInterfaceStateRefreshFunc(id string, failStates [
 		}
 		return object, fmt.Sprint(object["Status"]), nil
 	}
+}
+
+func (s *EcsService) DescribeEcsDeploymentSet(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDeploymentSets"
+	request := map[string]interface{}{
+		"RegionId":         s.client.RegionId,
+		"DeploymentSetIds": convertListToJsonString([]interface{}{id}),
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.DeploymentSets.DeploymentSet", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DeploymentSets.DeploymentSet", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["DeploymentSetId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *EcsService) DescribeEcsDedicatedHostCluster(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDedicatedHostClusters"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"PageNumber": 1,
+		"PageSize":   PageSizeLarge,
+	}
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+		v, err := jsonpath.Get("$.DedicatedHostClusters.DedicatedHostCluster", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DedicatedHostClusters.DedicatedHostCluster", response)
+		}
+		if len(v.([]interface{})) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+		}
+		for _, v := range v.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["DedicatedHostClusterId"]) == id {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+		if len(v.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+	}
+	return
+}
+
+func (s *EcsService) DescribeEcsSessionManagerStatus(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeUserBusinessBehavior"
+	request := map[string]interface{}{
+		"statusKey": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }

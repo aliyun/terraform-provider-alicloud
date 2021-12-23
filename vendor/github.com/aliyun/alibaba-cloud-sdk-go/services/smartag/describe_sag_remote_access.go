@@ -82,11 +82,11 @@ type DescribeSagRemoteAccessRequest struct {
 // DescribeSagRemoteAccessResponse is the response struct for api DescribeSagRemoteAccess
 type DescribeSagRemoteAccessResponse struct {
 	*responses.BaseResponse
-	RequestId      string         `json:"RequestId" xml:"RequestId"`
-	Success        bool           `json:"Success" xml:"Success"`
-	Code           string         `json:"Code" xml:"Code"`
 	Message        string         `json:"Message" xml:"Message"`
+	RequestId      string         `json:"RequestId" xml:"RequestId"`
 	SmartAGId      string         `json:"SmartAGId" xml:"SmartAGId"`
+	Code           string         `json:"Code" xml:"Code"`
+	Success        bool           `json:"Success" xml:"Success"`
 	RemoteAccesses RemoteAccesses `json:"RemoteAccesses" xml:"RemoteAccesses"`
 }
 

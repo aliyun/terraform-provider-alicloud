@@ -73,6 +73,7 @@ type DeleteInstanceRequest struct {
 	*requests.RoaRequest
 	InstanceId  string `position:"Path" name:"InstanceId"`
 	ClientToken string `position:"Query" name:"clientToken"`
+	DeleteType  string `position:"Query" name:"deleteType"`
 }
 
 // DeleteInstanceResponse is the response struct for api DeleteInstance

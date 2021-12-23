@@ -17,10 +17,10 @@ package smartag
 
 // Route is a nested struct in smartag response
 type Route struct {
+	NextHop         string   `json:"NextHop" xml:"NextHop"`
+	DestinationCidr string   `json:"DestinationCidr" xml:"DestinationCidr"`
+	Cost            string   `json:"Cost" xml:"Cost"`
 	PortName        string   `json:"PortName" xml:"PortName"`
 	RouteProtocol   string   `json:"RouteProtocol" xml:"RouteProtocol"`
-	DestinationCidr string   `json:"DestinationCidr" xml:"DestinationCidr"`
-	NextHop         string   `json:"NextHop" xml:"NextHop"`
-	Cost            string   `json:"Cost" xml:"Cost"`
 	ConflictCidrs   []string `json:"ConflictCidrs" xml:"ConflictCidrs"`
 }

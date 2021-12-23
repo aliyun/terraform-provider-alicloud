@@ -54,8 +54,8 @@ resource "alicloud_vswitch" "vswitches" {
 
 resource "alicloud_cs_kubernetes" "k8s" {
   count                 = 1
-  master_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)): length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
-  worker_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)): length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
+  master_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
+  worker_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
   master_instance_types = var.master_instance_types
   worker_instance_types = var.worker_instance_types
   worker_number         = var.worker_number
@@ -68,14 +68,14 @@ resource "alicloud_cs_kubernetes" "k8s" {
   pod_cidr              = var.pod_cidr
   service_cidr          = var.service_cidr
   # version can not be defined in variables.tf. Options: 1.16.6-aliyun.1|1.14.8-aliyun.1
-  version               = "1.16.6-aliyun.1"
+  version = "1.16.6-aliyun.1"
   dynamic "addons" {
-      for_each = var.cluster_addons
-      content {
-        name                    = lookup(addons.value, "name", var.cluster_addons)
-        config                  = lookup(addons.value, "config", var.cluster_addons)
-        disabled                = lookup(addons.value, "disabled", var.cluster_addons)
-      }
+    for_each = var.cluster_addons
+    content {
+      name     = lookup(addons.value, "name", var.cluster_addons)
+      config   = lookup(addons.value, "config", var.cluster_addons)
+      disabled = lookup(addons.value, "disabled", var.cluster_addons)
+    }
   }
 }
 ```
@@ -88,7 +88,7 @@ The following arguments are supported:
 
 * `name` - (Optional) The kubernetes cluster's name. It is unique in one Alicloud account.
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
-* `timezone` - (Optional, ForceNew, Available in 1.103.2+) When you create a cluster, set the time zones for the Master and Woker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
+* `timezone` - (Optional, ForceNew, Available in 1.103.2+) When you create a cluster, set the time zones for the Master and Worker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
 * `resource_group_id` - (Optional, Available in 1.101.0+, Modifiable in 1.115.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
 * `runtime` - (Optional, Available in 1.103.2+) The runtime of containers. Default to `docker`. If you select another container runtime, see [How do I select between Docker and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm?spm=a2c63.p38356.b99.440.22563866AJkBgI). Detailed below.
@@ -108,6 +108,7 @@ The following arguments are supported:
 * `api_audiences` - (Optional, ForceNew, Available in 1.92.0+) A list of API audiences for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm). Set this to `["kubernetes.default.svc"]` if you want to enable the Token Volume Projection feature (requires specifying `service_account_issuer` as well.
 * `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster and work nodes. Detailed below.
 * `load_balancer_spec` - (ForceNew, Available in 1.117.0+) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
+* `retain_resources` - (Optional, Available in 1.141.0+) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 
 ##### runtime
 
@@ -379,6 +380,37 @@ variable "cluster_addons" {
     {
       "name"     = "arms-prometheus",
       "config"   = "",
+      "disabled": true,
+    }
+  ]
+}
+
+# Event Center,Optional.
+variable "cluster_addons" {
+  type = list(object({
+      name      = string
+      config    = string
+      disabled  = bool
+  }))
+  default = [
+    {
+      "name"     = "ack-node-problem-detector",
+      "config"   = "{\"sls_project_name\":\"\"}",
+      "disabled": true,
+    }
+  ]
+}
+# ACK default alert, Optional.
+variable "cluster_addons" {
+  type = list(object({
+      name      = string
+      config    = string
+      disabled  = bool
+  }))
+  default = [
+    {
+      "name"     = "alicloud-monitor-controller",
+      "config"   = "{\"group_contact_ids\":\"[159]\"}",
       "disabled": true,
     }
   ]

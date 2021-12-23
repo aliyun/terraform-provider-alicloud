@@ -822,29 +822,10 @@ resource "alicloud_security_group_rule" "default" {
   	cidr_ip = "172.16.0.0/24"
 }
 `
-
-const RdsCommonTestCase = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
-}
-resource "alicloud_vpc" "default" {
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}"
-	name              = "${var.name}"
-	timeouts {
-    delete = "30m"
-  }
-}
-`
 const PolarDBCommonTestCase = `
 data "alicloud_polardb_zones" "default"{}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
 	zone_id = local.zone_id
@@ -852,12 +833,13 @@ data "alicloud_vswitches" "default" {
 }
 resource "alicloud_vswitch" "this" {
  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
- name = "tf_testAccPolarDB"
+ vswitch_name = "tf_testAccPolarDB"
  vpc_id = data.alicloud_vpcs.default.ids.0
- availability_zone = data.alicloud_polardb_zones.default.ids.0
+ zone_id = data.alicloud_polardb_zones.default.ids.0
  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
 locals {
+  vpc_id = data.alicloud_vpcs.default.ids.0
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
   zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
 }
@@ -865,7 +847,7 @@ locals {
 const AdbCommonTestCase = `
 data "alicloud_adb_zones" "default" {}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
@@ -889,7 +871,7 @@ data "alicloud_kvstore_zones" "default"{
 	instance_charge_type = "PostPaid"
 }
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
 	zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
@@ -917,7 +899,7 @@ resource "alicloud_vswitch" "default" {
 const ElasticsearchInstanceCommonTestCase = `
 data "alicloud_elasticsearch_zones" "default" {}
 data "alicloud_vpcs" "default" {
-  is_default = true
+  name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0

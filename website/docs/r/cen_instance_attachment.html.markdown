@@ -36,7 +36,7 @@ resource "alicloud_vpc" "vpc" {
 resource "alicloud_cen_instance_attachment" "foo" {
   instance_id              = alicloud_cen_instance.cen.id
   child_instance_id        = alicloud_vpc.vpc.id
-  child_instance_type      = "VPC" 
+  child_instance_type      = "VPC"
   child_instance_region_id = "cn-beijing"
 }
 ```

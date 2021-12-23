@@ -72,7 +72,9 @@ func (client *Client) ModifySmartAccessGatewayClientUserWithCallback(request *Mo
 type ModifySmartAccessGatewayClientUserRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ClientIp             string           `position:"Query" name:"ClientIp"`
 	Email                string           `position:"Query" name:"Email"`
+	EnableStaticIp       requests.Boolean `position:"Query" name:"EnableStaticIp"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	Bandwidth            requests.Integer `position:"Query" name:"Bandwidth"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -84,11 +86,11 @@ type ModifySmartAccessGatewayClientUserRequest struct {
 // ModifySmartAccessGatewayClientUserResponse is the response struct for api ModifySmartAccessGatewayClientUser
 type ModifySmartAccessGatewayClientUserResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	ClientIp  string `json:"ClientIp" xml:"ClientIp"`
-	UserMail  string `json:"UserMail" xml:"UserMail"`
 	UserName  string `json:"UserName" xml:"UserName"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	UserMail  string `json:"UserMail" xml:"UserMail"`
 	Bandwidth int    `json:"Bandwidth" xml:"Bandwidth"`
+	ClientIp  string `json:"ClientIp" xml:"ClientIp"`
 }
 
 // CreateModifySmartAccessGatewayClientUserRequest creates a request to invoke ModifySmartAccessGatewayClientUser API

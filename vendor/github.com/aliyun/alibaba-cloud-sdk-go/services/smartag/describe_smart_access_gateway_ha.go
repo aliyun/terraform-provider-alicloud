@@ -81,12 +81,12 @@ type DescribeSmartAccessGatewayHaRequest struct {
 // DescribeSmartAccessGatewayHaResponse is the response struct for api DescribeSmartAccessGatewayHa
 type DescribeSmartAccessGatewayHaResponse struct {
 	*responses.BaseResponse
-	RequestId              string             `json:"RequestId" xml:"RequestId"`
 	DeviceLevelBackupState string             `json:"DeviceLevelBackupState" xml:"DeviceLevelBackupState"`
-	DeviceLevelBackupType  string             `json:"DeviceLevelBackupType" xml:"DeviceLevelBackupType"`
-	MainDeviceId           string             `json:"MainDeviceId" xml:"MainDeviceId"`
+	RequestId              string             `json:"RequestId" xml:"RequestId"`
 	BackupDeviceId         string             `json:"BackupDeviceId" xml:"BackupDeviceId"`
 	SmartAGId              string             `json:"SmartAGId" xml:"SmartAGId"`
+	DeviceLevelBackupType  string             `json:"DeviceLevelBackupType" xml:"DeviceLevelBackupType"`
+	MainDeviceId           string             `json:"MainDeviceId" xml:"MainDeviceId"`
 	LinkBackupInfoList     LinkBackupInfoList `json:"LinkBackupInfoList" xml:"LinkBackupInfoList"`
 }
 

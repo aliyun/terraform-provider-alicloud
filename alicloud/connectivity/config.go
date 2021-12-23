@@ -23,16 +23,19 @@ var securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-cred
 
 // Config of aliyun
 type Config struct {
-	SourceIp        string
-	AccessKey       string
-	SecretKey       string
-	EcsRoleName     string
-	Region          Region
-	RegionId        string
-	SecurityToken   string
-	OtsInstanceName string
-	AccountId       string
-	Protocol        string
+	AccessKey            string
+	SecretKey            string
+	EcsRoleName          string
+	Region               Region
+	RegionId             string
+	SecurityToken        string
+	OtsInstanceName      string
+	AccountId            string
+	Protocol             string
+	ClientReadTimeout    int
+	ClientConnectTimeout int
+	SourceIp             string
+	SecureTransport      string
 
 	RamRoleArn               string
 	RamRoleSessionName       string
@@ -83,34 +86,80 @@ type Config struct {
 	AdbEndpoint              string
 	MaxComputeEndpoint       string
 
-	edasEndpoint            string
-	SkipRegionValidation    bool
-	ConfigurationSource     string
-	CbnEndpoint             string
-	DmsEnterpriseEndpoint   string
-	WafOpenapiEndpoint      string
-	ResourcemanagerEndpoint string
-	BssopenapiEndpoint      string
-	AlidnsEndpoint          string
-	CassandraEndpoint       string
-	EciEndpoint             string
-	OosEndpoint             string
-	DcdnEndpoint            string
-	MseEndpoint             string
-	ActiontrailEndpoint     string
-	ConfigEndpoint          string
-	FnfEndpoint             string
-	RosEndpoint             string
-	PrivatelinkEndpoint     string
-	MaxcomputeEndpoint      string
-	ResourcesharingEndpoint string
-	GaEndpoint              string
-	HitsdbEndpoint          string
-	BrainIndustrialEndpoint string
-	EipanycastEndpoint      string
-	ImsEndpoint             string
-	QuotasEndpoint          string
-	SgwEndpoint             string
+	edasEndpoint                string
+	SkipRegionValidation        bool
+	ConfigurationSource         string
+	CbnEndpoint                 string
+	DmsEnterpriseEndpoint       string
+	WafOpenapiEndpoint          string
+	ResourcemanagerEndpoint     string
+	BssopenapiEndpoint          string
+	AlidnsEndpoint              string
+	CassandraEndpoint           string
+	EciEndpoint                 string
+	OosEndpoint                 string
+	DcdnEndpoint                string
+	MseEndpoint                 string
+	ActiontrailEndpoint         string
+	ConfigEndpoint              string
+	FnfEndpoint                 string
+	RosEndpoint                 string
+	PrivatelinkEndpoint         string
+	MaxcomputeEndpoint          string
+	ResourcesharingEndpoint     string
+	GaEndpoint                  string
+	HitsdbEndpoint              string
+	BrainIndustrialEndpoint     string
+	EipanycastEndpoint          string
+	ImsEndpoint                 string
+	QuotasEndpoint              string
+	SgwEndpoint                 string
+	ScdnEndpoint                string
+	DmEndpoint                  string
+	EventbridgeEndpoint         string
+	OnsproxyEndpoint            string
+	CdsEndpoint                 string
+	HbrEndpoint                 string
+	ArmsEndpoint                string
+	CloudfwEndpoint             string
+	ServerlessEndpoint          string
+	AlbEndpoint                 string
+	RedisaEndpoint              string
+	GwsecdEndpoint              string
+	CloudphoneEndpoint          string
+	DataworkspublicEndpoint     string
+	HcsSgwEndpoint              string
+	CddcEndpoint                string
+	MscopensubscriptionEndpoint string
+	SddpEndpoint                string
+	BastionhostEndpoint         string
+	SasEndpoint                 string
+	AlidfsEndpoint              string
+	EhpcEndpoint                string
+	EnsEndpoint                 string
+	IotEndpoint                 string
+	ImmEndpoint                 string
+	ClickhouseEndpoint          string
+	DtsEndpoint                 string
+	DgEndpoint                  string
+	CloudssoEndpoint            string
+	WafEndpoint                 string
+	SwasEndpoint                string
+	VsEndpoint                  string
+	QuickbiEndpoint             string
+	VodEndpoint                 string
+	OpensearchEndpoint          string
+	GdsEndpoint                 string
+	DbfsEndpoint                string
+	DevopsrdcEndpoint           string
+	EaisEndpoint                string
+	CloudauthEndpoint           string
+	ImpEndpoint                 string
+	MhubEndpoint                string
+	ServicemeshEndpoint         string
+	AcrEndpoint                 string
+	EdsuserEndpoint             string
+	GpdbEndpoint                string
 }
 
 func (c *Config) loadAndValidate() error {
@@ -244,8 +293,16 @@ func (c *Config) getTeaDslSdkConfig(stsSupported bool) (config rpc.Config, err e
 	config.SetCredential(credential).
 		SetRegionId(c.RegionId).
 		SetProtocol(c.Protocol).
-		SetReadTimeout(30000).
-		SetConnectTimeout(30000)
+		SetReadTimeout(c.ClientReadTimeout).
+		SetConnectTimeout(c.ClientConnectTimeout).
+		SetMaxIdleConns(500)
+	if c.SourceIp != "" {
+		config.SetSourceIp(c.SourceIp)
+	}
+	if c.SecureTransport != "" {
+		config.SetSecureTransport(c.SecureTransport)
+	}
+
 	return
 }
 func (c *Config) getTeaRoaDslSdkConfig(stsSupported bool) (config roa.Config, err error) {
@@ -255,8 +312,15 @@ func (c *Config) getTeaRoaDslSdkConfig(stsSupported bool) (config roa.Config, er
 	config.SetCredential(credential).
 		SetRegionId(c.RegionId).
 		SetProtocol(c.Protocol).
-		SetReadTimeout(30000).
-		SetConnectTimeout(30000)
+		SetReadTimeout(c.ClientReadTimeout).
+		SetConnectTimeout(c.ClientConnectTimeout).
+		SetMaxIdleConns(500)
+	if c.SourceIp != "" {
+		config.SetSourceIp(c.SourceIp)
+	}
+	if c.SecureTransport != "" {
+		config.SetSecureTransport(c.SecureTransport)
+	}
 	return
 }
 func (c *Config) getCredentialConfig(stsSupported bool) *credential.Config {

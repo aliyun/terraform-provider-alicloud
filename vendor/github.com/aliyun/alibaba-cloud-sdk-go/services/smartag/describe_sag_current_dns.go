@@ -83,8 +83,8 @@ type DescribeSagCurrentDnsRequest struct {
 type DescribeSagCurrentDnsResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
-	MasterDns string `json:"MasterDns" xml:"MasterDns"`
 	SlaveDns  string `json:"SlaveDns" xml:"SlaveDns"`
+	MasterDns string `json:"MasterDns" xml:"MasterDns"`
 }
 
 // CreateDescribeSagCurrentDnsRequest creates a request to invoke DescribeSagCurrentDns API

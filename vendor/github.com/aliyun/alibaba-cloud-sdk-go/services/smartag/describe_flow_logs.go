@@ -74,6 +74,7 @@ type DescribeFlowLogsRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	Description          string           `position:"Query" name:"Description"`
 	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 	OutputType           string           `position:"Query" name:"OutputType"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
@@ -87,10 +88,10 @@ type DescribeFlowLogsRequest struct {
 // DescribeFlowLogsResponse is the response struct for api DescribeFlowLogs
 type DescribeFlowLogsResponse struct {
 	*responses.BaseResponse
-	RequestId  string   `json:"RequestId" xml:"RequestId"`
 	TotalCount int      `json:"TotalCount" xml:"TotalCount"`
-	PageNumber int      `json:"PageNumber" xml:"PageNumber"`
 	PageSize   int      `json:"PageSize" xml:"PageSize"`
+	RequestId  string   `json:"RequestId" xml:"RequestId"`
+	PageNumber int      `json:"PageNumber" xml:"PageNumber"`
 	FlowLogs   FlowLogs `json:"FlowLogs" xml:"FlowLogs"`
 }
 

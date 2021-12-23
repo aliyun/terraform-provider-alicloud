@@ -86,11 +86,11 @@ type DescribeQosCarsRequest struct {
 // DescribeQosCarsResponse is the response struct for api DescribeQosCars
 type DescribeQosCarsResponse struct {
 	*responses.BaseResponse
-	RequestId  string  `json:"RequestId" xml:"RequestId"`
-	TotalCount int     `json:"TotalCount" xml:"TotalCount"`
-	PageNumber int     `json:"PageNumber" xml:"PageNumber"`
-	PageSize   int     `json:"PageSize" xml:"PageSize"`
-	QosCars    QosCars `json:"QosCars" xml:"QosCars"`
+	TotalCount int                      `json:"TotalCount" xml:"TotalCount"`
+	PageSize   int                      `json:"PageSize" xml:"PageSize"`
+	RequestId  string                   `json:"RequestId" xml:"RequestId"`
+	PageNumber int                      `json:"PageNumber" xml:"PageNumber"`
+	QosCars    QosCarsInDescribeQosCars `json:"QosCars" xml:"QosCars"`
 }
 
 // CreateDescribeQosCarsRequest creates a request to invoke DescribeQosCars API

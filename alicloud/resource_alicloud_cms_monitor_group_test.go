@@ -184,6 +184,115 @@ func TestAccAlicloudCmsMonitorGroup_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cms_monitor_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudCmsMonitorGroupMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCmsMonitorGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudCmsMonitorGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCmsMonitorGroupBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"contact_groups":      []string{"${alicloud_cms_alarm_contact_group.default.alarm_contact_group_name}"},
+					"resource_group_id":   "${alicloud_resource_manager_resource_group.default.id}",
+					"resource_group_name": "${alicloud_resource_manager_resource_group.default.resource_group_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"contact_groups.#":    "1",
+						"resource_group_id":   CHECKSET,
+						"resource_group_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"monitor_group_name": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"monitor_group_name": name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"resource_group_id", "resource_group_name"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"contact_groups": []string{"${alicloud_cms_alarm_contact_group.default.alarm_contact_group_name}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"contact_groups.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"monitor_group_name": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"monitor_group_name": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance-test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance-test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"contact_groups":     []string{"${alicloud_cms_alarm_contact_group.default.alarm_contact_group_name}", "${alicloud_cms_alarm_contact_group.default1.alarm_contact_group_name}"},
+					"monitor_group_name": "${var.name}",
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "acceptance-test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"contact_groups.#":   "2",
+						"monitor_group_name": name,
+						"tags.%":             "2",
+						"tags.Created":       "TF-update",
+						"tags.For":           "acceptance-test-update",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AlicloudCmsMonitorGroupMap = map[string]string{}
 
 func AlicloudCmsMonitorGroupBasicDependence(name string) string {
@@ -198,6 +307,27 @@ alarm_contact_group_name = var.name
 
 resource "alicloud_cms_alarm_contact_group" "default1" {
 alarm_contact_group_name = "${var.name}_update"
+}
+`, name)
+}
+
+func AlicloudCmsMonitorGroupBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+resource "alicloud_cms_alarm_contact_group" "default" {
+	alarm_contact_group_name = var.name
+}
+
+resource "alicloud_cms_alarm_contact_group" "default1" {
+	alarm_contact_group_name = "${var.name}_update"
+}
+
+resource "alicloud_resource_manager_resource_group" "default" {
+	resource_group_name = var.name
+	display_name        = var.name
 }
 `, name)
 }

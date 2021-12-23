@@ -86,10 +86,10 @@ type DescribeACLAttributeRequest struct {
 // DescribeACLAttributeResponse is the response struct for api DescribeACLAttribute
 type DescribeACLAttributeResponse struct {
 	*responses.BaseResponse
-	RequestId  string `json:"RequestId" xml:"RequestId"`
 	TotalCount int    `json:"TotalCount" xml:"TotalCount"`
-	PageNumber int    `json:"PageNumber" xml:"PageNumber"`
 	PageSize   int    `json:"PageSize" xml:"PageSize"`
+	RequestId  string `json:"RequestId" xml:"RequestId"`
+	PageNumber int    `json:"PageNumber" xml:"PageNumber"`
 	Acrs       Acrs   `json:"Acrs" xml:"Acrs"`
 }
 

@@ -90,6 +90,7 @@ resource "alicloud_emr_cluster" "default" {
     disk_count        = "1"
     sys_disk_type     = data.alicloud_emr_disk_types.system_disk.types.0.value
     sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
+    charge_type       = "PostPaid"
   }
 
   host_group {
@@ -102,6 +103,7 @@ resource "alicloud_emr_cluster" "default" {
     disk_count        = "4"
     sys_disk_type     = data.alicloud_emr_disk_types.system_disk.types.0.value
     sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
+    charge_type       = "PostPaid"
   }
 
   host_group {
@@ -114,6 +116,7 @@ resource "alicloud_emr_cluster" "default" {
     disk_count        = "4"
     sys_disk_type     = data.alicloud_emr_disk_types.system_disk.types.0.value
     sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
+    charge_type       = "PostPaid"
   }
 
   high_availability_enable  = true

@@ -14,5 +14,6 @@ resource "alicloud_elasticsearch_instance" "instance" {
   client_node_amount       = var.client_node_amount
   client_node_spec         = var.client_node_spec
   protocol                 = var.protocol
+  setting_config           = var.setting_config
 }
 

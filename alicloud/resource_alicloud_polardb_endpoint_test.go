@@ -90,14 +90,16 @@ func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 			//todo: After resource polardb_node is supported, it is necessary to add a modification check on the “nodes” parameter
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ssl_enabled": "Enable",
-					"net_type":    "Private",
+					"ssl_enabled":     "Enable",
+					"net_type":        "Private",
+					"ssl_auto_rotate": "Enable",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"ssl_enabled":           "Enable",
 						"net_type":              "Private",
 						"ssl_connection_string": REGEXMATCH + privateConnectionStringRegexp,
+						"ssl_auto_rotate":       "Enable",
 					}),
 				),
 			},
@@ -116,7 +118,7 @@ func resourcePolarDBEndpointConfigDependence(name string) string {
         }
 
         data "alicloud_vpcs" "vpcs_ds"{
-                is_default = "true"
+               name_regex = "default-NODELETING"
         }
 
         resource "alicloud_polardb_cluster" "cluster" {

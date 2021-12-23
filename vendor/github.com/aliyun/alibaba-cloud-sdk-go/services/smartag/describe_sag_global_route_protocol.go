@@ -82,8 +82,8 @@ type DescribeSagGlobalRouteProtocolRequest struct {
 // DescribeSagGlobalRouteProtocolResponse is the response struct for api DescribeSagGlobalRouteProtocol
 type DescribeSagGlobalRouteProtocolResponse struct {
 	*responses.BaseResponse
-	RequestId     string      `json:"RequestId" xml:"RequestId"`
 	RouteProtocol string      `json:"RouteProtocol" xml:"RouteProtocol"`
+	RequestId     string      `json:"RequestId" xml:"RequestId"`
 	TaskStates    []TaskState `json:"TaskStates" xml:"TaskStates"`
 }
 

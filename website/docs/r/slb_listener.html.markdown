@@ -91,7 +91,8 @@ The following arguments are supported:
 * `protocol` - (Required, ForceNew) The protocol to listen on. Valid values are [`http`, `https`, `tcp`, `udp`].
 * `bandwidth` - (Optional) Bandwidth peak of Listener. For the public network instance charged per traffic consumed, the Bandwidth on Listener can be set to -1, indicating the bandwidth peak is unlimited. Valid values are [-1, 1-1000] in Mbps.
 * `description` - (Optional, Available in 1.69.0+) The description of slb listener. This description can have a string of 1 to 80 characters. Default value: null.
-* `scheduler` - (Optional) Scheduling algorithm,  Valid values: `wrr`, `rr`, `wlc`, `sch`. Default to `wrr`. Only when `protocol` is `tcp` or `udp`, `scheduler` can be set to `sch`.
+* `scheduler` - (Optional) Scheduling algorithm,  Valid values: `wrr`, `rr`, `wlc`, `sch`, `tcp`, `qch`. Default to `wrr`. 
+  Only when `protocol` is `tcp` or `udp`, `scheduler` can be set to `sch`. Only when instance is guaranteed-performance instance and `protocol` is `tcp` or `udp`, `scheduler` can be set to `tch`. Only when instance is guaranteed-performance instance and `protocol` is `udp`, `scheduler` can be set to `qch`.
 * `sticky_session` - (Optional) Whether to enable session persistence, Valid values are `on` and `off`. Default to `off`.
 * `sticky_session_type` - (Optional) Mode for handling the cookie. If `sticky_session` is "on", it is mandatory. Otherwise, it will be ignored. Valid values are `insert` and `server`. `insert` means it is inserted from Server Load Balancer; `server` means the Server Load Balancer learns from the backend server.
 * `cookie_timeout` - (Optional) Cookie timeout. It is mandatory when `sticky_session` is "on" and `sticky_session_type` is "insert". Otherwise, it will be ignored. Valid value range: [1-86400] in seconds.
@@ -108,8 +109,8 @@ The following arguments are supported:
 * `health_check_interval` - (Optional) Time interval of health checks. It is required when `health_check` is on. Valid value range: [1-50] in seconds. Default to 2.
 * `health_check_http_code` - (Optional) Regular health check HTTP status code. Multiple codes are segmented by “,”. It is required when `health_check` is on. Default to `http_2xx`.  Valid values are: `http_2xx`,  `http_3xx`, `http_4xx` and `http_5xx`.
 * `health_check_method` - (Optional, Available in 1.70.0+) HealthCheckMethod used for health check.`http` and `https` support regions ap-northeast-1, ap-southeast-1, ap-southeast-2, ap-southeast-3, us-east-1, us-west-1, eu-central-1, ap-south-1, me-east-1, cn-huhehaote, cn-zhangjiakou, ap-southeast-5, cn-shenzhen, cn-hongkong, cn-qingdao, cn-chengdu, eu-west-1, cn-hangzhou", cn-beijing, cn-shanghai.This function does not support the TCP protocol .
-* `ssl_certificate_id` - (Deprecated) It has been deprecated from 1.59.0 and using `server_certificate_id` instead. 
-* `server_certificate_id` - (Optional, Available in 1.59.0+) SLB Server certificate ID. It is required when `protocol` is `https`.
+* `ssl_certificate_id` - (Deprecated) SLB Server certificate ID. It has been deprecated from 1.59.0 and using `server_certificate_id` instead. 
+* `server_certificate_id` - (Optional, Available in 1.59.0+) SLB Server certificate ID. It is required when `protocol` is `https`. The `server_certificate_id` is also required when the value of the `ssl_certificate_id`  is Empty.
 * `ca_certificate_id` - (Optional, Available in 1.104) SLB CA certificate ID. Only when `protocol` is `https` can be specified.
 * `gzip` - (Optional) Whether to enable "Gzip Compression". If enabled, files of specific file types will be compressed, otherwise, no files will be compressed. Default to true. Available in v1.13.0+.
 * `x_forwarded_for` - (Optional) Whether to set additional HTTP Header field "X-Forwarded-For" (documented below). Available in v1.13.0+.
@@ -141,7 +142,7 @@ The x_forwarded_for mapping supports the following:
 
 ## Listener fields and protocol mapping
 
-load balance support 4 protocal to listen on, they are `http`,`https`,`tcp`,`udp`, the every listener support which portocal following:
+load balance support 4 protocol to listen on, they are `http`,`https`,`tcp`,`udp`, the every listener support which portocal following:
 
 listener parameter | support protocol | value range |
 ------------- | ------------- | ------------- | 
@@ -149,7 +150,7 @@ backend_port | http & https & tcp & udp | 1-65535 |
 frontend_port | http & https & tcp & udp | 1-65535 |
 protocol | http & https & tcp & udp |
 bandwidth | http & https & tcp & udp | -1 / 1-1000 |
-scheduler | http & https & tcp & udp | wrr rr or wlc |
+scheduler | http & https & tcp & udp | wrr, rr, wlc, tch, qch |
 sticky_session | http & https | on or off |
 sticky_session_type | http & https | insert or server | 
 cookie_timeout | http & https | 1-86400  | 
@@ -215,5 +216,5 @@ The following attributes are exported:
 Load balancer listener can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_slb_listener.example "lb-abc123456:22"
+$ terraform import alicloud_slb_listener.example "lb-abc123456:tcp:22"
 ```

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudOtsInstanceAttachmentsDataSource_basic(t *testing.T) {
+func TestAccAlicloudOtsInstanceAttachmentsDataSourceBasic(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_ots_instance_attachments.default"
 

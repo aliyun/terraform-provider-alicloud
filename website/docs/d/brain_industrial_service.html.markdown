@@ -13,11 +13,13 @@ Using this data source can open Brain Industrial service automatically. If the s
 
 -> **NOTE:** Available in v1.115.0+
 
+-> **NOTE:** The Brain Industrial service is not support in the international site.
+
 ## Example Usage
 
 ```terraform
 data "alicloud_brain_industrial_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

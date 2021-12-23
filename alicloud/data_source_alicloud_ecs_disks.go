@@ -156,7 +156,7 @@ func dataSourceAlicloudEcsDisks() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Attaching", "Available", "Creating", "Detaching", "In_use", "Migrating", "ReIniting", "Transfering"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Attaching", "Available", "Creating", "Detaching", "In_use", "Migrating", "ReIniting", "Transferring"}, false),
 			},
 			"tags": tagsSchema(),
 			"zone_id": {

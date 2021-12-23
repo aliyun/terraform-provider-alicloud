@@ -52,8 +52,8 @@ func testSweepElasticsearch(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
 		"",
-		fmt.Sprintf("tf-testAcc%s", region),
-		fmt.Sprintf("tf_testAcc%s", region),
+		"tf-testAcc",
+		"tf_testAcc",
 	}
 
 	var instances []elasticsearch.Instance
@@ -159,7 +159,6 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -366,7 +365,6 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -425,7 +423,6 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -489,7 +486,6 @@ func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -541,7 +537,6 @@ func TestAccAlicloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -602,7 +597,6 @@ func TestAccAlicloudElasticsearchInstance_client_node(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -670,7 +664,6 @@ func TestAccAlicloudElasticsearchInstance_https(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -722,6 +715,75 @@ func TestAccAlicloudElasticsearchInstance_https(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudElasticsearchInstance_setting_config(t *testing.T) {
+	var instance *elasticsearch.DescribeInstanceResponse
+
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudElasticsearchMap)
+
+	serviceFunc := func() interface{} {
+		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	if len(name) > 30 {
+		name = name[:30]
+	}
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":          name,
+					"vswitch_id":           "${local.vswitch_id}",
+					"version":              "6.7_with_X-Pack",
+					"password":             "Yourpassword1234",
+					"data_node_spec":       DataNodeSpec,
+					"data_node_amount":     "3",
+					"data_node_disk_size":  DataNodeDisk,
+					"data_node_disk_type":  DataNodeDiskType,
+					"instance_charge_type": string(PostPaid),
+					"setting_config": map[string]string{
+						"\"action.auto_create_index\"":         "+.*,-*",
+						"\"action.destructive_requires_name\"": "false",
+						"\"xpack.security.audit.enabled\"":     "true",
+						"\"xpack.security.audit.outputs\"":     "index",
+						"\"xpack.watcher.enabled\"":            "false",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"setting_config.action.auto_create_index":         "+.*,-*",
+						"setting_config.action.destructive_requires_name": "false",
+						"setting_config.xpack.security.audit.enabled":     "true",
+						"setting_config.xpack.security.audit.outputs":     "index",
+						"setting_config.xpack.watcher.enabled":            "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+		},
+	})
+}
+
 var elasticsearchMap = map[string]string{
 	"description":                   CHECKSET,
 	"data_node_spec":                DataNodeSpec,
@@ -744,6 +806,17 @@ var elasticsearchMap = map[string]string{
 	"kibana_domain":                 CHECKSET,
 	"kibana_port":                   CHECKSET,
 	"vswitch_id":                    CHECKSET,
+}
+
+var AlicloudElasticsearchMap = map[string]string{
+	"id":                   CHECKSET,
+	"domain":               CHECKSET,
+	"port":                 CHECKSET,
+	"kibana_domain":        CHECKSET,
+	"kibana_port":          CHECKSET,
+	"vswitch_id":           CHECKSET,
+	"description":          CHECKSET,
+	"instance_charge_type": string(PostPaid),
 }
 
 func resourceElasticsearchInstanceConfigDependence(name string) string {

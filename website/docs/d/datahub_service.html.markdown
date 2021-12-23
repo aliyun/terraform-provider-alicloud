@@ -15,11 +15,13 @@ For information about DataHub and how to use it, see [What is DataHub](https://h
 
 -> **NOTE:** Available in v1.111.0+
 
+-> **NOTE:** The DataHub service is not support in the international site.
+
 ## Example Usage
 
 ```terraform
 data "alicloud_datahub_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

@@ -73,19 +73,20 @@ func TestAccAlicloudAdbDbClustersDataSource(t *testing.T) {
 			"clusters.0.payment_type":        "PayAsYouGo",
 			"clusters.0.charge_type":         "PostPaid",
 			"clusters.0.region_id":           CHECKSET,
-			"clusters.0.expired":             "false",
+			"clusters.0.expired":             CHECKSET,
 			"clusters.0.lock_mode":           "Unlock",
 			"clusters.0.create_time":         CHECKSET,
 			"clusters.0.db_cluster_version":  "3.0",
 			"clusters.0.db_node_class":       "E8",
 			"clusters.0.db_node_count":       "1",
-			"clusters.0.db_node_storage":     "300",
+			"clusters.0.db_node_storage":     CHECKSET,
 			"clusters.0.compute_resource":    "8Core32GB",
 			"clusters.0.elastic_io_resource": "0",
 			"clusters.0.zone_id":             CHECKSET,
 			"clusters.0.db_cluster_category": "MixedStorage",
 			"clusters.0.maintain_time":       "23:00Z-00:00Z",
 			"clusters.0.security_ips.#":      "2",
+			"clusters.0.mode":                "flexible",
 		}
 	}
 
@@ -103,12 +104,7 @@ func TestAccAlicloudAdbDbClustersDataSource(t *testing.T) {
 		fakeMapFunc:  fakeAdbClusterMapFunc,
 	}
 
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-		testAccPreCheckWithNoDefaultVswitch(t)
-	}
-
-	AdbClusterCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameConf, statusConf, tagsConf, allConf)
+	AdbClusterCheckInfo.dataSourceTestCheck(t, rand, nameConf, statusConf, tagsConf, allConf)
 }
 
 func testAccCheckAlicloudAdbDbClusterDataSourceConfig(rand int, attrMap map[string]string) string {

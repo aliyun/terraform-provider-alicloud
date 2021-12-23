@@ -32,7 +32,7 @@ resource "alicloud_ons_instance" "default" {
 resource "alicloud_ons_group" "default" {
   group_name  = var.group_name
   instance_id = alicloud_ons_instance.default.id
-  remark = "dafault_ons_group_remark"
+  remark      = "dafault_ons_group_remark"
 }
 
 data "alicloud_ons_groups" "groups_ds" {

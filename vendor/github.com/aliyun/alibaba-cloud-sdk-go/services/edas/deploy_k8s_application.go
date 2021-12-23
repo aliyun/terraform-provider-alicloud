@@ -83,6 +83,8 @@ type DeployK8sApplicationRequest struct {
 	CpuLimit               requests.Integer `position:"Query" name:"CpuLimit"`
 	PackageVersion         string           `position:"Query" name:"PackageVersion"`
 	StorageType            string           `position:"Query" name:"StorageType"`
+	EnvFroms               string           `position:"Query" name:"EnvFroms"`
+	ConfigMountDescs       string           `position:"Query" name:"ConfigMountDescs"`
 	EdasContainerVersion   string           `position:"Query" name:"EdasContainerVersion"`
 	PackageUrl             string           `position:"Query" name:"PackageUrl"`
 	MemoryLimit            requests.Integer `position:"Query" name:"MemoryLimit"`
@@ -106,6 +108,8 @@ type DeployK8sApplicationRequest struct {
 	UriEncoding            string           `position:"Query" name:"UriEncoding"`
 	AppId                  string           `position:"Query" name:"AppId"`
 	BatchTimeout           requests.Integer `position:"Query" name:"BatchTimeout"`
+	PvcMountDescs          string           `position:"Query" name:"PvcMountDescs"`
+	EmptyDirs              string           `position:"Query" name:"EmptyDirs"`
 	McpuRequest            requests.Integer `position:"Query" name:"McpuRequest"`
 	McpuLimit              requests.Integer `position:"Query" name:"McpuLimit"`
 	VolumesStr             string           `position:"Query" name:"VolumesStr"`

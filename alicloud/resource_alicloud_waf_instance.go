@@ -89,6 +89,10 @@ func resourceAlicloudWafInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"region": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -116,6 +120,10 @@ func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{})
 		request["RenewalStatus"] = v
 	}
 
+	region := client.RegionId
+	if v, ok := d.GetOk("region"); ok && v.(string) != "" {
+		region = v.(string)
+	}
 	request["SubscriptionType"] = d.Get("subscription_type")
 	request["Parameter"] = []map[string]string{
 		{
@@ -152,7 +160,7 @@ func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{})
 		},
 		{
 			"Code":  "Region",
-			"Value": client.RegionId,
+			"Value": region,
 		},
 		{
 			"Code":  "WafLog",
@@ -165,6 +173,10 @@ func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
+				return resource.RetryableError(err)
+			}
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -263,6 +275,10 @@ func resourceAlicloudWafInstanceUpdate(d *schema.ResourceData, meta interface{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
+					return resource.RetryableError(err)
+				}
+				if IsExpectedErrors(err, []string{"NotApplicable"}) {
+					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

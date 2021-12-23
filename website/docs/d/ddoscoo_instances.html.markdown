@@ -44,3 +44,12 @@ The following attributes are exported in addition to the arguments listed above:
   * `service_bandwidth` - The instance's business bandwidth.
   * `port_count` - The instance's count of port retransmission config.
   * `domain_count` - The instance's count of domain retransmission config.
+  * `remark` - The remark of the instance.
+  * `ip_mode` - The ip mode of the instance. The Valid Values : `fnat`, `v6tov4`.
+  * `debt_status` - The debt status of the instance.
+  * `edition` - The edition of the instance. The Valid Values : `0`, `1`, `2`, `9`.
+  * `ip_version` - The ip version of the instance. The Valid Values : `Ipv4`, `Ipv6`.
+  * `status` - The status of the instance. The Valid Values : `1`, `2`.
+  * `enabled` - The enabled of the instance. The Valid Values : `0`, `1`.
+  * `expire_time` - The expiry time of the instance.
+  * `create_time` - The creation time of the instance.

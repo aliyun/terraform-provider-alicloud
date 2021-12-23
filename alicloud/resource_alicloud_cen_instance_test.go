@@ -7,13 +7,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -24,9 +28,12 @@ func init() {
 			"alicloud_cen_bandwidth_package",
 			"alicloud_cen_flowlog",
 			"alicloud_cen_instance_attachment",
+			"alicloud_cen_bandwidth_limit",
 		},
 	})
 }
+
+var sweepCenInstanceIds []string
 
 func testSweepCenInstances(region string) error {
 	rawClient, err := sharedClientForRegion(region)
@@ -36,10 +43,8 @@ func testSweepCenInstances(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		fmt.Sprintf("tf-testAcc%s", region),
-		fmt.Sprintf("tf_testAcc%s", region),
-		fmt.Sprintf("tf-testAccCen%s", region),
-		fmt.Sprintf("tf_testAccCen%s", region),
+		"tf-testAcc",
+		"tf_testAcc",
 	}
 
 	var insts []cbn.Cen
@@ -71,10 +76,10 @@ func testSweepCenInstances(region string) error {
 		describeCensRequest.PageNumber = page
 	}
 
-	sweeped := false
-	for _, v := range insts {
-		name := v.Name
-		id := v.CenId
+	sweepCenInstanceIds = make([]string, 0)
+	for _, cenInstance := range insts {
+		name := cenInstance.Name
+		cenId := cenInstance.CenId
 		skip := true
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
@@ -83,23 +88,24 @@ func testSweepCenInstances(region string) error {
 			}
 		}
 		if skip {
-			log.Printf("[INFO] Skipping CEN Instance: %s (%s)", name, id)
+			log.Printf("[INFO] Skipping CEN Instance: %s (%s)", name, cenId)
 			continue
 		}
+		sweepCenInstanceIds = append(sweepCenInstanceIds, cenId)
 		describeCenAttachedChildInstancesRequest := cbn.CreateDescribeCenAttachedChildInstancesRequest()
-		describeCenAttachedChildInstancesRequest.CenId = id
+		describeCenAttachedChildInstancesRequest.CenId = cenId
 		raw, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
 			return cenClient.DescribeCenAttachedChildInstances(describeCenAttachedChildInstancesRequest)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to Describe CEN Attached Instance (%s (%s)): %s", name, id, err)
+			log.Printf("[ERROR] Failed to Describe CEN Attached Instance (%s (%s)): %s", name, cenId, err)
 		}
 		describeCenAttachedChildInstancesResponse, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
 		for _, childInstance := range describeCenAttachedChildInstancesResponse.ChildInstances.ChildInstance {
 			instanceId := childInstance.ChildInstanceId
-			log.Printf("[INFO] Detaching CEN Child Instance: %s (%s %s)", name, id, instanceId)
+			log.Printf("[INFO] Detaching CEN Child Instance: %s (%s %s)", name, cenId, instanceId)
 			detachCenChildInstanceRequest := cbn.CreateDetachCenChildInstanceRequest()
-			detachCenChildInstanceRequest.CenId = id
+			detachCenChildInstanceRequest.CenId = cenId
 			detachCenChildInstanceRequest.ChildInstanceId = instanceId
 			detachCenChildInstanceRequest.ChildInstanceType = childInstance.ChildInstanceType
 			detachCenChildInstanceRequest.ChildInstanceRegionId = childInstance.ChildInstanceRegionId
@@ -107,29 +113,374 @@ func testSweepCenInstances(region string) error {
 				return cenClient.DetachCenChildInstance(detachCenChildInstanceRequest)
 			})
 			if err != nil {
-				log.Printf("[ERROR] Failed to Detach CEN Attached Instance (%s (%s %s)): %s", name, id, instanceId, err)
+				log.Printf("[ERROR] Failed to Detach CEN Attached Instance (%s (%s %s)): %s", name, cenId, instanceId, err)
 			}
 			cenService := CenService{client}
-			err = cenService.WaitForCenInstanceAttachment(id+COLON_SEPARATED+instanceId, Deleted, DefaultCenTimeoutLong)
+			err = cenService.WaitForCenInstanceAttachment(cenId+COLON_SEPARATED+instanceId, Deleted, DefaultCenTimeoutLong)
 			if err != nil {
-				log.Printf("[ERROR] Failed to WaitFor CEN Attached Instance Detached (%s (%s %s)): %s", name, id, instanceId, err)
+				log.Printf("[ERROR] Failed to WaitFor CEN Attached Instance Detached (%s (%s %s)): %s", name, cenId, instanceId, err)
 			}
 		}
-		log.Printf("[INFO] Deleting CEN Instance: %s (%s)", name, id)
+
+		action := "ListTransitRouterVbrAttachments"
+		request := make(map[string]interface{})
+		request["CenId"] = cenId
+		//request["RegionId"] = "cn-hangzhou"
+		request["PageSize"] = PageSizeLarge
+		request["PageNumber"] = 1
+		var response map[string]interface{}
+		conn, err := client.NewCbnClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		for {
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				log.Printf("[ERROR] %s failed: %v", action, err)
+				break
+			}
+			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				name := fmt.Sprint(item["TransitRouterAttachmentName"])
+				id := fmt.Sprint(item["TransitRouterAttachmentId"])
+				skip := true
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(name, prefix) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[DEBUG] Skipping the tr %s", name)
+					continue
+				}
+				action := "DeleteTransitRouterVbrAttachment"
+				log.Printf("[DEBUG] %s %s", action, name)
+
+				request := map[string]interface{}{
+					"TransitRouterAttachmentId": id,
+				}
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					log.Printf("[ERROR] %s failed %v", action, err)
+				}
+			}
+			if len(result) < PageSizeLarge {
+				break
+			}
+			request["PageNumber"] = request["PageNumber"].(int) + 1
+		}
+
+		action = "ListTransitRouterVpcAttachments"
+		request = make(map[string]interface{})
+		request["CenId"] = cenId
+		request["RegionId"] = client.RegionId
+		request["PageSize"] = PageSizeLarge
+		request["PageNumber"] = 1
+		for {
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				log.Printf("[ERROR] %s failed: %v", action, err)
+				break
+			}
+			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				name := fmt.Sprint(item["TransitRouterAttachmentName"])
+				id := fmt.Sprint(item["TransitRouterAttachmentId"])
+				skip := true
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(name, prefix) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[DEBUG] Skipping the tr %s", name)
+					continue
+				}
+				action := "DeleteTransitRouterVpcAttachment"
+				log.Printf("[DEBUG] %s %s", action, name)
+
+				request := map[string]interface{}{
+					"TransitRouterAttachmentId": id,
+				}
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					log.Printf("[ERROR] %s failed %v", action, err)
+				}
+			}
+			if len(result) < PageSizeLarge {
+				break
+			}
+			request["PageNumber"] = request["PageNumber"].(int) + 1
+		}
+
+		action = "ListTransitRouterPeerAttachments"
+		request = make(map[string]interface{})
+		request["CenId"] = cenId
+		request["RegionId"] = client.RegionId
+		request["PageSize"] = PageSizeLarge
+		request["PageNumber"] = 1
+		for {
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				log.Printf("[ERROR] %s failed: %v", action, err)
+				break
+			}
+			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				name := fmt.Sprint(item["TransitRouterAttachmentName"])
+				id := fmt.Sprint(item["TransitRouterAttachmentId"])
+				skip := true
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(name, prefix) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[DEBUG] Skipping the tr %s", name)
+					continue
+				}
+
+				action := "DeleteTransitRouterPeerAttachment"
+				log.Printf("[DEBUG] %s %s", action, name)
+
+				request := map[string]interface{}{
+					"TransitRouterAttachmentId": id,
+				}
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					log.Printf("[ERROR] %s failed %v", action, err)
+				}
+			}
+			if len(result) < PageSizeLarge {
+				break
+			}
+			request["PageNumber"] = request["PageNumber"].(int) + 1
+		}
+
+		describeCenPrivateZoneRoutesRequest := cbn.CreateDescribeCenPrivateZoneRoutesRequest()
+		describeCenPrivateZoneRoutesRequest.RegionId = client.RegionId
+		describeCenPrivateZoneRoutesRequest.AccessRegionId = client.RegionId
+		describeCenPrivateZoneRoutesRequest.CenId = cenInstance.CenId
+
+		raw, err = client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCenPrivateZoneRoutes(describeCenPrivateZoneRoutesRequest)
+		})
+		if err == nil {
+			response, _ := raw.(*cbn.DescribeCenPrivateZoneRoutesResponse)
+			for _, resp := range response.PrivateZoneInfos.PrivateZoneInfo {
+				request := cbn.CreateUnroutePrivateZoneInCenToVpcRequest()
+				request.AccessRegionId = resp.AccessRegionId
+				request.CenId = cenInstance.CenId
+				if _, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+					return cbnClient.UnroutePrivateZoneInCenToVpc(request)
+				}); err != nil {
+					log.Printf("\n Failed to UnroutePrivateZoneInCenToVpc. Error: %v", err)
+				}
+			}
+		}
+
+		action = "ListTransitRouters"
+		request = make(map[string]interface{})
+		request["RegionId"] = client.RegionId
+		request["CenId"] = cenId
+		request["PageSize"] = PageSizeLarge
+		request["PageNumber"] = 1
+		for {
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				log.Printf("[ERROR] %s failed: %v", action, err)
+				break
+			}
+			resp, err := jsonpath.Get("$.TransitRouters", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouters", response)
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				id := fmt.Sprint(item["TransitRouterId"])
+				action := "ListTransitRouterRouteTables"
+				request := make(map[string]interface{})
+				request["RegionId"] = client.RegionId
+				request["TransitRouterId"] = id
+				request["PageSize"] = PageSizeLarge
+				request["PageNumber"] = 1
+				var response map[string]interface{}
+				conn, err := client.NewCbnClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				for {
+					runtime := util.RuntimeOptions{}
+					runtime.SetAutoretry(true)
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+					if err != nil {
+						log.Printf("[ERROR] %s failed: %v", action, err)
+						break
+					}
+					resp, err := jsonpath.Get("$.TransitRouterRouteTables", response)
+					if err != nil {
+						log.Printf("\n jsonpath.Get $.TransitRouterRouteTables failed %v", err)
+						break
+					}
+					result, _ := resp.([]interface{})
+					for _, v := range result {
+						item := v.(map[string]interface{})
+						id := fmt.Sprint(item["TransitRouterRouteTableId"])
+						action := "DeleteTransitRouterRouteTable"
+						log.Printf("[DEBUG] %s %s", action, name)
+						request := map[string]interface{}{
+							"TransitRouterRouteTableId": id,
+						}
+						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+						if err != nil {
+							log.Printf("[ERROR] %s failed %v", action, err)
+						}
+					}
+					if len(result) < PageSizeLarge {
+						break
+					}
+					request["PageNumber"] = request["PageNumber"].(int) + 1
+				}
+
+				action = "DeleteTransitRouter"
+				log.Printf("[DEBUG] %s %s", action, name)
+
+				request = map[string]interface{}{
+					"TransitRouterId": id,
+				}
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					log.Printf("[ERROR] %s failed %v", action, err)
+				}
+			}
+			if len(result) < PageSizeLarge {
+				break
+			}
+			request["PageNumber"] = request["PageNumber"].(int) + 1
+		}
+	}
+	for _, cenId := range sweepCenInstanceIds {
+
+		log.Printf("[INFO] Deleting CEN Instance: %s ", cenId)
 		deleteCenRequest := cbn.CreateDeleteCenRequest()
-		deleteCenRequest.CenId = id
+		deleteCenRequest.CenId = cenId
 		_, err = client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
 			return cenClient.DeleteCen(deleteCenRequest)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete CEN Instance (%s (%s)): %s", name, id, err)
-		} else {
-			sweeped = true
+			log.Printf("[ERROR] Failed to delete CEN Instance (%s): %s", cenId, err)
 		}
-	}
-	if sweeped {
-		// Waiting 5 seconds to eusure these instances have been deleted.
-		time.Sleep(5 * time.Second)
 	}
 	return nil
 }
@@ -151,13 +502,13 @@ func TestAccAlicloudCenInstance_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
+			testAccPreCheckWithRegions(t, false, connectivity.CenNoSkipRegions)
 		},
 
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckCenInstanceDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -242,7 +593,7 @@ func TestAccAlicloudCenInstance_multi(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
+			testAccPreCheckWithRegions(t, false, connectivity.CenNoSkipRegions)
 		},
 
 		// module name
@@ -302,8 +653,8 @@ func testAccCheckCenInstanceDestroy(s *terraform.State) error {
 			return err
 		}
 
-		if instance.CenId != "" {
-			return fmt.Errorf("CEN %s still exist", instance.CenId)
+		if fmt.Sprint(instance["CenId"]) != "" {
+			return fmt.Errorf("CEN %s still exist", fmt.Sprint(instance["CenId"]))
 		}
 	}
 

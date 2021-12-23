@@ -31,7 +31,7 @@ func testSweepDns(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	queryRequest := alidns.CreateDescribeDomainsRequest()
-	var allDomains []alidns.Domain
+	var allDomains []alidns.DomainInDescribeDomains
 	queryRequest.PageSize = requests.NewInteger(PageSizeLarge)
 	queryRequest.PageNumber = requests.NewInteger(1)
 	for {
@@ -80,7 +80,7 @@ func testSweepDns(region string) error {
 
 }
 
-func TestAccAlicloudDns_basic(t *testing.T) {
+func TestAccAlicloudAlidns_basic(t *testing.T) {
 	resourceId := "alicloud_dns.default"
 	randInt := acctest.RandIntRange(10000, 99999)
 	var v *alidns.DescribeDomainInfoResponse

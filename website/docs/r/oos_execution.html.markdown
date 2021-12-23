@@ -90,6 +90,13 @@ The following attributes are exported:
 * `template_id` - The id of template.
 * `update_date` - The time when the execution was updated.
 
+### Timeouts
+
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 11 mins) Used when creating the alicloud_oos_execution (until it reaches the initial `Running` status).
+
 ## Import
 
 OOS Execution can be imported using the id, e.g.

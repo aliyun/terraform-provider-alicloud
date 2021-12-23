@@ -15,7 +15,7 @@ Provides a route entry resource. A route entry represents a route item of one VP
 
 Basic Usage
 
-```
+```terraform
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
@@ -37,15 +37,15 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "foo" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "foo" {
-  vpc_id            = alicloud_vpc.foo.id
-  cidr_block        = "10.1.1.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  name              = var.name
+  vpc_id       = alicloud_vpc.foo.id
+  cidr_block   = "10.1.1.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_security_group" "tf_test_foo" {
@@ -97,16 +97,18 @@ to create a VPC, several VSwitches and add several route entries one-click.
 
 The following arguments are supported:
 
-* `router_id` - (Deprecated) This argument has beeb deprecated. Please use other arguments to launch a custom route entry.
+* `router_id` - (Deprecated) This argument has been deprecated. Please use other arguments to launch a custom route entry.
 * `route_table_id` - (Required, ForceNew) The ID of the route table.
 * `destination_cidrblock` - (ForceNew) The RouteEntry's target network segment.
 * `nexthop_type` - (ForceNew) The next hop type. Available values:
-    - `Instance` (Default): Route the traffic destined for the destination CIDR block to an ECS instance in the VPC.
-    - `RouterInterface`: Route the traffic destined for the destination CIDR block to a router interface.
-    - `VpnGateway`: Route the traffic destined for the destination CIDR block to a VPN Gateway.
-    - `HaVip`: Route the traffic destined for the destination CIDR block to an HAVIP.
-    - `NetworkInterface`: Route the traffic destined for the destination CIDR block to an NetworkInterface.
-    - `NatGateway`: Route the traffic destined for the destination CIDR block to an Nat Gateway.
+    - `Instance` (Default): an Elastic Compute Service (ECS) instance. This is the default value.
+    - `RouterInterface`: a router interface.
+    - `VpnGateway`: a VPN Gateway.
+    - `HaVip`: a high-availability virtual IP address (HAVIP).
+    - `NetworkInterface`: an elastic network interface (ENI).
+    - `NatGateway`: a Nat Gateway.
+    - `IPv6Gateway`: an IPv6 gateway.
+    - `Attachment`: a transit router.
 
 * `nexthop_id` - (ForceNew) The route entry's next hop. ECS instance ID or VPC router interface ID.
 * `name` - (Optional, ForceNew, Available in 1.55.1+) The name of the route entry. This name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://.
@@ -116,11 +118,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The route entry id,it formats of `<route_table_id:router_id:destination_cidrblock:nexthop_type:nexthop_id>`.
-* `router_id` - The ID of the virtual router attached to Vpc.
-* `route_table_id` - The ID of the route table.
-* `destination_cidrblock` - The RouteEntry's target network segment.
-* `nexthop_type` - The next hop type.
-* `nexthop_id` - The route entry's next hop.
 
 ## Import
 

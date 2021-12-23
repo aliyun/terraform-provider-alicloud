@@ -18,7 +18,7 @@ This data source provides a list of Ram user permissions.
 ```terraform
 # Declare the data source
 data "alicloud_ram_users" "users_ds" {
-  name_regex  = "your_user_name"
+  name_regex = "your_user_name"
 }
 
 # permissions

@@ -348,7 +348,6 @@ func TestAccAlicloudSlbLoadBalancer_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -505,7 +504,7 @@ variable "name" {
 		}
 
 data "alicloud_vpcs" "default"{
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 `, name)
 }

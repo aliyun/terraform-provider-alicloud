@@ -19,7 +19,7 @@ For information about Priavte Zone and how to use it, see [What is Private Zone]
 
 ```terraform
 data "alicloud_pvtz_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

@@ -8,8 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-// Prepaid instance skip test and domestic accounts don't support calling international region to create instances.
-func SkipTestAccAlicloudAlidnsInstance_basic(t *testing.T) {
+func TestAccAlicloudAlidnsInstance_basic(t *testing.T) {
 	var v alidns.DescribeDnsProductInstanceResponse
 
 	resourceId := "alicloud_alidns_instance.default"
@@ -28,6 +27,7 @@ func SkipTestAccAlicloudAlidnsInstance_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -47,7 +47,7 @@ func SkipTestAccAlicloudAlidnsInstance_basic(t *testing.T) {
 						"dns_security":   "basic",
 						"domain_numbers": "2",
 						"period":         "1",
-						"renew_period":   "1",
+						"renew_period":   "0",
 						"renewal_status": "ManualRenewal",
 						"version_code":   "version_personal",
 					}),
@@ -57,7 +57,7 @@ func SkipTestAccAlicloudAlidnsInstance_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "renew_period", "renewal_status", "payment_type"},
+				ImportStateVerifyIgnore: []string{"period"},
 			},
 		},
 	})

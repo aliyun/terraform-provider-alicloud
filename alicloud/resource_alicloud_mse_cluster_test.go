@@ -104,7 +104,6 @@ func TestAccAlicloudMSECluster_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -181,7 +180,7 @@ var MseClusterMap = map[string]string{}
 func MseClusterBasicdependence(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_vpcs" "default" {
-	  is_default = true
+	  name_regex = "default-NODELETING"
 	}
 	data "alicloud_vswitches" "default" {
 	  vpc_id = data.alicloud_vpcs.default.ids.0

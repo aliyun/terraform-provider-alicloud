@@ -80,9 +80,9 @@ type GetCloudConnectNetworkUseLimitRequest struct {
 // GetCloudConnectNetworkUseLimitResponse is the response struct for api GetCloudConnectNetworkUseLimit
 type GetCloudConnectNetworkUseLimitResponse struct {
 	*responses.BaseResponse
+	UsedAmount  int    `json:"UsedAmount" xml:"UsedAmount"`
 	RequestId   string `json:"RequestId" xml:"RequestId"`
 	TotalAmount int    `json:"TotalAmount" xml:"TotalAmount"`
-	UsedAmount  int    `json:"UsedAmount" xml:"UsedAmount"`
 }
 
 // CreateGetCloudConnectNetworkUseLimitRequest creates a request to invoke GetCloudConnectNetworkUseLimit API

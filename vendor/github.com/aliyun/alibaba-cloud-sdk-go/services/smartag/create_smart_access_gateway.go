@@ -71,31 +71,33 @@ func (client *Client) CreateSmartAccessGatewayWithCallback(request *CreateSmartA
 // CreateSmartAccessGatewayRequest is the request struct for api CreateSmartAccessGateway
 type CreateSmartAccessGatewayRequest struct {
 	*requests.RpcRequest
-	MaxBandWidth         requests.Integer `position:"Query" name:"MaxBandWidth"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	Description          string           `position:"Query" name:"Description"`
 	ReceiverTown         string           `position:"Query" name:"ReceiverTown"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	ReceiverDistrict     string           `position:"Query" name:"ReceiverDistrict"`
+	BuyerMessage         string           `position:"Query" name:"BuyerMessage"`
+	ReceiverState        string           `position:"Query" name:"ReceiverState"`
+	Period               requests.Integer `position:"Query" name:"Period"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	ReceiverPhone        string           `position:"Query" name:"ReceiverPhone"`
+	HaType               string           `position:"Query" name:"HaType"`
+	Name                 string           `position:"Query" name:"Name"`
+	ReceiverCountry      string           `position:"Query" name:"ReceiverCountry"`
+	MaxBandWidth         requests.Integer `position:"Query" name:"MaxBandWidth"`
+	Description          string           `position:"Query" name:"Description"`
 	UserCount            requests.Integer `position:"Query" name:"UserCount"`
 	ReceiverAddress      string           `position:"Query" name:"ReceiverAddress"`
 	InstanceType         string           `position:"Query" name:"InstanceType"`
-	BuyerMessage         string           `position:"Query" name:"BuyerMessage"`
 	HardWareSpec         string           `position:"Query" name:"HardWareSpec"`
 	ReceiverEmail        string           `position:"Query" name:"ReceiverEmail"`
-	ReceiverState        string           `position:"Query" name:"ReceiverState"`
 	ReceiverCity         string           `position:"Query" name:"ReceiverCity"`
-	Period               requests.Integer `position:"Query" name:"Period"`
 	AutoPay              requests.Boolean `position:"Query" name:"AutoPay"`
+	CPEVersion           string           `position:"Query" name:"CPEVersion"`
 	ReceiverMobile       string           `position:"Query" name:"ReceiverMobile"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ReceiverPhone        string           `position:"Query" name:"ReceiverPhone"`
 	ReceiverName         string           `position:"Query" name:"ReceiverName"`
-	HaType               string           `position:"Query" name:"HaType"`
-	Name                 string           `position:"Query" name:"Name"`
 	AlreadyHaveSag       requests.Boolean `position:"Query" name:"AlreadyHaveSag"`
-	ReceiverCountry      string           `position:"Query" name:"ReceiverCountry"`
 	ChargeType           string           `position:"Query" name:"ChargeType"`
 	DataPlan             requests.Integer `position:"Query" name:"DataPlan"`
 	ReceiverZip          string           `position:"Query" name:"ReceiverZip"`
@@ -104,11 +106,12 @@ type CreateSmartAccessGatewayRequest struct {
 // CreateSmartAccessGatewayResponse is the response struct for api CreateSmartAccessGateway
 type CreateSmartAccessGatewayResponse struct {
 	*responses.BaseResponse
-	RequestId   string `json:"RequestId" xml:"RequestId"`
-	SmartAGId   string `json:"SmartAGId" xml:"SmartAGId"`
-	Name        string `json:"Name" xml:"Name"`
-	OrderId     string `json:"OrderId" xml:"OrderId"`
-	Description string `json:"Description" xml:"Description"`
+	Description     string `json:"Description" xml:"Description"`
+	RequestId       string `json:"RequestId" xml:"RequestId"`
+	OrderId         string `json:"OrderId" xml:"OrderId"`
+	SmartAGId       string `json:"SmartAGId" xml:"SmartAGId"`
+	Name            string `json:"Name" xml:"Name"`
+	ResourceGroupId string `json:"ResourceGroupId" xml:"ResourceGroupId"`
 }
 
 // CreateCreateSmartAccessGatewayRequest creates a request to invoke CreateSmartAccessGateway API

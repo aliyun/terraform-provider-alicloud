@@ -80,9 +80,9 @@ type GetSmartAccessGatewayUseLimitRequest struct {
 // GetSmartAccessGatewayUseLimitResponse is the response struct for api GetSmartAccessGatewayUseLimit
 type GetSmartAccessGatewayUseLimitResponse struct {
 	*responses.BaseResponse
+	UsedAmount  int    `json:"UsedAmount" xml:"UsedAmount"`
 	RequestId   string `json:"RequestId" xml:"RequestId"`
 	TotalAmount int    `json:"TotalAmount" xml:"TotalAmount"`
-	UsedAmount  int    `json:"UsedAmount" xml:"UsedAmount"`
 }
 
 // CreateGetSmartAccessGatewayUseLimitRequest creates a request to invoke GetSmartAccessGatewayUseLimit API

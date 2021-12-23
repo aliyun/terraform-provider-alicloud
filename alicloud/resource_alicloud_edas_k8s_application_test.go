@@ -43,12 +43,13 @@ func testSweepEdasK8sApplication(region string) error {
 	})
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve edas k8s application in service list: %s", err)
+		return nil
 	}
 
 	listApplicationResponse, _ := raw.(*edas.ListApplicationResponse)
 	if listApplicationResponse.Code != 200 {
 		log.Printf("[ERROR] Failed to retrieve edas k8s application in service list: %s", listApplicationResponse.Message)
-		return WrapError(Error(listApplicationResponse.Message))
+		return nil
 	}
 
 	for _, v := range listApplicationResponse.ApplicationList.Application {
@@ -113,7 +114,8 @@ func testSweepEdasK8sApplication(region string) error {
 			return nil
 		})
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] DeleteApplication got an error: %s", err)
+			return nil
 		}
 	}
 
@@ -141,7 +143,6 @@ func TestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -292,7 +293,6 @@ func TestAccAlicloudEdasK8sApplicationJar_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -417,7 +417,6 @@ func TestAccAlicloudEdasK8sApplication_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,

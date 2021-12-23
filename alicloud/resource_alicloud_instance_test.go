@@ -139,7 +139,7 @@ func testSweepInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudInstanceBasic(t *testing.T) {
+func TestAccAlicloudEcsInstanceBasic(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -362,15 +362,35 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
-						"foo": "foo",
-						"Bar": "Bar",
+						"foo":  "foo",
+						"Bar":  "Bar",
+						"tag0": "value0",
+						"tag1": "value1",
+						"tag2": "value2",
+						"tag3": "value3",
+						"tag4": "value4",
+						"tag5": "value5",
+						"tag6": "value6",
+						"tag7": "value7",
+						"tag8": "value8",
+						"tag9": "value9",
+						"tagA": "valueA",
+						"tagB": "valueB",
+						"tagC": "valueC",
+						"tagD": "valueD",
+						"tagE": "valueE",
+						"tagF": "valueF",
+						"tagG": "valueG",
+						"tagH": "valueH",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":   "2",
-						"tags.foo": "foo",
-						"tags.Bar": "Bar",
+						"tags.%":    "20",
+						"tags.foo":  "foo",
+						"tags.Bar":  "Bar",
+						"tags.tag9": "value9",
+						"tags.tagH": "valueH",
 					}),
 				),
 			},
@@ -468,7 +488,7 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceVpc(t *testing.T) {
+func TestAccAlicloudEcsInstanceVpc(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -682,15 +702,35 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
-						"foo": "foo",
-						"Bar": "Bar",
+						"foo":  "foo",
+						"Bar":  "Bar",
+						"tag0": "value0",
+						"tag1": "value1",
+						"tag2": "value2",
+						"tag3": "value3",
+						"tag4": "value4",
+						"tag5": "value5",
+						"tag6": "value6",
+						"tag7": "value7",
+						"tag8": "value8",
+						"tag9": "value9",
+						"tagA": "valueA",
+						"tagB": "valueB",
+						"tagC": "valueC",
+						"tagD": "valueD",
+						"tagE": "valueE",
+						"tagF": "valueF",
+						"tagG": "valueG",
+						"tagH": "valueH",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":   "2",
-						"tags.foo": "foo",
-						"tags.Bar": "Bar",
+						"tags.%":    "20",
+						"tags.foo":  "foo",
+						"tags.Bar":  "Bar",
+						"tags.tag9": "value9",
+						"tags.tagH": "valueH",
 					}),
 				),
 			},
@@ -727,9 +767,11 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 
-						"tags.%":   "0",
-						"tags.Bar": REMOVEKEY,
-						"tags.foo": REMOVEKEY,
+						"tags.%":    "0",
+						"tags.Bar":  REMOVEKEY,
+						"tags.foo":  REMOVEKEY,
+						"tags.tag9": REMOVEKEY,
+						"tags.tagH": REMOVEKEY,
 
 						"instance_name": name,
 
@@ -770,7 +812,7 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstancePrepaid(t *testing.T) {
+func TestAccAlicloudEcsInstancePrepaid(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -978,6 +1020,39 @@ func TestAccAlicloudInstancePrepaid(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"tag0": "value0",
+						"tag1": "value1",
+						"tag2": "value2",
+						"tag3": "value3",
+						"tag4": "value4",
+						"tag5": "value5",
+						"tag6": "value6",
+						"tag7": "value7",
+						"tag8": "value8",
+						"tag9": "value9",
+						"tagA": "valueA",
+						"tagB": "valueB",
+						"tagC": "valueC",
+						"tagD": "valueD",
+						"tagE": "valueE",
+						"tagF": "valueF",
+						"tagG": "valueG",
+						"tagH": "valueH",
+						"tagI": "valueI",
+						"tagJ": "valueJ",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":    "20",
+						"tags.tag9": "value9",
+						"tags.tagJ": "valueJ",
+					}),
+				),
+			},
 			// Message: The operation is not permitted due to deletion protection only support postPaid instance
 			/*{
 				Config: testAccConfig(map[string]interface{}{
@@ -1123,7 +1198,7 @@ func TestAccAlicloudInstancePrepaid(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceDataDisks(t *testing.T) {
+func TestAccAlicloudEcsInstanceDataDisks(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1278,7 +1353,7 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceTypeUpdate(t *testing.T) {
+func TestAccAlicloudEcsInstanceTypeUpdate(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1365,7 +1440,7 @@ func TestAccAlicloudInstanceTypeUpdate(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceSpotInstanceLimit(t *testing.T) {
+func TestAccAlicloudEcsInstanceSpotInstanceLimit(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1419,7 +1494,7 @@ func TestAccAlicloudInstanceSpotInstanceLimit(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudInstanceMulti(t *testing.T) {
+func TestAccAlicloudEcsInstanceMulti(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default.9"
@@ -1472,6 +1547,405 @@ func TestAccAlicloudInstanceMulti(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccAlicloudEcsInstanceHpcCluster(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceHpcCluster%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcHpcClusterIDDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EcsSccSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_efficiency",
+					"instance_name":                 "${var.name}",
+					"key_name":                      "${alicloud_key_pair.default.key_name}",
+					"spot_strategy":                 "NoSpot",
+					"spot_price_limit":              "0",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"hpc_cluster_id":                "${alicloud_ecs_hpc_cluster.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":  name,
+						"key_name":       name,
+						"hpc_cluster_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func resourceInstanceVpcHpcClusterIDDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_instance_types" "default" {
+  instance_type_family = "ecs.sccg7"
+  network_type = "Vpc"
+}
+data "alicloud_images" "default" {
+  name_regex  = "^aliyun_3_x64_20G_scc*"
+  owners      = "system"
+}
+
+data "alicloud_instance_types" "essd" {
+ 	cpu_core_count    = 2
+	memory_size       = 4
+ 	system_disk_category = "cloud_essd"
+}
+resource "alicloud_ecs_hpc_cluster" "default" {
+  name          = "${var.name}"
+  description   = "For Terraform Test"
+}
+resource "alicloud_vpc" "default" {
+  vpc_name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  zone_id = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+  vswitch_name              = "${var.name}"
+}
+resource "alicloud_security_group" "default" {
+  count = "2"
+  name   = "${var.name}"
+  vpc_id = "${alicloud_vpc.default.id}"
+}
+resource "alicloud_security_group_rule" "default" {
+	count = 2
+  	type = "ingress"
+  	ip_protocol = "tcp"
+  	nic_type = "intranet"
+  	policy = "accept"
+  	port_range = "22/22"
+  	priority = 1
+  	security_group_id = "${element(alicloud_security_group.default.*.id,count.index)}"
+  	cidr_ip = "172.16.0.0/24"
+}
+
+variable "name" {
+	default = "%s"
+}
+
+resource "alicloud_key_pair" "default" {
+	key_pair_name = "${var.name}"
+}
+resource "alicloud_kms_key" "key" {
+        description             = var.name
+        pending_window_in_days  = "7"
+        status               = "Enabled"
+}
+
+`, name)
+}
+
+func TestAccAlicloudEcsInstancSecondaryIps(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcSecondaryIps)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"system_disk_category":          "cloud_essd",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"host_name":                     "test",
+					"instance_name":                 "${var.name}",
+					"internet_charge_type":          "PayByTraffic",
+					"instance_charge_type":          "PostPaid",
+					"password":                      "Tftest123",
+					"user_data":                     "I_am_user_data",
+					"security_enhancement_strategy": "Active",
+					"internet_max_bandwidth_out":    "5",
+					"secondary_private_ips": []string{
+						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_id":                      CHECKSET,
+						"vswitch_id":                    CHECKSET,
+						"secondary_private_ips.#":       "1",
+						"instance_name":                 name,
+						"password":                      "Tftest123",
+						"internet_max_bandwidth_out":    "5",
+						"public_ip":                     CHECKSET,
+						"security_enhancement_strategy": "Active",
+						"system_disk_category":          "cloud_essd",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_private_ips": []string{
+						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 3)}",
+						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 7)}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_private_ips.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "security_enhancement_strategy", "dry_run"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudEcsInstancSecondaryIpCount(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcSecondaryIps)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                           "${data.alicloud_images.default.images.0.id}",
+					"security_groups":                    []string{"${alicloud_security_group.default.id}"},
+					"instance_type":                      "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"system_disk_category":               "cloud_essd",
+					"vswitch_id":                         "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"host_name":                          "test",
+					"instance_name":                      "${var.name}",
+					"internet_charge_type":               "PayByTraffic",
+					"instance_charge_type":               "PostPaid",
+					"password":                           "Tftest123",
+					"user_data":                          "I_am_user_data",
+					"security_enhancement_strategy":      "Active",
+					"internet_max_bandwidth_out":         "5",
+					"secondary_private_ip_address_count": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_id":                           CHECKSET,
+						"vswitch_id":                         CHECKSET,
+						"instance_name":                      name,
+						"password":                           "Tftest123",
+						"internet_max_bandwidth_out":         "5",
+						"public_ip":                          CHECKSET,
+						"security_enhancement_strategy":      "Active",
+						"system_disk_category":               "cloud_essd",
+						"secondary_private_ip_address_count": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_private_ip_address_count": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_private_ip_address_count": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_private_ip_address_count": "0"},
+				),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secondary_private_ip_address_count": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "security_enhancement_strategy", "secondary_private_ip_address_count", "dry_run"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudEcsInstanc_AutoRelaseTimeUpdate(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcSecondaryIps)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"system_disk_category":          "cloud_essd",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"host_name":                     "test",
+					"instance_name":                 "${var.name}",
+					"internet_charge_type":          "PayByTraffic",
+					"instance_charge_type":          "PostPaid",
+					"password":                      "Tftest123",
+					"user_data":                     "I_am_user_data",
+					"security_enhancement_strategy": "Active",
+					"auto_release_time":             time.Now().Add(1 * time.Hour).Format("2006-01-02T15:04:05Z"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_id":                      CHECKSET,
+						"vswitch_id":                    CHECKSET,
+						"instance_name":                 name,
+						"password":                      "Tftest123",
+						"security_enhancement_strategy": "Active",
+						"system_disk_category":          "cloud_essd",
+						"auto_release_time":             CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_release_time": time.Now().Add(2 * time.Hour).Format("2006-01-02T15:04:05Z"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_release_time": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_release_time": "",
+				},
+				),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_release_time": "",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "security_enhancement_strategy", "secondary_private_ip_address_count", "dry_run"},
+			},
+		},
+	})
+}
+
+func resourceInstanceVpcSecondaryIps(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  owners      = "system"
+}
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.ids[0]
+}
+
+data "alicloud_instance_types" "default" {
+	instance_type_family = "ecs.g6e"
+	network_type = "Vpc"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids[0]
+}
+
+`, name)
 }
 
 func resourceInstanceVpcConfigDependence(name string) string {
@@ -1607,7 +2081,7 @@ resource "alicloud_key_pair" "default" {
 }
 
 resource "alicloud_kms_key" "key" {
-        description             = "Hello KMS"
+        description             = var.name
         pending_window_in_days  = "7"
         key_state               = "Enabled"
 }

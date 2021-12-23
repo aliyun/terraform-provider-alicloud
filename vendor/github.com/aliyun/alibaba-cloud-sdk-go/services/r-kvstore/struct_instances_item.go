@@ -17,7 +17,7 @@ package r_kvstore
 
 // InstancesItem is a nested struct in r_kvstore response
 type InstancesItem struct {
-	CharacterType     int             `json:"CharacterType" xml:"CharacterType"`
+	CharacterType     string          `json:"CharacterType" xml:"CharacterType"`
 	ClusterId         string          `json:"ClusterId" xml:"ClusterId"`
 	ClusterName       string          `json:"ClusterName" xml:"ClusterName"`
 	EngineVersion     string          `json:"EngineVersion" xml:"EngineVersion"`
@@ -37,5 +37,8 @@ type InstancesItem struct {
 	ConnectionDomain  string          `json:"ConnectionDomain" xml:"ConnectionDomain"`
 	CreateTime        string          `json:"CreateTime" xml:"CreateTime"`
 	ShardCount        int             `json:"ShardCount" xml:"ShardCount"`
+	CurrentBandWidth  int64           `json:"CurrentBandWidth" xml:"CurrentBandWidth"`
+	BandWidth         int64           `json:"BandWidth" xml:"BandWidth"`
+	ProxyCount        int             `json:"ProxyCount" xml:"ProxyCount"`
 	InstanceNodeList  []InstanceNodes `json:"InstanceNodeList" xml:"InstanceNodeList"`
 }

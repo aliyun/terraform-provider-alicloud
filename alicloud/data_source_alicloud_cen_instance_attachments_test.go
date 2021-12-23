@@ -79,12 +79,7 @@ func TestAccAlicloudCenInstanceAttachmentsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeCenInstanceAttachmentsRecordsMapFunc,
 	}
 
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-		testAccPreCheck(t)
-	}
-
-	cenInstanceAttachmentsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, statusConf, childInstanceRegionIdConf, childInstanceTypeConf, allConf)
+	cenInstanceAttachmentsCheckInfo.dataSourceTestCheck(t, rand, statusConf, childInstanceRegionIdConf, childInstanceTypeConf, allConf)
 
 }
 

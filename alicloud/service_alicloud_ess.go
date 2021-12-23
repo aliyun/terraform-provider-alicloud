@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -152,7 +151,7 @@ func (s *EssService) WaitForEssNotification(id string, status Status, timeout in
 
 func (s *EssService) DescribeEssScalingGroup(id string) (group ess.ScalingGroup, err error) {
 	request := ess.CreateDescribeScalingGroupsRequest()
-	request.ScalingGroupId1 = id
+	request.ScalingGroupId = &[]string{id}
 	request.RegionId = s.client.RegionId
 	raw, e := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingGroups(request)
@@ -174,7 +173,7 @@ func (s *EssService) DescribeEssScalingGroup(id string) (group ess.ScalingGroup,
 
 func (s *EssService) DescribeEssScalingConfiguration(id string) (config ess.ScalingConfiguration, err error) {
 	request := ess.CreateDescribeScalingConfigurationsRequest()
-	request.ScalingConfigurationId1 = id
+	request.ScalingConfigurationId = &[]string{id}
 	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingConfigurations(request)
@@ -250,6 +249,7 @@ func (s *EssService) flattenDataDiskMappings(list []ess.DataDisk) []map[string]i
 			"disk_name":               i.DiskName,
 			"description":             i.Description,
 			"auto_snapshot_policy_id": i.AutoSnapshotPolicyId,
+			"performance_level":       i.PerformanceLevel,
 		}
 		result = append(result, l)
 	}
@@ -280,7 +280,7 @@ func (s *EssService) flattenVserverGroupList(vServerGroups []ess.VServerGroup) [
 
 func (s *EssService) DescribeEssScalingRule(id string) (rule ess.ScalingRule, err error) {
 	request := ess.CreateDescribeScalingRulesRequest()
-	request.ScalingRuleId1 = id
+	request.ScalingRuleId = &[]string{id}
 	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingRules(request)
@@ -327,7 +327,7 @@ func (s *EssService) WaitForEssScalingRule(id string, status Status, timeout int
 
 func (s *EssService) DescribeEssScheduledTask(id string) (task ess.ScheduledTask, err error) {
 	request := ess.CreateDescribeScheduledTasksRequest()
-	request.ScheduledTaskId1 = id
+	request.ScheduledTaskId = &[]string{id}
 	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScheduledTasks(request)
@@ -377,12 +377,8 @@ func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (i
 	request := ess.CreateDescribeScalingInstancesRequest()
 	request.RegionId = srv.client.RegionId
 	request.ScalingGroupId = id
-	s := reflect.ValueOf(request).Elem()
-
 	if len(instanceIds) > 0 {
-		for i, id := range instanceIds {
-			s.FieldByName(fmt.Sprintf("InstanceId%d", i+1)).Set(reflect.ValueOf(id))
-		}
+		request.InstanceId = &instanceIds
 	}
 
 	raw, err := srv.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {

@@ -35,12 +35,17 @@ The following arguments are supported:
 
 * `acl_entry_list` - (Optional) The whitelist.
 * `cluster_alias_name` - (Optional) The alias of MSE Cluster.
-* `cluster_specification` - (Required, ForceNew) The engine specification of MSE Cluster. Valid values: `MSE_SC_1_2_200_c`, `MSE_SC_2`, `MSE_SC_4_8_200_c_4_200_c`, `MSE_SC_8_16_200_c`.
+* `cluster_specification` - (Required, ForceNew) The engine specification of MSE Cluster. Valid values:
+  `MSE_SC_1_2_200_c`：1C2G
+  `MSE_SC_2_4_200_c`：2C4G
+  `MSE_SC_4_8_200_c`：4C8G
+  `MSE_SC_8_16_200_c`：8C16G
+  
 * `cluster_type` - (Required, ForceNew) The type of MSE Cluster.
 * `cluster_version` - (Required, ForceNew) The version of MSE Cluster.
 * `disk_type` - (Optional, ForceNew) The type of Disk.
 * `instance_count` - (Optional, ForceNew) The count of instance.
-* `net_type` - (Required, ForceNew) The type of network. Range limit: 1~5.
+* `net_type` - (Required, ForceNew) The type of network. Valid values: "privatenet" and "pubnet".
 * `private_slb_specification` - (Optional, ForceNew) The specification of private network SLB.
 * `pub_network_flow` - (Optional, ForceNew) The public network bandwidth. `0` means no access to the public network.
 * `pub_slb_specification` - (Optional, ForceNew) The specification of public network SLB.

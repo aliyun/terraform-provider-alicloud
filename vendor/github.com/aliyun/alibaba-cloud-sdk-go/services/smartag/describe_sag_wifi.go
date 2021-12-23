@@ -82,15 +82,15 @@ type DescribeSagWifiRequest struct {
 // DescribeSagWifiResponse is the response struct for api DescribeSagWifi
 type DescribeSagWifiResponse struct {
 	*responses.BaseResponse
-	RequestId          string      `json:"RequestId" xml:"RequestId"`
 	IsEnable           string      `json:"IsEnable" xml:"IsEnable"`
-	Ssid               string      `json:"Ssid" xml:"Ssid"`
-	IsBroadcast        string      `json:"IsBroadcast" xml:"IsBroadcast"`
-	Channel            string      `json:"Channel" xml:"Channel"`
-	Bandwidth          string      `json:"Bandwidth" xml:"Bandwidth"`
+	RequestId          string      `json:"RequestId" xml:"RequestId"`
 	IsAuth             string      `json:"IsAuth" xml:"IsAuth"`
+	Bandwidth          string      `json:"Bandwidth" xml:"Bandwidth"`
+	Channel            string      `json:"Channel" xml:"Channel"`
+	Ssid               string      `json:"Ssid" xml:"Ssid"`
 	AuthenticationType string      `json:"AuthenticationType" xml:"AuthenticationType"`
 	EncryptAlgorithm   string      `json:"EncryptAlgorithm" xml:"EncryptAlgorithm"`
+	IsBroadcast        string      `json:"IsBroadcast" xml:"IsBroadcast"`
 	TaskStates         []TaskState `json:"TaskStates" xml:"TaskStates"`
 }
 

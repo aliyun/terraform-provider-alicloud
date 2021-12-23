@@ -82,23 +82,23 @@ type DescribeHealthCheckAttributeRequest struct {
 // DescribeHealthCheckAttributeResponse is the response struct for api DescribeHealthCheckAttribute
 type DescribeHealthCheckAttributeResponse struct {
 	*responses.BaseResponse
-	RequestId          string `json:"RequestId" xml:"RequestId"`
-	CreateTime         int64  `json:"CreateTime" xml:"CreateTime"`
-	HcInstanceId       string `json:"HcInstanceId" xml:"HcInstanceId"`
-	SmartAGId          string `json:"SmartAGId" xml:"SmartAGId"`
-	Name               string `json:"Name" xml:"Name"`
-	Description        string `json:"Description" xml:"Description"`
-	Type               string `json:"Type" xml:"Type"`
-	DstIpAddr          string `json:"DstIpAddr" xml:"DstIpAddr"`
-	DstPort            int    `json:"DstPort" xml:"DstPort"`
-	SrcIpAddr          string `json:"SrcIpAddr" xml:"SrcIpAddr"`
 	SrcPort            int    `json:"SrcPort" xml:"SrcPort"`
-	ProbeInterval      int    `json:"ProbeInterval" xml:"ProbeInterval"`
-	ProbeCount         int    `json:"ProbeCount" xml:"ProbeCount"`
-	ProbeTimeout       int    `json:"ProbeTimeout" xml:"ProbeTimeout"`
-	RttThreshold       int    `json:"RttThreshold" xml:"RttThreshold"`
-	RttFailThreshold   int    `json:"RttFailThreshold" xml:"RttFailThreshold"`
+	Description        string `json:"Description" xml:"Description"`
+	RequestId          string `json:"RequestId" xml:"RequestId"`
+	SrcIpAddr          string `json:"SrcIpAddr" xml:"SrcIpAddr"`
+	CreateTime         int64  `json:"CreateTime" xml:"CreateTime"`
 	FailCountThreshold int    `json:"FailCountThreshold" xml:"FailCountThreshold"`
+	DstPort            int    `json:"DstPort" xml:"DstPort"`
+	Name               string `json:"Name" xml:"Name"`
+	ProbeCount         int    `json:"ProbeCount" xml:"ProbeCount"`
+	Type               string `json:"Type" xml:"Type"`
+	ProbeTimeout       int    `json:"ProbeTimeout" xml:"ProbeTimeout"`
+	HcInstanceId       string `json:"HcInstanceId" xml:"HcInstanceId"`
+	RttThreshold       int    `json:"RttThreshold" xml:"RttThreshold"`
+	ProbeInterval      int    `json:"ProbeInterval" xml:"ProbeInterval"`
+	SmartAGId          string `json:"SmartAGId" xml:"SmartAGId"`
+	RttFailThreshold   int    `json:"RttFailThreshold" xml:"RttFailThreshold"`
+	DstIpAddr          string `json:"DstIpAddr" xml:"DstIpAddr"`
 }
 
 // CreateDescribeHealthCheckAttributeRequest creates a request to invoke DescribeHealthCheckAttribute API

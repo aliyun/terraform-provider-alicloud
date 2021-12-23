@@ -19,8 +19,8 @@ Basic Usage
 
 ```terraform
 data "alicloud_config_aggregators" "example" {
-  ids         = ["ca-3ce2626622af0005****"]
-  name_regex  = "the_resource_name"
+  ids        = ["ca-3ce2626622af0005****"]
+  name_regex = "the_resource_name"
 }
 
 output "first_config_aggregator_id" {
@@ -36,9 +36,9 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of aggregator ids.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by aggregator name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid Values: `Creating`, `Normal`, `Deleting`.
+* `status` - (Optional, ForceNew) The status of the resource. Valid Values:  `0`: creating `1`: normal `2`: deleting.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

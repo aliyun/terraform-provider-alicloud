@@ -19,6 +19,9 @@ func init() {
 	resource.AddTestSweepers("alicloud_kms_key", &resource.Sweeper{
 		Name: "alicloud_kms_key",
 		F:    testSweepKmsKey,
+		Dependencies: []string{
+			"alicloud_kms_alias",
+		},
 	})
 }
 
@@ -85,9 +88,9 @@ func testSweepKmsKey(region string) error {
 			}
 			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Kms Key (%s): %s", item["Description"].(string), err)
+				log.Printf("[ERROR] Failed to delete Kms Key (%s): %s", item["Description"], err)
 			}
-			log.Printf("[INFO] Delete Kms Key success: %s ", item["Description"].(string))
+			log.Printf("[INFO] Delete Kms Key success: %s ", item["Description"])
 		}
 		if len(result) < PageSizeLarge {
 			break
@@ -100,7 +103,7 @@ func testSweepKmsKey(region string) error {
 	return nil
 }
 
-func TestAccAlicloudKMSKey_basic(t *testing.T) {
+func TestAccAlicloudKmsKey_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_key.default"
 	ra := resourceAttrInit(resourceId, KmsKeyMap)
@@ -115,8 +118,7 @@ func TestAccAlicloudKMSKey_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			// eu-central-1 not support Aliyun_SM4
-			testAccPreCheckWithRegions(t, false, connectivity.KmsKeyUnSupportRegions)
+			testAccPreCheckWithRegions(t, true, connectivity.KmsKeyHSMSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -126,14 +128,14 @@ func TestAccAlicloudKMSKey_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":            name,
-					"key_spec":               "Aliyun_SM4",
+					"key_spec":               "Aliyun_AES_256",
 					"protection_level":       "HSM",
 					"pending_window_in_days": "7",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":            name,
-						"key_spec":               "Aliyun_SM4",
+						"key_spec":               "Aliyun_AES_256",
 						"protection_level":       "HSM",
 						"pending_window_in_days": "7",
 					}),

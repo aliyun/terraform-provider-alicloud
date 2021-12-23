@@ -84,10 +84,10 @@ type DescribeRouteDistributionStrategiesRequest struct {
 // DescribeRouteDistributionStrategiesResponse is the response struct for api DescribeRouteDistributionStrategies
 type DescribeRouteDistributionStrategiesResponse struct {
 	*responses.BaseResponse
-	RequestId  string     `json:"RequestId" xml:"RequestId"`
 	TotalCount int        `json:"TotalCount" xml:"TotalCount"`
-	PageNumber int        `json:"PageNumber" xml:"PageNumber"`
 	PageSize   int        `json:"PageSize" xml:"PageSize"`
+	RequestId  string     `json:"RequestId" xml:"RequestId"`
+	PageNumber int        `json:"PageNumber" xml:"PageNumber"`
 	Strategies Strategies `json:"Strategies" xml:"Strategies"`
 }
 

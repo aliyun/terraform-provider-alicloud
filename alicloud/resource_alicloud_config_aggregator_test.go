@@ -66,6 +66,7 @@ func testSweepConfigAggregator(region string) error {
 		})
 		if err != nil {
 			log.Println("List Config Aggregator Failed!", err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.AggregatorsResult.Aggregators", response)
 		if err != nil {
@@ -226,6 +227,52 @@ func TestAccAlicloudConfigAggregator_basic(t *testing.T) {
 						"description":           "tf-create-aggregator",
 					}),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudConfigAggregator_aggregator_accounts_update(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregator.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigAggregatorMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregator")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigaggregator%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregatorBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": "${var.name}",
+					"description":     "tf-create-aggregator",
+					"aggregator_type": "RD",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_accounts.#": CHECKSET,
+						"aggregator_name":       name,
+						"description":           "tf-create-aggregator",
+						"aggregator_type":       "RD",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

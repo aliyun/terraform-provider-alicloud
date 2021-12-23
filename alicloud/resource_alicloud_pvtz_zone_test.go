@@ -278,6 +278,155 @@ func TestAccAlicloudPvtzZone_multi(t *testing.T) {
 		},
 	})
 }
+
+func TestAccAlicloudPvtzZone_syncTask(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_pvtz_zone.default"
+	ra := resourceAttrInit(resourceId, pvtzZoneBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePvtzZone")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%d.test.com", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePvtzZoneConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_name":         name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"sync_status":       "OFF",
+					"user_info": []map[string]interface{}{
+						{
+							"user_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.account_id}",
+							"region_ids": []string{"cn-beijing", "cn-hangzhou"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_name":         name,
+						"proxy_pattern":     "ZONE",
+						"resource_group_id": CHECKSET,
+						"user_info.#":       "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sync_status": "OFF",
+					"user_info": []map[string]interface{}{
+						{
+							"user_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.account_id}",
+							"region_ids": []string{"cn-beijing", "cn-hangzhou", "cn-chengdu"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_info.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sync_status": "OFF",
+					"user_info": []map[string]interface{}{
+						{
+							"user_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.account_id}",
+							"region_ids": []string{"cn-beijing", "cn-hangzhou"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_info.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"resource_group_id"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudPvtzZone_syncTask1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_pvtz_zone.default"
+	ra := resourceAttrInit(resourceId, pvtzZoneBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePvtzZone")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%d.test.com", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePvtzZoneConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_name":         name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"sync_status":       "OFF",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_name":         name,
+						"proxy_pattern":     "ZONE",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sync_status": "ON",
+					"user_info": []map[string]interface{}{
+						{
+							"user_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.account_id}",
+							"region_ids": []string{"cn-beijing", "cn-hangzhou", "cn-chengdu"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_info.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sync_status": "OFF",
+					"user_info":   REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sync_status": "OFF",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func resourcePvtzZoneConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_resource_manager_resource_groups" "default" {

@@ -74,10 +74,12 @@ type DescribeSmartAccessGatewayClientUsersRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
+	EndLoginTime         requests.Integer `position:"Query" name:"EndLoginTime"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	UserMail             string           `position:"Query" name:"UserMail"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	BeginLoginTime       requests.Integer `position:"Query" name:"BeginLoginTime"`
 	SmartAGId            string           `position:"Query" name:"SmartAGId"`
 	UserName             string           `position:"Query" name:"UserName"`
 }
@@ -85,10 +87,10 @@ type DescribeSmartAccessGatewayClientUsersRequest struct {
 // DescribeSmartAccessGatewayClientUsersResponse is the response struct for api DescribeSmartAccessGatewayClientUsers
 type DescribeSmartAccessGatewayClientUsersResponse struct {
 	*responses.BaseResponse
-	RequestId  string                                       `json:"RequestId" xml:"RequestId"`
 	TotalCount int                                          `json:"TotalCount" xml:"TotalCount"`
-	PageNumber int                                          `json:"PageNumber" xml:"PageNumber"`
 	PageSize   int                                          `json:"PageSize" xml:"PageSize"`
+	RequestId  string                                       `json:"RequestId" xml:"RequestId"`
+	PageNumber int                                          `json:"PageNumber" xml:"PageNumber"`
 	Users      UsersInDescribeSmartAccessGatewayClientUsers `json:"Users" xml:"Users"`
 }
 

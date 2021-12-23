@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_ddoscoo_domain_resources" "example" {
-  ids       = ["tftestacc1234.abc"]
+  ids = ["tftestacc1234.abc"]
 }
 
 output "first_ddoscoo_domain_resource_id" {

@@ -15,6 +15,8 @@ For information about EDAS and how to use it, see [What is EDAS](https://www.ali
 
 -> **NOTE:** Available in v1.98.0+
 
+-> **NOTE:** The EDAS service is not support to be open automatically in the international site.
+
 ## Example Usage
 
 ```

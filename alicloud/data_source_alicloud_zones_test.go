@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"testing"
 
-	"regexp"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
@@ -98,59 +96,6 @@ func TestAccAlicloudZonesDataSource_unitRegion(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "zones.0.available_disk_categories.#"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "ids.#"),
 					resource.TestCheckResourceAttr("data.alicloud_zones.foo", "zones.0.slb_slave_zone_ids.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudZonesDataSource_multiZone(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudZonesDataSourceMultiZone,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_zones.default"),
-					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.#"),
-					resource.TestMatchResourceAttr("data.alicloud_zones.default", "zones.0.id", regexp.MustCompile(fmt.Sprintf(".%s.", MULTI_IZ_SYMBOL))),
-					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.local_name", ""),
-					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.available_instance_types.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.available_resource_creation.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.available_disk_categories.#", "0"),
-					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.0.multi_zone_ids.#"),
-					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.0.multi_zone_ids.0"),
-					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.0.multi_zone_ids.1"),
-					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "ids.#"),
-					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.slb_slave_zone_ids.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudZonesDataSource_chargeType(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudZonesDataSourceChargeType,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_zones.default"),
-					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.#"),
-					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.0.id"),
-					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.local_name", ""),
-					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.available_instance_types.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.available_resource_creation.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.available_disk_categories.#", "0"),
-					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "ids.#"),
-					resource.TestCheckResourceAttr("data.alicloud_zones.default", "zones.0.slb_slave_zone_ids.#", "0"),
 				),
 			},
 		},
@@ -287,22 +232,6 @@ data "alicloud_zones" "foo" {
 	enable_details = true
 }
 `
-
-const testAccCheckAlicloudZonesDataSourceMultiZone = `
-data "alicloud_zones" "default" {
-  available_resource_creation= "Rds"
-  multi = true
-  enable_details = true
-}`
-
-const testAccCheckAlicloudZonesDataSourceChargeType = `
-data "alicloud_zones" "default" {
-  instance_charge_type = "PrePaid"
-  available_resource_creation= "Rds"
-  multi = true
-  enable_details = true
-}`
-
 const testAccCheckAlicloudZonesDataSource_slb = `
 data "alicloud_zones" "default" {
   available_resource_creation= "Slb"

@@ -50,3 +50,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `protection_level` - Indicates the allowed level of CIDR block overlapping.
   * `status` - Status of the CEN instance, including "Creating", "Active" and "Deleting".
   * `tags` - A map of tags assigned to the Cen Instance.
+  * `create_time` - The creation time of the CEN Instance.

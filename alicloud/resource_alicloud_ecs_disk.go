@@ -111,6 +111,10 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 			"performance_level": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("category").(string) != "cloud_essd"
+				},
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -436,15 +440,16 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 	update = false
 	modifyDiskChargeTypeReq := map[string]interface{}{
-		"DiskIds": d.Id(),
+		"DiskIds": convertListToJsonString([]interface{}{d.Id()}),
 	}
 	if !d.IsNewResource() && d.HasChange("instance_id") {
 		update = true
 	}
+	modifyDiskChargeTypeReq["ClientToken"] = buildClientToken("ModifyDiskChargeType")
 	modifyDiskChargeTypeReq["InstanceId"] = d.Get("instance_id")
 	modifyDiskChargeTypeReq["RegionId"] = client.RegionId
 	modifyDiskChargeTypeReq["AutoPay"] = true
-	if d.HasChange("payment_type") {
+	if d.HasChange("payment_type") && (d.Get("payment_type").(string) == "Subscription" || !d.IsNewResource()) {
 		update = true
 		modifyDiskChargeTypeReq["DiskChargeType"] = convertEcsDiskPaymentTypeRequest(d.Get("payment_type").(string))
 	}

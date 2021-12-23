@@ -75,6 +75,7 @@ type DescribeSmartAccessGatewayVersionsRequest struct {
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	VersionType          string           `position:"Query" name:"VersionType"`
 	SmartAGId            string           `position:"Query" name:"SmartAGId"`
 	SmartAGSn            string           `position:"Query" name:"SmartAGSn"`
 }

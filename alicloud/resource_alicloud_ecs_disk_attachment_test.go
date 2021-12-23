@@ -90,7 +90,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {
@@ -164,7 +164,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {

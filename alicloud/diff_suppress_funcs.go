@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"encoding/json"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -124,31 +123,6 @@ func dnsPriorityDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 	return d.Get("type").(string) != "MX"
 }
 
-func slbInternetDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if internet, ok := d.GetOk("address_type"); ok && internet.(string) == "internet" {
-		return true
-	}
-	if internet, ok := d.GetOkExists("internet"); ok && internet.(bool) {
-		return true
-	}
-	return false
-}
-
-func slbInternetChargeTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	// Uniform all internet chare type value and be compatible with previous lower value.
-	if strings.ToLower(old) == strings.ToLower(new) {
-		return true
-	}
-	return !slbInternetDiffSuppressFunc(k, old, new, d)
-}
-
-func slbBandwidthDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if slbInternetDiffSuppressFunc(k, old, new, d) && strings.ToLower(d.Get("internet_charge_type").(string)) == strings.ToLower(string(PayByBandwidth)) {
-		return false
-	}
-	return true
-}
-
 func slbAclDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if status, ok := d.GetOk("acl_status"); ok && status.(string) == string(OnFlag) {
 		return false
@@ -213,28 +187,11 @@ func csNodepoolSpotInstanceSettingDiffSuppressFunc(k, old, new string, d *schema
 	return true
 }
 
-func csForceUpdate(k, old, new string, d *schema.ResourceData) bool {
-	if d.Id() == "" {
+func csNodepoolScalingPolicyDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if _, ok := d.GetOk("scaling_config"); ok {
 		return false
 	}
-	return !d.Get("force_update").(bool)
-}
-
-func csForceUpdateSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	// many cs args are not returning from the server
-	// if this is a new resource, allow the diff
-	// args with this suppress func will always suppress the diff, unless user specified force_update
-	log.Printf("key %s, old %s, new %s, isnew %v, id %s", k, old, new, d.IsNewResource(), d.Id())
-	return !(d.Id() == "") && !d.Get("force_update").(bool)
-}
-
-func zoneIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if vsw, ok := d.GetOk("vswitch_id"); ok && vsw.(string) != "" {
-		return true
-	} else if multi, ok := d.GetOk("multi_az"); ok && multi.(bool) {
-		return true
-	}
-	return false
+	return true
 }
 
 func logRetentionPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -481,13 +438,6 @@ func vpnSslConnectionsDiffSuppressFunc(k, old, new string, d *schema.ResourceDat
 	return false
 }
 
-func slbDeleteProtectionSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if PayType(d.Get("instance_charge_type").(string)) == PrePaid {
-		return true
-	}
-	return false
-}
-
 func slbRuleStickySessionTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	listenerSync := slbRuleListenerSyncDiffSuppressFunc(k, old, new, d)
 	if session, ok := d.GetOk("sticky_session"); !listenerSync && ok && session.(string) == string(OnFlag) {
@@ -525,13 +475,6 @@ func slbRuleListenerSyncDiffSuppressFunc(k, old, new string, d *schema.ResourceD
 		return false
 	}
 	return true
-}
-
-func slbAddressDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if v, ok := d.GetOk("internet"); ok && v.(bool) {
-		return true
-	}
-	return false
 }
 
 func kmsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -639,6 +582,34 @@ func whiteIpListDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 		if newArray[i] != oldArray[i] {
 			return false
 		}
+	}
+	return true
+}
+
+func sslEnabledDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("ssl_enabled"); ok && v.(int) == 1 {
+		return false
+	}
+	return true
+}
+
+func securityIpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("security_ips"); ok && len(v.(*schema.Set).List()) > 0 {
+		return false
+	}
+	return true
+}
+
+func kernelVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("upgrade_db_instance_kernel_version"); ok && v.(bool) == true {
+		return false
+	}
+	return true
+}
+
+func StorageAutoScaleDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("storage_auto_scale"); ok && strings.ToLower(v.(string)) == "enable" {
+		return false
 	}
 	return true
 }

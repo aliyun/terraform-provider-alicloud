@@ -35,7 +35,7 @@ The following arguments are supported:
 
 ## Attributes Reference
 
-* `creation_date` - The date and time (UTC time) when the Alikms key version was created.
+* `creation_date` - (Removed from v1.124.4) The date and time (UTC time) when the Alikms key version was created.
 * `key_id` - The id of the master key (CMK).
 * `key_version_id` - The id of the Alikms key version.
 

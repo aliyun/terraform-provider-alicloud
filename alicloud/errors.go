@@ -26,6 +26,7 @@ const (
 	ResourceNotfound        = "ResourceNotfound"
 	ServiceUnavailable      = "ServiceUnavailable"
 	InstanceNotFound        = "Instance.Notfound"
+	ForbiddenInstance       = "Forbidden.InstanceNotFound"
 	MessageInstanceNotFound = "instance is not found"
 	Throttling              = "Throttling"
 	ThrottlingUser          = "Throttling.User"
@@ -35,6 +36,8 @@ const (
 	AliyunGoClientFailure = "AliyunGoClientFailure"
 
 	LogClientTimeout = "Client.Timeout exceeded while awaiting headers"
+
+	InvalidFileSystemStatus_Ordering = "InvalidFileSystemStatus.Ordering"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
@@ -181,7 +184,7 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 		return false
 	}
 
-	if e, ok := err.(datahub.DatahubError); ok {
+	if e, ok := err.(*datahub.DatahubClientError); ok {
 		for _, code := range expectCodes {
 			if e.Code == code || strings.Contains(e.Message, code) {
 				return true
@@ -202,30 +205,30 @@ func NeedRetry(err error) bool {
 	if err == nil {
 		return false
 	}
-	if err.Error() != "" {
-		re := regexp.MustCompile("^Post [\"]*https://.*")
-		return re.MatchString(err.Error())
+
+	postRegex := regexp.MustCompile("^Post [\"]*https://.*")
+	if postRegex.MatchString(err.Error()) {
+		return true
 	}
 
 	throttlingRegex := regexp.MustCompile("^Throttling.*")
+	codeRegex := regexp.MustCompile("^code: 5[\\d]{2}")
 
 	if e, ok := err.(*tea.SDKError); ok {
 		if strings.Contains(*e.Message, "code: 500, 您已开通过") {
 			return false
 		}
-		if *e.Code == ServiceUnavailable || *e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(*e.Code) {
+		if *e.Code == ServiceUnavailable || *e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(*e.Code) || codeRegex.MatchString(*e.Message) {
 			return true
 		}
-		re := regexp.MustCompile("^code: 5[\\d]{2}")
-		return re.MatchString(*e.Message)
 	}
 
 	if e, ok := err.(*errors.ServerError); ok {
-		return e.ErrorCode() == ServiceUnavailable || e.ErrorCode() == "Rejected.Throttling" || throttlingRegex.MatchString(e.ErrorCode())
+		return e.ErrorCode() == ServiceUnavailable || e.ErrorCode() == "Rejected.Throttling" || throttlingRegex.MatchString(e.ErrorCode()) || codeRegex.MatchString(e.Message())
 	}
 
 	if e, ok := err.(*common.Error); ok {
-		return e.Code == ServiceUnavailable || e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(e.Code)
+		return e.Code == ServiceUnavailable || e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(e.Code) || codeRegex.MatchString(e.Message)
 	}
 
 	return false
@@ -311,9 +314,9 @@ func (e ComplexError) Error() string {
 		e.Cause = Error("<nil cause>")
 	}
 	if e.Err == nil {
-		return fmt.Sprintf("[ERROR] %s:%d:\n%s", e.Path, e.Line, e.Cause.Error())
+		return fmt.Sprintf("\u001B[31m[ERROR]\u001B[0m %s:%d:\n%s", e.Path, e.Line, e.Cause.Error())
 	}
-	return fmt.Sprintf("[ERROR] %s:%d: %s:\n%s", e.Path, e.Line, e.Err.Error(), e.Cause.Error())
+	return fmt.Sprintf("\u001B[31m[ERROR]\u001B[0m %s:%d: %s:\n%s", e.Path, e.Line, e.Err.Error(), e.Cause.Error())
 }
 
 func Error(msg string, args ...interface{}) error {
@@ -327,7 +330,7 @@ func WrapError(cause error) error {
 	}
 	_, filepath, line, ok := runtime.Caller(1)
 	if !ok {
-		log.Printf("[ERROR] runtime.Caller error in WrapError.")
+		log.Printf("\u001B[31m[ERROR]\u001B[0m runtime.Caller error in WrapError.")
 		return WrapComplexError(cause, nil, "", -1)
 	}
 	parts := strings.Split(filepath, "/")
@@ -344,7 +347,7 @@ func WrapErrorf(cause error, msg string, args ...interface{}) error {
 	}
 	_, filepath, line, ok := runtime.Caller(1)
 	if !ok {
-		log.Printf("[ERROR] runtime.Caller error in WrapErrorf.")
+		log.Printf("\u001B[31m[ERROR]\u001B[0m runtime.Caller error in WrapErrorf.")
 		return WrapComplexError(cause, Error(msg), "", -1)
 	}
 	parts := strings.Split(filepath, "/")
@@ -377,9 +380,11 @@ const DefaultTimeoutMsg = "Resource %s %s Timeout!!! %s"
 const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"
 const WaitTimeoutMsg = "Resource %s %s Timeout In %d Seconds. Got: %s Expected: %s !!! %s"
 const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"
+const SweepDefaultErrorMsg = "Sweep %s %s Failed!!!"
 const IdMsg = "Resource id：%s "
 const FailedGetAttributeMsg = "Getting resource %s attribute by path %s failed!!! Body: %v."
 
 const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n\n"
 const FailedToReachTargetStatus = "Failed to reach target status. Current status is %s."
 const FailedToReachTargetAttribute = "Failed to reach value for target attribute. Current value is %s."
+const RequiredWhenMsg = "attribute '%s' is required when '%s' is %v"

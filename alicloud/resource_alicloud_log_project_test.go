@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/denverdino/aliyungo/cs"
+
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -20,18 +22,21 @@ func init() {
 }
 
 func testSweepLogProjects(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
 		"tf_test_",
 		"tf-test-",
 	}
+	return testSweepLogProjectsWithPrefixAndSuffix(region, prefixes, []string{})
+}
+
+func testSweepLogProjectsWithPrefixAndSuffix(region string, prefixes, suffixes []string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
 
 	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 		return slsClient.ListProject()
@@ -51,6 +56,33 @@ func testSweepLogProjects(region string) error {
 			}
 		}
 		if skip {
+			for _, suffix := range suffixes {
+				if strings.HasSuffix(strings.ToLower(name), strings.ToLower(suffix)) {
+					skip = false
+					break
+				}
+			}
+		}
+		// Sweep the project which from the k8s cluster
+		if skip && strings.HasPrefix(name, "k8s-log-") {
+			k8sId := strings.TrimPrefix(name, "k8s-log-")
+			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				return csClient.DescribeCluster(k8sId)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
+					skip = false
+				} else {
+					log.Printf("[ERROR] DescribeCluster got an error: %#v", err)
+				}
+			} else {
+				cluster, _ := raw.(cs.ClusterType)
+				if strings.HasPrefix(strings.ToLower(cluster.Name), "tf-testacc") || strings.HasPrefix(strings.ToLower(cluster.Name), "tf_testacc") {
+					skip = false
+				}
+			}
+		}
+		if skip {
 			log.Printf("[INFO] Skipping Log Project: %s", name)
 			continue
 		}
@@ -64,7 +96,6 @@ func testSweepLogProjects(region string) error {
 	}
 	return nil
 }
-
 func TestAccAlicloudLogProject_basic(t *testing.T) {
 	var v *sls.LogProject
 	resourceId := "alicloud_log_project.default"

@@ -71,36 +71,37 @@ func (client *Client) DescribeSmartAccessGatewaysWithCallback(request *DescribeS
 // DescribeSmartAccessGatewaysRequest is the request struct for api DescribeSmartAccessGateways
 type DescribeSmartAccessGatewaysRequest struct {
 	*requests.RpcRequest
-	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	AclIds               string           `position:"Query" name:"AclIds"`
-	CanAssociateQos      requests.Boolean `position:"Query" name:"CanAssociateQos"`
-	SoftwareVersion      string           `position:"Query" name:"SoftwareVersion"`
-	UnboundAclIds        string           `position:"Query" name:"UnboundAclIds"`
-	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
-	VersionComparator    string           `position:"Query" name:"VersionComparator"`
-	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
-	PageSize             requests.Integer `position:"Query" name:"PageSize"`
-	InstanceType         string           `position:"Query" name:"InstanceType"`
-	HardwareType         string           `position:"Query" name:"HardwareType"`
-	SmartAGIds           *[]string        `position:"Query" name:"SmartAGIds"  type:"Repeated"`
-	SerialNumber         string           `position:"Query" name:"SerialNumber"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
-	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	AssociatedCcnId      string           `position:"Query" name:"AssociatedCcnId"`
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	BusinessState        string           `position:"Query" name:"BusinessState"`
-	Name                 string           `position:"Query" name:"Name"`
-	SmartAGId            string           `position:"Query" name:"SmartAGId"`
-	Status               string           `position:"Query" name:"Status"`
+	ResourceOwnerId               requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	AclIds                        string           `position:"Query" name:"AclIds"`
+	CanAssociateQos               requests.Boolean `position:"Query" name:"CanAssociateQos"`
+	SoftwareVersion               string           `position:"Query" name:"SoftwareVersion"`
+	UnboundAclIds                 string           `position:"Query" name:"UnboundAclIds"`
+	PageNumber                    requests.Integer `position:"Query" name:"PageNumber"`
+	VersionComparator             string           `position:"Query" name:"VersionComparator"`
+	ResourceGroupId               string           `position:"Query" name:"ResourceGroupId"`
+	PageSize                      requests.Integer `position:"Query" name:"PageSize"`
+	InstanceType                  string           `position:"Query" name:"InstanceType"`
+	HardwareType                  string           `position:"Query" name:"HardwareType"`
+	SmartAGIds                    *[]string        `position:"Query" name:"SmartAGIds"  type:"Repeated"`
+	ApplicationBandwidthPackageId string           `position:"Query" name:"ApplicationBandwidthPackageId"`
+	SerialNumber                  string           `position:"Query" name:"SerialNumber"`
+	ResourceOwnerAccount          string           `position:"Query" name:"ResourceOwnerAccount"`
+	OwnerAccount                  string           `position:"Query" name:"OwnerAccount"`
+	AssociatedCcnId               string           `position:"Query" name:"AssociatedCcnId"`
+	OwnerId                       requests.Integer `position:"Query" name:"OwnerId"`
+	BusinessState                 string           `position:"Query" name:"BusinessState"`
+	Name                          string           `position:"Query" name:"Name"`
+	SmartAGId                     string           `position:"Query" name:"SmartAGId"`
+	Status                        string           `position:"Query" name:"Status"`
 }
 
 // DescribeSmartAccessGatewaysResponse is the response struct for api DescribeSmartAccessGateways
 type DescribeSmartAccessGatewaysResponse struct {
 	*responses.BaseResponse
-	RequestId           string                                           `json:"RequestId" xml:"RequestId"`
 	TotalCount          int                                              `json:"TotalCount" xml:"TotalCount"`
-	PageNumber          int                                              `json:"PageNumber" xml:"PageNumber"`
 	PageSize            int                                              `json:"PageSize" xml:"PageSize"`
+	RequestId           string                                           `json:"RequestId" xml:"RequestId"`
+	PageNumber          int                                              `json:"PageNumber" xml:"PageNumber"`
 	SmartAccessGateways SmartAccessGatewaysInDescribeSmartAccessGateways `json:"SmartAccessGateways" xml:"SmartAccessGateways"`
 }
 

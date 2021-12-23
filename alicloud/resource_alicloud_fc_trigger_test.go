@@ -42,7 +42,8 @@ func testSweepFcTrigger(region string) error {
 		return fcClient.ListServices(fc.NewListServicesInput())
 	})
 	if err != nil {
-		return fmt.Errorf("Error retrieving FC services: %s", err)
+		log.Printf("Error retrieving FC services: %s", err)
+		return nil
 	}
 
 	swept := false

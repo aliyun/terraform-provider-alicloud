@@ -2,10 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -34,7 +36,7 @@ func dataSourceAlicloudKmsKeyVersions() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"creation_date": {
+						"create_time": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -50,6 +52,11 @@ func dataSourceAlicloudKmsKeyVersions() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"creation_date": {
+							Type:     schema.TypeString,
+							Computed: true,
+							Removed:  "Attribute 'creation_date' has been removed and using 'create_time' instead.",
+						},
 					},
 				},
 			},
@@ -60,11 +67,13 @@ func dataSourceAlicloudKmsKeyVersions() *schema.Resource {
 func dataSourceAlicloudKmsKeyVersionsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := kms.CreateListKeyVersionsRequest()
-	request.KeyId = d.Get("key_id").(string)
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	var objects []kms.KeyVersion
+	action := "ListKeyVersions"
+	request := make(map[string]interface{})
+	request["KeyId"] = d.Get("key_id")
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
+
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -74,46 +83,61 @@ func dataSourceAlicloudKmsKeyVersionsRead(d *schema.ResourceData, meta interface
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+	var response map[string]interface{}
+	conn, err := client.NewKmsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-			return kmsClient.ListKeyVersions(request)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_key_versions", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_key_versions", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*kms.ListKeyVersionsResponse)
-
-		for _, item := range response.KeyVersions.KeyVersion {
+		resp, err := jsonpath.Get("$.KeyVersions.KeyVersion", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.KeyVersions.KeyVersion", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.KeyVersionId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["KeyVersionId"])]; !ok {
 					continue
 				}
 			}
 			objects = append(objects, item)
 		}
-		if len(response.KeyVersions.KeyVersion) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
-
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	ids := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-
-	for i, object := range objects {
+	ids := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"creation_date":  object.CreationDate,
-			"key_id":         object.KeyId,
-			"id":             fmt.Sprintf("%v:%v", request.KeyId, object.KeyVersionId),
-			"key_version_id": object.KeyVersionId,
+			"create_time":    object["CreationDate"],
+			"key_id":         object["KeyId"],
+			"id":             fmt.Sprint(object["KeyVersionId"]),
+			"key_version_id": fmt.Sprint(object["KeyVersionId"]),
+			"creation_date":  object["CreateTime"],
 		}
-		ids[i] = fmt.Sprintf("%v:%v", request.KeyId, object.KeyVersionId)
-		s[i] = mapping
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
@@ -127,5 +151,6 @@ func dataSourceAlicloudKmsKeyVersionsRead(d *schema.ResourceData, meta interface
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
+
 	return nil
 }

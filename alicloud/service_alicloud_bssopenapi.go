@@ -1,9 +1,12 @@
 package alicloud
 
 import (
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 const ModulesSizeLimit = 50
@@ -78,18 +81,31 @@ func (b *BssopenapiService) GetInstanceTypePrice(productCode, productType string
 	return priceList, nil
 }
 
-func (b *BssopenapiService) getSubscriptionData(request *bssopenapi.GetSubscriptionPriceRequest) (*bssopenapi.Data, error) {
+func (b *BssopenapiService) getSubscriptionData(request *bssopenapi.GetSubscriptionPriceRequest) (*bssopenapi.DataInGetSubscriptionPrice, error) {
 	request.OrderType = "NewOrder"
 	request.SubscriptionType = "Subscription"
-	request.RegionId = b.client.RegionId
-	raw, err := b.client.WithBssopenapiClient(func(client *bssopenapi.Client) (interface{}, error) {
-		return client.GetSubscriptionPrice(request)
+	request.RegionId = string(connectivity.Hangzhou)
+	var response *bssopenapi.GetSubscriptionPriceResponse
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := b.client.WithBssopenapiClient(func(client *bssopenapi.Client) (interface{}, error) {
+			return client.GetSubscriptionPrice(request)
+		})
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request.RegionId = string(connectivity.APSouthEast1)
+				request.Domain = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response = raw.(*bssopenapi.GetSubscriptionPriceResponse)
+		return nil
 	})
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response := raw.(*bssopenapi.GetSubscriptionPriceResponse)
 
 	if !response.Success {
 		return nil, WrapError(Error("Api:GetSubscriptionPrice  Modules:%v  RequestId:%s  Code:%s  Message:%s",
@@ -103,18 +119,31 @@ func (b *BssopenapiService) getSubscriptionData(request *bssopenapi.GetSubscript
 	return &response.Data, nil
 }
 
-func (b *BssopenapiService) getPayAsYouGoData(request *bssopenapi.GetPayAsYouGoPriceRequest) (*bssopenapi.Data, error) {
+func (b *BssopenapiService) getPayAsYouGoData(request *bssopenapi.GetPayAsYouGoPriceRequest) (*bssopenapi.DataInGetPayAsYouGoPrice, error) {
 	request.SubscriptionType = "PayAsYouGo"
-	request.RegionId = b.client.RegionId
-	raw, err := b.client.WithBssopenapiClient(func(client *bssopenapi.Client) (interface{}, error) {
-		return client.GetPayAsYouGoPrice(request)
+	request.RegionId = string(connectivity.Hangzhou)
+	var response *bssopenapi.GetPayAsYouGoPriceResponse
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := b.client.WithBssopenapiClient(func(client *bssopenapi.Client) (interface{}, error) {
+			return client.GetPayAsYouGoPrice(request)
+		})
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request.RegionId = string(connectivity.APSouthEast1)
+				request.Domain = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response = raw.(*bssopenapi.GetPayAsYouGoPriceResponse)
+		return nil
 	})
 
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response := raw.(*bssopenapi.GetPayAsYouGoPriceResponse)
 
 	if !response.Success {
 		return nil, WrapError(Error("Api:GetPayAsYouGoPrice  Modules:%v  RequestId:%s  Code:%s  Message:%s",

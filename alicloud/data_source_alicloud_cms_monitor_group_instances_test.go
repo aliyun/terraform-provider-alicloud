@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -25,7 +24,7 @@ func TestAccAlicloudCmsMonitorGroupInstancesDataSource(t *testing.T) {
 			"instances.0.instances.0.category":      "slb",
 			"instances.0.instances.0.instance_id":   CHECKSET,
 			"instances.0.instances.0.instance_name": fmt.Sprintf("tf-testAccMonitorGroupInstances-%d", rand),
-			"instances.0.instances.0.region_id":     os.Getenv("ALICLOUD_REGION"),
+			"instances.0.instances.0.region_id":     defaultRegionToTest,
 		}
 	}
 	var fakeAlicloudCmsMonitorGroupInstancesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -56,7 +55,7 @@ variable "name" {
 	default = "tf-testAccMonitorGroupInstances-%d"
 }
 data "alicloud_vpcs" "default" {
-  is_default = true
+  name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
   ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]

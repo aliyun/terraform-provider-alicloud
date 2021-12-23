@@ -77,7 +77,6 @@ func TestAccAlicloudECIOpenAPIImageCache_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -90,9 +89,9 @@ func TestAccAlicloudECIOpenAPIImageCache_basic(t *testing.T) {
 					"images":            []string{"registry.cn-beijing.aliyuncs.com/sceneplatform/sae-image-demo:latest"},
 					"security_group_id": "${alicloud_security_group.group.id}",
 					"vswitch_id":        "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
-					"eip_instance_id":   "${alicloud_eip.default.id}",
+					"eip_instance_id":   "${alicloud_eip_address.default.id}",
 					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
-					"depends_on ":       []string{"alicloud_eip.default"},
+					"depends_on ":       []string{"alicloud_eip_address.default"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -121,7 +120,7 @@ var EciOpenapiImageCacheMap = map[string]string{
 func EciOpenapiImageCacheBasicdependence(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_vpcs" "default" {
-	  is_default = true
+	  name_regex = "default-NODELETING"
 	}
 	data "alicloud_vswitches" "default" {
 	  ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
@@ -131,8 +130,8 @@ func EciOpenapiImageCacheBasicdependence(name string) string {
 	  description = "tf-eci-image-test"
 	  vpc_id      = data.alicloud_vpcs.default.vpcs.0.id
 	}
-	resource "alicloud_eip" "default" {
-	  name = "%[1]s"
+	resource "alicloud_eip_address" "default" {
+	  address_name = "%[1]s"
 	}
 `, name)
 }

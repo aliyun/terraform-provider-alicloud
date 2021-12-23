@@ -90,17 +90,17 @@ type CreateQosCarRequest struct {
 // CreateQosCarResponse is the response struct for api CreateQosCar
 type CreateQosCarResponse struct {
 	*responses.BaseResponse
-	RequestId           string `json:"RequestId" xml:"RequestId"`
-	QosId               string `json:"QosId" xml:"QosId"`
-	QosCarId            string `json:"QosCarId" xml:"QosCarId"`
-	Description         string `json:"Description" xml:"Description"`
-	Priority            int    `json:"Priority" xml:"Priority"`
-	LimitType           string `json:"LimitType" xml:"LimitType"`
 	MinBandwidthAbs     int    `json:"MinBandwidthAbs" xml:"MinBandwidthAbs"`
+	Description         string `json:"Description" xml:"Description"`
+	RequestId           string `json:"RequestId" xml:"RequestId"`
+	QosCarId            string `json:"QosCarId" xml:"QosCarId"`
 	MaxBandwidthAbs     int    `json:"MaxBandwidthAbs" xml:"MaxBandwidthAbs"`
-	MinBandwidthPercent int    `json:"MinBandwidthPercent" xml:"MinBandwidthPercent"`
 	MaxBandwidthPercent int    `json:"MaxBandwidthPercent" xml:"MaxBandwidthPercent"`
+	Priority            int    `json:"Priority" xml:"Priority"`
+	QosId               string `json:"QosId" xml:"QosId"`
 	PercentSourceType   string `json:"PercentSourceType" xml:"PercentSourceType"`
+	MinBandwidthPercent int    `json:"MinBandwidthPercent" xml:"MinBandwidthPercent"`
+	LimitType           string `json:"LimitType" xml:"LimitType"`
 }
 
 // CreateCreateQosCarRequest creates a request to invoke CreateQosCar API

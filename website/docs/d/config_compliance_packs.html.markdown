@@ -36,9 +36,9 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Compliance Pack IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Compliance Pack name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid values `ACTIVE`, `CREATING`, `INACTIVE`
+* `status` - (Optional, ForceNew) The status of the resource. Valid values `ACTIVE`, `CREATING`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

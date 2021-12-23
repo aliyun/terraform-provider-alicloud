@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"strings"
 	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -27,8 +28,8 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
-			Update: schema.DefaultTimeout(30 * time.Minute),
+			Create: schema.DefaultTimeout(50 * time.Minute),
+			Update: schema.DefaultTimeout(50 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 
@@ -93,6 +94,30 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: polardbPostPaidDiffSuppressFunc,
 			},
+			"db_cluster_ip_array": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"db_cluster_ip_array_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "default",
+						},
+						"security_ips": {
+							Type:     schema.TypeSet,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Optional: true,
+						},
+						"modify_mode": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"Cover", "Append", "Delete"}, false),
+						},
+					},
+				},
+			},
 			"security_ips": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -154,6 +179,18 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:     true,
 				Default:      "Disabled",
 			},
+			"encrypt_new_tables": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
+				Optional:     true,
+			},
+			"security_group_ids": {
+				Type:     schema.TypeSet,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+				Optional: true,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -201,6 +238,11 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
+	conn, err := client.NewPolarDBClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	payType := d.Get("pay_type").(string)
 	if !d.IsNewResource() && d.HasChange("pay_type") {
 		action := "TransformDBClusterPayType"
@@ -218,10 +260,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				request["Period"] = Year
 			}
 		}
-		conn, err := client.NewPolarDBClient()
-		if err != nil {
-			return WrapError(err)
-		}
+
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -290,6 +329,14 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("maintain_time")
+	}
+
+	if d.HasChange("db_cluster_ip_array") {
+
+		if err := polarDBService.ModifyDBAccessWhitelistSecurityIps(d); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("db_cluster_ip_array")
 	}
 
 	if d.HasChange("security_ips") {
@@ -387,26 +434,60 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
 		if d.HasChange("tde_status") {
 			if v, ok := d.GetOk("tde_status"); ok && v.(string) != "Disabled" {
-				// init modify TDE request
-				request := polardb.CreateModifyDBClusterTDERequest()
-				request.DBClusterId = d.Id()
-				request.TDEStatus = convertPolarDBTdeStatusUpdateRequest(v.(string))
-				// do handler
-				resp, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-					return polarDBClient.ModifyDBClusterTDE(request)
+				action := "ModifyDBClusterTDE"
+				request := map[string]interface{}{
+					"DBClusterId": d.Id(),
+					"TDEStatus":   convertPolarDBTdeStatusUpdateRequest(v.(string)),
+				}
+				if s, ok := d.GetOk("encrypt_new_tables"); ok && s.(string) != "" {
+					request["EncryptNewTables"] = s.(string)
+				}
+				//retry
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(action, response, request)
+					return nil
 				})
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), resp, request.RpcRequest, request)
+				//wait tde status 'Enabled'
 
-				if err := polarDBService.WaitForPolarDBTDEStatus(d.Id(), "Enabled", DefaultLongTimeout); err != nil {
-					return WrapError(err)
+				stateConf := BuildStateConf([]string{}, []string{"Enabled"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, polarDBService.PolarDBClusterTDEStateRefreshFunc(d.Id(), []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
 				}
-
 				d.SetPartial("tde_status")
+				d.SetPartial("encrypt_new_tables")
 			}
 		}
+	}
+
+	if d.HasChange("security_group_ids") {
+		securityGroupsList := expandStringList(d.Get("security_group_ids").(*schema.Set).List())
+		securityGroupsStr := strings.Join(securityGroupsList[:], COMMA_SEPARATED)
+
+		request := polardb.CreateModifyDBClusterAccessWhitelistRequest()
+		request.RegionId = client.RegionId
+		request.DBClusterId = d.Id()
+		request.WhiteListType = "SecurityGroup"
+		request.SecurityGroupIds = securityGroupsStr
+		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.ModifyDBClusterAccessWhitelist(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("security_group_ids")
 	}
 
 	if d.IsNewResource() {
@@ -482,7 +563,16 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
-	ips, err := polarDBService.DescribeDBSecurityIps(d.Id())
+	dbClusterIPArrayName := "default"
+	if v, ok := d.GetOk("db_cluster_ip_array_name"); ok {
+		dbClusterIPArrayName = v.(string)
+	}
+
+	if err = polarDBService.DBClusterIPArrays(d, "db_cluster_ip_array", dbClusterIPArrayName); err != nil {
+		return WrapError(err)
+	}
+
+	ips, err := polarDBService.DescribeDBSecurityIps(d.Id(), dbClusterIPArrayName)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -560,7 +650,16 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("tde_status", clusterTDEStatus.TDEStatus)
+	d.Set("tde_status", clusterTDEStatus["TDEStatus"])
+	d.Set("encrypt_new_tables", clusterTDEStatus["EncryptNewTables"])
+
+	securityGroups, err := polarDBService.DescribeDBSecurityGroups(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("security_group_ids", securityGroups)
+
 	return nil
 }
 

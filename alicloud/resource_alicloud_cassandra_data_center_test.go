@@ -25,7 +25,6 @@ func TestAccAlicloudCassandraDataCenter_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -141,7 +140,7 @@ func CassandraDataCenterBasicdependence(name string) string {
 		}
 		
 		data "alicloud_vpcs" "default" {
-		  is_default = true
+		  name_regex = "default-NODELETING"
 		}
 		
 		data "alicloud_vswitches" "default_1" {

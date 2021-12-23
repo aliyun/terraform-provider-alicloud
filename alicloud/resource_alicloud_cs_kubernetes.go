@@ -9,6 +9,9 @@ import (
 	"strings"
 	"time"
 
+	roacs "github.com/alibabacloud-go/cs-20151215/v2/client"
+	"github.com/alibabacloud-go/tea/tea"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -78,9 +81,8 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MinItems:         3,
-				MaxItems:         5,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				MinItems: 3,
+				MaxItems: 5,
 			},
 			"master_instance_types": {
 				Type:     schema.TypeList,
@@ -88,22 +90,19 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				MinItems:         3,
-				MaxItems:         5,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				MinItems: 3,
+				MaxItems: 5,
 			},
 			"master_disk_size": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          40,
-				ValidateFunc:     validation.IntBetween(40, 500),
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      40,
+				ValidateFunc: validation.IntBetween(40, 500),
 			},
 			"master_disk_category": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				Default:          DiskCloudEfficiency,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  DiskCloudEfficiency,
 			},
 			"master_disk_performance_level": {
 				Type:             schema.TypeString,
@@ -113,17 +112,15 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				DiffSuppressFunc: masterDiskPerformanceLevelDiffSuppressFunc,
 			},
 			"master_disk_snapshot_policy_id": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ForceNew:         true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"master_instance_charge_type": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
-				Default:          PostPaid,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
+				Default:      PostPaid,
 			},
 			"master_period_unit": {
 				Type:             schema.TypeString,
@@ -163,8 +160,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MinItems:         1,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				MinItems: 1,
 			},
 			"worker_instance_types": {
 				Type:     schema.TypeList,
@@ -208,9 +204,8 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
 			},
 			"worker_data_disk_category": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"worker_data_disks": {
 				Optional: true,
@@ -258,11 +253,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				},
 			},
 			"worker_instance_charge_type": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
-				Default:          PostPaid,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
+				Default:      PostPaid,
 			},
 			"worker_period_unit": {
 				Type:             schema.TypeString,
@@ -307,26 +301,22 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MaxItems:         10,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				MaxItems: 10,
 			},
 			// Flannel network
 			"pod_cidr": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"service_cidr": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"node_cidr_mask": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          KubernetesClusterNodeCIDRMasksByDefault,
-				ValidateFunc:     validation.IntBetween(24, 28),
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      KubernetesClusterNodeCIDRMasksByDefault,
+				ValidateFunc: validation.IntBetween(24, 28),
 			},
 			"new_nat_gateway": {
 				Type:     schema.TypeBool,
@@ -334,17 +324,15 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Default:  true,
 			},
 			"password": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				Sensitive:        true,
-				ConflictsWith:    []string{"key_name", "kms_encrypted_password"},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Sensitive:     true,
+				ConflictsWith: []string{"key_name", "kms_encrypted_password"},
 			},
 			"key_name": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ConflictsWith:    []string{"password", "kms_encrypted_password"},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"password", "kms_encrypted_password"},
 			},
 			"kms_encrypted_password": {
 				Type:          schema.TypeString,
@@ -360,15 +348,13 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Elem: schema.TypeString,
 			},
 			"user_ca": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"enable_ssh": {
-				Type:             schema.TypeBool,
-				Optional:         true,
-				Default:          false,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 			"load_balancer_spec": {
 				Type:         schema.TypeString,
@@ -382,10 +368,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"install_cloud_monitor": {
-				Type:             schema.TypeBool,
-				Optional:         true,
-				Default:          true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
 			},
 			"version": {
 				Type:     schema.TypeString,
@@ -429,10 +414,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"slb_internet_enabled": {
-				Type:             schema.TypeBool,
-				Optional:         true,
-				Default:          true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
 			},
 			"deletion_protection": {
 				Type:     schema.TypeBool,
@@ -668,10 +652,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MinItems:         3,
-				MaxItems:         5,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'vswitch_ids' has been removed from provider version 1.75.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replace it.",
+				MinItems: 3,
+				MaxItems: 5,
+				Removed:  "Field 'vswitch_ids' has been removed from provider version 1.75.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replace it.",
 			},
 			// single instance type would cause extra troubles
 			"master_instance_type": {
@@ -705,10 +688,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					Type:    schema.TypeInt,
 					Default: 3,
 				},
-				MinItems:         1,
-				MaxItems:         3,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'worker_numbers' has been removed from provider version 1.75.0. New field 'worker_number' replaces it.",
+				MinItems: 1,
+				MaxItems: 3,
+				Removed:  "Field 'worker_numbers' has been removed from provider version 1.75.0. New field 'worker_number' replaces it.",
 			},
 			"nodes": {
 				Type:     schema.TypeList,
@@ -734,15 +716,13 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						},
 					},
 				},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'log_config' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
+				Removed: "Field 'log_config' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
 			"cluster_network_type": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}, false),
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'cluster_network_type' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}, false),
+				Removed:      "Field 'cluster_network_type' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
 			"user_data": {
 				Type:     schema.TypeString,
@@ -774,6 +754,13 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"retain_resources": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}
@@ -867,7 +854,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 					if err != nil {
 						return WrapError(err)
 					}
-					password = decryptResp.Plaintext
+					password = decryptResp
 				}
 			}
 
@@ -1388,33 +1375,23 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	csService := CsService{client}
-	invoker := NewInvoker()
+	csService := CsService{meta.(*connectivity.AliyunClient)}
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+	}
 
-	var response interface{}
-	err := resource.Retry(30*time.Minute, func() *resource.RetryError {
-		if err := invoker.Run(func() error {
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				return nil, csClient.DeleteKubernetesCluster(d.Id())
-			})
-			response = raw
-			return err
-		}); err != nil {
-			return resource.RetryableError(err)
-		}
-		if debugOn() {
-			requestMap := make(map[string]interface{})
-			requestMap["ClusterId"] = d.Id()
-			addDebug("DeleteCluster", response, d.Id(), requestMap)
-		}
-		return nil
-	})
+	args := &roacs.DeleteClusterRequest{}
+	if v := d.Get("retain_resources"); len(v.([]interface{})) > 0 {
+		args.RetainResources = tea.StringSlice(expandStringList(v.([]interface{})))
+	}
+
+	_, err = client.DeleteCluster(tea.String(d.Id()), args)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteCluster", DenverdinoAliyungo)
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DeleteCluster", AliyunTablestoreGoSdk)
 	}
 
 	stateConf := BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))
@@ -1556,7 +1533,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			if err != nil {
 				return nil, WrapError(err)
 			}
-			password = decryptResp.Plaintext
+			password = decryptResp
 		}
 		creationArgs.LoginPassword = password
 	} else {
@@ -1700,6 +1677,19 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	// Cluster maintenance window. Effective only in the professional managed cluster
 	if v, ok := d.GetOk("maintenance_window"); ok {
 		creationArgs.MaintenanceWindow = expandMaintenanceWindowConfig(v.([]interface{}))
+	}
+
+	// Configure control plane log. Effective only in the professional managed cluster
+	if v, ok := d.GetOk("control_plane_log_components"); ok {
+		creationArgs.ControlplaneComponents = expandStringList(v.([]interface{}))
+		// ttl default is 30 days
+		creationArgs.ControlplaneLogTTL = "30"
+	}
+	if v, ok := d.GetOk("control_plane_log_ttl"); ok {
+		creationArgs.ControlplaneLogTTL = v.(string)
+	}
+	if v, ok := d.GetOk("control_plane_log_project"); ok {
+		creationArgs.ControlplaneLogProject = v.(string)
 	}
 
 	return creationArgs, nil

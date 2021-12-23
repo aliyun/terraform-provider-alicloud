@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ram_role" "default" {
-  name = "tf-testacc-fnfflow"
+  name     = "tf-testacc-fnfflow"
   document = <<EOF
   {
     "Statement": [
@@ -41,7 +41,7 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_fnf_flow" "example" {
-  definition = <<EOF
+  definition  = <<EOF
   version: v1beta1
   type: flow
   steps:

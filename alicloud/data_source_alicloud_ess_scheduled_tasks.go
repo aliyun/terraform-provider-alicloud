@@ -109,11 +109,11 @@ func dataSourceAlicloudEssScheduledTasksRead(d *schema.ResourceData, meta interf
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 
-	if id, ok := d.GetOk("scheduled_task_id"); ok && id.(string) != "" {
-		request.ScheduledTaskId1 = id.(string)
+	if v, ok := d.GetOk("scheduled_task_id"); ok {
+		request.ScheduledTaskId = &[]string{v.(string)}
 	}
-	if a, ok := d.GetOk("scheduled_action"); ok && a.(string) != "" {
-		request.ScheduledAction1 = a.(string)
+	if v, ok := d.GetOk("scheduled_action"); ok {
+		request.ScheduledAction = &[]string{v.(string)}
 	}
 
 	var allScheduledTasks []ess.ScheduledTask

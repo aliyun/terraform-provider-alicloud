@@ -43,8 +43,8 @@ data "alicloud_images" "default" {
 
 # Create a web server
 resource "alicloud_instance" "web" {
-  image_id              = "${data.alicloud_images.default.images.0.id}"
-  internet_charge_type  = "PayByBandwidth"
+  image_id             = "${data.alicloud_images.default.images.0.id}"
+  internet_charge_type = "PayByBandwidth"
 
   instance_type        = "${data.alicloud_instance_types.c2g4.instance_types.0.id}"
   system_disk_category = "cloud_efficiency"
@@ -68,8 +68,10 @@ The following methods are supported, in this order, and explained below:
 
 - Static credentials
 - Environment variables
+- Shared credentials/configuration file  
 - ECS Role
 - Assume role
+- Sidecar Credentials
 
 ### Static credentials
 
@@ -85,7 +87,6 @@ provider "alicloud" {
   region     = "${var.region}"
 }
 ```
-
 
 ### Environment variables
 
@@ -104,6 +105,20 @@ $ export ALICLOUD_ACCESS_KEY="anaccesskey"
 $ export ALICLOUD_SECRET_KEY="asecretkey"
 $ export ALICLOUD_REGION="cn-beijing"
 $ terraform plan
+```
+
+### Shared Credentials File
+
+You can use an [Alibaba Cloud credentials or configuration file](https://www.alibabacloud.com/help/doc-detail/110341.htm) to specify your credentials. The default location is `$HOME/.aliyun/config.json` on Linux and macOS, or `"%USERPROFILE%\.aliyun/config.json"` on Windows. You can optionally specify a different location in the Terraform configuration by providing the `shared_credentials_file` argument or using the `ALICLOUD_SHARED_CREDENTIALS_FILE` environment variable. This method also supports a `profile` configuration and matching `ALICLOUD_PROFILE` environment variable:
+
+Usage:
+
+```terraform
+provider "alicloud" {
+  region                  = "cn-hangzhou"
+  shared_credentials_file = "/Users/tf_user/.aliyun/creds"
+  profile                 = "customprofile"
+}
 ```
 
 ### ECS Role
@@ -147,6 +162,38 @@ provider "alicloud" {
 }
 ```
 
+### Sidecar Credentials
+
+You can deploy a sidecar to storage alibaba cloud credentials. Then, you can optionally specify a credentials URI in the Terraform configuration by providing the `credentials_uri` argument or using the `ALICLOUD_CREDENTIALS_URI` environment variable to get the credentials automatically. The Sidecar Credentials is available in v1.141.0+.
+
+Usage:
+
+```terraform
+provider "alicloud" {
+  region          = "cn-hangzhou"
+  credentials_uri = "<Your-Credential-URI>"
+}
+```
+
+### Custom User-Agent Information
+
+By default, the underlying AlibabaCloud client used by the Terraform AliCloud Provider creates requests with User-Agent headers including information about Terraform and AlibabaCloud Go SDK versions. 
+To provide additional information in the User-Agent headers, the provider variable `configuration_source` or `TF_APPEND_USER_AGENT` environment variable can be set and its value will be directly added to HTTP requests.
+
+Usage:
+
+```terraform
+provider "alicloud" {
+  region               = "cn-hangzhou"
+  configuration_source = "ArgoAgent/argo-12345678 NodeID/1234"
+}
+```
+
+or
+
+```shell
+$ export TF_APPEND_USER_AGENT="ArgoAgent/argo-12345678 NodeID/1234 (Optional Extra Information)"
+```
 
 ## Argument Reference
 
@@ -186,9 +233,13 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 * `skip_region_validation` - (Optional, Available in 1.52.0+) Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).
 
 * `configuration_source` - (Optional, Available in 1.56.0+) Use a string to mark a configuration file source, like `terraform-alicloud-modules/terraform-alicloud-ecs-instance` or `terraform-provider-alicloud/examples/vpc`.
-The length should not more than 64.
+The length should not more than 64. From the version 1.145.0+, it supports to be set by environment variable `TF_APPEND_USER_AGENT`. See `Custom User-Agent Information`.
 
-* `protocol` - (Optional, Available in 1.72.0+) The Protocol of used by API request. Valid values: `HTTP` and `HTTPS`. Default to `HTTPS`.
+* `protocol` - (Optional, Available in 1.72.0+) The Protocol of used by API request. Valid values: `HTTP` and `HTTPS`. Default to `HTTPS`. 
+
+* `client_read_timeout` - (Optional, Available in 1.125.0+) The maximum timeout in millisecond second of the client read request. Default to 60000.
+
+* `client_connect_timeout` - (Optional, Available in 1.125.0+) The maximum timeout in millisecond second of the client connection server. Default to 60000.
 
 The nested `assume_role` block supports the following:
 
@@ -202,6 +253,8 @@ The nested `assume_role` block supports the following:
 
 * `session_expiration` - (Optional) The time after which the established session for assuming role expires. Valid value range: [900-3600] seconds. Default to 3600 (in this case Alicloud use own default value). It supports environment variable `ALICLOUD_ASSUME_ROLE_SESSION_EXPIRATION`.
 
+* `credentials_uri` - (Optional, Available in 1.141.0+) The URI of sidecar credentials service. It can also be sourced from the `ALICLOUD_CREDENTIALS_URI` environment variable.
+  
 Nested `endpoints` block supports the following:
 
 * `ecs` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.
@@ -212,7 +265,7 @@ Nested `endpoints` block supports the following:
 
 * `vpc` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom VPC and VPN endpoints.
 
-* `cen` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CEN endpoints.
+* `cbn` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom CEN endpoints.
 
 * `ess` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Autoscaling endpoints.
 
@@ -269,6 +322,64 @@ Nested `endpoints` block supports the following:
 * `ddoscoo` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom BGP-Line Anti-DDoS Pro endpoints.
 
 * `market` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Market endpoints.
+
+* `cddc` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ApsaraDB for MyBase endpoints.
+
+* `ehpc` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Elastic High Performance Computing endpoints.
+
+* `mscsub` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Message Center endpoints.
+
+* `hitsdb` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Lindorm endpoints.
+
+* `sddp` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Data Security Center endpoints.
+
+* `sas` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Security Center endpoints.
+
+* `dts` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Data Transmission endpoints.
+
+* `ens` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ens endpoints.
+
+* `alidfs` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Apsara File Storage for HDFS endpoints.
+
+* `arms` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Application Real-Time Monitoring Service endpoints.
+
+* `bastionhost` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Bastion Host endpoints.
+
+* `waf` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Web Application Firewall endpoints.
+
+* `alb` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Application Load Balancer endpoints.
+
+* `hbr` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Hybrid Backup Recovery endpoints.
+
+* `dataworkspublic` - - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Data Works endpoints.
+
+* `cloudfw` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Cloud Firewall endpoints.
+
+* `dm` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Direct Mail endpoints.
+
+* `eais` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Elastic Accelerated Computing Instances endpoints.
+
+* `dg` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Database Gateway endpoints.
+
+* `imm` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Intelligent Media Management endpoints.
+
+* `iot` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Internet of Things endpoints.
+
+* `vod` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom VOD endpoints.
+
+* `gds` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Graph Database endpoints.
+
+* `swas` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Simple Application Server endpoints.
+
+* `opensearch` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Open Search endpoints.
+
+* `clickhouse` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Click House endpoints.
+
+* `vs` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Video Surveillance System endpoints.
+
+* `quickbi` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Quick BI endpoints.
+
+* `cloudsso` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Cloud SSO endpoints.
 
 ## Testing
 

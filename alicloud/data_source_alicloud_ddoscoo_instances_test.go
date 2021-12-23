@@ -56,6 +56,15 @@ func TestAccAlicloudDdoscooInstanceDataSource_basic(t *testing.T) {
 			"instances.0.service_bandwidth": "100",
 			"instances.0.port_count":        "50",
 			"instances.0.domain_count":      "50",
+			"instances.0.remark":            CHECKSET,
+			"instances.0.ip_mode":           CHECKSET,
+			"instances.0.debt_status":       CHECKSET,
+			"instances.0.edition":           CHECKSET,
+			"instances.0.status":            CHECKSET,
+			"instances.0.ip_version":        CHECKSET,
+			"instances.0.enabled":           CHECKSET,
+			"instances.0.expire_time":       CHECKSET,
+			"instances.0.create_time":       CHECKSET,
 		}
 	}
 
@@ -73,7 +82,7 @@ func TestAccAlicloudDdoscooInstanceDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeDdoscooInstanceMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithTime(t, []int{1, 15})
+		testAccPreCheckWithTime(t, []int{15})
 		testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 
 	}

@@ -82,12 +82,13 @@ type DescribeSagRouteProtocolBgpRequest struct {
 // DescribeSagRouteProtocolBgpResponse is the response struct for api DescribeSagRouteProtocolBgp
 type DescribeSagRouteProtocolBgpResponse struct {
 	*responses.BaseResponse
-	RequestId  string      `json:"RequestId" xml:"RequestId"`
-	RouterId   string      `json:"RouterId" xml:"RouterId"`
-	LocalAs    int         `json:"LocalAs" xml:"LocalAs"`
-	HoldTime   int         `json:"HoldTime" xml:"HoldTime"`
-	KeepAlive  int         `json:"KeepAlive" xml:"KeepAlive"`
-	TaskStates []TaskState `json:"TaskStates" xml:"TaskStates"`
+	HoldTime     int         `json:"HoldTime" xml:"HoldTime"`
+	RequestId    string      `json:"RequestId" xml:"RequestId"`
+	KeepAlive    int         `json:"KeepAlive" xml:"KeepAlive"`
+	LocalAs      int         `json:"LocalAs" xml:"LocalAs"`
+	RouterId     string      `json:"RouterId" xml:"RouterId"`
+	AdvertiseIps string      `json:"AdvertiseIps" xml:"AdvertiseIps"`
+	TaskStates   []TaskState `json:"TaskStates" xml:"TaskStates"`
 }
 
 // CreateDescribeSagRouteProtocolBgpRequest creates a request to invoke DescribeSagRouteProtocolBgp API

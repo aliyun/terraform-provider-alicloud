@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -143,7 +142,7 @@ func TestAccAlicloudOssBucketObjectsDataSource_versioning(t *testing.T) {
 		return map[string]string{
 			"objects.#":                        "1",
 			"objects.0.key":                    fmt.Sprintf("tf-sample/%s-object", fmt.Sprintf("tf-testacc-bucket-object-%d", rand)),
-			"objects.0.acl":                    "default",
+			"objects.0.acl":                    "private",
 			"objects.0.content_type":           "text/plain",
 			"objects.0.content_length":         CHECKSET,
 			"objects.0.cache_control":          "max-age=0",
@@ -170,7 +169,7 @@ func TestAccAlicloudOssBucketObjectsDataSource_versioning(t *testing.T) {
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
+		testAccPreCheck(t)
 	}
 
 	ossBucketObjectsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, bucketNameConf, keyRegexConf, keyPrefixConf, allConf)

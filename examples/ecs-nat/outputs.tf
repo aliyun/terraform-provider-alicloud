@@ -7,7 +7,7 @@ output "nat_instance_private_ip" {
 }
 
 output "nat_instance_eip_address" {
-  value = alicloud_eip.eip.ip_address
+  value = alicloud_eip_address.eip.ip_address
 }
 
 output "worker_instance_id" {

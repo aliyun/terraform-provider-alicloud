@@ -82,13 +82,13 @@ type DescribeSagWan4GRequest struct {
 // DescribeSagWan4GResponse is the response struct for api DescribeSagWan4G
 type DescribeSagWan4GResponse struct {
 	*responses.BaseResponse
-	RequestId    string `json:"RequestId" xml:"RequestId"`
-	Ip           string `json:"Ip" xml:"Ip"`
-	Mac          string `json:"Mac" xml:"Mac"`
 	Status       string `json:"Status" xml:"Status"`
-	Strength     string `json:"Strength" xml:"Strength"`
-	Priority     int    `json:"Priority" xml:"Priority"`
 	TrafficState string `json:"TrafficState" xml:"TrafficState"`
+	RequestId    string `json:"RequestId" xml:"RequestId"`
+	Priority     int    `json:"Priority" xml:"Priority"`
+	Ip           string `json:"Ip" xml:"Ip"`
+	Strength     string `json:"Strength" xml:"Strength"`
+	Mac          string `json:"Mac" xml:"Mac"`
 }
 
 // CreateDescribeSagWan4GRequest creates a request to invoke DescribeSagWan4G API
