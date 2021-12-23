@@ -254,7 +254,7 @@ func resourceAlicloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("status", object["Status"])
 	d.Set("support_eip", object["SupportEIP"])
 	bssOpenApiService := BssOpenApiService{client}
-	queryAvailableInstancesObject, err := bssOpenApiService.QueryAvailableInstances(d.Id(), "ons", "ons_onsproxy_pre")
+	queryAvailableInstancesObject, err := bssOpenApiService.QueryAvailableInstances(d.Id(), "ons", "ons_onsproxy_pre", "ons_onsproxy_public_intl")
 	if err != nil {
 		return WrapError(err)
 	}
@@ -358,6 +358,7 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 				}
 				if IsExpectedErrors(err, []string{"NotApplicable"}) {
 					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+					setRenewalReq["ProductType"] = "ons_onsproxy_public_intl"
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -449,6 +450,7 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 				}
 				if IsExpectedErrors(err, []string{"NotApplicable"}) {
 					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+					modifyInstanceReq["ProductType"] = "ons_onsproxy_public_intl"
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
