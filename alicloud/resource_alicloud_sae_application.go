@@ -634,6 +634,12 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	if update {
 		action := "/pop/v1/sam/app/rescaleApplication"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
+		request["PackageVersion"] = StringPointer(strconv.FormatInt(time.Now().Unix(), 10))
+		if v, ok := d.GetOk("package_version"); ok {
+			if d.HasChange("package_version") {
+				request["PackageVersion"] = StringPointer(v.(string))
+			}
+		}
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 			if err != nil {
