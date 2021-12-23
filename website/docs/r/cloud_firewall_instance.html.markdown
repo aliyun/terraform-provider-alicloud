@@ -41,7 +41,7 @@ The following arguments are supported:
 
 * `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `Subscription`.
 * `period` - (Required) The prepaid period. Valid values: `6`, `12`, `24`, `36`.
-* `renew_period` - (Optional) Automatic renewal period. **NOTE:** The `renew_period` is required under the condition that renewal_status is `AutoRenewal`.
+* `renew_period` - (Optional) Automatic renewal period. **NOTE:** The `renew_period` is required under the condition that renewal_status is `AutoRenewal`. Unit: Months.
 * `renewal_status` - (Optional) Automatic renewal status. Valid values: `AutoRenewal`,`ManualRenewal`. Default Value: `ManualRenewal`.
 * `logistics` - (Optional) The logistics.
 * `modify_type` - (Optional) The modify type. Valid values: `Upgrade`, `Downgrade`.  **NOTE:** The `modify_type` is required when you execute an update operation.
