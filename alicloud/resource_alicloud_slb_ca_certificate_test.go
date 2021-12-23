@@ -233,6 +233,92 @@ func TestAccAlicloudSlbCACertificate_multi(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbCACertificate_basic1(t *testing.T) {
+	var sc *slb.CACertificate
+	resourceId := "alicloud_slb_ca_certificate.default"
+	ra := resourceAttrInit(resourceId, ca_certificateMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &sc, func() interface{} {
+		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlbCACertificate")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccSlbCACertificateUpdate-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbCACertificateBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ca_certificate":    ca_certificate,
+					"name":              name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"ca_certificate"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "change",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name + "change",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF1",
+						"For":     "acceptance test1231",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF1",
+						"tags.For":     "acceptance test1231",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test123",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":         name,
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test123",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func resourceSlbCACertificateBasicdependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
