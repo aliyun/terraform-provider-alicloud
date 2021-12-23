@@ -148,7 +148,6 @@ func testSweepAmqpBinding(region string) error {
 			}
 		}
 	}
-	return nil
 }
 
 func TestAccAlicloudAmqpBinding_all_EXCHANGE(t *testing.T) {

@@ -43,7 +43,7 @@ output "output" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of Chart Namespace IDs.
-* `instance_id`- (Reu, ForceNew, Computed)  A list of Chart Namespace IDs.
+* `instance_id`- (Reu, ForceNew, Computed)  The ID of the Container Registry instance.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by name space name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -53,9 +53,9 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of matched Container Registry Enterprise Edition namespaces.
 * `names` - A list of namespace names.
 * `namespaces` - A list of Cr Chart Namespaces. Each element contains the following attributes:
-	* `auto_create_repo` - AutoCreateRepo.
-	* `chart_namespace_id` - The first ID of the resource.
-	* `default_repo_type` - DefaultRepoType.
+	* `auto_create_repo` - Indicates whether a repository is automatically created when an image is pushed to the namespace.
+	* `chart_namespace_id` - The ID of the namespace.
+	* `default_repo_type` - The default repository type. Valid values: `PUBLIC`,`PRIVATE`.
 	* `id` - The ID of the Chart Namespace.
-	* `instance_id` - InstanceId.
-	* `namespace_name` - NamespaceName.
+	* `instance_id` - The ID of the namespace.
+	* `namespace_name` - The name of the namespace.

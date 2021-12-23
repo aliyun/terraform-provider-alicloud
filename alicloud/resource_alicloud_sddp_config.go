@@ -85,7 +85,6 @@ func resourceAlicloudSddpConfigCreate(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sddp_config", action, AlibabaCloudSdkGoERROR)
 	}
 
-	fmt.Sprintf("ID = %v", request["Code"])
 	d.SetId(fmt.Sprint(request["Code"]))
 
 	return resourceAlicloudSddpConfigRead(d, meta)

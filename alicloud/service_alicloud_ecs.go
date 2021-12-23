@@ -942,7 +942,6 @@ func (s *EcsService) WaitForNetworkInterface(id string, status Status, timeout i
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 	}
-	return nil
 }
 
 func (s *EcsService) QueryPrivateIps(eniId string) ([]string, error) {
