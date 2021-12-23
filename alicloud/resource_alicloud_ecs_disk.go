@@ -166,6 +166,24 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 				ConflictsWith: []string{"zone_id"},
 			},
 		},
+		CustomizeDiff: func(d *schema.ResourceDiff, meta interface{}) error {
+			oldSize, newSize := d.GetChange("size")
+			if newSize.(int) < oldSize.(int) {
+				d.ForceNew("size")
+			}
+			oldCategory, newCategory := d.GetChange("category")
+			oldPL, newPL := d.GetChange("performance_level")
+			if oldCategory != newCategory || oldPL != newPL {
+				if oldCategory == "cloud_efficiency" && newCategory != "cloud" {
+				} else if oldCategory == "cloud_ssd" && newCategory == "cloud_essd" && newPL != "PL0" {
+				} else if oldCategory == "cloud_essd" && newCategory == "cloud_essd" && newPL != "PL0" {
+				} else {
+					d.ForceNew("category")
+					d.ForceNew("performance_level")
+				}
+			}
+			return nil
+		},
 	}
 }
 
