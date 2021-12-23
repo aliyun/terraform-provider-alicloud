@@ -508,3 +508,112 @@ data "alicloud_vpcs" "default"{
 }
 `, name)
 }
+
+func TestAccAlicloudSlbLoadBalancer_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_slb_load_balancer.default"
+	ra := resourceAttrInit(resourceId, AlicloudSlbLoadBalancerMap2)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlbLoadBalancer")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sslbloadbalancer%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlbLoadBalancerBasicDependence2)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"address_type":                   "intranet",
+					"name":                           name,
+					"specification":                  "slb.s1.small",
+					"vswitch_id":                     "${local.vswitch_id}",
+					"address":                        "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)}",
+					"master_zone_id":                 "${data.alicloud_zones.default.zones.0.id}",
+					"modification_protection_status": "ConsoleProtection",
+					"modification_protection_reason": name,
+					"payment_type":                   "PayAsYouGo",
+					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"slave_zone_id":                  "${data.alicloud_zones.default.zones.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address_type":                   "intranet",
+						"name":                           name,
+						"specification":                  "slb.s1.small",
+						"vswitch_id":                     CHECKSET,
+						"address":                        CHECKSET,
+						"master_zone_id":                 CHECKSET,
+						"modification_protection_status": "ConsoleProtection",
+						"modification_protection_reason": name,
+						"payment_type":                   "PayAsYouGo",
+						"resource_group_id":              CHECKSET,
+						"slave_zone_id":                  CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AlicloudSlbLoadBalancerMap2 = map[string]string{
+	"address_ip_version":   "ipv4",
+	"address_type":         "intranet",
+	"bandwidth":            CHECKSET,
+	"delete_protection":    "off",
+	"internet_charge_type": "PayByTraffic",
+	"resource_group_id":    CHECKSET,
+	"slave_zone_id":        CHECKSET,
+	"load_balancer_spec":   "slb.s1.small",
+	"status":               "active",
+	"tags.#":               "0",
+}
+
+func AlicloudSlbLoadBalancerBasicDependence2(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+			default = "%s"
+		}
+
+data "alicloud_zones" "default" {
+	available_resource_creation = "VSwitch"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+	name_regex = "^default$"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_zones.default.zones.0.id
+}
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+
+`, name)
+}
