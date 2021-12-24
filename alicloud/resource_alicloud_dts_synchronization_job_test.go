@@ -34,19 +34,19 @@ func TestAccAlicloudDTSSynchronizationJob_basic0(t *testing.T) {
 					"dts_instance_id":                    "${alicloud_dts_synchronization_instance.default.id}",
 					"dts_job_name":                       "tf-testAccCase",
 					"source_endpoint_instance_type":      "RDS",
-					"source_endpoint_instance_id":        "${data.alicloud_db_instances.db_instances_rs.instances.0.id}",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
 					"source_endpoint_engine_name":        "MySQL",
 					"source_endpoint_region":             "cn-hangzhou",
-					"source_endpoint_database_name":      "tfaccountpri_0",
-					"source_endpoint_user_name":          "tftestdts",
-					"source_endpoint_password":           "Test12345",
+					"source_endpoint_database_name":      "test_database",
+					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
+					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
 					"destination_endpoint_instance_type": "RDS",
-					"destination_endpoint_instance_id":   "${data.alicloud_db_instances.db_instances_ds.instances.0.id}",
+					"destination_endpoint_instance_id":   "${alicloud_db_instance.target.id}",
 					"destination_endpoint_engine_name":   "MySQL",
 					"destination_endpoint_region":        "cn-hangzhou",
-					"destination_endpoint_database_name": "tfaccountpri_0",
-					"destination_endpoint_user_name":     "tftestdts",
-					"destination_endpoint_password":      "Test12345",
+					"destination_endpoint_database_name": "test_database",
+					"destination_endpoint_user_name":     "${alicloud_rds_account.target_account.account_name}",
+					"destination_endpoint_password":      "${alicloud_rds_account.target_account.account_password}",
 					"db_list":                            "{\\\"tfaccountpri_0\\\":{\\\"name\\\":\\\"tfaccountpri_0\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"structure_initialization":           "true",
 					"data_initialization":                "true",
@@ -58,15 +58,9 @@ func TestAccAlicloudDTSSynchronizationJob_basic0(t *testing.T) {
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_engine_name":        "MySQL",
 						"source_endpoint_region":             "cn-hangzhou",
-						"source_endpoint_database_name":      "tfaccountpri_0",
-						"source_endpoint_user_name":          "tftestdts",
-						"source_endpoint_password":           "Test12345",
 						"destination_endpoint_instance_type": "RDS",
 						"destination_endpoint_engine_name":   "MySQL",
 						"destination_endpoint_region":        "cn-hangzhou",
-						"destination_endpoint_database_name": "tfaccountpri_0",
-						"destination_endpoint_user_name":     "tftestdts",
-						"destination_endpoint_password":      "Test12345",
 						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
 					}),
 				),
@@ -93,11 +87,11 @@ func TestAccAlicloudDTSSynchronizationJob_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"source_endpoint_password": "Test12345",
+					"source_endpoint_password": "N1cetest",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"source_endpoint_password": "Test12345",
+						"source_endpoint_password": "N1cetest",
 					}),
 				),
 			},
@@ -113,11 +107,11 @@ func TestAccAlicloudDTSSynchronizationJob_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"destination_endpoint_password": "Test12345",
+					"destination_endpoint_password": "N1cetest",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"destination_endpoint_password": "Test12345",
+						"destination_endpoint_password": "N1cetest",
 					}),
 				),
 			},
@@ -143,11 +137,11 @@ func TestAccAlicloudDTSSynchronizationJob_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"destination_endpoint_password": "Test12345",
+					"destination_endpoint_password": "N1cetest",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"destination_endpoint_password": "Test12345",
+						"destination_endpoint_password": "N1cetest",
 					}),
 				),
 			},
@@ -187,62 +181,94 @@ func AlicloudDTSSynchronizationJobBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
+
 variable "creation" {
   default = "Rds"
 }
 
-data "alicloud_db_instances" "db_instances_ds" {
-  name_regex = "dts_used_dest"
-  status     = "Running"
+data "alicloud_zones" "default" {
+  available_resource_creation = var.creation
 }
 
-data "alicloud_db_instances" "db_instances_rs" {
-  name_regex = "dts_used_source"
-  status     = "Running"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
 
-resource "alicloud_db_database" "db" {
-  count       = 2
-  instance_id = data.alicloud_db_instances.db_instances_ds.instances.0.id
-  name        = "tfaccountpri_${count.index}"
-  description = "from terraform"
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.1.id
 }
 
-resource "alicloud_db_account" "account" {
-  db_instance_id      = data.alicloud_db_instances.db_instances_ds.instances.0.id
-  account_name        = "tftestdts"
-  account_password    = "Test12345"
-  account_description = "from terraform"
+resource "alicloud_vswitch" "default" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_db_zones.default.zones.1.id
+  vswitch_name = "subnet-for-local-test"
 }
 
-resource "alicloud_db_account_privilege" "privilege" {
-  instance_id  = data.alicloud_db_instances.db_instances_ds.instances.0.id
-  account_name = alicloud_db_account.account.name
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "local_ssd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.zones.1.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "local_ssd"
+  instance_charge_type     = "PostPaid"
+}
+
+## RDS MySQL Source
+resource "alicloud_db_instance" "source" {
+  engine           = "MySQL"
+  engine_version   = "8.0"
+  instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  vswitch_id       = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.default.*.id, [""])[0]
+  instance_name    = "rds-mysql-source"
+}
+
+resource "alicloud_db_database" "source_db" {
+  instance_id = alicloud_db_instance.source.id
+  name        = "test_database"
+}
+
+resource "alicloud_rds_account" "source_account" {
+  db_instance_id   = alicloud_db_instance.source.id
+  account_name     = "test_mysql"
+  account_password = "N1cetest"
+}
+
+resource "alicloud_db_account_privilege" "source_privilege" {
+  instance_id  = alicloud_db_instance.source.id
+  account_name = alicloud_rds_account.source_account.name
   privilege    = "ReadWrite"
-  db_names     = alicloud_db_database.db.*.name
+  db_names     = alicloud_db_database.source_db.*.name
 }
 
-resource "alicloud_db_database" "db_r" {
-  count       = 2
-  instance_id = data.alicloud_db_instances.db_instances_rs.instances.0.id
-  name        = "tfaccountpri_${count.index}"
-  description = "from terraform"
+## RDS MySQL Target
+resource "alicloud_db_instance" "target" {
+  engine           = "MySQL"
+  engine_version   = "8.0"
+  instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  vswitch_id       = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.default.*.id, [""])[0]
+  instance_name    = "rds-mysql-target"
 }
 
-resource "alicloud_db_account" "account_r" {
-  db_instance_id      = data.alicloud_db_instances.db_instances_rs.instances.0.id
-  account_name        = "tftestdts"
-  account_password    = "Test12345"
-  account_description = "from terraform"
+resource "alicloud_rds_account" "target_account" {
+  db_instance_id   = alicloud_db_instance.target.id
+  account_name     = "test_mysql"
+  account_password = "N1cetest"
 }
 
-resource "alicloud_db_account_privilege" "privilege_r" {
-  instance_id  = data.alicloud_db_instances.db_instances_rs.instances.0.id
-  account_name = alicloud_db_account.account_r.name
-  privilege    = "ReadWrite"
-  db_names     = alicloud_db_database.db_r.*.name
-}
-
+## DTS Data Synchronization
 resource "alicloud_dts_synchronization_instance" "default" {
   payment_type                        = "PayAsYouGo"
   source_endpoint_engine_name         = "MySQL"
