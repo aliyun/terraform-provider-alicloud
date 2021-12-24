@@ -928,7 +928,6 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 				request["PackageVersion"] = StringPointer(v.(string))
 			}
 		}
-		request["PackageVersion"] = StringPointer(strconv.FormatInt(time.Now().Unix(), 10))
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 			if err != nil {
