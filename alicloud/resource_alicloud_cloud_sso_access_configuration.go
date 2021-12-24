@@ -31,7 +31,7 @@ func resourceAlicloudCloudSsoAccessConfiguration() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-z0-9-]{1,64}$`), "The name of the resource. The name must be 2 to 64 characters in length and can contain lower case letters, digits, and hyphens (-)."),
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-z0-9-]{1,32}$`), "The name of the resource. The name can be up to `32` characters long and can contain letters, digits, and hyphens (-)"),
 			},
 			"description": {
 				Type:         schema.TypeString,
