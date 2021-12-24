@@ -41,14 +41,14 @@ resource "alicloud_cloud_sso_user" "default" {
 
 The following arguments are supported:
 
-* `description` - (Optional) The description of user.
+* `description` - (Optional) The description of user. The description can be up to `1024` characters long.
 * `directory_id` - (Required, ForceNew) The ID of the Directory.
-* `display_name` - (Optional) The display name of user.
-* `email` - (Optional) The User's Contact Email Address.
-* `first_name` - (Optional) The first name of user.
-* `last_name` - (Optional) The last name of user.
+* `display_name` - (Optional) The display name of user. The display name can be up to `256` characters long.
+* `email` - (Optional) The User's Contact Email Address. The email can be up to `128` characters long.
+* `first_name` - (Optional) The first name of user. The first_name can be up to `64` characters long.
+* `last_name` - (Optional) The last name of user. The last_name can be up to `64` characters long.
 * `status` - (Optional) The status of user. Valid values: `Disabled`, `Enabled`.
-* `user_name` - (Required from 1.141.0, ForceNew) The name of user.
+* `user_name` - (Required from 1.141.0, ForceNew) The name of user. The name must be `1` to `64` characters in length and can contain letters, digits, at signs (@), periods (.), underscores (_), and hyphens (-).
 
 ## Attributes Reference
 
