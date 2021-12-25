@@ -1,4 +1,40 @@
 ## 1.149.0 (Unreleased)
+
+- **New Resource:** `alicloud_rds_backup` [GH-4343]
+- **New Resource:** `alicloud_rds_clone_db_instance` [GH-4361]	
+- **New Resource:** `alicloud_cr_chart_namespace` [GH-4391]
+- **New Resource:** `alicloud_fnf_execution` [GH-4395]
+- **New Resource:** `alicloud_mongodb_sharding_network_public_address` [GH-4397]
+- **New Resource:** `alicloud_cr_chart_repository` [GH-4393]
+- **New Data Source:** `alicloud_mongodb_sharding_network_addresses` [GH-4397]
+- **New Data Source:** `alicloud_cr_chart_repositories` [GH-4393]	
+- **New Data Source:** `alicloud_fnf_executions` [GH-4395]
+- **New Data Source:** `alicloud_cr_chart_namespaces` [GH-4391]	
+- **New Data Source:** `alicloud_rds_backups` [GH-4343]
+
+ENHANCEMENTS:
+
+- resource/alicloud_instance: Support updating the filed deployment_set_id and deployment_set_group_no [GH-4408]
+- resource/alicloud_cs_kubernetes_node_pool: CS kubernetes nodepool support deploymentSet [GH-4371]
+- resource/alicloud_cr_endpoint_acl_policy : Added error retry code SLB_SERVICE_ERROR [GH-4351]
+- resource/alicloud_dts_synchronization_job: Change delete api; Improved test cases [GH-4401]
+- docs/cloud_sso_access_configuration: Optimize document [GH-4412]
+- docs/cloud_sso_group: Optimize document [GH-4412]	
+- docs/cloud_sso_user: Optimize document [GH-4412]
+- testcase: Change vpc and vswitch creation to read [GH-4376]
+- testcase: Change vpc and vswitch creation to read [GH-4382]
+- testcase: Improves the resource sweeper testcases [GH-4386]
+- testcase: Improves the ddos instance testcases [GH-4390]	
+- testcase: Change vpc and vswitch creation to read [GH-4394]	
+- GithubWorkFlow: 1. Add the consistency check between the schema and document 2. Add the incompatible check between the current pr and previous provder version [GH-4378]
+
+BUG FIXES:
+
+- resource/alicloud_amqp_instance: fix the product_type checkout between domestic account and international account [GH-4409]
+- resource/alicloud_cs_kubernetes_node_pool unschedulable parameter bugfix [GH-4403]
+- resource/cloud_sso_access_configuration: Fixed character length limit error for access_configuration_name attribute [GH-4412]
+- GithubWorkFlow: fix the issue of the markdown parser [GH-4392]
+
 ## 1.148.0 (December 19, 2021)
 
 - **New Resource:** `alicloud_mongodb_audit_policy` ([#4368](https://github.com/aliyun/terraform-provider-alicloud/issues/4368))
