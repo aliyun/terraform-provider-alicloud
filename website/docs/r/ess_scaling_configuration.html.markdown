@@ -132,6 +132,8 @@ The following arguments are supported:
 * `kms_encryption_context` - (Optional, MapString, Available in 1.60.0+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `resource_group_id` - (Optional, Available in 1.135.0+) ID of resource group.
 * `host_name` - (Optional, Available in 1.143.0+) Hostname of an ECS instance.
+* `spot_strategy` - (Optional, Available in 1.151.0+) The spot strategy for a Pay-As-You-Go instance. Valid values: `NoSpot`, `SpotAsPriceGo`, `SpotWithPriceLimit`.
+* `spot_price_limit` - (Optional, Available in 1.151.0+) Sets the maximum price hourly for instance types. See [Block spotPriceLimit](#block-spotPriceLimit) below for details.
 
 -> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
 
@@ -164,6 +166,14 @@ The datadisk mapping supports the following:
 * `auto_snapshot_policy_id` - (Optional, Available in 1.92.0+) The id of auto snapshot policy for data disk.
 * `performance_level` - (Optional, Available in 1.124.3+) The performance level of the ESSD used as data disk.
 
+## Block spotPriceLimit
+
+The spotPriceLimit mapping supports the following:
+
+* `instance_type` - (Optional, Available in 1.151.0+) Resource type of an ECS instance.
+* `price_limit` - (Optional, Available in 1.151.0+) Price limit hourly of instance type, 2 decimals is allowed at most.
+
+
 ## Attributes Reference
 
 The following attributes are exported:
@@ -179,4 +189,3 @@ $ terraform import alicloud_ess_scaling_configuration.example asg-abc123456
 ```
 
 -> **NOTE:** Available in 1.46.0+
-

@@ -70,6 +70,8 @@ func TestAccAlicloudEssScalingconfigurationsDataSource(t *testing.T) {
 			"configurations.0.data_disks.#":                  "0",
 			"configurations.0.instance_name":                 "instance_name",
 			"configurations.0.host_name":                     "hostname",
+			"configurations.0.spot_strategy":                 "SpotWithPriceLimit",
+			"configurations.0.spot_price_limit.#":            "1",
 		}
 	}
 
@@ -123,6 +125,11 @@ resource "alicloud_ess_scaling_configuration" "default"{
 	force_delete = true
 	instance_name = "instance_name"
 	host_name = "hostname"
+	spot_strategy = "SpotWithPriceLimit"
+	spot_price_limit {
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		price_limit = 2.2
+	}
 }
 
 data "alicloud_ess_scaling_configurations" "default"{
