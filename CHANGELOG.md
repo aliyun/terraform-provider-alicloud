@@ -1,4 +1,8 @@
 ## 1.151.0 (Unreleased)
+
+- resource/alicloud_ess_scalingconfiguration: Adds new attributes spot_strategy and spot_price_limit. ([#4180](https://github.com/aliyun/terraform-provider-alicloud/issues/4180))
+- datasource/alicloud_ess_scalingconfiguration: Adds new attributes spot_strategy and spot_price_limit. ([#4180](https://github.com/aliyun/terraform-provider-alicloud/issues/4180))
+
 ## 1.150.0 (January 02, 2022)
 
 - **New Resource:** `alicloud_ga_acl` ([#4416](https://github.com/aliyun/terraform-provider-alicloud/issues/4416))

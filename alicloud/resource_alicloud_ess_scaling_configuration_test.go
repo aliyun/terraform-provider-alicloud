@@ -432,6 +432,33 @@ func TestAccAlicloudEssScalingConfigurationPerformanceLevel(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"spot_strategy": "NoSpot",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spot_strategy":    "NoSpot",
+						"spot_price_limit": NOSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"spot_strategy": "SpotWithPriceLimit",
+					"spot_price_limit": []map[string]string{{
+						"instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
+						"price_limit":   "2.1",
+					},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spot_strategy":      "SpotWithPriceLimit",
+						"spot_price_limit.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"data_disk": []map[string]string{{
 						"size":                 "20",
 						"category":             "cloud_essd",
