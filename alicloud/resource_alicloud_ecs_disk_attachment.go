@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/gofrs/flock"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -64,7 +66,18 @@ func resourceAlicloudEcsDiskAttachment() *schema.Resource {
 	}
 }
 
-func resourceAlicloudEcsDiskAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEcsDiskAttachmentCreate(d *schema.ResourceData, meta interface{}) (errCreate error) {
+	ecsLock := flock.New("/run/lock/terraform-alicloud-ecs-" + d.Get("instance_id").(string) + ".lock")
+	if err := ecsLock.Lock(); err != nil {
+		return WrapError(err)
+	}
+	defer func() {
+		err := ecsLock.Unlock()
+		if errCreate == nil {
+			errCreate = WrapError(err)
+		}
+	}()
+
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "AttachDisk"
@@ -179,7 +192,18 @@ func resourceAlicloudEcsDiskAttachmentUpdate(d *schema.ResourceData, meta interf
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
 	return resourceAlicloudEcsDiskAttachmentRead(d, meta)
 }
-func resourceAlicloudEcsDiskAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEcsDiskAttachmentDelete(d *schema.ResourceData, meta interface{}) (errDelete error) {
+	ecsLock := flock.New("/run/lock/terraform-alicloud-ecs-" + d.Get("instance_id").(string) + ".lock")
+	if err := ecsLock.Lock(); err != nil {
+		return WrapError(err)
+	}
+	defer func() {
+		err := ecsLock.Unlock()
+		if errDelete == nil {
+			errDelete = WrapError(err)
+		}
+	}()
+
 	client := meta.(*connectivity.AliyunClient)
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {

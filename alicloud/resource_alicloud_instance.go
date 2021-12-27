@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofrs/flock"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/denverdino/aliyungo/common"
@@ -1092,7 +1094,18 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	return nil
 }
 
-func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) (errUpdate error) {
+	ecsLock := flock.New("/run/lock/terraform-alicloud-ecs-" + d.Id() + ".lock")
+	if err := ecsLock.Lock(); err != nil {
+		return WrapError(err)
+	}
+	defer func() {
+		err := ecsLock.Unlock()
+		if errUpdate == nil {
+			errUpdate = WrapError(err)
+		}
+	}()
+
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	conn, err := client.NewEcsClient()
