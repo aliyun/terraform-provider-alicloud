@@ -638,6 +638,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fnf_executions":                              dataSourceAlicloudFnFExecutions(),
 			"alicloud_cr_chart_repositories":                       dataSourceAlicloudCrChartRepositories(),
 			"alicloud_mongodb_sharding_network_public_addresses":   dataSourceAlicloudMongodbShardingNetworkPublicAddresses(),
+			"alicloud_ga_acls":                                     dataSourceAlicloudGaAcls(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1156,6 +1157,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fnf_execution":                                        resourceAlicloudFnFExecution(),
 			"alicloud_cr_chart_repository":                                  resourceAlicloudCrChartRepository(),
 			"alicloud_mongodb_sharding_network_public_address":              resourceAlicloudMongodbShardingNetworkPublicAddress(),
+			"alicloud_ga_acl":                                               resourceAlicloudGaAcl(),
+			"alicloud_ga_acl_attachment":                                    resourceAlicloudGaAclAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1370,6 +1373,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ServicemeshEndpoint = strings.TrimSpace(endpoints["servicemesh"].(string))
 		config.AcrEndpoint = strings.TrimSpace(endpoints["acr"].(string))
 		config.EdsuserEndpoint = strings.TrimSpace(endpoints["edsuser"].(string))
+		config.GaplusEndpoint = strings.TrimSpace(endpoints["gaplus"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1678,6 +1682,8 @@ func init() {
 		"acr_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom acr endpoints.",
 
 		"edsuser_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom edsuser endpoints.",
+
+		"gaplus_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom gaplus endpoints.",
 	}
 }
 
@@ -1722,6 +1728,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"gaplus": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["gaplus_endpoint"],
+				},
+
 				"edsuser": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2529,6 +2542,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["servicemesh"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["acr"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["edsuser"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["gaplus"].(string)))
 	return hashcode.String(buf.String())
 }
 
