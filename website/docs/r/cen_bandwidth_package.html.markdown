@@ -25,6 +25,13 @@ resource "alicloud_cen_bandwidth_package" "example" {
   geographic_region_b_id     = "China"
 }
 ```
+
+### Deleting `alicloud_cen_bandwidth_package` or removing it from your configuration
+
+The `alicloud_cen_bandwidth_package` resource allows you to manage `payment_type = "PrePaid"` bandwidth package, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration will remove it from your statefile and management, but will not destroy the Bandwidth Package.
+You can resume managing the subscription bandwidth package via the AlibabaCloud Console.
+
 ## Argument Reference
 
 The following arguments are supported:
