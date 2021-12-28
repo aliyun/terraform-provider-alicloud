@@ -588,6 +588,55 @@ func TestAccAlicloudCenInstance_basic(t *testing.T) {
 		},
 	})
 }
+
+func TestAccAlicloudCenInstance_basic1(t *testing.T) {
+	var cen cbn.Cen
+	resourceId := "alicloud_cen_instance.default"
+	ra := resourceAttrInit(resourceId, cenInstanceMap)
+	serviceFunc := func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &cen, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sCenConfig-%d", defaultRegionToTest, rand)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCenInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.CenNoSkipRegions)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"description":      name,
+					"protection_level": "REDUCED",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":             name,
+						"description":      name,
+						"protection_level": "REDUCED",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccAlicloudCenInstance_multi(t *testing.T) {
 	var cen cbn.Cen
 	resourceId := "alicloud_cen_instance.default.4"
