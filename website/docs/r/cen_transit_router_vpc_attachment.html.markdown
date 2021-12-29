@@ -77,7 +77,6 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
 
 The following arguments are supported:
 
-* `auto_create_vpc_route` - (Optional) Whether to create vpc route automatically. The system default value is `true`.
 * `dry_run` - (Optional) The dry run.
 * `cen_id` - (Optional, ForceNew) The ID of the CEN.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC.
@@ -88,7 +87,7 @@ The following arguments are supported:
 * `route_table_association_enabled` - (Optional) Whether to enabled route table association. The system default value is `true`.
 * `route_table_propagation_enabled` - (Optional) Whether to enabled route table propagation. The system default value is `true`.
 * `vpc_owner_id` - (Optional,ForceNew) The owner id of vpc.
-* `zone_mapping` - (Required, ForceNew) The list of zone mapping of the VPC.
+* `zone_mappings` - (Required, ForceNew) The list of zone mapping of the VPC.
 
 -> **NOTE:** The Zone of CEN has MasterZone and SlaveZone, first zone_id of zone_mapping need be MasterZone. We have a API to describeZones[API](https://help.aliyun.com/document_detail/261356.html)
 
