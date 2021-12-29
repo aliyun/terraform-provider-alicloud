@@ -93,6 +93,60 @@ func TestAccAlicloudCenTransitRouterRouteEntry_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCenTransitRouterRouteEntry_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_route_entry.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteEntryMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterRouteEntry")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scentransitrouterrouteentry%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterRouteEntryBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_route_entry_destination_cidr_block": "192.168.1.0/24",
+					"transit_router_route_entry_name":                   name,
+					"transit_router_route_entry_description":            "test",
+					"transit_router_route_entry_next_hop_type":          "Attachment",
+					"transit_router_route_entry_next_hop_id":            "${alicloud_cen_transit_router_vbr_attachment.default.transit_router_attachment_id}",
+					"transit_router_route_table_id":                     "${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}",
+					"dry_run":                                           "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_route_entry_destination_cidr_block": "192.168.1.0/24",
+						"transit_router_route_entry_name":                   name,
+						"transit_router_route_entry_description":            "test",
+						"transit_router_route_entry_next_hop_type":          "Attachment",
+						"transit_router_route_entry_next_hop_id":            CHECKSET,
+						"transit_router_route_table_id":                     CHECKSET,
+						"dry_run":                                           "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
 var AlicloudCenTransitRouterRouteEntryMap = map[string]string{
 	"dry_run":                                NOSET,
 	"status":                                 CHECKSET,
