@@ -344,6 +344,14 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	request := ecs.CreateDescribeAvailableResourceRequest()
 	request.RegionId = s.client.RegionId
 	request.DestinationResource = string(destination)
+	if destination == InstanceTypeResource {
+		if v, ok := d.GetOk("cpu_core_count"); ok && v.(int) > 0 {
+			request.Cores = requests.NewInteger(v.(int))
+		}
+		if v, ok := d.GetOk("memory_size"); ok && v.(float64) > 0 {
+			request.Memory = requests.NewFloat(v.(float64))
+		}
+	}
 	request.IoOptimized = string(IOOptimized)
 
 	if v, ok := d.GetOk("availability_zone"); ok && strings.TrimSpace(v.(string)) != "" {
