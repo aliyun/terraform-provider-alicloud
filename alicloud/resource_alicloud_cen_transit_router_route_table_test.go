@@ -87,6 +87,54 @@ func TestAccAlicloudCenTransitRouterRouteTable_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCenTransitRouterRouteTable_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_route_table.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTableMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterRouteTable")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scentransitrouterroutetable%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterRouteTableBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_id":                      "${alicloud_cen_transit_router.default.transit_router_id}",
+					"transit_router_route_table_name":        name,
+					"transit_router_route_table_description": "description",
+					"dry_run":                                "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_id":                      CHECKSET,
+						"transit_router_route_table_name":        name,
+						"transit_router_route_table_description": "description",
+						"dry_run":                                "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
 var AlicloudCenTransitRouterRouteTableMap = map[string]string{
 	"dry_run":                                NOSET,
 	"status":                                 CHECKSET,
