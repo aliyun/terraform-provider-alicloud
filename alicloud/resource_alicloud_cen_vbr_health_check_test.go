@@ -120,6 +120,62 @@ func TestAccAlicloudCenVbrHealthCheck_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCenVbrHealthCheck_basic1(t *testing.T) {
+	var v cbn.VbrHealthCheck
+	resourceId := "alicloud_cen_vbr_health_check.default"
+	ra := resourceAttrInit(resourceId, CenVbrHealthCheckMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenVbrHealthCheck")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCenVbrHealthCheck%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, CenVbrHealthCheckBasicdependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.VbrSupportRegions)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cen_id":                 "${alicloud_cen_instance.default.id}",
+					"health_check_source_ip": "192.168.1.2",
+					"health_check_target_ip": "10.0.0.2",
+					"vbr_instance_id":        "${alicloud_express_connect_virtual_border_router.default.id}",
+					"vbr_instance_region_id": os.Getenv("ALICLOUD_REGION"),
+					"health_check_interval":  "2",
+					"healthy_threshold":      "8",
+					"vbr_instance_owner_id":  "${data.alicloud_account.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cen_id":                 CHECKSET,
+						"health_check_source_ip": "192.168.1.2",
+						"health_check_target_ip": "10.0.0.2",
+						"vbr_instance_id":        CHECKSET,
+						"vbr_instance_region_id": os.Getenv("ALICLOUD_REGION"),
+						"health_check_interval":  "2",
+						"healthy_threshold":      "8",
+						"vbr_instance_owner_id":  CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"vbr_instance_owner_id"},
+			},
+		},
+	})
+}
+
 var CenVbrHealthCheckMap = map[string]string{
 	"cen_id": CHECKSET,
 }
@@ -153,5 +209,38 @@ resource "alicloud_cen_instance_attachment" "default" {
   child_instance_type = "VBR"
   child_instance_region_id = "%s"
 }
+`, name, os.Getenv("ALICLOUD_REGION"))
+}
+
+func CenVbrHealthCheckBasicdependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+   default = "%s"
+}
+data "alicloud_express_connect_physical_connections" "nameRegex" {
+  name_regex = "^preserved-NODELETING"
+}
+
+resource "alicloud_express_connect_virtual_border_router" "default" {
+  local_gateway_ip           = "10.0.0.1"
+  peer_gateway_ip            = "10.0.0.2"
+  peering_subnet_mask        = "255.255.255.252"
+  physical_connection_id     = data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id
+  virtual_border_router_name = var.name
+  vlan_id                    = 100
+  min_rx_interval            = 1000
+  min_tx_interval            = 1000
+  detect_multiplier          = 10
+}
+resource "alicloud_cen_instance" "default" {
+  name = "${var.name}"
+}
+resource "alicloud_cen_instance_attachment" "default" {
+  instance_id = "${alicloud_cen_instance.default.id}"
+  child_instance_id = alicloud_express_connect_virtual_border_router.default.id
+  child_instance_type = "VBR"
+  child_instance_region_id = "%s"
+}
+data "alicloud_account" "default" {}
 `, name, os.Getenv("ALICLOUD_REGION"))
 }
