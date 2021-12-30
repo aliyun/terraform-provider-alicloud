@@ -18,7 +18,7 @@ This data source provides the CMS Groups of the current Alibaba Cloud user.
 Basic Usage
 
 ```terraform
-data "alicloud_cms_alarm_contact_group" "example" {
+data "alicloud_cms_alarm_contact_groups" "example" {
   name_regex = "tf-testacc"
 }
 ```
