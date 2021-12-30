@@ -224,6 +224,54 @@ func TestAccAlicloudALBSecurityPolicy_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudALBSecurityPolicy_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_security_policy.default"
+	ra := resourceAttrInit(resourceId, AlicloudALBSecurityPolicyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbSecurityPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salbsecuritypolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBSecurityPolicyBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_policy_name": "tf-testAcc-test-secrity",
+					"tls_versions":         []string{"TLSv1.0"},
+					"ciphers":              []string{"ECDHE-ECDSA-AES128-SHA", "AES256-SHA"},
+					"dry_run":              "false",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_policy_name": "tf-testAcc-test-secrity",
+						"ciphers.#":            "2",
+						"tls_versions.#":       "1",
+						"dry_run":              "false",
+						"resource_group_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
 var AlicloudALBSecurityPolicyMap0 = map[string]string{
 	"dry_run":              NOSET,
 	"ciphers.#":            CHECKSET,
@@ -239,5 +287,14 @@ func AlicloudALBSecurityPolicyBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
+`, name)
+}
+
+func AlicloudALBSecurityPolicyBasicDependence1(name string) string {
+	return fmt.Sprintf(` 
+variable "name" {
+  default = "%s"
+}
+data "alicloud_resource_manager_resource_groups" "default" {}
 `, name)
 }
