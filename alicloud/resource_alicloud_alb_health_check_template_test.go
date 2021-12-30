@@ -307,6 +307,70 @@ func TestAccAlicloudALBHealthCheckTemplate_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudALBHealthCheckTemplate_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_health_check_template.default"
+	ra := resourceAttrInit(resourceId, AlicloudALBHealthCheckTemplateMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbHealthCheckTemplate")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salbhealthchecktemplate%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBHealthCheckTemplateBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_template_name": name,
+					"health_check_protocol":      "HTTP",
+					"dry_run":                    "false",
+					"health_check_codes":         []string{"http_3xx", "http_4xx"},
+					"health_check_connect_port":  "8080",
+					"health_check_host":          "www.test.com",
+					"health_check_http_version":  "HTTP1.0",
+					"health_check_interval":      "2",
+					"health_check_method":        "GET",
+					"health_check_path":          "/test",
+					"health_check_timeout":       "50",
+					"healthy_threshold":          "5",
+					"unhealthy_threshold":        "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_template_name": name,
+						"health_check_protocol":      "HTTP",
+						"dry_run":                    "false",
+						"health_check_codes.#":       "2",
+						"health_check_connect_port":  "8080",
+						"health_check_host":          "www.test.com",
+						"health_check_http_version":  "HTTP1.0",
+						"health_check_interval":      "2",
+						"health_check_method":        "GET",
+						"health_check_path":          "/test",
+						"health_check_timeout":       "50",
+						"healthy_threshold":          "5",
+						"unhealthy_threshold":        "5",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
 var AlicloudALBHealthCheckTemplateMap0 = map[string]string{}
 
 func AlicloudALBHealthCheckTemplateBasicDependence0(name string) string {
