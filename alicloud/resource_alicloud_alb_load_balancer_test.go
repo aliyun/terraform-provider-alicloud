@@ -276,6 +276,83 @@ func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudALBLoadBalancer_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_load_balancer.default"
+	ra := resourceAttrInit(resourceId, AlicloudALBLoadBalancerMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbLoadBalancer")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salbloadbalancer%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBLoadBalancerBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":                 "${local.vpc_id}",
+					"address_type":           "Internet",
+					"address_allocated_mode": "Fixed",
+					"load_balancer_name":     "${var.name}",
+					"load_balancer_edition":  "Basic",
+					"load_balancer_billing_config": []map[string]interface{}{
+						{
+							"pay_type": "PayAsYouGo",
+						},
+					},
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${local.vswitch_id_1}",
+							"zone_id":    "${local.zone_id_1}",
+						},
+						{
+							"vswitch_id": "${local.vswitch_id_2}",
+							"zone_id":    "${local.zone_id_2}",
+						},
+					},
+					"deletion_protection_enabled": "false",
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"modification_protection_config": []map[string]interface{}{
+						{
+							"status": "ConsoleProtection",
+							"reason": "TF_Test123.-",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":                           CHECKSET,
+						"address_type":                     "Internet",
+						"address_allocated_mode":           "Fixed",
+						"load_balancer_name":               name,
+						"load_balancer_edition":            "Basic",
+						"load_balancer_billing_config.#":   "1",
+						"zone_mappings.#":                  "2",
+						"deletion_protection_enabled":      "false",
+						"resource_group_id":                CHECKSET,
+						"modification_protection_config.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "deletion_protection_enabled"},
+			},
+		},
+	})
+}
+
 var AlicloudALBLoadBalancerMap0 = map[string]string{}
 
 func AlicloudALBLoadBalancerBasicDependence0(name string) string {
