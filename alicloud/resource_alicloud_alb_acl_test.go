@@ -378,6 +378,51 @@ func TestAccAlicloudALBAcl_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudALBAcl_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_acl.default"
+	ra := resourceAttrInit(resourceId, AlicloudALBAclMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbAcl")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccalbacl%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBAclBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_name":          "${var.name}",
+					"dry_run":           "false",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_name":          name,
+						"dry_run":           "false",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
 var AlicloudALBAclMap0 = map[string]string{
 	"tags.%":            NOSET,
 	"dry_run":           NOSET,
