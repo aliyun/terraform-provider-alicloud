@@ -36,7 +36,12 @@ The following arguments are supported:
 * `accelerator_name` - (Optional) The Name of the GA instance.
 * `auto_use_coupon` - (Optional) Use coupons to pay bills automatically. Default value is `false`. Valid value: `true`: Use, `false`: Not used.
 * `description` - (Optional) Descriptive information of the global acceleration instance.
-* `duration` - (Required) The duration. The value range is 1-9.
+* `duration` - (Required) The subscription duration. **NOTE:** Starting from v1.150.0+, the `duration` and  `pricing_cycle` are both required.
+  * If the `pricing_cycle` parameter is set to `Month`, the valid values for the `duration` parameter are 1 to 9.
+  * If the `pricing_cycle` parameter is set to `Year`, the valid values for the `duration` parameter are 1 to 3.
+* `pricing_cycle`- (Optional, Available in v1.150.0+) The billing cycle of the GA instance. Valid values: `Month`,`Year`. The default value: `Month`.
+  * `Month`: billed on a monthly basis.
+  * `Year`: billed on an annual basis.
 * `spec` - (Required) The instance type of the GA instance. Specification of global acceleration instance, value:
     `1`: Small 1.
     `2`: Small 2.
