@@ -541,6 +541,113 @@ func TestAccAlicloudALBListener_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudALBListener_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_listener.default"
+	ra := resourceAttrInit(resourceId, AlicloudALBListenerMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbListener")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 1000)
+	port := fmt.Sprintf("%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, port, AlicloudALBListenerBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id":     "${local.load_balancer_id}",
+					"listener_protocol":    "HTTPS",
+					"listener_port":        "${var.port}",
+					"listener_description": "tf-testAccListener_new",
+					"default_actions": []map[string]interface{}{
+						{
+							"type": "ForwardGroup",
+							"forward_group_config": []map[string]interface{}{
+								{
+									"server_group_tuples": []map[string]interface{}{
+										{
+											"server_group_id": "${local.server_group_id}",
+										},
+									},
+								},
+							},
+						},
+					},
+					"certificates": []map[string]interface{}{
+						{
+							"certificate_id": "${local.certificate_id}",
+						},
+					},
+					"acl_config": []map[string]interface{}{
+						{
+							"acl_type": "White",
+							"acl_relations": []map[string]interface{}{
+								{
+									"acl_id": "${alicloud_alb_acl.default.0.id}",
+								},
+							},
+						},
+					},
+					"dry_run":            "false",
+					"gzip_enabled":       "true",
+					"http2_enabled":      "true",
+					"idle_timeout":       "20",
+					"request_timeout":    "60",
+					"security_policy_id": "tls_cipher_policy_1_0",
+					"xforwarded_for_config": []map[string]interface{}{
+						{
+							"xforwardedforclientcertclientverifyalias":   "test_client-verify-alias_223451",
+							"xforwardedforclientcertclientverifyenabled": "true",
+							"xforwardedforclientcertfingerprintalias":    "test_client-verify-alias_223452",
+							"xforwardedforclientcertfingerprintenabled":  "true",
+							"xforwardedforclientcert_issuerdnalias":      "test_client-verify-alias_223453",
+							"xforwardedforclientcert_issuerdnenabled":    "true",
+							"xforwardedforclientcertsubjectdnalias":      "test_client-verify-alias_223454",
+							"xforwardedforclientcertsubjectdnenabled":    "true",
+							"xforwardedforclientsrcportenabled":          "true",
+							"xforwardedforenabled":                       "true",
+							"xforwardedforprotoenabled":                  "true",
+							"xforwardedforslbidenabled":                  "true",
+							"xforwardedforslbportenabled":                "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_id":        CHECKSET,
+						"listener_protocol":       "HTTPS",
+						"listener_port":           port,
+						"listener_description":    "tf-testAccListener_new",
+						"default_actions.#":       "1",
+						"certificates.#":          "1",
+						"acl_config.#":            "1",
+						"dry_run":                 "false",
+						"gzip_enabled":            "true",
+						"http2_enabled":           "true",
+						"idle_timeout":            "20",
+						"request_timeout":         "60",
+						"security_policy_id":      "tls_cipher_policy_1_0",
+						"xforwarded_for_config.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"dry_run", "xforwarded_for_config"},
+			},
+		},
+	})
+}
+
 var AlicloudALBListenerMap0 = map[string]string{
 	"dry_run": NOSET,
 }
