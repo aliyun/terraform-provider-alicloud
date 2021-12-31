@@ -1002,7 +1002,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 					"zone_id":                  "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id}",
 					"instance_charge_type":     "Postpaid",
 					"instance_name":            "${var.name}",
-					"vswitch_id":               "vsw-bp1choevojf5gasmazq3c",
+					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
 					"db_time_zone":             "America/New_York",
 				}),
@@ -1031,6 +1031,25 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name": "tf-testAccDBInstance_instance_name",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pg_hba_conf": []interface{}{
+						map[string]interface{}{
+							"type":        "host",
+							"user":        "all",
+							"address":     "0.0.0.0/0",
+							"database":    "all",
+							"method":      "md5",
+							"priority_id": "0",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pg_hba_conf.#": "1",
 					}),
 				),
 			},

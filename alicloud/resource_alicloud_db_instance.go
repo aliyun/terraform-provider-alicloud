@@ -217,6 +217,50 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"pg_hba_conf": {
+				Type: schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"mask": {
+							Type:     schema.TypeString,
+							Optional: true,
+							// if attribute contains Optional feature, need to add Default: "", otherwise when terraform plan is executed, unmodified items wil detect differences.
+							Default: "",
+						},
+						"database": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"priority_id": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"address": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"user": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"method": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"option": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "",
+						},
+					},
+				},
+				Optional: true,
+				Computed: true,
+			},
 			"force_restart": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -451,7 +495,12 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 	}
-
+	if d.HasChange("pg_hba_conf") {
+		err := rdsService.ModifyPgHbaConfig(d, "pg_hba_conf")
+		if err != nil {
+			return WrapError(err)
+		}
+	}
 	if err := rdsService.setInstanceTags(d); err != nil {
 		return WrapError(err)
 	}
@@ -1278,6 +1327,9 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("sql_collector_config_value", configValue)
 
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
+		return WrapError(err)
+	}
+	if err = rdsService.RefreshPgHbaConf(d, "pg_hba_conf"); err != nil {
 		return WrapError(err)
 	}
 	if err = rdsService.SetTimeZone(d); err != nil {

@@ -315,6 +315,112 @@ func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string)
 	return nil
 }
 
+func (s *RdsService) RefreshPgHbaConf(d *schema.ResourceData, attribute string) error {
+	response, err := s.DescribePGHbaConfig(d.Id())
+	runningHbaItems := response["RunningHbaItems"].(map[string]interface{})["HbaItem"].([]interface{})
+	if err != nil {
+		return WrapError(err)
+	}
+	var items []map[string]interface{}
+
+	documented, ok := d.GetOk(attribute)
+	if !ok {
+		return nil
+	}
+
+	for _, item := range documented.(*schema.Set).List() {
+		item := item.(map[string]interface{})
+		for _, item2 := range runningHbaItems {
+			item2 := item2.(map[string]interface{})
+			if item["priority_id"] == formatInt(item2["PriorityId"]) {
+				mapping := map[string]interface{}{
+					"type":        item2["Type"],
+					"database":    item2["Database"],
+					"priority_id": formatInt(item2["PriorityId"]),
+					"address":     item2["Address"],
+					"user":        item2["User"],
+					"method":      item2["Method"],
+				}
+				if item2["mask"] != nil && item2["mask"] != "" {
+					mapping["mask"] = item2["mask"]
+				}
+				if item2["option"] != nil && item2["option"] != "" {
+					mapping["option"] = item2["option"]
+				}
+				items = append(items, mapping)
+			}
+		}
+	}
+	if len(items) > 0 {
+		if err := d.Set(attribute, items); err != nil {
+			return WrapError(err)
+		}
+	}
+	return nil
+}
+
+func (s *RdsService) ModifyPgHbaConfig(d *schema.ResourceData, attribute string) error {
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	action := "ModifyPGHbaConfig"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": d.Id(),
+		"SourceIp":     s.client.SourceIp,
+	}
+	request["OpsType"] = "update"
+	pgHbaConfig := d.Get("pg_hba_conf")
+	count := 1
+	for _, i := range pgHbaConfig.(*schema.Set).List() {
+		i := i.(map[string]interface{})
+		request[fmt.Sprint("HbaItem.", count, ".Type")] = i["type"]
+		if i["mask"] != nil && i["mask"] != "" {
+			request[fmt.Sprint("HbaItem.", count, ".Mask")] = i["mask"]
+		}
+		request[fmt.Sprint("HbaItem.", count, ".Database")] = i["database"]
+		request[fmt.Sprint("HbaItem.", count, ".PriorityId")] = i["priority_id"]
+		request[fmt.Sprint("HbaItem.", count, ".Address")] = i["address"]
+		request[fmt.Sprint("HbaItem.", count, ".User")] = i["user"]
+		request[fmt.Sprint("HbaItem.", count, ".Method")] = i["method"]
+		if i["option"] != nil && i["mask"] != "" {
+			request[fmt.Sprint("HbaItem.", count, ".Option")] = i["option"]
+		}
+		count = count + 1
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	var response map[string]interface{}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalError"}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return WrapError(err)
+	}
+	if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
+		return WrapError(err)
+	}
+
+	desResponse, err := s.DescribePGHbaConfig(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if desResponse["LastModifyStatus"] == "failed" {
+		return WrapError(Error(desResponse["ModifyStatusReason"].(string)))
+	}
+	d.SetPartial(attribute)
+	return nil
+}
+
 func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) error {
 	conn, err := s.client.NewRdsClient()
 	if err != nil {
@@ -1927,6 +2033,42 @@ func (s *RdsService) DescribeRdsCloneDbInstance(id string) (object map[string]in
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+func (s *RdsService) DescribePGHbaConfig(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribePGHbaConfig"
+	request := map[string]interface{}{
+		"SourceIp":     s.client.SourceIp,
+		"DBInstanceId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
 	return object, nil
 }
 
