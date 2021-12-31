@@ -7,12 +7,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudCSKubernetesAddon_basic(t *testing.T) {
-	var v *cs.NodePoolDetail
+	var v *Component
 
 	resourceId := "alicloud_cs_kubernetes_addon.default"
 	serviceFunc := func() interface{} {
@@ -22,6 +21,7 @@ func TestAccAlicloudCSKubernetesAddon_basic(t *testing.T) {
 
 	ra := resourceAttrInit(resourceId, csdKubernetesAddonBasicMap)
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc.describeMethod = "DescribeCsKubernetesAddon"
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()

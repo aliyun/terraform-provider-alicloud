@@ -13,7 +13,7 @@ func TestAccAlicloudCSKubernetesAddonsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccCSKubernetesAddons-%d", rand)
 
-	resourceId := "data.alicloud_cs_kubernetes_Addons.default"
+	resourceId := "data.alicloud_cs_kubernetes_addons.default"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -75,7 +75,6 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   service_cidr                 = "172.21.0.0/20"
   worker_vswitch_ids           = [alicloud_vswitch.default.id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
-  depends_on                   = ["alicloud_ram_user_policy_attachment.attach"]
 }
 
 data "alicloud_cs_kubernetes_addons" "default" {

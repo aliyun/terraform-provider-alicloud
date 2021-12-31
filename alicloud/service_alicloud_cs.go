@@ -281,7 +281,13 @@ func (s *CsClient) DescribeClusterAddonsMetadata(clusterId string) (map[string]*
 	return result, nil
 }
 
-func (s *CsClient) DescribeCsKubernetesAddon(clusterId string, addonName string) (*Component, error) {
+func (s *CsClient) DescribeCsKubernetesAddon(id string) (*Component, error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	clusterId := parts[0]
+	addonName := parts[1]
 	addonsMetadata, err := s.DescribeClusterAddonsMetadata(clusterId)
 	if err != nil {
 		return nil, err
@@ -368,11 +374,15 @@ func (s *CsClient) upgradeAddon(d *schema.ResourceData) error {
 }
 
 func (s *CsClient) uninstallAddon(d *schema.ResourceData) error {
-	clusterId := d.Get("cluster_id").(string)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	clusterId := parts[0]
 
 	body := make([]*client.UnInstallClusterAddonsRequestAddons, 0)
 	b := &client.UnInstallClusterAddonsRequestAddons{
-		Name: tea.String(d.Get("name").(string)),
+		Name: tea.String(parts[1]),
 	}
 	body = append(body, b)
 
@@ -380,7 +390,7 @@ func (s *CsClient) uninstallAddon(d *schema.ResourceData) error {
 		Addons: body,
 	}
 
-	_, err := s.client.UnInstallClusterAddons(&clusterId, uninstallArgs)
+	_, err = s.client.UnInstallClusterAddons(&clusterId, uninstallArgs)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "uninstallAddon", err)
 	}
