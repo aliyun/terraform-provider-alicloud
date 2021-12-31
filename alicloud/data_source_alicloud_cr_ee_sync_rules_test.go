@@ -145,7 +145,7 @@ variable "name" {
 	default = "%s"
 }
 data "alicloud_cr_ee_instances" "default" {
-	name_regex = "^tf-testacc-advanced"
+	name_regex = "^tf-testacc"
 }
 
 resource "alicloud_cr_ee_instance" "new" {

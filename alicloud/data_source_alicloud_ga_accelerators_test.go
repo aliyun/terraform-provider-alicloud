@@ -75,16 +75,39 @@ func TestAccAlicloudGaAcceleratorsDataSource(t *testing.T) {
 		existMapFunc: existMapFunc,
 		fakeMapFunc:  fakeMapFunc,
 	}
-	preCheck := func() {}
+	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckWithTime(t, []int{1})
+	}
 
 	CheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 
 func dataSourceGaAcceleratorsConfigDependence(name string) string {
-	return fmt.Sprintf(`resource "alicloud_ga_accelerator" "default" {
-  spec ="1"
-  auto_use_coupon=true
-  duration=1
-  accelerator_name="%s"
-}`, name)
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+resource "alicloud_ga_accelerator" "default" {
+  duration         = 1
+  spec             = "1"
+  accelerator_name = var.name
+  auto_use_coupon  = false
+  description      = var.name
+}
+resource "alicloud_ga_bandwidth_package" "default" {
+   	bandwidth              =  100
+  	type                   = "Basic"
+  	bandwidth_type         = "Basic"
+	payment_type           = "PayAsYouGo"
+  	billing_type           = "PayBy95"
+	ratio       = 30
+	bandwidth_package_name = var.name
+}
+resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  accelerator_id       = alicloud_ga_accelerator.default.id
+  bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+}
+
+`, name)
 }

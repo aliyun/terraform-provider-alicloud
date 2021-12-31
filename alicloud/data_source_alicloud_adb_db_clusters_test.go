@@ -121,6 +121,9 @@ variable "creation" {
 variable "name" {
 	default = "tf-testAccADBConfig_%d"
 }
+data "alicloud_resource_manager_resource_groups" "default" {
+  name_regex = "default"
+}
 
 resource "alicloud_adb_db_cluster" "default" {
   db_cluster_category = "MixedStorage"
@@ -134,7 +137,7 @@ resource "alicloud_adb_db_cluster" "default" {
     Created = "TF-update"
     For     = "acceptance-test-update"
   }
-  resource_group_id = "rg-aek2s7ylxx66kca"
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
   security_ips      = ["10.168.1.12", "10.168.1.11"]
 }
 

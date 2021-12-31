@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"os"
 	"testing"
 
@@ -13,7 +14,7 @@ func TestAccAlicloudGaEndpointGroupsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_ga_endpoint_groups.default"
 	name := fmt.Sprintf("tf-testEndpointGroups_datasource-%d", rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceGaEndpointGroupsConfigDependence)
-
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"accelerator_id": "${data.alicloud_ga_accelerators.default.ids.0}",
@@ -99,7 +100,10 @@ func TestAccAlicloudGaEndpointGroupsDataSource(t *testing.T) {
 		existMapFunc: existMapFunc,
 		fakeMapFunc:  fakeMapFunc,
 	}
-	preCheck := func() {}
+	preCheck := func() {
+		testAccPreCheck(t)
+
+	}
 
 	CheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, nameRegexConf, allConf)
 }
