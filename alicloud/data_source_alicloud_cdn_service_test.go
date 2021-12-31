@@ -32,6 +32,6 @@ func TestAccAlicloudCdnServiceDataSource(t *testing.T) {
 const testAccCheckAlicloudCdnServiceDataSource = `
 data "alicloud_cdn_service" "current" {
 	enable = "On"
-	internet_charge_type = "PayByBandwidth"
+	internet_charge_type = "PayByTraffic"
 }
 `

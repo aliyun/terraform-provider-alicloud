@@ -818,7 +818,7 @@ func (s *SlbService) DescribeTags(resourceId string, resourceTags map[string]int
 			return Client.ListTagResources(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{Throttling}) {
+			if IsExpectedErrors(err, []string{Throttling, "Throttling.User"}) {
 				time.Sleep(2 * time.Second)
 				return resource.RetryableError(err)
 			}

@@ -97,7 +97,8 @@ func TestAccAlicloudGaListenersDataSource(t *testing.T) {
 }
 
 func dataSourceGaListenersConfigDependence(name string) string {
-	return fmt.Sprintf(`data "alicloud_ga_accelerators" "default"{
+	return fmt.Sprintf(`
+data "alicloud_ga_accelerators" "default"{
 }
 resource "alicloud_ga_listener" "default"{
   port_ranges{

@@ -95,8 +95,9 @@ func TestAccAlicloudGaBandwidthPackagesDataSource(t *testing.T) {
 }
 
 func dataSourceGaBandwidthPackagesConfigDependence(name string) string {
-	return fmt.Sprintf(`resource "alicloud_ga_bandwidth_package" "default" {
-   	bandwidth              = "100"
+	return fmt.Sprintf(`
+resource "alicloud_ga_bandwidth_package" "default" {
+   	bandwidth              =  100
   	type                   = "Basic"
   	bandwidth_type         = "Basic"
 	payment_type           = "PayAsYouGo"
