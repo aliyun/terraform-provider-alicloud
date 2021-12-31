@@ -126,6 +126,63 @@ func TestAccAlicloudRdsParameterGroup_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudRdsParameterGroup_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_rds_parameter_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudRdsParameterGroupMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRdsParameterGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf_testAccAlicloudRdsParameterGroup%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRdsParameterGroupBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":         "mysql",
+					"engine_version": `5.7`,
+					"param_detail": []map[string]interface{}{
+						{
+							"param_name":  "back_log",
+							"param_value": `3000`,
+						},
+						{
+							"param_name":  "wait_timeout",
+							"param_value": `86400`,
+						},
+					},
+					"parameter_group_name": "${var.name}",
+					"parameter_group_desc": "update_test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":               "mysql",
+						"engine_version":       "5.7",
+						"param_detail.#":       "2",
+						"parameter_group_name": name,
+						"parameter_group_desc": "update_test",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudRdsParameterGroupMap0 = map[string]string{}
 
 func AlicloudRdsParameterGroupBasicDependence0(name string) string {
