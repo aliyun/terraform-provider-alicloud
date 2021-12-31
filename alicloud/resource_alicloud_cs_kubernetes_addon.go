@@ -69,7 +69,7 @@ func resourceAlicloudCSKubernetesAddonRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
-	addon, err := csClient.DescribeCsKubernetesAddon(parts[0], parts[1])
+	addon, err := csClient.DescribeCsKubernetesAddon(d.Id())
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAddon", err)
 	}
