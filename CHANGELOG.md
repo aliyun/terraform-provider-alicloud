@@ -1,4 +1,27 @@
 ## 1.150.0 (Unreleased)
+
+- **New Resource:** `alicloud_ga_acl` [GH-4416]
+- **New Resource:** `alicloud_ga_acl_attachment` [GH-4416]	
+- **New Resource:** `alicloud_ga_additional_certificate` [GH-4425]
+- **New Resource:** `alicloud_cs_kubernetes_addon` [GH-4402]
+- **New Data Source:** `alicloud_cs_kubernetes_addons` [GH-4402]
+- **New Data Source:** `alicloud_ga_additional_certificates` [GH-4425]	
+- **New Data Source:** `alicloud_ga_acls` [GH-4416]
+
+ENHANCEMENTS:
+
+- resource/alicloud_ga_accelerator: Added the time limit of the field duration. [GH-4426]
+- datasource/alicloud_instance_types: Removes the parameter system_disk_category default value cloud_efficiency [GH-4430]
+- docs/alicloud_kms_key: Improves the resource attribute description [GH-4415]
+- doc/alicloud_cen_transit_router: Optimize document [GH-4417]
+- docs/cloud_sso_access_configuration: Optimize document [GH-4423]
+- testcase: Adds a new test case for resource alicloud_common_bandwidth_package [GH-4262]
+
+BUG FIXES:
+
+- resource/alicloud_slb_acl: Fixed the limit on the number of IP entries; Updates its dependence SDK. [GH-4447]
+- testcase: Fixes the alicloud_cs_kubernetes_addon test case bug [GH-4450]
+
 ## 1.149.0 (December 26, 2021)
 
 - **New Resource:** `alicloud_rds_backup` ([#4343](https://github.com/aliyun/terraform-provider-alicloud/issues/4343))
