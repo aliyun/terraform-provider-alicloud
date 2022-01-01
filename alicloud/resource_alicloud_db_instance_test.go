@@ -1494,6 +1494,133 @@ func TestAccAlicloudRdsDBInstanceMultiAZ(t *testing.T) {
 
 }
 
+func TestAccAlicloudRdsDBInstanceBasic(t *testing.T) {
+	var instance map[string]interface{}
+	var ips []map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap3)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "tf-testAccDBInstanceConfig_slave_zone"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceHighAvailabilityConfigDependence1)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
+					"instance_charge_type":     "Prepaid",
+					"period":                   "1",
+					"instance_name":            "${var.name}",
+					"db_instance_storage_type": "local_ssd",
+					"zone_id":                  "${local.zone_id}",
+					//"zone_id_slave_a":          "${local.zone_id}",
+					"zone_id_slave_b":    "${local.zone_id}",
+					"vswitch_id":         "${local.vswitch_id}",
+					"monitoring_period":  "60",
+					"security_group_ids": "${alicloud_security_group.default.*.id}",
+					"encryption_key":     "${alicloud_kms_key.default.id}",
+					"security_ips":       []string{"10.168.1.12", "100.69.7.112"},
+					"db_time_zone":       "America/New_York",
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckKeyValueInMaps(ips, "security ip", "security_ips", "10.168.1.12,100.69.7.112"),
+					testAccCheck(map[string]string{
+						"engine":                   "MySQL",
+						"engine_version":           "8.0",
+						"db_instance_storage_type": "local_ssd",
+						"db_time_zone":             "America/New_York",
+						"resource_group_id":        CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "zone_id_slave_b"},
+			},
+		},
+	})
+}
+
+func resourceDBInstanceHighAvailabilityConfigDependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+   default = "%s"
+}
+data "alicloud_db_zones" "default"{
+   engine = "MySQL"
+   engine_version = "8.0"
+   instance_charge_type = "PostPaid"
+   category = "HighAvailability"
+   db_instance_storage_type = "local_ssd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+   engine = "MySQL"
+   engine_version = "8.0"
+    category = "HighAvailability"
+   db_instance_storage_type = "local_ssd"
+   instance_charge_type = "PostPaid"
+}
+
+data "alicloud_vpcs" "default" {
+ name_regex = "^default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "this" {
+ count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+ vswitch_name = var.name
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ zone_id = data.alicloud_db_zones.default.ids.0
+ cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_db_zones.default.ids.0
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+   status = "OK"
+}
+
+resource "alicloud_security_group" "default" {
+   name   = var.name
+   vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_kms_key" "default" {
+  description = var.name
+  pending_window_in_days  = 7
+  key_state               = "Enabled"
+}
+
+`, name)
+}
+
 func resourceDBInstanceMysqlAZConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -1616,4 +1743,16 @@ var instanceBasicMap2 = map[string]string{
 	"instance_charge_type": "Postpaid",
 	"connection_string":    CHECKSET,
 	"port":                 CHECKSET,
+}
+
+var instanceBasicMap3 = map[string]string{
+	"engine":            "MySQL",
+	"engine_version":    "8.0",
+	"instance_type":     CHECKSET,
+	"instance_storage":  "5",
+	"instance_name":     "tf-testAccDBInstanceConfig_slave_zone",
+	"monitoring_period": "60",
+	"zone_id":           CHECKSET,
+	"connection_string": CHECKSET,
+	"port":              CHECKSET,
 }
