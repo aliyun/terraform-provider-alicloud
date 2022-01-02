@@ -1,26 +1,28 @@
-## 1.150.0 (Unreleased)
+## 1.151.0 (Unreleased)
+## 1.150.0 (January 02, 2022)
 
-- **New Resource:** `alicloud_ga_acl` [GH-4416]
-- **New Resource:** `alicloud_ga_acl_attachment` [GH-4416]	
-- **New Resource:** `alicloud_ga_additional_certificate` [GH-4425]
-- **New Resource:** `alicloud_cs_kubernetes_addon` [GH-4402]
-- **New Data Source:** `alicloud_cs_kubernetes_addons` [GH-4402]
-- **New Data Source:** `alicloud_ga_additional_certificates` [GH-4425]	
-- **New Data Source:** `alicloud_ga_acls` [GH-4416]
+- **New Resource:** `alicloud_ga_acl` ([#4416](https://github.com/aliyun/terraform-provider-alicloud/issues/4416))
+- **New Resource:** `alicloud_ga_acl_attachment` ([#4416](https://github.com/aliyun/terraform-provider-alicloud/issues/4416))	
+- **New Resource:** `alicloud_ga_additional_certificate` ([#4425](https://github.com/aliyun/terraform-provider-alicloud/issues/4425))
+- **New Resource:** `alicloud_cs_kubernetes_addon` ([#4402](https://github.com/aliyun/terraform-provider-alicloud/issues/4402))
+- **New Data Source:** `alicloud_cs_kubernetes_addons` ([#4402](https://github.com/aliyun/terraform-provider-alicloud/issues/4402))
+- **New Data Source:** `alicloud_ga_additional_certificates` ([#4425](https://github.com/aliyun/terraform-provider-alicloud/issues/4425))	
+- **New Data Source:** `alicloud_ga_acls` ([#4416](https://github.com/aliyun/terraform-provider-alicloud/issues/4416))
 
 ENHANCEMENTS:
 
-- resource/alicloud_ga_accelerator: Added the time limit of the field duration. [GH-4426]
-- datasource/alicloud_instance_types: Removes the parameter system_disk_category default value cloud_efficiency [GH-4430]
-- docs/alicloud_kms_key: Improves the resource attribute description [GH-4415]
-- doc/alicloud_cen_transit_router: Optimize document [GH-4417]
-- docs/cloud_sso_access_configuration: Optimize document [GH-4423]
-- testcase: Adds a new test case for resource alicloud_common_bandwidth_package [GH-4262]
+- resource/alicloud_ga_accelerator: Added the time limit of the field duration. ([#4426](https://github.com/aliyun/terraform-provider-alicloud/issues/4426))
+- datasource/alicloud_instance_types: Removes the parameter system_disk_category default value cloud_efficiency ([#4430](https://github.com/aliyun/terraform-provider-alicloud/issues/4430))
+- docs/alicloud_kms_key: Improves the resource attribute description ([#4415](https://github.com/aliyun/terraform-provider-alicloud/issues/4415))
+- doc/alicloud_cen_transit_router: Optimize document ([#4417](https://github.com/aliyun/terraform-provider-alicloud/issues/4417))
+- docs/cloud_sso_access_configuration: Optimize document ([#4423](https://github.com/aliyun/terraform-provider-alicloud/issues/4423))
+- testcase: Adds a new test case for resource alicloud_common_bandwidth_package ([#4262](https://github.com/aliyun/terraform-provider-alicloud/issues/4262))
+- testcase: Fixes the alicloud_cs_kubernetes_addon test case bug ([#4451](https://github.com/aliyun/terraform-provider-alicloud/issues/4451))
 
 BUG FIXES:
 
-- resource/alicloud_slb_acl: Fixed the limit on the number of IP entries; Updates its dependence SDK. [GH-4447]
-- testcase: Fixes the alicloud_cs_kubernetes_addon test case bug [GH-4450]
+- resource/alicloud_slb_acl: Fixed the limit on the number of IP entries; Updates its dependence SDK. ([#4447](https://github.com/aliyun/terraform-provider-alicloud/issues/4447))
+- testcase: Fixes the alicloud_cs_kubernetes_addon test case bug ([#4450](https://github.com/aliyun/terraform-provider-alicloud/issues/4450))
 
 ## 1.149.0 (December 26, 2021)
 
