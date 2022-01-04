@@ -641,6 +641,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mongodb_sharding_network_public_addresses":   dataSourceAlicloudMongodbShardingNetworkPublicAddresses(),
 			"alicloud_ga_acls":                                     dataSourceAlicloudGaAcls(),
 			"alicloud_ga_additional_certificates":                  dataSourceAlicloudGaAdditionalCertificates(),
+			"alicloud_alidns_custom_lines":                         dataSourceAlicloudAlidnsCustomLines(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1163,6 +1164,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_acl":                                               resourceAlicloudGaAcl(),
 			"alicloud_ga_acl_attachment":                                    resourceAlicloudGaAclAttachment(),
 			"alicloud_ga_additional_certificate":                            resourceAlicloudGaAdditionalCertificate(),
+			"alicloud_alidns_custom_line":                                   resourceAlicloudAlidnsCustomLine(),
 		},
 
 		ConfigureFunc: providerConfigure,

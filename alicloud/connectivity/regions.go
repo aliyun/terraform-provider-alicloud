@@ -164,3 +164,4 @@ var MongoDBSupportRegions = []Region{APSouth1, Shanghai, APSouthEast2, WuLanChaB
 var MongoDBServerlessSupportRegions = []Region{APSouthEast5, Shanghai, USEast1, Hongkong, HeYuan, Zhangjiakou, APSouthEast6, GuangZhou, Huhehaote, Beijing, Shenzhen, WuLanChaBu, ChengDu, Hangzhou, Qingdao, USWest1, APSouthEast1}
 var FnFSupportRegions = []Region{Shenzhen, Beijing, Shanghai, APSouthEast1, USWest1, Hangzhou}
 var GaSupportRegions = []Region{Hangzhou, APSouthEast1}
+var AlidnsSupportRegions = []Region{Hangzhou, APSouthEast1}
