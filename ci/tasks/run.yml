@@ -24,7 +24,7 @@ params:
   ACCESS_USER_NAME:      ""
   ACCESS_PASSWORD:       ""
   DING_TALK_TOKEN:       ""
-  BUCKET_NAME:           "terraform-ci"
+  BUCKET_NAME:           "terraform-provider-test"
   BUCKET_REGION:         "cn-beijing"
   ALICLOUD_RESOURCE_GROUP_ID : ""
   ALICLOUD_WAF_INSTANCE_ID: ""
