@@ -105,6 +105,102 @@ func TestAccAlicloudNasAccessRule_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudNasAccessRule_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_access_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasAccessRule0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasAccessRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudNasAccessRule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessRuleBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_group_name":   "${alicloud_nas_access_group.example.access_group_name}",
+					"ipv6_source_cidr_ip": "0:0:0:0:0:0:0:0/0",
+					"file_system_type":    "${alicloud_nas_access_group.example.file_system_type}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_group_name":   name,
+						"ipv6_source_cidr_ip": "0:0:0:0:0:0:0:0/0",
+						"file_system_type":    CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_source_cidr_ip": "0:0:0:0:0:0:0:0/10",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_source_cidr_ip": "0:0:0:0:0:0:0:0/10",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rw_access_type": "RDONLY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rw_access_type": "RDONLY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"priority": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"priority": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_access_type": "root_squash",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_access_type": "root_squash",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_source_cidr_ip": "0:0:0:0:0:0:0:0/0",
+					"priority":            "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_source_cidr_ip": "0:0:0:0:0:0:0:0/0",
+						"priority":            "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AlicloudNasAccessRule0 = map[string]string{
 	"access_rule_id": CHECKSET,
 }
@@ -119,5 +215,19 @@ resource "alicloud_nas_access_group" "example" {
 	access_group_name = "${var.name}"
 	access_group_type = "Vpc"
 	}
+`, name)
+}
+
+func AlicloudNasAccessRuleBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+resource "alicloud_nas_access_group" "example" {
+	access_group_name = "${var.name}"
+	access_group_type = "Vpc"
+    file_system_type  = "extreme"
+}
 `, name)
 }

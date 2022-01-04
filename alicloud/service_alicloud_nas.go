@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -139,21 +140,20 @@ func (s *NasService) DescribeNasAccessRule(id string) (object map[string]interfa
 		return nil, WrapError(err)
 	}
 	action := "DescribeAccessRules"
-	parts, err := ParseResourceId(id, 2)
-	if err != nil {
-		err = WrapError(err)
-		return
-	}
+	parts := strings.Split(id, ":")
 	request := map[string]interface{}{
 		"RegionId":        s.client.RegionId,
 		"AccessGroupName": parts[0],
 		"AccessRuleId":    parts[1],
 	}
+	if len(parts) > 2 {
+		request["FileSystemType"] = parts[2]
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidAccessGroup.NotFound", "Forbidden.NasNotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidAccessGroup.NotFound", "Forbidden.NasNotFound", "Resource.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("AccessRule", id)), NotFoundMsg, ProviderERROR)
 			return object, err
 		}

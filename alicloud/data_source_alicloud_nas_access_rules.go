@@ -3,6 +3,8 @@ package alicloud
 import (
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -27,6 +29,12 @@ func dataSourceAlicloudAccessRules() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"file_system_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"standard", "extreme"}, false),
+				Default:      "standard",
+			},
 			"rw_access": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -48,6 +56,14 @@ func dataSourceAlicloudAccessRules() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"source_cidr_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ipv6_source_cidr_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"file_system_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -78,6 +94,7 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 
 	action := "DescribeAccessRules"
 	request := make(map[string]interface{})
+	request["FileSystemType"] = d.Get("file_system_type")
 	request["AccessGroupName"] = d.Get("access_group_name")
 	request["RegionId"] = client.Region
 	request["PageSize"] = PageSizeLarge
@@ -102,6 +119,11 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"Resource.NotFound"}) {
+				d.SetId("NasAccessRules")
+				d.Set("ids", []string{})
+				return nil
+			}
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_access_rules", action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
@@ -138,11 +160,13 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"source_cidr_ip": object["SourceCidrIp"],
-			"priority":       formatInt(object["Priority"]),
-			"access_rule_id": object["AccessRuleId"],
-			"user_access":    object["UserAccess"],
-			"rw_access":      object["RWAccess"],
+			"source_cidr_ip":      object["SourceCidrIp"],
+			"ipv6_source_cidr_ip": object["Ipv6SourceCidrIp"],
+			"file_system_type":    request["FileSystemType"],
+			"priority":            formatInt(object["Priority"]),
+			"access_rule_id":      object["AccessRuleId"],
+			"user_access":         object["UserAccess"],
+			"rw_access":           object["RWAccess"],
 		}
 		ids = append(ids, fmt.Sprint(object["AccessRuleId"]))
 		s = append(s, mapping)
@@ -152,7 +176,6 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
-
 	if err := d.Set("rules", s); err != nil {
 		return WrapError(err)
 	}
