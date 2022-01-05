@@ -2,16 +2,17 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
+	"reflect"
+	"strconv"
+	"testing"
+
 	"github.com/agiledragon/gomonkey/v2"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"reflect"
-	"strconv"
-	"testing"
 
 	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
