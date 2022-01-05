@@ -13,6 +13,15 @@ const (
 	ExpirationStatusDisabled = LifecycleRuleStatus("Disabled")
 )
 
+//ReplicationStatus the status of replication
+type ReplicationStatus string
+
+const (
+	ReplicationStatusStarting = ReplicationStatus("starting")
+	ReplicationStatusDoing    = ReplicationStatus("doing")
+	ReplicationStatusClosing  = ReplicationStatus("closing")
+)
+
 func ossNotFoundError(err error) bool {
 	if e, ok := err.(oss.ServiceError); ok &&
 		(e.StatusCode == 404 || strings.HasPrefix(e.Code, "NoSuch") || strings.HasPrefix(e.Message, "No Row found")) {

@@ -37,7 +37,12 @@ func (s *OssService) WaitForOssBucket(id string, status Status, timeout int) err
 	for {
 		object, err := s.DescribeOssBucket(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if NoSuchBucketError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else if AccessDeniedError(err) {
+				// After you delete a bucket, get the bucket will return '404 NoSuchBucket'; But if the bucket was set replication_rule, oss will return '403 AccessDenied' in about 10min
 				if status == Deleted {
 					return nil
 				}

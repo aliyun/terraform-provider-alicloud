@@ -53,9 +53,7 @@ type LifecycleRule struct {
 	Transitions          []LifecycleTransition          `xml:"Transition,omitempty"`           // The transition property
 	AbortMultipartUpload *LifecycleAbortMultipartUpload `xml:"AbortMultipartUpload,omitempty"` // The AbortMultipartUpload property
 	NonVersionExpiration *LifecycleVersionExpiration    `xml:"NoncurrentVersionExpiration,omitempty"`
-	// Deprecated: Use NonVersionTransitions instead.
-	NonVersionTransition  *LifecycleVersionTransition  `xml:"-"` // NonVersionTransition is not suggested to use
-	NonVersionTransitions []LifecycleVersionTransition `xml:"NoncurrentVersionTransition,omitempty"`
+	NonVersionTransition *LifecycleVersionTransition    `xml:"NoncurrentVersionTransition,omitempty"`
 }
 
 // LifecycleExpiration defines the rule's expiration property
@@ -123,7 +121,7 @@ func verifyLifecycleRules(rules []LifecycleRule) error {
 	if len(rules) == 0 {
 		return fmt.Errorf("invalid rules, the length of rules is zero")
 	}
-	for k, rule := range rules {
+	for _, rule := range rules {
 		if rule.Status != "Enabled" && rule.Status != "Disabled" {
 			return fmt.Errorf("invalid rule, the value of status must be Enabled or Disabled")
 		}
@@ -137,19 +135,63 @@ func verifyLifecycleRules(rules []LifecycleRule) error {
 
 		transitions := rule.Transitions
 		if len(transitions) > 0 {
+			if len(transitions) > 2 {
+				return fmt.Errorf("invalid count of transition lifecycles, the count must than less than 3")
+			}
+
 			for _, transition := range transitions {
 				if (transition.Days != 0 && transition.CreatedBeforeDate != "") || (transition.Days == 0 && transition.CreatedBeforeDate == "") {
 					return fmt.Errorf("invalid transition lifecycle, must be set one of CreatedBeforeDate and Days")
 				}
+				if transition.StorageClass != StorageIA && transition.StorageClass != StorageArchive {
+					return fmt.Errorf("invalid transition lifecylce, the value of storage class must be IA or Archive")
+				}
 			}
+		} else if rule.Expiration == nil && abortMPU == nil && rule.NonVersionExpiration == nil && rule.NonVersionTransition == nil {
+			return fmt.Errorf("invalid rule, must set one of Expiration, AbortMultipartUplaod, NonVersionExpiration, NonVersionTransition and Transitions")
+		}
+	}
+
+	return nil
+}
+
+// verifyReplicationRule Determine if a replication rule is valid, if it is invalid, it will return an error.
+func verifyReplicationRule(rule ReplicationRule) error {
+
+	if rule.PrefixSet != nil {
+		if len(rule.PrefixSet.Prefix) > 10 {
+			return fmt.Errorf("the num of prefix in prefixSet should less than 10")
 		}
 
-		// NonVersionTransition is not suggested to use
-		// to keep compatible
-		if rule.NonVersionTransition != nil && len(rule.NonVersionTransitions) > 0 {
-			return fmt.Errorf("NonVersionTransition and NonVersionTransitions cannot both have values")
-		} else if rule.NonVersionTransition != nil {
-			rules[k].NonVersionTransitions = append(rules[k].NonVersionTransitions, *rule.NonVersionTransition)
+		for _, prefix := range rule.PrefixSet.Prefix {
+			if len(prefix) > 1023 {
+				return fmt.Errorf("invalid PrefixSet.Prefix, the length should less than 1023")
+			}
+		}
+	}
+
+	// todo action的取值范围跟进下，
+	if rule.Action != "" {
+		if rule.Action != string(ReplicationActionALL) && rule.Action != string(ReplicationActionPUT) {
+			return fmt.Errorf("invalid Action, the value of action must be ...")
+		}
+	}
+
+	if rule.Destination != nil {
+		if rule.Destination.TransferType != string(TransferInternal) && rule.Destination.TransferType != string(TransferOssAcc) {
+			return fmt.Errorf(fmt.Sprintf("invalid Destination.TransferType, must be %s or %s", string(TransferInternal), string(TransferOssAcc)))
+		}
+	}
+
+	if rule.HistoricalObjectReplication != "" {
+		if rule.HistoricalObjectReplication != string(HistoricalEnabled) && rule.HistoricalObjectReplication != string(HistoricalDisabled) {
+			return fmt.Errorf(fmt.Sprintf("invalid HistoricalObjectReplication, must be %s or %s", string(HistoricalEnabled), string(HistoricalDisabled)))
+		}
+	}
+
+	if rule.SourceSelectionCriteria != nil && rule.SourceSelectionCriteria.SseKmsEncryptedObjects != nil {
+		if rule.SourceSelectionCriteria.SseKmsEncryptedObjects.Status != string(SourceSSEKMSEnabled) && rule.SourceSelectionCriteria.SseKmsEncryptedObjects.Status != string(SourceSSEKMSDisabled) {
+			return fmt.Errorf(fmt.Sprintf("invalid SourceSelectionCriteria.SseKmsEncryptedObjects.Status, must be %s or %s", string(SourceSSEKMSEnabled), string(SourceSSEKMSDisabled)))
 		}
 	}
 
@@ -296,18 +338,20 @@ type GetBucketInfoResult struct {
 
 // BucketInfo defines Bucket information
 type BucketInfo struct {
-	XMLName          xml.Name  `xml:"Bucket"`
-	Name             string    `xml:"Name"`                     // Bucket name
-	Location         string    `xml:"Location"`                 // Bucket datacenter
-	CreationDate     time.Time `xml:"CreationDate"`             // Bucket creation time
-	ExtranetEndpoint string    `xml:"ExtranetEndpoint"`         // Bucket external endpoint
-	IntranetEndpoint string    `xml:"IntranetEndpoint"`         // Bucket internal endpoint
-	ACL              string    `xml:"AccessControlList>Grant"`  // Bucket ACL
-	RedundancyType   string    `xml:"DataRedundancyType"`       // Bucket DataRedundancyType
-	Owner            Owner     `xml:"Owner"`                    // Bucket owner
-	StorageClass     string    `xml:"StorageClass"`             // Bucket storage class
-	SseRule          SSERule   `xml:"ServerSideEncryptionRule"` // Bucket ServerSideEncryptionRule
-	Versioning       string    `xml:"Versioning"`               // Bucket Versioning
+	XMLName          	   xml.Name  `xml:"Bucket"`
+	Name             	   string    `xml:"Name"`                     // Bucket name
+	Location         	   string    `xml:"Location"`                 // Bucket datacenter
+	CreationDate     	   time.Time `xml:"CreationDate"`             // Bucket creation time
+	ExtranetEndpoint 	   string    `xml:"ExtranetEndpoint"`         // Bucket external endpoint
+	IntranetEndpoint 	   string    `xml:"IntranetEndpoint"`         // Bucket internal endpoint
+	ACL              	   string    `xml:"AccessControlList>Grant"`  // Bucket ACL
+	RedundancyType   	   string    `xml:"DataRedundancyType"`       // Bucket DataRedundancyType
+	Owner            	   Owner     `xml:"Owner"`                    // Bucket owner
+	StorageClass     	   string    `xml:"StorageClass"`             // Bucket storage class
+	SseRule          	   SSERule   `xml:"ServerSideEncryptionRule"` // Bucket ServerSideEncryptionRule
+	Versioning       	   string    `xml:"Versioning"`               // Bucket Versioning
+	CrossRegionReplication string    `xml:"CrossRegionReplication"`   // Bucket replication
+	TransferAcceleration   string    `xml:"TransferAcceleration"`     // Bucket replication TransferAcceleration status
 }
 
 type SSERule struct {
@@ -340,20 +384,6 @@ type ObjectProperties struct {
 	Owner        Owner     `xml:"Owner"`        // Object owner information
 	LastModified time.Time `xml:"LastModified"` // Object last modified time
 	StorageClass string    `xml:"StorageClass"` // Object storage class (Standard, IA, Archive)
-}
-
-// ListObjectsResultV2 defines the result from ListObjectsV2 request
-type ListObjectsResultV2 struct {
-	XMLName               xml.Name           `xml:"ListBucketResult"`
-	Prefix                string             `xml:"Prefix"`                // The object prefix
-	StartAfter            string             `xml:"StartAfter"`            // the input StartAfter
-	ContinuationToken     string             `xml:"ContinuationToken"`     // the input ContinuationToken
-	MaxKeys               int                `xml:"MaxKeys"`               // Max keys to return
-	Delimiter             string             `xml:"Delimiter"`             // The delimiter for grouping objects' name
-	IsTruncated           bool               `xml:"IsTruncated"`           // Flag indicates if all results are returned (when it's false)
-	NextContinuationToken string             `xml:"NextContinuationToken"` // The start point of the next NextContinuationToken
-	Objects               []ObjectProperties `xml:"Contents"`              // Object list
-	CommonPrefixes        []string           `xml:"CommonPrefixes>Prefix"` // You can think of commonprefixes as "folders" whose names end with the delimiter
 }
 
 // ListObjectVersionsResult defines the result from ListObjectVersions request
@@ -596,40 +626,6 @@ func decodeListObjectsResult(result *ListObjectsResult) error {
 	return nil
 }
 
-// decodeListObjectsResult decodes list objects result in URL encoding
-func decodeListObjectsResultV2(result *ListObjectsResultV2) error {
-	var err error
-	result.Prefix, err = url.QueryUnescape(result.Prefix)
-	if err != nil {
-		return err
-	}
-	result.StartAfter, err = url.QueryUnescape(result.StartAfter)
-	if err != nil {
-		return err
-	}
-	result.Delimiter, err = url.QueryUnescape(result.Delimiter)
-	if err != nil {
-		return err
-	}
-	result.NextContinuationToken, err = url.QueryUnescape(result.NextContinuationToken)
-	if err != nil {
-		return err
-	}
-	for i := 0; i < len(result.Objects); i++ {
-		result.Objects[i].Key, err = url.QueryUnescape(result.Objects[i].Key)
-		if err != nil {
-			return err
-		}
-	}
-	for i := 0; i < len(result.CommonPrefixes); i++ {
-		result.CommonPrefixes[i], err = url.QueryUnescape(result.CommonPrefixes[i])
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // decodeListObjectVersionsResult decodes list version objects result in URL encoding
 func decodeListObjectVersionsResult(result *ListObjectVersionsResult) error {
 	var err error
@@ -746,7 +742,6 @@ type createBucketConfiguration struct {
 	XMLName            xml.Name           `xml:"CreateBucketConfiguration"`
 	StorageClass       StorageClassType   `xml:"StorageClass,omitempty"`
 	DataRedundancyType DataRedundancyType `xml:"DataRedundancyType,omitempty"`
-	ObjectHashFunction ObjecthashFuncType `xml:"ObjectHashFunction,omitempty"`
 }
 
 // LiveChannelConfiguration defines the configuration for live-channel
@@ -870,6 +865,113 @@ type VersioningConfig struct {
 }
 
 type GetBucketVersioningResult VersioningConfig
+
+// ReplicationConfiguration is the Bucket Replication configuration
+type ReplicationConfiguration struct {
+	XMLName xml.Name        `xml:"ReplicationConfiguration"`
+	Rule    ReplicationRule `xml:"Rule"`
+}
+
+// ReplicationRule defines Replication rules
+type ReplicationRule struct {
+	XMLName              		xml.Name                 `xml:"Rule"`
+	ID                   		string                   `xml:"ID,omitempty"`                   	   // The rule ID
+	PrefixSet            		*PrefixSet               `xml:"PrefixSet,omitempty"`            	   // The set of object key prefix
+	Action               		string                   `xml:"Action,omitempty"`                      // The action of object in replication rule
+	Status               		string                   `xml:"Status,omitempty"`                      // The rule status (enabled or not)
+	Destination          		*Destination             `xml:"Destination"`                    	   // The Destination property
+	HistoricalObjectReplication string    				 `xml:"HistoricalObjectReplication,omitempty"` // The objects already exits wether need to copy
+	SyncRole             		string    				 `xml:"SyncRole,omitempty"`                    // The role of replicate
+	SourceSelectionCriteria     *SourceSelectionCriteria `xml:"SourceSelectionCriteria,omitempty"`     // The another filter of replication(only support sse so far)
+	EncryptionConfiguration     *EncryptionConfiguration `xml:"EncryptionConfiguration,omitempty"`     // The target object configuration
+	Progress     				*RepliProgress 	 		 `xml:"Progress,omitempty"`     			   // The progress of replication
+}
+
+// PrefixSet defines prefixes in Replication rule
+type PrefixSet struct {
+	XMLName xml.Name `xml:"PrefixSet"`
+	Prefix  []string `xml:"Prefix,omitempty"`
+}
+
+// Destination defines the replication's target
+type Destination struct {
+	XMLName      xml.Name `xml:"Destination"`
+	Bucket       string   `xml:"Bucket,omitempty"`       // The dest bucket of replication
+	Location     string   `xml:"Location,omitempty"`     // The dest location of replication
+	TransferType string   `xml:"TransferType,omitempty"` // The transfer mode of replication
+}
+
+// SourceSelectionCriteria defines another filter of replication(only support sse so far)
+type SourceSelectionCriteria struct {
+	XMLName                xml.Name      		   `xml:"SourceSelectionCriteria"`
+	SseKmsEncryptedObjects *SseKmsEncryptedObjects `xml:"SseKmsEncryptedObjects"`  // The filed defines sse-kms objects wether replicate
+}
+
+// SseKmsEncryptedObjects defines wether replicate objects encryption as sse-kms
+type SseKmsEncryptedObjects struct {
+	XMLName xml.Name `xml:"SseKmsEncryptedObjects"`
+	Status  string   `xml:"Status,omitempty"`       // The status
+}
+
+// EncryptionConfiguration defines the object's encryption rule
+type EncryptionConfiguration struct {
+	XMLName         xml.Name `xml:"EncryptionConfiguration"`
+	ReplicaKmsKeyID string   `xml:"ReplicaKmsKeyID"`         // The kms-id
+}
+
+// GetBucketReplicationResult defines GetBucketReplication's result object
+type GetBucketReplicationResult ReplicationConfiguration
+
+// ReplicationRules defines simple replication xml, and ReplicationRules is used for "DeleteBucketReplication" in client.go
+type ReplicationRules struct {
+	XMLName xml.Name `xml:"ReplicationRules"`
+	ID      string   `xml:"ID,omitempty"`
+}
+
+// ReplicationLocation defines Replication location and transfer type
+type ReplicationLocation struct {
+	XMLName              		   xml.Name                        `xml:"ReplicationLocation"`
+	Locations                      []string                        `xml:"Location"`                   	  // The Replication location
+	LocationTransferTypeConstraint *LocationTransferTypeConstraint `xml:"LocationTransferTypeConstraint"` // The Replication transfer type
+}
+
+// LocationTransferTypeConstraint defines location which transfer type != internal
+type LocationTransferTypeConstraint struct {
+	XMLName              xml.Name               `xml:"LocationTransferTypeConstraint"`
+	LocationTransferType []LocationTransferType `xml:"LocationTransferType,omitempty"` // The Replication location
+}
+
+// LocationTransferType defines Replication transfer type
+type LocationTransferType struct {
+	XMLName       xml.Name       `xml:"LocationTransferType"`
+	Location      string         `xml:"Location,omitempty"`      // The Replication location
+	TransferTypes *TransferTypes `xml:"TransferTypes,omitempty"` // The set of object key prefix
+}
+
+// TransferTypes defines Replication transfer type
+type TransferTypes struct {
+	XMLName xml.Name `xml:"TransferTypes"`
+	Type    string   `xml:"Type,omitempty"` // The Replication transfer type
+}
+
+// GetBucketReplicationLocationResult defines GetBucketReplicationLocation's result object
+type GetBucketReplicationLocationResult ReplicationLocation
+
+// ReplicationProgress is the Bucket Replication Progress
+type ReplicationProgress struct {
+	XMLName xml.Name        `xml:"ReplicationProgress"`
+	Rule    ReplicationRule `xml:"Rule"`                // The Replication rule, contain progress
+}
+
+// RepliProgress is the Bucket Replication Progress
+type RepliProgress struct {
+	XMLName          xml.Name `xml:"Progress"`
+	HistoricalObject float64  `xml:"HistoricalObject,omitempty"` // The Percentage of historical data that has been copied
+	NewObject 		 string   `xml:"NewObject"`					 // The point in time at which data is copied to the target Bucket
+}
+
+// GetBucketReplicationProgressResult defines GetBucketReplicationProgress's result object
+type GetBucketReplicationProgressResult ReplicationProgress
 
 // Server Encryption rule for the bucket
 type ServerEncryptionRule struct {
@@ -1224,31 +1326,4 @@ type AsyncTaskInfo struct {
 	Callback      string   `xml:"Callback,omitempty"`
 	StorageClass  string   `xml:"StorageClass,omitempty"`
 	IgnoreSameKey bool     `xml:"IgnoreSameKey"`
-}
-
-// InitiateWormConfiguration define InitiateBucketWorm configuration
-type InitiateWormConfiguration struct {
-	XMLName               xml.Name `xml:"InitiateWormConfiguration"`
-	RetentionPeriodInDays int      `xml:"RetentionPeriodInDays"` // specify retention days
-}
-
-// ExtendWormConfiguration define ExtendWormConfiguration configuration
-type ExtendWormConfiguration struct {
-	XMLName               xml.Name `xml:"ExtendWormConfiguration"`
-	RetentionPeriodInDays int      `xml:"RetentionPeriodInDays"` // specify retention days
-}
-
-// WormConfiguration define WormConfiguration
-type WormConfiguration struct {
-	XMLName               xml.Name `xml:"WormConfiguration"`
-	WormId                string   `xml:"WormId,omitempty"`
-	State                 string   `xml:"State,omitempty"`
-	RetentionPeriodInDays int      `xml:"RetentionPeriodInDays"` // specify retention days
-	CreationDate          string   `xml:"CreationDate,omitempty"`
-}
-
-// TransferAccConfiguration define transfer acceleration configuration
-type TransferAccConfiguration struct {
-	XMLName xml.Name `xml:"TransferAccelerationConfiguration"`
-	Enabled bool     `xml:"Enabled"`
 }

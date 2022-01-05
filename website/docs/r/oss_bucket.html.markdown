@@ -18,7 +18,7 @@ Provides a resource to create a oss bucket and set its attribution.
 
 Private Bucket
 
-```terraform
+```
 resource "alicloud_oss_bucket" "bucket-acl" {
   bucket = "bucket-170309-acl"
   acl    = "private"
@@ -27,7 +27,7 @@ resource "alicloud_oss_bucket" "bucket-acl" {
 
 Static Website
 
-```terraform
+```
 resource "alicloud_oss_bucket" "bucket-website" {
   bucket = "bucket-170309-website"
 
@@ -40,7 +40,7 @@ resource "alicloud_oss_bucket" "bucket-website" {
 
 Enable Logging
 
-```terraform
+```
 resource "alicloud_oss_bucket" "bucket-target" {
   bucket = "bucket-170309-acl"
   acl    = "public-read"
@@ -58,7 +58,7 @@ resource "alicloud_oss_bucket" "bucket-logging" {
 
 Referer configuration
 
-```terraform
+```
 resource "alicloud_oss_bucket" "bucket-referer" {
   bucket = "bucket-170309-referer"
   acl    = "private"
@@ -72,7 +72,7 @@ resource "alicloud_oss_bucket" "bucket-referer" {
 
 Set lifecycle rule
 
-```terraform
+```
 resource "alicloud_oss_bucket" "bucket-lifecycle" {
   bucket = "bucket-170309-lifecycle"
   acl    = "public-read"
@@ -107,12 +107,12 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
     enabled = true
 
     transitions {
-      days          = "3"
-      storage_class = "IA"
+        days =         "3"
+        storage_class= "IA"
     }
     transitions {
-      days          = "30"
-      storage_class = "Archive"
+        days=         "30"
+        storage_class= "Archive"
     }
   }
 }
@@ -128,59 +128,11 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
 
     transitions {
       created_before_date = "2020-11-11"
-      storage_class       = "IA"
+      storage_class = "IA"
     }
     transitions {
       created_before_date = "2021-11-11"
-      storage_class       = "Archive"
-    }
-  }
-}
-
-resource "alicloud_oss_bucket" "bucket-lifecycle" {
-  bucket = "bucket-170309-lifecycle"
-  acl    = "public-read"
-
-  lifecycle_rule {
-    id      = "rule-abort-multipart-upload"
-    prefix  = "path3/"
-    enabled = true
-
-    abort_multipart_upload {
-      days = 128
-    }
-  }
-}
-
-resource "alicloud_oss_bucket" "bucket-versioning-lifecycle" {
-  bucket = "bucket-170309-lifecycle"
-  acl    = "private"
-
-  versioning {
-    status = "Enabled"
-  }
-
-  lifecycle_rule {
-    id      = "rule-versioning"
-    prefix  = "path1/"
-    enabled = true
-
-    expiration {
-      expired_object_delete_marker = true
-    }
-
-    noncurrent_version_expiration {
-      days = 240
-    }
-
-    noncurrent_version_transition {
-      days          = 180
       storage_class = "Archive"
-    }
-
-    noncurrent_version_transition {
-      days          = 60
-      storage_class = "IA"
     }
   }
 }
@@ -189,7 +141,7 @@ resource "alicloud_oss_bucket" "bucket-versioning-lifecycle" {
 
 Set bucket policy 
 
-```terraform
+```
 resource "alicloud_oss_bucket" "bucket-policy" {
   bucket = "bucket-170309-policy"
   acl    = "private"
@@ -208,16 +160,62 @@ resource "alicloud_oss_bucket" "bucket-policy" {
 
 IA Bucket
 
-```terraform
+```
 resource "alicloud_oss_bucket" "bucket-storageclass" {
   bucket        = "bucket-170309-storageclass"
   storage_class = "IA"
 }
 ```
 
-Set bucket server-side encryption rule 
+Set bucket replication rule
 
-```terraform
+```
+resource "alicloud_oss_bucket" "bucket-replication" {
+    bucket = "bucket-170309-replication"
+    acl    = "private"
+
+    replication_rule {
+        prefix_set {
+            prefixes = ["xx/", "test/"]
+        }
+        destination {
+            bucket = "guox-test-dst"
+            location = "oss-cn-beijing"
+            transfer_type = "internal"
+        }
+        action = "ALL"
+        historical_object_replication = "disabled"
+        sync_role = "User"
+    }
+}
+
+resource "alicloud_oss_bucket" "bucket-replication" {
+    bucket = "bucket-170309-replication"
+    acl    = "private"
+
+    replication_rule {
+        destination {
+            bucket = "guoxing-test-dst"
+            location = "oss-cn-beijing"
+            transfer_type = "oss_acc"
+        }
+        action = "PUT"
+        historical_object_replication = "enabled"
+        source_selection_criteria {
+            sse_kms_encrypted_objects {
+                status = "Enabled"
+            }
+        }
+        encryption_configuration {
+            replica_kms_key_id = "1a8d780d-0d34-49e5-ab45-7b9b*******4"
+        }
+    }
+}
+```
+
+Set bucket server-side encryption rule
+
+```
 resource "alicloud_oss_bucket" "bucket-sserule" {
   bucket = "bucket-170309-sserule"
   acl    = "private"
@@ -240,7 +238,7 @@ resource "alicloud_oss_bucket" "bucket-sserule" {
 
 Set bucket tags 
 
-```terraform
+```
 resource "alicloud_oss_bucket" "bucket-tags" {
   bucket = "bucket-170309-tags"
   acl    = "private"
@@ -254,7 +252,7 @@ resource "alicloud_oss_bucket" "bucket-tags" {
 
 Enable bucket versioning 
 
-```terraform
+```
 resource "alicloud_oss_bucket" "bucket-versioning" {
   bucket = "bucket-170309-versioning"
   acl    = "private"
@@ -267,24 +265,12 @@ resource "alicloud_oss_bucket" "bucket-versioning" {
 
 Set bucket redundancy type
 
-```terraform
+```
 resource "alicloud_oss_bucket" "bucket-redundancytype" {
   bucket          = "bucket_name"
   redundancy_type = "ZRS"
 
   # ... other configuration ...
-}
-```
-
-Set bucket accelerate configuration
-
-```terraform
-resource "alicloud_oss_bucket" "bucket-accelerate" {
-  bucket = "bucket_name"
-
-  transfer_acceleration {
-    enabled = false
-  }
 }
 ```
 
@@ -307,7 +293,7 @@ The following arguments are supported:
 * `tags` - (Optional, Available in 1.45.0+) A mapping of tags to assign to the bucket. The items are no more than 10 for a bucket.
 * `versioning` - (Optional, Available in 1.45.0+) A state of versioning (documented below).
 * `force_destroy` - (Optional, Available in 1.45.0+) A boolean that indicates all objects should be deleted from the bucket so that the bucket can be destroyed without error. These objects are not recoverable. Defaults to "false".
-* `transfer_acceleration` - (Optional, Available in 1.123.1+) A transfer acceleration status of a bucket (documented below).
+* `replication_rule` - (Optional) A configuration of [replication management](https://www.alibabacloud.com/help/zh/doc-detail/31905.html) (documented below).
 
 #### Block cors_rule
 
@@ -349,11 +335,8 @@ The lifecycle_rule object supports the following:
 * `enabled` - (Required, Type: bool) Specifies lifecycle rule status.
 * `expiration` - (Optional, Type: set) Specifies a period in the object's expire (documented below).
 * `transitions` - (Optional, Type: set, Available in 1.62.1+) Specifies the time when an object is converted to the IA or archive storage class during a valid life cycle. (documented below).
-* `abort_multipart_upload` - (Optional, Type: set, Available in 1.121.2+) Specifies the number of days after initiating a multipart upload when the multipart upload must be completed (documented below).
-* `noncurrent_version_expiration` - (Optional, Type: set, Available in 1.121.2+) Specifies when noncurrent object versions expire (documented below).
-* `noncurrent_version_transition` - (Optional, Type: set, Available in 1.121.2+) Specifies when noncurrent object versions transitions (documented below).
 
-`NOTE`: At least one of expiration, transitions, abort_multipart_upload, noncurrent_version_expiration and noncurrent_version_transition should be configured.
+`NOTE`: At least one of expiration and transitions should be configured.
 
 #### Block expiration
 
@@ -361,10 +344,8 @@ The lifecycle_rule expiration object supports the following:
 
 * `date` - (Optional) Specifies the date after which you want the corresponding action to take effect. The value obeys ISO8601 format like `2017-03-09`.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
-* `created_before_date` - (Optional, Available in 1.121.2+) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that objects updated before 2002-10-11T00:00:00.000Z are deleted or converted to another storage class, and objects updated after this time (including this time) are not deleted or converted.
-* `expired_object_delete_marker` - (Optional, Type: bool, Available in 1.121.2+) On a versioned bucket (versioning-enabled or versioning-suspended bucket), you can add this element in the lifecycle configuration to direct OSS to delete expired object delete markers. This cannot be specified with Days, Date or CreatedBeforeDate in a Lifecycle Expiration Policy.
 
-`NOTE`: One and only one of "date", "days", "created_before_date" and "expired_object_delete_marker" can be specified in one expiration configuration.
+`NOTE`: One and only one of "date" and "days" can be specified in one expiration configuration.
 
 #### Block transitions
 
@@ -376,28 +357,51 @@ The lifecycle_rule transitions object supports the following:
 
 `NOTE`: One and only one of "created_before_date" and "days" can be specified in one transition configuration.
 
-#### Block abort_multipart_upload
+#### Block replication_rule
 
-The lifecycle_rule abort_multipart_upload object supports the following:
+The replication_rule object supports the following:
 
-* `created_before_date` - (Optional) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that parts created before 2002-10-11T00:00:00.000Z are deleted, and parts created after this time (including this time) are not deleted.
-* `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
+* `prefixSet` - (Optional, Type: set) The set of prefix. If value is nil, the rule applies to all objects in a bucket.
+* `action` - (Optional, Type: string) Which operation will be replication. Value: `ALL`, `DELETE`, `PUT` or any combination of them.
+* `destination` - (Optional, Type: set) Which operation will be replication.
+* `historical_object_replication` - (Optional, Type: string) Whether the objects already exists would be replicated. Value: `enabled` or `disabled`.
+* `sync_role` - (Optional, Type: string) The operator of replication.
+* `source_selection_criteria` - (Optional, Type: set) Another filter of objects. Only support objects encrypted as "SSE-KMS".
+* `encryption_configuration` - (Optional, Type: set) This params based on "source_selection_criteria", the objects which was encrypted would be replicated by a new kms-id.
 
-`NOTE`: One and only one of "created_before_date" and "days" can be specified in one abort_multipart_upload configuration.
+`NOTE`: If "source_selection_criteria.sse_kms_encrypted_objects.status" is Enabled, then "encryption_configuration" and "encryption_configuration.replica_kms_key_id" should be defined.
 
-#### Block noncurrent_version_expiration
+#### Block prefix_set
 
-The lifecycle_rule noncurrent_version_expiration object supports the following:
+The replication_rule prefix_set object supports the following:
 
-* `days` - (Required, Type: int) Specifies the number of days noncurrent object versions expire.
+* `prefix` - (Optional, Type: string) Object key prefix identifying one or more objects to which the rule applies. 
 
-#### Block noncurrent_version_transition
+#### Block destination
 
-The lifecycle_rule noncurrent_version_transition object supports the following:
+The replication_rule destination object supports the following:
 
-* `days` - (Required, Type: int) Specifies the number of days noncurrent object versions transition.
-* `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`. 
+* `bucket` - (Optional, Type: string) The destination bucket of replication.
+* `loaction` - (Optional, Type: string) The location of destination bucket.
+* `transfer_type` - (Optional, Type: string) The transfer type of replication. Value: `internal`, `oss_acc`,
 
+#### Block source_selection_criteria
+
+The replication_rule source_selection_criteria object supports the following:
+
+* `SseKmsEncryptedObjects` - (Optional, Type: set) The objects encrypted as "SSE-KMS".
+
+#### Block sse_kms_encrypted_objects
+
+The replication_rule sse_kms_encrypted_objects supports the following:
+
+* `Status` - (Optional, Type: string) Whether the objects would be replicated. Value:`Enabled` \and `Disabled`.
+
+#### Block encryption_configuration
+
+The replication_rule encryption_configuration object supports the following:
+
+* `replica_kms_key_id` - (Optional, Type: string) The new kms-id for the objects.
 
 #### Block server-side encryption rule
 
@@ -413,12 +417,6 @@ The versioning supports the following:
 * `status` - (Required) Specifies the versioning state of a bucket. Valid values: `Enabled` and `Suspended`.
 
 `NOTE`: Currently, the `versioning` feature is only available in ap-south-1 and with white list. If you want to use it, please contact us.
-
-#### Block transfer_acceleration
-
-The transfer_acceleration supports the following:
-
-* `enabled` - (Required, Type: bool) Specifies the accelerate status of a bucket.
 
 ## Attributes Reference
 

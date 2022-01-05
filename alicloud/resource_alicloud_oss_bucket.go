@@ -170,17 +170,8 @@ func resourceAlicloudOssBucket() *schema.Resource {
 										Optional:     true,
 										ValidateFunc: validateOssBucketDateTimestamp,
 									},
-									"created_before_date": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										ValidateFunc: validateOssBucketDateTimestamp,
-									},
 									"days": {
 										Type:     schema.TypeInt,
-										Optional: true,
-									},
-									"expired_object_delete_marker": {
-										Type:     schema.TypeBool,
 										Optional: true,
 									},
 								},
@@ -205,59 +196,6 @@ func resourceAlicloudOssBucket() *schema.Resource {
 										Type:     schema.TypeString,
 										Default:  oss.StorageStandard,
 										Optional: true,
-										ValidateFunc: validation.StringInSlice([]string{
-											string(oss.StorageStandard),
-											string(oss.StorageIA),
-											string(oss.StorageArchive),
-										}, false),
-									},
-								},
-							},
-						},
-						"abort_multipart_upload": {
-							Type:     schema.TypeSet,
-							Optional: true,
-							Set:      abortMultipartUploadHash,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"created_before_date": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										ValidateFunc: validateOssBucketDateTimestamp,
-									},
-									"days": {
-										Type:     schema.TypeInt,
-										Optional: true,
-									},
-								},
-							},
-						},
-						"noncurrent_version_expiration": {
-							Type:     schema.TypeSet,
-							Optional: true,
-							Set:      expirationHash,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"days": {
-										Type:     schema.TypeInt,
-										Required: true,
-									},
-								},
-							},
-						},
-						"noncurrent_version_transition": {
-							Type:     schema.TypeSet,
-							Optional: true,
-							Set:      transitionsHash,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"days": {
-										Type:     schema.TypeInt,
-										Required: true,
-									},
-									"storage_class": {
-										Type:     schema.TypeString,
-										Required: true,
 										ValidateFunc: validation.StringInSlice([]string{
 											string(oss.StorageStandard),
 											string(oss.StorageIA),
@@ -317,6 +255,26 @@ func resourceAlicloudOssBucket() *schema.Resource {
 					string(oss.RedundancyZRS),
 				}, false),
 			},
+			"cross_region_replication": {
+				Type:     schema.TypeString,
+				Default:  oss.CrossRegionReplicationDisabled,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(oss.CrossRegionReplicationEnabled),
+					string(oss.CrossRegionReplicationDisabled),
+				}, false),
+			},
+			"transfer_acceleration": {
+				Type:     schema.TypeString,
+				Default:  oss.TransferAccelerationDisabled,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(oss.TransferAccelerationEnabled),
+					string(oss.TransferAccelerationDisabled),
+				}, false),
+			},
 			"server_side_encryption_rule": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -365,18 +323,129 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				MaxItems: 1,
 			},
 
-			"transfer_acceleration": {
+			"replication_rule": {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"enabled": {
-							Type:     schema.TypeBool,
-							Required: true,
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"prefix_set": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Set:      prefixSetHash,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"prefixes": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString, ValidateFunc: validation.StringLenBetween(0, 1023)},
+										MaxItems: 10,
+									},
+								},
+							},
+						},
+						"action": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  oss.ReplicationActionALL,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(oss.ReplicationActionALL),
+								string(oss.ReplicationActionPUT),
+								string(oss.ReplicationActionDELETE),
+								string(oss.ReplicationActionABORT),
+								string(oss.ReplicationActionPUT_ABORT),
+								string(oss.ReplicationActionPUT_DELETE),
+								string(oss.ReplicationActionDELETE_ABORT),
+							}, false),
+						},
+						"destination": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Set:      destinationHash,
+							ForceNew: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"bucket": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+									"location": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+									"transfer_type": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ValidateFunc: validation.StringInSlice([]string{
+											string(oss.TransferInternal),
+											string(oss.TransferOssAcc),
+										}, false),
+									},
+								},
+							},
+						},
+						"historical_object_replication": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  oss.HistoricalEnabled,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(oss.HistoricalEnabled),
+								string(oss.HistoricalDisabled),
+							}, false),
+						},
+						"sync_role": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"source_selection_criteria": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"sse_kms_encrypted_objects": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Set:      sseKmsEncryptedObjectsHash,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"status": {
+													Type:     schema.TypeString,
+													Optional: true,
+													ValidateFunc: validation.StringInSlice([]string{
+														string(oss.SourceSSEKMSEnabled),
+														string(oss.SourceSSEKMSDisabled),
+													}, false),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"encryption_configuration": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Set:      encryptionConfigurationHash,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"replica_kms_key_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
 						},
 					},
 				},
-				MaxItems: 1,
 			},
 		},
 	}
@@ -409,12 +478,22 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 		oss.StorageClass(oss.StorageClassType(d.Get("storage_class").(string))),
 		oss.RedundancyType(oss.DataRedundancyType(d.Get("redundancy_type").(string))),
 	}
-	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return nil, ossClient.CreateBucket(req.BucketName, req.StorageClassOption, req.RedundancyTypeOption)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "CreateBucket", AliyunOssGoSdk)
+
+	for {
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return nil, ossClient.CreateBucket(req.BucketName, req.StorageClassOption, req.RedundancyTypeOption)
+		})
+		if BucketAlreadyExistsError(err) {
+			log.Printf("[DEBUG] Bucket: %s still exists, wait 60s and retry...", d.Id())
+			time.Sleep(60 * time.Second)
+			continue
+		} else if err == nil {
+			break
+		} else {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "CreateBucket", AliyunOssGoSdk)
+		}
 	}
+
 	addDebug("CreateBucket", raw, requestInfo, req)
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
@@ -464,6 +543,8 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("owner", object.BucketInfo.Owner.ID)
 	d.Set("storage_class", object.BucketInfo.StorageClass)
 	d.Set("redundancy_type", object.BucketInfo.RedundancyType)
+	d.Set("cross_region_replication", object.BucketInfo.CrossRegionReplication)
+	d.Set("transfer_acceleration", object.BucketInfo.TransferAcceleration)
 
 	if &object.BucketInfo.SseRule != nil {
 		if len(object.BucketInfo.SseRule.SSEAlgorithm) > 0 && object.BucketInfo.SseRule.SSEAlgorithm != "None" {
@@ -588,6 +669,71 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
+	// Read the bucket replication rule configuration
+	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return ossClient.GetBucketReplication(d.Id())
+	})
+	if err != nil && !ossNotFoundError(err) {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketReplication", AliyunOssGoSdk)
+	}
+	addDebug("GetBucketReplication", raw, requestInfo, request)
+	repliRule := make([]map[string]interface{}, 0)
+	replication, _ := raw.(oss.GetBucketReplicationResult)
+
+	if replication.Rule.Status != "" && replication.Rule.ID != "" {
+		rule := make(map[string]interface{})
+		rule["id"] = replication.Rule.ID
+		rule["action"] = replication.Rule.Action
+		rule["status"] = replication.Rule.Status
+		if replication.Rule.HistoricalObjectReplication != "" {
+			rule["historical_object_replication"] = replication.Rule.HistoricalObjectReplication
+		}
+		if replication.Rule.SyncRole != "" {
+			rule["sync_role"] = replication.Rule.SyncRole
+		}
+		if replication.Rule.Destination != nil {
+			d := make(map[string]interface{})
+			d["bucket"] = replication.Rule.Destination.Bucket
+			d["location"] = replication.Rule.Destination.Location
+			if replication.Rule.Destination.TransferType == "" {
+				replication.Rule.Destination.TransferType = string(oss.TransferInternal)
+			}
+			d["transfer_type"] = replication.Rule.Destination.TransferType
+
+			rule["destination"] = schema.NewSet(destinationHash, []interface{}{d})
+		}
+		if replication.Rule.PrefixSet != nil {
+			if len(replication.Rule.PrefixSet.Prefix) != 0 {
+				p := make(map[string]interface{})
+				p["prefixes"] = replication.Rule.PrefixSet.Prefix
+				rule["prefix_set"] = schema.NewSet(prefixSetHash, []interface{}{p})
+			}
+		}
+		if replication.Rule.SourceSelectionCriteria != nil { // todo 发现公有云replication功能不反回以下两个参数，待查清情况再继续
+			if replication.Rule.SourceSelectionCriteria.SseKmsEncryptedObjects != nil {
+				if replication.Rule.SourceSelectionCriteria.SseKmsEncryptedObjects.Status != "" {
+					s := make(map[string]interface{})
+					x := make(map[string]interface{})
+					x["status"] = replication.Rule.SourceSelectionCriteria.SseKmsEncryptedObjects.Status
+					s["sse_kms_encrypted_objects"] = schema.NewSet(sseKmsEncryptedObjectsHash, []interface{}{x})
+					rule["source_selection_criteria"] = []interface{}{s}
+				}
+			}
+		}
+		if replication.Rule.EncryptionConfiguration != nil {
+			if replication.Rule.EncryptionConfiguration.ReplicaKmsKeyID != "" {
+				e := make(map[string]interface{})
+				e["replica_kms_key_id"] = replication.Rule.EncryptionConfiguration.ReplicaKmsKeyID
+				rule["encryption_configuration"] = schema.NewSet(encryptionConfigurationHash, []interface{}{e})
+			}
+		}
+
+		repliRule = append(repliRule, rule)
+	}
+	if err := d.Set("replication_rule", repliRule); err != nil {
+		return WrapError(err)
+	}
+
 	// Read the lifecycle rule configuration
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return ossClient.GetBucketLifecycle(d.Id())
@@ -617,16 +763,6 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 				}
 				e["date"] = t.Format("2006-01-02")
 			}
-			if lifecycleRule.Expiration.CreatedBeforeDate != "" {
-				t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.Expiration.CreatedBeforeDate)
-				if err != nil {
-					return WrapError(err)
-				}
-				e["created_before_date"] = t.Format("2006-01-02")
-			}
-			if lifecycleRule.Expiration.ExpiredObjectDeleteMarker != nil {
-				e["expired_object_delete_marker"] = *lifecycleRule.Expiration.ExpiredObjectDeleteMarker
-			}
 			e["days"] = int(lifecycleRule.Expiration.Days)
 			rule["expiration"] = schema.NewSet(expirationHash, []interface{}{e})
 		}
@@ -648,39 +784,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 			}
 			rule["transitions"] = schema.NewSet(transitionsHash, eSli)
 		}
-		// abort_multipart_upload
-		if lifecycleRule.AbortMultipartUpload != nil {
-			e := make(map[string]interface{})
-			if lifecycleRule.AbortMultipartUpload.CreatedBeforeDate != "" {
-				t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.AbortMultipartUpload.CreatedBeforeDate)
-				if err != nil {
-					return WrapError(err)
-				}
-				e["created_before_date"] = t.Format("2006-01-02")
-			}
-			valDays := int(lifecycleRule.AbortMultipartUpload.Days)
-			if valDays > 0 {
-				e["days"] = int(lifecycleRule.AbortMultipartUpload.Days)
-			}
-			rule["abort_multipart_upload"] = schema.NewSet(abortMultipartUploadHash, []interface{}{e})
-		}
-		// NoncurrentVersionExpiration
-		if lifecycleRule.NonVersionExpiration != nil {
-			e := make(map[string]interface{})
-			e["days"] = int(lifecycleRule.NonVersionExpiration.NoncurrentDays)
-			rule["noncurrent_version_expiration"] = schema.NewSet(expirationHash, []interface{}{e})
-		}
-		// NoncurrentVersionTransitions
-		if len(lifecycleRule.NonVersionTransitions) != 0 {
-			var eSli []interface{}
-			for _, transition := range lifecycleRule.NonVersionTransitions {
-				e := make(map[string]interface{})
-				e["days"] = transition.NoncurrentDays
-				e["storage_class"] = string(transition.StorageClass)
-				eSli = append(eSli, e)
-			}
-			rule["noncurrent_version_transition"] = schema.NewSet(transitionsHash, eSli)
-		}
+
 		lrules = append(lrules, rule)
 	}
 
@@ -731,25 +835,6 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 	if err := d.Set("tags", tagsMap); err != nil {
-		return WrapError(err)
-	}
-
-	// Read the bucket transfer acceleration status
-	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return ossClient.GetBucketTransferAcc(d.Id())
-	})
-	if err != nil && !ossNotFoundError(err) && !IsExpectedErrors(err, []string{"TransferAccelerationDisabled"}) {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketTransferAcc", AliyunOssGoSdk)
-	}
-	acc, _ := raw.(oss.TransferAccConfiguration)
-	accMap := make([]map[string]interface{}, 0)
-	if err == nil && &acc != nil {
-		data := map[string]interface{}{
-			"enabled": acc.Enabled,
-		}
-		accMap = append(accMap, data)
-	}
-	if err := d.Set("transfer_acceleration", accMap); err != nil {
 		return WrapError(err)
 	}
 
@@ -824,6 +909,21 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("server_side_encryption_rule")
 	}
 
+	if d.HasChange("replication_rule") {
+		_, n := d.GetChange("replication_rule")
+		if len(fmt.Sprintf("%#v", n)) > 16 {
+			err := getThenDeleteReplicationRule(client, d)
+			if NoSuchReplicationConfigurationError(err) || err == nil {
+			} else {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetThenDeleteReplicationRule", AliyunOssGoSdk)
+			}
+		}
+		if err := resourceAlicloudOssBucketReplicationUpdate(client, d); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("replication_rule")
+	}
+
 	if d.HasChange("tags") {
 		if err := resourceAlicloudOssBucketTaggingUpdate(client, d); err != nil {
 			return WrapError(err)
@@ -838,14 +938,8 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("versioning")
 	}
 
-	if d.HasChange("transfer_acceleration") {
-		if err := resourceAlicloudOssBucketTransferAccUpdate(client, d); err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("transfer_acceleration")
-	}
-
 	d.Partial(false)
+
 	return resourceAlicloudOssBucketRead(d, meta)
 }
 
@@ -1082,32 +1176,17 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 			e := expiration[0].(map[string]interface{})
 			i := oss.LifecycleExpiration{}
 			valDate, _ := e["date"].(string)
-			valCreatedBeforeDate, _ := e["created_before_date"].(string)
 			valDays, _ := e["days"].(int)
 
-			if val, ok := e["expired_object_delete_marker"].(bool); ok && val {
-				if valDays > 0 || valDate != "" || valCreatedBeforeDate != "" {
-					return WrapError(Error("'date/created_before_date/days' conflicts with 'expired_object_delete_marker'. One and only one of them can be specified in one expiration configuration."))
-				}
-				i.ExpiredObjectDeleteMarker = &val
-			} else {
-				cnt := 0
-				if valDate != "" {
-					i.Date = fmt.Sprintf("%sT00:00:00.000Z", valDate)
-					cnt++
-				}
-				if valCreatedBeforeDate != "" {
-					i.CreatedBeforeDate = fmt.Sprintf("%sT00:00:00.000Z", valCreatedBeforeDate)
-					cnt++
-				}
-				if valDays > 0 {
-					i.Days = valDays
-					cnt++
-				}
+			if (valDate != "" && valDays > 0) || (valDate == "" && valDays <= 0) {
+				return WrapError(Error("'date' conflicts with 'days'. One and only one of them can be specified in one expiration configuration."))
+			}
 
-				if cnt != 1 {
-					return WrapError(Error("One and only one of 'date', 'created_before_date' and 'days' can be specified in one expiration configuration."))
-				}
+			if valDate != "" {
+				i.Date = fmt.Sprintf("%sT00:00:00.000Z", valDate)
+			}
+			if valDays > 0 {
+				i.Days = valDays
 			}
 			rule.Expiration = &i
 		}
@@ -1137,53 +1216,6 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 					i.StorageClass = oss.StorageClassType(valStorageClass)
 				}
 				rule.Transitions = append(rule.Transitions, i)
-			}
-		}
-
-		// AbortMultipartUpload
-		abortMultipartUpload := d.Get(fmt.Sprintf("lifecycle_rule.%d.abort_multipart_upload", i)).(*schema.Set).List()
-		if len(abortMultipartUpload) > 0 {
-			e := abortMultipartUpload[0].(map[string]interface{})
-			i := oss.LifecycleAbortMultipartUpload{}
-			valCreatedBeforeDate, _ := e["created_before_date"].(string)
-			valDays, _ := e["days"].(int)
-
-			if (valCreatedBeforeDate != "" && valDays > 0) || (valCreatedBeforeDate == "" && valDays <= 0) {
-				return WrapError(Error("'CreatedBeforeDate' conflicts with 'days'. One and only one of them can be specified in one abort_multipart_upload configuration."))
-			}
-
-			if valCreatedBeforeDate != "" {
-				i.CreatedBeforeDate = fmt.Sprintf("%sT00:00:00.000Z", valCreatedBeforeDate)
-			}
-			if valDays > 0 {
-				i.Days = valDays
-			}
-			rule.AbortMultipartUpload = &i
-		}
-
-		// Noncurrent Version Expiration
-		noncurrentVersionExpiration := d.Get(fmt.Sprintf("lifecycle_rule.%d.noncurrent_version_expiration", i)).(*schema.Set).List()
-		if len(noncurrentVersionExpiration) > 0 {
-			e := noncurrentVersionExpiration[0].(map[string]interface{})
-			i := oss.LifecycleVersionExpiration{}
-			valDays, _ := e["days"].(int)
-			i.NoncurrentDays = valDays
-			rule.NonVersionExpiration = &i
-		}
-
-		// Noncurrent Version Transitions
-		noncurrentVersionTransitions := d.Get(fmt.Sprintf("lifecycle_rule.%d.noncurrent_version_transition", i)).(*schema.Set).List()
-		if len(noncurrentVersionTransitions) > 0 {
-			for _, transition := range noncurrentVersionTransitions {
-				i := oss.LifecycleVersionTransition{}
-
-				valDays := transition.(map[string]interface{})["days"].(int)
-				valStorageClass := transition.(map[string]interface{})["storage_class"].(string)
-
-				i.NoncurrentDays = valDays
-				i.StorageClass = oss.StorageClassType(valStorageClass)
-
-				rule.NonVersionTransitions = append(rule.NonVersionTransitions, i)
 			}
 		}
 
@@ -1341,28 +1373,162 @@ func resourceAlicloudOssBucketVersioningUpdate(client *connectivity.AliyunClient
 	return nil
 }
 
-func resourceAlicloudOssBucketTransferAccUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
-	acc := d.Get("transfer_acceleration").([]interface{})
-	if len(acc) == 1 {
-		var requestInfo *oss.Client
-		var aacCfg oss.TransferAccConfiguration
-		c := acc[0].(map[string]interface{})
-		if v, ok := c["enabled"]; ok {
-			aacCfg.Enabled = v.(bool)
+func getThenDeleteReplicationRule(client *connectivity.AliyunClient, d *schema.ResourceData) error {
+	var requestInfo *oss.Client
+	var repId string
+
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		requestInfo = ossClient
+		return ossClient.GetBucketReplication(d.Id())
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketReplication", AliyunOssGoSdk)
+	}
+	addDebug("GetBucketReplication", raw, requestInfo, map[string]string{"bucketName": d.Id()})
+
+	repRule, _ := raw.(oss.GetBucketReplicationResult)
+	repId = repRule.Rule.ID
+
+	if len(repId) != 36 {
+		return nil
+	}
+
+	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		requestInfo = ossClient
+		return nil, ossClient.DeleteBucketReplication(d.Id(), repId)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteBucketReplication", AliyunOssGoSdk)
+	}
+	addDebug("DeleteBucketReplication", raw, requestInfo, map[string]string{"bucketName": d.Id()})
+
+	for {
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.GetBucketReplication(d.Id())
+		})
+		if NoSuchReplicationConfigurationError(err) {
+			break
+		} else if err == nil {
+			log.Printf("[DEBUG] replication_rule of Bucket: %s still exists, wait 60s and retry...", d.Id())
+			time.Sleep(60 * time.Second)
+			continue
+		} else {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketReplication", AliyunOssGoSdk)
+		}
+	}
+
+	return nil
+}
+
+func resourceAlicloudOssBucketReplicationUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
+	replication_rule := d.Get("replication_rule").([]interface{})
+	var requestInfo *oss.Client
+
+	if replication_rule == nil || len(replication_rule) == 0 {
+		err := getThenDeleteReplicationRule(client, d)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetThenDeleteReplicationRule", AliyunOssGoSdk)
+		}
+	}
+
+	c := replication_rule[0].(map[string]interface{})
+	var repRule oss.ReplicationRule
+
+	// PrefixSet
+	prefixSet := d.Get("replication_rule.0.prefix_set").(*schema.Set).List()
+	if len(prefixSet) > 0 {
+		x := prefixSet[0].(map[string]interface{})
+		s := oss.PrefixSet{}
+
+		if v, ok := x["prefixes"]; ok {
+			for _, prefix := range v.([]interface{}) {
+				s.Prefix = append(s.Prefix, prefix.(string))
+			}
+			repRule.PrefixSet = &s
+		}
+	}
+
+	// Action
+	if val, ok := c["action"].(string); ok && val != "" {
+		repRule.Action = val
+	}
+
+	// Destination
+	destination := d.Get("replication_rule.0.destination").(*schema.Set).List()
+	if len(destination) > 0 {
+		e := destination[0].(map[string]interface{})
+		i := oss.Destination{}
+
+		if val, ok := e["bucket"].(string); ok && val != "" {
+			i.Bucket = val
+		}
+		if val, ok := e["location"].(string); ok && val != "" {
+			i.Location = val
+		}
+		if val, ok := e["transfer_type"].(string); ok && val != "" {
+			i.TransferType = val
 		}
 
-		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-			requestInfo = ossClient
-			return nil, ossClient.SetBucketTransferAcc(d.Id(), aacCfg)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketTransferAcc", AliyunOssGoSdk)
-		}
-		addDebug("SetBucketTransferAcc", raw, requestInfo, map[string]interface{}{
-			"bucketName":               d.Id(),
-			"TransferAccConfiguration": aacCfg,
-		})
+		repRule.Destination = &i
 	}
+
+	// HistoricalObjectReplication
+	if val, ok := c["historical_object_replication"].(string); ok && val != "" {
+		repRule.HistoricalObjectReplication = val
+	}
+
+	// SyncRole
+	if val, ok := c["sync_role"].(string); ok && val != "" {
+		repRule.SyncRole = val
+	}
+
+	// SourceSelectionCriteria
+	var sseKmsStatus string
+	sseKmsEncryptedObjects := d.Get("replication_rule.0.source_selection_criteria.0.sse_kms_encrypted_objects").(*schema.Set).List()
+	if len(sseKmsEncryptedObjects) > 0 {
+		e := sseKmsEncryptedObjects[0].(map[string]interface{})
+
+		if val, ok := e["status"].(string); ok && val != "" {
+			repRule.SourceSelectionCriteria = &oss.SourceSelectionCriteria{
+				SseKmsEncryptedObjects: &oss.SseKmsEncryptedObjects{
+					Status: val,
+				},
+			}
+		}
+	}
+
+	// EncryptionConfiguration
+	encryptionConfiguration := d.Get("replication_rule.0.encryption_configuration").(*schema.Set).List()
+	if len(encryptionConfiguration) > 0 {
+		e := encryptionConfiguration[0].(map[string]interface{})
+
+		if val, ok := e["replica_kms_key_id"].(string); ok && val != "" {
+			repRule.EncryptionConfiguration = &oss.EncryptionConfiguration{
+				ReplicaKmsKeyID: val,
+			}
+		} else {
+			if sseKmsStatus == string(oss.SourceSSEKMSEnabled) {
+				return WrapError(Error("if 'SourceSelectionCriteria.SseKmsEncryptedObjects.Status' was defined as 'Enabled', then 'EncryptionConfiguration' and 'ReplicaKmsKeyID' should be defined."))
+			}
+		}
+
+	} else {
+		if sseKmsStatus == string(oss.SourceSSEKMSEnabled) {
+			return WrapError(Error("if 'SourceSelectionCriteria.SseKmsEncryptedObjects.Status' was defined as 'Enabled', then 'EncryptionConfiguration' and 'ReplicaKmsKeyID' should be defined."))
+		}
+	}
+
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		requestInfo = ossClient
+		return nil, ossClient.SetBucketReplication(d.Id(), repRule)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketReplication", AliyunOssGoSdk)
+	}
+	addDebug("SetBucketReplication", raw, requestInfo, map[string]interface{}{
+		"bucketName":     d.Id(),
+		"encryptionRule": repRule,
+	})
 
 	return nil
 }
@@ -1439,14 +1605,8 @@ func expirationHash(v interface{}) int {
 	if v, ok := m["date"]; ok {
 		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
 	}
-	if v, ok := m["created_before_date"]; ok {
-		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
-	}
 	if v, ok := m["days"]; ok {
 		buf.WriteString(fmt.Sprintf("%d-", v.(int)))
-	}
-	if v, ok := m["expired_object_delete_marker"]; ok {
-		buf.WriteString(fmt.Sprintf("%v-", v.(bool)))
 	}
 	return hashcode.String(buf.String())
 }
@@ -1466,14 +1626,52 @@ func transitionsHash(v interface{}) int {
 	return hashcode.String(buf.String())
 }
 
-func abortMultipartUploadHash(v interface{}) int {
+func prefixSetHash(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
-	if v, ok := m["created_before_date"]; ok {
+
+	if v, ok := m["prefixes"]; ok {
+		buf.WriteString(fmt.Sprintf("%v-", v))
+	}
+
+	return hashcode.String(buf.String())
+}
+
+func destinationHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+
+	if v, ok := m["bucket"]; ok {
 		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
 	}
-	if v, ok := m["days"]; ok {
-		buf.WriteString(fmt.Sprintf("%d-", v.(int)))
+	if v, ok := m["location"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
 	}
+	if v, ok := m["transfer_type"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+
+	return hashcode.String(buf.String())
+}
+
+func sseKmsEncryptedObjectsHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+
+	if v, ok := m["status"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+
+	return hashcode.String(buf.String())
+}
+
+func encryptionConfigurationHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+
+	if v, ok := m["replica_kms_key_id"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+
 	return hashcode.String(buf.String())
 }
