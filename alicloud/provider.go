@@ -644,6 +644,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_custom_lines":                         dataSourceAlicloudAlidnsCustomLines(),
 			"alicloud_ros_template_scratches":                      dataSourceAlicloudRosTemplateScratches(),
 			"alicloud_alidns_gtm_instances":                        dataSourceAlicloudAlidnsGtmInstances(),
+			"alicloud_vpc_bgp_groups":                              dataSourceAlicloudVpcBgpGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1170,6 +1171,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_vbr_ha":                                           resourceAlicloudVpcVbrHa(),
 			"alicloud_ros_template_scratch":                                 resourceAlicloudRosTemplateScratch(),
 			"alicloud_alidns_gtm_instance":                                  resourceAlicloudAlidnsGtmInstance(),
+			"alicloud_vpc_bgp_group":                                        resourceAlicloudVpcBgpGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,

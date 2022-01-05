@@ -167,3 +167,4 @@ var GaSupportRegions = []Region{Hangzhou, APSouthEast1}
 var AlidnsSupportRegions = []Region{Hangzhou, APSouthEast1}
 var VPCVbrHaSupportRegions = []Region{Hangzhou}
 var ROSSupportRegions = []Region{USWest1, HeYuan, Zhangjiakou, Hongkong, APSouthEast3, EUCentral1, Huhehaote, APSouthEast6, Shenzhen, APSouth1, Qingdao, GuangZhou, APSouthEast2, WuLanChaBu, EUWest1, MEEast1, ChengDu, Shanghai, APSouthEast1, APSouthEast5, USEast1, Beijing, APNorthEast1, Hangzhou}
+var VPCBgpGroupSupportRegions = []Region{Hangzhou}
