@@ -165,3 +165,4 @@ var MongoDBServerlessSupportRegions = []Region{APSouthEast5, Shanghai, USEast1, 
 var FnFSupportRegions = []Region{Shenzhen, Beijing, Shanghai, APSouthEast1, USWest1, Hangzhou}
 var GaSupportRegions = []Region{Hangzhou, APSouthEast1}
 var AlidnsSupportRegions = []Region{Hangzhou, APSouthEast1}
+var VPCVbrHaSupportRegions = []Region{Hangzhou}
