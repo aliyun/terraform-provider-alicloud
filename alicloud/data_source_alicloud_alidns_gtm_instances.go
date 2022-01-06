@@ -231,12 +231,15 @@ func dataSourceAlicloudAlidnsGtmInstancesRead(d *schema.ResourceData, meta inter
 			if v, ok := config["Ttl"]; ok {
 				mapping["ttl"] = formatInt(v)
 			}
-			v, err := convertJsonStringToList(config["AlertGroup"].(string))
-			if err != nil {
-				return WrapError(err)
-			} else {
-				mapping["alert_group"] = v
+			if v, ok := config["AlertGroup"].(string); ok {
+				vv, err := convertJsonStringToList(v)
+				if err != nil {
+					return WrapError(err)
+				} else {
+					mapping["alert_group"] = vv
+				}
 			}
+
 			if alertConfigsList, ok := config["AlertConfig"]; ok {
 				alertConfigConfigArgs := alertConfigsList.([]interface{})
 				alertConfigsMaps := make([]map[string]interface{}, 0)
