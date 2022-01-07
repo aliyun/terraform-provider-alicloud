@@ -1853,6 +1853,8 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		// Ensure instance's image has been replaced successfully.
 		timeout := DefaultTimeoutMedium
+		var systemDiskId string
+		systemDiskTag := make(map[string]interface{})
 		for {
 			instance, errDesc := ecsService.DescribeInstance(d.Id())
 			if errDesc != nil {
@@ -1874,6 +1876,12 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 			}
 
 			if instance.ImageId == d.Get("image_id") && disk.Size == d.Get("system_disk_size").(int) {
+				systemDiskId = disk.DiskId
+				for _, t := range disk.Tags.Tag {
+					if !ecsService.ecsTagIgnored(t) {
+						systemDiskTag[t.TagKey] = t.TagValue
+					}
+				}
 				break
 			}
 			time.Sleep(DefaultIntervalShort * time.Second)
@@ -1886,6 +1894,11 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 
 		d.SetPartial("system_disk_size")
 		d.SetPartial("image_id")
+
+		// update tag after replacing system disk
+		if err = updateTags(client, []string{systemDiskId}, TagResourceDisk, systemDiskTag, d.Get("volume_tags").(map[string]interface{})); err != nil {
+			return update, err
+		}
 	}
 	return update, nil
 }
