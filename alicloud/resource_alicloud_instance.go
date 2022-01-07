@@ -1838,10 +1838,10 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		if err != nil {
 			return update, WrapError(err)
 		}
-		keyPairName := instance.KeyPairName
 		request := ecs.CreateReplaceSystemDiskRequest()
 		request.InstanceId = d.Id()
 		request.ImageId = d.Get("image_id").(string)
+		request.KeyPairName = instance.KeyPairName
 		request.SystemDiskSize = requests.NewInteger(d.Get("system_disk_size").(int))
 		request.ClientToken = buildClientToken(request.GetActionName())
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
@@ -1886,13 +1886,6 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 
 		d.SetPartial("system_disk_size")
 		d.SetPartial("image_id")
-
-		// After updating image, it need to re-attach key pair
-		if keyPairName != "" {
-			if err := ecsService.AttachKeyPair(keyPairName, []interface{}{d.Id()}); err != nil {
-				return update, WrapError(err)
-			}
-		}
 	}
 	return update, nil
 }
