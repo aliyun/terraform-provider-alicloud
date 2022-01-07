@@ -53,8 +53,8 @@ resource "alicloud_db_instance" "instance" {
   instance_name    = var.name
 }
 resource "alicloud_rds_account" "account" {
-  instance_id      = alicloud_db_instance.instance.id
-  name             = "tftestnormal12"
+  db_instance_id      = alicloud_db_instance.instance.id
+  account_name             = "tftestnormal12"
   account_password = "Test12345"
 }
 
@@ -73,6 +73,14 @@ The following arguments are supported:
 * `db_instance_id` - (Required, ForceNew) The Id of instance in which account belongs.
 * `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. If the `account_password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
+
+### Deprecated Attributes
+
+* `description` - (Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_description` instead.
+* `instance_id` - (Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `db_instance_id` instead.
+* `name` - (Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_name` instead.
+* `password` - (Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_password` instead.
+* `type` - (Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_type` instead.
 
 ## Attributes Reference
 
