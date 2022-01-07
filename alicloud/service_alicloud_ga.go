@@ -325,10 +325,13 @@ func (s *GaService) DescribeGaBandwidthPackageAttachment(id string) (object map[
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
 	object = v.(map[string]interface{})
-	if object["BasicBandwidthPackage"] == nil || object["BasicBandwidthPackage"].(map[string]interface{})["InstanceId"] != parts[1] {
-		return object, WrapErrorf(Error(GetNotFoundMessage("GaBandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
+
+	basic, exist1 := object["BasicBandwidthPackage"]
+	cross, exist2 := object["CrossDomainBandwidthPackage"]
+	if (exist1 && basic.(map[string]interface{})["InstanceId"] == parts[1]) || (exist2 && cross.(map[string]interface{})["InstanceId"] == parts[1]) {
+		return object, nil
 	}
-	return object, nil
+	return object, WrapErrorf(Error(GetNotFoundMessage("GaBandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
 }
 
 func (s *GaService) GaEndpointGroupStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
