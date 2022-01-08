@@ -1,4 +1,39 @@
 ## 1.151.0 (Unreleased)
+
+- **New Resource:** `alicloud_alidns_custom_line` [GH-4456]
+- **New Resource:** `alicloud_vpc_vbr_ha` [GH-4461]	
+- **New Resource:** `alicloud_ros_template_scratch` [GH-4421]
+- **New Resource:** `alidns_gtm_instance` [GH-4464]
+- **New Data Source:** `alidns_gtm_instances` [GH-4464]
+- **New Data Source:** `alicloud_ros_template_scratches` [GH-4421]	
+- **New Data Source:** `alicloud_alidns_custom_lines` [GH-4456]
+
+ENHANCEMENTS:
+
+- alicloud_ess_scalingconfiguration: Adds new attributes spot_strategy and spot_price_limit [GH-4413]
+- datasource/alicloud_cen_transit_routers: Modify the parameter transit_router_id to Optional doc/cen_transit_routers: Optimize documentation [GH-4459]
+- datasource/alicloud_cloud_storage_gateway_gateways: Optimize payment_type output parameter conversion [GH-4469]
+- testcase: Update the invalid test [GH-4419]
+- testcase: Adds a new test case for resource alicloud_ecs_launch_template [GH-4313]
+- testcase: Adds a new test case for resource alicloud_ecs_snapshot [GH-4324]
+- testcase: Adds a new test case for resource alicloud_ecs_dedicated_host_cluster [GH-4334]
+- testcase: Change vpc and vswitch creation to read [GH-4399]
+- testcase: Change vpc and vswitch creation to read [GH-4387]
+- testcase: Adds a new test case for resource alicloud_snat_entry [GH-4276]
+- testcase: Adds a new test case for resource alicloud_ecs_dedicated_host [GH-4291]
+- testcase: Adds a new test case for resource alicloud_ecs_disk [GH-4302]
+- testcase: Adds a new test case for resource alicloud_image [GH-4331]
+- testcase: Adds a new test case for resource alicloud_ecs_disk_attachment [GH-4333]
+- testcase: Adds a new test case for resource alicloud_ecs_network_interface [GH-4336]
+- testcase: Adds new unit test case for resource alicloud_vpc_traffic_mirror_filter_egress_rule alicloud_vpc_traffic_mirror_filter alicloud_vpc_traffic_mirror_filter_ingress_rule [GH-4458]
+- testcase: Adds new unit test case for resource alicloud_vpc_nat_ip alicloud_vpc_nat_ip_cidr alicloud_havip [GH-4466]
+- testcase: Adds a new test case for resource alicloud_nat_gateway [GH-4272]
+
+BUG FIXES:
+
+- resource/alicloud_rds_account: Fixes the OperationDenied.DBInstanceStatus when deleting rds account [GH-4471]
+- resource/ga_bandwidth_package_attachment: fix the attachment while the bandwidth package type is cross domain [GH-4470]
+
 ## 1.150.0 (January 02, 2022)
 
 - **New Resource:** `alicloud_ga_acl` ([#4416](https://github.com/aliyun/terraform-provider-alicloud/issues/4416))
