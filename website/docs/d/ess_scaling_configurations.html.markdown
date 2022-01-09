@@ -65,4 +65,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `creation_time` - Creation time of the scaling configuration.
   * `instance_name` - (Optional,Available in 1.143.0+) InstanceName of an ECS instance.
   * `host_name` - (Optional,Available in 1.143.0+) Hostname of an ECS instance.
-  
+  * `spot_strategy` - (Optional, Available in 1.151.0+) The spot strategy for a Pay-As-You-Go instance.
+  * `spot_price_limit` - (Optional, Available in 1.151.0+) The maximum price hourly for instance types.
+    * `instance_type` - Resource type of an ECS instance.
+    * `price_limit` - Price limit hourly of instance type.

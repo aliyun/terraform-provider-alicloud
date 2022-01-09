@@ -433,6 +433,132 @@ func TestAccAlicloudNatGateway_PayByLcu(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudNatGateway_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nat_gateway.default"
+	ra := resourceAttrInit(resourceId, AlicloudNatGatewayMap3)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNatGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNatGatewayBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":               "${data.alicloud_vpcs.default.ids.0}",
+					"name":                 name,
+					"nat_type":             "Enhanced",
+					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"description":          name,
+					"network_type":         "internet",
+					"payment_type":         "Subscription",
+					"period":               "12",
+					"internet_charge_type": "PayBySpec",
+					"specification":        "Middle",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":               CHECKSET,
+						"name":                 name,
+						"nat_type":             "Enhanced",
+						"vswitch_id":           CHECKSET,
+						"description":          name,
+						"network_type":         "internet",
+						"payment_type":         CHECKSET,
+						"internet_charge_type": "PayBySpec",
+						"specification":        "Middle",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name + "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "force", "period"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudNatGateway_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nat_gateway.default"
+	ra := resourceAttrInit(resourceId, AlicloudNatGatewayMap3)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNatGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNatGatewayBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":               "${data.alicloud_vpcs.default.ids.0}",
+					"name":                 name,
+					"nat_type":             "Enhanced",
+					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"description":          name,
+					"network_type":         "internet",
+					"instance_charge_type": "PrePaid",
+					"period":               "5",
+					"internet_charge_type": "PayBySpec",
+					"specification":        "Middle",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":               CHECKSET,
+						"name":                 name,
+						"nat_type":             "Enhanced",
+						"vswitch_id":           CHECKSET,
+						"description":          name,
+						"network_type":         "internet",
+						"instance_charge_type": CHECKSET,
+						"internet_charge_type": "PayBySpec",
+						"specification":        "Middle",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "force", "period"},
+			},
+		},
+	})
+}
+
 var AlicloudNatGatewayMap0 = map[string]string{
 	"description":          "",
 	"dry_run":              NOSET,
@@ -510,6 +636,38 @@ resource "alicloud_vswitch" "default" {
 	cidr_block = "172.16.0.0/21"
 	zone_id = data.alicloud_zones.default.zones.0.id
 	vswitch_name = var.name
+}
+
+`, name)
+}
+
+var AlicloudNatGatewayMap3 = map[string]string{
+	"description":         CHECKSET,
+	"dry_run":             NOSET,
+	"force":               NOSET,
+	"forward_table_ids":   CHECKSET,
+	"nat_type":            CHECKSET,
+	"payment_type":        CHECKSET,
+	"snat_table_ids":      CHECKSET,
+	"specification":       "Small",
+	"status":              "Available",
+	"tags.%":              "0",
+	"vswitch_id":          "",
+	"deletion_protection": "false",
+}
+
+func AlicloudNatGatewayBasicDependence3(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_vpcs" "default"	{
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
 }
 
 `, name)

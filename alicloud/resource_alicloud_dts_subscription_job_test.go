@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -135,7 +136,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic0(t *testing.T) {
 					"dts_job_name":                       "tf-testAccCase",
 					"payment_type":                       "PayAsYouGo",
 					"source_endpoint_engine_name":        "MySQL",
-					"source_endpoint_region":             "cn-hangzhou",
+					"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
 					"source_endpoint_instance_type":      "RDS",
 					"source_endpoint_instance_id":        "${alicloud_db_instance.instance.id}",
 					"source_endpoint_database_name":      "tfaccountpri_0",
@@ -151,7 +152,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic0(t *testing.T) {
 						"dts_job_name":                       "tf-testAccCase",
 						"payment_type":                       "PayAsYouGo",
 						"source_endpoint_engine_name":        "MySQL",
-						"source_endpoint_region":             "cn-hangzhou",
+						"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_database_name":      "tfaccountpri_0",
 						"source_endpoint_user_name":          "tftestprivilege",
@@ -224,8 +225,8 @@ func TestAccAlicloudDTSSubscriptionJob_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"subscription_instance_network_type": "vpc",
-					"subscription_instance_vpc_id":       "${data.alicloud_vpcs.default2.ids[0]}",
-					"subscription_instance_vswitch_id":   "${data.alicloud_vswitches.default_2.ids[0]}",
+					"subscription_instance_vpc_id":       "${data.alicloud_vpcs.default1.ids[0]}",
+					"subscription_instance_vswitch_id":   "${data.alicloud_vswitches.default_1.ids[0]}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -292,7 +293,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic1(t *testing.T) {
 					"dts_job_name":                       "tf-testAccCase",
 					"payment_type":                       "PayAsYouGo",
 					"source_endpoint_engine_name":        "MySQL",
-					"source_endpoint_region":             "cn-hangzhou",
+					"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
 					"source_endpoint_instance_type":      "RDS",
 					"source_endpoint_instance_id":        "${alicloud_db_instance.instance.id}",
 					"source_endpoint_database_name":      "tfaccountpri_0",
@@ -310,7 +311,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic1(t *testing.T) {
 						"dts_job_name":                       "tf-testAccCase",
 						"payment_type":                       "PayAsYouGo",
 						"source_endpoint_engine_name":        "MySQL",
-						"source_endpoint_region":             "cn-hangzhou",
+						"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_database_name":      "tfaccountpri_0",
 						"source_endpoint_user_name":          "tftestprivilege",
@@ -425,7 +426,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic2(t *testing.T) {
 					"payment_duration_unit":              "Month",
 					"payment_duration":                   "1",
 					"source_endpoint_engine_name":        "MySQL",
-					"source_endpoint_region":             "cn-hangzhou",
+					"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
 					"source_endpoint_instance_type":      "RDS",
 					"source_endpoint_instance_id":        "${alicloud_db_instance.instance.id}",
 					"source_endpoint_database_name":      "tfaccountpri_0",
@@ -443,7 +444,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic2(t *testing.T) {
 						"dts_job_name":                       "tf-testAccCase",
 						"payment_type":                       "Subscription",
 						"source_endpoint_engine_name":        "MySQL",
-						"source_endpoint_region":             "cn-hangzhou",
+						"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_database_name":      "tfaccountpri_0",
 						"source_endpoint_user_name":          "tftestprivilege",
@@ -503,17 +504,26 @@ data "alicloud_zones" "default" {
   available_resource_creation = var.creation
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name       = var.name
-  cidr_block     = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones[0].id
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
   zone_id           = data.alicloud_zones.default.zones[0].id
   vswitch_name      = var.name
 }
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+
 
 data "alicloud_db_zones" "default"{
 	engine = "MySQL"
@@ -533,7 +543,7 @@ resource "alicloud_db_instance" "instance" {
   engine_version   = "5.6"
   instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
   instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  vswitch_id       = alicloud_vswitch.default.id
+  vswitch_id       = local.vswitch_id
   instance_name    = var.name
 }
 
@@ -566,12 +576,5 @@ data "alicloud_vswitches" "default_1" {
   vpc_id = data.alicloud_vpcs.default1.ids[0]
 }
 
-data "alicloud_vpcs" "default2" {
-  name_regex = "hbr-ecs-backup-plan"
-}
-
-data "alicloud_vswitches" "default_2" {
-  vpc_id = data.alicloud_vpcs.default2.ids[0]
-}
 `, name)
 }

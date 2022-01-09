@@ -63,7 +63,7 @@ The following attributes are exported in addition to the arguments listed above:
 	* `ip` - gateway public ip.
 	* `is_release_after_expiration` - whether subscription gateway is released after expiration or not.
 	* `location` - gateway location.
-	* `payment_type` - gateway payment type. The Payment type of gateway. The valid value: `PayAsYouGo`.
+	* `payment_type` - gateway payment type. The Payment type of gateway. The valid value: `PayAsYouGo`, `Subscription`.
 	* `public_network_bandwidth` - gateway public network bandwidth.
 	* `status` - gateway status.
 	* `storage_bundle_id` - storage bundle id.

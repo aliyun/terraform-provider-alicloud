@@ -333,6 +333,74 @@ var AlicloudEcsDiskMap = map[string]string{
 	"performance_level": "",
 }
 
+func TestAccAlicloudEcsDisk_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_disk.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsDisk")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsdisk%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsDiskBasic2Dependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disk_name":         name,
+					"description":       name,
+					"zone_id":           "${data.alicloud_zones.default.zones.0.id}",
+					"size":              "500",
+					"payment_type":      "PayAsYouGo",
+					"category":          "cloud_ssd",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"snapshot_id":       "${data.alicloud_ecs_snapshots.default.snapshots.1.id}",
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+					"timeouts": []map[string]interface{}{
+						{
+							"create": "1h",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disk_name":         name,
+						"description":       name,
+						"zone_id":           CHECKSET,
+						"size":              "500",
+						"category":          "cloud_ssd",
+						"resource_group_id": CHECKSET,
+						"snapshot_id":       CHECKSET,
+						"tags.%":            "2",
+						"tags.Created":      "TF-update",
+						"tags.For":          "Test-update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"advanced_features", "type", "dedicated_block_storage_cluster_id", "dry_run", "encrypt_algorithm", "storage_set_id", "storage_set_partition_number"},
+			},
+		},
+	})
+}
+
+var AlicloudEcsDiskMap1 = map[string]string{}
+
 func AlicloudEcsDiskBasicDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -390,5 +458,22 @@ resource "alicloud_instance" "default" {
   vswitch_id                    = data.alicloud_vswitches.default.ids.0
   force_delete                  = true
 }
+`, name)
+}
+
+func AlicloudEcsDiskBasic2Dependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+			default = "%s"
+		}
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
+}
+
+data "alicloud_resource_manager_resource_groups" "default"{
+status = "OK"
+}
+
+data "alicloud_ecs_snapshots" "default" {}
 `, name)
 }

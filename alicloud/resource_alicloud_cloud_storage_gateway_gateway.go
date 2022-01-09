@@ -453,6 +453,8 @@ func convertCsgGatewayPaymentTypeResp(source interface{}) interface{} {
 	switch source {
 	case true:
 		return "PayAsYouGo"
+	case false:
+		return "Subscription"
 	}
 	return source
 }
