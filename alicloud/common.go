@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -16,24 +17,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/cs"
-
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/fc-go-sdk"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
-	"gopkg.in/yaml.v2"
-
-	"math"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
+	"github.com/denverdino/aliyungo/cs"
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/mitchellh/go-homedir"
+	"gopkg.in/yaml.v2"
 )
 
 type InstanceNetWork string
@@ -586,13 +581,17 @@ func writeToFile(filePath string, data interface{}) error {
 		}
 	}
 
+	if _, err := os.Stat(filepath.Dir(filePath)); os.IsNotExist(err) {
+		os.MkdirAll(filepath.Dir(filePath), 0755)
+	}
+
 	if _, err := os.Stat(filePath); err == nil {
 		if err := os.Remove(filePath); err != nil {
 			return err
 		}
 	}
 
-	return ioutil.WriteFile(filePath, []byte(out), 422)
+	return ioutil.WriteFile(filePath, []byte(out), 0422)
 }
 
 type Invoker struct {
