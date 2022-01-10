@@ -15,7 +15,13 @@ For information about Actiontrail History Delivery Job and how to use it, see [W
 
 -> **NOTE:** Available in v1.139.0+.
 
--> **NOTE:** Make sure that you have called the `alicloud_actiontrail_trail` to create a single account trace that is delivered to Log Service SLS. An Alibaba cloud account can only have one running delivery history job at the same time.
+-> **NOTE:** You are authorized to use the historical event delivery task feature. To use this feature, [submit a ticket](https://workorder-intl.console.aliyun.com/?spm=a2c63.p38356.0.0.e29f552bb6odNZ#/ticket/createIndex) or ask the sales manager to add you to the whitelist.
+
+-> **NOTE:** Make sure that you have called the `alicloud_actiontrail_trail` to create a single-account or multi-account trace that delivered to Log Service SLS.
+
+-> **NOTE:** An Alibaba cloud account can only have one running delivery history job at the same time.
+
+
 
 ## Example Usage
 
