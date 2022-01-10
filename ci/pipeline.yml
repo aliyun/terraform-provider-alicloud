@@ -2173,7 +2173,7 @@ resources:
   - name: 1330Thu
     type: time
     source:
-      start: 101:30 PM
+      start: 10:30 PM
       stop: 10:50 PM
       days: [Thursday]
       location: {{time_location}}

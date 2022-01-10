@@ -53,8 +53,8 @@ resource "alicloud_db_instance" "instance" {
   instance_name    = var.name
 }
 resource "alicloud_rds_account" "account" {
-  db_instance_id      = alicloud_db_instance.instance.id
-  account_name             = "tftestnormal12"
+  db_instance_id   = alicloud_db_instance.instance.id
+  account_name     = "tftestnormal12"
   account_password = "Test12345"
 }
 
