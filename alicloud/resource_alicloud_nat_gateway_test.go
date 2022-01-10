@@ -169,9 +169,7 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 					"specification": "Middle",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"specification": "Middle",
-					}),
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
@@ -244,7 +242,7 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"specification":       "Small",
+						"specification":       "",
 						"description":         name,
 						"nat_gateway_name":    name,
 						"tags.%":              "2",
@@ -569,7 +567,7 @@ var AlicloudNatGatewayMap0 = map[string]string{
 	"payment_type":         "PayAsYouGo",
 	"period":               NOSET,
 	"snat_table_ids":       CHECKSET,
-	"specification":        "Small",
+	"specification":        "",
 	"status":               "Available",
 	"tags.%":               "0",
 	"vswitch_id":           "",
@@ -610,7 +608,6 @@ var AlicloudNatGatewayMap1 = map[string]string{
 	"payment_type":        "PayAsYouGo",
 	"period":              NOSET,
 	"snat_table_ids":      CHECKSET,
-	"specification":       "",
 	"status":              "Available",
 	"tags.%":              "0",
 	"deletion_protection": "false",
@@ -649,7 +646,6 @@ var AlicloudNatGatewayMap3 = map[string]string{
 	"nat_type":            CHECKSET,
 	"payment_type":        CHECKSET,
 	"snat_table_ids":      CHECKSET,
-	"specification":       "Small",
 	"status":              "Available",
 	"tags.%":              "0",
 	"vswitch_id":          "",
