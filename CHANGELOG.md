@@ -258,6 +258,7 @@ BUG FIXES:
 - resource/alicloud_cs_managed_kubernetes: Fix the inconsistency of the number of cluster nodes ([#4279](https://github.com/aliyun/terraform-provider-alicloud/issues/4279))
 - data_source/alb_security_policies: Fixing query errors; Refine test cases. ([#4283](https://github.com/aliyun/terraform-provider-alicloud/issues/4283))
 - doc/cloud_storage_gateway_gateway_cache_disk: Fix formatting errors. ([#4264](https://github.com/aliyun/terraform-provider-alicloud/issues/4264))
+- datasource/alicloud_log_service: fix logtail Unmarshal bug and update log service ([#4236](https://github.com/aliyun/terraform-provider-alicloud/issues/4236))
 
 ## 1.144.0 (November 21, 2021)
 
