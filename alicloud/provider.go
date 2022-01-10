@@ -1183,6 +1183,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_address_pool":                                  resourceAlicloudAlidnsAddressPool(),
 			"alicloud_ecs_prefix_list":                                      resourceAlicloudEcsPrefixList(),
 			"alicloud_alidns_access_strategy":                               resourceAlicloudAlidnsAccessStrategy(),
+			"alicloud_alidns_monitor_config":                                resourceAlicloudAlidnsMonitorConfig(),
 		},
 
 		ConfigureFunc: providerConfigure,
