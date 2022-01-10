@@ -52,12 +52,12 @@ resource "alicloud_db_instance" "instance" {
   vswitch_id       = alicloud_vswitch.default.id
   instance_name    = var.name
 }
+
 resource "alicloud_rds_account" "account" {
   db_instance_id   = alicloud_db_instance.instance.id
   account_name     = "tftestnormal12"
   account_password = "Test12345"
 }
-
 ```
 
 ## Argument Reference
