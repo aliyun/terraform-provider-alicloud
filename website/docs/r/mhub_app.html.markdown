@@ -15,6 +15,8 @@ For information about MHUB App and how to use it, see [What is App](https://help
 
 -> **NOTE:** Available in v1.138.0+.
 
+-> **NOTE:** At present, the resource only supports cn-shanghai region.
+
 ## Example Usage
 
 Basic Usage
