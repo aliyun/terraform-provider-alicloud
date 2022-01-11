@@ -649,6 +649,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_replication_vault_regions":               dataSourceAlicloudHbrReplicationVaultRegions(),
 			"alicloud_alidns_address_pools":                        dataSourceAlicloudAlidnsAddressPools(),
 			"alicloud_ecs_prefix_lists":                            dataSourceAlicloudEcsPrefixLists(),
+			"alicloud_alidns_access_strategies":                    dataSourceAlicloudAlidnsAccessStrategies(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1181,6 +1182,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_replication_vault":                                resourceAlicloudHbrReplicationVault(),
 			"alicloud_alidns_address_pool":                                  resourceAlicloudAlidnsAddressPool(),
 			"alicloud_ecs_prefix_list":                                      resourceAlicloudEcsPrefixList(),
+			"alicloud_alidns_access_strategy":                               resourceAlicloudAlidnsAccessStrategy(),
 		},
 
 		ConfigureFunc: providerConfigure,
