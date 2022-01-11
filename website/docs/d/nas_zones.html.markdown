@@ -27,6 +27,7 @@ output "alicloud_nas_zones_id" {
 
 The following arguments are supported:
 
+* `file_system_type` - (Optional, ForceNew, Available in v1.152.0+) The type of the file system.  Valid values: `standard`, `extreme`, `cpfs`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
