@@ -1172,6 +1172,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ros_template_scratch":                                 resourceAlicloudRosTemplateScratch(),
 			"alicloud_alidns_gtm_instance":                                  resourceAlicloudAlidnsGtmInstance(),
 			"alicloud_vpc_bgp_group":                                        resourceAlicloudVpcBgpGroup(),
+			"alicloud_ram_security_preference":                              resourceAlicloudRamSecurityPreference(),
 		},
 
 		ConfigureFunc: providerConfigure,
