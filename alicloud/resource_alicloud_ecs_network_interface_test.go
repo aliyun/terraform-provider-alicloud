@@ -423,7 +423,7 @@ func TestAccAlicloudEcsNetworkInterface_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                               name,
-					"vswitch_id":                         "${alicloud_vswitch.default.id}",
+					"vswitch_id":                         "${local.vswitch_id}",
 					"security_groups":                    []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":                  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":                        name,
@@ -484,7 +484,7 @@ func TestAccAlicloudEcsNetworkInterface_basic2(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":              name,
-					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"vswitch_id":        "${local.vswitch_id}",
 					"security_groups":   []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":       name,
@@ -545,7 +545,7 @@ func TestAccAlicloudEcsNetworkInterface_basic3(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                 name,
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"vswitch_id":           "${local.vswitch_id}",
 					"security_groups":      []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":          name,
@@ -602,7 +602,7 @@ func TestAccAlicloudEcsNetworkInterface_basic4(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                 name,
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"vswitch_id":           "${local.vswitch_id}",
 					"security_groups":      []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":          name,
