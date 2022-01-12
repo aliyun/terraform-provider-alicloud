@@ -32,6 +32,27 @@ func (s *OssService) DescribeOssBucket(id string) (response oss.GetBucketInfoRes
 	return
 }
 
+func (s *OssService) DescribeOssBucketReplication(id string) (response oss.GetBucketReplicationResult, err error) {
+	request := map[string]string{"bucketName": id}
+	var requestInfo *oss.Client
+
+	raw, err := s.client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		requestInfo = ossClient
+		return ossClient.GetBucketReplication(request["bucketName"])
+	})
+	if err != nil {
+		// sometimes replication_rule is nil, only need to create bucket, so catch this error.
+		if NoSuchReplicationConfigurationError(err) {
+			return raw.(oss.GetBucketReplicationResult), nil
+		}
+		return response, WrapErrorf(err, DefaultErrorMsg, id, "GetBucketReplication", AliyunOssGoSdk)
+	}
+
+	addDebug("GetBucketReplication", raw, requestInfo, request)
+	response, _ = raw.(oss.GetBucketReplicationResult)
+	return
+}
+
 func (s *OssService) WaitForOssBucket(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {

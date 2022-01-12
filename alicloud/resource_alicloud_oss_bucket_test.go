@@ -138,17 +138,6 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 		"created_before_date": "2021-11-11",
 		"storage_class":       "IA",
 	}))
-	preHashcode := strconv.Itoa(prefixSetHash(map[string]interface{}{
-		"prefixes": []string{
-			"test/",
-			"src/",
-		},
-	}))
-	desHashcode := strconv.Itoa(destinationHash(map[string]interface{}{
-		"bucket":        "guox-test-dst",
-		"location":      "oss-cn-beijing",
-		"transfer_type": string(oss.TransferInternal),
-	}))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -353,56 +342,6 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"replication_rule": []map[string]interface{}{
-						{
-							"action":                        string(oss.ReplicationActionALL),
-							"historical_object_replication": string(oss.HistoricalEnabled),
-							"prefix_set": []map[string]interface{}{
-								{
-									"prefixes": []string{
-										"test/",
-										"src/",
-									},
-								},
-							},
-							"destination": []map[string]string{
-								{
-									"bucket":        "guox-test-dst",
-									"location":      "oss-cn-beijing", // todo 这个也改成动态的
-									"transfer_type": string(oss.TransferInternal),
-								},
-							},
-							//"source_selection_criteria": []map[string]interface{}{
-							//	{
-							//		"sse_kms_encrypted_objects": []map[string]string{
-							//			{
-							//				"status": string(oss.SourceSSEKMSEnabled),
-							//			},
-							//		},
-							//	},
-							//},
-							//"encryption_configuration": []map[string]string{
-							//	{
-							//		"replica_kms_key_id": "1a8d780d-0d34-49e5-ab45-7b9b5fcca954",
-							//	},
-							//},
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"replication_rule.#":                                               "1",
-						"replication_rule.0.action":                                        string(oss.ReplicationActionALL),
-						"replication_rule.0.historical_object_replication":                 string(oss.HistoricalEnabled),
-						"replication_rule.0.prefix_set." + preHashcode + ".prefixes.#":     "2",
-						"replication_rule.0.destination." + desHashcode + ".bucket":        "guox-test-dst",
-						"replication_rule.0.destination." + desHashcode + ".location":      "oss-cn-beijing",
-						"replication_rule.0.destination." + desHashcode + ".transfer_type": string(oss.TransferInternal),
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"policy": `{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -445,15 +384,14 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"acl":              "public-read",
-					"cors_rule":        REMOVEKEY,
-					"tags":             REMOVEKEY,
-					"website":          REMOVEKEY,
-					"logging":          REMOVEKEY,
-					"referer_config":   REMOVEKEY,
-					"lifecycle_rule":   REMOVEKEY,
-					"policy":           REMOVEKEY,
-					"replication_rule": REMOVEKEY,
+					"acl":            "public-read",
+					"cors_rule":      REMOVEKEY,
+					"tags":           REMOVEKEY,
+					"website":        REMOVEKEY,
+					"logging":        REMOVEKEY,
+					"referer_config": REMOVEKEY,
+					"lifecycle_rule": REMOVEKEY,
+					"policy":         REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -493,14 +431,6 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 						"tags.key1-update": REMOVEKEY,
 						"tags.Key2-update": REMOVEKEY,
 						"tags.key3-new":    REMOVEKEY,
-
-						"replication_rule.#":                                               "0",
-						"replication_rule.0.action":                                        REMOVEKEY,
-						"replication_rule.0.historical_object_replication":                 REMOVEKEY,
-						"replication_rule.0.prefix_set." + preHashcode + ".prefixes.#":     "0",
-						"replication_rule.0.destination." + desHashcode + ".bucket":        REMOVEKEY,
-						"replication_rule.0.destination." + desHashcode + ".location":      REMOVEKEY,
-						"replication_rule.0.destination." + desHashcode + ".transfer_type": REMOVEKEY,
 					}),
 				),
 			},

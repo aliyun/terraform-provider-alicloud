@@ -601,7 +601,15 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			if replication.Rule.Destination.TransferType != "" {
 				destinationMapping["transfer_type"] = replication.Rule.Destination.TransferType
 			}
-			replicationRuleMapping["destination"] = destinationMapping
+			replicationRuleMapping["destination"] = []map[string]interface{}{destinationMapping}
+
+			// PrefixSet
+			prefixSetMapping := make(map[string]interface{})
+			if replication.Rule.PrefixSet != nil && len(replication.Rule.PrefixSet.Prefix) != 0 {
+				prefixSetMapping["prefixes"] = replication.Rule.PrefixSet.Prefix
+			}
+			replicationRuleMapping["prefix_set"] = []map[string]interface{}{prefixSetMapping}
+
 			replicationRuleMappings = append(replicationRuleMappings, replicationRuleMapping)
 		} else {
 			log.Printf("[WARN] Unable to get replication information for the bucket %s: %v", bucket.Name, err)

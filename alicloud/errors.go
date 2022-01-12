@@ -126,7 +126,7 @@ func NoSuchBucketError(err error) bool {
 	}
 
 	if e, ok := err.(oss.ServiceError); ok {
-		return e.StatusCode == 404 || strings.HasPrefix(e.Code, NoSuchBucket) || strings.HasSuffix(e.Message, "bucket does not exist.")
+		return e.StatusCode == 404 && strings.HasPrefix(e.Code, NoSuchBucket) && strings.HasSuffix(e.Message, "bucket does not exist.")
 	}
 	return false
 }
@@ -147,7 +147,7 @@ func NoSuchReplicationConfigurationError(err error) bool {
 	}
 
 	if e, ok := err.(oss.ServiceError); ok {
-		return e.StatusCode == 404 || strings.HasPrefix(e.Code, NoSuchReplicationConfiguration) || strings.HasSuffix(e.Message, "does not have replication configuration")
+		return e.StatusCode == 404 && strings.HasPrefix(e.Code, NoSuchReplicationConfiguration) && strings.HasSuffix(e.Message, "does not have replication configuration")
 	}
 	return false
 }
@@ -168,7 +168,7 @@ func AccessDeniedError(err error) bool {
 	}
 
 	if e, ok := err.(oss.ServiceError); ok {
-		return e.StatusCode == 403 || strings.HasPrefix(e.Code, AccessDenied) || strings.HasSuffix(e.Message, "does not belong to you.")
+		return e.StatusCode == 403 && strings.HasPrefix(e.Code, AccessDenied) && strings.HasSuffix(e.Message, "does not belong to you.")
 	}
 	return false
 }
@@ -189,7 +189,7 @@ func BucketAlreadyExistsError(err error) bool {
 	}
 
 	if e, ok := err.(oss.ServiceError); ok {
-		return e.StatusCode == 409 || strings.HasPrefix(e.Code, BucketAlreadyExists) || strings.HasSuffix(e.Message, "select a different name and try again.")
+		return e.StatusCode == 409 && strings.HasPrefix(e.Code, BucketAlreadyExists) && strings.HasSuffix(e.Message, "select a different name and try again.")
 	}
 	return false
 }

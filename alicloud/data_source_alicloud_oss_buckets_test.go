@@ -91,9 +91,10 @@ func TestAccAlicloudOssBucketsDataSource_basic(t *testing.T) {
 			"buckets.0.tags.key2": "value2",
 
 			"buckets.0.replication_rule.#":                               "1",
-			"buckets.0.replication_rule.0.prefix_set.#":                  "2",
-			"buckets.0.replication_rule.0.prefix_set.0":                  "xx/",
-			"buckets.0.replication_rule.0.prefix_set.1":                  "test/",
+			"buckets.0.replication_rule.0.prefix_set.#":                  "1",
+			"buckets.0.replication_rule.0.prefix_set.0.prefixes.#":       "2",
+			"buckets.0.replication_rule.0.prefix_set.0.prefixes.0":       "xx/",
+			"buckets.0.replication_rule.0.prefix_set.0.prefixes.1":       "test/",
 			"buckets.0.replication_rule.0.destination.#":                 "1",
 			"buckets.0.replication_rule.0.destination.0.bucket":          fmt.Sprintf("tf-testacc-bucket-%d-target", rand),
 			"buckets.0.replication_rule.0.destination.0.location":        "oss-cn-beijing",
