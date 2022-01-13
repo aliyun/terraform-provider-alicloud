@@ -1086,7 +1086,7 @@ func setPagingRequest(d *schema.ResourceData, request map[string]interface{}, ma
 	} else {
 		request["PageNumber"] = 1
 	}
-	if v, ok := d.GetOk("page_size"); ok {
+	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
 		request["PageSize"] = v.(int)
 	} else {
 		request["PageSize"] = PageSizeLarge
