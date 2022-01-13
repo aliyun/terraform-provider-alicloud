@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"io/ioutil"
 	"log"
 	"os"
@@ -1071,4 +1072,23 @@ func SplitSlice(xs []interface{}, chunkSize int) [][]interface{} {
 	}
 	divided[i] = xs[prev:]
 	return divided
+}
+
+func isPagingRequest(d *schema.ResourceData) bool {
+	v, ok := d.GetOk("page_number")
+	return ok && v.(int) > 0
+}
+
+func setPagingRequest(d *schema.ResourceData, request map[string]interface{}, maxPageSize int) {
+	if v, ok := d.GetOk("page_number"); ok && v.(int) > 0 {
+		request["PageNumber"] = v.(int)
+	} else {
+		request["PageNumber"] = 1
+	}
+	if v, ok := d.GetOk("page_size"); ok {
+		request["PageSize"] = v.(int)
+	} else {
+		request["PageSize"] = PageSizeLarge
+	}
+	return
 }

@@ -26,14 +26,21 @@ func TestAccAlicloudCloudStorageGatewayStorageBundlesDataSource(t *testing.T) {
 			"name_regex": `"${alicloud_cloud_storage_gateway_storage_bundle.default.storage_bundle_name}_fake"`,
 		}),
 	}
+	pagingConf := dataSourceTestAccConfig{
+		fakeConfig: testAccCheckAlicloudCloudStorageGatewayStorageBundlesDataSourceName(rand, map[string]string{
+			"page_number": `2`,
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCloudStorageGatewayStorageBundlesDataSourceName(rand, map[string]string{
-			"ids":        `["${alicloud_cloud_storage_gateway_storage_bundle.default.id}"]`,
-			"name_regex": `"${alicloud_cloud_storage_gateway_storage_bundle.default.storage_bundle_name}"`,
+			"ids":         `["${alicloud_cloud_storage_gateway_storage_bundle.default.id}"]`,
+			"name_regex":  `"${alicloud_cloud_storage_gateway_storage_bundle.default.storage_bundle_name}"`,
+			"page_number": `1`,
 		}),
 		fakeConfig: testAccCheckAlicloudCloudStorageGatewayStorageBundlesDataSourceName(rand, map[string]string{
-			"ids":        `["${alicloud_cloud_storage_gateway_storage_bundle.default.id}_fake"]`,
-			"name_regex": `"${alicloud_cloud_storage_gateway_storage_bundle.default.storage_bundle_name}_fake"`,
+			"ids":         `["${alicloud_cloud_storage_gateway_storage_bundle.default.id}_fake"]`,
+			"name_regex":  `"${alicloud_cloud_storage_gateway_storage_bundle.default.storage_bundle_name}_fake"`,
+			"page_number": `2`,
 		}),
 	}
 	var existAlicloudCloudStorageGatewayStorageBundlesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -61,7 +68,7 @@ func TestAccAlicloudCloudStorageGatewayStorageBundlesDataSource(t *testing.T) {
 		existMapFunc: existAlicloudCloudStorageGatewayStorageBundlesDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudCloudStorageGatewayStorageBundlesDataSourceNameMapFunc,
 	}
-	alicloudCloudStorageGatewayStorageBundlesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
+	alicloudCloudStorageGatewayStorageBundlesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, pagingConf, allConf)
 }
 func testAccCheckAlicloudCloudStorageGatewayStorageBundlesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
