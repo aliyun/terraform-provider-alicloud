@@ -42,6 +42,15 @@ func dataSourceAlicloudCloudStorageGatewayStorageBundles() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"page_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"page_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  50,
+			},
 			"bundles": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -84,9 +93,8 @@ func dataSourceAlicloudCloudStorageGatewayStorageBundlesRead(d *schema.ResourceD
 	action := "DescribeStorageBundles"
 	request := make(map[string]interface{})
 	request["BackendBucketRegionId"] = d.Get("backend_bucket_region_id")
-	request["PageSize"] = PageSizeLarge
-	request["PageNumber"] = 1
-	var objects []map[string]interface{}
+	setPagingRequest(d, request, PageSizeLarge)
+	var objects []interface{}
 	var storageBundleNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -124,6 +132,10 @@ func dataSourceAlicloudCloudStorageGatewayStorageBundlesRead(d *schema.ResourceD
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.StorageBundles.StorageBundle", response)
 		}
 		result, _ := resp.([]interface{})
+		if isPagingRequest(d) {
+			objects = result
+			break
+		}
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			if storageBundleNameRegex != nil {
@@ -138,7 +150,7 @@ func dataSourceAlicloudCloudStorageGatewayStorageBundlesRead(d *schema.ResourceD
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < request["PageSize"].(int) {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -146,7 +158,8 @@ func dataSourceAlicloudCloudStorageGatewayStorageBundlesRead(d *schema.ResourceD
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
-	for _, object := range objects {
+	for _, v := range objects {
+		object := v.(map[string]interface{})
 		mapping := map[string]interface{}{
 			"description":         object["Description"],
 			"location":            object["Location"],
