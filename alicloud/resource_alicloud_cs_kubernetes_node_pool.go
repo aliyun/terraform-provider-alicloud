@@ -575,9 +575,9 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if d.HasChange("install_cloud_monitor") {
+	if v, ok := d.GetOk("install_cloud_monitor"); ok {
 		update = true
-		args.CmsEnabled = d.Get("install_cloud_monitor").(bool)
+		args.CmsEnabled = v.(bool)
 	}
 
 	if v, ok := d.GetOk("unschedulable"); ok {
@@ -652,23 +652,19 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.KubernetesConfig.NodeNameMode = d.Get("node_name_mode").(string)
 	}
 
-	if d.HasChange("user_data") {
+	if v, ok := d.GetOk("user_data"); ok {
 		update = true
-		if v := d.Get("user_data").(string); v != "" {
-			_, base64DecodeError := base64.StdEncoding.DecodeString(v)
-			if base64DecodeError == nil {
-				args.KubernetesConfig.UserData = v
-			} else {
-				args.KubernetesConfig.UserData = base64.StdEncoding.EncodeToString([]byte(v))
-			}
+		_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
+		if base64DecodeError == nil {
+			args.KubernetesConfig.UserData = v.(string)
+		} else {
+			args.KubernetesConfig.UserData = base64.StdEncoding.EncodeToString([]byte(v.(string)))
 		}
 	}
 
-	if d.HasChange("scaling_config") {
+	if v, ok := d.GetOk("scaling_config"); ok {
 		update = true
-		if v, ok := d.GetOk("scaling_config"); ok {
-			args.AutoScaling = setAutoScalingConfig(v.([]interface{}))
-		}
+		args.AutoScaling = setAutoScalingConfig(v.([]interface{}))
 	}
 
 	if v, ok := d.Get("management").([]interface{}); len(v) > 0 && ok {
