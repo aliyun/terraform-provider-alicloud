@@ -16,8 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-
 	"github.com/denverdino/aliyungo/cs"
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
