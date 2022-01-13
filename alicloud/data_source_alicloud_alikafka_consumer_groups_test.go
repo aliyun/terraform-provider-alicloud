@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -9,53 +10,70 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudAlikafkaConsumerGroupsDataSource(t *testing.T) {
-
-	rand := acctest.RandInt()
-	resourceId := "data.alicloud_alikafka_consumer_groups.default"
-	name := fmt.Sprintf("tf-testacc-alikafkaconsumer%v", rand)
-
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceAlikafkaConsumerGroupsConfigDependence)
-
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id":       "${alicloud_alikafka_instance.default.id}",
-			"consumer_id_regex": "${alicloud_alikafka_consumer_group.default.consumer_id}",
+func TestAccAAlikafkaConsumerGroupsDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 99999)
+	checkoutSupportedRegions(t, true, connectivity.AlikafkaSupportedRegions)
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAAlikafkaConsumerGroupsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"ids":         `["${alicloud_alikafka_consumer_group.default.id}"]`,
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id":       "${alicloud_alikafka_instance.default.id}",
-			"consumer_id_regex": "fake_tf-testacc*",
+		fakeConfig: testAccCheckAAlikafkaConsumerGroupsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"ids":         `["${alicloud_alikafka_consumer_group.default.id}_fake"]`,
 		}),
 	}
 
-	var existAlikafkaConsumerGroupsMapFunc = func(rand int) map[string]string {
-		return map[string]string{
-			"consumer_ids.#": "1",
-			"consumer_ids.0": fmt.Sprintf("tf-testacc-alikafkaconsumer%v", rand),
-		}
+	consumerIdRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAAlikafkaConsumerGroupsDataSourceName(rand, map[string]string{
+			"instance_id":       `"${alicloud_alikafka_instance.default.id}"`,
+			"consumer_id_regex": `"${alicloud_alikafka_consumer_group.default.consumer_id}"`,
+		}),
+		fakeConfig: testAccCheckAAlikafkaConsumerGroupsDataSourceName(rand, map[string]string{
+			"instance_id":       `"${alicloud_alikafka_instance.default.id}"`,
+			"consumer_id_regex": `"${alicloud_alikafka_consumer_group.default.consumer_id}_fake"`,
+		}),
 	}
 
-	var fakeAlikafkaConsumerGroupsMapFunc = func(rand int) map[string]string {
+	var existAAlikafkaConsumerGroupsDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"consumer_ids.#": "0",
+			"ids.#":                 "1",
+			"names.#":               "1",
+			"groups.#":              "1",
+			"groups.0.id":           CHECKSET,
+			"groups.0.consumer_id":  fmt.Sprintf("tf-testacc-alikafkaconsumer%v", rand),
+			"groups.0.remark":       "",
+			"groups.0.instance_id":  CHECKSET,
+			"groups.0.tags.%":       "2",
+			"groups.0.tags.Created": "TF",
+			"groups.0.tags.For":     "Test",
 		}
 	}
+	var fakeAAlikafkaConsumerGroupsDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":    "0",
+			"groups.#": "0",
+			"names.#":  "0",
+		}
+	}
+	var AAlikafkaConsumerGroupsBusesCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_alikafka_consumer_groups.default",
+		existMapFunc: existAAlikafkaConsumerGroupsDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAAlikafkaConsumerGroupsDataSourceNameMapFunc,
+	}
 
-	var alikafkaConsumerGroupsCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existAlikafkaConsumerGroupsMapFunc,
-		fakeMapFunc:  fakeAlikafkaConsumerGroupsMapFunc,
-	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
-	}
-	alikafkaConsumerGroupsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
+	AAlikafkaConsumerGroupsBusesCheckInfo.dataSourceTestCheck(t, rand, idsConf, consumerIdRegexConf)
 }
+func testAccCheckAAlikafkaConsumerGroupsDataSourceName(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 
-func dataSourceAlikafkaConsumerGroupsConfigDependence(name string) string {
-	return fmt.Sprintf(`
+	config := fmt.Sprintf(`
+
 variable "name" {
- default = "%v"
+  default = "tf-testacc-alikafkaconsumer%d"
 }
 
 data "alicloud_vpcs" "default" {
@@ -84,6 +102,16 @@ resource "alicloud_alikafka_instance" "default" {
 resource "alicloud_alikafka_consumer_group" "default" {
   instance_id = "${alicloud_alikafka_instance.default.id}"
   consumer_id = "${var.name}"
+  tags = {
+    	Created = "TF"
+		For =     "Test"
+  }
 }
-		`, name)
+
+data "alicloud_alikafka_consumer_groups" "default" {	
+	%s
+}
+
+`, rand, strings.Join(pairs, " \n "))
+	return config
 }

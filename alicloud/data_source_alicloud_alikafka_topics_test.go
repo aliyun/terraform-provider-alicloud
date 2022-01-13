@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -9,60 +10,86 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudAlikafkaTopicsDataSource(t *testing.T) {
-
-	rand := acctest.RandInt()
-	resourceId := "data.alicloud_alikafka_topics.default"
-	name := fmt.Sprintf("tf-testacc-alikafkatopic%v", rand)
-
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceAlikafkaTopicsConfigDependence)
-
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${alicloud_alikafka_instance.default.id}",
-			"name_regex":  "${alicloud_alikafka_topic.default.topic}",
+func TestAccAlikafkaTopicsDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 99999)
+	checkoutSupportedRegions(t, true, connectivity.AlikafkaSupportedRegions)
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"ids":         `["${alicloud_alikafka_topic.default.id}"]`,
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${alicloud_alikafka_instance.default.id}",
-			"name_regex":  "fake_tf-testacc*",
+		fakeConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"ids":         `["${alicloud_alikafka_topic.default.id}_fake"]`,
 		}),
 	}
 
-	var existAlikafkaTopicsMapFunc = func(rand int) map[string]string {
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"name_regex":  `"${alicloud_alikafka_topic.default.topic}"`,
+		}),
+		fakeConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"name_regex":  `"${alicloud_alikafka_topic.default.topic}_fake"`,
+		}),
+	}
+
+	topicConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"topic":       `"${alicloud_alikafka_topic.default.topic}"`,
+		}),
+		fakeConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"topic":       `"${alicloud_alikafka_topic.default.topic}_fake"`,
+		}),
+	}
+
+	var existAlikafkaTopicsDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
+			"ids.#":                  "1",
 			"names.#":                "1",
 			"topics.#":               "1",
+			"topics.0.id":            CHECKSET,
 			"topics.0.topic":         fmt.Sprintf("tf-testacc-alikafkatopic%v", rand),
 			"topics.0.local_topic":   "false",
 			"topics.0.compact_topic": "false",
 			"topics.0.partition_num": "12",
-			"topics.0.remark":        "alicloud_alikafka_topic_remark",
+			"topics.0.remark":        "remark",
 			"topics.0.status":        "0",
+			"topics.0.status_name":   CHECKSET,
+			"topics.0.instance_id":   CHECKSET,
+			"topics.0.tags.%":        "2",
+			"topics.0.tags.Created":  "TF",
+			"topics.0.tags.For":      "Test",
 		}
 	}
-
-	var fakeAlikafkaTopicsMapFunc = func(rand int) map[string]string {
+	var fakeAlikafkaTopicsDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
+			"ids.#":    "0",
 			"topics.#": "0",
 			"names.#":  "0",
 		}
 	}
+	var AlikafkaTopicsBusesCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_alikafka_topics.default",
+		existMapFunc: existAlikafkaTopicsDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAlikafkaTopicsDataSourceNameMapFunc,
+	}
 
-	var alikafkaTopicsCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existAlikafkaTopicsMapFunc,
-		fakeMapFunc:  fakeAlikafkaTopicsMapFunc,
-	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
-	}
-	alikafkaTopicsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
+	AlikafkaTopicsBusesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, topicConf)
 }
+func testAccCheckAlikafkaTopicsDataSourceName(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
 
-func dataSourceAlikafkaTopicsConfigDependence(name string) string {
-	return fmt.Sprintf(`
+	config := fmt.Sprintf(`
+
 variable "name" {
- default = "%v"
+  default = "tf-testacc-alikafkatopic%d"
 }
 
 data "alicloud_vpcs" "default" {
@@ -94,7 +121,17 @@ resource "alicloud_alikafka_topic" "default" {
   local_topic = "false"
   compact_topic = "false"
   partition_num = "12"
-  remark = "alicloud_alikafka_topic_remark"
+  remark = "remark"
+  tags = {
+       Created = "TF"
+      For =     "Test"
+  }
 }
-`, name)
+
+data "alicloud_alikafka_topics" "default" {	
+	%s
+}
+
+`, rand, strings.Join(pairs, " \n "))
+	return config
 }
