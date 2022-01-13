@@ -131,7 +131,6 @@ var SaeSupportRegions = []Region{Hangzhou, Shanghai, Beijing, Zhangjiakou, Shenz
 var HbrSupportRegions = []Region{Hangzhou}
 var EcdSupportRegions = []Region{Hangzhou, Shanghai, Beijing, Shenzhen, Hongkong, APSouthEast1, APSouthEast2}
 var EcpSupportRegions = []Region{Hangzhou, Shanghai, Beijing, Shenzhen}
-var CsgSupportRegions = []Region{Shanghai}
 var SddpSupportRegions = []Region{Hangzhou, Zhangjiakou, APSouthEast1}
 var CddcSupportRegions = []Region{Shenzhen, Beijing, APSouth1, EUWest1, APNorthEast1, MEEast1, ChengDu, Qingdao, Shanghai, Hongkong, HeYuan, APSouthEast1, APSouthEast2, APSouthEast3, EUCentral1, Huhehaote, APSouthEast5, USEast1, Zhangjiakou, USWest1, Hangzhou}
 var DfsSupportRegions = []Region{Hangzhou, Zhangjiakou, Shanghai, Beijing, HeYuan, ChengDu, APSouthEast5, USEast1, RusWest1}

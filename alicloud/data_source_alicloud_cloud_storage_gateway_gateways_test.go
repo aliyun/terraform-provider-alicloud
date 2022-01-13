@@ -5,12 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCsgGatewayDataSource(t *testing.T) {
+func TestAccAlicloudCloudStorageGatewayGatewayDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCsgGatewayDataSourceName(rand, map[string]string{
@@ -42,18 +40,30 @@ func TestAccAlicloudCsgGatewayDataSource(t *testing.T) {
 			"status":            `"Unknown"`,
 		}),
 	}
+	pagingConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCsgGatewayDataSourceName(rand, map[string]string{
+			"storage_bundle_id": `"${alicloud_cloud_storage_gateway_gateway.default.storage_bundle_id}"`,
+			"page_number":       `1`,
+		}),
+		fakeConfig: testAccCheckAlicloudCsgGatewayDataSourceName(rand, map[string]string{
+			"storage_bundle_id": `"${alicloud_cloud_storage_gateway_gateway.default.storage_bundle_id}"`,
+			"page_number":       `2`,
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCsgGatewayDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_cloud_storage_gateway_gateway.default.id}"]`,
 			"storage_bundle_id": `"${alicloud_cloud_storage_gateway_gateway.default.storage_bundle_id}"`,
 			"name_regex":        `"${alicloud_cloud_storage_gateway_gateway.default.gateway_name}"`,
 			"status":            `"Running"`,
+			"page_number":       `1`,
 		}),
 		fakeConfig: testAccCheckAlicloudCsgGatewayDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_cloud_storage_gateway_gateway.default.id}_fake"]`,
 			"storage_bundle_id": `"${alicloud_cloud_storage_gateway_gateway.default.storage_bundle_id}"`,
 			"name_regex":        `"${alicloud_cloud_storage_gateway_gateway.default.gateway_name}_fake"`,
 			"status":            `"Unknown"`,
+			"page_number":       `2`,
 		}),
 	}
 	var existAlicloudCsgGatewayDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -83,10 +93,7 @@ func TestAccAlicloudCsgGatewayDataSource(t *testing.T) {
 		existMapFunc: existAlicloudCsgGatewayDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudCsgGatewayDataSourceNameMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.CsgSupportRegions)
-	}
-	alicloudCsgGatewayCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, allConf)
+	alicloudCsgGatewayCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, statusConf, pagingConf, allConf)
 }
 func testAccCheckAlicloudCsgGatewayDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
