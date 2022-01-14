@@ -17,8 +17,8 @@ func TestAccAlicloudHbrReplicationVaultRegionsDataSource(t *testing.T) {
 
 	var existAlicloudHbrVaultReplicationRegionDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"regions.#":           CHECKSET,
-			"regions.0.region_id": CHECKSET,
+			"regions.#":                       CHECKSET,
+			"regions.0.replication_region_id": CHECKSET,
 		}
 	}
 	var fakeHbrVaultReplicationRegionsMapFunc = func(rand int) map[string]string {
