@@ -650,6 +650,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_address_pools":                        dataSourceAlicloudAlidnsAddressPools(),
 			"alicloud_ecs_prefix_lists":                            dataSourceAlicloudEcsPrefixLists(),
 			"alicloud_alidns_access_strategies":                    dataSourceAlicloudAlidnsAccessStrategies(),
+			"alicloud_vpc_bgp_peers":                               dataSourceAlicloudVpcBgpPeers(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1185,6 +1186,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_access_strategy":                               resourceAlicloudAlidnsAccessStrategy(),
 			"alicloud_alidns_monitor_config":                                resourceAlicloudAlidnsMonitorConfig(),
 			"alicloud_vpc_dhcp_options_set_attachment":                      resourceAlicloudVpcDhcpOptionsSetAttachement(),
+			"alicloud_vpc_bgp_peer":                                         resourceAlicloudVpcBgpPeer(),
 		},
 
 		ConfigureFunc: providerConfigure,
