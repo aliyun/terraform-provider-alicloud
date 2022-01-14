@@ -31,7 +31,7 @@ output "connection_string" {
 
 The following arguments are supported:
 
-* `ids` - (Optional) A list of KVStore DBInstance ids, only support one item.
+* `ids` - (Required) A list of KVStore DBInstance ids, only support one item.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
