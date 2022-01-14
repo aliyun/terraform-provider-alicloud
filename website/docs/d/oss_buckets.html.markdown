@@ -45,6 +45,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `storage_class` - Object storage type. Possible values: `Standard`, `IA` and `Archive`.
   * `redundancy_type` - Redundancy type. Possible values: `LRS`, and `ZRS`.
   * `creation_date` - Bucket creation date.
+  * `cross_region_replication` - Bucket replication type. Possible values: `Enabled`, and `Disabled`.
+  * `transfer_acceleration` - Bucket replication accelerator. Possible values: `Enabled`, and `Disabled`.
   * `cors_rules` - A list of CORS rule configurations. Each element contains the following attributes:
     * `allowed_origins` - The origins allowed for cross-domain requests. Multiple elements can be used to specify multiple allowed origins. Each rule allows up to one wildcard "\*". If "\*" is specified, cross-domain requests of all origins are allowed.
     * `allowed_methods` - Specify the allowed methods for cross-domain requests. Possible values: `GET`, `PUT`, `DELETE`, `POST` and `HEAD`.
@@ -73,3 +75,12 @@ The following attributes are exported in addition to the arguments listed above:
   * `tags` - A mapping of tags.
   * `versioning` - If present , the versioning state has been set on the bucket. It contains the following attribute.
       * `status` - A bucket versioning state. Possible values:`Enabled` and `Suspended`.
+  * `replictation_rule` - A configuration of replication for a bucket. It contains the following attributes:
+    * `id` - (Computed, Type: string) Unique identifier for the rule. OSS bucket will assign a unique name.
+    * `status` - (Computed, Type: string) Specifies replication rule status. Possible values:`starting`, `doing` and `closing`.
+    * `action` - Defined which operation of objects in bucket will be sync. Possible values:`ALL`, `DELETE`, `PUT` or any combination of them.
+    * `destination` - Defined the target bucket of replication
+      * `bucket` - Target bucket
+      * `location` - The location of target bucket
+      * `transfer_type` - The transfer type of replication. Possible values:`internal` and `oss_acc`.
+    * `historical_object_replication` - Defined whether the objects already exits will be sync. Possible values:`enabled` and `disabled`.

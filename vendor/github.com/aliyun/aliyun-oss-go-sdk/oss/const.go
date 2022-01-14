@@ -89,12 +89,85 @@ const (
 	RedundancyZRS DataRedundancyType = "ZRS"
 )
 
-//ObjecthashFuncType
-type ObjecthashFuncType string
+//CrossRegionReplicationType bucket data replicate status
+type BucketCrossRegionReplicationType string
 
 const (
-	HashFuncSha1   ObjecthashFuncType = "SHA-1"
-	HashFuncSha256 ObjecthashFuncType = "SHA-256"
+	// CrossRegionReplicationEnabled Open bucket synchronization
+	CrossRegionReplicationEnabled BucketCrossRegionReplicationType = "Enabled"
+
+	// CrossRegionReplicationDisabled Synchronization is disabled, default value
+	CrossRegionReplicationDisabled BucketCrossRegionReplicationType = "Disabled"
+)
+
+//TransferAccelerationType bucket data replicate accelerator
+type BucketTransferAccelerationType string
+
+const (
+	// TransferAccelerationEnabled accelerated
+	TransferAccelerationEnabled BucketTransferAccelerationType = "Enabled"
+
+	// TransferAccelerationDisabled Not accelerated, default value
+	TransferAccelerationDisabled BucketTransferAccelerationType = "Disabled"
+)
+
+//ReplicationAction bucket replication action type
+type ReplicationAction string
+
+const (
+	// ReplicationActionALL all action, default value
+	ReplicationActionALL ReplicationAction = "ALL"
+
+	// ReplicationActionPUT only put action
+	ReplicationActionPUT ReplicationAction = "PUT"
+
+	// ReplicationActionDELETE only delete action
+	ReplicationActionDELETE ReplicationAction = "DELETE"
+
+	// ReplicationActionABORT only abort action
+	ReplicationActionABORT ReplicationAction = "ABORT"
+
+	// ReplicationActionPUT_DELETE put and delete action
+	ReplicationActionPUT_DELETE ReplicationAction = "PUT,DELETE"
+
+	// ReplicationActionPUT_ABORT put and abort action
+	ReplicationActionPUT_ABORT ReplicationAction = "PUT,ABORT"
+
+	// ReplicationActionDELETE_ABORT delete and abort action
+	ReplicationActionDELETE_ABORT ReplicationAction = "DELETE,ABORT"
+)
+
+//ReplicationTransferType bucket replication transfer type
+type ReplicationTransferType string
+
+const (
+	// TransferInternal usually transfer mode, default value
+	TransferInternal ReplicationTransferType = "internal"
+
+	// TransferOssAcc accelerate mode
+	TransferOssAcc ReplicationTransferType = "oss_acc"
+)
+
+//HistoricalObjectReplication whether replicate for history objects
+type HistoricalObjectReplication string
+
+const (
+	// HistoricalEnabled enabled, default value
+	HistoricalEnabled HistoricalObjectReplication = "enabled"
+
+	// HistoricalDisabled disabled
+	HistoricalDisabled HistoricalObjectReplication = "disabled"
+)
+
+//SourceObjectsSSEKMS whether replicate objects encrpied as SSE-KMS
+type SourceObjectsSSEKMS string
+
+const (
+	// SourceSSEKMSEnabled enabled, default value
+	SourceSSEKMSEnabled SourceObjectsSSEKMS = "Enabled"
+
+	// SourceSSEKMSDisabled disabled
+	SourceSSEKMSDisabled SourceObjectsSSEKMS = "Disabled"
 )
 
 // PayerType the type of request payer
@@ -201,8 +274,6 @@ const (
 	HTTPHeaderOssForbidOverWrite             = "X-Oss-Forbid-Overwrite"
 	HTTPHeaderOssRangeBehavior               = "X-Oss-Range-Behavior"
 	HTTPHeaderOssTaskID                      = "X-Oss-Task-Id"
-	HTTPHeaderOssHashCtx                     = "X-Oss-Hash-Ctx"
-	HTTPHeaderOssMd5Ctx                      = "X-Oss-Md5-Ctx"
 )
 
 // HTTP Param
@@ -234,7 +305,7 @@ const (
 
 	NullVersion = "null"
 
-	Version = "v2.1.8" // Go SDK version
+	Version = "v2.1.3" // Go SDK version
 )
 
 // FrameType
