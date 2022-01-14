@@ -13,6 +13,10 @@ Provides a ActionTrail Trail resource. For information about alicloud actiontrai
 
 -> **NOTE:** Available in 1.95.0+
 
+-> **NOTE:** You can create a trail to deliver events to Log Service, Object Storage Service (OSS), or both. Before you call this operation to create a trail, make sure that the following requirements are met.
+- Deliver events to Log Service: A project is created in Log Service.
+- Deliver events to OSS: A bucket is created in OSS.
+
 ## Example Usage
 
 ```terraform
@@ -44,7 +48,6 @@ The following arguments are supported:
 * `oss_write_role_arn` - (Optional) The unique ARN of the Oss role.
 * `is_organization_trail` - (Optional) Specifies whether to create a multi-account trail. Valid values:`true`: Create a multi-account trail.`false`: Create a single-account trail. It is the default value.
 
--> **NOTE:** `sls_project_arn` and `sls_write_role_arn` should be set or not set at the same time when actiontrail delivers logs.
 
 ## Attributes Reference
 

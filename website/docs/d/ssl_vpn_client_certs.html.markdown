@@ -37,7 +37,7 @@ The following attributes are exported:
 
 * `ids` - A list of SSL-VPN client cert IDs.
 * `names` - A list of SSL-VPN client cert names.
-* `ssl_vpn_client_certs` - A list of SSL-VPN client certificates. Each element contains the following attributes:
+* `certs` - A list of SSL-VPN client certificates. Each element contains the following attributes:
   * `id` - ID of the SSL-VPN client certificate.
   * `ssl_vpn_server_id` - ID of the SSL-VPN Server.
   * `name` - The name of the SSL-VPN client certificate.
