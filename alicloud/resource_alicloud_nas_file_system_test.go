@@ -262,7 +262,7 @@ func TestAccAlicloudNasFileSystemExtreme_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"protocol_type":    "NFS",
-					"zone_id":          "${data.alicloud_nas_zones.default.zones.0.zone_id}",
+					"zone_id":          "${local.zone_id}",
 					"storage_type":     "standard",
 					"file_system_type": "extreme",
 					"capacity":         "100",
@@ -309,7 +309,7 @@ func TestAccAlicloudNasFileSystemExtremeEncrypt(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"protocol_type":    "NFS",
-					"zone_id":          "${data.alicloud_nas_zones.default.zones.0.zone_id}",
+					"zone_id":          "${local.zone_id}",
 					"storage_type":     "standard",
 					"file_system_type": "extreme",
 					"capacity":         "100",
@@ -324,6 +324,139 @@ func TestAccAlicloudNasFileSystemExtremeEncrypt(t *testing.T) {
 						"file_system_type": "extreme",
 						"capacity":         "100",
 						"encrypt_type":     "2",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAlicloudNasFileSystemCpfs_basic(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_file_system.default"
+	checkoutSupportedRegions(t, true, connectivity.NASCPFSSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudNasFileSystem0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudNasFileSystem%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence4)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocol_type":    "cpfs",
+					"zone_id":          "${local.zone_id}",
+					"storage_type":     "advance_200",
+					"file_system_type": "cpfs",
+					"capacity":         "3600",
+					"vpc_id":           "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":       "${data.alicloud_vswitches.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocol_type":    CHECKSET,
+						"zone_id":          CHECKSET,
+						"storage_type":     "advance_200",
+						"file_system_type": "cpfs",
+						"capacity":         "3600",
+						"vpc_id":           CHECKSET,
+						"vswitch_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"vpc_id", "vswitch_id"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudNasFileSystemTags_basic(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasFileSystem0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudNasFileSystem%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence5)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.NasNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocol_type": "NFS",
+					"storage_type":  "Capacity",
+					"zone_id":       "${local.zone_id}",
+					"description":   name,
+					"tags": map[string]string{
+						"Created": "TF2",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocol_type": CHECKSET,
+						"storage_type":  "Capacity",
+						"zone_id":       CHECKSET,
+						"description":   name,
+						"tags.%":        "1",
+						"tags.Created":  "TF2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF1",
+						"For":     "Test1",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF1",
+						"tags.For":     "Test1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF2",
+						"For":     "Test2",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF2",
+						"tags.For":     "Test2",
 					}),
 				),
 			},
@@ -369,6 +502,12 @@ variable "name" {
 }
 
 data "alicloud_nas_zones" "default" {
+  file_system_type = "extreme"
+}
+
+locals {
+  count_size = length(data.alicloud_nas_zones.default.zones)
+  zone_id = data.alicloud_nas_zones.default.zones[local.count_size - 1].zone_id
 }
 `, name)
 }
@@ -385,6 +524,55 @@ resource "alicloud_kms_key" "key" {
 }
 
 data "alicloud_nas_zones" "default" {
+  file_system_type = "extreme"
+}
+
+locals {
+  count_size = length(data.alicloud_nas_zones.default.zones)
+  zone_id = data.alicloud_nas_zones.default.zones[local.count_size - 1].zone_id
+}
+`, name)
+}
+
+func AlicloudNasFileSystemBasicDependence4(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_nas_zones" "default" {
+  file_system_type = "cpfs"
+}
+
+locals {
+  count_size = length(data.alicloud_nas_zones.default.zones)
+  zone_id = data.alicloud_nas_zones.default.zones[local.count_size - 1].zone_id
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = local.zone_id
+}
+`, name)
+}
+
+func AlicloudNasFileSystemBasicDependence5(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_nas_zones" "default" {
+  file_system_type = "standard"
+}
+
+locals {
+  count_size = length(data.alicloud_nas_zones.default.zones)
+  zone_id = data.alicloud_nas_zones.default.zones[local.count_size - 1].zone_id
 }
 `, name)
 }
