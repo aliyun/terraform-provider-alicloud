@@ -158,6 +158,45 @@ func TestAccAlicloudEcsSecurityGroupRuleMulti(t *testing.T) {
 
 }
 
+func TestAccAlicloudEcsSecurityGroupRulePrefixList(t *testing.T) {
+	var v ecs.Permission
+	resourceId := "alicloud_security_group_rule.default"
+	ra := resourceAttrInit(resourceId, testAccCheckSecurityGroupRulePrefixList)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSecurityGroupRulePrefix,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "abc",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+
+}
+
 const testAccSecurityGroupRuleBasic = `
 variable "name" {
   default = "tf-testAccSecurityGroupRuleBasic"
@@ -186,6 +225,45 @@ resource "alicloud_security_group_rule" "default" {
   description = "abc"
 }
 `
+
+const testAccSecurityGroupRulePrefix = `
+variable "name" {
+  default = "tf-testAccSecurityGroupRuleBasic"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+
+resource "alicloud_security_group" "default" {
+  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
+  name = "${var.name}"
+}
+resource "alicloud_ecs_prefix_list" "default"{
+	address_family = "IPv4"
+	max_entries = 2
+	prefix_list_name = "tftest"
+	description = "description"
+	entry {
+		cidr = "192.168.0.0/24"
+		description = "description"
+	}
+}
+
+resource "alicloud_security_group_rule" "default" {
+  type = "ingress"
+  ip_protocol = "tcp"
+  prefix_list_id = "${alicloud_ecs_prefix_list.default.id}"
+  nic_type = "intranet"
+  policy = "accept"
+  port_range = "22/22"
+  priority = 100
+  security_group_id = "${alicloud_security_group.default.id}"
+  description = "abc"
+}
+`
+
 const testAccSecurityGroupRule_cidrIp = `
 
 variable "name" {
@@ -320,6 +398,16 @@ var testAccCheckSecurityGroupRuleBasicMap = map[string]string{
 	"security_group_id":        CHECKSET,
 	"source_security_group_id": CHECKSET,
 	"cidr_ip":                  "",
+}
+
+var testAccCheckSecurityGroupRulePrefixList = map[string]string{
+	"type":              "ingress",
+	"ip_protocol":       "tcp",
+	"nic_type":          "intranet",
+	"policy":            "accept",
+	"port_range":        "22/22",
+	"priority":          "100",
+	"security_group_id": CHECKSET,
 }
 
 func testAccCheckSecurityGroupRuleDestroy(s *terraform.State) error {
