@@ -1,4 +1,47 @@
 ## 1.152.0 (Unreleased)
+
+- **New Resource:** `alicloud_vpc_bgp_group` [GH-4465]
+- **New Resource:** `alicloud_ram_security_preference` [GH-4478]
+- **New Resource:** `alicloud_nas_snapshot` [GH-4483]
+- **New Resource:** `alicloud_hbr_replication_vault` [GH-4488]
+- **New Resource:** `alicloud_alidns_address_pool` [GH-4476]
+- **New Resource:** `alicloud_ecs_prefix_list` [GH-4492]
+- **New Data Source:** `alicloud_ecs_prefix_lists` [GH-4492]
+- **New Data Source:** `alicloud_alidns_address_pools` [GH-4476]	
+- **New Data Source:** `alicloud_hbr_replication_vault_regions` [GH-4488]
+- **New Data Source:** `alicloud_nas_snapshots` [GH-4483]	
+- **New Data Source:** `alicloud_vpc_bgp_groups` [GH-4465]
+
+ENHANCEMENTS:
+
+- resource/alicloud_security_group_rule: support updating prefix_list_id [GH-4496]
+- datasource/alicloud_alikafka_topics: Adds new attribute id status_name instance_id tags [GH-4494]
+- datasource/alicloud_alikafka_instances: Adds new attribute upgrade_service_detail_info tags domain_endpoint ssl_domain_endpoint sasl_domain_endpoint allowed_list [GH-4494]
+- datasource/alicloud_alikafka_consumer_groups: Adds new attribute id consumer_id instance_id remark tags [GH-4494]
+- datasource/alicloud_cloud_storage_gateway_storage_bundles: Adds two internal parameters page_number and page_size to support paging [GH-4490]
+- datasource/alicloud_cloud_storage_gateway_gateways: Adds two internal parameters page_number and page_size to support paging [GH-4493]
+- datasource/alicloud_nas_zones: Add support for field file_system_type [GH-4483]
+- testcase: Adds new unit test case for resource alicloud_ecs_dedicated_host_cluster alicloud_ecs_auto_snapshot_policy_attachment alicloud_ecs_command [GH-4482]
+- testcase: Adds new unit test case for resource alicloud_route_table alicloud_forward_entry alicloud_vpc_flow_log [GH-4481]	
+- docs/d/kvstore_connections: document optimization [GH-4486]
+- docs/r/actiontrail_history_delivery_job: document optimization [GH-4486]
+-	docs/r/actiontrail_trail: document optimization [GH-4486]
+- docs/r/db_backup_policy: document optimization [GH-4486]
+-	docs/r/kvstore_account: document optimization [GH-4486]
+- docs/r/kvstore_instance: document optimization [GH-4486]
+-	docs/r/slb_domain_extension: document optimization [GH-4486]
+- docs/r/slb_listener: document optimization [GH-4486]
+-	docs/r/slb_load_balancer: document optimization [GH-4486]
+-	docs/r/ssl_vpn_serverdocs/r/vpc_ipv6_egress_rule: document optimization [GH-4486]
+-	docs/r/vpn_connection: document optimization [GH-4486]
+- ci:checkout the ci account doc/resource_actiontrail_history_delivery_job: improve the document [GH-4473]
+
+BUG FIXES:
+
+- resource/alicloud_mhub_app: fixe the accessed issues in different regions [GH-4480]
+- resource/alicloud_mhub_product: fixe the accessed issues in different regions [GH-4480]
+- resource/alicloud_cs_kubernetes_node_pool: Fixed an issue where modifying node pool parameters would cause elastic scaling to be turned off [GH-4497]
+
 ## 1.151.0 (January 09, 2022)
 
 - **New Resource:** `alicloud_alidns_custom_line` ([#4456](https://github.com/aliyun/terraform-provider-alicloud/issues/4456))
