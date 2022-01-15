@@ -312,27 +312,26 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	setRenewalReq := map[string]interface{}{
 		"InstanceIDs": d.Id(),
 	}
+
 	if !d.IsNewResource() && d.HasChange("renewal_status") {
 		update = true
 	}
 	if v, ok := d.GetOk("renewal_status"); ok {
 		setRenewalReq["RenewalStatus"] = v
 	}
+	if !d.IsNewResource() && d.HasChange("renewal_duration") {
+		update = true
+	}
+	if v, ok := d.GetOk("renewal_duration"); ok {
+		setRenewalReq["RenewalPeriod"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("payment_type") {
 		update = true
 		setRenewalReq["SubscriptionType"] = d.Get("payment_type")
 	}
 	setRenewalReq["ProductCode"] = "ons"
 	setRenewalReq["ProductType"] = "ons_onsproxy_pre"
-	if !d.IsNewResource() && d.HasChange("renewal_duration") {
-		update = true
-		if v, ok := d.GetOk("renewal_duration"); ok {
-			setRenewalReq["RenewalPeriod"] = v
-		} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
-			return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_duration", "renewal_status", d.Get("renewal_status")))
-		}
-		setRenewalReq["RenewalStatus"] = d.Get("renewal_status")
-	}
 	if d.HasChange("renewal_duration_unit") {
 		update = true
 		if v, ok := d.GetOk("renewal_duration_unit"); ok {

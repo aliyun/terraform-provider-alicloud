@@ -72,8 +72,8 @@ func TestFieldCompatibilityCheck(t *testing.T) {
 	byt, _ := ioutil.ReadFile(*fileName)
 	diff, _ := diffparser.Parse(string(byt))
 	res := false
-	fileRegex := regexp.MustCompile("alicloud/resource[a-zA-Z_]*.go")
-	fileTestRegex := regexp.MustCompile("alicloud/resource[a-zA-Z_]*_test.go")
+	fileRegex := regexp.MustCompile("alicloud/resource[0-9a-zA-Z_]*.go")
+	fileTestRegex := regexp.MustCompile("alicloud/resource[0-9a-zA-Z_]*_test.go")
 	for _, file := range diff.Files {
 		if fileRegex.MatchString(file.NewName) {
 			if fileTestRegex.MatchString(file.NewName) {
@@ -226,7 +226,7 @@ func parseResource(resourceName string) (*Resource, error) {
 	attributeFieldRegex := regexp.MustCompile("^\\* `([a-zA-Z_0-9]*)`[ ]*-?(.*)")
 
 	name := filepath.Base(filePath)
-	re := regexp.MustCompile("[a-zA-Z_]*")
+	re := regexp.MustCompile("[a-z0-9A-Z_]*")
 	resourceName = "alicloud_" + re.FindString(name)
 	result := &Resource{Name: resourceName, Arguments: map[string]interface{}{}, Attributes: map[string]interface{}{}}
 	log.Infof("the resourceName = %s\n", resourceName)
