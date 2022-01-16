@@ -38,6 +38,7 @@ ENHANCEMENTS:
 - docs/r/ssl_vpn_serverdocs/r/vpc_ipv6_egress_rule: document optimization ([#4486](https://github.com/aliyun/terraform-provider-alicloud/issues/4486))
 - docs/r/vpn_connection: document optimization ([#4486](https://github.com/aliyun/terraform-provider-alicloud/issues/4486))
 - client: adds a compatibile endpoint for adb service ([#4502](https://github.com/aliyun/terraform-provider-alicloud/issues/4502))
+- common: adds missing importing package and format the code ([#4503](https://github.com/aliyun/terraform-provider-alicloud/issues/4503))
 - ci:checkout the ci account doc/resource_actiontrail_history_delivery_job: improve the document ([#4473](https://github.com/aliyun/terraform-provider-alicloud/issues/4473))
 
 BUG FIXES:
