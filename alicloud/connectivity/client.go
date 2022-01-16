@@ -1789,6 +1789,9 @@ func (client *AliyunClient) NewAdbClient() (*rpc.Client, error) {
 	productCode := "ads"
 	endpoint := ""
 	if client.config.Endpoints[productCode] == nil {
+		if v := client.config.AdbEndpoint; v != "" {
+			client.config.Endpoints[productCode] = v
+		}
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
