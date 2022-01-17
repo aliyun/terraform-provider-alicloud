@@ -75,6 +75,14 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"cross_region_replication": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"transfer_acceleration": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 
 						"cors_rules": {
 							Type:     schema.TypeList,
@@ -203,6 +211,68 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 							},
 						},
 
+						"replication_rule": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"prefix_set": {
+										Type:     schema.TypeSet,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"prefixes": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem:     &schema.Schema{Type: schema.TypeString},
+												},
+											},
+										},
+									},
+									"action": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"destination": {
+										Type:     schema.TypeSet,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"bucket": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"location": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"transfer_type": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+											},
+										},
+									},
+									"historical_object_replication": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"sync_role": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+
 						"policy": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -286,16 +356,12 @@ func dataSourceAlicloudOssBucketsRead(d *schema.ResourceData, meta interface{}) 
 	var filteredBucketsTemp []oss.BucketProperties
 	nameRegex, ok := d.GetOk("name_regex")
 	if ok && nameRegex.(string) != "" {
-		var ossBucketNameRegex *regexp.Regexp
+		var r *regexp.Regexp
 		if nameRegex != "" {
-			r, err := regexp.Compile(nameRegex.(string))
-			if err != nil {
-				return WrapError(err)
-			}
-			ossBucketNameRegex = r
+			r = regexp.MustCompile(nameRegex.(string))
 		}
 		for _, bucket := range allBuckets {
-			if ossBucketNameRegex != nil && !ossBucketNameRegex.MatchString(bucket.Name) {
+			if r != nil && !r.MatchString(bucket.Name) {
 				continue
 			}
 			filteredBucketsTemp = append(filteredBucketsTemp, bucket)
@@ -336,6 +402,8 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			mapping["intranet_endpoint"] = response.BucketInfo.IntranetEndpoint
 			mapping["owner"] = response.BucketInfo.Owner.ID
 			mapping["redundancy_type"] = response.BucketInfo.RedundancyType
+			mapping["cross_region_replication"] = response.BucketInfo.CrossRegionReplication
+			mapping["transfer_acceleration"] = response.BucketInfo.TransferAcceleration
 
 			//Add ServerSideEncryption information
 			var sseconfig []map[string]interface{}
@@ -502,6 +570,52 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			log.Printf("[WARN] Unable to get lifecycle information for the bucket %s: %v", bucket.Name, err)
 		}
 		mapping["lifecycle_rule"] = lifecycleRuleMappings
+
+		// Add replication information
+		var replicationRuleMappings []map[string]interface{}
+		replicationRuleMapping := make(map[string]interface{})
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			requestInfo = ossClient
+			return ossClient.GetBucketReplication(bucket.Name)
+		})
+		if err == nil {
+			if debugOn() {
+				addDebug("GetBucketReplication", raw, requestInfo, map[string]string{"bucketName": bucket.Name})
+			}
+			replication, _ := raw.(oss.GetBucketReplicationResult)
+
+			replicationRuleMapping["id"] = replication.Rule.ID
+			replicationRuleMapping["action"] = replication.Rule.Action
+			replicationRuleMapping["status"] = replication.Rule.Status
+			replicationRuleMapping["historical_object_replication"] = replication.Rule.HistoricalObjectReplication
+			replicationRuleMapping["sync_role"] = replication.Rule.SyncRole
+
+			// Destination
+			destinationMapping := make(map[string]interface{})
+			if replication.Rule.Destination.Bucket != "" {
+				destinationMapping["bucket"] = replication.Rule.Destination.Bucket
+			}
+			if replication.Rule.Destination.Location != "" {
+				destinationMapping["location"] = replication.Rule.Destination.Location
+			}
+			if replication.Rule.Destination.TransferType != "" {
+				destinationMapping["transfer_type"] = replication.Rule.Destination.TransferType
+			}
+			replicationRuleMapping["destination"] = []map[string]interface{}{destinationMapping}
+
+			// PrefixSet
+			prefixSetMapping := make(map[string]interface{})
+			if replication.Rule.PrefixSet != nil && len(replication.Rule.PrefixSet.Prefix) != 0 {
+				prefixSetMapping["prefixes"] = replication.Rule.PrefixSet.Prefix
+			}
+			replicationRuleMapping["prefix_set"] = []map[string]interface{}{prefixSetMapping}
+
+			replicationRuleMappings = append(replicationRuleMappings, replicationRuleMapping)
+		} else {
+			log.Printf("[WARN] Unable to get replication information for the bucket %s: %v", bucket.Name, err)
+		}
+
+		mapping["replication_rule"] = replicationRuleMappings
 
 		// Add policy information
 		var policy string

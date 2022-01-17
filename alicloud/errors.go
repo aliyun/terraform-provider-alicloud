@@ -1,10 +1,7 @@
 package alicloud
 
 import (
-	"regexp"
 	"strings"
-
-	"github.com/alibabacloud-go/tea/tea"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 
@@ -22,32 +19,34 @@ import (
 
 const (
 	// common
-	NotFound                = "NotFound"
-	ResourceNotfound        = "ResourceNotfound"
-	ServiceUnavailable      = "ServiceUnavailable"
-	InstanceNotFound        = "Instance.Notfound"
-	ForbiddenInstance       = "Forbidden.InstanceNotFound"
-	MessageInstanceNotFound = "instance is not found"
-	Throttling              = "Throttling"
-	ThrottlingUser          = "Throttling.User"
+	NotFound                       = "NotFound"
+	ResourceNotfound               = "ResourceNotfound"
+	ServiceUnavailable             = "ServiceUnavailable"
+	InstanceNotFound               = "Instance.Notfound"
+	MessageInstanceNotFound        = "instance is not found"
+	Throttling                     = "Throttling"
+	ThrottlingUser                 = "Throttling.User"
+	NoSuchBucket                   = "NoSuchBucket"
+	AccessDenied                   = "AccessDenied"
+	NoSuchReplicationConfiguration = "NoSuchReplicationConfiguration"
+	BucketAlreadyExists            = "BucketAlreadyExists"
 
 	// RAM Instance Not Found
 	RamInstanceNotFound   = "Forbidden.InstanceNotFound"
 	AliyunGoClientFailure = "AliyunGoClientFailure"
 
 	LogClientTimeout = "Client.Timeout exceeded while awaiting headers"
-
-	InvalidFileSystemStatus_Ordering = "InvalidFileSystemStatus.Ordering"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
 var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotFound"}
 var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", "InternalError", "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
-var OperationDeniedDBStatus = []string{"InstanceConnectTimeoutFault", "OperationDenied.DBStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBClusterStatus", "InternalError", "OperationDenied.OutofUsage", "IncorrectDBInstanceState"}
+var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBClusterStatus", "InternalError", "OperationDenied.OutofUsage"}
 var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatus", "OperationDenied.MasterDBInstanceState", "ReadDBInstance.Mismatch"}
 var NasNotFound = []string{"InvalidMountTarget.NotFound", "InvalidFileSystem.NotFound", "Forbidden.NasNotFound", "InvalidLBid.NotFound", "VolumeUnavailable"}
 var SnapshotInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
+var SnapshotPolicyInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
 var DiskNotSupportOnlineChangeErrors = []string{"InvalidDiskCategory.NotSupported", "InvalidRegion.NotSupport", "IncorrectInstanceStatus", "IncorrectDiskStatus", "InvalidOperation.InstanceTypeNotSupport"}
 
 // details at: https://help.aliyun.com/document_detail/27300.html
@@ -82,6 +81,7 @@ func NotFoundError(err error) bool {
 	if err == nil {
 		return false
 	}
+
 	if e, ok := err.(*ComplexError); ok {
 		if e.Err != nil && strings.HasPrefix(e.Err.Error(), ResourceNotfound) {
 			return true
@@ -107,7 +107,90 @@ func NotFoundError(err error) bool {
 	if e, ok := err.(oss.ServiceError); ok {
 		return e.StatusCode == 404 || strings.HasPrefix(e.Code, "NoSuch") || strings.HasPrefix(e.Message, "No Row found")
 	}
+	return false
+}
 
+func NoSuchBucketError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(*ComplexError); ok {
+		if e.Err != nil && strings.HasPrefix(e.Err.Error(), NoSuchBucket) {
+			return true
+		}
+		return NoSuchBucketError(e.Cause)
+	}
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(oss.ServiceError); ok {
+		return e.StatusCode == 404 && strings.HasPrefix(e.Code, NoSuchBucket) && strings.HasSuffix(e.Message, "bucket does not exist.")
+	}
+	return false
+}
+
+func NoSuchReplicationConfigurationError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(*ComplexError); ok {
+		if e.Err != nil && strings.HasPrefix(e.Err.Error(), NoSuchReplicationConfiguration) {
+			return true
+		}
+		return NoSuchReplicationConfigurationError(e.Cause)
+	}
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(oss.ServiceError); ok {
+		return e.StatusCode == 404 && strings.HasPrefix(e.Code, NoSuchReplicationConfiguration) && strings.HasSuffix(e.Message, "does not have replication configuration")
+	}
+	return false
+}
+
+func AccessDeniedError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(*ComplexError); ok {
+		if e.Err != nil && strings.Contains(e.Err.Error(), AccessDenied) {
+			return true
+		}
+		return AccessDeniedError(e.Cause)
+	}
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(oss.ServiceError); ok {
+		return e.StatusCode == 403 && strings.HasPrefix(e.Code, AccessDenied) && strings.HasSuffix(e.Message, "does not belong to you.")
+	}
+	return false
+}
+
+func BucketAlreadyExistsError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(*ComplexError); ok {
+		if e.Err != nil && strings.Contains(e.Err.Error(), BucketAlreadyExists) {
+			return true
+		}
+		return BucketAlreadyExistsError(e.Cause)
+	}
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(oss.ServiceError); ok {
+		return e.StatusCode == 409 && strings.HasPrefix(e.Code, BucketAlreadyExists) && strings.HasSuffix(e.Message, "select a different name and try again.")
+	}
 	return false
 }
 
@@ -119,14 +202,7 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 	if e, ok := err.(*ComplexError); ok {
 		return IsExpectedErrors(e.Cause, expectCodes)
 	}
-
-	if e, ok := err.(*tea.SDKError); ok {
-		for _, code := range expectCodes {
-			// The second statement aims to match the tea sdk history bug
-			if *e.Code == code || strings.HasPrefix(code, *e.Code) || strings.Contains(*e.Data, code) {
-				return true
-			}
-		}
+	if err == nil {
 		return false
 	}
 
@@ -184,7 +260,7 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 		return false
 	}
 
-	if e, ok := err.(*datahub.DatahubClientError); ok {
+	if e, ok := err.(datahub.DatahubError); ok {
 		for _, code := range expectCodes {
 			if e.Code == code || strings.Contains(e.Message, code) {
 				return true
@@ -195,51 +271,6 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 
 	for _, code := range expectCodes {
 		if strings.Contains(err.Error(), code) {
-			return true
-		}
-	}
-	return false
-}
-
-func NeedRetry(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	postRegex := regexp.MustCompile("^Post [\"]*https://.*")
-	if postRegex.MatchString(err.Error()) {
-		return true
-	}
-
-	throttlingRegex := regexp.MustCompile("^Throttling.*")
-	codeRegex := regexp.MustCompile("^code: 5[\\d]{2}")
-
-	if e, ok := err.(*tea.SDKError); ok {
-		if strings.Contains(*e.Message, "code: 500, 您已开通过") {
-			return false
-		}
-		if *e.Code == ServiceUnavailable || *e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(*e.Code) || codeRegex.MatchString(*e.Message) {
-			return true
-		}
-	}
-
-	if e, ok := err.(*errors.ServerError); ok {
-		return e.ErrorCode() == ServiceUnavailable || e.ErrorCode() == "Rejected.Throttling" || throttlingRegex.MatchString(e.ErrorCode()) || codeRegex.MatchString(e.Message())
-	}
-
-	if e, ok := err.(*common.Error); ok {
-		return e.Code == ServiceUnavailable || e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(e.Code) || codeRegex.MatchString(e.Message)
-	}
-
-	return false
-}
-
-func IsExpectedErrorCodes(code string, errorCodes []string) bool {
-	if code == "" {
-		return false
-	}
-	for _, v := range errorCodes {
-		if v == code {
 			return true
 		}
 	}
@@ -314,9 +345,9 @@ func (e ComplexError) Error() string {
 		e.Cause = Error("<nil cause>")
 	}
 	if e.Err == nil {
-		return fmt.Sprintf("\u001B[31m[ERROR]\u001B[0m %s:%d:\n%s", e.Path, e.Line, e.Cause.Error())
+		return fmt.Sprintf("[ERROR] %s:%d:\n%s", e.Path, e.Line, e.Cause.Error())
 	}
-	return fmt.Sprintf("\u001B[31m[ERROR]\u001B[0m %s:%d: %s:\n%s", e.Path, e.Line, e.Err.Error(), e.Cause.Error())
+	return fmt.Sprintf("[ERROR] %s:%d: %s:\n%s", e.Path, e.Line, e.Err.Error(), e.Cause.Error())
 }
 
 func Error(msg string, args ...interface{}) error {
@@ -330,7 +361,7 @@ func WrapError(cause error) error {
 	}
 	_, filepath, line, ok := runtime.Caller(1)
 	if !ok {
-		log.Printf("\u001B[31m[ERROR]\u001B[0m runtime.Caller error in WrapError.")
+		log.Printf("[ERROR] runtime.Caller error in WrapError.")
 		return WrapComplexError(cause, nil, "", -1)
 	}
 	parts := strings.Split(filepath, "/")
@@ -347,7 +378,7 @@ func WrapErrorf(cause error, msg string, args ...interface{}) error {
 	}
 	_, filepath, line, ok := runtime.Caller(1)
 	if !ok {
-		log.Printf("\u001B[31m[ERROR]\u001B[0m runtime.Caller error in WrapErrorf.")
+		log.Printf("[ERROR] runtime.Caller error in WrapErrorf.")
 		return WrapComplexError(cause, Error(msg), "", -1)
 	}
 	parts := strings.Split(filepath, "/")
@@ -372,20 +403,14 @@ func WrapComplexError(cause, err error, filepath string, fileline int) error {
 
 // A default message of ComplexError's Err. It is format to Resource <resource-id> <operation> Failed!!! <error source>
 const DefaultErrorMsg = "Resource %s %s Failed!!! %s"
-const ResponseCodeMsg = "Resource %s %s Failed!!! %v"
 const RequestIdMsg = "RequestId: %s"
 const NotFoundMsg = ResourceNotfound + "!!! %s"
-const NotFoundWithResponse = ResourceNotfound + "!!! Response: %v"
 const DefaultTimeoutMsg = "Resource %s %s Timeout!!! %s"
 const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"
 const WaitTimeoutMsg = "Resource %s %s Timeout In %d Seconds. Got: %s Expected: %s !!! %s"
 const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"
-const SweepDefaultErrorMsg = "Sweep %s %s Failed!!!"
 const IdMsg = "Resource id：%s "
-const FailedGetAttributeMsg = "Getting resource %s attribute by path %s failed!!! Body: %v."
 
 const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n\n"
 const FailedToReachTargetStatus = "Failed to reach target status. Current status is %s."
-const FailedToReachTargetStatusWithResponse = FailedToReachTargetStatus + " Response: %s"
 const FailedToReachTargetAttribute = "Failed to reach value for target attribute. Current value is %s."
-const RequiredWhenMsg = "attribute '%s' is required when '%s' is %v"

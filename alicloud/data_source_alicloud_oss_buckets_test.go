@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -25,17 +26,19 @@ func TestAccAlicloudOssBucketsDataSource_basic(t *testing.T) {
 	}
 	var existOssBucketsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"buckets.#":                   "1",
-			"names.#":                     "1",
-			"buckets.0.name":              fmt.Sprintf("tf-testacc-bucket-%d-default", rand),
-			"buckets.0.acl":               "public-read",
-			"buckets.0.extranet_endpoint": CHECKSET,
-			"buckets.0.intranet_endpoint": CHECKSET,
-			"buckets.0.location":          CHECKSET,
-			"buckets.0.owner":             CHECKSET,
-			"buckets.0.storage_class":     "Standard",
-			"buckets.0.redundancy_type":   "LRS",
-			"buckets.0.creation_date":     CHECKSET,
+			"buckets.#":                          "1",
+			"names.#":                            "1",
+			"buckets.0.name":                     fmt.Sprintf("tf-testacc-bucket-%d-default", rand),
+			"buckets.0.acl":                      "public-read",
+			"buckets.0.extranet_endpoint":        CHECKSET,
+			"buckets.0.intranet_endpoint":        CHECKSET,
+			"buckets.0.location":                 CHECKSET,
+			"buckets.0.owner":                    CHECKSET,
+			"buckets.0.storage_class":            "Standard",
+			"buckets.0.redundancy_type":          "LRS",
+			"buckets.0.creation_date":            CHECKSET,
+			"buckets.0.cross_region_replication": CHECKSET,
+			"buckets.0.transfer_acceleration":    CHECKSET,
 
 			"buckets.0.cors_rules.#":                   "2",
 			"buckets.0.cors_rules.0.allowed_headers.#": "1",
@@ -86,6 +89,18 @@ func TestAccAlicloudOssBucketsDataSource_basic(t *testing.T) {
 
 			"buckets.0.tags.key1": "value1",
 			"buckets.0.tags.key2": "value2",
+
+			"buckets.0.replication_rule.#":                               "1",
+			"buckets.0.replication_rule.0.prefix_set.#":                  "1",
+			"buckets.0.replication_rule.0.prefix_set.0.prefixes.#":       "2",
+			"buckets.0.replication_rule.0.prefix_set.0.prefixes.0":       "xx/",
+			"buckets.0.replication_rule.0.prefix_set.0.prefixes.1":       "test/",
+			"buckets.0.replication_rule.0.destination.#":                 "1",
+			"buckets.0.replication_rule.0.destination.0.bucket":          fmt.Sprintf("tf-testacc-bucket-%d-target", rand),
+			"buckets.0.replication_rule.0.destination.0.location":        "oss-cn-beijing",
+			"buckets.0.replication_rule.0.destination.0.transfer_type":   "oss_acc",
+			"buckets.0.replication_rule.0.action":                        "PUT",
+			"buckets.0.replication_rule.0.historical_object_replication": "enabled",
 		}
 	}
 
@@ -123,17 +138,19 @@ func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
 	}
 	var existOssBucketsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"buckets.#":                   "1",
-			"names.#":                     "1",
-			"buckets.0.name":              fmt.Sprintf("tf-testacc-bucket-%d-default", rand),
-			"buckets.0.acl":               "public-read",
-			"buckets.0.extranet_endpoint": CHECKSET,
-			"buckets.0.intranet_endpoint": CHECKSET,
-			"buckets.0.location":          CHECKSET,
-			"buckets.0.owner":             CHECKSET,
-			"buckets.0.storage_class":     "Standard",
-			"buckets.0.redundancy_type":   "LRS",
-			"buckets.0.creation_date":     CHECKSET,
+			"buckets.#":                          "1",
+			"names.#":                            "1",
+			"buckets.0.name":                     fmt.Sprintf("tf-testacc-bucket-%d-default", rand),
+			"buckets.0.acl":                      "public-read",
+			"buckets.0.extranet_endpoint":        CHECKSET,
+			"buckets.0.intranet_endpoint":        CHECKSET,
+			"buckets.0.location":                 CHECKSET,
+			"buckets.0.owner":                    CHECKSET,
+			"buckets.0.storage_class":            "Standard",
+			"buckets.0.redundancy_type":          "LRS",
+			"buckets.0.creation_date":            CHECKSET,
+			"buckets.0.cross_region_replication": CHECKSET,
+			"buckets.0.transfer_acceleration":    CHECKSET,
 
 			"buckets.0.server_side_encryption_rule.0.sse_algorithm": "AES256",
 		}
@@ -152,7 +169,7 @@ func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
 		fakeMapFunc:  fakeOssBucketsMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.OssSseSupportedRegions)
 	}
 	ossBucketsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
@@ -175,16 +192,18 @@ func TestAccAlicloudOssBucketsDataSource_sserule_with_kmsid(t *testing.T) {
 	}
 	var existOssBucketsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"buckets.#":                   "1",
-			"names.#":                     "1",
-			"buckets.0.name":              fmt.Sprintf("tf-testacc-bucket-%d-default", rand),
-			"buckets.0.acl":               "public-read",
-			"buckets.0.extranet_endpoint": CHECKSET,
-			"buckets.0.intranet_endpoint": CHECKSET,
-			"buckets.0.location":          CHECKSET,
-			"buckets.0.owner":             CHECKSET,
-			"buckets.0.storage_class":     "Standard",
-			"buckets.0.creation_date":     CHECKSET,
+			"buckets.#":                          "1",
+			"names.#":                            "1",
+			"buckets.0.name":                     fmt.Sprintf("tf-testacc-bucket-%d-default", rand),
+			"buckets.0.acl":                      "public-read",
+			"buckets.0.extranet_endpoint":        CHECKSET,
+			"buckets.0.intranet_endpoint":        CHECKSET,
+			"buckets.0.location":                 CHECKSET,
+			"buckets.0.owner":                    CHECKSET,
+			"buckets.0.storage_class":            "Standard",
+			"buckets.0.creation_date":            CHECKSET,
+			"buckets.0.cross_region_replication": CHECKSET,
+			"buckets.0.transfer_acceleration":    CHECKSET,
 
 			"buckets.0.server_side_encryption_rule.0.sse_algorithm":     "KMS",
 			"buckets.0.server_side_encryption_rule.0.kms_master_key_id": "kms-id",
@@ -204,7 +223,7 @@ func TestAccAlicloudOssBucketsDataSource_sserule_with_kmsid(t *testing.T) {
 		fakeMapFunc:  fakeOssBucketsMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.OssSseSupportedRegions)
 	}
 	ossBucketsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
@@ -227,17 +246,19 @@ func TestAccAlicloudOssBucketsDataSource_versioning(t *testing.T) {
 	}
 	var existOssBucketsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"buckets.#":                   "1",
-			"names.#":                     "1",
-			"buckets.0.name":              fmt.Sprintf("tf-testacc-bucket-%d-default", rand),
-			"buckets.0.acl":               "public-read",
-			"buckets.0.extranet_endpoint": CHECKSET,
-			"buckets.0.intranet_endpoint": CHECKSET,
-			"buckets.0.location":          CHECKSET,
-			"buckets.0.owner":             CHECKSET,
-			"buckets.0.storage_class":     "Standard",
-			"buckets.0.redundancy_type":   "LRS",
-			"buckets.0.creation_date":     CHECKSET,
+			"buckets.#":                          "1",
+			"names.#":                            "1",
+			"buckets.0.name":                     fmt.Sprintf("tf-testacc-bucket-%d-default", rand),
+			"buckets.0.acl":                      "public-read",
+			"buckets.0.extranet_endpoint":        CHECKSET,
+			"buckets.0.intranet_endpoint":        CHECKSET,
+			"buckets.0.location":                 CHECKSET,
+			"buckets.0.owner":                    CHECKSET,
+			"buckets.0.storage_class":            "Standard",
+			"buckets.0.redundancy_type":          "LRS",
+			"buckets.0.creation_date":            CHECKSET,
+			"buckets.0.cross_region_replication": CHECKSET,
+			"buckets.0.transfer_acceleration":    CHECKSET,
 
 			"buckets.0.versioning.0.status": "Enabled",
 		}
@@ -256,7 +277,7 @@ func TestAccAlicloudOssBucketsDataSource_versioning(t *testing.T) {
 		fakeMapFunc:  fakeOssBucketsMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
 	}
 	ossBucketsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
@@ -324,6 +345,18 @@ resource "alicloud_oss_bucket" "default" {
 		key1 = "value1",
 		key2 = "value2",
 	}
+    replication_rule {
+        prefix_set {
+            prefixes = ["xx/", "test/"]
+        }
+        destination {
+            bucket = "${alicloud_oss_bucket.target.id}"
+            location = "oss-cn-beijing"
+            transfer_type = "oss_acc"
+        }
+        action = "PUT"
+        historical_object_replication = "enabled"
+    }
 }
 
 `, name)
