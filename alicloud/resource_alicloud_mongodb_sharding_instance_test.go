@@ -170,7 +170,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 						"mongo_list.#":                   "2",
 						"mongo_list.0.node_class":        "dds.mongos.mid",
 						"mongo_list.1.node_class":        "dds.mongos.mid",
-						"name":                           "",
+						"name":                           "tf-testaccMongoDBShardingInstance_classic_base",
 						"storage_engine":                 "WiredTiger",
 						"instance_charge_type":           "PostPaid",
 						"tags.%":                         "0",
@@ -284,6 +284,7 @@ func TestAccAlicloudMongoDBShardingInstance_transform_charge_type(t *testing.T) 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
+			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -305,7 +306,7 @@ func TestAccAlicloudMongoDBShardingInstance_transform_charge_type(t *testing.T) 
 						"mongo_list.#":                   "2",
 						"mongo_list.0.node_class":        "dds.mongos.mid",
 						"mongo_list.1.node_class":        "dds.mongos.mid",
-						"name":                           "",
+						"name":                           "tf-testaccMongoDBShardingInstance_classic_base",
 						"storage_engine":                 "WiredTiger",
 						"instance_charge_type":           "PostPaid",
 						"tags.%":                         "0",
@@ -329,7 +330,7 @@ func TestAccAlicloudMongoDBShardingInstance_transform_charge_type(t *testing.T) 
 						"mongo_list.#":                   "2",
 						"mongo_list.0.node_class":        "dds.mongos.mid",
 						"mongo_list.1.node_class":        "dds.mongos.mid",
-						"name":                           "",
+						"name":                           "tf-testaccMongoDBShardingInstance_classic_transform_to_prepaid",
 						"storage_engine":                 "WiredTiger",
 						"instance_charge_type":           "PrePaid",
 						"tags.%":                         "0",
@@ -374,7 +375,7 @@ func TestAccAlicloudMongoDBShardingInstance_classicVersion4(t *testing.T) {
 						"mongo_list.#":              "2",
 						"mongo_list.0.node_class":   "dds.mongos.mid",
 						"mongo_list.1.node_class":   "dds.mongos.mid",
-						"name":                      "",
+						"name":                      "tf-testaccMongoDBShardingInstance_classic_base4",
 						"storage_engine":            "WiredTiger",
 						"instance_charge_type":      "PostPaid",
 					}),
@@ -440,7 +441,7 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 						"mongo_list.#":                   "2",
 						"mongo_list.0.node_class":        "dds.mongos.mid",
 						"mongo_list.1.node_class":        "dds.mongos.mid",
-						"name":                           "",
+						"name":                           "tf-testAccMongoDBShardingInstance_vpc",
 						"storage_engine":                 "WiredTiger",
 						"instance_charge_type":           "PostPaid",
 					}),
@@ -557,7 +558,7 @@ func TestAccAlicloudMongoDBShardingInstance_multi_instance(t *testing.T) {
 						"mongo_list.#":              "2",
 						"mongo_list.0.node_class":   "dds.mongos.mid",
 						"mongo_list.1.node_class":   "dds.mongos.mid",
-						"name":                      "",
+						"name":                      "tf-testAccMongoDBShardingInstance_multi_instance",
 						"storage_engine":            "WiredTiger",
 						"instance_charge_type":      "PostPaid",
 					}),
@@ -638,6 +639,7 @@ data "alicloud_mongodb_zones" "default" {}
 resource "alicloud_mongodb_sharding_instance" "default" {
   zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
   engine_version = "3.4"
+  name = "tf-testaccMongoDBShardingInstance_classic_base"
   shard_list {
     node_class   = "dds.shard.mid"
     node_storage = 10
@@ -661,6 +663,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
   auto_renew 		  = "false"
   instance_charge_type = "PrePaid"
   engine_version = "3.4"
+  name = "tf-testaccMongoDBShardingInstance_classic_transform_to_prepaid"
   shard_list {
     node_class   = "dds.shard.mid"
     node_storage = 10
@@ -683,6 +686,7 @@ data "alicloud_mongodb_zones" "default" {}
 resource "alicloud_mongodb_sharding_instance" "default" {
   zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
   engine_version = "4.0"
+  name = "tf-testaccMongoDBShardingInstance_classic_base4"
   shard_list {
     node_class   = "dds.shard.mid"
     node_storage = 10
@@ -967,6 +971,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
   vswitch_id     = data.alicloud_vswitches.default.ids.0
   zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
   engine_version = "3.4"
+  name = var.name
   shard_list {
     node_class   = "dds.shard.mid"
     node_storage = 10
@@ -1235,6 +1240,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
   count          = 3
   zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
   engine_version = "3.4"
+  name = var.name
   shard_list {
     node_class   = "dds.shard.mid"
     node_storage = 10
