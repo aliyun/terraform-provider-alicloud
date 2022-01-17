@@ -26,7 +26,6 @@ const (
 	storageClass       = "storage-class"
 	responseHeader     = "x-response-header"
 	redundancyType     = "redundancy-type"
-	objectHashFunc     = "object-hash-func"
 )
 
 type (
@@ -291,22 +290,6 @@ func RangeBehavior(value string) Option {
 	return setHeader(HTTPHeaderOssRangeBehavior, value)
 }
 
-func PartHashCtxHeader(value string) Option {
-	return setHeader(HTTPHeaderOssHashCtx, value)
-}
-
-func PartMd5CtxHeader(value string) Option {
-	return setHeader(HTTPHeaderOssMd5Ctx, value)
-}
-
-func PartHashCtxParam(value string) Option {
-	return addParam("x-oss-hash-ctx", value)
-}
-
-func PartMd5CtxParam(value string) Option {
-	return addParam("x-oss-md5-ctx", value)
-}
-
 // Delimiter is an option to set delimiler parameter
 func Delimiter(value string) Option {
 	return addParam("delimiter", value)
@@ -382,50 +365,9 @@ func Sequential() Option {
 	return addParam("sequential", "")
 }
 
-// WithHashContext is an option to set withHashContext parameter for InitiateMultipartUpload
-func WithHashContext() Option {
-	return addParam("withHashContext", "")
-}
-
-// EnableMd5 is an option to set x-oss-enable-md5 parameter for InitiateMultipartUpload
-func EnableMd5() Option {
-	return addParam("x-oss-enable-md5", "")
-}
-
-// EnableSha1 is an option to set x-oss-enable-sha1 parameter for InitiateMultipartUpload
-func EnableSha1() Option {
-	return addParam("x-oss-enable-sha1", "")
-}
-
-// EnableSha256 is an option to set x-oss-enable-sha256 parameter for InitiateMultipartUpload
-func EnableSha256() Option {
-	return addParam("x-oss-enable-sha256", "")
-}
-
-// ListType is an option to set List-type parameter for ListObjectsV2
-func ListType(value int) Option {
-	return addParam("list-type", strconv.Itoa(value))
-}
-
-// StartAfter is an option to set start-after parameter for ListObjectsV2
-func StartAfter(value string) Option {
-	return addParam("start-after", value)
-}
-
-// ContinuationToken is an option to set Continuation-token parameter for ListObjectsV2
-func ContinuationToken(value string) Option {
-	if value == "" {
-		return addParam("continuation-token", nil)
-	}
-	return addParam("continuation-token", value)
-}
-
-// FetchOwner is an option to set Fetch-owner parameter for ListObjectsV2
-func FetchOwner(value bool) Option {
-	if value {
-		return addParam("fetch-owner", "true")
-	}
-	return addParam("fetch-owner", "false")
+// RuleId is an option to get replication progress
+func RuleId(value string) Option {
+	return addParam("rule-id", value)
 }
 
 // DeleteObjectsQuiet false:DeleteObjects in verbose mode; true:DeleteObjects in quite mode. Default is false.
@@ -441,11 +383,6 @@ func StorageClass(value StorageClassType) Option {
 // RedundancyType bucket data redundancy type
 func RedundancyType(value DataRedundancyType) Option {
 	return addArg(redundancyType, value)
-}
-
-// RedundancyType bucket data redundancy type
-func ObjectHashFunc(value ObjecthashFuncType) Option {
-	return addArg(objectHashFunc, value)
 }
 
 // Checkpoint configuration
