@@ -2,6 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"reflect"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
@@ -10,13 +18,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/stretchr/testify/assert"
-	"log"
-	"os"
-	"reflect"
-	"strconv"
-	"strings"
-	"testing"
-	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
