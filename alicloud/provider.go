@@ -654,6 +654,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nas_filesets":                                dataSourceAlicloudNasFilesets(),
 			"alicloud_cdn_ip_info":                                 dataSourceAlicloudCdnIpInfo(),
 			"alicloud_nas_auto_snapshot_policies":                  dataSourceAlicloudNasAutoSnapshotPolicies(),
+			"alicloud_nas_lifecycle_policies":                      dataSourceAlicloudNasLifecyclePolicies(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1192,6 +1193,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_bgp_peer":                                         resourceAlicloudVpcBgpPeer(),
 			"alicloud_nas_fileset":                                          resourceAlicloudNasFileset(),
 			"alicloud_nas_auto_snapshot_policy":                             resourceAlicloudNasAutoSnapshotPolicy(),
+			"alicloud_nas_lifecycle_policy":                                 resourceAlicloudNasLifecyclePolicy(),
 		},
 
 		ConfigureFunc: providerConfigure,
