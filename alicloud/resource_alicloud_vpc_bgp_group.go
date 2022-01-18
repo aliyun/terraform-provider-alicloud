@@ -151,6 +151,10 @@ func resourceAlicloudVpcBgpGroupRead(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudVpcBgpGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -190,10 +194,6 @@ func resourceAlicloudVpcBgpGroupUpdate(d *schema.ResourceData, meta interface{})
 			request["IsFakeAsn"] = v
 		}
 		action := "ModifyBgpGroupAttribute"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
