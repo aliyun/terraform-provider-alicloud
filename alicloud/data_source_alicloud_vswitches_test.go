@@ -49,6 +49,20 @@ func TestAccAlicloudVpcVSwitchesDataSourceBasic(t *testing.T) {
 			"cidr_block": `"172.16.0.0/23"`,
 		}),
 	}
+
+	ipv6CidrBlockConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudVSwitchesDataSourceConfig(rand, map[string]string{
+			"name_regex":      `"${alicloud_vswitch.default.vswitch_name}"`,
+			"cidr_block":      `"172.16.0.0/24"`,
+			"ipv6_cidr_block": "1",
+		}),
+		fakeConfig: testAccCheckAlicloudVSwitchesDataSourceConfig(rand, map[string]string{
+			"name_regex":      `"${alicloud_vswitch.default.vswitch_name}"`,
+			"cidr_block":      `"172.16.0.0/24"`,
+			"ipv6_cidr_block": "0",
+		}),
+	}
+
 	idDefaultConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVSwitchesDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_vswitch.default.vswitch_name}"`,
@@ -115,6 +129,7 @@ func TestAccAlicloudVpcVSwitchesDataSourceBasic(t *testing.T) {
 			"name_regex":        `"${alicloud_vswitch.default.vswitch_name}"`,
 			"ids":               `[ "${alicloud_vswitch.default.id}" ]`,
 			"cidr_block":        `"172.16.0.0/24"`,
+			"ipv6_cidr_block":   "1",
 			"is_default":        `"false"`,
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"zone_id":           `"${data.alicloud_zones.default.zones.0.id}"`,
@@ -125,6 +140,7 @@ func TestAccAlicloudVpcVSwitchesDataSourceBasic(t *testing.T) {
 			"name_regex":        `"${alicloud_vswitch.default.vswitch_name}"`,
 			"ids":               `[ "${alicloud_vswitch.default.id}" ]`,
 			"cidr_block":        `"172.16.0.0/24"`,
+			"ipv6_cidr_block":   "1",
 			"is_default":        `"false"`,
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"zone_id":           `"${data.alicloud_zones.default.zones.0.id}_fake"`,
@@ -133,7 +149,7 @@ func TestAccAlicloudVpcVSwitchesDataSourceBasic(t *testing.T) {
 		}),
 	}
 
-	vswitchesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, statusConf, cidrBlockConf, idDefaultConf, vpcIdConf, zoneIdConf, tagsConf, resourceGroupIdConf, allConf)
+	vswitchesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, statusConf, cidrBlockConf, ipv6CidrBlockConf, idDefaultConf, vpcIdConf, zoneIdConf, tagsConf, resourceGroupIdConf, allConf)
 
 }
 
@@ -152,11 +168,13 @@ data "alicloud_zones" "default" {}
 resource "alicloud_vpc" "default" {
   cidr_block = "172.16.0.0/16"
   vpc_name = "${var.name}"
+  enable_ipv6 = true
 }
 
 resource "alicloud_vswitch" "default" {
   vswitch_name = "${var.name}"
   cidr_block = "172.16.0.0/24"
+  ipv6_cidr_block = 1
   vpc_id = "${alicloud_vpc.default.id}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   tags 		= {
@@ -183,6 +201,7 @@ var existVSwitchesMapFunc = func(rand int) map[string]string {
 		"vswitches.0.name":                       fmt.Sprintf("tf-testAccVSwitchDatasource%d", rand),
 		"vswitches.0.vswitch_name":               fmt.Sprintf("tf-testAccVSwitchDatasource%d", rand),
 		"vswitches.0.cidr_block":                 "172.16.0.0/24",
+		"vswitches.0.ipv6_cidr_block":            "1",
 		"vswitches.0.description":                "",
 		"vswitches.0.is_default":                 "false",
 		"vswitches.0.creation_time":              CHECKSET,
