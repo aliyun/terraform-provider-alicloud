@@ -49,6 +49,15 @@ func dataSourceAlicloudAlikafkaTopics() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"page_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"page_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  50,
+			},
 			// Computed values
 			"names": {
 				Type:     schema.TypeList,
@@ -104,6 +113,10 @@ func dataSourceAlicloudAlikafkaTopics() *schema.Resource {
 					},
 				},
 			},
+			"total_count": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -123,8 +136,6 @@ func dataSourceAlicloudAlikafkaTopicsRead(d *schema.ResourceData, meta interface
 		request["Topic"] = v
 	}
 
-	var objects []map[string]interface{}
-
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -140,7 +151,19 @@ func dataSourceAlicloudAlikafkaTopicsRead(d *schema.ResourceData, meta interface
 	}
 
 	var response map[string]interface{}
-	pageNo, pageSize := 1, PageSizeLarge
+
+	if v, ok := d.GetOk("page_number"); ok && v.(int) > 0 {
+		request["CurrentPage"] = v.(int)
+	} else {
+		request["CurrentPage"] = 1
+	}
+	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
+		request["PageSize"] = v.(int)
+	} else {
+		request["PageSize"] = PageSizeLarge
+	}
+
+	var objects []interface{}
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -165,6 +188,10 @@ func dataSourceAlicloudAlikafkaTopicsRead(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TopicList.TopicVO", response)
 		}
 		result, _ := resp.([]interface{})
+		if isPagingRequest(d) {
+			objects = result
+			break
+		}
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			if nameRegex != nil && !nameRegex.MatchString(fmt.Sprint(item["Topic"])) {
@@ -178,17 +205,18 @@ func dataSourceAlicloudAlikafkaTopicsRead(d *schema.ResourceData, meta interface
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < pageSize {
+		if len(result) < request["PageSize"].(int) {
 			break
 		}
-		pageNo++
+		request["CurrentPage"] = request["CurrentPage"].(int) + 1
 	}
 
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 
 	s := make([]map[string]interface{}, 0)
-	for _, object := range objects {
+	for _, v := range objects {
+		object := v.(map[string]interface{})
 		mapping := map[string]interface{}{
 			"id":            fmt.Sprint(object["InstanceId"], ":", object["Topic"]),
 			"topic":         object["Topic"],
@@ -226,6 +254,9 @@ func dataSourceAlicloudAlikafkaTopicsRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 	if err := d.Set("topics", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("total_count", formatInt(response["Total"])); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

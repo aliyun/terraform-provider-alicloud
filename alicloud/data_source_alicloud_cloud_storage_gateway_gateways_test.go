@@ -70,6 +70,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                               CHECKSET,
 			"names.#":                             CHECKSET,
+			"total_count":                         CHECKSET,
 			"gateways.#":                          CHECKSET,
 			"gateways.0.gateway_class":            "Standard",
 			"gateways.0.storage_bundle_id":        CHECKSET,
