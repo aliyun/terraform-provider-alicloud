@@ -46,8 +46,8 @@ resources:
   - name: terraform-provider-alicloud
     type: git
     source:
-      uri: https://github.com/aliyun/terraform-provider-alicloud.git
-      branch: master
+      uri: https://github.com/wanghx0991/terraform-provider-alicloud.git
+      branch: service
   - name: trigger-every-day
     type: time
     source:
