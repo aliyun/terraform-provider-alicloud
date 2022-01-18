@@ -171,6 +171,10 @@ func dataSourceAlicloudCloudStorageGatewayGateways() *schema.Resource {
 					},
 				},
 			},
+			"total_count": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -307,6 +311,11 @@ func dataSourceAlicloudCloudStorageGatewayGatewaysRead(d *schema.ResourceData, m
 	if err := d.Set("gateways", s); err != nil {
 		return WrapError(err)
 	}
+
+	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+		return WrapError(err)
+	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}

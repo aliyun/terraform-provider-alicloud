@@ -47,6 +47,7 @@ func TestAccAlicloudCloudStorageGatewayStorageBundlesDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                         "1",
 			"names.#":                       "1",
+			"total_count":                   CHECKSET,
 			"bundles.#":                     "1",
 			"bundles.0.description":         "",
 			"bundles.0.location":            CHECKSET,
