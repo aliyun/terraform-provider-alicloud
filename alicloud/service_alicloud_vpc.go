@@ -2169,6 +2169,54 @@ func (s *VpcService) VpcDhcpOptionsSetStateRefreshFunc(id string, failStates []s
 	}
 }
 
+func (s *VpcService) DescribeVpcDhcpOptionsSetAttachment(id string) (object map[string]interface{}, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return object, WrapError(err)
+	}
+	object, err = s.DescribeVpcDhcpOptionsSet(parts[1])
+	if err != nil {
+		return object, WrapError(err)
+	}
+	return object, nil
+}
+
+func (s *VpcService) DescribeVpcDhcpOptionsSetAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		parts, err := ParseResourceId(id, 2)
+		if err != nil {
+			return nil, "", WrapError(err)
+		}
+		object, err := s.DescribeVpcDhcpOptionsSetAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		status := ""
+		if associateVpcsList, ok := object["AssociateVpcs"]; ok {
+			for _, associateVpcsListItem := range associateVpcsList.([]interface{}) {
+				if associateVpcsListItem != nil {
+					associateVpcsListItemMap, ok := associateVpcsListItem.(map[string]interface{})
+					if ok && associateVpcsListItemMap["VpcId"] == parts[0] {
+						status = associateVpcsListItemMap["AssociateStatus"].(string)
+						break
+					}
+				}
+			}
+		}
+
+		for _, failState := range failStates {
+			if status == failState {
+				return object, fmt.Sprint(object["AssociateStatus"]), WrapError(Error(FailedToReachTargetStatus, status))
+			}
+		}
+		return object, status, nil
+	}
+}
+
 func (s *VpcService) DescribeVpcNatIpCidr(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewVpcClient()

@@ -30,10 +30,6 @@ func init() {
 	})
 }
 
-func TestName(t *testing.T) {
-	testAlicloudEcsPrefixList("eu-central-1")
-}
-
 func testAlicloudEcsPrefixList(region string) error {
 	prefixes := []string{
 		"tf-testacc",
