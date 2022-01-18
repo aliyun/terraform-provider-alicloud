@@ -652,6 +652,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_access_strategies":                    dataSourceAlicloudAlidnsAccessStrategies(),
 			"alicloud_vpc_bgp_peers":                               dataSourceAlicloudVpcBgpPeers(),
 			"alicloud_nas_filesets":                                dataSourceAlicloudNasFilesets(),
+			"alicloud_cdn_ip_info":                                 dataSourceAlicloudCdnIpInfo(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
