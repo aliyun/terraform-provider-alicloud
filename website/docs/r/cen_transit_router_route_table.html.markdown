@@ -51,6 +51,8 @@ The following attributes are exported:
 
 * `id` - ID of the resource, It is formatted to `<transit_router_id>:<transit_router_route_table_id>`.
 * `status` - The associating status of the Transit Router.
+* `transit_router_route_table_id` - The id of the transit router route table.
+* `transit_router_route_table_type` - The type of the transit router route table. Valid values: `Custom`, `System`.
 
 ### Timeouts
 
