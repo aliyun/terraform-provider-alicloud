@@ -16,6 +16,8 @@ jobs:
         with:
           go_version: '1.16'
           golangci_lint_flags: '--timeout=25m ./alicloud'
+          level: error
+          reporter: github-pr-check
 
 
   errcheck:

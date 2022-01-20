@@ -52,7 +52,8 @@ The following arguments are supported:
  and [managed kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_managed_kubernetes.html). Optional Values: `Master` and `Worker`.
 * `is_outdated` - (Optional, type: bool) If true, outdated instance types are included in the results. Default to false.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `system_disk_category` - (Optional, Available in 1.120.0+) Filter the results by system disk category. Valid values: `cloud`, `ephemeral_ssd`, `cloud_essd`, `cloud_efficiency`, `cloud_ssd`. Default to `cloud_efficiency`.
+* `system_disk_category` - (Optional, Available in 1.120.0+) Filter the results by system disk category. Valid values: `cloud`, `ephemeral_ssd`, `cloud_essd`, `cloud_efficiency`, `cloud_ssd`. 
+  **NOTE**: Its default value `cloud_efficiency` has been removed from the version v1.150.0.
 
 ## Attributes Reference
 

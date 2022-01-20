@@ -172,6 +172,18 @@ data "alicloud_vswitches" "default" {
 	zone_id = data.alicloud_zones.default.zones.0.id
 }
 
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+
 resource "alicloud_security_group" "default" {
   name = "${var.name}"
   description = "New security group"
@@ -179,7 +191,7 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_instance" "default" {
-  vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
+  vswitch_id = local.vswitch_id
   image_id = "${data.alicloud_images.default.images.1.id}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   system_disk_category = "cloud_ssd"
@@ -240,6 +252,18 @@ data "alicloud_vswitches" "default" {
 	zone_id = data.alicloud_zones.default.zones.0.id
 }
 
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+
 resource "alicloud_security_group" "default" {
   name = "${var.name}"
   description = "New security group"
@@ -248,7 +272,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_instance" "default" {
   count = "${var.number}"
-  vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
+  vswitch_id = local.vswitch_id
   image_id = "${data.alicloud_images.default.images.0.id}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   system_disk_category = "cloud_ssd"
@@ -298,6 +322,18 @@ data "alicloud_vswitches" "default" {
 	zone_id = data.alicloud_zones.default.zones.0.id
 }
 
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+
 resource "alicloud_security_group" "default" {
     name = "${var.name}"
     vpc_id = data.alicloud_vpcs.default.ids.0
@@ -305,7 +341,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_network_interface" "default" {
 	name = "${var.name}"
-    vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
+    vswitch_id = local.vswitch_id
 	security_groups = [ "${alicloud_security_group.default.id}" ]
 	private_ip = cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)
 }

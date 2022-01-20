@@ -145,7 +145,7 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 						"engine_version":       "3.4",
 						"db_instance_storage":  "10",
 						"db_instance_class":    "dds.mongo.mid",
-						"name":                 "",
+						"name":                 "tf-testAccMongoDBInstance_classic_base",
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
@@ -300,7 +300,7 @@ func TestAccAlicloudMongoDBInstance_transform_charge_type(t *testing.T) {
 						"engine_version":       "3.4",
 						"db_instance_storage":  "10",
 						"db_instance_class":    "dds.mongo.mid",
-						"name":                 "",
+						"name":                 "tf-testAccMongoDBInstance_classic_base",
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
@@ -315,7 +315,7 @@ func TestAccAlicloudMongoDBInstance_transform_charge_type(t *testing.T) {
 						"engine_version":       "3.4",
 						"db_instance_storage":  "10",
 						"db_instance_class":    "dds.mongo.mid",
-						"name":                 "",
+						"name":                 "tf-testAccMongoDBInstance_classic_base",
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PrePaid",
 						"replication_factor":   "3",
@@ -353,7 +353,7 @@ func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
 						"engine_version":       "4.0",
 						"db_instance_storage":  "10",
 						"db_instance_class":    "dds.mongo.mid",
-						"name":                 "",
+						"name":                 "tf-testAccMongoDBInstance_classic_base4",
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
@@ -404,7 +404,7 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 						"engine_version":       "3.4",
 						"db_instance_storage":  "10",
 						"db_instance_class":    "dds.mongo.mid",
-						"name":                 "",
+						"name":                 "tf-testAccMongoDBInstance_base",
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
@@ -422,7 +422,7 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 				Config: testMongoDBInstance_vpc_name,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-testAccMongoDBInstance_test",
+						"name": "tf-testAccMongoDBInstance_vpc",
 					}),
 				),
 			},
@@ -508,7 +508,7 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 						"engine_version":       "3.4",
 						"db_instance_storage":  "10",
 						"db_instance_class":    "dds.mongo.mid",
-						"name":                 "",
+						"name":                 "tf-testAccMongoDBInstance_multiAZ",
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
@@ -612,7 +612,7 @@ func TestAccAlicloudMongoDBInstance_multi_instance(t *testing.T) {
 						"engine_version":       "3.4",
 						"db_instance_storage":  "10",
 						"db_instance_class":    "dds.mongo.mid",
-						"name":                 "",
+						"name":                 "tf-testAccMongoDBInstance_multi_instance",
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
@@ -692,6 +692,7 @@ resource "alicloud_mongodb_instance" "default" {
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
+  name = "tf-testAccMongoDBInstance_classic_base"
 }`
 
 const testMongoDBInstance_classic_transform_to_prepaid = `
@@ -703,6 +704,7 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_class   = "dds.mongo.mid"
   auto_renew 		  = "false"
   instance_charge_type = "PrePaid"
+  name = "tf-testAccMongoDBInstance_classic_base"
 }`
 
 const testMongoDBInstance_classic_ssl_action = `
@@ -732,6 +734,7 @@ resource "alicloud_mongodb_instance" "default" {
   engine_version      = "4.0"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
+  name = "tf-testAccMongoDBInstance_classic_base4"
 }`
 
 const testMongoDBInstance_classic_tags = `
@@ -881,13 +884,14 @@ data "alicloud_vswitches" "default" {
 }
 
 variable "name" {
-  default = "tf-testAccMongoDBInstance_vpc"
+  default = "tf-testAccMongoDBInstance_base"
 }
 resource "alicloud_mongodb_instance" "default" {
   vswitch_id          = data.alicloud_vswitches.default.ids.0
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
+  name                = var.name
 }`
 
 const testMongoDBInstance_vpc_name = `
@@ -909,7 +913,7 @@ resource "alicloud_mongodb_instance" "default" {
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
-  name                = "tf-testAccMongoDBInstance_test"
+  name                = var.name
 }`
 
 const testMongoDBInstance_vpc_configure = `
@@ -1053,6 +1057,7 @@ resource "alicloud_mongodb_instance" "default" {
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
+  name = var.name
 }`
 
 const testMongoDBInstance_multiAZ_name = `
@@ -1224,6 +1229,7 @@ resource "alicloud_mongodb_instance" "default" {
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
+  name = var.name
 }`
 
 const testMongoDBInstance_multi_instance_name = `

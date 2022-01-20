@@ -44,7 +44,7 @@ resource "alicloud_vpc_ipv6_egress_rule" "example" {
   instance_id           = data.alicloud_vpc_ipv6_addresses.default.ids.0
   ipv6_egress_rule_name = "example_value"
   description           = "example_value"
-  ipv6_gateway_id       = alicloud_vpc_ipv6_gateway.example.ipv6_gateway_id
+  ipv6_gateway_id       = alicloud_vpc_ipv6_gateway.example.id
   instance_type         = "Ipv6Address"
 }
 

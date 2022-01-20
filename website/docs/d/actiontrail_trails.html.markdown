@@ -48,10 +48,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `event_rw` - Indicates whether the event is a read or a write event.
   * `oss_bucket_name` - The name of the specified OSS bucket.
   * `oss_key_prefix` - The prefix of the specified OSS bucket name.
-  * `role_name` - The role in ActionTrail Trail.
   * `sls_project_arn` - The unique ARN of the Log Service project.
   * `sls_write_role_arn` - The unique ARN of the Log Service role.
   * `status` - The status of the ActionTrail Trail.
   * `id` - The id of the ActionTrail Trail. It is the same as trail name.
   * `trail_region` - The regions to which the trail is applied.
-  * `mns_topic_arn` - The ARN of the Message Service (MNS) topic to which ActionTrail sends messages.

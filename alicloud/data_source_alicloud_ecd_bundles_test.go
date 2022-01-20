@@ -21,10 +21,10 @@ func TestAccAlicloudEcdBundlesDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcdBundlesDataSourceName(rand, map[string]string{
-			"name_regex": `"Graphics"`,
+			"name_regex": `"General"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEcdBundlesDataSourceName(rand, map[string]string{
-			"name_regex": `"Graphics_fake"`,
+			"name_regex": `"General_fake"`,
 		}),
 	}
 

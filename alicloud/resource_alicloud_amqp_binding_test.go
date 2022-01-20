@@ -42,51 +42,92 @@ func testSweepAmqpBinding(region string) error {
 		log.Println(WrapError(err))
 		return nil
 	}
-	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-12-12"), StringPointer("AK"), request, nil, &runtime)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-12-12"), StringPointer("AK"), request, nil, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
 			}
-			return nil
-		})
-		addDebug(action, response, request)
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		log.Println(WrapErrorf(err, DataDefaultErrorMsg, "alicloud_amqp_bindings", action, AlibabaCloudSdkGoERROR))
+		return nil
+	}
+	resp, err := jsonpath.Get("$.Data.Instances", response)
+	if err != nil {
+		log.Println(WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Instances", response))
+		return nil
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		instanceId := fmt.Sprint(item["InstanceId"])
+		action := "ListExchanges"
+		request := make(map[string]interface{})
+		request["InstanceId"] = instanceId
+		request["MaxResults"] = PageSizeLarge
+		var response map[string]interface{}
+		conn, err := client.NewOnsproxyClient()
 		if err != nil {
-			log.Println(WrapErrorf(err, DataDefaultErrorMsg, "alicloud_amqp_bindings", action, AlibabaCloudSdkGoERROR))
+			log.Println(WrapError(err))
 			return nil
 		}
-		resp, err := jsonpath.Get("$.Data.Instances", response)
-		if err != nil {
-			log.Println(WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Instances", response))
-			return nil
-		}
-		result, _ := resp.([]interface{})
-		for _, v := range result {
-			item := v.(map[string]interface{})
-			instanceId := fmt.Sprint(item["InstanceId"])
-			action := "ListExchanges"
-			request := make(map[string]interface{})
-			request["InstanceId"] = instanceId
-			request["MaxResults"] = PageSizeLarge
-			var response map[string]interface{}
-			conn, err := client.NewOnsproxyClient()
+		for {
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-12-12"), StringPointer("AK"), request, nil, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
 			if err != nil {
-				log.Println(WrapError(err))
+				log.Println(WrapErrorf(err, DataDefaultErrorMsg, "alicloud_amqp_bindings", action, AlibabaCloudSdkGoERROR))
 				return nil
 			}
-			for {
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
+			resp, err := jsonpath.Get("$.Data.Exchanges", response)
+			if err != nil {
+				log.Println(WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Exchanges", response))
+				return nil
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				skip := true
+				for _, prefixe := range prefixes {
+					if strings.HasPrefix(fmt.Sprint(item["Name"]), prefixe) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[DEBUG] Skipping the resource %s", item["Name"])
+				}
+
+				action := "DeleteExchange"
+				request := map[string]interface{}{
+					"InstanceId": instanceId,
+					"Exchange":   item["Name"],
+				}
+
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-12-12"), StringPointer("AK"), request, nil, &runtime)
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -96,55 +137,12 @@ func testSweepAmqpBinding(region string) error {
 					}
 					return nil
 				})
-				addDebug(action, response, request)
-				if err != nil {
-					log.Println(WrapErrorf(err, DataDefaultErrorMsg, "alicloud_amqp_bindings", action, AlibabaCloudSdkGoERROR))
-					return nil
-				}
-				resp, err := jsonpath.Get("$.Data.Exchanges", response)
-				if err != nil {
-					log.Println(WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Exchanges", response))
-					return nil
-				}
-				result, _ := resp.([]interface{})
-				for _, v := range result {
-					item := v.(map[string]interface{})
-					skip := true
-					for _, prefixe := range prefixes {
-						if strings.HasPrefix(fmt.Sprint(item["Name"]), prefixe) {
-							skip = false
-							break
-						}
-					}
-					if skip {
-						log.Printf("[DEBUG] Skipping the resource %s", item["Name"])
-					}
-
-					action := "DeleteExchange"
-					request := map[string]interface{}{
-						"InstanceId": instanceId,
-						"Exchange":   item["Name"],
-					}
-
-					wait := incrementalWait(3*time.Second, 3*time.Second)
-					err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-						if err != nil {
-							if NeedRetry(err) {
-								wait()
-								return resource.RetryableError(err)
-							}
-							return resource.NonRetryableError(err)
-						}
-						return nil
-					})
-					log.Println(WrapError(err))
-				}
-				if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
-					request["NextToken"] = nextToken
-				} else {
-					break
-				}
+				log.Println(WrapError(err))
+			}
+			if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+				request["NextToken"] = nextToken
+			} else {
+				break
 			}
 		}
 	}

@@ -160,7 +160,7 @@ The following arguments are supported:
 -> **NOTE:** Only Instances outside the Security Group to Access the Log Switch **accesslogenabled** Open, in Order to Set This Parameter to the **True**.
 * `access_log_tracing_config` - (Optional) Xtrace Configuration Information. See the following `Block access_log_tracing_config`.
 * `certificates` - (Optional) The Certificate List. See the following `Block certificates`.
-* `default_actions` - (Required) The Default Rule Action List. See the following `Block default_actions`.
+* `default_actions` - (Optional) The Default Rule Action List. See the following `Block default_actions`.
 * `dry_run` - (Optional) The dry run.
 * `gzip_enabled` - (Optional, Computed) Whether to Enable Gzip Compression, as a Specific File Type on a Compression. Valid values: `false`, `true`. Default Value: `true`. .
 * `http2_enabled` - (Optional, Computed) Whether to Enable HTTP/2 Features. Valid Values: `True` Or `False`. Default Value: `True`.

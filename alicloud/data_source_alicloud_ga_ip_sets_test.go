@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -11,7 +13,7 @@ func TestAccAlicloudGaIpSetsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_ga_ip_sets.default"
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceGaIpSetsConfigDependence)
-
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"accelerator_id": "${data.alicloud_ga_accelerators.default.ids.0}",
@@ -87,6 +89,7 @@ data "alicloud_ga_accelerators" "default"{
 data "alicloud_ga_bandwidth_packages" "default"{
 }
 resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  count = length(data.alicloud_ga_accelerators.default.ids) > 0 ? (length(data.alicloud_ga_accelerators.default.accelerators.0.basic_bandwidth_package) > 0 ? 0 : 1 ) :1
   accelerator_id       = "${data.alicloud_ga_accelerators.default.ids.0}"
   bandwidth_package_id = "${data.alicloud_ga_bandwidth_packages.default.ids.0}"
 }

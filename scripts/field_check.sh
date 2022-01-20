@@ -22,7 +22,7 @@ do
         if [[ ${fileName} == *?_test.go ]]; then
             continue
         fi
-        resourceName=$(echo ${fileName} | grep -Eo "alicloud_[a-z_]*") || exit 1
+        resourceName=$(echo ${fileName} | grep -Eo "alicloud_[0-9a-z_]*") || exit 1
         echo -e "\033[33mThe ResourceName = ${resourceName}"
         go test -v ./scripts/schema_test.go -run=TestConsistencyWithDocument -resource="${resourceName}"
         if [[ "$?" != "0" ]]; then

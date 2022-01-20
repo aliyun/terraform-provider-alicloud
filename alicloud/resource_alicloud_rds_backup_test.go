@@ -83,16 +83,24 @@ data "alicloud_db_instance_classes" "default" {
   instance_charge_type     = "PostPaid"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_db_zones.default.ids.0
 }
 
-resource "alicloud_vswitch" "default" {
-  vswitch_name = var.name
-  vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_db_zones.default.ids.0
-  cidr_block   = "172.16.0.0/24"
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_db_zones.default.ids.0
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_db_instance" "default" {
@@ -101,7 +109,7 @@ resource "alicloud_db_instance" "default" {
   db_instance_storage_type = "cloud_essd"
   instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
   instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  vswitch_id               = alicloud_vswitch.default.id
+  vswitch_id               = local.vswitch_id
   instance_name            = var.name
 }
 

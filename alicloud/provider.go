@@ -263,6 +263,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_edge_kubernetes_clusters":                 dataSourceAlicloudCSEdgeKubernetesClusters(),
 			"alicloud_cs_serverless_kubernetes_clusters":           dataSourceAlicloudCSServerlessKubernetesClusters(),
 			"alicloud_cs_kubernetes_permissions":                   dataSourceAlicloudCSKubernetesPermissions(),
+			"alicloud_cs_kubernetes_addons":                        dataSourceAlicloudCSKubernetesAddons(),
 			"alicloud_cr_namespaces":                               dataSourceAlicloudCRNamespaces(),
 			"alicloud_cr_repos":                                    dataSourceAlicloudCRRepos(),
 			"alicloud_cr_ee_instances":                             dataSourceAlicloudCrEEInstances(),
@@ -636,6 +637,24 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cddc_dedicated_host_accounts":                dataSourceAlicloudCddcDedicatedHostAccounts(),
 			"alicloud_cr_chart_namespaces":                         dataSourceAlicloudCrChartNamespaces(),
 			"alicloud_fnf_executions":                              dataSourceAlicloudFnFExecutions(),
+			"alicloud_cr_chart_repositories":                       dataSourceAlicloudCrChartRepositories(),
+			"alicloud_mongodb_sharding_network_public_addresses":   dataSourceAlicloudMongodbShardingNetworkPublicAddresses(),
+			"alicloud_ga_acls":                                     dataSourceAlicloudGaAcls(),
+			"alicloud_ga_additional_certificates":                  dataSourceAlicloudGaAdditionalCertificates(),
+			"alicloud_alidns_custom_lines":                         dataSourceAlicloudAlidnsCustomLines(),
+			"alicloud_ros_template_scratches":                      dataSourceAlicloudRosTemplateScratches(),
+			"alicloud_alidns_gtm_instances":                        dataSourceAlicloudAlidnsGtmInstances(),
+			"alicloud_vpc_bgp_groups":                              dataSourceAlicloudVpcBgpGroups(),
+			"alicloud_nas_snapshots":                               dataSourceAlicloudNasSnapshots(),
+			"alicloud_hbr_replication_vault_regions":               dataSourceAlicloudHbrReplicationVaultRegions(),
+			"alicloud_alidns_address_pools":                        dataSourceAlicloudAlidnsAddressPools(),
+			"alicloud_ecs_prefix_lists":                            dataSourceAlicloudEcsPrefixLists(),
+			"alicloud_alidns_access_strategies":                    dataSourceAlicloudAlidnsAccessStrategies(),
+			"alicloud_vpc_bgp_peers":                               dataSourceAlicloudVpcBgpPeers(),
+			"alicloud_nas_filesets":                                dataSourceAlicloudNasFilesets(),
+			"alicloud_cdn_ip_info":                                 dataSourceAlicloudCdnIpInfo(),
+			"alicloud_nas_auto_snapshot_policies":                  dataSourceAlicloudNasAutoSnapshotPolicies(),
+			"alicloud_nas_lifecycle_policies":                      dataSourceAlicloudNasLifecyclePolicies(),
 			"alicloud_cloud_firewall_address_books":                dataSourceAlicloudCloudFirewallAddressBooks(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -745,6 +764,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_application":                                       resourceAlicloudCSApplication(),
 			"alicloud_cs_swarm":                                             resourceAlicloudCSSwarm(),
 			"alicloud_cs_kubernetes":                                        resourceAlicloudCSKubernetes(),
+			"alicloud_cs_kubernetes_addon":                                  resourceAlicloudCSKubernetesAddon(),
 			"alicloud_cs_managed_kubernetes":                                resourceAlicloudCSManagedKubernetes(),
 			"alicloud_cs_edge_kubernetes":                                   resourceAlicloudCSEdgeKubernetes(),
 			"alicloud_cs_serverless_kubernetes":                             resourceAlicloudCSServerlessKubernetes(),
@@ -1153,6 +1173,28 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cddc_dedicated_host_account":                          resourceAlicloudCddcDedicatedHostAccount(),
 			"alicloud_cr_chart_namespace":                                   resourceAlicloudCrChartNamespace(),
 			"alicloud_fnf_execution":                                        resourceAlicloudFnFExecution(),
+			"alicloud_cr_chart_repository":                                  resourceAlicloudCrChartRepository(),
+			"alicloud_mongodb_sharding_network_public_address":              resourceAlicloudMongodbShardingNetworkPublicAddress(),
+			"alicloud_ga_acl":                                               resourceAlicloudGaAcl(),
+			"alicloud_ga_acl_attachment":                                    resourceAlicloudGaAclAttachment(),
+			"alicloud_ga_additional_certificate":                            resourceAlicloudGaAdditionalCertificate(),
+			"alicloud_alidns_custom_line":                                   resourceAlicloudAlidnsCustomLine(),
+			"alicloud_vpc_vbr_ha":                                           resourceAlicloudVpcVbrHa(),
+			"alicloud_ros_template_scratch":                                 resourceAlicloudRosTemplateScratch(),
+			"alicloud_alidns_gtm_instance":                                  resourceAlicloudAlidnsGtmInstance(),
+			"alicloud_vpc_bgp_group":                                        resourceAlicloudVpcBgpGroup(),
+			"alicloud_ram_security_preference":                              resourceAlicloudRamSecurityPreference(),
+			"alicloud_nas_snapshot":                                         resourceAlicloudNasSnapshot(),
+			"alicloud_hbr_replication_vault":                                resourceAlicloudHbrReplicationVault(),
+			"alicloud_alidns_address_pool":                                  resourceAlicloudAlidnsAddressPool(),
+			"alicloud_ecs_prefix_list":                                      resourceAlicloudEcsPrefixList(),
+			"alicloud_alidns_access_strategy":                               resourceAlicloudAlidnsAccessStrategy(),
+			"alicloud_alidns_monitor_config":                                resourceAlicloudAlidnsMonitorConfig(),
+			"alicloud_vpc_dhcp_options_set_attachment":                      resourceAlicloudVpcDhcpOptionsSetAttachement(),
+			"alicloud_vpc_bgp_peer":                                         resourceAlicloudVpcBgpPeer(),
+			"alicloud_nas_fileset":                                          resourceAlicloudNasFileset(),
+			"alicloud_nas_auto_snapshot_policy":                             resourceAlicloudNasAutoSnapshotPolicy(),
+			"alicloud_nas_lifecycle_policy":                                 resourceAlicloudNasLifecyclePolicy(),
 			"alicloud_cloud_firewall_address_book":                          resourceAlicloudCloudFirewallAddressBook(),
 		},
 
@@ -1368,6 +1410,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ServicemeshEndpoint = strings.TrimSpace(endpoints["servicemesh"].(string))
 		config.AcrEndpoint = strings.TrimSpace(endpoints["acr"].(string))
 		config.EdsuserEndpoint = strings.TrimSpace(endpoints["edsuser"].(string))
+		config.GaplusEndpoint = strings.TrimSpace(endpoints["gaplus"].(string))
 		config.CloudfwEndpoint = strings.TrimSpace(endpoints["cloudfw"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
@@ -1678,6 +1721,8 @@ func init() {
 
 		"edsuser_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom edsuser endpoints.",
 
+		"gaplus_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom gaplus endpoints.",
+
 		"cloudfw_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudfw endpoints.",
 	}
 }
@@ -1728,6 +1773,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["cloudfw_endpoint"],
+				},
+				"gaplus": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["gaplus_endpoint"],
 				},
 
 				"edsuser": {
@@ -2537,6 +2588,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["servicemesh"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["acr"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["edsuser"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["gaplus"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudfw"].(string)))
 	return hashcode.String(buf.String())
 }

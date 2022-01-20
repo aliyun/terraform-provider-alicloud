@@ -344,6 +344,14 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	request := ecs.CreateDescribeAvailableResourceRequest()
 	request.RegionId = s.client.RegionId
 	request.DestinationResource = string(destination)
+	if destination == InstanceTypeResource {
+		if v, ok := d.GetOk("cpu_core_count"); ok && v.(int) > 0 {
+			request.Cores = requests.NewInteger(v.(int))
+		}
+		if v, ok := d.GetOk("memory_size"); ok && v.(float64) > 0 {
+			request.Memory = requests.NewFloat(v.(float64))
+		}
+	}
 	request.IoOptimized = string(IOOptimized)
 
 	if v, ok := d.GetOk("availability_zone"); ok && strings.TrimSpace(v.(string)) != "" {
@@ -942,7 +950,6 @@ func (s *EcsService) WaitForNetworkInterface(id string, status Status, timeout i
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
 		}
 	}
-	return nil
 }
 
 func (s *EcsService) QueryPrivateIps(eniId string) ([]string, error) {
@@ -2313,6 +2320,46 @@ func (s *EcsService) DescribeEcsSessionManagerStatus(id string) (object map[stri
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *EcsService) DescribeEcsPrefixList(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribePrefixListAttributes"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"PrefixListId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidPrefixListId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS:PrefixList", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$", response)

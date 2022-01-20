@@ -94,9 +94,8 @@ variable "name" {
 	default = "tf-testAccCenRouteServicesDataSource%d"
 }
 
-resource "alicloud_vpc" "default"{
-  name       = "tf-testaccCenRouteService"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_cen_instance" "example" {
@@ -105,7 +104,7 @@ resource "alicloud_cen_instance" "example" {
 
 resource "alicloud_cen_instance_attachment" "vpc" {
   instance_id              = alicloud_cen_instance.example.id
-  child_instance_id        = alicloud_vpc.default.id
+  child_instance_id        = data.alicloud_vpcs.default.ids.0
   child_instance_type      = "VPC"
   child_instance_region_id = "%s"
 }

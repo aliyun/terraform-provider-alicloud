@@ -17,12 +17,12 @@ func TestAccAlicloudCrEEReposDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+			"instance_id": "${local.instance_id}",
 			"namespace":   "${alicloud_cr_ee_namespace.default.name}",
 			"name_regex":  "${alicloud_cr_ee_repo.default.name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+			"instance_id": "${local.instance_id}",
 			"namespace":   "${alicloud_cr_ee_namespace.default.name}",
 			"name_regex":  "${alicloud_cr_ee_repo.default.name}-fake",
 		}),
@@ -30,12 +30,12 @@ func TestAccAlicloudCrEEReposDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+			"instance_id": "${local.instance_id}",
 			"namespace":   "${alicloud_cr_ee_namespace.default.name}",
 			"ids":         []string{"${alicloud_cr_ee_repo.default.repo_id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+			"instance_id": "${local.instance_id}",
 			"namespace":   "${alicloud_cr_ee_namespace.default.name}",
 			"ids":         []string{"${alicloud_cr_ee_repo.default.repo_id}-fake"},
 		}),
@@ -43,13 +43,13 @@ func TestAccAlicloudCrEEReposDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+			"instance_id": "${local.instance_id}",
 			"namespace":   "${alicloud_cr_ee_namespace.default.name}",
 			"name_regex":  "${alicloud_cr_ee_repo.default.name}",
 			"ids":         []string{"${alicloud_cr_ee_repo.default.repo_id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+			"instance_id": "${local.instance_id}",
 			"namespace":   "${alicloud_cr_ee_namespace.default.name}",
 			"ids":         []string{"${alicloud_cr_ee_repo.default.repo_id}-fake"},
 			"name_regex":  "${alicloud_cr_ee_repo.default.name}-fake",
@@ -95,19 +95,32 @@ func dataSourceCrEEReposConfigDependence(name string) string {
 		default = "tf-testacc-cr-ee-repo-%s"
 	}
 
-	data "alicloud_cr_ee_instances" "default" {
-		name_regex = "^tf-testacc"
+	resource "alicloud_cr_ee_instance" "default" {
+	  count = length(data.alicloud_cr_ee_instances.default.ids) > 0 ? 0 : 1
+	  period = 1
+	  renew_period = 0
+	  payment_type = "Subscription"
+	  instance_type = "Basic"
+	  renewal_status = "ManualRenewal"
+	  instance_name = "tf-testacc-basic"
+	}
+	data "alicloud_cr_ee_instances" "default"{
+	  name_regex = "tf-testacc"
+	}
+
+	locals {
+	  instance_id=length(data.alicloud_cr_ee_instances.default.ids)>0? data.alicloud_cr_ee_instances.default.ids[0] : concat(alicloud_cr_ee_instance.default.*.id, [""])[0]
 	}
 	
 	resource "alicloud_cr_ee_namespace" "default" {
-		instance_id = "${data.alicloud_cr_ee_instances.default.ids.0}"
+		instance_id = local.instance_id
 		name = var.name
 		auto_create	= true
 		default_visibility = "PRIVATE"
 	}
 	
 	resource "alicloud_cr_ee_repo" "default" {
-		instance_id = "${data.alicloud_cr_ee_instances.default.ids.0}"
+		instance_id = local.instance_id
 		namespace = "${alicloud_cr_ee_namespace.default.name}"
 		name = "${var.name}"
 		summary = "test summary"

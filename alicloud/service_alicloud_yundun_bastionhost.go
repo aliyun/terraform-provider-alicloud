@@ -149,7 +149,7 @@ func (s *YundunBastionhostService) UpdateInstanceSpec(schemaSpecMap map[string]s
 
 	params := make([]bssopenapi.ModifyInstanceParameter, 0, len(schemaSpecMap))
 	for schemaName, spec := range schemaSpecMap {
-		params = append(params, bssopenapi.ModifyInstanceParameter{schemaName, d.Get(spec).(string)})
+		params = append(params, bssopenapi.ModifyInstanceParameter{Code: schemaName, Value: d.Get(spec).(string)})
 	}
 
 	request.Parameter = &params

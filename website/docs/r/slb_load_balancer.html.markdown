@@ -15,7 +15,7 @@ Provides an Application Load Balancer resource.
 
 -> **NOTE:** At present, to avoid some unnecessary regulation confusion, SLB can not support alicloud international account to create `PayByBandwidth` instance.
 
--> **NOTE:** The supported specifications vary by region. Currently not all regions support guaranteed-performance instances.
+-> **NOTE:** The supported specifications vary by region. Currently, not all regions support guaranteed-performance instances.
 For more details about guaranteed-performance instance, see [Guaranteed-performance instances](https://www.alibabacloud.com/help/doc-detail/27657.htm).
 
 ## Example Usage
@@ -75,11 +75,11 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 * `slave_zone_id` - (Optional, ForceNew) The standby zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the DescribeZone API.
 * `delete_protection` - (Optional) Whether enable the deletion protection or not. on: Enable deletion protection. off: Disable deletion protection. Default to off. Only postpaid instance support this function.   
 * `address_ip_version` - (Optional) The IP version of the SLB instance to be created, which can be set to `ipv4` or `ipv6` . Default to `ipv4`. Now, only internet instance support `ipv6` address.
-* `address` - (Optional) Specify the IP address of the private network for the SLB instance, which must be in the destination CIDR block of the correspond ing switch.
+* `address` - (Optional) Specify the IP address of the private network for the SLB instance, which must be in the destination CIDR block of the corresponding switch.
 * `resource_group_id` - (Optional, ForceNew) The Id of resource group which the SLB belongs.
-* `modification_protection_reason` - (Optional) The resource of modification protection. It's effective when modification protection is `ConsoleProtection`.
+* `modification_protection_reason` - (Optional) The reason of modification protection. It's effective when `modification_protection_status` is `ConsoleProtection`.
 * `modification_protection_status` - (Optional) The status of modification protection. Valid values: `ConsoleProtection` and `NonProtection`. Default value is `NonProtection`.
-* `status` - (Optional) The status of slb load balancer. Valid values: `actice` and `inactice`. The system default value is `active`.
+* `status` - (Optional) The status of slb load balancer. Valid values: `active` and `inactice`. The system default value is `active`.
 
 -> **NOTE:** A "Shared-Performance" instance can be changed to "Performance-guaranteed", but the change is irreversible.
 
@@ -98,8 +98,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 5 mins) Used when creating the SLB load banalcer.(until it reaches the initial `active` status). 
-* `delete` - (Defaults to 9 mins) Used when terminating the SLB load banalcer.
+* `create` - (Defaults to 5 mins) Used when creating the SLB load balancer.(until it reaches the initial `active` status). 
+* `delete` - (Defaults to 9 mins) Used when terminating the SLB load balancer.
 
 ## Import
 

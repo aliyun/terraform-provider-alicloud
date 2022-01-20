@@ -34,6 +34,7 @@ func init() {
 var (
 	resourceName = flag.String("resource", "", "the name of the terraform resource to diff")
 	fileName     = flag.String("file_name", "", "the file to check diff")
+	fileter_list = make(map[string][]string, 0)
 )
 
 type Resource struct {
@@ -71,8 +72,8 @@ func TestFieldCompatibilityCheck(t *testing.T) {
 	byt, _ := ioutil.ReadFile(*fileName)
 	diff, _ := diffparser.Parse(string(byt))
 	res := false
-	fileRegex := regexp.MustCompile("alicloud/resource[a-zA-Z_]*.go")
-	fileTestRegex := regexp.MustCompile("alicloud/resource[a-zA-Z_]*_test.go")
+	fileRegex := regexp.MustCompile("alicloud/resource[0-9a-zA-Z_]*.go")
+	fileTestRegex := regexp.MustCompile("alicloud/resource[0-9a-zA-Z_]*_test.go")
 	for _, file := range diff.Files {
 		if fileRegex.MatchString(file.NewName) {
 			if fileTestRegex.MatchString(file.NewName) {
@@ -102,9 +103,10 @@ func CompatibilityRule(prev, current map[string]map[string]interface{}, fileName
 			log.Errorf("[Incompatible Change]: there should not change attribute %v to required from optional in the file %v!", fileName, filedName)
 		}
 		// Type changed
-		_, exist1 = obj["Type"]
-		_, exist2 = current[filedName]["Type"]
-		if exist1 && exist2 {
+		typPrev, exist1 := obj["Type"]
+		typCurr, exist2 := current[filedName]["Type"]
+
+		if exist1 && exist2 && typPrev != typCurr {
 			res = true
 			log.Errorf("[Incompatible Change]: there should not to change the type of attribute %v in the file %v!", fileName, filedName)
 		}
@@ -224,7 +226,7 @@ func parseResource(resourceName string) (*Resource, error) {
 	attributeFieldRegex := regexp.MustCompile("^\\* `([a-zA-Z_0-9]*)`[ ]*-?(.*)")
 
 	name := filepath.Base(filePath)
-	re := regexp.MustCompile("[a-zA-Z_]*")
+	re := regexp.MustCompile("[a-z0-9A-Z_]*")
 	resourceName = "alicloud_" + re.FindString(name)
 	result := &Resource{Name: resourceName, Arguments: map[string]interface{}{}, Attributes: map[string]interface{}{}}
 	log.Infof("the resourceName = %s\n", resourceName)

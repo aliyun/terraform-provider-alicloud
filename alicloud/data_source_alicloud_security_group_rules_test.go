@@ -205,15 +205,14 @@ const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigDirection = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig_1"
 }
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "group" {
   name = "${var.name}"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
@@ -242,21 +241,20 @@ const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigGroup_id = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig0"
 }
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "group" {
   name = "${var.name}"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group" "bar" {
   name = "tf-testAccCheckAlicloudSecurityGroupRules"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
@@ -318,15 +316,14 @@ const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIp_Protocol = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig2"
 }
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "group" {
   name = "${var.name}"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
@@ -357,15 +354,14 @@ const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigPolicy = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig3"
 }
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "group" {
   name = "${var.name}"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
@@ -397,15 +393,14 @@ const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEmpty = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEgress"
 }
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "group" {
   name = "${var.name}"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
 }
 
 data "alicloud_security_group_rules" "empty" {

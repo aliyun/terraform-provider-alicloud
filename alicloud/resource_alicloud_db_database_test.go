@@ -65,6 +65,56 @@ func TestAccAlicloudRdsDBDatabaseMySQL(t *testing.T) {
 
 }
 
+func TestAccAlicloudRdsDBDatabaseMySQL1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_db_database.default"
+
+	var dbDatabaseBasicMap = map[string]string{
+		"instance_id":   CHECKSET,
+		"name":          "tftestdatabase",
+		"character_set": "utf8",
+		"description":   "",
+	}
+
+	ra := resourceAttrInit(resourceId, dbDatabaseBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBDatabase")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "tf-testAccDBdatabase_basic"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBDatabaseConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id": "${alicloud_db_instance.default.id}",
+					"name":        "tftestdatabase",
+					"description": "from terraform",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"description": "from terraform"}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+
+}
+
 func resourceDBDatabaseConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {

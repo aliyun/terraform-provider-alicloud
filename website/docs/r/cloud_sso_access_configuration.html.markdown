@@ -58,8 +58,8 @@ resource "alicloud_cloud_sso_access_configuration" "default" {
 
 The following arguments are supported:
 
-* `access_configuration_name` - (Required, ForceNew) The AccessConfigurationName of the Access Configuration. The name of the resource. The name must be 2 to 64 characters in length and can contain letters, digits, and hyphens (-).
-* `description` - (Optional) The Description of the  Access Configuration.
+* `access_configuration_name` - (Required, ForceNew) The AccessConfigurationName of the Access Configuration. The name of the resource. The name can be up to `32` characters long and can contain letters, digits, and hyphens (-).
+* `description` - (Optional) The Description of the  Access Configuration. The description can be up to `1024` characters long.
 * `directory_id` - (Required, ForceNew) The ID of the Directory.
 * `permission_policies` - (Optional) The Policy List. See the following `Block permission_policies`.
 * `relay_state` - (Optional) The RelayState of the Access Configuration, Cloud SSO users use this access configuration to access the RD account, the initial access page address. Must be the Alibaba Cloud console page, the default is the console home page.
@@ -73,7 +73,7 @@ The following arguments are supported:
 The permission_policies supports the following: 
 
 * `permission_policy_document` - (Optional, Sensitive) The Content of Policy.
-* `permission_policy_name` - (Required) The Policy Name of policy. The name of the resource. The name must be 1 to 32 characters in length and can contain letters, digits, and hyphens (-).
+* `permission_policy_name` - (Required) The Policy Name of policy. The name of the resource. 
 * `permission_policy_type` - (Required) The Policy Type of policy. Valid values: `System`, `Inline`.
 
 ## Attributes Reference
@@ -82,6 +82,15 @@ The following attributes are exported:
 
 * `id` - The resource ID of Access Configuration. The value formats as `<directory_id>:<access_configuration_id>`.
 * `access_configuration_id` - The AccessConfigurationId of the Access Configuration.
+
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when create the Access Configuration.
+* `update` - (Defaults to 5 mins) Used when update the Access Configuration.
+* `delete` - (Defaults to 5 mins) Used when delete the Access Configuration.
+
 
 ## Import
 

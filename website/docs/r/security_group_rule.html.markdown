@@ -57,8 +57,9 @@ The following arguments are supported:
 * `source_security_group_id` - (Optional, ForceNew) The target security group ID within the same region. If this field is specified, the `nic_type` can only select `intranet`.
 * `source_group_owner_account` - (Optional, ForceNew) The Alibaba Cloud user account Id of the target security group when security groups are authorized across accounts.  This parameter is invalid if `cidr_ip` has already been set.
 * `description` - (Optional) The description of the security group rule. The description can be up to 1 to 512 characters in length. Defaults to null.
+* `prefix_list_id`- (Optional) The ID of the source/destination prefix list to which you want to control access. **NOTE:** If you specify `cidr_ip`,`source_security_group_id` parameter, this parameter is ignored.
 
--> **NOTE:**  Either the `source_security_group_id` or `cidr_ip` must be set.
+-> **NOTE:**  You must specify one of the following field: `cidr_ip`,`source_security_group_id`,`prefix_list_id`. 
 
 ## Attributes Reference
 
@@ -66,6 +67,5 @@ The following attributes are exported:
 
 * `id` - The ID of the security group rule
 * `type` - The type of rule, `ingress` or `egress`
-* `name` - The name of the security group
 * `port_range` - The range of port numbers
 * `ip_protocol` - The protocol of the security group rule
