@@ -34,7 +34,7 @@ func init() {
 var (
 	resourceName = flag.String("resource", "", "the name of the terraform resource to diff")
 	fileName     = flag.String("file_name", "", "the file to check diff")
-	filterList = map[string][]string{
+	filterList   = map[string][]string{
 		"alicloud_amqp_instance": []string{"logistics"},
 	}
 )
