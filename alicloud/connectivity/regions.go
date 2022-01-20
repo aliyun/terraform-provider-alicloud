@@ -215,3 +215,4 @@ var GraphDatabaseDbInstanceSupportRegions = []Region{Hangzhou}
 var SchedulerxSupportRegions = []Region{Hangzhou, Shenzhen, Beijing, Shanghai, USEast1, Zhangjiakou}
 var EhpcSupportRegions = []Region{Qingdao, HeYuan, Hongkong, APSouthEast1, Huhehaote, Shenzhen, WuLanChaBu, APNorthEast1, EUCentral1, Zhangjiakou, Hangzhou, Beijing, Shanghai, APSouthEast2}
 var EcsActivationsSupportRegions = []Region{Qingdao, Beijing, Zhangjiakou, Huhehaote, Hangzhou, Shanghai, Shenzhen, HeYuan, Hongkong}
+var CloudFirewallSupportRegions = []Region{APSouthEast1, Hangzhou}
