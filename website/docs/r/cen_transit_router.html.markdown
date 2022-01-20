@@ -38,7 +38,7 @@ resource "alicloud_cen_transit_router" "default" {
 The following arguments are supported:
 
 * `cen_id` - (Required, ForceNew) The ID of the CEN.
-* `transit_router_name` - (Optional) The name of the transit router. 
+* `transit_router_name` - (Optional) The name of the transit router.
 * `transit_router_description` - (Optional) The description of the transit router.
 * `dry_run` - (Optional) The dry run.
 
@@ -50,6 +50,7 @@ The following attributes are exported:
 * `id` - ID of the resource, It is formatted to `<cen_id>:<transit_router_id>`.
 * `status` - The associating status of the Transit Router.
 * `type` - The Type of the Transit Router. Valid values: `Enterprise`, `Basic`.
+* `transit_router_id` -  The transit router id of the transit router.
 
 ### Timeouts
 

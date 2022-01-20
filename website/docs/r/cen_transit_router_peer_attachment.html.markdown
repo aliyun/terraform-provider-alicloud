@@ -83,7 +83,6 @@ The following arguments are supported:
 * `dry_run` - (Optional) Whether to perform pre-check for this request, including permission, instance status verification, etc.
 * `cen_id` - (Required, ForceNew) The ID of the CEN.
 * `transit_router_id` - (Optional, ForceNew) The ID of the transit router to attach.
-* `transit_router_peer_region_id` - (Optional, ForceNew) The region ID of the peer transit router.
 * `peer_transit_router_id` - (Required, ForceNew) The ID of the peer transit router.
 * `peer_transit_router_region_id` - (Required, ForceNew) The region ID of peer transit router.
 * `resource_type` - (Required, ForceNew) The resource type to attachment. Only support `VR` and default value is `VR`.
