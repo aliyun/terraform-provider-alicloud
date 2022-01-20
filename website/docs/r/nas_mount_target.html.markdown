@@ -59,6 +59,16 @@ The following attributes are exported:
 
  *`id`  - This ID of this resource. It is formatted to `<file_system_id>:<mount_target_domain>`. Before version 1.95.0, the value is `<mount_target_domain>`.
 
+### Timeouts
+
+-> **NOTE:** Available in v1.153.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 40 mins) Used when create the mount target (until it reaches the initial `Active` status).
+* `delete` - (Defaults to 40 mins) Used when delete the mount target.
+
+
 ## Import
 
 NAS MountTarget  can be imported using the id, e.g.
