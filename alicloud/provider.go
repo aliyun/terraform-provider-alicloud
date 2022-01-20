@@ -712,6 +712,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_ad_connector_office_sites":               dataSourceAlicloudEcdAdConnectorOfficeSites(),
 			"alicloud_ecs_activations":                             dataSourceAlicloudEcsActivations(),
 			"alicloud_cms_hybrid_monitor_datas":                    dataSourceAlicloudCmsHybridMonitorDatas(),
+			"alicloud_cloud_firewall_address_books":                dataSourceAlicloudCloudFirewallAddressBooks(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1319,6 +1320,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_custom_property":                                  resourceAlicloudEcdCustomProperty(),
 			"alicloud_ecd_ad_connector_office_site":                         resourceAlicloudEcdAdConnectorOfficeSite(),
 			"alicloud_ecs_activation":                                       resourceAlicloudEcsActivation(),
+			"alicloud_cloud_firewall_address_book":                          resourceAlicloudCloudFirewallAddressBook(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1540,6 +1542,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EdasEndpoint = strings.TrimSpace(endpoints["edas"].(string))
 		config.EdasschedulerxEndpoint = strings.TrimSpace(endpoints["edasschedulerx"].(string))
 		config.EhsEndpoint = strings.TrimSpace(endpoints["ehs"].(string))
+		config.CloudfwEndpoint = strings.TrimSpace(endpoints["cloudfw"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1862,6 +1865,8 @@ func init() {
 		"edasschedulerx_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom edasschedulerx endpoints.",
 
 		"ehs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ehs endpoints.",
+
+		"cloudfw_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudfw endpoints.",
 	}
 }
 
@@ -1953,6 +1958,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["gaplus_endpoint"],
+				},
+
+				"cloudfw": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cloudfw_endpoint"],
 				},
 
 				"edsuser": {
@@ -2769,6 +2781,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["edas"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["edasschedulerx"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ehs"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cloudfw"].(string)))
 	return hashcode.String(buf.String())
 }
 
