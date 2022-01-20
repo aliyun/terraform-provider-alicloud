@@ -261,6 +261,9 @@ const (
 // ValidProtocols network protocol list
 var ValidProtocols = []Protocol{Http, Https, Tcp, Udp}
 
+//address book group types
+var AddressBookGroupTypes = []string{"domain", "ip", "port", "tag"}
+
 // simple array value check method, support string type only
 func isProtocolValid(value string) bool {
 	res := false
