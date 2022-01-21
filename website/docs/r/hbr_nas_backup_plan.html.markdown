@@ -66,7 +66,7 @@ The following arguments are supported:
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
 * `backup_type` - (Required, ForceNew) Backup type. Valid values: `COMPLETE`.
 * `file_system_id` - (Required, ForceNew) The File System ID of Nas.
-* `create_time` - (Required, ForceNew) File System Creation Time. **Note** The time format of the API adopts the ISO 8601 format, such as `2021-07-09T15:45:30CST` or `2021-07-09T07:45:30Z`.
+* `create_time` - (Optional, Deprecated) This field has been deprecated from provider version 1.153.0+. The creation time of NAS file system. **Note** The time format of the API adopts the ISO 8601, such as `2021-07-09T15:45:30CST` or `2021-07-09T07:45:30Z`.
 * `path` - (Required) List of backup path. Up to 65536 characters. e.g.`["/home", "/var"]`. **Note** You should at least specify a backup path, empty array not allowed here.
 * `options` - (Optional) Windows operating system with application consistency using VSS, e.g: `{"UseVSS":false}`.
 
