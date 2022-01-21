@@ -164,8 +164,8 @@ func TestAccAlicloudVpcVSwitch_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"zone_id":    "${data.alicloud_zones.default.zones.0.id}",
-					"vpc_id":     "${data.alicloud_vpcs.default.ids.0}",
-					"cidr_block": "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 4, 2)}",
+					"vpc_id":     "${alicloud_vpc.default.id}",
+					"cidr_block": "${cidrsubnet(alicloud_vpc.default.cidr_block, 4, 2)}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -262,8 +262,8 @@ func TestAccAlicloudVpcVSwitch_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"zone_id":      "${data.alicloud_zones.default.zones.0.id}",
-					"vpc_id":       "${data.alicloud_vpcs.default.ids.0}",
-					"cidr_block":   "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 4, 2)}",
+					"vpc_id":       "${alicloud_vpc.default.id}",
+					"cidr_block":   "${cidrsubnet(alicloud_vpc.default.cidr_block, 4, 2)}",
 					"description":  name,
 					"vswitch_name": name,
 				}),
@@ -310,8 +310,8 @@ func TestAccAlicloudVpcVSwitch_basic2(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"availability_zone": "${data.alicloud_zones.default.zones.0.id}",
-					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
-					"cidr_block":        "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 4, 2)}",
+					"vpc_id":            "${alicloud_vpc.default.id}",
+					"cidr_block":        "${cidrsubnet(alicloud_vpc.default.cidr_block, 4, 2)}",
 					"description":       name,
 					"name":              name,
 				}),
@@ -352,8 +352,9 @@ variable "name" {
 			default = "%s"
 		}
 
-data "alicloud_vpcs" "default"{
-	name_regex = "default-NODELETING"
+resource "alicloud_vpc" "default" {
+  vpc_name   = "tf-testacc"
+  cidr_block = "172.16.0.0/12"
 }
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"

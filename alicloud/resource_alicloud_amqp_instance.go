@@ -27,6 +27,7 @@ func resourceAlicloudAmqpInstance() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"instance_name": {
 				Type:     schema.TypeString,
+				Computed: true,
 				Optional: true,
 			},
 			"instance_type": {

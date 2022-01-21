@@ -287,7 +287,7 @@ func AlicloudVpcBasicDependence(name string) string {
 	return fmt.Sprintf(`
 
 data "alicloud_resource_manager_resource_groups" "default" {
-  name_regex = "terraformci"
+  name_regex = "default"
 }
 `)
 }
@@ -536,7 +536,7 @@ func AlicloudVpcBasicDependence1(name string) string {
 	return fmt.Sprintf(`
 
 data "alicloud_resource_manager_resource_groups" "default" {
-  name_regex = "terraformci"
+  name_regex = "default"
 }
 `)
 }

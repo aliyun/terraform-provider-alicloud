@@ -79,11 +79,17 @@ func dataSourceAmqpQueuesConfigDependence(name string) string {
 		variable "name" {
 		 default = "%v"
 		}
-		data "alicloud_amqp_instances" "default" {
-			status = "SERVING"
+		resource "alicloud_amqp_instance" "default" {
+  			instance_type  = "professional"
+  			max_tps        = 1000
+  			queue_capacity = 50
+  			support_eip    = true
+  			max_eip_tps    = 128
+  			payment_type   = "Subscription"
+  			period         = 1
 		}
 		resource "alicloud_amqp_virtual_host" "default" {
-		  instance_id       = data.alicloud_amqp_instances.default.ids.0
+		  instance_id       = alicloud_amqp_instance.default.id
 		  virtual_host_name = "${var.name}"
 		}
 

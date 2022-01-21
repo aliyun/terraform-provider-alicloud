@@ -10,11 +10,11 @@ import (
 )
 
 func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := acctest.RandIntRange(0, 9999)
 	resourceId := "data.alicloud_drds_instances.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
-		fmt.Sprintf("tf-testAcc%sDRDSInstancesDataSource-%d", defaultRegionToTest, rand),
+		fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand),
 		dataSourceDRDSInstancesConfigDependence)
 
 	nameRegexConf := dataSourceTestAccConfig{
@@ -111,7 +111,7 @@ func dataSourceDRDSInstancesConfigDependence(name string) string {
  	resource "alicloud_drds_instance" "default" {
   		description = "${var.name}"
   		zone_id = "${data.alicloud_vswitches.default.vswitches.0.zone_id}"
-  		instance_series = "drds.sn1.4c8g"
+  		instance_series = "drds.sn2.4c16g"
   		instance_charge_type = "PostPaid"
 		vswitch_id = "${data.alicloud_vswitches.default.vswitches.0.id}"
   		specification = "drds.sn1.4c8g.8C16G"

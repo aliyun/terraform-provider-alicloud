@@ -66,7 +66,7 @@ func TestAccAlicloudEcdNasFileSystemsDataSource(t *testing.T) {
 			"systems.0.file_system_type":     "standard",
 			"systems.0.metered_size":         CHECKSET,
 			"systems.0.capacity":             CHECKSET,
-			"systems.0.mount_target_status":  "Active",
+			"systems.0.mount_target_status":  CHECKSET,
 			"systems.0.nas_file_system_name": fmt.Sprintf("tf-testacc-ecdnasfilesystem%d", rand),
 			"systems.0.office_site_id":       CHECKSET,
 			"systems.0.status":               "Running",

@@ -36,6 +36,8 @@ var checkCassandraDcInfo = dataSourceAttr{
 }
 
 func TestAccAlicloudCassandraDataCentersDataSourceNewDataCenter(t *testing.T) {
+	// Cloud database Cassandra has been closed for sale
+	t.Skip("Cloud database Cassandra has been closed for sale")
 	rand := acctest.RandInt()
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
