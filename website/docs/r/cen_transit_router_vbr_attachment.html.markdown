@@ -59,7 +59,7 @@ resource "alicloud_cen_transit_router_vbr_attachment" "foo" {
 The following arguments are supported:
 
 * `vbr_id` - (Required, ForceNew) The ID of the VBR.
-* `cen_id` - (Optional, ForceNew) The ID of the CEN.
+* `cen_id` - (Required, ForceNew) The ID of the CEN.
 * `transit_router_id` - (Optional, ForceNew) The ID of the transit router.
 * `auto_publish_route_enabled` - (Optional) Auto publish route enabled.Default value is `false`.
 * `transit_router_attachment_name` - (Optional) The name of the transit router vbr attachment.
@@ -76,6 +76,9 @@ The following attributes are exported:
 
 * `id` - ID of the resource, It is formatted to `<transit_router_id>:<transit_router_attachment_id>`. 
 * `status` - The associating status of the network.
+* `resource_type` - The resource type of the transit router vbr attachment.  Valid values: `VPC`, `CCN`, `VBR`, `TR`.
+* `transit_router_attachment_id` - The id of the transit router vbr attachment.
+* `vbr_owner_id` - The owner id of the transit router vbr attachment.
 
 ### Timeouts
 
