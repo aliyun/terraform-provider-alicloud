@@ -37,6 +37,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/sae"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
@@ -143,6 +144,7 @@ type AliyunClient struct {
 	cmsConn                      *cms.Client
 	r_kvstoreConn                *r_kvstore.Client
 	maxcomputeConn               *maxcompute.Client
+	saeconn                      *sae.Client
 }
 
 type ApiVersion string
@@ -2065,6 +2067,37 @@ func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (inter
 	return do(client.r_kvstoreConn)
 }
 
+func (client *AliyunClient) WithSaeClient(do func(*sae.Client) (interface{}, error)) (interface{}, error) {
+	// Initialize the SAE client if necessary
+	if client.saeconn == nil {
+		endpoint := client.config.SaeEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, SAECode)
+			if endpoint == "" {
+				endpoint = EndpointMap[client.config.RegionId]
+			}
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(SAECode), endpoint)
+		}
+		saeConn, err := sae.NewClientWithOptions(client.config.RegionId, client.getSdkConfig().WithTimeout(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
+		}
+
+		saeConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
+		saeConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
+		saeConn.SourceIp = client.config.SourceIp
+		saeConn.SecureTransport = client.config.SecureTransport
+		saeConn.AppendUserAgent(Terraform, terraformVersion)
+		saeConn.AppendUserAgent(Provider, providerVersion)
+		saeConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.saeconn = saeConn
+	}
+
+	return do(client.saeconn)
+}
+
 func (client *AliyunClient) NewOnsClient() (*rpc.Client, error) {
 	productCode := "ons"
 	endpoint := ""
@@ -3983,6 +4016,31 @@ func (client *AliyunClient) NewDdsClient() (*rpc.Client, error) {
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("dds.%s.aliyuncs.com", client.config.RegionId)
+			client.config.Endpoints[productCode] = endpoint
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewSaeClient() (*rpc.Client, error) {
+	productCode := "sae"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = fmt.Sprintf("sae.%s.aliyuncs.com", client.config.RegionId)
 			client.config.Endpoints[productCode] = endpoint
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}

@@ -495,7 +495,7 @@ func resourceAlicloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 func resourceAlicloudSaeApplicationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	saeService := SaeService{client}
-	object, err := saeService.DescribeSaeApplication(d.Id())
+	object, err := saeService.DescribeApplicationStatus(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_sae_application saeService.DescribeSaeApplication Failed!!! %s", err)
