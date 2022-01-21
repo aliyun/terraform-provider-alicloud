@@ -76,14 +76,9 @@ func dataSourceActiontrailHistoryDeliveryJobsDependence(name string) string {
 	  name = var.name
 	  description = "tf actiontrail test"
 	}
-	
-	data "alicloud_ram_roles" "default" {
-	  name_regex = "AliyunActionTrailDefaultRole"
-	}
-	
+
 	resource "alicloud_actiontrail_trail" "default" {
 	  trail_name = var.name
-	  sls_write_role_arn = data.alicloud_ram_roles.default.roles.0.arn
 	  sls_project_arn = "acs:log:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:project/${alicloud_log_project.default.name}"
 	}
 

@@ -60,7 +60,7 @@ func dataSourceDataworksFoldersConfigDependence(name string) string {
 		}
 		
 		resource "alicloud_data_works_folder" "default" {
-			project_id = "34051"
+			project_id = "638"
 			folder_path = "Business Flow/tfTestAcc/folderDi/tftest1"
 		}
 		`, name)

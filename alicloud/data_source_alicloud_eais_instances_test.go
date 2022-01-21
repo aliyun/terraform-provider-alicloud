@@ -115,7 +115,7 @@ func dataSourceEaisInstancesConfigDependence(name string) string {
 		}
 		data "alicloud_vswitches" "default" {
 		  vpc_id  = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-		  zone_id = "cn-hangzhou-h"
+
 		}
 		resource "alicloud_vswitch" "default" {
 		  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1

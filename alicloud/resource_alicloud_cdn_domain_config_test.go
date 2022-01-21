@@ -1170,6 +1170,8 @@ func TestAccAlicloudCdnDomainConfig_forward_scheme(t *testing.T) {
 }
 
 func TestAccAlicloudCdnDomainConfig_green_manager(t *testing.T) {
+	// the function: green_manager has been deleted
+	t.Skip()
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"

@@ -564,7 +564,7 @@ var AlicloudNatGatewayMap0 = map[string]string{
 	"dry_run":              NOSET,
 	"force":                NOSET,
 	"forward_table_ids":    CHECKSET,
-	"internet_charge_type": "PayBySpec",
+	"internet_charge_type": "PayByLcu",
 	"nat_type":             "Normal",
 	"payment_type":         "PayAsYouGo",
 	"period":               NOSET,

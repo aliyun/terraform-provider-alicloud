@@ -24,12 +24,12 @@ func TestAccAlicloudEnsKeyPairsDataSource(t *testing.T) {
 
 	namesRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEnsKeyPairSourceConfig(rand, map[string]string{
-			"names":   `["${alicloud_ens_key_pair.default.key_pair_name}"]`,
-			"version": `"2017-11-10"`,
+			"name_regex": `"${alicloud_ens_key_pair.default.key_pair_name}"`,
+			"version":    `"2017-11-10"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEnsKeyPairSourceConfig(rand, map[string]string{
-			"names":   `["${alicloud_ens_key_pair.default.key_pair_name}_fake"]`,
-			"version": `"2017-11-10"`,
+			"name_regex": `"TestAccAlicloudAmqpBindingsDataSource"`,
+			"version":    `"2017-11-10"`,
 		}),
 	}
 

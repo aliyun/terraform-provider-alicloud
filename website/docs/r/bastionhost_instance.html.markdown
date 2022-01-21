@@ -33,6 +33,14 @@ resource "alicloud_bastionhost_instance" "default" {
   security_group_ids = ["sg-test", "sg-12345"]
 }
 ```
+
+### Deleting `alicloud_bastionhost_instance` or removing it from your configuration
+
+The `alicloud_bastionhost_instance` resource allows you to manage bastionhost instance, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration
+will remove it from your state file and management, but will not destroy the bastionhost instance.
+You can resume managing the subscription bastionhost instance via the AlibabaCloud Console.
+
 ## Argument Reference
 
 The following arguments are supported:
