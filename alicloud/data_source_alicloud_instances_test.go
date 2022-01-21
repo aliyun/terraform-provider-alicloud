@@ -131,6 +131,17 @@ func TestAccAlicloudEcsInstancesDataSourceBasic(t *testing.T) {
 		),
 	}
 
+	pagingConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"ids":         `[ "${alicloud_instance.default.id}" ]`,
+			"page_number": `1`,
+		}),
+		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"ids":         `[ "${alicloud_instance.default.id}" ]`,
+			"page_number": `2`,
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand, map[string]string{
 			"ids":               `[ "${alicloud_instance.default.id}" ]`,
@@ -141,6 +152,7 @@ func TestAccAlicloudEcsInstancesDataSourceBasic(t *testing.T) {
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"`,
 			"resource_group_id": `"${var.resource_group_id}"`,
+			"page_number":       `1`,
 		},
 			`tags = {
 				from = "datasource"
@@ -161,6 +173,7 @@ func TestAccAlicloudEcsInstancesDataSourceBasic(t *testing.T) {
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"`,
 			"resource_group_id": `"${var.resource_group_id}"`,
+			"page_number":       `2`,
 		},
 			`tags = {
 				from = "datasource_fake"
@@ -175,7 +188,7 @@ func TestAccAlicloudEcsInstancesDataSourceBasic(t *testing.T) {
 	}
 
 	instancesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, imageIdConf, statusConf,
-		vpcIdConf, vSwitchConf, availabilityZoneConf, ramRoleNameConf, resourceGroupIdConf, tagsConf, allConf)
+		vpcIdConf, vSwitchConf, availabilityZoneConf, ramRoleNameConf, resourceGroupIdConf, tagsConf, pagingConf, allConf)
 }
 
 func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -321,6 +334,7 @@ var existInstancesMapFunc = func(rand int) map[string]string {
 		"ids.#":                                  "1",
 		"names.#":                                "1",
 		"instances.#":                            "1",
+		"total_count":                            CHECKSET,
 		"instances.0.id":                         CHECKSET,
 		"instances.0.region_id":                  CHECKSET,
 		"instances.0.availability_zone":          CHECKSET,
