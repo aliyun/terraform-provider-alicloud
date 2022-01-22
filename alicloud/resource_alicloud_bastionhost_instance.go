@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"strconv"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
