@@ -34,7 +34,8 @@ func TestAccAlicloudVpcSnatEntry_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"snat_ip":           "${alicloud_eip_address.default.ip_address}",
 					"snat_table_id":     "${alicloud_nat_gateway.default.snat_table_ids}",
-					"source_vswitch_id": "${local.vswitch_id}",
+					"source_vswitch_id": "${data.alicloud_vswitches.default.ids[0]}",
+					"depends_on":        []string{"alicloud_eip_association.default"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -163,50 +164,33 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
+data "alicloud_enhanced_nat_available_zones" "default" {}
 
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+  name_regex = "default-NODELETING"
 }
+
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
-}
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
-}
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_enhanced_nat_available_zones.default.zones.0.zone_id
 }
 
 resource "alicloud_nat_gateway" "default" {
-  vpc_id        = data.alicloud_vpcs.default.ids.0
-  specification = "Middle"
-  network_type  = "internet"
-  nat_gateway_name = "${var.name}"
-  vswitch_id    = local.vswitch_id
-  nat_type      = "Enhanced"
-  period        = "5"
-  instance_charge_type = "PrePaid"
-  internet_charge_type = "PayBySpec"
+  vpc_id           = data.alicloud_vpcs.default.ids.0
+  nat_gateway_name = var.name
+  payment_type     = "PayAsYouGo"
+  vswitch_id       = data.alicloud_vswitches.default.ids[0]
+  nat_type         = "Enhanced"
 }
 
 resource "alicloud_eip_address" "default" {
-  address_name = "${var.name}"
+  address_name = var.name
 }
 
 resource "alicloud_eip_association" "default" {
-  depends_on    = [alicloud_eip_address.default, alicloud_nat_gateway.default]
-  allocation_id = "${alicloud_eip_address.default.id}"
-  instance_id   = "${alicloud_nat_gateway.default.id}"
+  allocation_id = alicloud_eip_address.default.id
+  instance_id   = alicloud_nat_gateway.default.id
 }
-
 `, name)
 }
 
@@ -216,57 +200,40 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
+data "alicloud_enhanced_nat_available_zones" "default" {}
 
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+  name_regex = "default-NODELETING"
 }
+
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
-}
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
-}
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_enhanced_nat_available_zones.default.zones.0.zone_id
 }
 
 resource "alicloud_nat_gateway" "default" {
-  vpc_id        = data.alicloud_vpcs.default.ids.0
-  specification = "Middle"
-  network_type  = "internet"
-  nat_gateway_name = "${var.name}"
-  vswitch_id    = local.vswitch_id
-  nat_type      = "Enhanced"
-  period        = "5"
-  instance_charge_type = "PrePaid"
-  internet_charge_type = "PayBySpec"
+  vpc_id           = data.alicloud_vpcs.default.ids.0
+  nat_gateway_name = var.name
+  payment_type     = "PayAsYouGo"
+  vswitch_id       = data.alicloud_vswitches.default.ids[0]
+  nat_type         = "Enhanced"
 }
 
 resource "alicloud_eip_address" "default" {
-  address_name = "${var.name}"
+  address_name = var.name
 }
 
 resource "alicloud_eip_association" "default" {
-  depends_on    = [alicloud_eip_address.default, alicloud_nat_gateway.default]
-  allocation_id = "${alicloud_eip_address.default.id}"
-  instance_id   = "${alicloud_nat_gateway.default.id}"
+  allocation_id = alicloud_eip_address.default.id
+  instance_id   = alicloud_nat_gateway.default.id
 }
 
 resource "alicloud_snat_entry" "default" {
-	count = 3
-	snat_ip = "${alicloud_eip_address.default.ip_address}"
-    snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
-    source_vswitch_id = local.vswitch_id
-	depends_on = [alicloud_eip_association.default]
+  count             = 3
+  snat_ip           = alicloud_eip_address.default.ip_address
+  snat_table_id     = alicloud_nat_gateway.default.snat_table_ids
+  source_vswitch_id = data.alicloud_vswitches.default.ids[count.index]
+  depends_on        = [alicloud_eip_association.default]
 }
-
 `, name)
 }
