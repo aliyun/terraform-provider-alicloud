@@ -237,6 +237,7 @@ resource "alicloud_vpc_traffic_mirror_filter" "default" {
 }
 
 func TestAccAlicloudVPCTrafficMirrorFilterIngressRule_unit(t *testing.T) {
+	t.Parallel()
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_traffic_mirror_filter_ingress_rule"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_traffic_mirror_filter_ingress_rule"].Schema).Data(nil, nil)
@@ -539,10 +540,10 @@ func TestAccAlicloudVPCTrafficMirrorFilterIngressRule_unit(t *testing.T) {
 
 	t.Run("DeleteMockAbnormal", func(t *testing.T) {
 		retryFlag := true
-		noRetryFlag := false
+		noRetryFlag := true
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if retryFlag {
-				// retry until the timeout comes
+				retryFlag = false
 				return responseMock["RetryError"]("Throttling")
 			} else if noRetryFlag {
 				noRetryFlag = false

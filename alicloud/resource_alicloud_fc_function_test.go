@@ -313,6 +313,7 @@ func TestAccAlicloudFCFunctionMulti(t *testing.T) {
 }
 
 func TestAccAlicloudFCFunction_custom_container(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.FCSupportRegions)
 	var v *fc.GetFunctionOutput
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testaccalicloudfcfunction-%d", rand)

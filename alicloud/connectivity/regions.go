@@ -171,3 +171,5 @@ var NASSupportRegions = []Region{HeYuan, Huhehaote, APSouthEast5, WuLanChaBu, Cn
 var HBRSupportRegions = []Region{Beijing, ChengDu, Huhehaote, Qingdao, Shanghai, Shenzhen, Zhangjiakou, Hangzhou}
 var NASCPFSSupportRegions = []Region{Hangzhou, Shenzhen, Beijing, Shanghai, HeYuan, Huhehaote, WuLanChaBu, Qingdao, ChengDu, APSouthEast1}
 var WAFSupportRegions = []Region{Hangzhou, APSouth1}
+var MSCSupportRegions = []Region{Hangzhou}
+var FCSupportRegions = []Region{Hangzhou}

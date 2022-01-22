@@ -236,8 +236,9 @@ func AlicloudOOSApplicationBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
-
-data "alicloud_resource_manager_resource_groups" "default" {}
+data "alicloud_resource_manager_resource_groups" "default" {
+  name_regex = "default"
+}
 
 `, name)
 }
