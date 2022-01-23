@@ -44,7 +44,7 @@ ENHANCEMENTS:
 - testcase: Adds a new test case for resource alicloud_cen_transit_router_route_table([#4432](https://github.com/aliyun/terraform-provider-alicloud/issues/4432))
 - testcase: Adds a new test case for resource alicloud_cen_transit_router_route_table_propagation([#4434](https://github.com/aliyun/terraform-provider-alicloud/issues/4434))
 - testcase: Adds a new test case for resource alicloud_cen_transit_router_vbr_attachment([#4435](https://github.com/aliyun/terraform-provider-alicloud/issues/4435))
-- testcase: Adds a new test case for resource alicloud_cen_vbr_health_check [GHH-4437]
+- testcase: Adds a new test case for resource alicloud_cen_vbr_health_check ([#4437](https://github.com/aliyun/terraform-provider-alicloud/issues/4437))
 - testcase: Adds a new test case for resource alicloud_alb_acl([#4439](https://github.com/aliyun/terraform-provider-alicloud/issues/4439))
 - testcase: Adds a new test case for resource alicloud_alb_health_check_template([#4440](https://github.com/aliyun/terraform-provider-alicloud/issues/4440))
 - testcase: Adds a new test case for resource alicloud_alb_listener([#4441](https://github.com/aliyun/terraform-provider-alicloud/issues/4441))
