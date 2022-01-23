@@ -1,4 +1,53 @@
 ## 1.153.0 (Unreleased)
+
+- **New Resource:** `alicloud_alidns_monitor_config` [GH-4477]
+- **New Resource:** `alicloud_vpc_bgp_peer` [GH-4500]
+- **New Resource:** `alicloud_vpc_dhcp_options_set_attachment` [GH-4505]
+- **New Resource:** `alicloud_nas_fileset` [GH-4508]
+- **New Resource:** `alicloud_nas_auto_snapshot_policy` [GH-4509]
+- **New Resource:** `alicloud_nas_lifecycle_policy` [GH-4513]
+- **New Resource:** `alicloud_rds_upgrade_db_instance` [GH-4475]	
+- **New Resource:** `alicloud_vpc_bgp_network` [GH-4516]
+- **New Data Source:** `alicloud_vpc_bgp_networks` [GH-4516]	
+- **New Data Source:** `alicloud_nas_lifecycle_policies` [GH-4513]	
+- **New Data Source:** `alicloud_nas_auto_snapshot_policies` [GH-4509]
+- **New Data Source:** `alicloud_nas_filesets` [GH-4508]	
+- **New Data Source:** `alicloud_vpc_bgp_peers` [GH-4500]
+- **New Data Source:** `alicloud_cdn_ip_info` [GH-4511]
+
+ENHANCEMENTS:
+
+- resource/alicloud_security_group_rule: support updating prefix_list_id [GH-4496]
+- resource/sae_application: add the Async await process [GH-4525]
+- resource/alicloud_hbr_nas_backup_plan: remove attribute create_time [GH-4518]
+- resource/alicloud_nas_file_system: Support for creating cpfs file system and configuration tags [GH-4508]
+- datasource/alicloud_alikafka_topics: Adds two internal parameters current_page and page_size to support paging [GH-4514]
+- datasource/alicloud_emr_clusters: Adds three internal parameters current_page page_size total_count to support paging [GH-4519]
+- datasource/alicloud_instances: Adds three internal parameters current_page page_size total_count to support paging [GH-4521]
+- datasource/alicloud_ecs_disks: Adds three internal parameters current_page page_size total_count to support paging [GH-4524]	
+- testcase: Adds a new test case for resource alicloud_db_database [GH-4452]
+- testcase: Adds a new test case for resource alicloud_cen_transit_router_route_table_association [GH-4433]
+- testcase: Adds a new test case for resource alicloud_cen_transit_router_route_entry [GH-4431]
+- testcase: Adds a new test case for resource alicloud_cen_route_service [GH-4427]
+- testcase: Adds a new test case for resource alicloud_dcdn_domain [GH-4420]
+- testcase: Adds new unit test case for resource alicloud_ecs_session_manager_status alicloud_ecs_key_pair alicloud_ecs_network_interface_attachment [GH-4506]
+- testcase: Adds new unit test case for resource alicloud_ecs_snapshot alicloud_ecs_hpc_cluster alicloud_ecs_deployment_set [GH-4487]
+- testcase: Adds a new test case for resource alicloud_rds_parameter_group [GH-4449]
+- testcase: Adds a new test case for resource alicloud_rds_account [GH-4448]
+- testcase: Adds new unit test case for resource alicloud_cen_transit_router_route_entry alicloud_cen_transit_router_peer_attachment alicloud_cen_transit_router [GH-4428]
+- testcase: Adds new unit test case for resource alicloud_vpc_vbr_ha alicloud_cen_instance alicloud_vpc_bgp_group [GH-4512]
+- testcase: Improve the effectiveness of test cases [GH-4515]
+- testcase: Improve the effectiveness of test cases [GH-4526]
+- testcase: Adds a new test case for resource alicloud_cen_instance [GH-4424]
+- testcase: Adds a new test case for resource alicloud_cen_transit_router_peer_attachment [GH-4429]
+- testcase: Adds a new test case for resource alicloud_cen_transit_router_route_table [GH-4432]
+- testcase: Adds a new test case for resource alicloud_cen_transit_router_route_table_propagation [GH-4434]
+- testcase: Adds a new test case for resource alicloud_cen_transit_router_vbr_attachment [GH-4435]
+- testcase: Adds a new test case for resource alicloud_cen_vbr_health_check [GHH-4437]
+- testcase: Adds a new test case for resource alicloud_alb_acl [GH-4439]
+- testcase: Adds a new test case for resource alicloud_alb_health_check_template [GH-4440]
+- testcase: Adds a new test case for resource alicloud_alb_listener [GH-4441]
+
 ## 1.152.0 (January 16, 2022)
 
 - **New Resource:** `alicloud_vpc_bgp_group` ([#4465](https://github.com/aliyun/terraform-provider-alicloud/issues/4465))
