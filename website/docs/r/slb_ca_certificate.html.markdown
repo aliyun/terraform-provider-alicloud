@@ -41,7 +41,7 @@ resource "alicloud_slb_ca_certificate" "foo-file" {
 
 The following arguments are supported:
 
-* `ca_certifacate_name` - (Optional, Available in 1.123.1+) Name of the CA Certificate.
+* `ca_certificate_name` - (Optional, Available in 1.123.1+) Name of the CA Certificate.
 * `ca_certificate` - (Required, ForceNew) the content of the CA certificate.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the slb_ca certificate belongs.
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
