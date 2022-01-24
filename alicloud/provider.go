@@ -658,6 +658,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_bgp_networks":                            dataSourceAlicloudVpcBgpNetworks(),
 			"alicloud_nas_data_flows":                              dataSourceAlicloudNasDataFlows(),
 			"alicloud_ecs_storage_capacity_units":                  dataSourceAlicloudEcsStorageCapacityUnits(),
+			"alicloud_dbfs_snapshots":                              dataSourceAlicloudDbfsSnapshots(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1202,6 +1203,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nas_data_flow":                                        resourceAlicloudNasDataFlow(),
 			"alicloud_ecs_storage_capacity_unit":                            resourceAlicloudEcsStorageCapacityUnit(),
 			"alicloud_nas_recycle_bin":                                      resourceAlicloudNasRecycleBin(),
+			"alicloud_dbfs_snapshot":                                        resourceAlicloudDbfsSnapshot(),
+			"alicloud_dbfs_instance_attachment":                             resourceAlicloudDbfsInstanceAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
