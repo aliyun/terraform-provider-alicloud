@@ -35,7 +35,7 @@ The following arguments are supported:
 
 * `category` - (Optional, Computed, ForceNew) The type of the Database file system. Valid values: `standard`.
 * `delete_snapshot` - (Optional) Whether to delete the original snapshot after the DBFS is created using the snapshot. Valid values : `true` anf `false`.
-* `ecs_list` - (Optional) The collection of ECS instances mounted to the Database file system. See the following `Block ecs_list`.
+* `ecs_list` - (Optional) The collection of ECS instances mounted to the Database file system. See the following `Block ecs_list`. **NOTE:** Field 'ecs_list' has been deprecated from provider version 1.156.0 and it will be removed in the future version. Please use the new resource 'alicloud_dbfs_instance_attachment' to attach ECS and DBFS.
 * `enable_raid` - (Optional, ForceNew) Whether to create the Database file system in RAID way. Valid values : `true` anf `false`.
 * `encryption` - (Optional, ForceNew) Whether to encrypt the database file system. Valid values: `true` and `false`.
 * `instance_name` - (Required) The name of the Database file system.
@@ -45,6 +45,7 @@ The following arguments are supported:
 * `size` - (Required) The size Of the Database file system. Unit: GiB.
 * `snapshot_id` - (Optional) The snapshot id of the Database file system.
 * `zone_id` - (Required, ForceNew) The Zone ID of the Database file system.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 
 ### Block ecs_list
