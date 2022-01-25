@@ -667,6 +667,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecp_zones":                                   dataSourceAlicloudEcpZones(),
 			"alicloud_ecp_instance_types":                          dataSourceAlicloudEcpInstanceTypes(),
 			"alicloud_dcdn_ipa_domains":                            dataSourceAlicloudDcdnIpaDomains(),
+			"alicloud_sddp_data_limits":                            dataSourceAlicloudSddpDataLimits(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1222,6 +1223,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mongodb_sharding_network_private_address":             resourceAlicloudMongodbShardingNetworkPrivateAddress(),
 			"alicloud_ecp_instance":                                         resourceAlicloudEcpInstance(),
 			"alicloud_dcdn_ipa_domain":                                      resourceAlicloudDcdnIpaDomain(),
+			"alicloud_sddp_data_limit":                                      resourceAlicloudSddpDataLimit(),
 		},
 
 		ConfigureFunc: providerConfigure,
