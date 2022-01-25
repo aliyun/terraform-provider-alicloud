@@ -41,6 +41,7 @@ The following arguments are supported:
 * `dry_run` - (Optional) The dry run.
 * `tls_versions` - (Required) The TLS protocol versions that are supported. Valid values: TLSv1.0, TLSv1.1, TLSv1.2 and TLSv1.3.
 * `ciphers` - (Required) The supported cipher suites, which are determined by the TLS protocol version.The specified cipher suites must be supported by at least one TLS protocol version that you select. 
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 ## Attributes Reference
 
 The following attributes are exported:
