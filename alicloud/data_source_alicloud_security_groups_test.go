@@ -137,6 +137,7 @@ var existSecurityGroupsMapFunc = func(rand int) map[string]string {
 		"ids.#":                        "1",
 		"names.#":                      "1",
 		"groups.#":                     "1",
+		"total_count":                  CHECKSET,
 		"groups.0.vpc_id":              CHECKSET,
 		"groups.0.resource_group_id":   os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 		"groups.0.security_group_type": "normal",
