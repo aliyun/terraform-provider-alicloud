@@ -136,8 +136,16 @@ func resourceAlicloudEcsKeyPairCreate(d *schema.ResourceData, meta interface{}) 
 
 	d.SetId(fmt.Sprint(response["KeyPairName"]))
 	if file, ok := d.GetOk("key_file"); ok {
-		ioutil.WriteFile(file.(string), []byte(response["PrivateKeyBody"].(string)), 0600)
-		os.Chmod(file.(string), 0400)
+		if v, exist := response["PrivateKeyBody"]; exist {
+			err := ioutil.WriteFile(file.(string), []byte(v.(string)), 0600)
+			if err != nil {
+				return WrapError(err)
+			}
+			err = os.Chmod(file.(string), 0400)
+			if err != nil {
+				return WrapError(err)
+			}
+		}
 	}
 
 	return resourceAlicloudEcsKeyPairRead(d, meta)

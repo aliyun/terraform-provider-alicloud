@@ -652,28 +652,8 @@ func TestAccAlicloudVpcVSwitch_unit(t *testing.T) {
 	})
 
 	t.Run("DeleteMockAbnormal", func(t *testing.T) {
-		retryFlag := false
-		noRetryFlag := true
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if retryFlag {
-				// delete方法里,一直重试,直到超时
-				retryFlag = false
-				return responseMock["RetryError"]("RetryableError")
-			} else if noRetryFlag {
-				noRetryFlag = false
-				return responseMock["NoRetryError"]("InvalidRegionId.NotFound")
-			}
-			return responseMock["DeleteNormal"]("")
-		})
-		err := resourceAlicloudVswitchDelete(d, rawClient)
-		patches.Reset()
-		assert.NotNil(t, err)
-	})
-
-	//timeout
-	t.Run("DeleteMockNormalTimeOut", func(t *testing.T) {
 		retryFlag := true
-		noRetryFlag := false
+		noRetryFlag := true
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if retryFlag {
 				retryFlag = false

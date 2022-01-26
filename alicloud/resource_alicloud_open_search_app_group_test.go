@@ -148,12 +148,12 @@ func TestAccAlicloudOpenSearchAppGroup_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"app_group_name": name,
 					"payment_type":   "PayAsYouGo",
-					"type":           "standard",
+					"type":           "enhanced",
 					"quota": []map[string]interface{}{
 						{
-							"doc_size":         "1",
-							"compute_resource": "20",
-							"spec":             "opensearch.share.common",
+							"doc_size":         "100",
+							"compute_resource": "500",
+							"spec":             "opensearch.private.common",
 						},
 					},
 				}),
@@ -190,9 +190,9 @@ func TestAccAlicloudOpenSearchAppGroup_basic0(t *testing.T) {
 					"order_type": "UPGRADE",
 					"quota": []map[string]interface{}{
 						{
-							"doc_size":         "2",
+							"doc_size":         "200",
 							"compute_resource": "1000",
-							"spec":             "opensearch.share.compute",
+							"spec":             "opensearch.private.compute",
 						},
 					},
 				}),

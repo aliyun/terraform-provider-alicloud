@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"testing"
 
@@ -64,6 +63,7 @@ func testSweepEciImageCache(region string) error {
 
 func TestAccAlicloudECIOpenAPIImageCache_basic(t *testing.T) {
 	var v eci.DescribeImageCachesImageCache0
+	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	resourceId := "alicloud_eci_image_cache.default"
 	ra := resourceAttrInit(resourceId, EciOpenapiImageCacheMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -86,18 +86,18 @@ func TestAccAlicloudECIOpenAPIImageCache_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"image_cache_name":  strings.ToLower(name),
-					"images":            []string{"registry.cn-beijing.aliyuncs.com/sceneplatform/sae-image-demo:latest"},
+					"images":            []string{fmt.Sprintf("registry-vpc.%s.aliyuncs.com/sae-demo-image/consumer:1.0", defaultRegionToTest)},
 					"security_group_id": "${alicloud_security_group.group.id}",
 					"vswitch_id":        "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
 					"eip_instance_id":   "${alicloud_eip_address.default.id}",
-					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"depends_on ":       []string{"alicloud_eip_address.default"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"image_cache_name":  strings.ToLower(name),
 						"images.#":          "1",
-						"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -132,6 +132,9 @@ func EciOpenapiImageCacheBasicdependence(name string) string {
 	}
 	resource "alicloud_eip_address" "default" {
 	  address_name = "%[1]s"
+	}
+	data "alicloud_resource_manager_resource_groups" "default" {
+	  name_regex = "default"
 	}
 `, name)
 }

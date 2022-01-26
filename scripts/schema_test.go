@@ -34,7 +34,9 @@ func init() {
 var (
 	resourceName = flag.String("resource", "", "the name of the terraform resource to diff")
 	fileName     = flag.String("file_name", "", "the file to check diff")
-	fileter_list = make(map[string][]string, 0)
+	filterList = map[string][]string{
+		"alicloud_amqp_instance": []string{"logistics"},
+	}
 )
 
 type Resource struct {
@@ -58,7 +60,7 @@ func TestConsistencyWithDocument(t *testing.T) {
 	}
 	mergeMaps(objSchema, objMd.Arguments, objMd.Attributes)
 
-	if consistencyCheck(objSchema, obj) {
+	if consistencyCheck(t, *resourceName, objSchema, obj) {
 		t.Fatal()
 	}
 }
@@ -253,6 +255,7 @@ func parseResource(resourceName string) (*Resource, error) {
 			argumentsMatched := argumentsFieldRegex.FindAllStringSubmatch(line, 1)
 			for _, argumentMatched := range argumentsMatched {
 				Field := parseMatchLine(argumentMatched, true)
+				Field["Type"] = "Argument"
 				if v, exist := Field["Name"]; exist {
 					result.Arguments[v.(string)] = Field
 				}
@@ -267,6 +270,7 @@ func parseResource(resourceName string) (*Resource, error) {
 			attributesMatched := attributeFieldRegex.FindAllStringSubmatch(line, 1)
 			for _, attributeParsed := range attributesMatched {
 				Field := parseMatchLine(attributeParsed, false)
+				Field["Type"] = "Attribute"
 				if v, exist := Field["Name"]; exist {
 					result.Attributes[v.(string)] = Field
 				}
@@ -300,13 +304,27 @@ func parseMatchLine(words []string, argumentFlag bool) map[string]interface{} {
 	return nil
 }
 
-func consistencyCheck(doc map[string]interface{}, resource map[string]*schema.Schema) (res bool) {
+func consistencyCheck(t *testing.T, resourceName string, doc map[string]interface{}, resource map[string]*schema.Schema) bool {
+	res := false
+	fileteredList := set.NewSet()
+	if val, ok := filterList[resourceName]; ok {
+		for _, v := range val {
+			fileteredList.Add(v)
+		}
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			res = true
+			log.Errorf("internal error: Please email terraform@alibabacloud.com to report the issue with the related resource")
+			t.Fatal()
+		}
+	}()
+
 	// the number of the schema field + 1(id) should equal to the number defined in document
 	if len(resource)+1 != len(doc) {
-		res = true
 		record := set.NewSet()
 		for field, _ := range doc {
-			if field == "id" {
+			if field == "id" || fileteredList.Contains(field) {
 				delete(doc, field)
 				continue
 			}
@@ -320,35 +338,43 @@ func consistencyCheck(doc map[string]interface{}, resource map[string]*schema.Sc
 		}
 		if len(resource) != 0 {
 			for field, _ := range resource {
+				if fileteredList.Contains(field) {
+					record.Remove(field)
+					continue
+				}
 				// the field existed in resource,but not existed in document
 				record.Add(field)
 			}
 		}
-		log.Errorf("there is missing attribute %v description in the document", record)
-		return
+		if record.Cardinality() != 0 {
+			log.Errorf("there is missing attribute %v description in the document", record)
+			return true
+		}
 	}
 	for field, docFieldObj := range doc {
+		docObj := docFieldObj.(map[string]interface{})
+		if docObj["Type"] == "Attribute" || fileteredList.Contains(field) {
+			continue
+		}
 		resourceFieldObj := resource[field]
-		if _, exist1 := docFieldObj.(map[string]interface{})["Optional"]; exist1 {
-			if !resourceFieldObj.Optional {
-				res = true
-				log.Errorf("attribute %v should be marked as Optional in the in the document description", field)
-			}
+		if resourceFieldObj == nil {
+			res = true
+			panic(field)
 		}
-		if _, exist1 := docFieldObj.(map[string]interface{})["Required"]; exist1 {
-			if !resourceFieldObj.Required {
-				res = true
-				log.Errorf("attribute %v should be marked as Required in the in the document description", field)
-			}
+		if _, exist1 := docObj["Optional"]; exist1 && !resourceFieldObj.Optional {
+			res = true
+			log.Errorf("attribute %v should be marked as Optional in the in the document description", field)
 		}
-		if _, exist1 := docFieldObj.(map[string]interface{})["ForceNew"]; exist1 {
-			if !resourceFieldObj.ForceNew {
-				res = true
-				log.Errorf("attribute %v should be marked as ForceNew in the document description", field)
-			}
+		if _, exist1 := docObj["Required"]; exist1 && !resourceFieldObj.Required {
+			res = true
+			log.Errorf("attribute %v should be marked as Required in the in the document description", field)
+		}
+		if _, exist1 := docObj["ForceNew"]; exist1 && !resourceFieldObj.ForceNew {
+			res = true
+			log.Errorf("attribute %v should be marked as ForceNew in the document description", field)
 		}
 	}
-	return false
+	return res
 }
 
 func mergeMaps(Dst map[string]interface{}, arr ...map[string]interface{}) map[string]interface{} {

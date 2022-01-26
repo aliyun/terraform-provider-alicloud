@@ -403,7 +403,7 @@ func TestAccAlicloudFCServiceVpcAndNasUpdate(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"name_prefix"},
+				ImportStateVerifyIgnore: []string{"name_prefix", "publish"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
