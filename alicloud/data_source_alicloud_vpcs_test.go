@@ -94,6 +94,16 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 			"resource_group_id": fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 		}),
 	}
+	pagingConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
+			"vpc_name":    `"${var.name}"`,
+			"page_number": `1`,
+		}),
+		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
+			"vpc_name":    `"${var.name}"`,
+			"page_number": `2`,
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${var.name}"`,
@@ -103,6 +113,8 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 			"is_default":        `"false"`,
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"resource_group_id": fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+			"vpc_name":          `"${var.name}"`,
+			"page_number":       `1`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${var.name}"`,
@@ -112,10 +124,12 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 			"is_default":        `"false"`,
 			"vswitch_id":        `"${alicloud_vswitch.default.id}_fake"`,
 			"resource_group_id": fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+			"vpc_name":          `"${var.name}"`,
+			"page_number":       `2`,
 		}),
 	}
 
-	vpcsCheckInfo.dataSourceTestCheck(t, rand, initVswitchConf, nameRegexConf, idsConf, cidrBlockConf, statusConf, idDefaultConf, vswitchIdConf, tagsConf, resourceGroupIdConf, allConf)
+	vpcsCheckInfo.dataSourceTestCheck(t, rand, initVswitchConf, nameRegexConf, idsConf, cidrBlockConf, statusConf, idDefaultConf, vswitchIdConf, tagsConf, resourceGroupIdConf, pagingConf, allConf)
 }
 
 func testAccCheckAlicloudVpcsDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -163,6 +177,7 @@ var existVpcsMapFunc = func(rand int) map[string]string {
 		"ids.#":                 "1",
 		"names.#":               "1",
 		"vpcs.#":                "1",
+		"total_count":           CHECKSET,
 		"vpcs.0.id":             CHECKSET,
 		"vpcs.0.region_id":      CHECKSET,
 		"vpcs.0.status":         "Available",
