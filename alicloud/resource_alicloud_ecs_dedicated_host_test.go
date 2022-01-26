@@ -218,12 +218,11 @@ func TestAccAlicloudEcsDedicatedHost_basic2(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"dedicated_host_type":   "ddh.c6s",
+					"dedicated_host_type":   "ddh.r6",
 					"description":           "From_Terraform",
 					"dedicated_host_name":   name,
 					"action_on_maintenance": "Migrate",
 					"auto_placement":        "on",
-					"cpu_over_commit_ratio": "1",
 					"min_quantity":          "1",
 					"network_attributes": []map[string]interface{}{
 						{
@@ -236,16 +235,15 @@ func TestAccAlicloudEcsDedicatedHost_basic2(t *testing.T) {
 						"Created": "TF",
 						"For":     "DDH_Test",
 					},
-					"zone_id": "cn-shanghai-g",
+					"zone_id": "${data.alicloud_vswitches.default.vswitches.1.zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"dedicated_host_type":   "ddh.c6s",
+						"dedicated_host_type":   "ddh.r6",
 						"description":           "From_Terraform",
 						"dedicated_host_name":   name,
 						"action_on_maintenance": "Migrate",
 						"auto_placement":        "on",
-						"cpu_over_commit_ratio": "1",
 						"min_quantity":          "1",
 						"network_attributes.#":  "1",
 						"resource_group_id":     CHECKSET,
@@ -274,6 +272,12 @@ var EcsDedicatedHostMap = map[string]string{
 
 func EcsDedicatedHostBasicdependence(name string) string {
 	return fmt.Sprintf(`
+	data "alicloud_vpcs" "default" {
+	  name_regex = "default-NODELETING"
+	}
+	data "alicloud_vswitches" "default" {
+	  vpc_id = data.alicloud_vpcs.default.ids.0
+	}
 	data "alicloud_resource_manager_resource_groups" "default"{
 	}
 `)

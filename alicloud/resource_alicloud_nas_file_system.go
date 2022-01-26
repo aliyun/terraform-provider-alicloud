@@ -107,7 +107,7 @@ func resourceAlicloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
-	request["RegiondId"] = client.RegionId
+	request["RegionId"] = client.RegionId
 	request["ProtocolType"] = d.Get("protocol_type")
 	if v, ok := d.GetOk("file_system_type"); ok {
 		request["FileSystemType"] = v

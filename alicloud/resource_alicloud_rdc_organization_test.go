@@ -89,6 +89,7 @@ func testSweepRdcOrganization(region string) error {
 
 func TestAccAlicloudRDCOrganization_basic1(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.RDCupportRegions)
 	resourceId := "alicloud_rdc_organization.default"
 	ra := resourceAttrInit(resourceId, AlicloudRDCOrganizationMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
