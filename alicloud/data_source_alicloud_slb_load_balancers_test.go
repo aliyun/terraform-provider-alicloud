@@ -98,6 +98,16 @@ func TestAccAlicloudSlbLoadBalancersDataSource(t *testing.T) {
 			"status": `"inactive"`,
 		}),
 	}
+	pagingConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbLoadBalancersDataSourceName(rand, map[string]string{
+			"load_balancer_name": `"${alicloud_slb_load_balancer.default.load_balancer_name}"`,
+			"page_number":        `1`,
+		}),
+		fakeConfig: testAccCheckAlicloudSlbLoadBalancersDataSourceName(rand, map[string]string{
+			"load_balancer_name": `"${alicloud_slb_load_balancer.default.load_balancer_name}"`,
+			"page_number":        `2`,
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbLoadBalancersDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_slb_load_balancer.default.id}"]`,
@@ -111,6 +121,7 @@ func TestAccAlicloudSlbLoadBalancersDataSource(t *testing.T) {
 			"tags": fmt.Sprintf(`{
 				Created = "TF-%d"
 		}`, rand),
+			"page_number": `1`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbLoadBalancersDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_slb_load_balancer.default.id}_fake"]`,
@@ -124,6 +135,7 @@ func TestAccAlicloudSlbLoadBalancersDataSource(t *testing.T) {
 			"tags": fmt.Sprintf(`{
 				Created = "fake-%d"
 		}`, rand),
+			"page_number": `2`,
 		}),
 	}
 	var existAlicloudSlbLoadBalancersDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -131,6 +143,7 @@ func TestAccAlicloudSlbLoadBalancersDataSource(t *testing.T) {
 			"ids.#":                                      "1",
 			"names.#":                                    "1",
 			"balancers.#":                                "1",
+			"total_count":                                CHECKSET,
 			"balancers.0.address":                        CHECKSET,
 			"balancers.0.address_ip_version":             `ipv4`,
 			"balancers.0.address_type":                   `intranet`,
@@ -161,7 +174,7 @@ func TestAccAlicloudSlbLoadBalancersDataSource(t *testing.T) {
 		existMapFunc: existAlicloudSlbLoadBalancersDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudSlbLoadBalancersDataSourceNameMapFunc,
 	}
-	alicloudSlbLoadBalancersCheckInfo.dataSourceTestCheck(t, rand, idsConf, vpcIDConf, vswitchConf, netWorkTypeConf, masterZoneConf, resourceGroupIdConf, tagsConf, nameRegexConf, statusConf, allConf)
+	alicloudSlbLoadBalancersCheckInfo.dataSourceTestCheck(t, rand, idsConf, vpcIDConf, vswitchConf, netWorkTypeConf, masterZoneConf, resourceGroupIdConf, tagsConf, nameRegexConf, statusConf, pagingConf, allConf)
 }
 func testAccCheckAlicloudSlbLoadBalancersDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
