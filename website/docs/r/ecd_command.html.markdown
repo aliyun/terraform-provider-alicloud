@@ -71,7 +71,7 @@ The following arguments are supported:
 
 * `command_content` - (Required, ForceNew) The Contents of the Script to Base64 Encoded Transmission.
 * `command_type` - (Required, ForceNew) The Script Type. Valid values: `RunBatScript`, `RunPowerShellScript`.
-* `content_encoding` - (Optional, Computed, ForceNew) That Returns the Data Encoding Method. Valid values: `Base64`, `PlainText`.
+* `content_encoding` - (Optional, Computed) That Returns the Data Encoding Method. Valid values: `Base64`, `PlainText`.
 * `desktop_id` - (Required, ForceNew) The desktop id of the Desktop.
 * `timeout` - (Optional) The timeout period for script execution the unit is seconds. Default to: `60`.
 
