@@ -167,7 +167,7 @@ The health_check_config supports the following:
   is declared healthy. In this case, the health check state is changed from fail to success. Valid values: 2 to 10.
   Default value: 3.
 * `health_check_http_version` - HTTP protocol version. Valid values: `HTTP1.0` and `HTTP1.1`. Default value: `HTTP1.1`
-  . **NOTE:** This parameter exists if the `HealthCheckProtocol` parameter is set to `HTTP`.
+  . **NOTE:** This parameter exists if the `protocol` parameter is set to `HTTP`.
 * `health_check_interval` - The time interval between two consecutive health checks. Unit: seconds. Valid values: `1`
   to `50`. Default value: `2`.
 * `health_check_method` - Health check method. Valid values: `GET` and `HEAD`. Default: `GET`. **NOTE:** This parameter
@@ -182,7 +182,13 @@ The health_check_config supports the following:
   to `65535`. Default value: `0`. A value of 0 indicates that a backend server port is used for health checks.
 * `health_check_enabled` - Indicates whether health checks are enabled. Valid values: `true`, `false`. Default
   value: `true`.
-* `health_check_host` - The domain name that is used for health checks.
+* `health_check_host` - The domain name that is used for health checks. **NOTE:** This parameter is required only if the `protocol` parameter is set to HTTP. The domain name must meet the following requirements:
+  * The domain name must be 1 to 80 characters in length.
+  * The domain name can contain lowercase letters, digits, hyphens (-), and periods (.).
+  * The domain name must contain at least one period (.),and cannot start or end with a period (.).
+  * The rightmost field can contain only letters, and cannot contain digits or hyphens (-).
+  * Other fields cannot start or end with a hyphen (-).
+
 
 ## Attributes Reference
 

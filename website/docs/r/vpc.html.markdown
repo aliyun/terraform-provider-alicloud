@@ -66,6 +66,7 @@ The following attributes are exported:
 * `router_id` - The ID of the router created by default on VPC creation.
 * `route_table_id` - The route table ID of the router created by default on VPC creation.
 * `ipv6_cidr_block` - (Available in v1.119.0+) ) The ipv6 cidr block of VPC.
+* `status` - The status of the VPC. Valid values: `Pending` and `Available`.
 
 ## Import
 
