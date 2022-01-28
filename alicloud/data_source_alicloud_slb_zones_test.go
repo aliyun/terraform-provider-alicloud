@@ -33,9 +33,12 @@ func TestAccAlicloudSlbZonesDataSource_basic(t *testing.T) {
 
 	var existSlbZonesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                        CHECKSET,
-			"zones.#":                      CHECKSET,
-			"zones.0.slb_slave_zone_ids.#": CHECKSET,
+			"ids.#":                         CHECKSET,
+			"zones.#":                       CHECKSET,
+			"zones.0.slb_slave_zone_ids.#":  CHECKSET,
+			"zones.0.supported_resources.#": CHECKSET,
+			"zones.0.supported_resources.0.address_type":       CHECKSET,
+			"zones.0.supported_resources.0.address_ip_version": CHECKSET,
 		}
 	}
 

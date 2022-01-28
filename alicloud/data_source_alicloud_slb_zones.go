@@ -31,9 +31,10 @@ func dataSourceAlicloudSlbZones() *schema.Resource {
 				Optional: true,
 			},
 			"enable_details": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Default:    false,
+				Deprecated: "The parameter enable_details has been deprecated from version v1.154.0+",
 			},
 			"ids": {
 				Type:     schema.TypeList,
@@ -53,6 +54,22 @@ func dataSourceAlicloudSlbZones() *schema.Resource {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"supported_resources": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"address_type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"address_ip_version": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -81,6 +98,7 @@ func dataSourceAlicloudSlbZonesRead(d *schema.ResourceData, meta interface{}) er
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.DescribeAvailableResourceResponse)
+	supportedResources := make(map[string][]map[string]interface{})
 	for _, resource := range response.AvailableResources.AvailableResource {
 		slaveIds := slaveZones[resource.MasterZoneId]
 		slaveIds = append(slaveIds, resource.SlaveZoneId)
@@ -88,6 +106,14 @@ func dataSourceAlicloudSlbZonesRead(d *schema.ResourceData, meta interface{}) er
 			sort.Strings(slaveIds)
 		}
 		slaveZones[resource.MasterZoneId] = slaveIds
+		supportedResourceList := make([]map[string]interface{}, 0)
+		for _, v := range resource.SupportResources.SupportResource {
+			supportedResourceList = append(supportedResourceList, map[string]interface{}{
+				"address_type":       v.AddressType,
+				"address_ip_version": v.AddressIPVersion,
+			})
+		}
+		supportedResources[resource.MasterZoneId] = supportedResourceList
 	}
 
 	var ids []string
@@ -100,13 +126,10 @@ func dataSourceAlicloudSlbZonesRead(d *schema.ResourceData, meta interface{}) er
 
 	var s []map[string]interface{}
 	for _, zoneId := range ids {
-		mapping := map[string]interface{}{"id": zoneId}
-		if len(slaveZones) > 0 {
-			mapping["slb_slave_zone_ids"] = slaveZones[zoneId]
-		}
-		if !d.Get("enable_details").(bool) {
-			s = append(s, mapping)
-			continue
+		mapping := map[string]interface{}{
+			"id":                  zoneId,
+			"slb_slave_zone_ids":  slaveZones[zoneId],
+			"supported_resources": supportedResources[zoneId],
 		}
 		s = append(s, mapping)
 	}
