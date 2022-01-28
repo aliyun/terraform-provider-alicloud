@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"regexp"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
@@ -116,12 +118,25 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 	}
 	// all roles
 
+	var raw interface{}
+	var err error
 	request := ram.CreateListRolesRequest()
 	request.RegionId = client.RegionId
 	request.MaxItems = requests.NewInteger(1000)
 	for {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListRoles(request)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.ListRoles(request)
+			})
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"Throttling.User"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
