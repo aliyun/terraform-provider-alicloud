@@ -319,9 +319,8 @@ func TestAccAlicloudClickHouseDBCluster_basic2(t *testing.T) {
 					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"db_cluster_access_white_list": []map[string]interface{}{
 						{
-							"db_cluster_ip_array_attribute": "test1",
-							"db_cluster_ip_array_name":      "test1",
-							"security_ip_list":              "192.168.0.1",
+							"db_cluster_ip_array_name": "test1",
+							"security_ip_list":         "192.168.0.1",
 						},
 					},
 				}),
@@ -344,14 +343,12 @@ func TestAccAlicloudClickHouseDBCluster_basic2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_access_white_list": []map[string]interface{}{
 						{
-							"db_cluster_ip_array_attribute": "test2",
-							"db_cluster_ip_array_name":      "test2",
-							"security_ip_list":              "192.168.0.3",
+							"db_cluster_ip_array_name": "test2",
+							"security_ip_list":         "192.168.0.3",
 						},
 						{
-							"db_cluster_ip_array_attribute": "test1",
-							"db_cluster_ip_array_name":      "test1",
-							"security_ip_list":              "192.168.0.2",
+							"db_cluster_ip_array_name": "test1",
+							"security_ip_list":         "192.168.0.2",
 						},
 					},
 				}),
