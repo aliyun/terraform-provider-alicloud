@@ -68,6 +68,7 @@ func TestAccAlicloudAdbDbClustersDataSource(t *testing.T) {
 			"ids.#":                          "1",
 			"descriptions.#":                 "1",
 			"clusters.#":                     "1",
+			"total_count":                    CHECKSET,
 			"clusters.0.id":                  CHECKSET,
 			"clusters.0.description":         CHECKSET,
 			"clusters.0.payment_type":        "PayAsYouGo",
