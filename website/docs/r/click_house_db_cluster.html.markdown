@@ -20,6 +20,16 @@ For information about Click House DBCluster and how to use it, see [What is DBCl
 Basic Usage
 
 ```terraform
+data "alicloud_click_house_regions" "default" {
+  current = true
+}
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
+}
 resource "alicloud_click_house_db_cluster" "default" {
   db_cluster_version      = "20.3.10.75"
   category                = "Basic"
@@ -29,14 +39,13 @@ resource "alicloud_click_house_db_cluster" "default" {
   payment_type            = "PayAsYouGo"
   db_node_storage         = "500"
   storage_type            = "cloud_essd"
-  vswitch_id              = "your_vswitch_id"
+  vswitch_id              = data.alicloud_vswitches.default.ids.0
   db_cluster_access_white_list {
     db_cluster_ip_array_attribute = "test"
     db_cluster_ip_array_name      = "test"
     security_ip_list              = "192.168.0.1"
   }
 }
-
 ```
 
 ## Argument Reference
@@ -67,7 +76,7 @@ The following arguments are supported:
 
 The db_cluster_access_white_list supports the following:
 
-* `db_cluster_ip_array_attribute` - (Optional) Whitelist grouping attribute.
+* `db_cluster_ip_array_attribute` - (Optional, Removed) Field `db_cluster_ip_array_attribute` has been removed from provider.
 * `db_cluster_ip_array_name` - (Optional) Whitelist group name.
 * `security_ip_list` - (Optional) The IP address list under the whitelist group.
 

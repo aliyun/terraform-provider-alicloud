@@ -66,9 +66,8 @@ func TestAccAlicloudClickHouseDbClusterDataSource(t *testing.T) {
 			"clusters.0.payment_type":                   "PayAsYouGo",
 			"clusters.0.category":                       "Basic",
 			"clusters.0.db_cluster_access_white_list.#": "1",
-			"clusters.0.db_cluster_access_white_list.0.db_cluster_ip_array_name":      "test",
-			"clusters.0.db_cluster_access_white_list.0.db_cluster_ip_array_attribute": "test",
-			"clusters.0.db_cluster_access_white_list.0.security_ip_list":              "192.168.0.1",
+			"clusters.0.db_cluster_access_white_list.0.db_cluster_ip_array_name": "test",
+			"clusters.0.db_cluster_access_white_list.0.security_ip_list":         "192.168.0.1",
 			"clusters.0.ali_uid":                  CHECKSET,
 			"clusters.0.bid":                      CHECKSET,
 			"clusters.0.commodity_code":           CHECKSET,
@@ -80,7 +79,7 @@ func TestAccAlicloudClickHouseDbClusterDataSource(t *testing.T) {
 			"clusters.0.db_cluster_type":          "Common",
 			"clusters.0.db_node_class":            "S8",
 			"clusters.0.db_node_count":            "1",
-			"clusters.0.db_node_storage":          "500",
+			"clusters.0.db_node_storage":          "100",
 			"clusters.0.encryption_key":           "",
 			"clusters.0.encryption_type":          "",
 			"clusters.0.engine":                   "clickhouse",
@@ -131,13 +130,17 @@ func testAccCheckAlicloudClickHouseDbClusterDataSourceName(rand int, attrMap map
 
 	config := fmt.Sprintf(`
 variable "name" {	
-	default = "tf-testAccClickhouseDbCluster-%d"
+  default = "tf-testAccClickhouseDbCluster-%d"
+}
+data "alicloud_click_house_regions" "default" {	
+  current = true
 }
 data "alicloud_vpcs" "default"	{
   name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
   vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  zone_id = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
 }
 resource "alicloud_click_house_db_cluster" "default" {
   db_cluster_version      = "20.3.10.75"
@@ -148,11 +151,10 @@ resource "alicloud_click_house_db_cluster" "default" {
   db_cluster_description  = var.name
   db_node_group_count     = "1"
   payment_type            = "PayAsYouGo"
-  db_node_storage         = "500"
+  db_node_storage         = "100"
   storage_type            = "cloud_essd"
   vswitch_id              = data.alicloud_vswitches.default.vswitches.0.id
   db_cluster_access_white_list {
-    db_cluster_ip_array_attribute = "test"
     db_cluster_ip_array_name      = "test"
     security_ip_list              = "192.168.0.1"
   }
