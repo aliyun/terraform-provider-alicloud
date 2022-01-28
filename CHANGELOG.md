@@ -1,44 +1,45 @@
-## 1.154.0 (Unreleased)
+## 1.155.0 (Unreleased)
+## 1.154.0 (January 28, 2022)
 
-- **New Resource:** `alicloud_nas_data_flow` [GH-4538]
-- **New Data Source:** `alicloud_nas_data_flows` [GH-4538]
+- **New Resource:** `alicloud_nas_data_flow` ([#4538](https://github.com/aliyun/terraform-provider-alicloud/issues/4538))
+- **New Data Source:** `alicloud_nas_data_flows` ([#4538](https://github.com/aliyun/terraform-provider-alicloud/issues/4538))
 
 ENHANCEMENTS:
 
-- resource/alicloud_nas_data_flow: update support regions NASCPFSSupportRegions. [GH-4540]
-- datasource/alicloud_nat_gateways: Adds three internal parameters current_pagepage_size total_count to support paging [GH-4541]
-- datasource/alicloud_slb_load_balancers: Adds three internal parameters current_page page_size total_count to support paging [GH-4534]
-- datasource/alicloud_security_groups: Adds three internal parameters current_pagepage_size total_count to support paging [GH-4536]
-- datasource/alicloud_vpcs: Adds three internal parameters current_pagepage_size total_count to support paging [GH-4533]
-- datasource/alicloud_adb_db_clusters: Adds three internal parameters current_pagepage_size total_count to support paging [GH-4542]
-- datasource/alicloud_db_instances: Adds three internal parameters current_pagepage_size total_count to support paging [GH-4542]
-- datasource/alicloud_route_tables: Adds three internal parameters current_pagepage_size total_count to support paging [GH-4542]	
-- datasource/alicloud_slb_zones: Supports new output parameters address_type and address_ip_version [GH-4543]	
-- testcase: Adds a new test case for resource alicloud_alb_security_policy [GH-4444]
-- testcase: Adds a new test case for resource alicloud_alb_security_policy [GH-4407]
-- testcase: Adds a new test case for resource alicloud_slb_load_balancee [GH-4411]
-- testcase: Adds a new test case for resource alicloud_alb_load_balancer [GH-4443]
-- testcase: Adds a new test case for resource alicloud_express_connect_physical_connection [GH-4280]
-- testcase: Adds a new test case for resource alicloud_cen_transit_router_vpc_attachment [GH-4436]
-- testcase: Adds a new test case for resource alicloud_alb_rule [GH-4446]
-- testcase: Adds a new test case for resource alicloud_db_instance [GH-4453]
-- testcase: Adds a new test case for resource alicloud_cen_bandwidth_package [GH-4422]
-- testcase: Adds a new test case for resource alicloud_alb_server_group [GH-4445]
-- testcase: Adds new unit test case for resource alicloud_alb_health_check_template alicloud_slb_tls_cipher_policy alicloud_slb_ca_certificate [GH-4529]
-- testcase: Adds new unit test case for resource alicloud_cen_transit_router_route_table_association alicloud_cen_transit_router_route_table_propagation alicloud_cen_transit_router_route_table [GH-4520]
-- testcase: Adds new unit test case for resource alicloud_cdn_real_time_log_delivery alicloud_cen_transit_router_vbr_attachment alicloud_cen_transit_router_vpc_attachment [GH-4523]
-- testcase: Adds new unit test case for resource alicloud_alb_security_policy alicloud_rds_backup alicloud_ecd_image [GH-4531]
-- testcase: Adds new unit test case for resource alicloud_ecd_simple_office_site alicloud_ecd_network_package alicloud_ecd_nas_file_system [GH-4537]
-- testcase: Adds new unit test case for resource alicloud_ecd_user alicloud_ecd_command alicloud_ram_saml_provider [GH-4539]
-- testcase: Improve the effectiveness of test cases [GH-4530]
-- testcase/alicloud_nat_gateway: Improves the nat gateway testcases [GH-4474]
-- testcase/alicloud_snat_entry: Improves the snat entry testcases [GH-4474]
-- testcase: Adds new unit test case for resource alicloud_nas_lifecycle_policy [GH-4535]
-- testcase: Improve the unit of the test cases [GH-4544]
+- resource/alicloud_nas_data_flow: update support regions NASCPFSSupportRegions. ([#4540](https://github.com/aliyun/terraform-provider-alicloud/issues/4540))
+- datasource/alicloud_nat_gateways: Adds three internal parameters current_pagepage_size total_count to support paging ([#4541](https://github.com/aliyun/terraform-provider-alicloud/issues/4541))
+- datasource/alicloud_slb_load_balancers: Adds three internal parameters current_page page_size total_count to support paging ([#4534](https://github.com/aliyun/terraform-provider-alicloud/issues/4534))
+- datasource/alicloud_security_groups: Adds three internal parameters current_pagepage_size total_count to support paging ([#4536](https://github.com/aliyun/terraform-provider-alicloud/issues/4536))
+- datasource/alicloud_vpcs: Adds three internal parameters current_pagepage_size total_count to support paging ([#4533](https://github.com/aliyun/terraform-provider-alicloud/issues/4533))
+- datasource/alicloud_adb_db_clusters: Adds three internal parameters current_pagepage_size total_count to support paging ([#4542](https://github.com/aliyun/terraform-provider-alicloud/issues/4542))
+- datasource/alicloud_db_instances: Adds three internal parameters current_pagepage_size total_count to support paging ([#4542](https://github.com/aliyun/terraform-provider-alicloud/issues/4542))
+- datasource/alicloud_route_tables: Adds three internal parameters current_pagepage_size total_count to support paging ([#4542](https://github.com/aliyun/terraform-provider-alicloud/issues/4542))	
+- datasource/alicloud_slb_zones: Supports new output parameters address_type and address_ip_version ([#4543](https://github.com/aliyun/terraform-provider-alicloud/issues/4543))	
+- testcase: Adds a new test case for resource alicloud_alb_security_policy ([#4444](https://github.com/aliyun/terraform-provider-alicloud/issues/4444))
+- testcase: Adds a new test case for resource alicloud_alb_security_policy ([#4407](https://github.com/aliyun/terraform-provider-alicloud/issues/4407))
+- testcase: Adds a new test case for resource alicloud_slb_load_balancee ([#4411](https://github.com/aliyun/terraform-provider-alicloud/issues/4411))
+- testcase: Adds a new test case for resource alicloud_alb_load_balancer ([#4443](https://github.com/aliyun/terraform-provider-alicloud/issues/4443))
+- testcase: Adds a new test case for resource alicloud_express_connect_physical_connection ([#4280](https://github.com/aliyun/terraform-provider-alicloud/issues/4280))
+- testcase: Adds a new test case for resource alicloud_cen_transit_router_vpc_attachment ([#4436](https://github.com/aliyun/terraform-provider-alicloud/issues/4436))
+- testcase: Adds a new test case for resource alicloud_alb_rule ([#4446](https://github.com/aliyun/terraform-provider-alicloud/issues/4446))
+- testcase: Adds a new test case for resource alicloud_db_instance ([#4453](https://github.com/aliyun/terraform-provider-alicloud/issues/4453))
+- testcase: Adds a new test case for resource alicloud_cen_bandwidth_package ([#4422](https://github.com/aliyun/terraform-provider-alicloud/issues/4422))
+- testcase: Adds a new test case for resource alicloud_alb_server_group ([#4445](https://github.com/aliyun/terraform-provider-alicloud/issues/4445))
+- testcase: Adds new unit test case for resource alicloud_alb_health_check_template alicloud_slb_tls_cipher_policy alicloud_slb_ca_certificate ([#4529](https://github.com/aliyun/terraform-provider-alicloud/issues/4529))
+- testcase: Adds new unit test case for resource alicloud_cen_transit_router_route_table_association alicloud_cen_transit_router_route_table_propagation alicloud_cen_transit_router_route_table ([#4520](https://github.com/aliyun/terraform-provider-alicloud/issues/4520))
+- testcase: Adds new unit test case for resource alicloud_cdn_real_time_log_delivery alicloud_cen_transit_router_vbr_attachment alicloud_cen_transit_router_vpc_attachment ([#4523](https://github.com/aliyun/terraform-provider-alicloud/issues/4523))
+- testcase: Adds new unit test case for resource alicloud_alb_security_policy alicloud_rds_backup alicloud_ecd_image ([#4531](https://github.com/aliyun/terraform-provider-alicloud/issues/4531))
+- testcase: Adds new unit test case for resource alicloud_ecd_simple_office_site alicloud_ecd_network_package alicloud_ecd_nas_file_system ([#4537](https://github.com/aliyun/terraform-provider-alicloud/issues/4537))
+- testcase: Adds new unit test case for resource alicloud_ecd_user alicloud_ecd_command alicloud_ram_saml_provider ([#4539](https://github.com/aliyun/terraform-provider-alicloud/issues/4539))
+- testcase: Improve the effectiveness of test cases ([#4530](https://github.com/aliyun/terraform-provider-alicloud/issues/4530))
+- testcase/alicloud_nat_gateway: Improves the nat gateway testcases ([#4474](https://github.com/aliyun/terraform-provider-alicloud/issues/4474))
+- testcase/alicloud_snat_entry: Improves the snat entry testcases ([#4474](https://github.com/aliyun/terraform-provider-alicloud/issues/4474))
+- testcase: Adds new unit test case for resource alicloud_nas_lifecycle_policy ([#4535](https://github.com/aliyun/terraform-provider-alicloud/issues/4535))
+- testcase: Improve the unit of the test cases ([#4544](https://github.com/aliyun/terraform-provider-alicloud/issues/4544))
 
 BUG FIXES:
 
-- bug/alicloud_snat_entry: Corrected field source_vswitch_id, source_cidr to Computed [GH-4528]
+- bug/alicloud_snat_entry: Corrected field source_vswitch_id, source_cidr to Computed ([#4528](https://github.com/aliyun/terraform-provider-alicloud/issues/4528))
 
 ## 1.153.0 (January 23, 2022)
 
