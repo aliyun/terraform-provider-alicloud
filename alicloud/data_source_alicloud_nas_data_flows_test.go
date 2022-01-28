@@ -11,7 +11,7 @@ import (
 
 func TestAccAlicloudNasDataFlowsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100, 999)
-	checkoutSupportedRegions(t, true, connectivity.NASSupportRegions)
+	checkoutSupportedRegions(t, true, connectivity.NASCPFSSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNasDataFlowsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_nas_data_flow.default.id}"]`,
