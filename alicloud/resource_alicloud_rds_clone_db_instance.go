@@ -151,6 +151,50 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"pg_hba_conf": {
+				Type: schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"mask": {
+							Type:     schema.TypeString,
+							Optional: true,
+							// if attribute contains Optional feature, need to add Default: "", otherwise when terraform plan is executed, unmodified items wil detect differences.
+							Default: "",
+						},
+						"database": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"priority_id": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"address": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"user": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"method": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"option": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "",
+						},
+					},
+				},
+				Optional: true,
+				Computed: true,
+			},
 			"force_restart": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -451,6 +495,9 @@ func resourceAlicloudRdsCloneDbInstanceRead(d *schema.ResourceData, meta interfa
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
 		return WrapError(err)
 	}
+	if err = rdsService.RefreshPgHbaConf(d, "pg_hba_conf"); err != nil {
+		return WrapError(err)
+	}
 	describeDBInstanceHAConfigObject, err := rdsService.DescribeDBInstanceHAConfig(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -499,6 +546,12 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 
 	if d.HasChange("parameters") {
 		if err := rdsService.ModifyParameters(d, "parameters"); err != nil {
+			return WrapError(err)
+		}
+	}
+	if d.HasChange("pg_hba_conf") {
+		err := rdsService.ModifyPgHbaConfig(d, "pg_hba_conf")
+		if err != nil {
 			return WrapError(err)
 		}
 	}
