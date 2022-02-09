@@ -124,6 +124,25 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"pg_hba_conf": []interface{}{
+						map[string]interface{}{
+							"type":        "host",
+							"user":        "all",
+							"address":     "0.0.0.0/0",
+							"database":    "all",
+							"method":      "md5",
+							"priority_id": "0",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pg_hba_conf.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"db_instance_class": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -227,7 +246,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "backup_id", "source_db_instance_id", "client_ca_enabled", "client_crl_enabled", "connection_string_prefix", "ssl_enabled"},
+				ImportStateVerifyIgnore: []string{"force_restart", "backup_id", "source_db_instance_id", "client_ca_enabled", "client_crl_enabled", "connection_string_prefix", "ssl_enabled", "pg_hba_conf"},
 			},
 		},
 	})

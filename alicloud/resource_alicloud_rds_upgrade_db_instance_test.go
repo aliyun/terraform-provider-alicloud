@@ -126,6 +126,25 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"pg_hba_conf": []interface{}{
+						map[string]interface{}{
+							"type":        "host",
+							"user":        "all",
+							"address":     "0.0.0.0/0",
+							"database":    "all",
+							"method":      "md5",
+							"priority_id": "0",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pg_hba_conf.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"db_instance_description": "tf-testAccDBInstance_instance_name",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -239,7 +258,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "source_db_instance_id", "client_ca_enabled", "client_crl_enabled", "connection_string_prefix", "ssl_enabled", "target_major_version", "collect_stat_mode", "switch_over"},
+				ImportStateVerifyIgnore: []string{"force_restart", "source_db_instance_id", "client_ca_enabled", "client_crl_enabled", "connection_string_prefix", "ssl_enabled", "target_major_version", "collect_stat_mode", "switch_over", "pg_hba_conf"},
 			},
 		},
 	})
