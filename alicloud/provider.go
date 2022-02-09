@@ -1201,6 +1201,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_bgp_network":                                      resourceAlicloudVpcBgpNetwork(),
 			"alicloud_nas_data_flow":                                        resourceAlicloudNasDataFlow(),
 			"alicloud_ecs_storage_capacity_unit":                            resourceAlicloudEcsStorageCapacityUnit(),
+			"alicloud_nas_recycle_bin":                                      resourceAlicloudNasRecycleBin(),
 		},
 
 		ConfigureFunc: providerConfigure,
