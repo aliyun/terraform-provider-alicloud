@@ -269,6 +269,10 @@ func resourceAlicloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 }
 func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewBssopenapiClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -344,10 +348,6 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	}
 	if update {
 		action := "SetRenewal"
-		conn, err := client.NewBssopenapiClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, setRenewalReq, &util.RuntimeOptions{})
@@ -433,10 +433,6 @@ func resourceAlicloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 			modifyInstanceReq["ModifyType"] = v
 		}
 		action := "ModifyInstance"
-		conn, err := client.NewBssopenapiClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("ModifyInstance")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
