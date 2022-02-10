@@ -16,6 +16,67 @@ type LogService struct {
 	client *connectivity.AliyunClient
 }
 
+func (s *LogService) DescribeLogSavedSearch(id string) (*sls.SavedSearch, error) {
+	var savedsearch *sls.SavedSearch
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return savedsearch, WrapError(err)
+	}
+	projectName, searchName := parts[0], parts[2]
+	var requestInfo *sls.Client
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			return slsClient.GetSavedSearch(projectName, searchName)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError"}) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetSavedSearch", raw, requestInfo, map[string]string{"name": id})
+		}
+		savedsearch, _ = raw.(*sls.SavedSearch)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
+			return savedsearch, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return savedsearch, WrapErrorf(err, DefaultErrorMsg, id, "GetSavedSearch", AliyunLogGoSdkERROR)
+	}
+	return savedsearch, nil
+}
+
+func (s *LogService) WaitForLogSavedSearch(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		object, err := s.DescribeLogSavedSearch(id)
+		if err != nil {
+			if object == nil {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.SavedSearchName == parts[2] && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.SavedSearchName, id, ProviderERROR)
+		}
+	}
+}
+
 func (s *LogService) DescribeLogProject(id string) (*sls.LogProject, error) {
 	project := &sls.LogProject{}
 	var requestInfo *sls.Client
