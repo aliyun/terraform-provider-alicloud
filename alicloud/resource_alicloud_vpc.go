@@ -195,12 +195,13 @@ func resourceAlicloudVpcRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("description", object["Description"])
 	d.Set("ipv6_cidr_block", object["Ipv6CidrBlock"])
 	d.Set("router_id", object["VRouterId"])
-	d.Set("secondary_cidr_blocks", object["SecondaryCidrBlocks"].(map[string]interface{})["SecondaryCidrBlock"])
+	err = d.Set("secondary_cidr_blocks", object["SecondaryCidrBlocks"].(map[string]interface{})["SecondaryCidrBlock"])
 	d.Set("status", object["Status"])
 	if v, ok := object["Tags"].(map[string]interface{}); ok {
-		d.Set("tags", tagsToMap(v["Tag"]))
+		err = d.Set("tags", tagsToMap(v["Tag"]))
+		fmt.Println(err)
 	}
-	d.Set("user_cidrs", object["UserCidrs"].(map[string]interface{})["UserCidr"])
+	err = d.Set("user_cidrs", object["UserCidrs"].(map[string]interface{})["UserCidr"])
 	d.Set("vpc_name", object["VpcName"])
 	d.Set("name", object["VpcName"])
 

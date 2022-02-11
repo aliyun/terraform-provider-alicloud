@@ -347,3 +347,7 @@ resource "alicloud_ecs_snapshot" "default" {
 
 `, name)
 }
+
+func TestAccAlicloudEcsImageBasic_unit(t *testing.T) {
+
+}

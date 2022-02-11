@@ -125,6 +125,7 @@ func testSweepOpenSearchAppGroup(region string) error {
 }
 
 func TestAccAlicloudOpenSearchAppGroup_basic0(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.OpenSearchSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_open_search_app_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudOpenSearchAppGroupMap0)
@@ -153,14 +154,14 @@ func TestAccAlicloudOpenSearchAppGroup_basic0(t *testing.T) {
 						{
 							"doc_size":         "100",
 							"compute_resource": "500",
-							"spec":             "opensearch.private.common",
+							"spec":             "opensearch.share.common",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"app_group_name": name,
-						"type":           "standard",
+						"type":           "enhanced",
 						"payment_type":   "PayAsYouGo",
 					}),
 				),
@@ -192,7 +193,7 @@ func TestAccAlicloudOpenSearchAppGroup_basic0(t *testing.T) {
 						{
 							"doc_size":         "200",
 							"compute_resource": "1000",
-							"spec":             "opensearch.private.compute",
+							"spec":             "opensearch.share.common",
 						},
 					},
 				}),
@@ -212,6 +213,7 @@ func TestAccAlicloudOpenSearchAppGroup_basic0(t *testing.T) {
 	})
 }
 func TestAccAlicloudOpenSearchAppGroup_basic1(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.OpenSearchSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_open_search_app_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudOpenSearchAppGroupMap0)

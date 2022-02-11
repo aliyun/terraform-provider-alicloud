@@ -36,7 +36,7 @@ func TestAccAlicloudLogDashboard_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project_name":   name,
+					"project_name":   "${alicloud_log_project.default.name}",
 					"dashboard_name": "dashboard_name",
 					"display_name":   displayname,
 					"char_list":      `[{\"title\":\"new_title\",\"type\":\"map\",\"search\":{\"logstore\":\"new_logstore\",\"topic\":\"new_topic\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"end\":\"now\"},\"display\":{\"xAxis\":[\"province\"],\"yAxis\":[\"aini\"],\"xPos\":0,\"yPos\":0,\"width\":10,\"height\":12,\"displayName\":\"xixihaha911\"}}]`,
