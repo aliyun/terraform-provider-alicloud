@@ -174,3 +174,4 @@ var WAFSupportRegions = []Region{Hangzhou, APSouth1}
 var MSCSupportRegions = []Region{Hangzhou}
 var FCSupportRegions = []Region{Hangzhou}
 var RDCupportRegions = []Region{Hangzhou}
+var MSESupportRegions = []Region{Shenzhen, Beijing, EUWest1, APNorthEast1, Shanghai, ShanghaiFinance, APSouthEast5, USEast1, Zhangjiakou, CnNorth2Gov1, APSouthEast3, EUCentral1, Hangzhou, ShenZhenFinance, Qingdao, Hongkong, APSouthEast2, APSouth1, ChengDu, APSouthEast1, HeYuan, Huhehaote, USWest1}
