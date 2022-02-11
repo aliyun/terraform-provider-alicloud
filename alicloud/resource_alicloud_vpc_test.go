@@ -767,7 +767,7 @@ func TestAccAlicloudVpc_unit(t *testing.T) {
 			} else {
 				assert.Nil(t, err)
 				for key, _ := range attributes {
-					assert.False(t, dCreate.HasChange(key))
+					assert.False(t, d.HasChange(key))
 				}
 				break
 			}

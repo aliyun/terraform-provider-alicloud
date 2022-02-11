@@ -859,9 +859,9 @@ func TestAccAlicloudEcsNetworkInterface_unit(t *testing.T) {
 				diff.SetAttribute(fmt.Sprintf("%s.%sKey1",key,key), &terraform.ResourceAttrDiff{Old: "", New: fmt.Sprintf("%sValue1",key)})
 				diff.SetAttribute(fmt.Sprintf("%s.%sKey2",key,key), &terraform.ResourceAttrDiff{Old: "", New: fmt.Sprintf("%sValue2",key)})
 			case schema.TypeList:
-				diff.SetAttribute("security_group_ids.#",&terraform.ResourceAttrDiff{Old: "1", New: "2"})
-				diff.SetAttribute("security_group_ids.0",&terraform.ResourceAttrDiff{Old: "prev_value0", New: "current_value0"})
-				diff.SetAttribute("security_group_ids.1",&terraform.ResourceAttrDiff{Old: "", New: "current_value1"})
+				diff.SetAttribute(fmt.Sprintf("%s.#",key),&terraform.ResourceAttrDiff{Old: "1", New: "2"})
+				diff.SetAttribute(fmt.Sprintf("%s.0",key),&terraform.ResourceAttrDiff{Old: "prev_value0", New: "current_value0"})
+				diff.SetAttribute(fmt.Sprintf("%s.1",key),&terraform.ResourceAttrDiff{Old: "prev_value1", New: "current_value1"})
 			case schema.TypeSet:
 				diff.SetAttribute(fmt.Sprintf("%s.#", key), &terraform.ResourceAttrDiff{Old: "1", New: "1"})
 				for _, ipConfig := range d.Get(key).(*schema.Set).List() {
@@ -883,7 +883,7 @@ func TestAccAlicloudEcsNetworkInterface_unit(t *testing.T) {
 			} else {
 				assert.Nil(t, err)
 				for key, _ := range attributes {
-					assert.False(t, dCreate.HasChange(key))
+					assert.False(t, d.HasChange(key))
 				}
 				break
 			}
