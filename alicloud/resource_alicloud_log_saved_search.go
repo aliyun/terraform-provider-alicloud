@@ -63,7 +63,7 @@ func resourceAlicloudLogSavedSearchCreate(d *schema.ResourceData, meta interface
 	projectName := d.Get("project_name").(string)
 	logstoreName := d.Get("logstore_name").(string)
 	searchName := d.Get("search_name").(string)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(5*time.Second, 5*time.Second)
 	if err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
@@ -71,9 +71,9 @@ func resourceAlicloudLogSavedSearchCreate(d *schema.ResourceData, meta interface
 			project, _ = project.WithToken(slsClient.SecurityToken)
 			_, _ = sls.NewLogStore(logstoreName, project)
 			return nil, slsClient.CreateSavedSearch(projectName, &sls.SavedSearch{
-				SavedSearchName: d.Get("search_name").(string),
+				SavedSearchName: searchName,
 				SearchQuery:     d.Get("search_query").(string),
-				Logstore:        d.Get("logstore_name").(string),
+				Logstore:        logstoreName,
 				Topic:           d.Get("topic").(string),
 				DisplayName:     d.Get("display_name").(string),
 			})
@@ -153,15 +153,15 @@ func resourceAlicloudLogSavedSearchUpdate(d *schema.ResourceData, meta interface
 func resourceAlicloudLogSavedSearchDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
-	var requestInfo *sls.Client
-	request := map[string]string{
-		"projectName": d.Get("project_name").(string),
-		"searchName":  d.Get("search_name").(string),
+	parts, err := ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return WrapError(err)
 	}
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	var requestInfo *sls.Client
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
-			return nil, slsClient.DeleteSavedSearch(request["projectName"], request["searchName"])
+			return nil, slsClient.DeleteSavedSearch(parts[0], parts[2])
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout, "RequestTimeout"}) {
@@ -169,11 +169,13 @@ func resourceAlicloudLogSavedSearchDelete(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("DeleteSavedSearch", raw, requestInfo, request)
+		addDebug("DeleteSavedSearch", raw, requestInfo, map[string]interface{}{
+			"projectName": parts[0],
+			"searchName":  parts[2]})
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "SavedSearchNotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteSavedSearch", AliyunLogGoSdkERROR)

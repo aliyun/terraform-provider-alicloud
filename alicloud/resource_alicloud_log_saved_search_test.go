@@ -37,18 +37,14 @@ func TestAccAlicloudLogSavedSearch_basic(t *testing.T) {
 					"project_name":  name,
 					"logstore_name": name,
 					"search_name":   "test_saved_search",
-					"display_name":  "test-log",
 					"search_query":  "* | select count(*) as c,__time__ as t group by t order by t DESC limit 10",
-					"topic":         "sls-test",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"project_name":  name,
 						"logstore_name": name,
-						"display_name":  "test-log",
 						"search_name":   "test_saved_search",
 						"search_query":  "* | select count(*) as c,__time__ as t group by t order by t DESC limit 10",
-						"topic":         "sls-test",
 					}),
 				),
 			},

@@ -43,10 +43,10 @@ func (s *LogService) DescribeLogSavedSearch(id string) (*sls.SavedSearch, error)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "SavedSearchNotExist"}) {
 			return savedsearch, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		}
-		return savedsearch, WrapErrorf(err, DefaultErrorMsg, id, "GetSavedSearch", AliyunLogGoSdkERROR)
+		return savedsearch, WrapErrorf(Error(GetNotFoundMessage("GetLogstoreSavedSearch", id)), NotFoundMsg, ProviderERROR)
 	}
 	return savedsearch, nil
 }
@@ -60,7 +60,7 @@ func (s *LogService) WaitForLogSavedSearch(id string, status Status, timeout int
 	for {
 		object, err := s.DescribeLogSavedSearch(id)
 		if err != nil {
-			if object == nil {
+			if NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
