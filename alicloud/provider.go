@@ -661,6 +661,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dbfs_snapshots":                              dataSourceAlicloudDbfsSnapshots(),
 			"alicloud_msc_sub_contact_verification_message":        dataSourceAlicloudMscSubContactVerificationMessage(),
 			"alicloud_dts_migration_jobs":                          dataSourceAlicloudDtsMigrationJobs(),
+			"alicloud_mse_gateways":                                dataSourceAlicloudMseGateways(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1209,6 +1210,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dbfs_instance_attachment":                             resourceAlicloudDbfsInstanceAttachment(),
 			"alicloud_dts_migration_job":                                    resourceAlicloudDtsMigrationJob(),
 			"alicloud_dts_migration_instance":                               resourceAlicloudDtsMigrationInstance(),
+			"alicloud_mse_gateway":                                          resourceAlicloudMseGateway(),
 		},
 
 		ConfigureFunc: providerConfigure,
