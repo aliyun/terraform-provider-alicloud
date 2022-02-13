@@ -1,18 +1,19 @@
-## 1.155.0 (Unreleased)
+## 1.156.0 (Unreleased)
+## 1.155.0 (February 13, 2022)
 
-- **New Resource:** `alicloud_ecs_storage_capacity_unit` [GH-4562]
-- **New Resource:** `alicloud_nas_recycle_bin` [GH-4556]	
-- **New Data Source:** `alicloud_ecs_storage_capacity_units` [GH-4562]
+- **New Resource:** `alicloud_ecs_storage_capacity_unit` ([#4562](https://github.com/aliyun/terraform-provider-alicloud/issues/4562))
+- **New Resource:** `alicloud_nas_recycle_bin` ([#4556](https://github.com/aliyun/terraform-provider-alicloud/issues/4556))	
+- **New Data Source:** `alicloud_ecs_storage_capacity_units` ([#4562](https://github.com/aliyun/terraform-provider-alicloud/issues/4562))
 
 ENHANCEMENTS:
 
-- resource/alicloud_db_instance add new Attribute pg_hba_conf to support pgsql AD domain [GH-4547]
-- resource/alicloud_rds_clone_db_instance, alicloud_rds_upgrade_db_instance add new Attribute pg_hba_conf to support pgsql AD domain [GH-4558]	
-- testcase: Adds new unit test case for resource alicloud_alidns_custom_line alicloud_sddp_config alicloud_alidns_address_pool [GH-4551]
-- testcase: Adds new unit test case for resource alicloud_waf_instance alicloud_waf_certificate alicloud_waf_protection_module [GH-4552]
-- testcase: Adds new unit test case for resource alicloud_amqp_instance alicloud_amqp_queue alicloud_amqp_binding [GH-4561]
-- testcase: Adds new unit test case for resource alicloud_ecs_auto_snapshot_policy alicloud_amqp_exchange alicloud_amqp_virtual_host [GH-4563]
-- testcase: Adds new unit test case for resource alicloud_bastionhost_host_account alicloud_bastionhost_host alicloud_kvstore_audit_log_config [GH-4570]
+- resource/alicloud_db_instance add new Attribute pg_hba_conf to support pgsql AD domain ([#4547](https://github.com/aliyun/terraform-provider-alicloud/issues/4547))
+- resource/alicloud_rds_clone_db_instance, alicloud_rds_upgrade_db_instance add new Attribute pg_hba_conf to support pgsql AD domain ([#4558](https://github.com/aliyun/terraform-provider-alicloud/issues/4558))	
+- testcase: Adds new unit test case for resource alicloud_alidns_custom_line alicloud_sddp_config alicloud_alidns_address_pool ([#4551](https://github.com/aliyun/terraform-provider-alicloud/issues/4551))
+- testcase: Adds new unit test case for resource alicloud_waf_instance alicloud_waf_certificate alicloud_waf_protection_module ([#4552](https://github.com/aliyun/terraform-provider-alicloud/issues/4552))
+- testcase: Adds new unit test case for resource alicloud_amqp_instance alicloud_amqp_queue alicloud_amqp_binding ([#4561](https://github.com/aliyun/terraform-provider-alicloud/issues/4561))
+- testcase: Adds new unit test case for resource alicloud_ecs_auto_snapshot_policy alicloud_amqp_exchange alicloud_amqp_virtual_host ([#4563](https://github.com/aliyun/terraform-provider-alicloud/issues/4563))
+- testcase: Adds new unit test case for resource alicloud_bastionhost_host_account alicloud_bastionhost_host alicloud_kvstore_audit_log_config ([#4570](https://github.com/aliyun/terraform-provider-alicloud/issues/4570))
 
 ## 1.154.0 (January 28, 2022)
 
