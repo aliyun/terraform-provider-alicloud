@@ -2,7 +2,16 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/stretchr/testify/assert"
 	"log"
+	"os"
+	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -110,6 +119,7 @@ func testSweepPrivateZoneEndpoint(region string) error {
 }
 
 func TestAccAlicloudPrivateZoneEndpoint_basic0(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.PvtzSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_pvtz_endpoint.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivateZoneEndpointMap0)
@@ -163,16 +173,16 @@ func TestAccAlicloudPrivateZoneEndpoint_basic0(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"endpoint_name": name + "update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"endpoint_name": name + "update",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"endpoint_name": name + "update",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"endpoint_name": name + "update",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"ip_configs": []map[string]interface{}{
@@ -194,22 +204,22 @@ func TestAccAlicloudPrivateZoneEndpoint_basic0(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"endpoint_name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"endpoint_name": name,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"endpoint_name": name,
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"endpoint_name": name,
+			//		}),
+			//	),
+			//},
+			//{
+			//	ResourceName:            resourceId,
+			//	ImportState:             true,
+			//	ImportStateVerify:       true,
+			//	ImportStateVerifyIgnore: []string{},
+			//},
 		},
 	})
 }
@@ -243,4 +253,213 @@ resource "alicloud_vswitch" "default" {
   zone_id    = data.alicloud_pvtz_resolver_zones.default.zones[count.index].zone_id
 }
 `, name)
+}
+
+func TestAccAlicloudPrivateZoneEndpoint_unit(t *testing.T) {
+	resourceName := "alicloud_pvtz_endpoint"
+	p := Provider().(*schema.Provider).ResourcesMap
+	d, _ := schema.InternalMap(p[resourceName].Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(p[resourceName].Schema).Data(nil, nil)
+	dCreate.MarkNewResource()
+	attributes := map[string]interface{}{
+		"endpoint_name":     "endpoint_name",
+		"security_group_id": "security_group_id",
+		"vpc_id":            "vpc_id",
+		"vpc_region_id":     "vpc_region_id",
+		"ip_configs": []map[string]interface{}{
+			{
+				"zone_id":    "cn-hangzhou-a",
+				"cidr_block": "10.0.0.0/16",
+				"vswitch_id": "vswitch_id_0",
+				"ip":         "172.16.0.0",
+			},
+		},
+	}
+	for key, value := range attributes {
+		err := dCreate.Set(key, value)
+		assert.Nil(t, err)
+		err = d.Set(key, value)
+		assert.Nil(t, err)
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		"Status":          "SUCCESS",
+		"SecurityGroupId": "security_group_id",
+		"Name":            "endpoint_name",
+		"VpcId":           "vpc_id",
+		"VpcRegionId":     "vpc_region_id",
+		"IpConfigs": []interface{}{
+			map[string]interface{}{
+				"VSwitchId": "vswitch_id_0",
+				"AzId":      "cn-hangzhou-a",
+				"CidrBlock": "10.0.0.0/16",
+				"Ip":        "172.16.0.0",
+			},
+		},
+	}
+	ReadMockUpdateResponse := map[string]interface{}{
+		"Status":          "SUCCESS",
+		"SecurityGroupId": "security_group_id",
+		"Name":            "endpoint_name_update",
+		"VpcId":           "vpc_id",
+		"VpcRegionId":     "vpc_region_id",
+		"IpConfigs": []interface{}{
+			map[string]interface{}{
+				"VSwitchId": "vswitch_id_0_update",
+				"AzId":      "cn-hangzhou-a_update",
+				"CidrBlock": "10.0.0.0/16_update",
+				"Ip":        "172.16.0.0_update",
+			},
+		},
+	}
+	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
+		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			result["EndpointId"] = "MockId"
+			return result, nil
+		},
+		"UpdateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockUpdateResponse
+			return result, nil
+		},
+		"RetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:    String(errorCode),
+				Data:    String(errorCode),
+				Message: String(errorCode),
+			}
+		},
+		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:    String(errorCode),
+				Data:    String(errorCode),
+				Message: String(errorCode),
+			}
+		},
+	}
+
+	t.Run("Create", func(t *testing.T) {
+		// Client Error
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewPvtzClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err = resourceAlicloudPvtzEndpointCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+
+		retryFlag, noRetryFlag, abnormal := true, true, true
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		for {
+			err = resourceAlicloudPvtzEndpointCreate(dCreate, rawClient)
+			if abnormal {
+				abnormal = false
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+				for key, _ := range attributes {
+					assert.False(t, dCreate.HasChange(key))
+				}
+				break
+			}
+		}
+		patches.Reset()
+	})
+
+	t.Run("Update", func(t *testing.T) {
+		rand1 := acctest.RandIntRange(1000, 9999)
+		// Client Error
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewPvtzClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err = resourceAlicloudPvtzEndpointUpdate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+
+		// DoRequest
+		retryFlag, noRetryFlag, abnormal := false, false, false
+		targetFunc := "UpdateResolverEndpoint"
+
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if targetFunc == *action && retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if targetFunc == *action && noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+
+		diff := terraform.NewInstanceDiff()
+
+		for _, key := range []string{"endpoint_name", "ip_configs"} {
+			switch p[resourceName].Schema[key].Type {
+			case schema.TypeString:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+			case schema.TypeBool:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+			case schema.TypeInt:
+				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(2)})
+			case schema.TypeMap:
+				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+			case schema.TypeSet:
+				diff.SetAttribute(fmt.Sprintf("%s.#", key), &terraform.ResourceAttrDiff{Old: "1", New: "1"})
+				for _, ipConfig := range d.Get(key).(*schema.Set).List() {
+					ipConfigArg := ipConfig.(map[string]interface{})
+					for field, _ := range p[resourceName].Schema[key].Elem.(*schema.Resource).Schema {
+						diff.SetAttribute(fmt.Sprintf("%s.%d.%s", key, rand1, field), &terraform.ResourceAttrDiff{Old: ipConfigArg[field].(string), New: ipConfigArg[field].(string) + "_update"})
+					}
+				}
+			}
+		}
+
+
+
+		dCreate, err := schema.InternalMap(p[resourceName].Schema).Data(dCreate.State(), diff)
+		//dCreate.
+
+		dCreate.SetId("MockId")
+
+		for {
+			err = resourceAlicloudPvtzEndpointUpdate(dCreate, rawClient)
+			if abnormal {
+				abnormal = false
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+				for key, _ := range attributes {
+					assert.False(t, dCreate.HasChange(key))
+				}
+				break
+			}
+		}
+		patches.Reset()
+
+	})
+
 }
