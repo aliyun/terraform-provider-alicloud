@@ -3,13 +3,21 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 
+	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -175,4 +183,216 @@ resource "alicloud_actiontrail_trail" "default" {
   sls_project_arn = "acs:log:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:project/${alicloud_log_project.default.name}"
 }
 `, name)
+}
+
+func TestAccAlicloudActionTrailHistoryDeliveryJob_unit(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	d, _ := schema.InternalMap(p["alicloud_actiontrail_history_delivery_job"].Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(p["alicloud_actiontrail_history_delivery_job"].Schema).Data(nil, nil)
+	dCreate.MarkNewResource()
+	for key, value := range map[string]interface{}{
+		"trail_name": "trail_name",
+	} {
+		err := dCreate.Set(key, value)
+		assert.Nil(t, err)
+		err = d.Set(key, value)
+		assert.Nil(t, err)
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		"JobStatus": 2,
+		"TrailName": "trail_name",
+		"JobId":     1,
+	}
+
+	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
+		"RetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:    String(errorCode),
+				Data:    String(errorCode),
+				Message: String(errorCode),
+			}
+		},
+		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_actiontrail_history_delivery_job", "1"))
+		},
+		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:    String(errorCode),
+				Data:    String(errorCode),
+				Message: String(errorCode),
+			}
+		},
+		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			result["JobId"] = 1
+			return result, nil
+		},
+		"UpdateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"DeleteNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"ReadNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+	}
+	// Create
+	t.Run("CreateClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewActiontrailClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudActiontrailHistoryDeliveryJobCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("CreateAbnormal", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAlicloudActiontrailHistoryDeliveryJobCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("CreateNormal", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAlicloudActiontrailHistoryDeliveryJobCreate(dCreate, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	// Set ID for Update and Delete Method
+	d.SetId("1")
+
+	// Delete
+	t.Run("DeleteClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewActiontrailClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudActiontrailHistoryDeliveryJobDelete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("DeleteMockAbnormal", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceAlicloudActiontrailHistoryDeliveryJobDelete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("DeleteMockNormal", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceAlicloudActiontrailHistoryDeliveryJobDelete(d, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("DeleteNonRetryableError", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceAlicloudActiontrailHistoryDeliveryJobDelete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	//Read
+	t.Run("ReadDescribeActiontrailHistoryDeliveryJobNotFound", func(t *testing.T) {
+		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			NotFoundFlag := true
+			noRetryFlag := false
+			if NotFoundFlag {
+				return responseMock["NotFoundError"]("ResourceNotfound")
+			} else if noRetryFlag {
+				return responseMock["NoRetryError"]("NoRetryError")
+			}
+			return responseMock["ReadNormal"]("")
+		})
+		err := resourceAlicloudActiontrailHistoryDeliveryJobRead(d, rawClient)
+		patcheDorequest.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("ReadDescribeActiontrailHistoryDeliveryJobAbnormal", func(t *testing.T) {
+		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			retryFlag := false
+			noRetryFlag := true
+			if retryFlag {
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["ReadNormal"]("")
+		})
+		err := resourceAlicloudActiontrailHistoryDeliveryJobRead(d, rawClient)
+		patcheDorequest.Reset()
+		assert.NotNil(t, err)
+	})
 }
