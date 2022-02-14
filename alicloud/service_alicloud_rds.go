@@ -317,10 +317,14 @@ func (s *RdsService) RefreshParameters(d *schema.ResourceData, attribute string)
 
 func (s *RdsService) RefreshPgHbaConf(d *schema.ResourceData, attribute string) error {
 	response, err := s.DescribePGHbaConfig(d.Id())
-	runningHbaItems := response["RunningHbaItems"].(map[string]interface{})["HbaItem"].([]interface{})
 	if err != nil {
 		return WrapError(err)
 	}
+	runningHbaItems := make([]interface{}, 0)
+	if v, exist := response["RunningHbaItems"].(map[string]interface{})["HbaItem"]; exist {
+		runningHbaItems = v.([]interface{})
+	}
+
 	var items []map[string]interface{}
 
 	documented, ok := d.GetOk(attribute)

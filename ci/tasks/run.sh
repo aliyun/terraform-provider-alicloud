@@ -141,9 +141,9 @@ do
         if [[ $LINE == "--- PASS: "* ]]; then
             PASS_COUNT=$((${PASS_COUNT}+1))
         fi
-        if [[ $LINE == "panic: "* ]]; then
-            exit 1
-        fi
+#        if [[ $LINE == "panic: "* ]]; then
+#            exit 1
+#        fi
     elif [[ ${FAIL_FLAG} == true ]];then
         echo -e "$LINE"
     else
