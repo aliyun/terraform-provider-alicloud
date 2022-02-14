@@ -194,6 +194,9 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				},
 				Optional: true,
 				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("engine").(string) != string(PostgreSQL)
+				},
 			},
 			"force_restart": {
 				Type:     schema.TypeBool,
@@ -495,8 +498,10 @@ func resourceAlicloudRdsCloneDbInstanceRead(d *schema.ResourceData, meta interfa
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
 		return WrapError(err)
 	}
-	if err = rdsService.RefreshPgHbaConf(d, "pg_hba_conf"); err != nil {
-		return WrapError(err)
+	if object["Engine"].(string) == string(PostgreSQL) && object["DBInstanceStorageType"].(string) != "local_ssd" {
+		if err = rdsService.RefreshPgHbaConf(d, "pg_hba_conf"); err != nil {
+			return WrapError(err)
+		}
 	}
 	describeDBInstanceHAConfigObject, err := rdsService.DescribeDBInstanceHAConfig(d.Id())
 	if err != nil {

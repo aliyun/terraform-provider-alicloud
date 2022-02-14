@@ -260,6 +260,9 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				},
 				Optional: true,
 				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("engine").(string) != string(PostgreSQL)
+				},
 			},
 			"force_restart": {
 				Type:     schema.TypeBool,
@@ -1329,8 +1332,10 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
 		return WrapError(err)
 	}
-	if err = rdsService.RefreshPgHbaConf(d, "pg_hba_conf"); err != nil {
-		return WrapError(err)
+	if instance["Engine"].(string) == string(PostgreSQL) && instance["DBInstanceStorageType"].(string) != "local_ssd" {
+		if err = rdsService.RefreshPgHbaConf(d, "pg_hba_conf"); err != nil {
+			return WrapError(err)
+		}
 	}
 	if err = rdsService.SetTimeZone(d); err != nil {
 		return WrapError(err)
