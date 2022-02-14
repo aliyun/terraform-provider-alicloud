@@ -119,8 +119,8 @@ The following arguments are supported:
     
     Recommend to use `vpcs`.
 
-* `lang` - (Optional, Available in 1.62.1+) The language of code.
-* `user_client_ip` - (Optional, Available in 1.62.1+) The user custom IP address.
+* `lang` - (Optional, ForceNew,Available in 1.62.1+) The language of code.
+* `user_client_ip` - (Optional, ForceNew Available in 1.62.1+) The user custom IP address.
 
 ### Timeouts
 

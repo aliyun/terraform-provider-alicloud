@@ -40,7 +40,7 @@ The following arguments are supported:
 
 * `domain_name` - (Required) Name of the accelerated domain. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
 * `cdn_type` - (Required, ForceNew) Cdn type of the accelerated domain. Valid values are `web`, `download`, `video`.
-* `scope` - (Optional) Scope of the accelerated domain. Valid values are `domestic`, `overseas`, `global`. Default value is `domestic`. This parameter's setting is valid Only for the international users and domestic L3 and above users .
+* `scope` - (Optional, ForceNew) Scope of the accelerated domain. Valid values are `domestic`, `overseas`, `global`. Default value is `domestic`. This parameter's setting is valid Only for the international users and domestic L3 and above users .
 * `sources` - (Optional, Type: list) The source address list of the accelerated domain. Defaults to null. See Block Sources.
 * `certificate_config` - (Optional, Type: list, Available in 1.52.0+)  Certificate config of the accelerated domain. It's a list and consist of at most 1 item.
 * `resource_group_id` - (Optional, Available in v1.67.0+) Resource group ID.
