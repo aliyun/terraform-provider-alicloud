@@ -1,4 +1,5 @@
-## 1.156.0 (Unreleased)
+## 1.157.0 (Unreleased)
+## 1.155.0 (February 15, 2022)
 
 - **New Resource:** `alicloud_dbfs_snapshot` ([#4553](https://github.com/aliyun/terraform-provider-alicloud/issues/4553))
 - **New Resource:** `alicloud_dbfs_instance_attachment` ([#4553](https://github.com/aliyun/terraform-provider-alicloud/issues/4553))
