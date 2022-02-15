@@ -583,7 +583,7 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
   		owners      = "system"
 	}
 	data "alicloud_instance_types" "t5" {
-      instance_type_family = "ecs.t5"
+      instance_type_family = "ecs.g6e"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 	resource "alicloud_kms_key" "key" {
