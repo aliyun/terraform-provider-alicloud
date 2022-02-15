@@ -1,4 +1,15 @@
 ## 1.156.0 (Unreleased)
+
+- **New Resource:** `alicloud_dbfs_snapshot` [GH-4553]
+- **New Resource:** `alicloud_dbfs_instance_attachment` [GH-4553]
+- **New Data Source:** `alicloud_msc_sub_contact_verification_message` [GH-4569]	
+- **New Data Source:** `alicloud_dbfs_snapshots` [GH-4553]
+
+BUG FIXES:
+
+- resource/alicloud_db_instance: fix the error of the type convertion [GH-4573]
+- resource/alicloud_db_instance, alicloud_rds_clone_db_instance, alicloud_rds_upgrade_db_instance pg_hba_conf bug fix [GH-4575]
+
 ## 1.155.0 (February 13, 2022)
 
 - **New Resource:** `alicloud_ecs_storage_capacity_unit` ([#4562](https://github.com/aliyun/terraform-provider-alicloud/issues/4562))
