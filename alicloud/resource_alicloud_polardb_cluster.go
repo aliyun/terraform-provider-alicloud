@@ -57,8 +57,8 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"db_node_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(2, 16),
-				Default:      2,
+				Computed:     true,
+				ValidateFunc: validation.IntBetween(1, 16),
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -190,7 +190,31 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
-
+			"creation_category": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Normal", "Basic", "ArchiveNormal"}, false),
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+			},
+			"creation_option": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Normal", "CloneFromPolarDB", "CloneFromRDS", "MigrationFromRDS", "CreateGdnStandby"}, false),
+				Optional:     true,
+			},
+			"source_resource_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"gdn_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"clone_data_point": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"LATEST", "BackupID", "Timestamp"}, false),
+				Optional:     true,
+			},
 			"tags": tagsSchema(),
 		},
 	}
@@ -218,6 +242,12 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
+		categoryConf := BuildStateConf([]string{}, []string{"Normal", "Basic", "ArchiveNormal"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, polarDBService.PolarDBClusterCategoryRefreshFunc(d.Id(), []string{}))
+		if _, err := categoryConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 	return resourceAlicloudPolarDBClusterUpdate(d, meta)
 }
@@ -600,6 +630,8 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("db_node_class", cluster.DBNodeClass)
 	d.Set("db_node_count", len(clusterAttribute.DBNodes))
 	d.Set("resource_group_id", clusterAttribute.ResourceGroupId)
+	d.Set("creation_category", clusterAttribute.Category)
+
 	tags, err := polarDBService.DescribeTags(d.Id(), "cluster")
 	if err != nil {
 		return WrapError(err)
@@ -654,7 +686,6 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 
 	d.Set("security_group_ids", securityGroups)
-
 	return nil
 }
 
@@ -714,6 +745,48 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (*polar
 	request.DBNodeClass = d.Get("db_node_class").(string)
 	request.DBClusterDescription = d.Get("description").(string)
 	request.ClientToken = buildClientToken(request.GetActionName())
+	request.CreationCategory = d.Get("creation_category").(string)
+	request.CloneDataPoint = d.Get("clone_data_point").(string)
+
+	v, exist := d.GetOk("creation_option")
+	db, ok := d.GetOk("db_type")
+	dbv, dbvok := d.GetOk("db_version")
+
+	if exist && v.(string) == "CloneFromPolarDB" {
+		request.SourceResourceId = d.Get("source_resource_id").(string)
+		request.CreationOption = d.Get("creation_option").(string)
+	}
+
+	if exist && v.(string) == "CloneFromRDS" {
+		request.CloneDataPoint = "LATEST"
+	}
+
+	if exist && v.(string) == "CreateGdnStandby" {
+		if ok && db.(string) == "MySQL" {
+			if dbvok && dbv.(string) == "8.0" {
+				request.CreationOption = d.Get("creation_option").(string)
+				request.GDNId = d.Get("gdn_id").(string)
+			}
+		}
+	}
+
+	if exist && v.(string) == "CloneFromRDS" {
+		if ok && db.(string) == "MySQL" {
+			if dbvok && (dbv.(string) == "5.6" || dbv.(string) == "5.7") {
+				request.CreationOption = d.Get("creation_option").(string)
+				request.SourceResourceId = d.Get("source_resource_id").(string)
+			}
+		}
+	}
+
+	if exist && v.(string) == "MigrationFromRDS" {
+		if ok && db.(string) == "MySQL" {
+			if dbvok && (dbv.(string) == "5.6" || dbv.(string) == "5.7") {
+				request.CreationOption = d.Get("creation_option").(string)
+				request.SourceResourceId = d.Get("source_resource_id").(string)
+			}
+		}
+	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
 		request.ResourceGroupId = v.(string)

@@ -364,6 +364,222 @@ func TestAccAlicloudPolarDBClusterMulti(t *testing.T) {
 
 }
 
+func TestAccAlicloudPolarDBClusterCreate(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterCreate"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":   CHECKSET,
+		"db_node_class": CHECKSET,
+		"vswitch_id":    CHECKSET,
+		"db_type":       CHECKSET,
+		"db_version":    CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":            "MySQL",
+					"db_version":         "8.0",
+					"pay_type":           "PostPaid",
+					"db_node_class":      "polar.mysql.x4.large",
+					"vswitch_id":         "${local.vswitch_id}",
+					"creation_category":  "Normal",
+					"clone_data_point":   "LATEST",
+					"creation_option":    "CloneFromPolarDB",
+					"source_resource_id": "${alicloud_polardb_cluster.cluster.id}",
+					"description":        "${var.name}",
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"creation_category": "Normal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"creation_category": "Normal",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "gdn_id", "source_resource_id", "clone_data_point"},
+			},
+		},
+	})
+}
+
+func TestPolarDBClusterCreateCloneFromRDS(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testPolarDBClusterCreateCloneFromRDS"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":   CHECKSET,
+		"db_node_class": CHECKSET,
+		"vswitch_id":    CHECKSET,
+		"db_type":       CHECKSET,
+		"db_version":    CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":            "MySQL",
+					"db_version":         "8.0",
+					"pay_type":           "PostPaid",
+					"db_node_class":      "polar.mysql.x4.large",
+					"vswitch_id":         "${local.vswitch_id}",
+					"description":        "${var.name}",
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"clone_data_point":   "LATEST",
+					"creation_option":    "CloneFromRDS",
+					"creation_category":  "Normal",
+					"source_resource_id": "${alicloud_polardb_cluster.cluster.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"creation_category": "Normal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"creation_category": "Normal",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "gdn_id", "source_resource_id", "clone_data_point"},
+			},
+		},
+	})
+}
+
+func TestPolarDBClusterCreateMigrationFromRDS(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testPolarDBClusterMigrationFromRDS"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":   CHECKSET,
+		"db_node_class": CHECKSET,
+		"vswitch_id":    CHECKSET,
+		"db_type":       CHECKSET,
+		"db_version":    CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":            "MySQL",
+					"db_version":         "8.0",
+					"pay_type":           "PostPaid",
+					"db_node_class":      "polar.mysql.x4.large",
+					"vswitch_id":         "${local.vswitch_id}",
+					"description":        "${var.name}",
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"clone_data_point":   "LATEST",
+					"creation_option":    "MigrationFromRDS",
+					"creation_category":  "Normal",
+					"source_resource_id": "${alicloud_polardb_cluster.cluster.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"creation_category": "Normal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"creation_category": "Normal",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "gdn_id", "source_resource_id", "clone_data_point"},
+			},
+		},
+	})
+}
+
 func testAccCheckKeyValueInMapsForPolarDB(ps []map[string]interface{}, propName, key, value string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		for _, policy := range ps {
@@ -396,6 +612,15 @@ func resourcePolarDBClusterConfigDependence(name string) string {
 		count = 2
 		name   = "${var.name}"
 	    vpc_id = "${local.vpc_id}"
+	}
+
+ 	resource "alicloud_polardb_cluster" "cluster" {
+		db_type = "MySQL"
+		db_version = "8.0"
+		pay_type = "PostPaid"
+		db_node_class = "polar.mysql.x4.large"
+		vswitch_id = "${local.vswitch_id}"
+		description = "${var.name}"
 	}
 
 `, PolarDBCommonTestCase, name)
