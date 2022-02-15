@@ -13,6 +13,8 @@ Provides an RDS instance resource. A DB instance is an isolated database environ
 
 For information about RDS and how to use it, see [What is ApsaraDB for RDS](https://www.alibabacloud.com/help/en/doc-detail/26092.htm).
 
+-> **NOTE:** This resource has a fatal bug in the version v1.155.0. If you want to use new feature, please upgrade it to v1.156.0.
+
 ## Example Usage
 
 ### Create a RDS MySQL instance
