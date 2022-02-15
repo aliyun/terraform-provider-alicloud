@@ -23,11 +23,11 @@ func init() {
 			F:    testSweepDirectMailAddress,
 		})
 }
-
 func testSweepDirectMailAddress(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sharedClientForRegionWithBackendRegions(region, true, connectivity.DmSupportRegions)
 	if err != nil {
-		return WrapErrorf(err, "Error getting Alicloud client.")
+		log.Printf("error getting Alicloud client: %s", err)
+		return nil
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{

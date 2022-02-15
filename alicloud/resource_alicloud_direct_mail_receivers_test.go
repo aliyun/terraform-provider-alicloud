@@ -25,7 +25,8 @@ func init() {
 func testSweepDirectMailReceivers(region string) error {
 	rawClient, err := sharedClientForRegionWithBackendRegions(region, true, connectivity.DmSupportRegions)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		log.Printf("error getting Alicloud client: %s", err)
+		return nil
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
