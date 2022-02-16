@@ -202,6 +202,51 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudAlikafkaConsumerGroup_basic1(t *testing.T) {
+	var v *alikafka.ConsumerVO
+	resourceId := "alicloud_alikafka_consumer_group.default"
+	ra := resourceAttrInit(resourceId, alikafkaConsumerGroupBasicMap)
+	serviceFunc := func() interface{} {
+		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testacc-alikafkaconsumerbasic%v", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaConsumerGroupConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id": "${alicloud_alikafka_instance.default.id}",
+					"consumer_id": name,
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"consumer_id": name,
+						"description": name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+
+}
+
 func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
 
 	var v *alikafka.ConsumerVO
