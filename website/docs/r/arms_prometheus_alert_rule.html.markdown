@@ -43,8 +43,7 @@ The following arguments are supported:
 * `message` - (Required, ForceNew) The message of the alert notification.
 * `notify_type` - (Optional) The method of sending the alert notification. Valid values: `ALERT_MANAGER`, `DISPATCH_RULE`.
 * `prometheus_alert_rule_name` - (Required, ForceNew) The name of the resource.
-* `status` - (Optional, ForceNew) The status of the resource. Valid values: `0`, `1`. 
-* `type` - (Optional, ForceNew) The type of the alert rule.
+* `type` - (Optional, Computed, ForceNew) The type of the alert rule.
 
 #### Block labels
 
@@ -66,6 +65,8 @@ The following attributes are exported:
 
 * `id` - The resource ID of Prometheus Alert Rule. The value formats as `<cluster_id>:<prometheus_alert_rule_id>`.
 * `prometheus_alert_rule_id` - The first ID of the resource.
+* `status` -  The status of the resource. Valid values: `0`, `1`.
+
 
 ## Import
 
