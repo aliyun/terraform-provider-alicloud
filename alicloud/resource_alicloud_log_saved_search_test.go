@@ -83,6 +83,20 @@ func TestAccAlicloudLogSavedSearch_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"search_query": "* | select count(*) as c,__time__ as t group by t order by t DESC limit 20",
+					"topic":        "test-sls-log-saved-search",
+					"display_name": "test-sls-saved-search",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"search_query": "* | select count(*) as c,__time__ as t group by t order by t DESC limit 20",
+						"topic":        "test-sls-log-saved-search",
+						"display_name": "test-sls-saved-search",
+					}),
+				),
+			},
 		},
 	})
 }
