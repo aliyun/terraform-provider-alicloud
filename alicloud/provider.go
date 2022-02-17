@@ -802,6 +802,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_log_etl":                                              resourceAlicloudLogETL(),
 			"alicloud_log_machine_group":                                    resourceAlicloudLogMachineGroup(),
 			"alicloud_log_oss_shipper":                                      resourceAlicloudLogOssShipper(),
+			"alicloud_log_saved_search":                                     resourceAlicloudLogSavedSearch(),
 			"alicloud_log_project":                                          resourceAlicloudLogProject(),
 			"alicloud_log_store":                                            resourceAlicloudLogStore(),
 			"alicloud_log_store_index":                                      resourceAlicloudLogStoreIndex(),
