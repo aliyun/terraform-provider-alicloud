@@ -80,7 +80,7 @@ resource "alicloud_pvtz_rule" "default" {
 The following arguments are supported:
 
 * `endpoint_id` - (Required, ForceNew) The ID of the Endpoint.
-* `forward_ips` - (Required,Optional) Forwarding target. See the following `Block forward_ip`.
+* `forward_ips` - (Required) Forwarding target. See the following `Block forward_ip`.
 * `rule_name` - (Required, ForceNew) The name of the resource.
 * `type` - (Optional, ForceNew) The type of the rule. Valid values: `OUTBOUND`.
 * `zone_name` - (Required, ForceNew) The name of the forwarding zone.
