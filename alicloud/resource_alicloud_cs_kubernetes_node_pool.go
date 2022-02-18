@@ -49,7 +49,14 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Type:          schema.TypeInt,
 				Optional:      true,
 				Computed:      true,
-				ConflictsWith: []string{"instances"},
+				ConflictsWith: []string{"instances", "desired_size"},
+				Deprecated:    "Field 'node_count' has been deprecated from provider version 1.158.0. New field 'desired_size' instead.",
+			},
+			"desired_size": {
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"instances", "node_count"},
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -395,7 +402,7 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				MaxItems:      100,
-				ConflictsWith: []string{"node_count", "scaling_config"},
+				ConflictsWith: []string{"node_count", "scaling_config", "desired_size"},
 			},
 			"keep_instance_name": {
 				Type:     schema.TypeBool,
@@ -518,7 +525,6 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if d.HasChange("node_count") {
 		oldV, newV := d.GetChange("node_count")
-
 		oldValue, ok := oldV.(int)
 		if ok != true {
 			return WrapErrorf(fmt.Errorf("node_count old value can not be parsed"), "parseError %d", oldValue)
@@ -572,6 +578,12 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 			args.AutoRenew = d.Get("auto_renew").(bool)
 			args.AutoRenewPeriod = d.Get("auto_renew_period").(int)
 		}
+	}
+
+	if d.HasChange("desired_size") {
+		update = true
+		size := int64(d.Get("desired_size").(int))
+		args.ScalingGroup.DesiredSize = &size
 	}
 
 	if v, ok := d.GetOk("install_cloud_monitor"); ok && v != nil {
@@ -740,7 +752,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 			addDebug("UpdateKubernetesNodePool", resoponse, resizeRequestMap)
 		}
 
-		stateConf := BuildStateConf([]string{"scaling", "updating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+		stateConf := BuildStateConf([]string{"scaling", "updating", "removing"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -773,7 +785,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 			return resource.NonRetryableError(err)
 		}
 
-		if nodePoolDetail.TotalNodes != d.Get("node_count").(int) {
+		if nodePoolDetail.TotalNodes != d.Get("node_count").(int) && nodePoolDetail.TotalNodes != d.Get("desired_size").(int) {
 			time.Sleep(20 * time.Second)
 			return resource.RetryableError(Error("[ERROR] The number of nodes is inconsistent %s", d.Id()))
 		}
@@ -827,6 +839,11 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("runtime_name", object.Runtime)
 	d.Set("runtime_version", object.RuntimeVersion)
 	d.Set("deployment_set_id", object.DeploymentSetId)
+
+	if object.DesiredSize != nil {
+		d.Set("desired_size", *object.DesiredSize)
+	}
+
 	if object.InstanceChargeType == "PrePaid" {
 		d.Set("period", object.Period)
 		d.Set("period_unit", object.PeriodUnit)
@@ -960,7 +977,6 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 
 	creationArgs := &cs.CreateNodePoolRequest{
 		RegionId: common.Region(client.RegionId),
-		Count:    int64(d.Get("node_count").(int)),
 		NodePoolInfo: cs.NodePoolInfo{
 			Name:         d.Get("name").(string),
 			NodePoolType: "ess", // hard code the type
@@ -980,6 +996,15 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 		KubernetesConfig: cs.KubernetesConfig{
 			NodeNameMode: d.Get("node_name_mode").(string),
 		},
+	}
+
+	if v, ok := d.GetOkExists("node_count"); ok {
+		creationArgs.Count = int64(v.(int))
+	}
+
+	if v, ok := d.GetOkExists("desired_size"); ok {
+		size := int64(v.(int))
+		creationArgs.DesiredSize = &size
 	}
 
 	setNodePoolDataDisks(&creationArgs.ScalingGroup, d)
