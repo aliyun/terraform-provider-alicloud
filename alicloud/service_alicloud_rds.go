@@ -1268,10 +1268,10 @@ func (s *RdsService) RdsDBInstanceStateRefreshFunc(id string, failStates []strin
 
 		for _, failState := range failStates {
 			if object["DBInstanceStatus"] == failState {
-				return object, object["DBInstanceStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["DBInstanceStatus"]))
+				return object, fmt.Sprint(object["DBInstanceStatus"]), WrapError(Error(FailedToReachTargetStatus, object["DBInstanceStatus"]))
 			}
 		}
-		return object, object["DBInstanceStatus"].(string), nil
+		return object, fmt.Sprint(object["DBInstanceStatus"]), nil
 	}
 }
 
