@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRamServiceLinkedRole_basic0(t *testing.T) {
+func TestAccAlicloudResourceManagerServiceLinkedRole_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_service_linked_role.default"
 	ra := resourceAttrInit(resourceId, AlicloudResourceManagerServiceLinkedRoleMap0)
