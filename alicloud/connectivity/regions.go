@@ -178,3 +178,4 @@ var MSESupportRegions = []Region{Shenzhen, Beijing, EUWest1, APNorthEast1, Shang
 var BrainIndustrialSupportRegions = []Region{Hangzhou}
 var TestSalveRegions = []Region{Hangzhou}
 var ECPSupportRegions = []Region{Beijing, Hangzhou}
+var DCDNSupportRegions = []Region{Hangzhou, APSouthEast1, APNorthEast1}
