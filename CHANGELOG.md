@@ -1,4 +1,7 @@
 ## 1.158.0 (Unreleased)
+
+- **New Resource:** `alicloud_ess_alb_server_group_attachment`
+
 ## 1.157.0 (February 20, 2022)
 
 - **New Resource:** `alicloud_dts_migration_job` ([#4572](https://github.com/aliyun/terraform-provider-alicloud/issues/4572))
