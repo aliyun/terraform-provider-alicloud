@@ -666,6 +666,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecp_instances":                               dataSourceAlicloudEcpInstances(),
 			"alicloud_ecp_zones":                                   dataSourceAlicloudEcpZones(),
 			"alicloud_ecp_instance_types":                          dataSourceAlicloudEcpInstanceTypes(),
+			"alicloud_dcdn_ipa_domains":                            dataSourceAlicloudDcdnIpaDomains(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1220,6 +1221,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_service_linked_role":                 resourceAlicloudResourceManagerServiceLinkedRole(),
 			"alicloud_mongodb_sharding_network_private_address":             resourceAlicloudMongodbShardingNetworkPrivateAddress(),
 			"alicloud_ecp_instance":                                         resourceAlicloudEcpInstance(),
+			"alicloud_dcdn_ipa_domain":                                      resourceAlicloudDcdnIpaDomain(),
 		},
 
 		ConfigureFunc: providerConfigure,
