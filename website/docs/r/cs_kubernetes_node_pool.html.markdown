@@ -31,6 +31,8 @@ This resource will help you to manage node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.149.0, support for specifying deploymentSet for node pools. 
 
+-> **NOTE:** From version 1.158.0, Support for specifying the desired size of nodes for the node pool, for more information, visit [Modify the expected number of nodes in a node pool](https://www.alibabacloud.com/help/en/doc-detail/160490.html#title-mpp-3jj-oo3)
+
 ## Example Usage
 
 The managed cluster configuration,
@@ -89,7 +91,27 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   key_name             = alicloud_key_pair.default.key_name
 
   # you need to specify the number of nodes in the node pool, which can be 0
-  node_count = 1
+  desired_size = 1
+}
+```
+
+The parameter `node_count` are deprecated from version 1.158.0，but it can still works. If you want to use the new parameter `desired_size` instead, you can update it as follows. for more information of `desired_size`, visit [Modify the expected number of nodes in a node pool](https://www.alibabacloud.com/help/en/doc-detail/160490.html#title-mpp-3jj-oo3). 
+
+```terraform
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  name           = var.name
+  cluster_id     = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids    = [alicloud_vswitch.default.id]
+  instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
+
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  key_name             = alicloud_key_pair.default.key_name
+
+  # comment out node_count and specify a new field desired_size
+  # node_count = 1
+
+  desired_size = 1
 }
 ```
 
@@ -108,7 +130,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   key_name = alicloud_key_pair.default.key_name
 
   # you need to specify the number of nodes in the node pool, which can be zero
-  node_count = 1
+  desired_size = 1
 
   # management node pool configuration.
   management {
@@ -214,7 +236,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   key_name             = alicloud_key_pair.default.key_name
 
   # you need to specify the number of nodes in the node pool, which can be 0
-  node_count = 1
+  desired_size = 1
 
   # spot config
   spot_strategy = "SpotWithPriceLimit"
@@ -262,7 +284,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   system_disk_category = "cloud_efficiency"
   system_disk_size     = 40
   instance_charge_type = "PostPaid"
-  node_count           = 1
+  desired_size         = 1
 
   // if the instance platform is windows, the password is requered.
   password = "Hello1234"
@@ -302,10 +324,11 @@ The following arguments are supported:
 * `name` - (Required) The name of node pool.
 * `vswitch_ids` - (Required) The vswitches used by node pool workers.
 * `instance_types` (Required) The instance type of worker node.
-* `node_count` (Optional) The worker node number of the node pool. From version 1.111.0, `node_count` is not required.
-* `password` - (Required, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
-* `key_name` - (Required) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. Only `key_name` is supported in the management node pool.
-* `kms_encrypted_password` - (Required) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
+* `password` - (Optional, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
+* `key_name` - (Optional) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. Only `key_name` is supported in the management node pool.
+* `kms_encrypted_password` - (Optional) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
+* `node_count` (Optional, Deprecated) The worker node number of the node pool. From version 1.111.0, `node_count` is not required.
+* `desired_size` (Optional, Available in 1.158.0+) The desired size of nodes of the node pool. From version 1.158.0, `desired_size` is not required.
 * `system_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `system_disk_size` - (Optional) The system disk category of worker node. Its valid value range [40~500] in GB. Default to `120`.
 * `system_disk_performance_level` - (Optional) The performance of system disk, only valid for ESSD disk. You have to specify one of `PL0` `PL1` `PL2` `PL3` fields.

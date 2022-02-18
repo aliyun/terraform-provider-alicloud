@@ -44,7 +44,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
 					"vswitch_ids":           []string{"${local.vswitch_id}"},
 					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"node_count":            "1",
+					"desired_size":          "1",
 					"key_name":              "${alicloud_key_pair.default.key_name}",
 					"system_disk_category":  "cloud_efficiency",
 					"system_disk_size":      "40",
@@ -57,6 +57,126 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 					"runtime_version":       "1.4.8",
 					"image_type":            "CentOS",
 					"deployment_set_id":     "${alicloud_ecs_deployment_set.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                         name,
+						"cluster_id":                   CHECKSET,
+						"vswitch_ids.#":                "1",
+						"instance_types.#":             "1",
+						"desired_size":                 "1",
+						"key_name":                     CHECKSET,
+						"system_disk_category":         "cloud_efficiency",
+						"system_disk_size":             "40",
+						"install_cloud_monitor":        "false",
+						"data_disks.#":                 "1",
+						"data_disks.0.size":            "100",
+						"data_disks.0.category":        "cloud_ssd",
+						"tags.%":                       "2",
+						"tags.Created":                 "TF",
+						"tags.Foo":                     "Bar",
+						"management.#":                 "1",
+						"management.0.auto_repair":     "true",
+						"management.0.auto_upgrade":    "true",
+						"management.0.surge":           "0",
+						"management.0.max_unavailable": "0",
+						"security_group_ids.#":         "2",
+						"runtime_name":                 "containerd",
+						"runtime_version":              "1.4.8",
+						"image_type":                   "CentOS",
+						"deployment_set_id":            CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+			// check: scale out
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"desired_size":     "2",
+					"system_disk_size": "80",
+					"data_disks":       []map[string]string{{"size": "40", "category": "cloud"}},
+					"management":       []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "1", "max_unavailable": "1"}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"desired_size":                 "2",
+						"system_disk_size":             "80",
+						"data_disks.#":                 "1",
+						"data_disks.0.size":            "40",
+						"data_disks.0.category":        "cloud",
+						"management.#":                 "1",
+						"management.0.auto_repair":     "true",
+						"management.0.auto_upgrade":    "true",
+						"management.0.surge":           "1",
+						"management.0.max_unavailable": "1",
+					}),
+				),
+			},
+			// check: remove nodes
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"desired_size": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"desired_size": "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.with_node_count"
+	ra := resourceAttrInit(resourceId, csdKubernetesNodePoolBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSNodePoolConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                  name,
+					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
+					"vswitch_ids":           []string{"${local.vswitch_id}"},
+					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"node_count":            "1",
+					"key_name":              "${alicloud_key_pair.default.key_name}",
+					"system_disk_category":  "cloud_efficiency",
+					"system_disk_size":      "40",
+					"install_cloud_monitor": "false",
+					"data_disks":            []map[string]string{{"size": "100", "category": "cloud_ssd"}},
+					"tags":                  map[string]interface{}{"Created": "TF", "Foo": "Bar"},
+					"management":            []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "0"}},
+					"security_group_ids":    []string{"${alicloud_security_group.group.id}", "${alicloud_security_group.group1.id}"},
+					"runtime_name":          "containerd",
+					"runtime_version":       "1.4.8",
+					"image_type":            "CentOS",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -84,7 +204,6 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"runtime_name":                 "containerd",
 						"runtime_version":              "1.4.8",
 						"image_type":                   "CentOS",
-						"deployment_set_id":            CHECKSET,
 					}),
 				),
 			},
@@ -125,6 +244,18 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"node_count": "1",
+					}),
+				),
+			},
+			// check: change node_count to desire_size
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"node_count":   "#REMOVEKEY",
+					"desired_size": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"desired_size": "1",
 					}),
 				),
 			},
@@ -200,7 +331,7 @@ func TestAccAlicloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "node_count"},
+				ImportStateVerifyIgnore: []string{"password", "node_count", "desired_size"},
 			},
 			// check: update config
 			{
@@ -375,7 +506,7 @@ func TestAccAlicloudCSKubernetesNodePool_Spot(t *testing.T) {
 					"system_disk_size":           "120",
 					"resource_group_id":          "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"password":                   "Terraform1234",
-					"node_count":                 "1",
+					"desired_size":               "1",
 					"install_cloud_monitor":      "false",
 					"internet_charge_type":       "PayByTraffic",
 					"internet_max_bandwidth_out": "5",
@@ -397,7 +528,7 @@ func TestAccAlicloudCSKubernetesNodePool_Spot(t *testing.T) {
 						"system_disk_size":                 "120",
 						"resource_group_id":                CHECKSET,
 						"password":                         CHECKSET,
-						"node_count":                       "1",
+						"desired_size":                     "1",
 						"install_cloud_monitor":            "false",
 						"internet_charge_type":             "PayByTraffic",
 						"internet_max_bandwidth_out":       "5",
