@@ -342,6 +342,58 @@ resource "alicloud_cen_transit_router" "default_1" {
 
 `, name)
 }
+func TestAccAlicloudCenTransitRouterPeerAttachment_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_peer_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterPeerAttachmentMap)
+	var providers []*schema.Provider
+	providerFactories := map[string]terraform.ResourceProviderFactory{
+		"alicloud": func() (terraform.ResourceProvider, error) {
+			p := Provider()
+			providers = append(providers, p.(*schema.Provider))
+			return p, nil
+		},
+	}
+	testAccCheck := ra.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCenTransitRouterPeerAttachment%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterPeerAttachmentBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
+		},
+
+		IDRefreshName:     resourceId,
+		CheckDestroy:      testAccCheckCenTransitRouterPeerAttachmentDestroyWithProviders(&providers),
+		ProviderFactories: providerFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"provider":                       "alicloud.cn",
+					"cen_id":                         "${alicloud_cen_instance.default.id}",
+					"transit_router_id":              "${alicloud_cen_transit_router.default_0.transit_router_id}",
+					"peer_transit_router_id":         "${alicloud_cen_transit_router.default_1.transit_router_id}",
+					"peer_transit_router_region_id":  "cn-beijing",
+					"transit_router_attachment_name": name,
+					"bandwidth":                      "5",
+					"bandwidth_type":                 "DataTransfer",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCenTransitRouterPeerAttachmentExistsWithProviders(resourceId, v, &providers),
+					testAccCheck(map[string]string{
+						"cen_id":                         CHECKSET,
+						"peer_transit_router_id":         CHECKSET,
+						"transit_router_id":              CHECKSET,
+						"peer_transit_router_region_id":  "cn-beijing",
+						"transit_router_attachment_name": name,
+						"bandwidth_type":                 "DataTransfer",
+					}),
+				),
+			},
+		},
+	})
+}
 
 func TestAccAlicloudCenTransitRouterPeerAttachment_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
@@ -356,6 +408,7 @@ func TestAccAlicloudCenTransitRouterPeerAttachment_unit(t *testing.T) {
 		"transit_router_attachment_name":        "transit_router_attachment_name",
 		"auto_publish_route_enabled":            false,
 		"bandwidth":                             2,
+		"bandwidth_type":                        "BandwidthPackage",
 		"cen_bandwidth_package_id":              "cen_bandwidth_package_id",
 		"dry_run":                               false,
 		"resource_type":                         "TR",
@@ -383,6 +436,7 @@ func TestAccAlicloudCenTransitRouterPeerAttachment_unit(t *testing.T) {
 				"CenId":                              "cen_id",
 				"AutoPublishRouteEnabled":            false,
 				"Bandwidth":                          2,
+				"BandwidthType":                      "BandwidthPackage",
 				"CenBandwidthPackageId":              "cen_bandwidth_package_id",
 				"PeerTransitRouterId":                "peer_transit_router_region_id",
 				"PeerTransitRouterRegionId":          "peer_transit_router_region_id",

@@ -428,7 +428,7 @@ func TestAccAlicloudVPCNatIpCidr_unit(t *testing.T) {
 		noRetryFlag := false
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if retryFlag {
-				// retry until the timeout comes
+				retryFlag = false
 				return responseMock["RetryError"]("Throttling")
 			} else if noRetryFlag {
 				noRetryFlag = false
