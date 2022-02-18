@@ -43,7 +43,7 @@ The following arguments are supported:
 * `message` - (Required, ForceNew) The message of the alert notification.
 * `notify_type` - (Optional) The method of sending the alert notification. Valid values: `ALERT_MANAGER`, `DISPATCH_RULE`.
 * `prometheus_alert_rule_name` - (Required, ForceNew) The name of the resource.
-* `type` - (Optional, Computed, ForceNew) The type of the alert rule.
+* `type` - (Optional, ForceNew) The type of the alert rule.
 
 #### Block labels
 
