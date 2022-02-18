@@ -862,3 +862,35 @@ func (s *RamService) DescribeRamSecurityPreference(id string) (object map[string
 	object = v.(map[string]interface{})
 	return object, nil
 }
+
+func (s *RamService) DescribeRamServiceLinkedRole(id string) (*ram.GetRoleResponse, error) {
+	parts, _ := ParseResourceId(id, 2)
+	id = parts[1]
+
+	response := &ram.GetRoleResponse{}
+	request := ram.CreateGetRoleRequest()
+	request.RegionId = s.client.RegionId
+	request.RoleName = id
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.GetRole(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+				time.Sleep(2 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*ram.GetRoleResponse)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
+			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
+}

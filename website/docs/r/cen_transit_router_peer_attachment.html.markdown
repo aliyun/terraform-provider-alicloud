@@ -85,14 +85,17 @@ The following arguments are supported:
 * `transit_router_id` - (Optional, ForceNew) The ID of the transit router to attach.
 * `peer_transit_router_id` - (Required, ForceNew) The ID of the peer transit router.
 * `peer_transit_router_region_id` - (Required, ForceNew) The region ID of peer transit router.
-* `resource_type` - (Required, ForceNew) The resource type to attachment. Only support `VR` and default value is `VR`.
-* `cen_bandwidth_package_id` - (Optional, ForceNew) The ID of the bandwidth package. If you do not enter the ID of the package, it means you are using the test. The system default test is 1bps, demonstrating that you test network connectivity
+* `resource_type` - (Optional, ForceNew) The resource type to attachment. Only support `VR` and default value is `VR`.
+* `cen_bandwidth_package_id` - (Optional) The ID of the bandwidth package. If you do not enter the ID of the package, it means you are using the test. The system default test is 1bps, demonstrating that you test network connectivity
 * `bandwidth` - (Optional) The bandwidth of the bandwidth package.
 * `auto_publish_route_enabled` - (Optional) Auto publish route enabled. The system default value is `false`.
 * `route_table_association_enabled` - (Optional, ForceNew) Whether to association route table. System default is `false`.
 * `route_table_propagation_enabled` - (Optional, ForceNew) Whether to propagation route table. System default is `false`.
 * `transit_router_attachment_description` - (Optional) The description of transit router attachment. The description is 2~256 characters long and must start with a letter or Chinese, but cannot start with `http://` or `https://`.
 * `transit_router_attachment_name` - (Optional) The name of transit router attachment. The name is 2~128 characters in length, starts with uppercase and lowercase letters or Chinese, and can contain numbers, underscores (_) and dashes (-)
+* `bandwidth_type` - (Optional,Available in v1.157.0+) The method that is used to allocate bandwidth to the cross-region connection. Valid values: `BandwidthPackage` and `DataTransfer`.
+  * `DataTransfer` - uses pay-by-data-transfer bandwidth.
+  * `BandwidthPackage` - allocates bandwidth from a bandwidth plan.
 
 ## Attributes Reference
 

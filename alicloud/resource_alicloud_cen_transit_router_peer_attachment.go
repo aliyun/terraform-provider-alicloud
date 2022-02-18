@@ -36,6 +36,11 @@ func resourceAlicloudCenTransitRouterPeerAttachment() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"bandwidth_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"BandwidthPackage", "DataTransfer"}, false),
+			},
 			"cen_bandwidth_package_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -155,6 +160,9 @@ func resourceAlicloudCenTransitRouterPeerAttachmentCreate(d *schema.ResourceData
 		request["TransitRouterId"] = v
 	}
 
+	if v, ok := d.GetOk("bandwidth_type"); ok {
+		request["BandwidthType"] = v
+	}
 	request["ClientToken"] = buildClientToken("CreateTransitRouterPeerAttachment")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -202,6 +210,7 @@ func resourceAlicloudCenTransitRouterPeerAttachmentRead(d *schema.ResourceData, 
 	d.Set("transit_router_attachment_id", parts[1])
 	d.Set("auto_publish_route_enabled", object["AutoPublishRouteEnabled"])
 	d.Set("bandwidth", formatInt(object["Bandwidth"]))
+	d.Set("bandwidth_type", object["BandwidthType"])
 	d.Set("cen_bandwidth_package_id", object["CenBandwidthPackageId"])
 	d.Set("peer_transit_router_id", object["PeerTransitRouterId"])
 	d.Set("peer_transit_router_region_id", object["PeerTransitRouterRegionId"])

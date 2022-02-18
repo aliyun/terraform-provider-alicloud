@@ -1212,6 +1212,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dts_migration_instance":                               resourceAlicloudDtsMigrationInstance(),
 			"alicloud_mse_gateway":                                          resourceAlicloudMseGateway(),
 			"alicloud_dbfs_service_linked_role":                             resourceAlicloudDbfsServiceLinkedRole(),
+			"alicloud_resource_manager_service_linked_role":                 resourceAlicloudResourceManagerServiceLinkedRole(),
 		},
 
 		ConfigureFunc: providerConfigure,
