@@ -1,5 +1,31 @@
 ## 1.157.0 (Unreleased)
-## 1.155.0 (February 15, 2022)
+
+- **New Resource:** `alicloud_dts_migration_job` [GH-4572]
+- **New Resource:** `alicloud_mse_gateway` [GH-4577]
+- **New Resource:** `alicloud_dts_migration_instance` [GH-4572]
+- **New Resource:** `alicloud_ram_service_linked_role` [GH-4590]
+- **New Resource:** `alicloud_mongodb_sharding_network_private_address` [GH-4584]
+- **New Data Source:** `alicloud_mongodb_sharding_network_private_addresses` [GH-4584]
+- **New Data Source:** `alicloud_mse_gateways` [GH-4577]	
+- **New Data Source:** `alicloud_dts_migration_jobs` [GH-4572]
+
+ENHANCEMENTS:
+
+- resource/alicloud_cen_transit_router_peer_attachment: support updating bandwidth_type with DataTransfer [GH-4590]
+- resource/alicloud_alikafka_consumer_group: change sdk to common api;Support for new parameter description [GH-4583]
+- datasource/alicloud_slb_zones: Adds new parameter master_zone_id and slave_zone_id; Deprecates tehe output slb_slave_zone_ids [GH-4593]	
+- testcase: Adds new unit test case for resource alicloud_actiontrail_history_delivery_job alicloud_actiontrail_trail alicloud_cr_endpoint_acl_policy [GH-4576]
+- testcase: Adds new unit test case for resource alicloud_cloud_firewall_control_policy alicloud_security_center_group alicloud_security_center_service_linked_role [GH-4580]
+- testcase: Adds new unit test case for resource alicloud_arms_alert_contact alicloud_arms_alert_contact_group alicloud_arms_prometheus_alert_rule [GH-4585]
+- testcase: Adds new unit test case for resource alicloud_pvtz_rule_attachment alicloud_pvtz_rule alicloud_pvtz_endpoint [GH-4589]
+- testcase: Adds new unit test case for resource alicloud_oos_application_group alicloud_oos_application alicloud_pvtz_user_vpc_authorization [GH-4592]
+
+BUG FIXES:
+
+- datasource/alicloud_bastionhost_host_account: Fixed the not found error returned by the query after the resource was deleted [GH-4576]
+- datasource/alicloud_bastionhost_host: Fixed the not found error returned by the query after the resource was deleted [GH-4576]
+
+## 1.156.0 (February 15, 2022)
 
 - **New Resource:** `alicloud_dbfs_snapshot` ([#4553](https://github.com/aliyun/terraform-provider-alicloud/issues/4553))
 - **New Resource:** `alicloud_dbfs_instance_attachment` ([#4553](https://github.com/aliyun/terraform-provider-alicloud/issues/4553))
