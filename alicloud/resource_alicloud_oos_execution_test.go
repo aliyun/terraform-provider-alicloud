@@ -3,13 +3,21 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 
+	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -182,4 +190,227 @@ func OosExecutionBasicdependence(name string) string {
 		  }
 		}
 	`, name)
+}
+
+func TestAccAlicloudOosExecution_unit(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	d, _ := schema.InternalMap(p["alicloud_oos_execution"].Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(p["alicloud_oos_execution"].Schema).Data(nil, nil)
+	dCreate.MarkNewResource()
+	for key, value := range map[string]interface{}{
+		"description":         "From TF Test",
+		"parameters":          `{\"Status\":\"Running\"}`,
+		"loop_mode":           "loop_mode",
+		"mode":                "mode",
+		"parent_execution_id": "parent_execution_id",
+		"safety_check":        "safety_check",
+		"template_content":    "template_content",
+		"template_name":       "template_name",
+		"template_version":    "template_version",
+	} {
+		err := dCreate.Set(key, value)
+		assert.Nil(t, err)
+		err = d.Set(key, value)
+		assert.Nil(t, err)
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		"Executions": []interface{}{
+			map[string]interface{}{
+				"Counters":          "counters",
+				"CreateDate":        "create_date",
+				"EndDate":           "end_date",
+				"ExecutedBy":        "executed_by",
+				"IsParent":          "is_parent",
+				"Mode":              "mode",
+				"Outputs":           "outputs",
+				"Parameters":        "parameters",
+				"ParentExecutionId": "parent_execution_id",
+				"RamRole":           "ram_role",
+				"StartDate":         "start_date",
+				"Status":            "Success",
+				"StatusMessage":     "status_message",
+				"TemplateId":        "template_id",
+				"TemplateName":      "template_name",
+				"TemplateVersion":   "template_version",
+				"UpdateDate":        "update_date",
+				"ExecutionId":       "MockExecutionId",
+			},
+		},
+		"Execution": map[string]interface{}{
+			"ExecutionId": "MockExecutionId",
+		},
+	}
+
+	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
+		"RetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:    String(errorCode),
+				Data:    String(errorCode),
+				Message: String(errorCode),
+			}
+		},
+		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_oos_execution", "MockExecutionId"))
+		},
+		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:    String(errorCode),
+				Data:    String(errorCode),
+				Message: String(errorCode),
+			}
+		},
+		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"UpdateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"DeleteNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"ReadNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+	}
+	// Create
+	t.Run("CreateClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewOosClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudOosExecutionCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("CreateAbnormal", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAlicloudOosExecutionCreate(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("CreateNormal", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceAlicloudOosExecutionCreate(dCreate, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	// Set ID for Update and Delete Method
+	d.SetId("MockExecutionId")
+	// Delete
+	t.Run("DeleteClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewOosClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudOosExecutionDelete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("DeleteMockAbnormal", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceAlicloudOosExecutionDelete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("DeleteMockNormal", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceAlicloudOosExecutionDelete(d, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	//Read
+	t.Run("ReadDescribeOosExecutionNotFound", func(t *testing.T) {
+		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			NotFoundFlag := true
+			noRetryFlag := false
+			if NotFoundFlag {
+				return responseMock["NotFoundError"]("ResourceNotfound")
+			} else if noRetryFlag {
+				return responseMock["NoRetryError"]("NoRetryError")
+			}
+			return responseMock["ReadNormal"]("")
+		})
+		err := resourceAlicloudOosExecutionRead(d, rawClient)
+		patcheDorequest.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("ReadDescribeOosExecutionAbnormal", func(t *testing.T) {
+		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			retryFlag := false
+			noRetryFlag := true
+			if retryFlag {
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["ReadNormal"]("")
+		})
+		err := resourceAlicloudOosExecutionRead(d, rawClient)
+		patcheDorequest.Reset()
+		assert.NotNil(t, err)
+	})
 }
