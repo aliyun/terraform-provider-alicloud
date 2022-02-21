@@ -10,6 +10,9 @@ import (
 )
 
 func TestAccAlicloudVpcBgpNetworksDataSource(t *testing.T) {
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	idsConf := dataSourceTestAccConfig{

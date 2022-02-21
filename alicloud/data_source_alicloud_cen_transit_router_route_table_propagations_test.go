@@ -11,6 +11,9 @@ import (
 )
 
 func TestAccAlicloudCenTransitRouterRouteTablePropagationsDataSource(t *testing.T) {
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandIntRange(0, 2999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterRouteTablePropagationsDataSourceName(rand, map[string]string{

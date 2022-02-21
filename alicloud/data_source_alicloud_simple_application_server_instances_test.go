@@ -11,6 +11,9 @@ import (
 )
 
 func TestAccAlicloudSimpleApplicationServerInstanceDataSource(t *testing.T) {
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandIntRange(10000, 99999)
 
 	idsConf := dataSourceTestAccConfig{

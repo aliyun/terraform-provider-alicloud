@@ -10,6 +10,9 @@ import (
 )
 
 func TestAccAlicloudDtsConsumerChannelsDataSource(t *testing.T) {
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandIntRange(1000, 9999)
 	checkoutSupportedRegions(t, true, connectivity.DTSSupportRegions)
 	idsConf := dataSourceTestAccConfig{

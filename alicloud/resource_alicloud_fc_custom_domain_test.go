@@ -187,6 +187,8 @@ func testSweepFCCustomDomain(region string) error {
 }
 
 func TestAccAlicloudFCCustomDomainUpdate(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	var v *fc.GetCustomDomainOutput
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testacc-%s-alicloudfccustomdomain-%d-cd", defaultRegionToTest, rand)

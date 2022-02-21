@@ -10,6 +10,8 @@ import (
 )
 
 func TestAccAlicloudHBRRestoreJob_basic0(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_restore_job.default"
 	ra := resourceAttrInit(resourceId, AlicloudHBRRestoreJobMap0)
@@ -65,6 +67,8 @@ func TestAccAlicloudHBRRestoreJob_basic0(t *testing.T) {
 }
 
 func TestAccAlicloudHBRRestoreJob_basic1(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_restore_job.default"
 	ra := resourceAttrInit(resourceId, AlicloudHBRRestoreJobMap0)
@@ -119,6 +123,8 @@ func TestAccAlicloudHBRRestoreJob_basic1(t *testing.T) {
 }
 
 func TestAccAlicloudHBRRestoreJob_basic2(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_restore_job.default"
 	ra := resourceAttrInit(resourceId, AlicloudHBRRestoreJobMap0)
@@ -171,6 +177,8 @@ func TestAccAlicloudHBRRestoreJob_basic2(t *testing.T) {
 }
 
 func TestAccAlicloudHBRRestoreJob_basic3(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_restore_job.default"
 	ra := resourceAttrInit(resourceId, AlicloudHBRRestoreJobMap0)

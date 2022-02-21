@@ -130,6 +130,8 @@ func testSweepHbrServerBackupPlan(region string) error {
 }
 
 func TestAccAlicloudHBRServerBackupPlan_basic0(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_server_backup_plan.default"
 	checkoutSupportedRegions(t, true, connectivity.HbrSupportRegions)

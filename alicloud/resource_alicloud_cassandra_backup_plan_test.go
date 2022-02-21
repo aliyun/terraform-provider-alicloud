@@ -10,6 +10,8 @@ import (
 )
 
 func TestAccAlicloudCassandraBackupPlan_basic0(t *testing.T) {
+	// Cassandra has been offline
+	t.Skip("Cassandra has been offline")
 	var v map[string]interface{}
 	resourceId := "alicloud_cassandra_backup_plan.default"
 	ra := resourceAttrInit(resourceId, AlicloudCassandraBackupPlanMap0)

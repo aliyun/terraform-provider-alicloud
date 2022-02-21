@@ -62,7 +62,7 @@ func TestAccAlicloudSddpRuleDataSource(t *testing.T) {
 			"ids":        `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
-			"product_id": `"3"`,
+			"product_id": `"2"`,
 			"ids":        `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 	}

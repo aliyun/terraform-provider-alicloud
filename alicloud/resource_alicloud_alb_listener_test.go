@@ -107,6 +107,7 @@ func testSweepAlbListener(region string) error {
 }
 
 func TestAccAlicloudALBListener_basic0(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_listener.default"
 	ra := resourceAttrInit(resourceId, AlicloudALBListenerMap0)
@@ -424,6 +425,7 @@ func TestAccAlicloudALBListener_basic0(t *testing.T) {
 	})
 }
 func TestAccAlicloudALBListener_basic1(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_listener.default"
 	ra := resourceAttrInit(resourceId, AlicloudALBListenerMap0)
@@ -542,6 +544,7 @@ func TestAccAlicloudALBListener_basic1(t *testing.T) {
 }
 
 func TestAccAlicloudALBListener_basic2(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_listener.default"
 	ra := resourceAttrInit(resourceId, AlicloudALBListenerMap0)

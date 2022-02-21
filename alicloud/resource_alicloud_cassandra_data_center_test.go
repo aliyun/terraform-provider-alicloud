@@ -11,6 +11,8 @@ import (
 )
 
 func TestAccAlicloudCassandraDataCenter_basic(t *testing.T) {
+	// Cassandra has been offline
+	t.Skip("Cassandra has been offline")
 	var v cassandra.DescribeDataCenterResponse
 	resourceId := "alicloud_cassandra_data_center.default"
 	ra := resourceAttrInit(resourceId, CassandraDataCenterMap)

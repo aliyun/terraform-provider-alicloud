@@ -172,6 +172,17 @@ func checkoutSupportedRegions(t *testing.T, supported bool, regions []connectivi
 	}
 }
 
+func checkoutAccount(t *testing.T, SLAVE bool) {
+	if SLAVE {
+		os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE"))
+		os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY_SLAVE"))
+		t.Logf("%s is using the slave account", t.Name())
+	} else {
+		os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY_MASTER"))
+		os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY_MASTER"))
+	}
+}
+
 // Skip automatically the sweep testcases which does not support some known regions.
 // If supported is true, the regions should a list of supporting the service regions.
 // If supported is false, the regions should a list of unsupporting the service regions.
@@ -393,6 +404,8 @@ provider "alicloud" {
 `
 
 func TestAccAlicloudProviderEcs(t *testing.T) {
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -449,6 +462,8 @@ func TestAccAlicloudProviderEcs(t *testing.T) {
 }
 
 func TestAccAlicloudProviderFC(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	var v *fc.GetFunctionOutput
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testacc%salicloudfcfunction-%d", defaultRegionToTest, rand)
@@ -497,6 +512,8 @@ func TestAccAlicloudProviderFC(t *testing.T) {
 }
 
 func TestAccAlicloudProviderOss(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	var v oss.GetBucketInfoResult
 
 	resourceId := "alicloud_oss_bucket.default"
@@ -540,6 +557,8 @@ func TestAccAlicloudProviderOss(t *testing.T) {
 }
 
 func TestAccAlicloudProviderLog(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	var v *sls.LogProject
 	resourceId := "alicloud_log_project.default"
 	ra := resourceAttrInit(resourceId, logProjectMap)
@@ -578,6 +597,8 @@ func TestAccAlicloudProviderLog(t *testing.T) {
 }
 
 func TestAccAlicloudProviderDatahub(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	var v *datahub.GetProjectResult
 
 	resourceId := "alicloud_datahub_project.default"

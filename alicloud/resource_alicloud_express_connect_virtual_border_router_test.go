@@ -10,6 +10,9 @@ import (
 )
 
 func TestAccAlicloudExpressConnectVirtualBorderRouter_basic0(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_virtual_border_router.default"
 	ra := resourceAttrInit(resourceId, AlicloudExpressConnectVirtualBorderRouterMap0)

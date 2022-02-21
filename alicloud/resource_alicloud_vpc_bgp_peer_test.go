@@ -10,6 +10,9 @@ import (
 )
 
 func TestAccAlicloudVPCBgpPeer_basic0(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_peer.default"
 	checkoutSupportedRegions(t, true, connectivity.VPCBgpGroupSupportRegions)
@@ -73,6 +76,9 @@ func TestAccAlicloudVPCBgpPeer_basic0(t *testing.T) {
 	})
 }
 func TestAccAlicloudVPCBgpPeer_basic1(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_peer.default"
 	checkoutSupportedRegions(t, true, connectivity.VPCBgpGroupSupportRegions)

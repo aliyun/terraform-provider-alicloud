@@ -95,6 +95,9 @@ func testSweepServiceMeshServiceMesh(region string) error {
 }
 
 func TestAccAlicloudServiceMeshServiceMesh_basic0(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_service_mesh_service_mesh.default"
 	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)

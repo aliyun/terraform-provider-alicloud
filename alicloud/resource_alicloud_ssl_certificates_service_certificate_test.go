@@ -10,6 +10,7 @@ import (
 )
 
 func TestAccAlicloudSSLCertificatesServiceCertificate_basic0(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_ssl_certificates_service_certificate.default"
 	ra := resourceAttrInit(resourceId, AlicloudSSLCertificatesServiceCertificateMap0)

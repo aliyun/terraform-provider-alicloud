@@ -38,6 +38,8 @@ var checkCassandraInfo = dataSourceAttr{
 }
 
 func TestAccAlicloudCassandraClustersDataSourceNewCluster(t *testing.T) {
+	// Cassandra has been offline
+	t.Skip("Cassandra has been offline")
 	rand := acctest.RandInt()
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
