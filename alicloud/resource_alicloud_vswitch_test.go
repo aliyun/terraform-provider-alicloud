@@ -34,7 +34,7 @@ func init() {
 			"alicloud_instance",
 			"alicloud_db_instance",
 			"alicloud_slb_load_balancer",
-			"alicloud_ess_scalinggroup",
+			"alicloud_ess_scaling_group",
 			"alicloud_fc_service",
 			"alicloud_cs_kubernetes",
 			"alicloud_kvstore_instance",

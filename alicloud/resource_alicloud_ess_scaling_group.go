@@ -122,6 +122,10 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"launch_template_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -151,10 +155,22 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 		d.SetId(response.ScalingGroupId)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scalinggroup", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scaling_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	if err := essService.WaitForEssScalingGroup(d.Id(), Inactive, DefaultTimeout); err != nil {
 		return WrapError(err)
+	}
+
+	// enable group if use launchTemplate
+	if request.LaunchTemplateId != "" {
+		enableGroupRequest := ess.CreateEnableScalingGroupRequest()
+		enableGroupRequest.ScalingGroupId = d.Id()
+		_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.EnableScalingGroup(enableGroupRequest)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scaling_group", enableGroupRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
 	}
 
 	return resourceAliyunEssScalingGroupUpdate(d, meta)
@@ -216,6 +232,7 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	}
 	d.Set("vswitch_ids", vswitchIds)
 	d.Set("launch_template_id", object.LaunchTemplateId)
+	d.Set("launch_template_version", object.LaunchTemplateVersion)
 
 	return nil
 }
@@ -277,6 +294,11 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("group_deletion_protection") {
 		request.GroupDeletionProtection = requests.NewBoolean(d.Get("group_deletion_protection").(bool))
+	}
+
+	if d.HasChange("launch_template_id") || d.HasChange("launch_template_version") {
+		request.LaunchTemplateId = d.Get("launch_template_id").(string)
+		request.LaunchTemplateVersion = d.Get("launch_template_version").(string)
 	}
 
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -405,6 +427,10 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("launch_template_id"); ok {
 		request.LaunchTemplateId = v.(string)
+	}
+
+	if v, ok := d.GetOk("launch_template_version"); ok {
+		request.LaunchTemplateVersion = v.(string)
 	}
 
 	return request, nil
