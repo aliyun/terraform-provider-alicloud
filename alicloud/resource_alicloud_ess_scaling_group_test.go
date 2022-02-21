@@ -18,8 +18,8 @@ import (
 )
 
 func init() {
-	resource.AddTestSweepers("alicloud_ess_scalinggroup", &resource.Sweeper{
-		Name: "alicloud_ess_scalinggroup",
+	resource.AddTestSweepers("alicloud_ess_scaling_group", &resource.Sweeper{
+		Name: "alicloud_ess_scaling_group",
 		F:    testSweepEssGroups,
 	})
 }
@@ -215,13 +215,13 @@ func TestAccAlicloudEssScalingGroup_withLaunchTemplateId(t *testing.T) {
 	resourceId := "alicloud_ess_scaling_group.default"
 
 	basicMap := map[string]string{
-		"min_size":           "1",
-		"max_size":           "4",
-		"desired_capacity":   "2",
-		"default_cooldown":   "20",
-		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
-		"vswitch_ids.#":      "2",
-		"removal_policies.#": "2",
+		"min_size":                "0",
+		"max_size":                "4",
+		"default_cooldown":        "20",
+		"scaling_group_name":      fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
+		"vswitch_ids.#":           "1",
+		"removal_policies.#":      "2",
+		"launch_template_version": "Default",
 	}
 
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -246,6 +246,14 @@ func TestAccAlicloudEssScalingGroup_withLaunchTemplateId(t *testing.T) {
 				Config: testAccEssScalingGroupWithTemplate(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupWithTemplateUpdate(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"launch_template_version": "Latest",
+					}),
 				),
 			},
 		},
@@ -624,25 +632,72 @@ func testAccEssScalingGroupWithTemplate(common string, rand int) string {
 variable "name" {
   default = "tf-testAccEssScalingGroup-%d"
 }
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+
+resource "alicloud_vswitch" "tmpVs" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.1.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}-bar"
 }
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids[0]
-}
+
 resource "alicloud_security_group" "default1" {
   name   = "tftestacc"
-  vpc_id = data.alicloud_vpcs.default.ids[0]
+  vpc_id = "${alicloud_vpc.default.id}"
 }
 resource "alicloud_ess_scaling_group" "default" {
-  min_size           = 1
+  min_size           = 0
   max_size           = 4
-  desired_capacity   = 2
   scaling_group_name = var.name
   default_cooldown   = 20
-  vswitch_ids        = [data.alicloud_vswitches.default.ids.0, data.alicloud_vswitches.default.ids.1]
+  vswitch_ids        = ["${alicloud_vswitch.tmpVs.id}"]
   removal_policies   = ["OldestInstance", "NewestInstance"]
   launch_template_id = alicloud_ecs_launch_template.default.id
+  launch_template_version = "Default"
+}
+resource "alicloud_ecs_launch_template" "default" {
+  launch_template_name = "tf-test"
+  image_id             =  data.alicloud_images.default.images.0.id
+  instance_charge_type = "PrePaid"
+  instance_type        =  data.alicloud_instance_types.default.instance_types.0.id
+  internet_charge_type          = "PayByBandwidth"
+  internet_max_bandwidth_in     = "5"
+  internet_max_bandwidth_out    = "0"
+  io_optimized                  = "optimized"
+  network_type                  = "vpc"
+  security_enhancement_strategy = "Active"
+  spot_price_limit              = "5"
+  spot_strategy                 = "SpotWithPriceLimit"
+  security_group_id             = alicloud_security_group.default1.id
+}`, common, rand)
+}
+
+func testAccEssScalingGroupWithTemplateUpdate(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+variable "name" {
+  default = "tf-testAccEssScalingGroup-%d"
+}
+
+resource "alicloud_vswitch" "tmpVs" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.1.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}-bar"
+}
+
+resource "alicloud_security_group" "default1" {
+  name   = "tftestacc"
+  vpc_id = "${alicloud_vpc.default.id}"
+}
+resource "alicloud_ess_scaling_group" "default" {
+  min_size           = 0
+  max_size           = 4
+  scaling_group_name = var.name
+  default_cooldown   = 20
+  vswitch_ids        = ["${alicloud_vswitch.tmpVs.id}"]
+  removal_policies   = ["OldestInstance", "NewestInstance"]
+  launch_template_id = alicloud_ecs_launch_template.default.id
+  launch_template_version = "Latest"
 }
 resource "alicloud_ecs_launch_template" "default" {
   launch_template_name = "tf-test"

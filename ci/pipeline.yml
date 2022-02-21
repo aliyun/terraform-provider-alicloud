@@ -619,7 +619,7 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "Ess"
-          SWEEPER_CODE: "alicloud_ess_scalinggroup"
+          SWEEPER_CODE: "alicloud_ess_scaling_group"
   #
   - name: Hbr
     plan:

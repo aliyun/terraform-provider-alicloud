@@ -1,4 +1,7 @@
 ## 1.159.0 (Unreleased)
+
+- resource/alicloud_ess_scaling_group: Adds new parameter launch_template_version
+
 ## 1.158.0 (February 27, 2022)
 
 - **New Resource:** `alicloud_ess_alb_server_group_attachment` ([#4594](https://github.com/aliyun/terraform-provider-alicloud/issues/4594))
