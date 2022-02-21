@@ -10,6 +10,9 @@ import (
 )
 
 func TestAccAlicloudExpressConnectPhysicalConnectionsDataSource(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "data.alicloud_express_connect_physical_connections.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccExpressConnectPhysicalConnectionsTest%d", rand)

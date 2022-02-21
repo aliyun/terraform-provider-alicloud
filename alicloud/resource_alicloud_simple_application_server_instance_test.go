@@ -10,6 +10,9 @@ import (
 )
 
 func TestAccAlicloudSimpleApplicationServerInstance_basic0(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_simple_application_server_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudSimpleApplicationServerInstanceMap0)

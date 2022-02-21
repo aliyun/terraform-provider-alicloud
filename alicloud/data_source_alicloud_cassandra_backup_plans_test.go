@@ -9,6 +9,8 @@ import (
 )
 
 func TestAccAlicloudCassandraBackupPlansDataSource(t *testing.T) {
+	// Cassandra has been offline
+	t.Skip("Cassandra has been offline")
 	rand := acctest.RandInt()
 
 	var existAlicloudCassandraBackupPlanDataSourceNameMapFunc = func(rand int) map[string]string {

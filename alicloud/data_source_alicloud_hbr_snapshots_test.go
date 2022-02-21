@@ -11,6 +11,9 @@ import (
 )
 
 func TestAccAlicloudHbrSnapshotsDataSource(t *testing.T) {
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	ecsBackupConf := dataSourceTestAccConfig{

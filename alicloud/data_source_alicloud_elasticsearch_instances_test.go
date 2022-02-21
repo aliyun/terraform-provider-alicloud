@@ -8,6 +8,8 @@ import (
 )
 
 func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_elasticsearch_instances.default"
 

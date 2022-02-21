@@ -10,6 +10,9 @@ import (
 )
 
 func TestAccAlicloudExpressConnectPhysicalConnection_domesic(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_physical_connection.default"
 	ra := resourceAttrInit(resourceId, AlicloudExpressConnectPhysicalConnectionMap0)
@@ -189,6 +192,9 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic(t *testing.T) {
 }
 
 func TestAccAlicloudExpressConnectPhysicalConnection_intl(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_physical_connection.default"
 	ra := resourceAttrInit(resourceId, AlicloudExpressConnectPhysicalConnectionMap0)
@@ -349,6 +355,9 @@ func TestAccAlicloudExpressConnectPhysicalConnection_intl(t *testing.T) {
 }
 
 func TestAccAlicloudExpressConnectPhysicalConnection_domesic1(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_physical_connection.default"
 	ra := resourceAttrInit(resourceId, AlicloudExpressConnectPhysicalConnectionMap0)

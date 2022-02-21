@@ -99,6 +99,8 @@ func testSweepActiontrailTrail(region string) error {
 }
 
 func TestAccAlicloudActiontrailTrail_basic(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_trail.default"
 	ra := resourceAttrInit(resourceId, ActiontrailTrailMap)

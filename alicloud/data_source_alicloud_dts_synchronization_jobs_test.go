@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -9,8 +10,10 @@ import (
 )
 
 func TestAccAlicloudDtsSynchronizationJobsDataSource(t *testing.T) {
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandIntRange(1000000, 9999999)
-
 	synchronizationJobidconf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_dts_synchronization_job.default.id}"]`,

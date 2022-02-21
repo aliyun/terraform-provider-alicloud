@@ -2,12 +2,16 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudSimpleApplicationServerDisksDataSource(t *testing.T) {
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "data.alicloud_simple_application_server_disks.default"
 	rand := acctest.RandIntRange(100000, 999999)
 	name := fmt.Sprintf("tf-testacc-simpleapplicationserverdisk-%d", rand)

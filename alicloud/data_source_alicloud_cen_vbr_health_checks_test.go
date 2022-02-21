@@ -13,7 +13,9 @@ import (
 
 func TestAccAlicloudCenVbrHealthCheckDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(0, 2999)
-
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	cenIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
 			"cen_id":          `"${alicloud_cen_instance.default.id}"`,

@@ -10,6 +10,8 @@ import (
 )
 
 func TestAccAlicloudHbrBackupJobsDataSource(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_hbr_backup_jobs.default"
 	name := fmt.Sprintf("tf-testAccHbrBackupJobTest%d", rand)

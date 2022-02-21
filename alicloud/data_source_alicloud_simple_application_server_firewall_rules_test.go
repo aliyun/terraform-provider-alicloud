@@ -10,6 +10,9 @@ import (
 )
 
 func TestAccAlicloudSimpleApplicationServerFirewallRulesDataSource(t *testing.T) {
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "data.alicloud_simple_application_server_firewall_rules.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	checkoutSupportedRegions(t, true, connectivity.SWASSupportRegions)

@@ -64,6 +64,7 @@ func testAccCheckAlicloudSddpConfigDataSourceName(rand int, attrMap map[string]s
 	config := fmt.Sprintf(`
 resource "alicloud_sddp_config" "default" {
   code = "access_failed_cnt"
+  description = "tf-testacc"
   value = 50
 }
 
