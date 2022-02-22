@@ -61,11 +61,15 @@ func resourceAlicloudLogDashboardCreate(d *schema.ResourceData, meta interface{}
 	if jsonErr != nil {
 		return WrapError(jsonErr)
 	}
-
+	jsonByte, err := json.Marshal(dashBoard)
+	if err != nil {
+		return WrapError(err)
+	}
+	dashboardStr := string(jsonByte)
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
-			return nil, slsClient.CreateDashboard(d.Get("project_name").(string), dashBoard)
+			return nil, slsClient.CreateDashboardString(d.Get("project_name").(string), dashboardStr)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
@@ -133,8 +137,13 @@ func resourceAlicloudLogDashboardUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		dashboard.DashboardName = parts[1]
+		jsonByte, err := json.Marshal(dashboard)
+		if err != nil {
+			return WrapError(err)
+		}
+		dashboardStr := string(jsonByte)
 		_, err = client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return nil, slsClient.UpdateDashboard(parts[0], dashboard)
+			return nil, slsClient.UpdateDashboardString(parts[0], parts[1], dashboardStr)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateDashboard", AliyunLogGoSdkERROR)
