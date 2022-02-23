@@ -1,11 +1,12 @@
 package alicloud
 
 import (
+	"strings"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"strings"
 )
 
 func dataSourceAlicloudSlbZones() *schema.Resource {
