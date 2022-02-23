@@ -55,29 +55,31 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Network Interface names.
 * `interfaces` - A list of Ecs Network Interfaces. Each element contains the following attributes:
-	* `creation_time` - The creation time.
-	* `description` - The description of the ENI.
-	* `id` - The ID of the Network Interface.
-	* `instance_id` - The instance id.
-	* `mac` - The MAC address of the ENI.
-	* `name` - The network interface name.
-	* `network_interface_id` - The network interface id.
-	* `network_interface_name` - The network interface name.
-	* `primary_ip_address` - The primary private IP address of the ENI. 
-	* `private_ip` - The primary private IP address of the ENI.
-	* `private_ip_address` - A list of secondary private IP address that is assigned to the ENI.
-	* `private_ips` - A list of secondary private IP address that is assigned to the ENI.
-	* `queue_number` - Number of network card queues.
-	* `resource_group_id` - The resource group id.
-	* `security_group_ids` - The security group ids.
-	* `security_groups` - The security groups.
-	* `service_managed` - Whether the user of the elastic network card is a cloud product or a virtual vendor.
-	* `service_id` - The service id.
-	* `status` - The status of the ENI.
-	* `tags` - The tags.
-		* `tag_key` - The tagKey.
-		* `tag_value` - The tagValue.
-	* `type` - The type of the ENI.
-	* `vpc_id` - The Vpc Id.
-	* `vswitch_id` - The vswitch id.
-	* `zone_id` - The zone id.
+    * `creation_time` - The creation time.
+    * `description` - The description of the ENI.
+    * `id` - The ID of the Network Interface.
+    * `instance_id` - The instance id.
+    * `mac` - The MAC address of the ENI.
+    * `name` - The network interface name.
+    * `network_interface_id` - The network interface id.
+    * `network_interface_name` - The network interface name.
+    *  `network_interface_traffic_mode` - The communication mode of the elastic network card.
+    * `owner_id` - The ID of the account to which the ENIC belongs.
+    * `primary_ip_address` - The primary private IP address of the ENI. 
+    * `private_ip` - The primary private IP address of the ENI.
+    * `private_ip_address` - A list of secondary private IP address that is assigned to the ENI.
+    * `private_ips` - A list of secondary private IP address that is assigned to the ENI.
+    * `queue_number` - Number of network card queues.
+    * `resource_group_id` - The resource group id.
+    * `security_group_ids` - The security group ids.
+    * `security_groups` - The security groups.
+    * `service_managed` - Whether the user of the elastic network card is a cloud product or a virtual vendor.
+    * `service_id` - The service id.
+    * `status` - The status of the ENI.
+    * `tags` - The tags.
+        * `tag_key` - The tagKey.
+        * `tag_value` - The tagValue.
+    * `type` - The type of the ENI.
+    * `vpc_id` - The Vpc Id.
+    * `vswitch_id` - The vswitch id.
+    * `zone_id` - The zone id.

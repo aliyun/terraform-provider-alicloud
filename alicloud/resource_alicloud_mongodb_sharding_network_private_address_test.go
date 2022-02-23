@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
