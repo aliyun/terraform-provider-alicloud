@@ -50,6 +50,16 @@ func TestAccAlicloudNasAccessRuleDataSource(t *testing.T) {
 			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}_fake"]`,
 		}),
 	}
+	fileSystemTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"file_system_type":  `"standard"`,
+		}),
+		fakeConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"file_system_type":  `"extreme"`,
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
@@ -57,6 +67,7 @@ func TestAccAlicloudNasAccessRuleDataSource(t *testing.T) {
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}"`,
 			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}"`,
+			"file_system_type":  `"standard"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
@@ -64,9 +75,10 @@ func TestAccAlicloudNasAccessRuleDataSource(t *testing.T) {
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}_fake"`,
 			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}_fake"`,
+			"file_system_type":  `"extreme"`,
 		}),
 	}
-	accessRuleCheckInfo.dataSourceTestCheck(t, rand, ipConf, RWAccessConf, UserAccessConf, idsConf, allConf)
+	accessRuleCheckInfo.dataSourceTestCheck(t, rand, ipConf, RWAccessConf, UserAccessConf, idsConf, fileSystemTypeConf, allConf)
 }
 
 func testAccCheckAlicloudAccessRuleDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -76,19 +88,19 @@ func testAccCheckAlicloudAccessRuleDataSourceConfig(rand int, attrMap map[string
 	}
 	config := fmt.Sprintf(`
 variable "name" {
-        	default = "tf-testAccAccessGroupsdatasource-%d"
+  default = "tf-testAccAccessGroupsdatasource-%d"
 }
 resource "alicloud_nas_access_group" "default" {
-        	access_group_name = "${var.name}"
-	        access_group_type = "Vpc"
-	        description = "tf-testAccAccessGroupsdatasource"
+  access_group_name = "${var.name}"
+  access_group_type = "Vpc"
+  description       = "tf-testAccAccessGroupsdatasource"
 }
 resource "alicloud_nas_access_rule" "default" {
-        	access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
-	        source_cidr_ip = "168.1.1.0/16"
-        	rw_access_type = "RDWR"
-	        user_access_type = "no_squash"
-	        priority = 2
+  access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
+  source_cidr_ip    = "168.1.1.0/16"
+  rw_access_type    = "RDWR"
+  user_access_type  = "no_squash"
+  priority          = 2
 }
 data "alicloud_nas_access_rules" "default" {
 		%s
@@ -98,14 +110,16 @@ data "alicloud_nas_access_rules" "default" {
 
 var existAccessRuleMapCheck = func(rand int) map[string]string {
 	return map[string]string{
-		"rules.#":                "1",
-		"rules.0.source_cidr_ip": "168.1.1.0/16",
-		"rules.0.priority":       "2",
-		"rules.0.access_rule_id": CHECKSET,
-		"rules.0.user_access":    "no_squash",
-		"rules.0.rw_access":      "RDWR",
-		"ids.#":                  "1",
-		"ids.0":                  "1",
+		"rules.#":                     "1",
+		"rules.0.source_cidr_ip":      "168.1.1.0/16",
+		"rules.0.ipv6_source_cidr_ip": "",
+		"rules.0.file_system_type":    "standard",
+		"rules.0.priority":            "2",
+		"rules.0.access_rule_id":      CHECKSET,
+		"rules.0.user_access":         "no_squash",
+		"rules.0.rw_access":           "RDWR",
+		"ids.#":                       "1",
+		"ids.0":                       CHECKSET,
 	}
 }
 

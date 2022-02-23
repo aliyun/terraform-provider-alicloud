@@ -21,6 +21,7 @@ data "alicloud_nas_access_rules" "foo" {
   source_cidr_ip    = "168.1.1.0/16"
   rw_access         = "RDWR"
   user_access       = "no_squash"
+  file_system_type  = "standard"
 }
 
 output "alicloud_nas_access_rules_id" {
@@ -38,6 +39,7 @@ The following arguments are supported:
 * `user_access` - (Optional) Filter results by a specific UserAccess. 
 * `rw_access` - (Optional) Filter results by a specific RWAccess. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `file_system_type` - (Optional, Available in v1.152.0+) The type of the file system. Valid values: `standard` or `extreme`. Default value: `standard`.
 
 ## Attributes Reference
 
@@ -45,8 +47,10 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of rule IDs, Each element set to `access_rule_id` (Each element formats as `<access_group_name>:<access_rule_id>` before 1.53.0).
 * `rules` - A list of AccessRules. Each element contains the following attributes:
- * `source_cidr_ip` - SourceCidrIp of the AccessRule.
- * `priority` - Priority of the AccessRule.
- * `access_rule_id` - AccessRuleId of the AccessRule.
- * `user_access` - UserAccess of the AccessRule
- * `rw_access` - RWAccess of the AccessRule.
+  * `source_cidr_ip` - SourceCidrIp of the AccessRule.
+  * `priority` - Priority of the AccessRule.
+  * `access_rule_id` - AccessRuleId of the AccessRule.
+  * `user_access` - UserAccess of the AccessRule
+  * `rw_access` - RWAccess of the AccessRule.
+  * `file_system_type` - (Available in v1.152.0+) The type of the file system.
+  * `ipv6_source_cidr_ip` - (Available in v1.152.0+) The IPv6 address or IPv6 CIDR block of the authorized object.

@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -31,8 +32,19 @@ func resourceAlicloudNasAccessRule() *schema.Resource {
 				ForceNew: true,
 			},
 			"source_cidr_ip": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ExactlyOneOf: []string{"source_cidr_ip", "ipv6_source_cidr_ip"},
+			},
+			"ipv6_source_cidr_ip": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+			},
+			"file_system_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"standard", "extreme"}, false),
+				Computed:     true,
 			},
 			"rw_access_type": {
 				Type:         schema.TypeString,
@@ -71,9 +83,17 @@ func resourceAlicloudNasAccessRuleCreate(d *schema.ResourceData, meta interface{
 	}
 	request["RegionId"] = client.Region
 	request["AccessGroupName"] = d.Get("access_group_name")
-	request["SourceCidrIp"] = d.Get("source_cidr_ip")
+	if v, ok := d.GetOk("source_cidr_ip"); ok && v.(string) != "" {
+		request["SourceCidrIp"] = v
+	}
+	if v, ok := d.GetOk("ipv6_source_cidr_ip"); ok && v.(string) != "" {
+		request["Ipv6SourceCidrIp"] = v
+	}
 	if v, ok := d.GetOk("rw_access_type"); ok && v.(string) != "" {
 		request["RWAccessType"] = v
+	}
+	if v, ok := d.GetOk("file_system_type"); ok && v.(string) != "" {
+		request["FileSystemType"] = v
 	}
 	if v, ok := d.GetOk("user_access_type"); ok && v.(string) != "" {
 		request["UserAccessType"] = v
@@ -95,29 +115,40 @@ func resourceAlicloudNasAccessRuleCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_access_rule", action, AlibabaCloudSdkGoERROR)
 	}
-	d.SetId(fmt.Sprint(request["AccessGroupName"], ":", response["AccessRuleId"]))
+	if _, ok := d.GetOk("file_system_type"); ok {
+		d.SetId(fmt.Sprint(request["AccessGroupName"], ":", response["AccessRuleId"], ":", request["FileSystemType"]))
+	} else {
+		d.SetId(fmt.Sprint(request["AccessGroupName"], ":", response["AccessRuleId"], ":standard"))
+	}
+
 	return resourceAlicloudNasAccessRuleRead(d, meta)
 }
 
 func resourceAlicloudNasAccessRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		err = WrapError(err)
-		return err
-	}
+	parts := strings.Split(d.Id(), ":")
 	request := map[string]interface{}{
 		"RegionId":        client.RegionId,
 		"AccessGroupName": parts[0],
 		"AccessRuleId":    parts[1],
 	}
-
+	if len(parts) > 2 {
+		request["FileSystemType"] = parts[2]
+	}
 	update := false
 	if d.HasChange("source_cidr_ip") {
 		update = true
 	}
-	request["SourceCidrIp"] = d.Get("source_cidr_ip")
+	if v, ok := d.GetOk("source_cidr_ip"); ok && v.(string) != "" {
+		request["SourceCidrIp"] = v
+	}
+	if d.HasChange("ipv6_source_cidr_ip") {
+		update = true
+	}
+	if v, ok := d.GetOk("ipv6_source_cidr_ip"); ok && v.(string) != "" {
+		request["Ipv6SourceCidrIp"] = v
+	}
 
 	if d.HasChange("rw_access_type") {
 		update = true
@@ -172,13 +203,16 @@ func resourceAlicloudNasAccessRuleRead(d *schema.ResourceData, meta interface{})
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+	parts := strings.Split(d.Id(), ":")
 	d.Set("access_rule_id", object["AccessRuleId"])
 	d.Set("source_cidr_ip", object["SourceCidrIp"])
+	d.Set("ipv6_source_cidr_ip", object["Ipv6SourceCidrIp"])
 	d.Set("access_group_name", parts[0])
+	if len(parts) == 2 {
+		d.SetId(fmt.Sprintf("%s:%s:%s", parts[0], parts[1], "standard"))
+	} else {
+		d.Set("file_system_type", parts[2])
+	}
 	d.Set("priority", formatInt(object["Priority"]))
 	d.Set("rw_access_type", object["RWAccess"])
 	d.Set("user_access_type", object["UserAccess"])
@@ -194,15 +228,14 @@ func resourceAlicloudNasAccessRuleDelete(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		err = WrapError(err)
-		return err
-	}
+	parts := strings.Split(d.Id(), ":")
 	request := map[string]interface{}{
 		"RegionId":        client.RegionId,
 		"AccessGroupName": parts[0],
 		"AccessRuleId":    parts[1],
+	}
+	if len(parts) > 2 {
+		request["FileSystemType"] = parts[2]
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
