@@ -15,6 +15,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+type DashBoardStr struct {
+	DashboardName string        `json:"dashboardName"`
+	Description   string        `json:"description"`
+	ChartList     []interface{} `json:"charts"`
+	DisplayName   string        `json:"displayName"`
+}
+
 func resourceAlicloudLogDashboard() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudLogDashboardCreate,
@@ -52,14 +59,15 @@ func resourceAlicloudLogDashboard() *schema.Resource {
 func resourceAlicloudLogDashboardCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var requestInfo *sls.Client
-
-	dashBoard := sls.Dashboard{
+	var charts []interface{}
+	err := json.Unmarshal([]byte(d.Get("char_list").(string)), &charts)
+	if err != nil {
+		return WrapError(err)
+	}
+	dashBoard := DashBoardStr{
 		DashboardName: d.Get("dashboard_name").(string),
 		DisplayName:   d.Get("display_name").(string),
-	}
-	jsonErr := json.Unmarshal([]byte(d.Get("char_list").(string)), &dashBoard.ChartList)
-	if jsonErr != nil {
-		return WrapError(jsonErr)
+		ChartList:     charts,
 	}
 	jsonByte, err := json.Marshal(dashBoard)
 	if err != nil {
@@ -116,7 +124,7 @@ func resourceAlicloudLogDashboardRead(d *schema.ResourceData, meta interface{}) 
 func resourceAlicloudLogDashboardUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	update := false
-	dashboard := sls.Dashboard{}
+	dashboard := DashBoardStr{}
 	dashboard.DisplayName = d.Get("display_name").(string)
 	data := d.Get("char_list").(string)
 	err := json.Unmarshal([]byte(data), &dashboard.ChartList)
