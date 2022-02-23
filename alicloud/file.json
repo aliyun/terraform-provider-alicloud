@@ -1,0 +1,147 @@
+[
+	{
+		"cidr_block": "cidr_block",
+		"creation_time": null,
+		"description": "description",
+		"id": "MockId",
+		"ipv6_cidr_block": "ipv6_cidr_block",
+		"is_default": null,
+		"region_id": null,
+		"resource_group_id": null,
+		"route_table_id": "route_table_id",
+		"router_id": "v_router_id",
+		"secondary_cidr_blocks": [
+			"secondary_cidr_blocks"
+		],
+		"status": "Available",
+		"tags": {
+			"TagKey1": "TagValue1",
+			"TagKey2": "TagValue2"
+		},
+		"user_cidrs": [
+			"UserCidr"
+		],
+		"vpc_id": "MockId",
+		"vpc_name": "vpc_name",
+		"vrouter_id": "v_router_id",
+		"vswitch_ids": [
+			"vswitch_id"
+		]
+	},
+	{
+		"cidr_block": "cidr_block1",
+		"creation_time": null,
+		"description": "description1",
+		"id": "MockId1",
+		"ipv6_cidr_block": "ipv6_cidr_block1",
+		"is_default": null,
+		"region_id": null,
+		"resource_group_id": null,
+		"route_table_id": "route_table_id",
+		"router_id": "v_router_id1",
+		"secondary_cidr_blocks": [
+			"secondary_cidr_blocks1"
+		],
+		"status": "Available",
+		"tags": {
+			"TagKey1": "TagValue1",
+			"TagKey2": "TagValue2"
+		},
+		"user_cidrs": [
+			"UserCidr1"
+		],
+		"vpc_id": "MockId1",
+		"vpc_name": "vpc_name",
+		"vrouter_id": "v_router_id1",
+		"vswitch_ids": [
+			"vswitch_id"
+		]
+	},
+	{
+		"cidr_block": "cidr_block",
+		"creation_time": null,
+		"description": "description1",
+		"id": "MockId2",
+		"ipv6_cidr_block": "ipv6_cidr_block1",
+		"is_default": null,
+		"region_id": null,
+		"resource_group_id": null,
+		"route_table_id": "route_table_id",
+		"router_id": "v_router_id1",
+		"secondary_cidr_blocks": [
+			"secondary_cidr_blocks1"
+		],
+		"status": "Available",
+		"tags": {
+			"TagKey1": "TagValue1",
+			"TagKey2": "TagValue2"
+		},
+		"user_cidrs": [
+			"UserCidr1"
+		],
+		"vpc_id": "MockId2",
+		"vpc_name": "vpc_name1",
+		"vrouter_id": "v_router_id1",
+		"vswitch_ids": [
+			"vswitch_id1"
+		]
+	},
+	{
+		"cidr_block": "cidr_block",
+		"creation_time": null,
+		"description": "description",
+		"id": "MockId3",
+		"ipv6_cidr_block": "ipv6_cidr_block",
+		"is_default": null,
+		"region_id": null,
+		"resource_group_id": null,
+		"route_table_id": "route_table_id",
+		"router_id": "v_router_id",
+		"secondary_cidr_blocks": [
+			"secondary_cidr_blocks"
+		],
+		"status": "Available",
+		"tags": {
+			"TagKey1": "TagValue1",
+			"TagKey2": "TagValue2"
+		},
+		"user_cidrs": [
+			"UserCidr1"
+		],
+		"vpc_id": "MockId3",
+		"vpc_name": "vpc_name",
+		"vrouter_id": "v_router_id",
+		"vswitch_ids": [
+			"vswitch_id"
+		]
+	},
+	{
+		"cidr_block": "cidr_block",
+		"creation_time": null,
+		"description": "description",
+		"id": "MockId4",
+		"ipv6_cidr_block": "ipv6_cidr_block",
+		"is_default": null,
+		"region_id": null,
+		"resource_group_id": null,
+		"route_table_id": "route_table_id",
+		"router_id": "v_router_id",
+		"secondary_cidr_blocks": [
+			"secondary_cidr_blocks"
+		],
+		"status": "Pending",
+		"tags": {
+			"TagKey1": "TagValue1",
+			"TagKey2": "TagValue2"
+		},
+		"user_cidrs": [
+			"UserCidr"
+		],
+		"vpc_id": "MockId4",
+		"vpc_name": "vpc_name",
+		"vrouter_id": "v_router_id",
+		"vswitch_ids": [
+			"vswitch_id"
+		]
+	}
+]

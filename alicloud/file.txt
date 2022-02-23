@@ -1,0 +1,30 @@
+[
+	{
+		"cidr_block": "cidr_block",
+		"creation_time": null,
+		"description": "description",
+		"id": "MockId",
+		"ipv6_cidr_block": "ipv6_cidr_block",
+		"is_default": null,
+		"region_id": null,
+		"resource_group_id": null,
+		"route_table_id": "route_table_id",
+		"router_id": "v_router_id",
+		"secondary_cidr_blocks": [
+			"secondary_cidr_blocks"
+		],
+		"status": "Available",
+		"tags": {
+			"TagKey": "TagValue"
+		},
+		"user_cidrs": [
+			"UserCidr"
+		],
+		"vpc_id": "MockId",
+		"vpc_name": "vpc_name",
+		"vrouter_id": "v_router_id",
+		"vswitch_ids": [
+			"vswitch_id"
+		]
+	}
+]

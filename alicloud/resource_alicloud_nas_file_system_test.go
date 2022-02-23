@@ -135,7 +135,7 @@ func TestAccAlicloudNasFileSystem_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"protocol_type": "${data.alicloud_nas_protocols.example.protocols.0}",
 					"storage_type":  "Capacity",
-					"zone_id":       "${data.alicloud_nas_zones.default.zones.1.zone_id}",
+					"zone_id":       "${data.alicloud_nas_zones.default.zones.0.zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -199,7 +199,7 @@ func TestAccAlicloudNasFileSystemEncrypt(t *testing.T) {
 					"protocol_type": "NFS",
 					"storage_type":  "Capacity",
 					"encrypt_type":  "1",
-					"zone_id":       "${data.alicloud_nas_zones.default.zones.1.zone_id}",
+					"zone_id":       "${data.alicloud_nas_zones.default.zones.0.zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

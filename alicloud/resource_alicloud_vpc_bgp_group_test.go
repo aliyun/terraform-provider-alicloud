@@ -549,9 +549,10 @@ func TestAccAlicloudVPCBgpGroup_unit(t *testing.T) {
 	})
 	t.Run("DeleteMockAbnormal", func(t *testing.T) {
 		retryFlag := true
-		noRetryFlag := false
+		noRetryFlag := true
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if retryFlag {
+				retryFlag = false
 				// retry until the timeout comes
 				retryFlag = false
 				return responseMock["RetryError"]("Throttling")
