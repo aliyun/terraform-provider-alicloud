@@ -21,7 +21,7 @@ func TestAccAlicloudLogDashboard_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacclogdashboard-%d", rand)
+	name := fmt.Sprintf("test-acclogdashboard-%d", rand)
 	displayname := fmt.Sprintf("dashboard_displayname-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogDashboardDependence)
 
