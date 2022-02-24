@@ -641,8 +641,8 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   is_enterprise_security_group = true
   worker_number                = 2
   password                     = "Hello1234"
-  pod_cidr                     = "172.20.0.0/16"
-  service_cidr                 = "172.21.0.0/20"
+  pod_cidr                     = "10.99.0.0/16"
+  service_cidr                 = "172.16.0.0/16"
   worker_vswitch_ids           = [local.vswitch_id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
   
