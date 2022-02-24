@@ -53,6 +53,7 @@ resource "alicloud_ecp_key_pair" "default" {
 resource "alicloud_ecp_instance" "default" {
   instance_name = var.name
   description   = var.name
+  force         = "true"
   key_pair_name = "${alicloud_ecp_key_pair.default.key_pair_name}"
   vswitch_id    = "${data.alicloud_vswitches.default.ids.0}"
   image_id      = "android_9_0_0_release_2851157_20211201.vhd"

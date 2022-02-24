@@ -223,6 +223,7 @@ resource "alicloud_ecp_instance" "default" {
   image_id          = "android_9_0_0_release_2851157_20211201.vhd"
   instance_type     = "${local.instance_type}"
   vnc_password      = "Cp1234"
+  force             = "true"   
   payment_type      = "PayAsYouGo"
 }
 
