@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -221,4 +223,111 @@ func resourceGpdbElasticInstanceConfigDependence(name string) string {
             vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
         }
         `, name)
+}
+
+func TestAccAlicloudGpdbElasticInstance_basic0(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_elastic_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudGpdbElasticInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbElasticInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccgpab%d", rand)
+	checkoutSupportedRegions(t, true, connectivity.GpdbElasticInstanceSupportRegions)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGpdbElasticInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                  "gpdb",
+					"engine_version":          "6.0",
+					"seg_storage_type":        "cloud_essd",
+					"seg_node_num":            "4",
+					"storage_size":            "50",
+					"instance_spec":           "2C8G",
+					"db_instance_description": name,
+					"vswitch_id":              "${data.alicloud_vswitches.default.ids[0]}",
+					"db_instance_category":    "Basic",
+					"encryption_key":          "${alicloud_kms_key.default.id}",
+					"encryption_type":         "CloudDisk",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                  "gpdb",
+						"engine_version":          "6.0",
+						"seg_storage_type":        "cloud_essd",
+						"seg_node_num":            "4",
+						"storage_size":            "50",
+						"instance_spec":           "2C8G",
+						"db_instance_description": name,
+						"instance_network_type":   "VPC",
+						"payment_type":            "PayAsYouGo",
+						"db_instance_category":    "Basic",
+						"vswitch_id":              CHECKSET,
+						"tags.%":                  "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF1",
+						"For":     "acceptance test1",
+						"Updated": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%": "3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{""},
+			},
+		},
+	})
+}
+
+var AlicloudGpdbElasticInstanceMap0 = map[string]string{}
+
+func AlicloudGpdbElasticInstanceBasicDependence0(name string) string {
+	return fmt.Sprintf(` 
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_gpdb_zones" "default" {}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_gpdb_zones.default.zones.5.id
+}
+
+resource "alicloud_kms_key" "default" {
+  description             =  var.name
+  deletion_window_in_days =  7
+  status                  = "Enabled"
+}
+`, name)
 }
