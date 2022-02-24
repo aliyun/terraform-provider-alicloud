@@ -227,7 +227,7 @@ func OosTemplateBasicdependence(name string) string {
 	return ""
 }
 
-func TestAccAlicloudOOSStateConfiguration_unit(t *testing.T) {
+func TestAccAlicloudOosTemplate_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_oos_template"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_oos_template"].Schema).Data(nil, nil)
