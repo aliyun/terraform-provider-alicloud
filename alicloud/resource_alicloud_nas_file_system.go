@@ -162,6 +162,10 @@ func resourceAlicloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
+	conn, err := client.NewNasClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	request := map[string]interface{}{
 		"RegionId":     client.RegionId,
@@ -179,10 +183,6 @@ func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("description") {
 		request["Description"] = d.Get("description")
 		action := "ModifyFileSystem"
-		conn, err := client.NewNasClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
