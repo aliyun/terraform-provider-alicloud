@@ -83,7 +83,7 @@ resource "alicloud_alb_load_balancer" "default" {
 ```
 
 ## Argument Reference
-R
+
 The following arguments are supported:
 
 * `access_log_config` - (Optional, Optional) The Access Logging Configuration Structure.
@@ -100,6 +100,7 @@ The following arguments are supported:
 * `resource_group_id` - (Optional) The ID of the resource group.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) where the ALB instance is deployed.
 * `zone_mappings` - (Required, ForceNew) The zones and vSwitches. You must specify at least two zones.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 #### Block load_balancer_billing_config
 
@@ -136,6 +137,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Load Balancer.
 * `status` - The load balancer status. Valid values: `Active`, `Configuring`, `CreateFailed`
+* `dns_name` - The domain name of the ALB instance. **NOTE:** Available in v1.158.0+.
 
 ### Timeouts
 
