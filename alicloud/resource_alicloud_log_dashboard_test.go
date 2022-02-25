@@ -21,7 +21,7 @@ func TestAccAlicloudLogDashboard_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacclogdashboard-%d", rand)
+	name := fmt.Sprintf("test-acclogdashboard-%d", rand)
 	displayname := fmt.Sprintf("dashboard_displayname-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogDashboardDependence)
 
@@ -39,15 +39,13 @@ func TestAccAlicloudLogDashboard_basic(t *testing.T) {
 					"project_name":   name,
 					"dashboard_name": "dashboard_name",
 					"display_name":   displayname,
-					"char_list":      `[{\"title\":\"new_title\",\"type\":\"map\",\"search\":{\"logstore\":\"new_logstore\",\"topic\":\"new_topic\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"end\":\"now\"},\"display\":{\"xAxis\":[\"province\"],\"yAxis\":[\"aini\"],\"xPos\":0,\"yPos\":0,\"width\":10,\"height\":12,\"displayName\":\"xixihaha911\"}}]`,
-				}),
+					"char_list":      `[{\"action\":{},\"display\":{\"displayName\":\"xixihaha911\",\"height\":12,\"width\":10,\"xAxis\":[\"province\"],\"xPos\":0,\"yAxis\":[\"aini\"],\"yPos\":0},\"search\":{\"end\":\"now\",\"logstore\":\"new_logstore\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"topic\":\"new_topic\"},\"title\":\"new_title\",\"type\":\"map\"}]`}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"project_name":   name,
 						"dashboard_name": "dashboard_name",
 						"display_name":   displayname,
-						"char_list":      "[{\"title\":\"new_title\",\"type\":\"map\",\"search\":{\"logstore\":\"new_logstore\",\"topic\":\"new_topic\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"end\":\"now\"},\"display\":{\"xAxis\":[\"province\"],\"yAxis\":[\"aini\"],\"xPos\":0,\"yPos\":0,\"width\":10,\"height\":12,\"displayName\":\"xixihaha911\"}}]",
-					}),
+						"char_list":      "[{\"action\":{},\"display\":{\"displayName\":\"xixihaha911\",\"height\":12,\"width\":10,\"xAxis\":[\"province\"],\"xPos\":0,\"yAxis\":[\"aini\"],\"yPos\":0},\"search\":{\"end\":\"now\",\"logstore\":\"new_logstore\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"topic\":\"new_topic\"},\"title\":\"new_title\",\"type\":\"map\"}]"}),
 				),
 			},
 			{
@@ -67,24 +65,20 @@ func TestAccAlicloudLogDashboard_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"char_list": `[{\"title\":\"upadte_title\",\"type\":\"map\",\"search\":{\"logstore\":\"new_logstore\",\"topic\":\"new_topic\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"end\":\"\"},\"display\":{\"xAxis\":[\"province\"],\"yAxis\":[\"aini\"],\"xPos\":0,\"yPos\":0,\"width\":10,\"height\":12,\"displayName\":\"xixihaha911\"}}]`,
-				}),
+					"char_list": `[{\"action\":{},\"display\":{\"displayName\":\"xixihaha911\",\"height\":12,\"width\":10,\"xAxis\":[\"province\"],\"xPos\":0,\"yAxis\":[\"aini\"],\"yPos\":0},\"search\":{\"end\":\"\",\"logstore\":\"new_logstore\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"topic\":\"new_topic\"},\"title\":\"update_title\",\"type\":\"map\"}]`}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"char_list": "[{\"title\":\"upadte_title\",\"type\":\"map\",\"search\":{\"logstore\":\"new_logstore\",\"topic\":\"new_topic\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"end\":\"\"},\"display\":{\"xAxis\":[\"province\"],\"yAxis\":[\"aini\"],\"xPos\":0,\"yPos\":0,\"width\":10,\"height\":12,\"displayName\":\"xixihaha911\"}}]",
-					}),
+						"char_list": "[{\"action\":{},\"display\":{\"displayName\":\"xixihaha911\",\"height\":12,\"width\":10,\"xAxis\":[\"province\"],\"xPos\":0,\"yAxis\":[\"aini\"],\"yPos\":0},\"search\":{\"end\":\"\",\"logstore\":\"new_logstore\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"topic\":\"new_topic\"},\"title\":\"update_title\",\"type\":\"map\"}]"}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"display_name": "update_name",
-					"char_list":    `[{\"title\":\"upadte_title_2\",\"type\":\"map\",\"search\":{\"logstore\":\"new_logstore\",\"topic\":\"new_topic\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"end\":\"\"},\"display\":{\"xAxis\":[\"province\"],\"yAxis\":[\"aini\"],\"xPos\":0,\"yPos\":0,\"width\":10,\"height\":12,\"displayName\":\"xixihaha911\"}}]`,
-				}),
+					"char_list":    `[{\"action\":{},\"display\":{\"displayName\":\"xixihaha911\",\"height\":12,\"width\":10,\"xAxis\":[\"province\"],\"xPos\":0,\"yAxis\":[\"aini\"],\"yPos\":0},\"search\":{\"end\":\"\",\"logstore\":\"new_logstore\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"topic\":\"new_topic\"},\"title\":\"update_title_2\",\"type\":\"map\"}]`}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"display_name": "update_name",
-						"char_list":    "[{\"title\":\"upadte_title_2\",\"type\":\"map\",\"search\":{\"logstore\":\"new_logstore\",\"topic\":\"new_topic\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"end\":\"\"},\"display\":{\"xAxis\":[\"province\"],\"yAxis\":[\"aini\"],\"xPos\":0,\"yPos\":0,\"width\":10,\"height\":12,\"displayName\":\"xixihaha911\"}}]",
-					}),
+						"char_list":    "[{\"action\":{},\"display\":{\"displayName\":\"xixihaha911\",\"height\":12,\"width\":10,\"xAxis\":[\"province\"],\"xPos\":0,\"yAxis\":[\"aini\"],\"yPos\":0},\"search\":{\"end\":\"\",\"logstore\":\"new_logstore\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"topic\":\"new_topic\"},\"title\":\"update_title_2\",\"type\":\"map\"}]"}),
 				),
 			},
 		},
