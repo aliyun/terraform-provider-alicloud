@@ -35,6 +35,25 @@ func tagsSchema() *schema.Schema {
 	}
 }
 
+func tagSchema() *schema.Schema {
+	return &schema.Schema{
+		Optional: true,
+		Type:     schema.TypeSet,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"key": {
+					Type:     schema.TypeString,
+					Optional: true,
+				},
+				"value": {
+					Type:     schema.TypeString,
+					Optional: true,
+				},
+			},
+		},
+	}
+}
+
 func tagsSchemaComputed() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeMap,
