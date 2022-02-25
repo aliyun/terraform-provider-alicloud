@@ -558,3 +558,78 @@ func (s *SaeService) SaeApplicationStateRefreshFunc(id string, failStates []stri
 		return object, fmt.Sprint(object["LastChangeOrderStatus"]), nil
 	}
 }
+
+func (s *SaeService) DescribeSaeApplicationScalingRule(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewServerlessClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	action := "/pop/v1/sam/scale/applicationScalingRules"
+	idExist := false
+	request := map[string]*string{
+		"AppId":       StringPointer(parts[0]),
+		"PageSize":    StringPointer(strconv.Itoa(PageSizeLarge)),
+		"CurrentPage": StringPointer("1"),
+	}
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		addDebug(action, response, request)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidAppId.NotFound"}) {
+				return object, WrapErrorf(Error(GetNotFoundMessage("SAE:ApplicationScalingRule", id)), NotFoundMsg, ProviderERROR)
+			}
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+		if respBody, isExist := response["body"]; isExist {
+			response = respBody.(map[string]interface{})
+		} else {
+			return object, WrapError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
+		}
+		v, err := jsonpath.Get("$.Data.ApplicationScalingRules", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.ApplicationScalingRules", response)
+		}
+		if len(v.([]interface{})) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("SAE:ApplicationScalingRule", id)), NotFoundMsg, ProviderERROR)
+		}
+		for _, v := range v.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["ScaleRuleName"]) == parts[1] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+		if len(v.([]interface{})) < PageSizeLarge {
+			break
+		}
+		currentPage, err := strconv.Atoi(*request["CurrentPage"])
+		if err != nil {
+			return object, WrapError(err)
+		}
+		request["CurrentPage"] = StringPointer(strconv.Itoa(currentPage + 1))
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("SAE:ApplicationScalingRule", id)), NotFoundMsg, ProviderERROR)
+	}
+	return object, nil
+}
