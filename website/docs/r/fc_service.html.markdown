@@ -76,8 +76,7 @@ resource "alicloud_fc_service" "foo" {
 
 ## Module Support
 
-You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) 
-to create a service and a function quickly and then set several triggers for it.
+You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) to create a service and a function quickly and then set several triggers for it.
 
 ## Argument Reference
 

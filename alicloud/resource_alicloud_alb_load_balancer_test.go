@@ -153,6 +153,7 @@ func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
 						"load_balancer_edition":          "Basic",
 						"load_balancer_billing_config.#": "1",
 						"zone_mappings.#":                "2",
+						"dns_name":                       CHECKSET,
 					}),
 				),
 			},
