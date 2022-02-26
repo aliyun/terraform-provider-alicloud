@@ -46,6 +46,8 @@ The following arguments are supported:
 * `sync_architecture` - (Optional) The sync architecture. Valid values: `oneway`, `bidirectional`.
 * `compute_unit` - (Optional) [ETL specifications](https://help.aliyun.com/document_detail/212324.html). The unit is the computing unit ComputeUnit (CU), 1CU=1vCPU+4 GB memory. The value range is an integer greater than or equal to 2.
 * `database_count` - (Optional) The number of private customized RDS instances under PolarDB-X. The default value is 1. This parameter needs to be passed only when `source_endpoint_engine_name` equals `drds`.
+* `auto_pay` - (Optional) Whether to automatically renew when it expires. Valid values: `true`, `false`.
+* `auto_start` - (Optional) Whether to automatically start the task after the purchase completed. Valid values: `true`, `false`.
 * `quantity` - (Optional) The number of instances purchased.
 
 ## Attributes Reference

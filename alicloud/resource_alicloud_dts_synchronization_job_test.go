@@ -200,9 +200,9 @@ data "alicloud_vswitches" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  count        = length(data.alicloud_vswitches.default.ids) > 1 ? 0 : 1
   vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 16)
   zone_id      = data.alicloud_db_zones.default.zones.1.id
   vswitch_name = "subnet-for-local-test"
 }

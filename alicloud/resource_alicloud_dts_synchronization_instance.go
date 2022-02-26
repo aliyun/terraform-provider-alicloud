@@ -34,6 +34,16 @@ func resourceAlicloudDtsSynchronizationInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"auto_pay": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"true", "false"}, false),
+			},
+			"auto_start": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"true", "false"}, false),
+			},
 			"sync_architecture": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -103,6 +113,12 @@ func resourceAlicloudDtsSynchronizationInstanceCreate(d *schema.ResourceData, me
 	request["AutoPay"] = false
 	request["AutoStart"] = true
 	request["InstanceClass"] = "small"
+	if v, ok := d.GetOk("auto_pay"); ok {
+		request["AutoPay"] = v
+	}
+	if v, ok := d.GetOk("auto_start"); ok {
+		request["AutoStart"] = v
+	}
 	if v, ok := d.GetOk("instance_class"); ok {
 		request["InstanceClass"] = v
 	}
