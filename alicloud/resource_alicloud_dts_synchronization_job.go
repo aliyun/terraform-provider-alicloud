@@ -32,8 +32,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 			},
 			"dts_job_name": {
 				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Required: true,
 			},
 			"checkpoint": {
 				Type:     schema.TypeString,
@@ -77,7 +76,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 			"reserve": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
+				Computed: true,
 			},
 			"source_endpoint_instance_type": {
 				Type:         schema.TypeString,
@@ -495,7 +494,7 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 
 	if !d.IsNewResource() && d.HasChange("destination_endpoint_password") {
 
-		modifyDtsJobPasswordReq["Endpoint"] = "src"
+		modifyDtsJobPasswordReq["Endpoint"] = "dest"
 		if v, ok := d.GetOk("destination_endpoint_password"); ok {
 			modifyDtsJobPasswordReq["Password"] = v
 		}

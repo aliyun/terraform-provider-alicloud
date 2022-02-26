@@ -338,6 +338,12 @@ func (s *DtsService) DescribeDtsSynchronizationJob(id string) (object map[string
 	if object["Status"] == "synchronizing" || object["Status"] == "Initializing" {
 		object["Status"] = "Synchronizing"
 	}
+	// After calling the delete interface, soft delete is actually performed,
+	// and instance data will still be queried from the query interface.
+	// Therefore, it is judged that the instance does not exist when the end state is "Finished".
+	if object["Status"] == "Finished" {
+		return object, WrapErrorf(Error(GetNotFoundMessage("DTS:SynchronizationJob", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+	}
 	return object, nil
 }
 

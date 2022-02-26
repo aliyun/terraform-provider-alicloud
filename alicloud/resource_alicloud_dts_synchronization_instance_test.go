@@ -31,6 +31,8 @@ func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"auto_pay":                         "false",
+					"auto_start":                       "false",
 					"payment_type":                     "PayAsYouGo",
 					"source_endpoint_engine_name":      "MySQL",
 					"source_endpoint_region":           "cn-hangzhou",
@@ -50,7 +52,7 @@ func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"database_count", "status", "quantity", "sync_architecture", "auto_start", "compute_unit", "period", "used_time", "auto_pay", "order_type", "synchronization_direction"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"database_count", "status", "quantity", "sync_architecture", "auto_pay", "auto_start", "compute_unit", "period", "used_time", "auto_pay", "order_type", "synchronization_direction"},
 			},
 		},
 	})
@@ -62,7 +64,6 @@ var AlicloudDTSSynchronizationInstanceMap0 = map[string]string{
 	"compute_unit":              NOSET,
 	"period":                    NOSET,
 	"used_time":                 NOSET,
-	"auto_pay":                  NOSET,
 	"order_type":                NOSET,
 	"synchronization_direction": NOSET,
 	"database_count":            NOSET,
