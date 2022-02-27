@@ -1,33 +1,34 @@
-## 1.158.0 (Unreleased)
+## 1.159.0 (Unreleased)
+## 1.158.0 (February 27, 2022)
 
-- **New Resource:** `alicloud_ess_alb_server_group_attachment` [GH-4594]
-- **New Resource:** `alicloud_ecp_instance` [GH-4588]
-- **New Resource:** `alicloud_dcdn_ipa_domain` [GH-4600]
-- **New Data Source:** `alicloud_dcdn_ipa_domains` [GH-4600]	
-- **New Data Source:** `alicloud_ecp_instances` [GH-4588]
-- **New Data Source:** `alicloud_ecp_zones` [GH-4588]
-- **New Data Source:** `alicloud_ecp_instance_types` [GH-4588]
+- **New Resource:** `alicloud_ess_alb_server_group_attachment` ([#4594](https://github.com/aliyun/terraform-provider-alicloud/issues/4594))
+- **New Resource:** `alicloud_ecp_instance` ([#4588](https://github.com/aliyun/terraform-provider-alicloud/issues/4588))
+- **New Resource:** `alicloud_dcdn_ipa_domain` ([#4600](https://github.com/aliyun/terraform-provider-alicloud/issues/4600))
+- **New Data Source:** `alicloud_dcdn_ipa_domains` ([#4600](https://github.com/aliyun/terraform-provider-alicloud/issues/4600))	
+- **New Data Source:** `alicloud_ecp_instances` ([#4588](https://github.com/aliyun/terraform-provider-alicloud/issues/4588))
+- **New Data Source:** `alicloud_ecp_zones` ([#4588](https://github.com/aliyun/terraform-provider-alicloud/issues/4588))
+- **New Data Source:** `alicloud_ecp_instance_types` ([#4588](https://github.com/aliyun/terraform-provider-alicloud/issues/4588))
 
 ENHANCEMENTS:
 
-- resource/alicloud_gpdb_elastic_instance: Add support for output parameters db_instance_category, encryption_type, encryption_key, tags [GH-4608]
-- resource/pvtz_rule: add the query field bind_vpcs [GH-4607]
-- resource/alb_load_balancer: add the query field dns_nam [GH-4607]	
-- resource/alicloud_cs_kubernetes_node_pool: support to specify desired node size for node pool [GH-4596]
-- datasource/ess_scalinggroups: Add support for output parameters vpc_id,vswitch_id,health_check_type,suspended_processes,group_deletion_protection,modification_time,total_instance_count [GH-4603]
-- datasource/ecs_network_interfaces: Add support for output parameters network_interface_traffic_mode,owner_id [GH-4603]
-- testcase: Improve the effectiveness of test cases [GH-4554]
-- testcase: Adds new unit test case for resource alicloud_oos_patch_baseline alicloud_oos_parameter alicloud_oos_execution [GH-4597]
-- testcase: Adds new unit test case for resource alicloud_oos_state_configuration alicloud_oos_service_setting alicloud_oos_secret_parameter [GH-4601]
-- testcase: Adds new unit test case for resource alicloud_nas_access_rule alicloud_nas_access_group alicloud_oos_template [GH-4604]
-- testcase: Adds new unit test case for resource alicloud_nas_fileset alicloud_nas_auto_snapshot_policy alicloud_nas_file_system [GH-4609]
-- testcase: Adds new unit test case for resource alicloud_kms_key alicloud_nas_mount_target alicloud_nas_snapshot [GH-4613]	
-- testcase: Improves the provider testcase when changing the supported regions [GH-4610]
+- resource/alicloud_gpdb_elastic_instance: Add support for output parameters db_instance_category, encryption_type, encryption_key, tags ([#4608](https://github.com/aliyun/terraform-provider-alicloud/issues/4608))
+- resource/pvtz_rule: add the query field bind_vpcs ([#4607](https://github.com/aliyun/terraform-provider-alicloud/issues/4607))
+- resource/alb_load_balancer: add the query field dns_nam ([#4607](https://github.com/aliyun/terraform-provider-alicloud/issues/4607))	
+- resource/alicloud_cs_kubernetes_node_pool: support to specify desired node size for node pool ([#4596](https://github.com/aliyun/terraform-provider-alicloud/issues/4596))
+- datasource/ess_scalinggroups: Add support for output parameters vpc_id,vswitch_id,health_check_type,suspended_processes,group_deletion_protection,modification_time,total_instance_count ([#4603](https://github.com/aliyun/terraform-provider-alicloud/issues/4603))
+- datasource/ecs_network_interfaces: Add support for output parameters network_interface_traffic_mode,owner_id ([#4603](https://github.com/aliyun/terraform-provider-alicloud/issues/4603))
+- testcase: Improve the effectiveness of test cases ([#4554](https://github.com/aliyun/terraform-provider-alicloud/issues/4554))
+- testcase: Adds new unit test case for resource alicloud_oos_patch_baseline alicloud_oos_parameter alicloud_oos_execution ([#4597](https://github.com/aliyun/terraform-provider-alicloud/issues/4597))
+- testcase: Adds new unit test case for resource alicloud_oos_state_configuration alicloud_oos_service_setting alicloud_oos_secret_parameter ([#4601](https://github.com/aliyun/terraform-provider-alicloud/issues/4601))
+- testcase: Adds new unit test case for resource alicloud_nas_access_rule alicloud_nas_access_group alicloud_oos_template ([#4604](https://github.com/aliyun/terraform-provider-alicloud/issues/4604))
+- testcase: Adds new unit test case for resource alicloud_nas_fileset alicloud_nas_auto_snapshot_policy alicloud_nas_file_system ([#4609](https://github.com/aliyun/terraform-provider-alicloud/issues/4609))
+- testcase: Adds new unit test case for resource alicloud_kms_key alicloud_nas_mount_target alicloud_nas_snapshot ([#4613](https://github.com/aliyun/terraform-provider-alicloud/issues/4613))	
+- testcase: Improves the provider testcase when changing the supported regions ([#4610](https://github.com/aliyun/terraform-provider-alicloud/issues/4610))
 
 BUG FIXES:
 
-- resource/click_house_db_clusters: Fixed the difference error in the attribute db_cluster_access_white_list; Remove the db_cluster_ip_array_attribute attribute [GH-4546]
-- testcase: fix CIDR block conflicts for resource alicloud_cs_kubernete [GH-4606]
+- resource/click_house_db_clusters: Fixed the difference error in the attribute db_cluster_access_white_list; Remove the db_cluster_ip_array_attribute attribute ([#4546](https://github.com/aliyun/terraform-provider-alicloud/issues/4546))
+- testcase: fix CIDR block conflicts for resource alicloud_cs_kubernete ([#4606](https://github.com/aliyun/terraform-provider-alicloud/issues/4606))
 
 ## 1.157.0 (February 20, 2022)
 
