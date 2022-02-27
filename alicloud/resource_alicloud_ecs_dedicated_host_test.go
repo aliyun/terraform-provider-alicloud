@@ -11,6 +11,7 @@ import (
 )
 
 func TestAccAlicloudEcsDedicatedHost_basic(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
@@ -145,6 +146,7 @@ func TestAccAlicloudEcsDedicatedHost_basic(t *testing.T) {
 
 func TestAccAlicloudEcsDedicatedHost_basic1(t *testing.T) {
 	var v ecs.DedicatedHost
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -196,6 +198,7 @@ func TestAccAlicloudEcsDedicatedHost_basic1(t *testing.T) {
 }
 
 func TestAccAlicloudEcsDedicatedHost_basic2(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)

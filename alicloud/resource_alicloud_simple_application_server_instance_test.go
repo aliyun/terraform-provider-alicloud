@@ -27,7 +27,6 @@ func TestAccAlicloudSimpleApplicationServerInstance_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.SWASSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

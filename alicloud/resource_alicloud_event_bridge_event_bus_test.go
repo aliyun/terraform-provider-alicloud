@@ -2,12 +2,107 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	log "github.com/sirupsen/logrus"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_event_bridge_event_bus",
+		&resource.Sweeper{
+			Name: "alicloud_event_bridge_event_bus",
+			F:    testSweepEventBridgeEventBus,
+		})
+}
+
+func testSweepEventBridgeEventBus(region string) error {
+	prefixes := []string{
+		"tf-testacc",
+	}
+	rawClient, err := sharedClientForRegionWithBackendRegions(region, true, connectivity.SaeSupportRegions)
+	if err != nil {
+		return WrapErrorf(err, "Error getting Alicloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	request := make(map[string]interface{})
+	action := "ListEventBuses"
+	request["Limit"] = PageSizeLarge
+	conn, err := client.NewEventbridgeClient()
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_event_buses", action, AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return WrapError(fmt.Errorf("ListEventBuses failed, response: %v", response))
+	}
+	resp, err := jsonpath.Get("$.Data.EventBuses", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.EventBuses", response)
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		// item namespace
+		item := v.(map[string]interface{})
+		skip := true
+		for _, prefix := range prefixes {
+			EventBusName := ""
+			if val, exist := item["EventBusName"]; exist {
+				EventBusName = val.(string)
+			}
+			if strings.Contains(strings.ToLower(EventBusName), strings.ToLower(prefix)) {
+				skip = false
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping EventBridge Bus: %s", item["EventBusName"])
+			continue
+		}
+		action = "DeleteEventBus"
+		request = map[string]interface{}{
+			"EventBusName": item["EventBusName"],
+		}
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+	}
+	return nil
+}
 
 func TestAccAlicloudEventBridgeEventBus_basic(t *testing.T) {
 	var v map[string]interface{}

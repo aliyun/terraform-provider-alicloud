@@ -78,8 +78,8 @@ The following arguments are supported:
 
 * `aggregate_compliance_pack_name` - (Required)The name of compliance package name. **NOTE:** the `aggregate_compliance_pack_name` supports modification since V1.145.0.
 * `aggregator_id` - (Required, ForceNew)The ID of aggregator.
-* `compliance_pack_template_id` - (Optional form v1.141.0, ForceNew)The Template ID of compliance package.
-* `config_rules` - (Optional, Computed, Deprecated form v1.141.0) A list of Config Rules.
+* `compliance_pack_template_id` - (Optional from v1.141.0, ForceNew)The Template ID of compliance package.
+* `config_rules` - (Optional, Computed, Deprecated from v1.141.0) A list of Config Rules.
 * `config_rule_ids` - (Optional, Computed, Available in v1.141.0) A list of Config Rule IDs.
 * `description` - (Required) The description of compliance package.
 * `risk_level` - (Required) The Risk Level. Valid values: `1`: critical `2`: warning `3`: info.

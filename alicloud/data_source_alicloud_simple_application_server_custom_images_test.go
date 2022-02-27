@@ -2,17 +2,18 @@ package alicloud
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudSimpleApplicationServerCustomImagesDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.SWASSupportRegions)
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	resourceId := "data.alicloud_simple_application_server_custom_images.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
-	checkoutSupportedRegions(t, true, connectivity.SWASSupportRegions)
 	name := fmt.Sprintf("tf-testacc-swascustomimage-%d", rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceSimpleApplicationServerCustomImagesDependence)
 

@@ -10,6 +10,9 @@ import (
 )
 
 func TestAccAlicloudHBREcsBackupPlan_basic0(t *testing.T) {
+	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	defer checkoutAccount(t, false)
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_ecs_backup_plan.default"
 	ra := resourceAttrInit(resourceId, AlicloudHBREcsBackupPlanMap0)

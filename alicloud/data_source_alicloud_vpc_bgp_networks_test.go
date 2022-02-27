@@ -14,7 +14,6 @@ func TestAccAlicloudVpcBgpNetworksDataSource(t *testing.T) {
 	checkoutAccount(t, true)
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcBgpNetworksDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_vpc_bgp_network.default.id}"]`,

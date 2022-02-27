@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
@@ -12,6 +11,7 @@ import (
 )
 
 func TestAccAlicloudDdosCooSchedulerRule_basic(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v ddoscoo.SchedulerRule
 	resourceId := "alicloud_ddoscoo_scheduler_rule.default"
 	ra := resourceAttrInit(resourceId, DdosCooSchedulerRuleMap)
@@ -69,11 +69,11 @@ func TestAccAlicloudDdosCooSchedulerRule_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": os.Getenv("RESOURCE_GROUP_ID"),
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.defaults.groups[0].id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": os.Getenv("RESOURCE_GROUP_ID"),
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -111,5 +111,9 @@ func TestAccAlicloudDdosCooSchedulerRule_basic(t *testing.T) {
 var DdosCooSchedulerRuleMap = map[string]string{}
 
 func DdosCooSchedulerRuleBasicdependence(name string) string {
-	return ""
+	return `
+data "alicloud_resource_manager_resource_groups" "defaults" {
+  name_regex = "default"
+}
+`
 }

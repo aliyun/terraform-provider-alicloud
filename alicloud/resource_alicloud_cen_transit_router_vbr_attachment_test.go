@@ -22,6 +22,9 @@ import (
 )
 
 func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_vbr_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVbrAttachmentMap)
@@ -126,6 +129,9 @@ func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 }
 
 func TestAccAlicloudCenTransitRouterVbrAttachment_basic1(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_vbr_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVbrAttachmentMap)

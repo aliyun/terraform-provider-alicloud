@@ -12,7 +12,7 @@ import (
 
 func TestAccAlicloudClickHouseBackupPoliciesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.ClickHouseSupportRegions)
+	checkoutSupportedRegions(t, true, connectivity.ClickHouseBackupPolicySupportRegions)
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudClickHouseBackupPoliciesDataSourceName(rand, map[string]string{
 			"db_cluster_id": `"${alicloud_click_house_backup_policy.default.db_cluster_id}"`,
@@ -88,7 +88,6 @@ resource "alicloud_click_house_db_cluster" "default" {
   storage_type            = "cloud_essd"
   vswitch_id              = data.alicloud_vswitches.default.vswitches.0.id
   db_cluster_access_white_list {
-    db_cluster_ip_array_attribute = "test"
     db_cluster_ip_array_name      = "test"
     security_ip_list              = "192.168.0.1"
   }

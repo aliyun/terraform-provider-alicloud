@@ -52,9 +52,10 @@ The following arguments are supported:
 * `ssl_pri` - (Optional) The private key. Specify this parameter only if you enable the SSL certificate.
 * `ssl_pub` - (Optional) Indicates the public key of the certificate if the HTTPS protocol is enabled.
 * `scope` - (Optional) The acceleration region.
-* `sources` - (Optional) The origin information.
+* `sources` - (Required) The origin information.
 * `status` - (Optional) The status of DCDN Domain. Valid values: `online`, `offline`. Default to `online`.
 * `top_level_domain` - (Optional) The top-level domain name.
+* `security_token` - (Optional) The top-level domain name.
 
 ### Block sources
 * `content` - (Required) The origin address.

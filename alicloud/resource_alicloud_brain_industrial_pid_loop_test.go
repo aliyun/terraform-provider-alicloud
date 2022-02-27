@@ -141,7 +141,7 @@ func AlicloudBrainIndustrialPidLoopBasicDependence(name string) string {
 		pid_organization_name = "%[1]s"
 	}
 	resource "alicloud_brain_industrial_pid_project" "default" {
-		pid_organisation_id = alicloud_brain_industrial_pid_organization.default.id
+		pid_organization_id = alicloud_brain_industrial_pid_organization.default.id
 		pid_project_name = "%[1]s"
 	}`, name)
 }

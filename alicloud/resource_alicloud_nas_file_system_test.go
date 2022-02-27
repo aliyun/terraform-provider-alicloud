@@ -122,6 +122,7 @@ func testSweepNasFileSystem(region string) error {
 }
 
 func TestAccAlicloudNasFileSystem_basic(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.NasClassicSupportedRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_file_system.default"
 	ra := resourceAttrInit(resourceId, AlicloudNasFileSystem0)

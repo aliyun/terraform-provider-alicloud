@@ -11,6 +11,7 @@ import (
 )
 
 func TestAccAlicloudDdoscooDomainResourcesDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(rand, map[string]string{

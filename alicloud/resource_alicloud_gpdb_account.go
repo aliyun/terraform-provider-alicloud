@@ -175,12 +175,12 @@ func resourceAlicloudGpdbAccountDelete(d *schema.ResourceData, meta interface{})
 }
 func convertGpdbAccountStatusResponse(source interface{}) interface{} {
 	switch source {
-	case "Creating":
-		return "0"
-	case "Active":
-		return "1"
-	case "Deleting":
-		return "3"
+	case "0":
+		return "Creating"
+	case "1":
+		return "Active"
+	case "3":
+		return "Deleting"
 	}
 	return source
 }

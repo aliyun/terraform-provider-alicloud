@@ -113,8 +113,7 @@ variable "name" {
   default = "%s"
 }
 data "alicloud_waf_instances" "default" {
-  status          = "1"
-  instance_source = "waf-cloud"
+
 }
 
 data "alicloud_waf_domains" "default" {

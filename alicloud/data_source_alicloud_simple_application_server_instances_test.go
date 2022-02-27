@@ -91,7 +91,7 @@ func TestAccAlicloudSimpleApplicationServerInstanceDataSource(t *testing.T) {
 		fakeMapFunc:  fakeDataAlicloudSimpleApplicationServerInstancesSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.SWASSupportRegions)
+		testAccPreCheck(t)
 	}
 	alicloudSimpleApplicationServerInstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, paymentTypeConf, statusConf, allConf)
 }

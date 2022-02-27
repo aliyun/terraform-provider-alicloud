@@ -2,12 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudEcsDedicatedHostsDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_ecs_dedicated_hosts.default"
 	name := fmt.Sprintf("tf_testAccEcsDedicatedHostsDataSource_%d", rand)

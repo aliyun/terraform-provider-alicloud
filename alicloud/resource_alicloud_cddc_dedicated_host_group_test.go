@@ -653,7 +653,7 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic5(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine":                    "SQLServer",
-					"vpc_id":                    "${alicloud_vpc.vpc.id}",
+					"vpc_id":                    "${data.alicloud_vpcs.default.ids.0}",
 					"allocation_policy":         "Evenly",
 					"host_replace_policy":       "Auto",
 					"dedicated_host_group_desc": name,

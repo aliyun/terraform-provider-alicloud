@@ -10,6 +10,7 @@ import (
 )
 
 func TestAccAlicloudHBRRestoreJob_basic0(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
 	var v map[string]interface{}
