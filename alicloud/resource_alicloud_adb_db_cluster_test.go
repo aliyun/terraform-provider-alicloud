@@ -462,7 +462,7 @@ var AlicloudAdbDbClusterMap1 = map[string]string{
 	"db_cluster_version":  "3.0",
 	"db_node_class":       "E8",
 	"db_node_count":       "1",
-	"db_node_storage":     "300",
+	"db_node_storage":     "100",
 	"elastic_io_resource": "0",
 	"maintain_time":       CHECKSET,
 	"modify_type":         NOSET,
@@ -483,7 +483,7 @@ variable "name" {
 	default = "%s"
 }
 data "alicloud_resource_manager_resource_groups" "default" {
-  name_regex = "terraformci"
+  name_regex = "default"
 }
 %s
 `, name, AdbCommonTestCase)

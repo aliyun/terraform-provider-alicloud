@@ -39,6 +39,7 @@ func resourceAlicloudCenTransitRouterPeerAttachment() *schema.Resource {
 			"bandwidth_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"BandwidthPackage", "DataTransfer"}, false),
 			},
 			"cen_bandwidth_package_id": {

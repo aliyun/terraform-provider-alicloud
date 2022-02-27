@@ -12,6 +12,9 @@ import (
 )
 
 func TestAccAlicloudCenVbrHealthCheck_basic(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v cbn.VbrHealthCheck
 	resourceId := "alicloud_cen_vbr_health_check.default"
 	ra := resourceAttrInit(resourceId, CenVbrHealthCheckMap)
@@ -121,6 +124,9 @@ func TestAccAlicloudCenVbrHealthCheck_basic(t *testing.T) {
 }
 
 func TestAccAlicloudCenVbrHealthCheck_basic1(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v cbn.VbrHealthCheck
 	resourceId := "alicloud_cen_vbr_health_check.default"
 	ra := resourceAttrInit(resourceId, CenVbrHealthCheckMap)

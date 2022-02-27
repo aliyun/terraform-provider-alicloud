@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -10,7 +11,7 @@ import (
 
 func TestAccAlicloudPolarDBClusterAccountsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
-
+	checkoutSupportedRegions(t, true, connectivity.EcsClassicSupportedRegions)
 	idConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudPolarClusterAccountsDataSourceConfig(rand, map[string]string{
 			"db_cluster_id": `"${alicloud_polardb_account.account.db_cluster_id}"`,

@@ -18,6 +18,9 @@ func resourceAlicloudRosTemplate() *schema.Resource {
 		Read:   resourceAlicloudRosTemplateRead,
 		Update: resourceAlicloudRosTemplateUpdate,
 		Delete: resourceAlicloudRosTemplateDelete,
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},

@@ -34,7 +34,7 @@ func init() {
 }
 
 func testSweepMseGateway(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.MSESupportRegions) {
+	if testSweepPreCheckWithRegions(region, true, connectivity.MSEGatewaySupportRegions) {
 		log.Printf("[INFO] Skipping Mse Gateway unsupported region: %s", region)
 		return nil
 	}
@@ -121,8 +121,8 @@ func testSweepMseGateway(region string) error {
 
 func TestAccAlicloudMSEGateway_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.MSEGatewaySupportRegions)
 	resourceId := "alicloud_mse_gateway.default"
-	checkoutSupportedRegions(t, true, connectivity.MSESupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudMSEGatewayMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -178,9 +178,9 @@ func TestAccAlicloudMSEGateway_basic0(t *testing.T) {
 	})
 }
 func TestAccAlicloudMSEGateway_basic1(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.MSEGatewaySupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_gateway.default"
-	checkoutSupportedRegions(t, true, connectivity.MSESupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudMSEGatewayMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}

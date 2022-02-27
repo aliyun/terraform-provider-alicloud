@@ -489,7 +489,7 @@ func resourceApigatewayApiConfigDependence_vpc(name string) string {
 
 	resource "alicloud_api_gateway_vpc_access" "default" {
 	  name = "${var.name}"
-	  vpc_id = "${alicloud_vpc.default.id}"
+	  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
 	  instance_id = "${alicloud_instance.default.id}"
 	  port = "8080"
 	}

@@ -10,6 +10,8 @@ import (
 )
 
 func TestAccAlicloudCSKubernetesClustersDataSource(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_cs_kubernetes_clusters.default"
 

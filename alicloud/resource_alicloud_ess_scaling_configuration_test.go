@@ -11,6 +11,7 @@ import (
 )
 
 func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.ESSSupportRegions)
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"

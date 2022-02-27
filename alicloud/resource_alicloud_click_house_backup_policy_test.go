@@ -10,6 +10,7 @@ import (
 )
 
 func TestAccAlicloudClickHouseBackupPolicy_basic0(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.ClickHouseBackupPolicySupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_backup_policy.default"
 	checkoutSupportedRegions(t, true, connectivity.ClickHouseSupportRegions)

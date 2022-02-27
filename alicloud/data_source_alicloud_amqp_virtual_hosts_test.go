@@ -2,13 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudAmqpVirtualHostsDataSource(t *testing.T) {
-
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_amqp_virtual_hosts.default"
 	name := fmt.Sprintf("tf-testacc-amqpvirtualhost%v", rand)

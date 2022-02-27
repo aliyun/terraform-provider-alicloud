@@ -66,6 +66,7 @@ func resourceAlicloudActiontrailTrail() *schema.Resource {
 			},
 			"sls_write_role_arn": {
 				Type:     schema.TypeString,
+				Computed: true,
 				Optional: true,
 			},
 			"status": {

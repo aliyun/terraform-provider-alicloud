@@ -10,6 +10,8 @@ import (
 )
 
 func TestAccAlicloudCloudStorageGatewayGatewayLogging_basic0(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_storage_gateway_gateway_logging.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudStorageGatewayGatewayLoggingMap0)

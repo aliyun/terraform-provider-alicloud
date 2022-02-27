@@ -406,6 +406,7 @@ provider "alicloud" {
 func TestAccAlicloudProviderEcs(t *testing.T) {
 	defer checkoutAccount(t, false)
 	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -463,6 +464,7 @@ func TestAccAlicloudProviderEcs(t *testing.T) {
 
 func TestAccAlicloudProviderFC(t *testing.T) {
 	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	defer checkoutAccount(t, false)
 	var v *fc.GetFunctionOutput
 	rand := acctest.RandIntRange(1000, 9999)
@@ -513,6 +515,7 @@ func TestAccAlicloudProviderFC(t *testing.T) {
 
 func TestAccAlicloudProviderOss(t *testing.T) {
 	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	defer checkoutAccount(t, false)
 	var v oss.GetBucketInfoResult
 
@@ -558,6 +561,7 @@ func TestAccAlicloudProviderOss(t *testing.T) {
 
 func TestAccAlicloudProviderLog(t *testing.T) {
 	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	defer checkoutAccount(t, false)
 	var v *sls.LogProject
 	resourceId := "alicloud_log_project.default"
@@ -598,6 +602,7 @@ func TestAccAlicloudProviderLog(t *testing.T) {
 
 func TestAccAlicloudProviderDatahub(t *testing.T) {
 	checkoutAccount(t, true)
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	defer checkoutAccount(t, false)
 	var v *datahub.GetProjectResult
 

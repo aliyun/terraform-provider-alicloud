@@ -1,12 +1,14 @@
 package alicloud
 
 import (
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudMarketProductDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_market_product.default"
 

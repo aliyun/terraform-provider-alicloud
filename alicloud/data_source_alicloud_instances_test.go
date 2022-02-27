@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -200,8 +199,8 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 	config := fmt.Sprintf(`
 	%s
 
-	variable "resource_group_id" {
-		default = "%s"
+	data "alicloud_resource_manager_resource_groups" "default" {
+	  name_regex = "default"
 	}
 
 	variable "name" {
@@ -217,7 +216,7 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 		instance_name = "${var.name}"
 		system_disk_category = "cloud_efficiency"
 		security_groups = ["${alicloud_security_group.default.id}"]
-		resource_group_id = "${var.resource_group_id}"
+		resource_group_id = "${data.alicloud_resource_manager_resource_groups.default.groups[0].id}"
 		role_name = "${alicloud_ram_role.default.name}"
 		data_disks {
 				name  = "${var.name}-disk1"
@@ -267,7 +266,7 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 
 	data "alicloud_instances" "default" {
 		%s
-	}`, EcsInstanceCommonNoZonesTestCase, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), rand, strings.Join(pairs, "\n  "))
+	}`, EcsInstanceCommonNoZonesTestCase, rand, strings.Join(pairs, "\n  "))
 	return config
 }
 
@@ -280,12 +279,12 @@ func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[
 	config := fmt.Sprintf(`
 	%s
 
-	variable "resource_group_id" {
-		default = "%s"
-	}
-
 	variable "name" {
 		default = "tf-testAccCheckAlicloudInstancesDataSource%d"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	  name_regex = "default"
 	}
 
 	resource "alicloud_instance" "default" {
@@ -297,7 +296,7 @@ func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[
 		instance_name = "${var.name}"
 		system_disk_category = "cloud_efficiency"
 		security_groups = ["${alicloud_security_group.default.id}"]
-		resource_group_id = "${var.resource_group_id}"
+		resource_group_id = "${data.alicloud_resource_manager_resource_groups.default.groups[0].id}"
 		data_disks {
 				name  = "${var.name}-disk1"
 				size =        "20"
@@ -325,7 +324,7 @@ func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[
 	data "alicloud_instances" "default" {
 		%s
 		%s
-	}`, EcsInstanceCommonNoZonesTestCase, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), rand, strings.Join(pairs, "\n  "), tags)
+	}`, EcsInstanceCommonNoZonesTestCase, rand, strings.Join(pairs, "\n  "), tags)
 	return config
 }
 

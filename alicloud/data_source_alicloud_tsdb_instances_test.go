@@ -11,6 +11,7 @@ import (
 )
 
 func TestAccAlicloudTsdbInstancesDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudTsdbInstancesDataSourceConfig(rand, map[string]string{

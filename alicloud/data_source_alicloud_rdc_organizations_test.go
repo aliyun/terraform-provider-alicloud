@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 )
 
 func TestAccAlicloudRdcOrganizationDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.RDCupportRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRdcOrganizationDataSourceName(rand, map[string]string{
