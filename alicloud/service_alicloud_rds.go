@@ -1582,7 +1582,7 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
 				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 				if err != nil {
-					if IsThrottling(err) || NeedRetry(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -1615,7 +1615,7 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
 				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 				if err != nil {
-					if IsThrottling(err) || NeedRetry(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 					}

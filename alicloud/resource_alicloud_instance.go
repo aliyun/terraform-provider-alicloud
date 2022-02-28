@@ -465,7 +465,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 			return ecsClient.RunInstances(request)
 		})
 		if err != nil {
-			if IsThrottling(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

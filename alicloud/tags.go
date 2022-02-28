@@ -153,7 +153,7 @@ func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceTy
 				return ecsClient.DescribeDisks(request)
 			})
 			if err != nil {
-				if IsThrottling(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 
@@ -218,7 +218,7 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 				return ecsClient.UntagResources(request)
 			})
 			if err != nil {
-				if IsThrottling(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 
@@ -254,7 +254,7 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 				return ecsClient.TagResources(request)
 			})
 			if err != nil {
-				if IsThrottling(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 

@@ -695,7 +695,7 @@ func (s *SlbService) setInstanceTags(d *schema.ResourceData, resourceType TagRes
 				return client.UntagResources(request)
 			})
 			if err != nil {
-				if IsThrottling(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 
@@ -723,7 +723,7 @@ func (s *SlbService) setInstanceTags(d *schema.ResourceData, resourceType TagRes
 				return client.TagResources(request)
 			})
 			if err != nil {
-				if IsThrottling(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 
@@ -914,7 +914,7 @@ func (s *SlbService) SetResourceTags(d *schema.ResourceData, resourceType string
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					if IsThrottling(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 
@@ -946,7 +946,7 @@ func (s *SlbService) SetResourceTags(d *schema.ResourceData, resourceType string
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					if IsThrottling(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 

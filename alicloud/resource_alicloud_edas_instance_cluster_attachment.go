@@ -87,7 +87,7 @@ func resourceAlicloudEdasInstanceClusterAttachmentCreate(d *schema.ResourceData,
 			return edasClient.InstallAgent(request)
 		})
 		if err != nil {
-			if IsThrottling(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -187,7 +187,7 @@ func resourceAlicloudEdasInstanceClusterAttachmentDelete(d *schema.ResourceData,
 
 			})
 			if err != nil {
-				if IsThrottling(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
