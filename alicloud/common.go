@@ -1131,14 +1131,15 @@ func mapMerge(target, merged map[string]interface{}) map[string]interface{} {
 	return target
 }
 
-func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) *terraform.InstanceDiff {
+func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) (*terraform.InstanceDiff, error) {
+
 	p := Provider().(*schema.Provider).ResourcesMap
 	dOld, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
 	dNew, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
 	for key, value := range attributes {
 		err := dOld.Set(key, value)
 		if err != nil {
-			WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+			return nil, WrapErrorf(err, "[ERROR] the field %s setting error.", key)
 		}
 	}
 	for key, value := range attributesDiff {
@@ -1148,7 +1149,7 @@ func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]
 	for key, value := range attributes {
 		err := dNew.Set(key, value)
 		if err != nil {
-			WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+			return nil, WrapErrorf(err, "[ERROR] the field %s setting error.", key)
 		}
 	}
 
@@ -1186,5 +1187,5 @@ func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]
 			objectKey = ""
 		}
 	}
-	return diff
+	return diff, nil
 }
