@@ -229,11 +229,11 @@ func resourceAlicloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 		request["NetworkType"] = v
 	}
 	request["VpcId"] = d.Get("vpc_id")
-	request["ClientToken"] = buildClientToken("CreateNatGateway")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		request["ClientToken"] = buildClientToken("CreateNatGateway")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict", "VswitchStatusError"}) {
