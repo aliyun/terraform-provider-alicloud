@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"io/ioutil"
 	"log"
 	"os"
@@ -1092,4 +1093,98 @@ func setPagingRequest(d *schema.ResourceData, request map[string]interface{}, ma
 		request["PageSize"] = PageSizeLarge
 	}
 	return
+}
+
+func mapMerge(target, merged map[string]interface{}) map[string]interface{} {
+	for key, value := range merged {
+		if _, exist := target[key]; !exist {
+			target[key] = value
+		} else {
+			// key existed in both src,target
+			switch merged[key].(type) {
+			case []interface{}:
+				sourceSlice := value.([]interface{})
+				targetSlice := make([]interface{}, len(sourceSlice))
+				copy(targetSlice, target[key].([]interface{}))
+
+				for index, val := range sourceSlice {
+					switch val.(type) {
+					case map[string]interface{}:
+						targetMap, ok := targetSlice[index].(map[string]interface{})
+						if ok {
+							targetSlice[index] = mapMerge(targetMap, val.(map[string]interface{}))
+						} else {
+							targetSlice[index] = mapMerge(map[string]interface{}{}, val.(map[string]interface{}))
+						}
+					default:
+						targetSlice[index] = val
+					}
+				}
+				target[key] = targetSlice
+			case map[string]interface{}:
+				target[key] = mapMerge(target[key].(map[string]interface{}), merged[key].(map[string]interface{}))
+			default:
+				target[key] = merged[key]
+			}
+		}
+	}
+	return target
+}
+
+func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) *terraform.InstanceDiff {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dOld, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	dNew, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	for key, value := range attributes {
+		err := dOld.Set(key, value)
+		if err != nil {
+			WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+		}
+	}
+	for key, value := range attributesDiff {
+		attributes[key] = value
+	}
+
+	for key, value := range attributes {
+		err := dNew.Set(key, value)
+		if err != nil {
+			WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+		}
+	}
+
+	diff := terraform.NewInstanceDiff()
+	objectKey := ""
+	for key, newValue := range dNew.State().Attributes {
+		oldValue, ok := dOld.State().Attributes[key]
+		if ok && oldValue == newValue {
+			continue
+		}
+		if oldValue == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					oldValue = "0"
+					objectKey = strings.TrimSuffix(key, suffix)
+				}
+			}
+		}
+		diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: oldValue, New: newValue})
+		if objectKey == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					objectKey = strings.TrimSuffix(key, suffix)
+				}
+			}
+		}
+		if objectKey != "" {
+			for removeKey, removeValue := range dOld.State().Attributes {
+				if strings.HasPrefix(removeKey, objectKey) {
+					if _, ok := dNew.State().Attributes[removeKey]; !ok {
+						diff.SetAttribute(removeKey, &terraform.ResourceAttrDiff{Old: removeValue, New: ""})
+					}
+				}
+			}
+			objectKey = ""
+		}
+	}
+	return diff
 }
