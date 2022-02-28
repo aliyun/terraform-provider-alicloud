@@ -465,7 +465,7 @@ func (s *GpdbService) SetResourceTags(d *schema.ResourceData, resourceType strin
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					if IsThrottling(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 
@@ -497,7 +497,7 @@ func (s *GpdbService) SetResourceTags(d *schema.ResourceData, resourceType strin
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					if IsThrottling(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 

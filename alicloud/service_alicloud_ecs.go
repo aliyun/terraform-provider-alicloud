@@ -131,7 +131,7 @@ func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err err
 			return ecsClient.DescribeInstances(request)
 		})
 		if err != nil {
-			if IsThrottling(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 
@@ -187,7 +187,7 @@ func (s *EcsService) DescribeInstanceSystemDisk(id, rg string) (disk ecs.Disk, e
 			return ecsClient.DescribeDisks(request)
 		})
 		if err != nil {
-			if IsThrottling(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 
@@ -1524,7 +1524,7 @@ func (s *EcsService) SetResourceTags(d *schema.ResourceData, resourceType string
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					if IsThrottling(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 
@@ -1556,7 +1556,7 @@ func (s *EcsService) SetResourceTags(d *schema.ResourceData, resourceType string
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					if IsThrottling(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 
@@ -1873,7 +1873,7 @@ func (s *EcsService) SetResourceTemplateTags(d *schema.ResourceData, resourceTyp
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					if IsThrottling(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 
@@ -1905,7 +1905,7 @@ func (s *EcsService) SetResourceTemplateTags(d *schema.ResourceData, resourceTyp
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					if IsThrottling(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 
