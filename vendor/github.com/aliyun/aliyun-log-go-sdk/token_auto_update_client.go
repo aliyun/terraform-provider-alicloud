@@ -1284,7 +1284,7 @@ func (c *TokenAutoUpdateClient) ListScheduledSQLJobInstances(projectName, jobNam
 // ####################### Resource API ######################
 func (c *TokenAutoUpdateClient) ListResource(resourceType string, resourceName string, offset, size int) (resourceList []*Resource, count, total int, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
-		resourceList, total, count, err = c.logClient.ListResource(resourceType, resourceName, offset, size)
+		resourceList, count, total, err = c.logClient.ListResource(resourceType, resourceName, offset, size)
 		if !c.processError(err) {
 			return
 		}
@@ -1365,7 +1365,7 @@ func (c *TokenAutoUpdateClient) CreateResourceString(resourceStr string) (err er
 // ####################### Resource Record API ######################
 func (c *TokenAutoUpdateClient) ListResourceRecord(resourceName string, offset, size int) (recordList []*ResourceRecord, count, total int, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
-		recordList, total, count, err = c.logClient.ListResourceRecord(resourceName, offset, size)
+		recordList, count, total, err = c.logClient.ListResourceRecord(resourceName, offset, size)
 		if !c.processError(err) {
 			return
 		}
@@ -1436,6 +1436,57 @@ func (c *TokenAutoUpdateClient) CreateResourceRecord(resourceName string, record
 func (c *TokenAutoUpdateClient) CreateResourceRecordString(resourceName, recordStr string) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		err = c.logClient.CreateResourceRecordString(resourceName, recordStr)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+// ####################### Ingestion API ######################
+func (c *TokenAutoUpdateClient) CreateIngestion(project string, ingestion *Ingestion) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateIngestion(project, ingestion)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) UpdateIngestion(project string, ingestion *Ingestion) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateIngestion(project, ingestion)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetIngestion(project string, name string) (ingestion *Ingestion, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		ingestion, err = c.logClient.GetIngestion(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) ListIngestion(project, logstore, name, displayName string, offset, size int) (ingestions []*Ingestion, total, count int, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		ingestions, total, count, err = c.logClient.ListIngestion(project, logstore, name, displayName, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) DeleteIngestion(project string, name string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.DeleteIngestion(project, name)
 		if !c.processError(err) {
 			return
 		}

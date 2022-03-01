@@ -803,6 +803,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_log_audit":                                            resourceAlicloudLogAudit(),
 			"alicloud_log_dashboard":                                        resourceAlicloudLogDashboard(),
 			"alicloud_log_etl":                                              resourceAlicloudLogETL(),
+			"alicloud_log_ingestion":                                        resourceAlicloudLogIngestion(),
 			"alicloud_log_machine_group":                                    resourceAlicloudLogMachineGroup(),
 			"alicloud_log_oss_shipper":                                      resourceAlicloudLogOssShipper(),
 			"alicloud_log_project":                                          resourceAlicloudLogProject(),
