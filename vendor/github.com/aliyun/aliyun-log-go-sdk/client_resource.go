@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strconv"
 )
 
 const ResourceTypeUserDefine = "userdefine"
@@ -167,10 +166,8 @@ func (c *Client) ListResource(resourceType string, resourceName string, offset, 
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Content-Type":      "application/json",
-		"offset":            strconv.Itoa(offset),
-		"size":              strconv.Itoa(size),
 	}
-	uri := fmt.Sprintf("/resources?type=%s&names=%s", resourceType, resourceName)
+	uri := fmt.Sprintf("/resources?type=%s&names=%s&offset=%d&size=%d", resourceType, resourceName, offset, size)
 	r, err := c.request("", "GET", uri, h, nil)
 	if err != nil {
 		return nil, 0, 0, err

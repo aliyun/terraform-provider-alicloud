@@ -833,3 +833,68 @@ func (s *LogService) LogProjectStateRefreshFunc(id string, failStates []string) 
 		return object, object.Status, nil
 	}
 }
+
+func (s *LogService) DescribeLogIngestion(id string) (*sls.Ingestion, error) {
+	var ingestion *sls.Ingestion
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return ingestion, WrapError(err)
+	}
+	projectName, logstoreName, ingestionName := parts[0], parts[1], parts[2]
+	var requestInfo *sls.Client
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			return slsClient.GetIngestion(projectName, ingestionName)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetIngestion", raw, requestInfo, map[string]string{
+				"project":        projectName,
+				"logstore":       logstoreName,
+				"ingestion_name": ingestionName,
+			})
+		}
+		ingestion, _ = raw.(*sls.Ingestion)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "JobNotExist"}) {
+			return ingestion, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return ingestion, WrapErrorf(err, DefaultErrorMsg, id, "GetIngestion", AliyunLogGoSdkERROR)
+	}
+	return ingestion, nil
+}
+
+func (s *LogService) WaitForLogIngestion(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		object, err := s.DescribeLogIngestion(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Name == parts[2] && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Name, id, ProviderERROR)
+		}
+	}
+}

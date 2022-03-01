@@ -188,6 +188,8 @@ type Schedule struct {
 	Delay          int32  `json:"delay"`
 	DayOfWeek      int32  `json:"dayOfWeek"`
 	Hour           int32  `json:"hour"`
+	RunImmediately bool   `json:"runImmediately"`
+	TimeZone       string `json:"timeZone"`
 }
 
 type AlertConfiguration struct {

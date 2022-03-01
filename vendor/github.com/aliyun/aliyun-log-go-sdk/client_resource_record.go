@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strconv"
 )
 
 type ResourceRecord struct {
@@ -142,10 +141,8 @@ func (c *Client) ListResourceRecord(resourceName string, offset, size int) (reco
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Content-Type":      "application/json",
-		"offset":            strconv.Itoa(offset),
-		"size":              strconv.Itoa(size),
 	}
-	uri := fmt.Sprintf("/resources/%s/records", resourceName)
+	uri := fmt.Sprintf("/resources/%s/records?offset=%d&size=%d", resourceName, offset, size)
 	r, err := c.request("", "GET", uri, h, nil)
 	if err != nil {
 		return nil, 0, 0, err
