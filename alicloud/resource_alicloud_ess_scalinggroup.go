@@ -118,22 +118,23 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
-			"tag": {
-				Optional: true,
-				Type:     schema.TypeSet,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"key": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"value": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-			},
+			// "tag": {
+			// 	Optional: true,
+			// 	Type:     schema.TypeSet,
+			// 	Elem: &schema.Resource{
+			// 		Schema: map[string]*schema.Schema{
+			// 			"key": {
+			// 				Type:     schema.TypeString,
+			// 				Optional: true,
+			// 			},
+			// 			"value": {
+			// 				Type:     schema.TypeString,
+			// 				Optional: true,
+			// 			},
+			// 		},
+			// 	},
+			// },
+			"tag": tagSchema(),
 			"launch_template_id": {
 				Type:     schema.TypeString,
 				Optional: true,
