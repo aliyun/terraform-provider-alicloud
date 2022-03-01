@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,9 +12,12 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
@@ -1131,6 +1133,15 @@ func mapMerge(target, merged map[string]interface{}) map[string]interface{} {
 	return target
 }
 
+func mapSort(target map[string]string) []string {
+	result := make([]string, 0)
+	for key, _ := range target {
+		result = append(result, key)
+	}
+	sort.Strings(result)
+	return result
+}
+
 func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) (*terraform.InstanceDiff, error) {
 
 	p := Provider().(*schema.Provider).ResourcesMap
@@ -1155,7 +1166,19 @@ func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]
 
 	diff := terraform.NewInstanceDiff()
 	objectKey := ""
-	for key, newValue := range dNew.State().Attributes {
+	for _, key := range mapSort(dNew.State().Attributes) {
+		newValue := dNew.State().Attributes[key]
+		if objectKey != "" && !strings.HasPrefix(key, objectKey) {
+			objectKey = ""
+		}
+		if objectKey == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					objectKey = strings.TrimSuffix(key, suffix)
+					break
+				}
+			}
+		}
 		oldValue, ok := dOld.State().Attributes[key]
 		if ok && oldValue == newValue {
 			continue
@@ -1164,23 +1187,21 @@ func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]
 			for _, suffix := range []string{"#", "%"} {
 				if strings.HasSuffix(key, suffix) {
 					oldValue = "0"
-					objectKey = strings.TrimSuffix(key, suffix)
 				}
 			}
 		}
 		diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: oldValue, New: newValue})
-		if objectKey == "" {
-			for _, suffix := range []string{"#", "%"} {
-				if strings.HasSuffix(key, suffix) {
-					objectKey = strings.TrimSuffix(key, suffix)
-				}
-			}
-		}
+
 		if objectKey != "" {
 			for removeKey, removeValue := range dOld.State().Attributes {
 				if strings.HasPrefix(removeKey, objectKey) {
 					if _, ok := dNew.State().Attributes[removeKey]; !ok {
-						diff.SetAttribute(removeKey, &terraform.ResourceAttrDiff{Old: removeValue, New: ""})
+						// If the attribue has complex elements, there should remove the key, not setting it to empty
+						if len(strings.Split(removeKey, ".")) > 2 {
+							diff.DelAttribute(removeKey)
+						} else {
+							diff.SetAttribute(removeKey, &terraform.ResourceAttrDiff{Old: removeValue, New: ""})
+						}
 					}
 				}
 			}
