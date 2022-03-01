@@ -12,7 +12,7 @@ The dashboard is a real-time data analysis platform provided by the log service.
 [Refer to details](https://www.alibabacloud.com/help/doc-detail/102530.htm).
 
 -> **NOTE:** Available in 1.86.0
-
+             After version 1.161.1, char_list added new parameter "action". It's not required for previous versions.
 ## Example Usage
 
 Basic Usage
@@ -34,6 +34,7 @@ resource "alicloud_log_dashboard" "example" {
   char_list      = <<EOF
   [
     {
+      "action":{},
       "title":"new_title",
       "type":"map",
       "search":{
