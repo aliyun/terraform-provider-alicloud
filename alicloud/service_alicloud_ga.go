@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 type GaService struct {
@@ -128,42 +127,53 @@ func (s *GaService) GaListenerStateRefreshFunc(id string, failStates []string) r
 }
 
 func (s *GaService) DescribeGaBandwidthPackage(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
 	conn, err := s.client.NewGaplusClient()
 	if err != nil {
-		return nil, WrapError(err)
+		return object, WrapError(err)
 	}
-	action := "DescribeBandwidthPackage"
+
 	request := map[string]interface{}{
-		"RegionId":           s.client.RegionId,
 		"BandwidthPackageId": id,
+		"RegionId":           s.client.RegionId,
 	}
+
+	var response map[string]interface{}
+	action := "DescribeBandwidthPackage"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, resp, request)
+		return nil
+	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.BandwidthPackage"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("GaBandwidthPackage", id)), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
-	object = v.(map[string]interface{})
-	return object, nil
+	return v.(map[string]interface{}), nil
 }
 
-func (s *GaService) GaBandwidthPackageStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *GaService) GaBandwidthPackageStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeGaBandwidthPackage(id)
+		object, err := s.DescribeGaBandwidthPackage(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
-				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
 			return nil, "", WrapError(err)
