@@ -668,6 +668,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecp_instance_types":                          dataSourceAlicloudEcpInstanceTypes(),
 			"alicloud_dcdn_ipa_domains":                            dataSourceAlicloudDcdnIpaDomains(),
 			"alicloud_sddp_data_limits":                            dataSourceAlicloudSddpDataLimits(),
+			"alicloud_ecs_image_components":                        dataSourceAlicloudEcsImageComponents(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1224,6 +1225,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecp_instance":                                         resourceAlicloudEcpInstance(),
 			"alicloud_dcdn_ipa_domain":                                      resourceAlicloudDcdnIpaDomain(),
 			"alicloud_sddp_data_limit":                                      resourceAlicloudSddpDataLimit(),
+			"alicloud_ecs_image_component":                                  resourceAlicloudEcsImageComponent(),
 		},
 
 		ConfigureFunc: providerConfigure,
