@@ -118,6 +118,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"tag": tagSchema(),
 			"launch_template_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -355,6 +356,20 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("scaling_group_name"); ok && v.(string) != "" {
 		request.ScalingGroupName = v.(string)
+	}
+
+	v, ok := d.GetOk("tag")
+	if ok {
+		tag := make([]ess.CreateScalingGroupTag, 0)
+		for _, e := range v.(*schema.Set).List() {
+			pack := e.(map[string]interface{})
+			l := ess.CreateScalingGroupTag{
+				Key:   pack["key"].(string),
+				Value: pack["value"].(string),
+			}
+			tag = append(tag, l)
+		}
+		request.Tag = &tag
 	}
 
 	if v, ok := d.GetOk("desired_capacity"); ok {
