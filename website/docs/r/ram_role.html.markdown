@@ -67,6 +67,16 @@ The following attributes are exported:
 * `ram_users` - List of services which can assume the RAM role. 
 * `services` - List of services which can assume the RAM role.
 
+### Timeouts
+
+-> **NOTE:** Available in v1.159.0+
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the ram role.
+* `update` - (Defaults to 10 mins) Used when updating the ram role.
+* `delete` - (Defaults to 10 mins) Used when deleting the ram role.
+
 ## Import
 
 RAM role can be imported using the id or name, e.g.
