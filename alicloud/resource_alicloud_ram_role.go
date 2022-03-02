@@ -25,6 +25,11 @@ func resourceAlicloudRamRole() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
@@ -108,15 +113,27 @@ func resourceAlicloudRamRoleCreate(d *schema.ResourceData, meta interface{}) err
 		return WrapError(err)
 	}
 
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.CreateRole(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.CreateRole(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*ram.CreateRoleResponse)
+		d.SetId(response.Role.RoleName)
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_role", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ram.CreateRoleResponse)
-	d.SetId(response.Role.RoleName)
 	return resourceAlicloudRamRoleRead(d, meta)
 }
 
@@ -247,12 +264,12 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 	deleteRoleRequest := ram.CreateDeleteRoleRequest()
 	deleteRoleRequest.RegionId = client.RegionId
 	deleteRoleRequest.RoleName = d.Id()
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.DeleteRole(deleteRoleRequest)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"DeleteConflict.Role.Policy"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"DeleteConflict.Role.Policy"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
