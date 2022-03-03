@@ -270,3 +270,91 @@ var alikafkaSaslUserBasicMap = map[string]string{
 	"username": "${var.name}",
 	"password": "password",
 }
+
+func TestAccAlicloudAlikafkaSaslUser_type(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alikafka_sasl_user.default"
+	ra := resourceAttrInit(resourceId, AlikafkaSaslUserTypeBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAliKafkaSaslUser")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-alikafkasasluserbasic%d", rand)
+	checkoutSupportedRegions(t, true, connectivity.AlikafkaSupportedRegions)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAlikafkaSaslUserTypeDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAlikafkaAclEnable(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id": "${alicloud_alikafka_instance.default.id}",
+					"username":    "${var.name}",
+					"password":    "password",
+					"type":        "scram",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"username":    CHECKSET,
+						"instance_id": CHECKSET,
+						"type":        "scram",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"password": "newPassword",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+		},
+	})
+
+}
+
+func AlicloudAlikafkaSaslUserTypeDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_vpcs" "default" {
+ name_regex = "^default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_alikafka_instance" "default" {
+  name = "${var.name}"
+  topic_quota = "50"
+  disk_type = "1"
+  disk_size = "500"
+  deploy_type = "5"
+  io_max = "20"
+  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
+  security_group = alicloud_security_group.default.id
+}
+`, name)
+}
+
+var AlikafkaSaslUserTypeBasicMap = map[string]string{}
