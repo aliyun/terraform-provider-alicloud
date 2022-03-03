@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"strings"
 )
 
 func resourceAlicloudLogAlert() *schema.Resource {
@@ -22,6 +23,16 @@ func resourceAlicloudLogAlert() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
+			"version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "",
+			},
+			"type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "default",
+			},
 			"project_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -42,11 +53,12 @@ func resourceAlicloudLogAlert() *schema.Resource {
 			},
 			"condition": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 			"dashboard": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "deprecated in new alert",
 			},
 			"mute_until": {
 				Type:         schema.TypeInt,
@@ -59,11 +71,30 @@ func resourceAlicloudLogAlert() *schema.Resource {
 				Optional: true,
 			},
 			"notify_threshold": {
+				Type:       schema.TypeInt,
+				Optional:   true,
+				Deprecated: "deprecated in new alert",
+			},
+			"threshold": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  1,
 			},
-
+			"no_data_fire": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"no_data_severity": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  sls.Medium,
+			},
+			"send_resolved": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"query_list": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -73,13 +104,26 @@ func resourceAlicloudLogAlert() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"logstore": {
+						"project": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+						},
+						"store": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"store_type": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"query": {
 							Type:     schema.TypeString,
 							Required: true,
+						},
+						"logstore": {
+							Type:       schema.TypeString,
+							Optional:   true,
+							Deprecated: "deprecated in new alert",
 						},
 						"start": {
 							Type:     schema.TypeString,
@@ -94,13 +138,26 @@ func resourceAlicloudLogAlert() *schema.Resource {
 							Optional: true,
 							Default:  "Custom",
 						},
+						"region": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"role_arn": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"dashboard_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
 
 			"notification_list": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:       schema.TypeList,
+				Optional:   true,
+				Deprecated: "deprecated in new alert",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"type": {
@@ -134,7 +191,87 @@ func resourceAlicloudLogAlert() *schema.Resource {
 					},
 				},
 			},
-
+			"labels": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"annotations": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"severity_configurations": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"severity": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"eval_condition": {
+							Type:     schema.TypeMap,
+							Required: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+					},
+				},
+			},
+			"join_configurations": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"condition": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"policy_configuration": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"group_configuration": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"schedule_interval": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -167,12 +304,16 @@ func resourceAlicloudLogAlertCreate(d *schema.ResourceData, meta interface{}) er
 	}
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			dashboard := d.Get("dashboard").(string)
-			err := CreateDashboard(project_name, dashboard, slsClient)
-			if err != nil {
-				return nil, err
+			if _, ok := d.GetOk("version"); ok {
+				alert.Configuration = createAlert2Config(d)
+			} else {
+				dashboard := d.Get("dashboard").(string)
+				err := CreateDashboard(project_name, dashboard, slsClient)
+				if err != nil {
+					return nil, err
+				}
+				alert.Configuration = createAlertConfig(d, project_name, dashboard, slsClient)
 			}
-			alert.Configuration = createAlertConfig(d, project_name, dashboard, slsClient)
 			return nil, slsClient.CreateAlert(project_name, alert)
 		})
 		if err != nil {
@@ -210,14 +351,49 @@ func resourceAlicloudLogAlertRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("alert_name", parts[1])
 	d.Set("alert_displayname", object.DisplayName)
 	d.Set("alert_description", object.Description)
-	d.Set("condition", object.Configuration.Condition)
-	d.Set("dashboard", object.Configuration.Dashboard)
 	d.Set("mute_until", object.Configuration.MuteUntil)
 	d.Set("throttling", object.Configuration.Throttling)
 	d.Set("notify_threshold", object.Configuration.NotifyThreshold)
 	d.Set("schedule_interval", object.Schedule.Interval)
 	d.Set("schedule_type", object.Schedule.Type)
 
+	isV2 := object.Configuration.Version != ""
+	if isV2 {
+		d.Set("version", object.Configuration.Version)
+		d.Set("type", object.Configuration.Type)
+		d.Set("threshold", object.Configuration.Threshold)
+		d.Set("labels", object.Configuration.Labels)
+		d.Set("annotations", object.Configuration.Annotations)
+		d.Set("severity_configurations", object.Configuration.SeverityConfigurations)
+		d.Set("no_data_fire", object.Configuration.NoDataFire)
+		d.Set("no_data_severity", object.Configuration.NoDataSeverity)
+		d.Set("send_resolved", object.Configuration.SendResolved)
+		d.Set("join_configurations", object.Configuration.JoinConfigurations)
+		d.Set("group_configuration", object.Configuration.GroupConfiguration)
+		d.Set("policy_configuration", object.Configuration.PolicyConfiguration)
+
+		var queryList []map[string]interface{}
+		for _, v := range object.Configuration.QueryList {
+			mapping := map[string]interface{}{
+				"chart_title":    v.ChartTitle,
+				"region":         v.Region,
+				"project":        v.Project,
+				"store":          v.Store,
+				"store_type":     v.StoreType,
+				"query":          v.Query,
+				"start":          v.Start,
+				"end":            v.End,
+				"time_span_type": v.TimeSpanType,
+				"role_arn":       v.RoleArn,
+				"dashboard_id":   v.DashboardId,
+			}
+			queryList = append(queryList, mapping)
+		}
+		d.Set("query_list", queryList)
+		return nil
+	}
+	d.Set("condition", object.Configuration.Condition)
+	d.Set("dashboard", object.Configuration.Dashboard)
 	var notiList []map[string]interface{}
 
 	for _, v := range object.Configuration.NotificationList {
@@ -266,13 +442,17 @@ func resourceAlicloudLogAlertUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			project_name := d.Get("project_name").(string)
-			dashboard := d.Get("dashboard").(string)
-			err := CreateDashboard(project_name, dashboard, slsClient)
-			if err != nil {
-				return nil, err
+			if _, ok := d.GetOk("version"); ok {
+				params.Configuration = createAlert2Config(d)
+			} else {
+				project_name := d.Get("project_name").(string)
+				dashboard := d.Get("dashboard").(string)
+				err := CreateDashboard(project_name, dashboard, slsClient)
+				if err != nil {
+					return nil, err
+				}
+				params.Configuration = createAlertConfig(d, project_name, dashboard, slsClient)
 			}
-			params.Configuration = createAlertConfig(d, project_name, dashboard, slsClient)
 			return nil, slsClient.UpdateAlert(parts[0], params)
 		})
 		if err != nil {
@@ -436,4 +616,123 @@ func getNotiMap(v *sls.Notification) map[string]interface{} {
 	}
 	return mapping
 
+}
+
+func createAlert2Config(d *schema.ResourceData) *sls.AlertConfiguration {
+	labels := []*sls.Tag{}
+	if v, ok := d.GetOk("labels"); ok {
+		for _, e := range v.([]interface{}) {
+			labelMap := e.(map[string]interface{})
+			label := new(sls.Tag)
+			label.Key, _ = labelMap["key"].(string)
+			label.Value, _ = labelMap["value"].(string)
+			labels = append(labels, label)
+		}
+	}
+
+	annotations := []*sls.Tag{}
+	if v, ok := d.GetOk("annotations"); ok {
+		for _, e := range v.([]interface{}) {
+			annotationMap := e.(map[string]interface{})
+			annotation := new(sls.Tag)
+			annotation.Key, _ = annotationMap["key"].(string)
+			annotation.Value, _ = annotationMap["value"].(string)
+			annotations = append(annotations, annotation)
+		}
+	}
+
+	severityConfigurations := []*sls.SeverityConfiguration{}
+	if v, ok := d.GetOk("severity_configurations"); ok {
+		for _, e := range v.([]interface{}) {
+			severityConfiguration := new(sls.SeverityConfiguration)
+			severityConfigurationMap := e.(map[string]interface{})
+			severityConfiguration.Severity = sls.Severity(severityConfigurationMap["severity"].(int))
+			evalConditionMap := severityConfigurationMap["eval_condition"].(map[string]interface{})
+			condition, _ := evalConditionMap["condition"].(string)
+			countCondition, _ := evalConditionMap["count_condition"].(string)
+			severityConfiguration.EvalCondition = sls.ConditionConfiguration{
+				Condition:      condition,
+				CountCondition: countCondition,
+			}
+			severityConfigurations = append(severityConfigurations, severityConfiguration)
+		}
+	}
+
+	joinConfigurations := []*sls.JoinConfiguration{}
+	if v, ok := d.GetOk("join_configurations"); ok {
+		for _, e := range v.([]interface{}) {
+			joinConfigurationMap := e.(map[string]interface{})
+			joinConfiguration := new(sls.JoinConfiguration)
+			joinConfiguration.Type, _ = joinConfigurationMap["type"].(string)
+			joinConfiguration.Condition, _ = joinConfigurationMap["condition"].(string)
+			joinConfigurations = append(joinConfigurations, joinConfiguration)
+		}
+	}
+
+	groupConfiguration := sls.GroupConfiguration{}
+	if v, ok := d.GetOk("group_configuration"); ok {
+		groupConfigurationMap := v.(map[string]interface{})
+		groupConfiguration.Type, _ = groupConfigurationMap["type"].(string)
+		fields, _ := groupConfigurationMap["fields"].(string)
+		if fields != "" {
+			groupConfiguration.Fields = strings.Split(fields, ",")
+		}
+	}
+
+	policyConfiguration := sls.PolicyConfiguration{}
+	if v, ok := d.GetOk("policy_configuration"); ok {
+		policyConfigurationMap := v.(map[string]interface{})
+		policyConfiguration.AlertPolicyId, _ = policyConfigurationMap["alert_policy_id"].(string)
+		policyConfiguration.ActionPolicyId, _ = policyConfigurationMap["action_policy_id"].(string)
+		policyConfiguration.RepeatInterval, _ = policyConfigurationMap["repeat_interval"].(string)
+	}
+
+	queryList := []*sls.AlertQuery{}
+
+	if v, ok := d.GetOk("query_list"); ok {
+		for _, e := range v.([]interface{}) {
+			query_map := e.(map[string]interface{})
+			query := &sls.AlertQuery{
+				DashboardId:  query_map["dashboard_id"].(string),
+				RoleArn:      query_map["role_arn"].(string),
+				Region:       query_map["region"].(string),
+				Project:      query_map["project"].(string),
+				StoreType:    query_map["store_type"].(string),
+				Store:        query_map["store"].(string),
+				Query:        query_map["query"].(string),
+				Start:        query_map["start"].(string),
+				End:          query_map["end"].(string),
+				TimeSpanType: query_map["time_span_type"].(string),
+			}
+			queryList = append(queryList, query)
+		}
+	}
+
+	version, ok := d.GetOk("version")
+	if !ok {
+		version = "2.0"
+	}
+	configType, ok := d.GetOk("type")
+	if !ok {
+		configType = "default"
+	}
+
+	config := &sls.AlertConfiguration{
+		Version:                version.(string),
+		Type:                   configType.(string),
+		Labels:                 labels,
+		Annotations:            annotations,
+		SeverityConfigurations: severityConfigurations,
+		JoinConfigurations:     joinConfigurations,
+		GroupConfiguration:     groupConfiguration,
+		PolicyConfiguration:    policyConfiguration,
+		QueryList:              queryList,
+		Threshold:              d.Get("threshold").(int),
+		Dashboard:              d.Get("dashboard").(string),
+		NoDataFire:             d.Get("no_data_fire").(bool),
+		NoDataSeverity:         sls.Severity(d.Get("no_data_severity").(int)),
+		SendResolved:           d.Get("send_resolved").(bool),
+		MuteUntil:              int64(d.Get("mute_until").(int)),
+	}
+	return config
 }

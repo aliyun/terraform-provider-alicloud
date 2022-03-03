@@ -833,3 +833,132 @@ func (s *LogService) LogProjectStateRefreshFunc(id string, failStates []string) 
 		return object, object.Status, nil
 	}
 }
+
+func (s *LogService) DescribeResource(id string) (*sls.Resource, error) {
+	res := &sls.Resource{}
+	resourceName := id
+	var requestInfo *sls.Client
+	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			return slsClient.GetResource(resourceName)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetResource", raw, requestInfo, map[string]string{
+				"resource_name": resourceName,
+			})
+		}
+		res, _ = raw.(*sls.Resource)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotExist"}) {
+			return res, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return res, WrapErrorf(err, DefaultErrorMsg, id, "GetResource", AliyunLogGoSdkERROR)
+	}
+
+	if res == nil {
+		return res, WrapErrorf(Error(GetNotFoundMessage("Resource", id)), NotFoundMsg, ProviderERROR)
+	}
+	return res, nil
+}
+
+func (s *LogService) WaitForResource(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	resourceName := id
+	for {
+		object, err := s.DescribeResource(resourceName)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Name == resourceName && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Name, resourceName, ProviderERROR)
+		}
+	}
+}
+
+func (s *LogService) DescribeResourceRecord(id string) (*sls.ResourceRecord, error) {
+	res := &sls.ResourceRecord{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return res, WrapError(err)
+	}
+	resourceName, recordId := parts[0], parts[1]
+	var requestInfo *sls.Client
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			return slsClient.GetResourceRecord(resourceName, recordId)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetResourceRecord", raw, requestInfo, map[string]string{
+				"resource_name": resourceName,
+				"record_id":     recordId,
+			})
+		}
+		res, _ = raw.(*sls.ResourceRecord)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotExist", "ResourceRecordNotExist"}) {
+			return res, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return res, WrapErrorf(err, DefaultErrorMsg, id, "GetResourceRecord", AliyunLogGoSdkERROR)
+	}
+
+	if res == nil {
+		return res, WrapErrorf(Error(GetNotFoundMessage("ResourceRecord", id)), NotFoundMsg, ProviderERROR)
+	}
+	return res, nil
+}
+
+func (s *LogService) WaitForResourceRecord(id string, status Status, timeout int) error {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	recordId := parts[1]
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeResourceRecord(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Id == recordId && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Id, recordId, ProviderERROR)
+		}
+	}
+}
