@@ -37,21 +37,24 @@ func resourceAlicloudResourceManagerFolder() *schema.Resource {
 
 func resourceAlicloudResourceManagerFolderCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "CreateFolder"
 	request := make(map[string]interface{})
 	conn, err := client.NewResourcemanagerClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request["FolderName"] = d.Get("folder_name")
+
+	if v, ok := d.GetOk("folder_name"); ok {
+		request["FolderName"] = v
+	}
 	if v, ok := d.GetOk("parent_folder_id"); ok {
 		request["ParentFolderId"] = v
 	}
 
+	var response map[string]interface{}
+	action := "CreateFolder"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -59,7 +62,8 @@ func resourceAlicloudResourceManagerFolderCreate(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
 	if err != nil {
@@ -88,20 +92,23 @@ func resourceAlicloudResourceManagerFolderRead(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudResourceManagerFolderUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	update := false
+	request := map[string]interface{}{
+		"FolderId": d.Id(),
+	}
 	if d.HasChange("folder_name") {
-		request := map[string]interface{}{
-			"FolderId": d.Id(),
-		}
-		request["NewFolderName"] = d.Get("folder_name")
+		update = true
+	}
+	request["NewFolderName"] = d.Get("folder_name")
+	if update {
 		action := "UpdateFolder"
-		conn, err := client.NewResourcemanagerClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -109,7 +116,7 @@ func resourceAlicloudResourceManagerFolderUpdate(d *schema.ResourceData, meta in
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			addDebug(action, resp, request)
 			return nil
 		})
 		if err != nil {
@@ -120,8 +127,6 @@ func resourceAlicloudResourceManagerFolderUpdate(d *schema.ResourceData, meta in
 }
 func resourceAlicloudResourceManagerFolderDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteFolder"
-	var response map[string]interface{}
 	conn, err := client.NewResourcemanagerClient()
 	if err != nil {
 		return WrapError(err)
@@ -130,9 +135,10 @@ func resourceAlicloudResourceManagerFolderDelete(d *schema.ResourceData, meta in
 		"FolderId": d.Id(),
 	}
 
+	action := "DeleteFolder"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -140,7 +146,7 @@ func resourceAlicloudResourceManagerFolderDelete(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		addDebug(action, resp, request)
 		return nil
 	})
 	if err != nil {
