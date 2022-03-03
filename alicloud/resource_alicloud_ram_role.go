@@ -231,8 +231,20 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 	ListPoliciesForRoleRequest.RoleName = d.Id()
 
 	if d.Get("force").(bool) {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListPoliciesForRole(ListPoliciesForRoleRequest)
+		var response *ram.ListPoliciesForRoleResponse
+		err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.ListPoliciesForRole(ListPoliciesForRoleRequest)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(ListPoliciesForRoleRequest.GetActionName(), raw, ListPoliciesForRoleRequest.RpcRequest, ListPoliciesForRoleRequest)
+			response, _ = raw.(*ram.ListPoliciesForRoleResponse)
+			return nil
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
@@ -240,8 +252,6 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), ListPoliciesForRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(ListPoliciesForRoleRequest.GetActionName(), raw, ListPoliciesForRoleRequest.RpcRequest, ListPoliciesForRoleRequest)
-		response, _ := raw.(*ram.ListPoliciesForRoleResponse)
 		// Loop and remove the Policies from the Role
 		if len(response.Policies.Policy) > 0 {
 			for _, v := range response.Policies.Policy {
@@ -274,7 +284,7 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(ListPoliciesForRoleRequest.GetActionName(), raw, ListPoliciesForRoleRequest.RpcRequest, ListPoliciesForRoleRequest)
+		addDebug(deleteRoleRequest.GetActionName(), raw, deleteRoleRequest.RpcRequest, deleteRoleRequest)
 		return nil
 	})
 	if err != nil {
