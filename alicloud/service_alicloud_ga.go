@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -259,28 +261,41 @@ func (s *GaService) DescribeGaForwardingRule(id string) (object map[string]inter
 }
 
 func (s *GaService) DescribeGaIpSet(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
 	conn, err := s.client.NewGaplusClient()
 	if err != nil {
-		return nil, WrapError(err)
+		return object, WrapError(err)
 	}
-	action := "DescribeIpSet"
+
 	request := map[string]interface{}{
-		"RegionId": s.client.RegionId,
 		"IpSetId":  id,
+		"RegionId": s.client.RegionId,
 	}
+
+	var response map[string]interface{}
+	action := "DescribeIpSet"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, resp, request)
+		return nil
+	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"UnknownError"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("GaIpSet", id)), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
@@ -394,25 +409,24 @@ func (s *GaService) GaBandwidthPackageAttachmentStateRefreshFunc(id string, fail
 	}
 }
 
-func (s *GaService) GaIpSetStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *GaService) GaIpSetStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeGaIpSet(id)
+		object, err := s.DescribeGaIpSet(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
-				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		for _, failState := range failStates {
-			if object["State"].(string) == failState {
-				return object, object["State"].(string), WrapError(Error(FailedToReachTargetStatus, object["State"].(string)))
+			if fmt.Sprint(object["State"]) == failState {
+				return object, fmt.Sprint(object["State"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["State"])))
 			}
 		}
-		return object, object["State"].(string), nil
+		return object, fmt.Sprint(object["State"]), nil
 	}
 }
+
 func (s *GaService) DescribeAcceleratorAutoRenewAttribute(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewGaplusClient()

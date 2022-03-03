@@ -103,34 +103,45 @@ func (s *ResourcemanagerService) ResourceManagerResourceGroupStateRefreshFunc(id
 }
 
 func (s *ResourcemanagerService) DescribeResourceManagerFolder(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
 	conn, err := s.client.NewResourcemanagerClient()
 	if err != nil {
-		return nil, WrapError(err)
+		return object, WrapError(err)
 	}
-	action := "GetFolder"
+
 	request := map[string]interface{}{
-		"RegionId": s.client.RegionId,
 		"FolderId": id,
 	}
+
+	var response map[string]interface{}
+	action := "GetFolder"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, resp, request)
+		return nil
+	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Folder", "EntityNotExists.ResourceDirectory"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerFolder", id)), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	v, err := jsonpath.Get("$.Folder", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Folder", response)
 	}
-	object = v.(map[string]interface{})
-	return object, nil
+	return v.(map[string]interface{}), nil
 }
 
 func (s *ResourcemanagerService) DescribeResourceManagerHandshake(id string) (object map[string]interface{}, err error) {
