@@ -22,8 +22,8 @@ func resourceAlicloudEventBridgeEventSource() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"description": {
-				Type:     schema.TypeString,
 				Optional: true,
+				Type:     schema.TypeString,
 			},
 			"event_bus_name": {
 				Type:     schema.TypeString,
@@ -31,21 +31,21 @@ func resourceAlicloudEventBridgeEventSource() *schema.Resource {
 				ForceNew: true,
 			},
 			"event_source_name": {
-				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+				Type:     schema.TypeString,
 			},
 			"external_source_config": {
-				Type:     schema.TypeMap,
 				Optional: true,
+				Type:     schema.TypeMap,
 			},
 			"external_source_type": {
-				Type:     schema.TypeString,
 				Optional: true,
+				Type:     schema.TypeString,
 			},
 			"linked_external_source": {
-				Type:     schema.TypeBool,
 				Optional: true,
+				Type:     schema.TypeBool,
 				Computed: true,
 			},
 		},
@@ -54,18 +54,21 @@ func resourceAlicloudEventBridgeEventSource() *schema.Resource {
 
 func resourceAlicloudEventBridgeEventSourceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "CreateEventSource"
 	request := make(map[string]interface{})
 	conn, err := client.NewEventbridgeClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	request["EventSourceName"] = d.Get("event_source_name")
-	request["EventBusName"] = d.Get("event_bus_name")
+	if v, ok := d.GetOk("event_bus_name"); ok {
+		request["EventBusName"] = v
+	}
+	if v, ok := d.GetOk("event_source_name"); ok {
+		request["EventSourceName"] = v
+	}
 	if v, ok := d.GetOk("external_source_config"); ok {
 		if v, err := convertMaptoJsonString(v.(map[string]interface{})); err == nil {
 			request["ExternalSourceConfig"] = v
@@ -79,9 +82,12 @@ func resourceAlicloudEventBridgeEventSourceCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOkExists("linked_external_source"); ok {
 		request["LinkedExternalSource"] = v
 	}
+
+	var response map[string]interface{}
+	action := "CreateEventSource"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -89,9 +95,10 @@ func resourceAlicloudEventBridgeEventSourceCreate(d *schema.ResourceData, meta i
 			}
 			return resource.NonRetryableError(err)
 		}
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_event_bridge_event_source", action, AlibabaCloudSdkGoERROR)
 	}
@@ -126,14 +133,24 @@ func resourceAlicloudEventBridgeEventSourceRead(d *schema.ResourceData, meta int
 }
 func resourceAlicloudEventBridgeEventSourceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+	conn, err := client.NewEventbridgeClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	update := false
 	request := map[string]interface{}{
 		"EventSourceName": d.Id(),
 	}
+
 	if d.HasChange("description") {
 		update = true
-		request["Description"] = d.Get("description")
+		if v, ok := d.GetOk("description"); ok {
+			request["Description"] = v
+		}
+	}
+	if v, ok := d.GetOk("event_bus_name"); ok {
+		request["EventBusName"] = v
 	}
 	if d.HasChange("external_source_config") {
 		update = true
@@ -143,28 +160,24 @@ func resourceAlicloudEventBridgeEventSourceUpdate(d *schema.ResourceData, meta i
 			return WrapError(err)
 		}
 	}
-	request["ExternalSourceType"] = d.Get("external_source_type")
 	if d.HasChange("external_source_type") {
 		update = true
 	}
-	request["LinkedExternalSource"] = d.Get("linked_external_source")
-	if d.HasChange("linked_external_source") || d.IsNewResource() {
+	if v, ok := d.GetOk("external_source_type"); ok {
+		request["ExternalSourceType"] = v
+	}
+	if d.HasChange("linked_external_source") {
 		update = true
 	}
-
+	if v, ok := d.GetOk("linked_external_source"); ok {
+		request["LinkedExternalSource"] = v
+	}
+	var response map[string]interface{}
 	if update {
 		action := "UpdateEventSource"
-		conn, err := client.NewEventbridgeClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		if v, ok := d.GetOk("event_bus_name"); ok {
-			request["EventBusName"] = v
-		}
-
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -172,9 +185,10 @@ func resourceAlicloudEventBridgeEventSourceUpdate(d *schema.ResourceData, meta i
 				}
 				return resource.NonRetryableError(err)
 			}
+			response = resp
+			addDebug(action, resp, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -186,8 +200,6 @@ func resourceAlicloudEventBridgeEventSourceUpdate(d *schema.ResourceData, meta i
 }
 func resourceAlicloudEventBridgeEventSourceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteEventSource"
-	var response map[string]interface{}
 	conn, err := client.NewEventbridgeClient()
 	if err != nil {
 		return WrapError(err)
@@ -195,10 +207,11 @@ func resourceAlicloudEventBridgeEventSourceDelete(d *schema.ResourceData, meta i
 	request := map[string]interface{}{
 		"EventSourceName": d.Id(),
 	}
-
+	var response map[string]interface{}
+	action := "DeleteEventSource"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -206,9 +219,10 @@ func resourceAlicloudEventBridgeEventSourceDelete(d *schema.ResourceData, meta i
 			}
 			return resource.NonRetryableError(err)
 		}
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}

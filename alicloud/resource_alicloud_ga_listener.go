@@ -28,8 +28,8 @@ func resourceAlicloudGaListener() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"accelerator_id": {
-				Type:     schema.TypeString,
 				Required: true,
+				Type:     schema.TypeString,
 			},
 			"certificates": {
 				Type:     schema.TypeList,
@@ -56,8 +56,8 @@ func resourceAlicloudGaListener() *schema.Resource {
 				},
 			},
 			"description": {
-				Type:     schema.TypeString,
 				Optional: true,
+				Type:     schema.TypeString,
 			},
 			"name": {
 				Type:     schema.TypeString,
@@ -101,9 +101,9 @@ func resourceAlicloudGaListener() *schema.Resource {
 func resourceAlicloudGaListenerCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
-	var response map[string]interface{}
-	action := "CreateListener"
-	request := make(map[string]interface{})
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+	}
 	conn, err := client.NewGaplusClient()
 	if err != nil {
 		return WrapError(err)
@@ -119,15 +119,12 @@ func resourceAlicloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 		request["Certificates"] = Certificates
 
 	}
-
 	if v, ok := d.GetOk("client_affinity"); ok {
 		request["ClientAffinity"] = v
 	}
-
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-
 	if v, ok := d.GetOk("name"); ok {
 		request["Name"] = v
 	}
@@ -144,26 +141,27 @@ func resourceAlicloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("protocol"); ok {
 		request["Protocol"] = v
 	}
-
 	if v, ok := d.GetOkExists("proxy_protocol"); ok {
 		request["ProxyProtocol"] = v
 	}
 
-	request["RegionId"] = client.RegionId
+	var response map[string]interface{}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
+	action := "CreateListener"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("CreateListener")
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
 	if err != nil {
@@ -171,11 +169,10 @@ func resourceAlicloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.SetId(fmt.Sprint(response["ListenerId"]))
-	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, gaService.GaListenerStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, gaService.GaListenerStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-
 	return resourceAlicloudGaListenerRead(d, meta)
 }
 func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) error {
@@ -209,7 +206,7 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("client_affinity", object["ClientAffinity"])
 	d.Set("description", object["Description"])
 	d.Set("name", object["Name"])
-	if val, ok := d.GetOk("proxy_protocol"); ok {
+	if val, ok := d.GetOkExists("proxy_protocol"); ok {
 		d.Set("proxy_protocol", val)
 	}
 
@@ -231,16 +228,24 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("protocol", object["Protocol"])
 	d.Set("status", object["State"])
+
 	return nil
 }
+
 func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
-	var response map[string]interface{}
+	conn, err := client.NewGaplusClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	update := false
 	request := map[string]interface{}{
 		"ListenerId": d.Id(),
+		"RegionId":   client.RegionId,
 	}
+
 	if d.HasChange("certificates") {
 		update = true
 		Certificates := make([]map[string]interface{}, len(d.Get("certificates").([]interface{})))
@@ -254,15 +259,21 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if d.HasChange("client_affinity") {
 		update = true
-		request["ClientAffinity"] = d.Get("client_affinity")
+		if v, ok := d.GetOk("client_affinity"); ok {
+			request["ClientAffinity"] = v
+		}
 	}
 	if d.HasChange("description") {
 		update = true
-		request["Description"] = d.Get("description")
+		if v, ok := d.GetOk("description"); ok {
+			request["Description"] = v
+		}
 	}
 	if d.HasChange("name") {
 		update = true
-		request["Name"] = d.Get("name")
+		if v, ok := d.GetOk("name"); ok {
+			request["Name"] = v
+		}
 	}
 	if d.HasChange("port_ranges") {
 		update = true
@@ -278,38 +289,36 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if d.HasChange("protocol") {
 		update = true
-		request["Protocol"] = d.Get("protocol")
+		if v, ok := d.GetOk("protocol"); ok {
+			request["Protocol"] = v
+		}
+	}
+	if v, ok := d.GetOkExists("proxy_protocol"); ok {
+		request["ProxyProtocol"] = v
 	}
 	request["RegionId"] = client.RegionId
 	if update {
-		if _, ok := d.GetOkExists("proxy_protocol"); ok {
-			request["ProxyProtocol"] = d.Get("proxy_protocol")
-		}
-		action := "UpdateListener"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
+		action := "UpdateListener"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			request["ClientToken"] = buildClientToken("UpdateListener")
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			addDebug(action, resp, request)
 			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gaService.GaListenerStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gaService.GaListenerStateRefreshFunc(d, []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -319,8 +328,6 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 func resourceAlicloudGaListenerDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
-	action := "DeleteListener"
-	var response map[string]interface{}
 	conn, err := client.NewGaplusClient()
 	if err != nil {
 		return WrapError(err)
@@ -328,28 +335,33 @@ func resourceAlicloudGaListenerDelete(d *schema.ResourceData, meta interface{}) 
 	request := map[string]interface{}{
 		"ListenerId": d.Id(),
 	}
-
-	request["AcceleratorId"] = d.Get("accelerator_id")
+	if v, ok := d.GetOk("accelerator_id"); ok {
+		request["AcceleratorId"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
+	action := "DeleteListener"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeleteListener")
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		addDebug(action, resp, request)
 		return nil
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"Forbidden", "NotActive.Listener", "NotExist.Accelerator", "NotExist.Listener", "Resource.QuotaFull", "UnknownError"}) || NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gaService.GaListenerStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gaService.GaListenerStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

@@ -5,12 +5,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudEventBridgeEventBus() *schema.Resource {
@@ -24,8 +23,8 @@ func resourceAlicloudEventBridgeEventBus() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"description": {
-				Type:     schema.TypeString,
 				Optional: true,
+				Type:     schema.TypeString,
 			},
 			"event_bus_name": {
 				Type:         schema.TypeString,
@@ -39,8 +38,6 @@ func resourceAlicloudEventBridgeEventBus() *schema.Resource {
 
 func resourceAlicloudEventBridgeEventBusCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "CreateEventBus"
 	request := make(map[string]interface{})
 	conn, err := client.NewEventbridgeClient()
 	if err != nil {
@@ -49,13 +46,17 @@ func resourceAlicloudEventBridgeEventBusCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	request["EventBusName"] = d.Get("event_bus_name")
+	if v, ok := d.GetOk("event_bus_name"); ok {
+		request["EventBusName"] = v
+	}
+	var response map[string]interface{}
 	request["ClientToken"] = buildClientToken("CreateEventBus")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
+	action := "CreateEventBus"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -63,12 +64,14 @@ func resourceAlicloudEventBridgeEventBusCreate(d *schema.ResourceData, meta inte
 			}
 			return resource.NonRetryableError(err)
 		}
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_event_bridge_event_bus", action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Code"]) != "Success" {
 		return WrapError(fmt.Errorf("CreateEventBus failed, response: %v", response))
 	}
@@ -89,27 +92,35 @@ func resourceAlicloudEventBridgeEventBusRead(d *schema.ResourceData, meta interf
 		}
 		return WrapError(err)
 	}
-
 	d.Set("event_bus_name", d.Id())
 	d.Set("description", object["Description"])
 	return nil
 }
+
 func resourceAlicloudEventBridgeEventBusUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+	conn, err := client.NewEventbridgeClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	update := false
+	request := map[string]interface{}{
+		"EventBusName": d.Id(),
+	}
+
 	if d.HasChange("description") {
-		request := map[string]interface{}{
-			"EventBusName": d.Id(),
+		update = true
+		if v, ok := d.GetOk("description"); ok {
+			request["Description"] = v
 		}
-		request["Description"] = d.Get("description")
+	}
+	var response map[string]interface{}
+	if update {
 		action := "UpdateEventBus"
-		conn, err := client.NewEventbridgeClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -117,9 +128,10 @@ func resourceAlicloudEventBridgeEventBusUpdate(d *schema.ResourceData, meta inte
 				}
 				return resource.NonRetryableError(err)
 			}
+			response = resp
+			addDebug(action, resp, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -131,8 +143,6 @@ func resourceAlicloudEventBridgeEventBusUpdate(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudEventBridgeEventBusDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteEventBus"
-	var response map[string]interface{}
 	conn, err := client.NewEventbridgeClient()
 	if err != nil {
 		return WrapError(err)
@@ -140,13 +150,17 @@ func resourceAlicloudEventBridgeEventBusDelete(d *schema.ResourceData, meta inte
 	request := map[string]interface{}{
 		"EventBusName": d.Id(),
 	}
-
+	if v, ok := d.GetOk("event_bus_name"); ok {
+		request["EventBusName"] = v
+	}
+	var response map[string]interface{}
 	request["ClientToken"] = buildClientToken("DeleteEventBus")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
+	action := "DeleteEventBus"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -154,9 +168,10 @@ func resourceAlicloudEventBridgeEventBusDelete(d *schema.ResourceData, meta inte
 			}
 			return resource.NonRetryableError(err)
 		}
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EventBusNotExist"}) {
 			return nil
