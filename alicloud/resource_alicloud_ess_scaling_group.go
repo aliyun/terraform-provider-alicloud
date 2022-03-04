@@ -126,6 +126,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -234,6 +235,13 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("launch_template_id", object.LaunchTemplateId)
 	d.Set("launch_template_version", object.LaunchTemplateVersion)
 
+	listTagResourcesObject, err := essService.ListTagResources(d.Id(), client)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("tags", tagsToMap(listTagResourcesObject))
+
 	return nil
 }
 
@@ -243,8 +251,17 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	request := ess.CreateModifyScalingGroupRequest()
 	request.RegionId = client.RegionId
 	request.ScalingGroupId = d.Id()
+	essService := EssService{client}
 
 	d.Partial(true)
+
+	if d.HasChange("tags") {
+		if err := essService.SetResourceTags(d, d.Id(), client); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
+
 	if d.HasChange("scaling_group_name") {
 		request.ScalingGroupName = d.Get("scaling_group_name").(string)
 	}
