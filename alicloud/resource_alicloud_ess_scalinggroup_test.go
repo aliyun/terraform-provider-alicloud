@@ -437,6 +437,73 @@ func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
 
 }
 
+func TestAccAlicloudEssScalingGroup_tags(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":                  "1",
+		"max_size":                  "1",
+		"default_cooldown":          "20",
+		"scaling_group_name":        fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
+		"vswitch_ids.#":             "2",
+		"removal_policies.#":        "2",
+		"group_deletion_protection": "false",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	name := fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssScalingGroupTags)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "tfTestAcc7",
+						"For":     "Tftestacc7",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "tfTestAcc7",
+						"tags.For":     "Tftestacc7",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "tfTestAcc7",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "1",
+						"tags.Created": "tfTestAcc7",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
 	var v ess.ScalingGroup
 	var slb *slb.DescribeLoadBalancerAttributeResponse
@@ -1282,6 +1349,34 @@ func testAccEssScalingGroupCostOptimized(common string, rand int) string {
         on_demand_percentage_above_base_capacity = "10"
         spot_instance_pools = "10"
     }`, common, rand)
+}
+
+func testAccEssScalingGroupTags(common string) string {
+	return fmt.Sprintf(`
+    %s
+    variable "name" {
+        default = "tf-testAccEssScalingGroup"
+    }
+    
+    resource "alicloud_vswitch" "default2" {
+          vpc_id = "${alicloud_vpc.default.id}"
+          cidr_block = "172.16.1.0/24"
+          availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+          name = "${var.name}-bar"
+    }
+    
+    resource "alicloud_ess_scaling_group" "default" {
+        min_size = 1
+        max_size = 1
+        scaling_group_name = "${var.name}"
+        default_cooldown = 20
+        vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+        removal_policies = ["OldestInstance", "NewestInstance"]
+		tag = {
+			"testValue2":"testValue2"
+			"testValue1":"testValue1"
+        }
+    }`, common)
 }
 
 func testAccEssScalingGroupSpotInstanceRemedy(common string, rand int) string {
