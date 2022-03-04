@@ -121,7 +121,7 @@ to create a MongoDB sharding instance resource one-click.
 
 The following arguments are supported:
 
-* `engine_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/zh/doc-detail/61884.htm) `EngineVersion`. 
+* `engine_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/en/doc-detail/61884.htm) `EngineVersion`. 
 * `storage_engine` (Optional, ForceNew) Storage engine: WiredTiger or RocksDB. System Default value: WiredTiger.
 * `name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
 * `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`,System default to `PostPaid`. **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version v1.141.0.
@@ -151,6 +151,10 @@ If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of 
     Note: This parameter is only applicable to instances when `instance_charge_type` is PrePaid.
 * `auto_renew` - (Optional, Available in v1.141.0+) Auto renew for prepaid, true of false. Default is false.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `network_type` - (Optional, ForceNew, Computed, Available in v1.161.0+) The network type of the instance. Valid values:`Classic` or `VPC`. Default value: `Classic`.
+* `vpc_id` - (Optional, ForceNew, Computed, Available in v1.161.0+) The ID of the VPC. -> **NOTE:** This parameter is valid only when NetworkType is set to VPC.
+* `protocol_type` - (Optional, ForceNew, Computed, Available in v1.161.0+) The type of the access protocol. Valid values: `mongodb` or `dynamodb`.
+* `resource_group_id` - (Optional, Computed, Available in v1.161.0+) The ID of the Resource Group.
 
 ## Attributes Reference
 
