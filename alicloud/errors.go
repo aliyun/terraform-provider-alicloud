@@ -92,8 +92,12 @@ func NotFoundError(err error) bool {
 		return false
 	}
 
+	if e, ok := err.(*tea.SDKError); ok {
+		return *e.StatusCode == 404
+	}
+
 	if e, ok := err.(*errors.ServerError); ok {
-		return e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound || strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)
+		return e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound || e.HttpStatus() == 404 || strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)
 	}
 
 	if e, ok := err.(*ProviderError); ok {
