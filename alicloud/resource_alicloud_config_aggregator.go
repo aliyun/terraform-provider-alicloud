@@ -72,13 +72,12 @@ func resourceAlicloudConfigAggregator() *schema.Resource {
 func resourceAlicloudConfigAggregatorCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	configService := ConfigService{client}
-	var response map[string]interface{}
-	action := "CreateAggregator"
 	request := make(map[string]interface{})
 	conn, err := client.NewConfigClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	aggregatorAccountsMaps := make([]map[string]interface{}, 0)
 	for _, aggregatorAccounts := range d.Get("aggregator_accounts").(*schema.Set).List() {
 		aggregatorAccountsArg := aggregatorAccounts.(map[string]interface{})
@@ -94,17 +93,23 @@ func resourceAlicloudConfigAggregatorCreate(d *schema.ResourceData, meta interfa
 	} else {
 		return WrapError(err)
 	}
-	request["AggregatorName"] = d.Get("aggregator_name")
+	if v, ok := d.GetOk("aggregator_name"); ok {
+		request["AggregatorName"] = v
+	}
 	if v, ok := d.GetOk("aggregator_type"); ok {
 		request["AggregatorType"] = v
 	}
-	request["Description"] = d.Get("description")
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
 	request["ClientToken"] = buildClientToken("CreateAggregator")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
+	var response map[string]interface{}
+	action := "CreateAggregator"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -112,15 +117,16 @@ func resourceAlicloudConfigAggregatorCreate(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_aggregator", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["AggregatorId"]))
-	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, configService.ConfigAggregatorStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, configService.ConfigAggregatorStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -139,7 +145,6 @@ func resourceAlicloudConfigAggregatorRead(d *schema.ResourceData, meta interface
 		}
 		return WrapError(err)
 	}
-
 	aggregatorAccounts := make([]map[string]interface{}, 0)
 	if aggregatorAccountsList, ok := object["AggregatorAccounts"].([]interface{}); ok {
 		for _, v := range aggregatorAccountsList {
@@ -165,7 +170,11 @@ func resourceAlicloudConfigAggregatorRead(d *schema.ResourceData, meta interface
 }
 func resourceAlicloudConfigAggregatorUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+	conn, err := client.NewConfigClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	update := false
 	request := map[string]interface{}{
 		"AggregatorId": d.Id(),
@@ -190,24 +199,24 @@ func resourceAlicloudConfigAggregatorUpdate(d *schema.ResourceData, meta interfa
 	}
 	if d.HasChange("aggregator_name") {
 		update = true
+		if v, ok := d.GetOk("aggregator_name"); ok {
+			request["AggregatorName"] = v
+		}
 	}
-	request["AggregatorName"] = d.Get("aggregator_name")
 	if d.HasChange("description") {
 		update = true
+		if v, ok := d.GetOk("description"); ok {
+			request["Description"] = v
+		}
 	}
-	request["Description"] = d.Get("description")
 	if update {
 		action := "UpdateAggregator"
-		conn, err := client.NewConfigClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("UpdateAggregator")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -215,9 +224,9 @@ func resourceAlicloudConfigAggregatorUpdate(d *schema.ResourceData, meta interfa
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, resp, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -226,8 +235,6 @@ func resourceAlicloudConfigAggregatorUpdate(d *schema.ResourceData, meta interfa
 }
 func resourceAlicloudConfigAggregatorDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteAggregators"
-	var response map[string]interface{}
 	conn, err := client.NewConfigClient()
 	if err != nil {
 		return WrapError(err)
@@ -239,9 +246,10 @@ func resourceAlicloudConfigAggregatorDelete(d *schema.ResourceData, meta interfa
 	request["ClientToken"] = buildClientToken("DeleteAggregators")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
+	action := "DeleteAggregators"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -249,9 +257,9 @@ func resourceAlicloudConfigAggregatorDelete(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AccountNotExisted", "Invalid.AggregatorIds.Empty"}) {
 			return nil
