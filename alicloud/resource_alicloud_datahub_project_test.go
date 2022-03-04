@@ -164,7 +164,7 @@ func TestAccAlicloudDatahubProject_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"comment": REMOVEKEY,
+					"comment": "project added by terraform",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

@@ -139,6 +139,9 @@ func resourceAliyunDatahubProjectUpdate(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
+		if err != nil {
+			return WrapError(err)
+		}
 	}
 
 	return resourceAliyunDatahubProjectRead(d, meta)
