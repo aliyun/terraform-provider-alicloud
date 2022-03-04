@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -640,4 +642,84 @@ func (s *EssService) WaitForEssAlarm(id string, status Status, timeout int) erro
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AlarmTaskId, id, ProviderERROR)
 		}
 	}
+}
+
+func (s *EssService) SetResourceTags(d *schema.ResourceData, scalingGroupId string, client *connectivity.AliyunClient) error {
+
+	if d.HasChange("tags") {
+		added, removed := parsingTags(d)
+
+		// untag resources
+		if len(removed) > 0 {
+			removedTagKeys := make([]string, 0)
+			for _, v := range removed {
+				if !ignoredTags(v, "") {
+					removedTagKeys = append(removedTagKeys, v)
+				}
+			}
+			untagRequest := ess.CreateUntagResourcesRequest()
+			resourceId := []string{scalingGroupId}
+			untagRequest.ResourceId = &resourceId
+			untagRequest.ResourceType = "scalinggroup"
+			untagRequest.TagKey = &removedTagKeys
+			raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.UntagResources(untagRequest)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), untagRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(untagRequest.GetActionName(), raw, untagRequest.RpcRequest, untagRequest)
+		}
+
+		// tag resources
+		if len(added) > 0 {
+			tagRequest := ess.CreateTagResourcesRequest()
+			resourceId := []string{scalingGroupId}
+			tagRequest.ResourceId = &resourceId
+			tagRequest.ResourceType = "scalinggroup"
+			tags := make([]ess.TagResourcesTag, 0)
+			for k, v := range added {
+				if !ignoredTags(v.(string), "") {
+					tags = append(tags, ess.TagResourcesTag{
+						Key:   k,
+						Value: v.(string),
+					})
+				}
+			}
+			tagRequest.Tag = &tags
+			raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.TagResources(tagRequest)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), tagRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(tagRequest.GetActionName(), raw, tagRequest.RpcRequest, tagRequest)
+		}
+	}
+	return nil
+}
+
+func (s *EssService) ListTagResources(scalingGroupId string, client *connectivity.AliyunClient) (object interface{}, err error) {
+	listTagsRequest := ess.CreateListTagResourcesRequest()
+	listTagsRequest.ResourceType = "scalinggroup"
+	resourceIds := []string{scalingGroupId}
+	listTagsRequest.ResourceId = &resourceIds
+	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.ListTagResources(listTagsRequest)
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, scalingGroupId, listTagsRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(listTagsRequest.GetActionName(), raw, listTagsRequest.RpcRequest, listTagsRequest)
+
+	response, _ := raw.(*ess.ListTagResourcesResponse)
+
+	tags := make([]interface{}, 0)
+	for _, v := range response.TagResources.TagResource {
+		tags = append(tags, map[string]interface{}{
+			"TagKey":   v.TagKey,
+			"TagValue": v.TagValue,
+		})
+	}
+	return tags, nil
 }

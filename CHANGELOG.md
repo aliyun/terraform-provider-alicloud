@@ -1,4 +1,8 @@
 ## 1.160.0 (Unreleased)
+
+- resource/alicloud_ess_scaling_group: Add support for new parameter `tags`
+- datasource/alicloud_ess_scaling_group: Add support for new parameter `tags`
+
 ## 1.159.0 (March 06, 2022)
 
 - **New Resource:** `alicloud_sddp_data_limit` ([#4622](https://github.com/aliyun/terraform-provider-alicloud/issues/4622))

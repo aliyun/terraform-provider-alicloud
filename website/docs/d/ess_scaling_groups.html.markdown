@@ -65,5 +65,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `pending_capacity` - Number of pending instances in scaling group.
   * `removing_capacity` - Number of removing instances in scaling group.
   * `creation_time` - Creation time of scaling group.
+  * `tags` - A mapping of tags to assign to the resource.
   
   
