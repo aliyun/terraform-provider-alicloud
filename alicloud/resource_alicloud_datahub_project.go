@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -126,6 +127,18 @@ func resourceAliyunDatahubProjectUpdate(d *schema.ResourceData, meta interface{}
 			requestMap["ProjectComment"] = projectComment
 			addDebug("UpdateProject", raw, requestInfo, requestMap)
 		}
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			datahubService := DatahubService{client}
+			object, err := datahubService.DescribeDatahubProject(d.Id())
+			if err != nil {
+				return resource.NonRetryableError(err)
+			}
+			if object.Comment != projectComment {
+				return resource.RetryableError(fmt.Errorf("waiting for updating project %s comment finished timwout. "+
+					"current comment is %s ", d.Id(), object.Comment))
+			}
+			return nil
+		})
 	}
 
 	return resourceAliyunDatahubProjectRead(d, meta)
