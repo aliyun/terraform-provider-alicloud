@@ -3,12 +3,19 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -235,16 +242,6 @@ func TestAccAlicloudArmsDispatchRule_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"dispatch_type": "DISCARD_ALERT",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"dispatch_type": "DISCARD_ALERT",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"label_match_expression_grid": []map[string]interface{}{
 						{
 							"label_match_expression_groups": []map[string]interface{}{
@@ -269,8 +266,16 @@ func TestAccAlicloudArmsDispatchRule_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"label_match_expression_grid.#": "1",
-						"notify_rules.#":                "0",
-						"group_rules.#":                 "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dispatch_type": "DISCARD_ALERT",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dispatch_type": "DISCARD_ALERT",
 					}),
 				),
 			},
@@ -352,4 +357,405 @@ resource "alicloud_arms_alert_contact_group" "default" {
   contact_ids = [alicloud_arms_alert_contact.default.id]
 }
 `, name)
+}
+
+func TestAccAlicloudArmsDispatchRule_unit(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_arms_dispatch_rule"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_arms_dispatch_rule"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"dispatch_rule_name": "CreateDispatchRuleValue",
+		"dispatch_type":      "CreateDispatchRuleValue",
+		"group_rules": []interface{}{
+			map[string]interface{}{
+				"group_interval":  10,
+				"group_wait_time": 10,
+				"grouping_fields": []interface{}{"CreateDispatchRuleValue0", "CreateDispatchRuleValue1"},
+				"repeat_interval": 10,
+			},
+		},
+		"is_recover": true,
+		"label_match_expression_grid": []interface{}{
+			map[string]interface{}{
+				"label_match_expression_groups": []interface{}{
+					map[string]interface{}{
+						"label_match_expressions": []interface{}{
+							map[string]interface{}{
+								"key":      "CreateDispatchRuleValue",
+								"operator": "CreateDispatchRuleValue",
+								"value":    "CreateDispatchRuleValue",
+							},
+						},
+					},
+				},
+			},
+		},
+		"notify_rules": []interface{}{
+			map[string]interface{}{
+				"notify_channels": []interface{}{"CreateDispatchRuleValue0", "CreateDispatchRuleValue1"},
+				"notify_objects": []interface{}{
+					map[string]interface{}{
+						"name":             "CreateDispatchRuleValue",
+						"notify_object_id": "10",
+						"notify_type":      "CreateDispatchRuleValue",
+					},
+				},
+			},
+		},
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		// DescribeDispatchRule
+		"DispatchRule": map[string]interface{}{
+			"RuleId":       10,
+			"Name":         "CreateDispatchRuleValue",
+			"DispatchType": "CreateDispatchRuleValue",
+			"GroupRules": []interface{}{
+				map[string]interface{}{
+					"GroupInterval": 10,
+					"GroupWaitTime": 10,
+					"GroupingFields": []interface{}{
+						"CreateDispatchRuleValue0",
+						"CreateDispatchRuleValue1",
+					},
+					"RepeatInterval": 10,
+				},
+			},
+			"IsRecover": true,
+			"LabelMatchExpressionGrid": map[string]interface{}{
+				"LabelMatchExpressionGroups": []interface{}{
+					map[string]interface{}{
+						"LabelMatchExpressions": []interface{}{
+							map[string]interface{}{
+								"Key":      "CreateDispatchRuleValue",
+								"Operator": "CreateDispatchRuleValue",
+								"Value":    "CreateDispatchRuleValue",
+							},
+						},
+					},
+				},
+			},
+			"NotifyRules": []interface{}{
+				map[string]interface{}{
+					"NotifyChannels": []interface{}{
+						"CreateDispatchRuleValue0",
+						"CreateDispatchRuleValue1",
+					},
+					"NotifyObjects": []interface{}{
+						map[string]interface{}{
+							"Name":           "CreateDispatchRuleValue",
+							"NotifyObjectId": 10,
+							"NotifyType":     "CreateDispatchRuleValue",
+						},
+					},
+				},
+			},
+			"State": "DefaultValue",
+		},
+	}
+	CreateMockResponse := map[string]interface{}{
+		// CreateDispatchRule
+		"DispatchRuleId": 10,
+	}
+	ReadMockResponseDiff := map[string]interface{}{}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       String(errorCode),
+			Data:       String(errorCode),
+			Message:    String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_arms_dispatch_rule", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			mapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+
+	// Create
+	t.Run("Create", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewArmsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudArmsDispatchRuleCreate(dInit, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+		ReadMockResponseDiff = map[string]interface{}{
+			// DescribeDispatchRule Response
+			"DispatchRule": map[string]interface{}{
+				"RuleId": 10,
+			},
+		}
+		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "CreateDispatchRule" {
+					switch errorCode {
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if retryIndex >= len(errorCodes)-1 {
+							successResponseMock(ReadMockResponseDiff)
+							return CreateMockResponse, nil
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudArmsDispatchRuleCreate(dInit, rawClient)
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			default:
+				assert.Nil(t, err)
+				dCompare, _ := schema.InternalMap(p["alicloud_arms_dispatch_rule"].Schema).Data(dInit.State(), nil)
+				for key, value := range attributes {
+					dCompare.Set(key, value)
+				}
+				assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+			}
+			if retryIndex >= len(errorCodes)-1 {
+				break
+			}
+		}
+	})
+
+	// Update
+	t.Run("Update", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewArmsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudArmsDispatchRuleUpdate(dExisted, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+		// UpdateDispatchRule
+		attributesDiff := map[string]interface{}{
+			"dispatch_rule_name": "UpdateDispatchRuleValue",
+			"dispatch_type":      "UpdateDispatchRuleValue",
+			"group_rules": []interface{}{
+				map[string]interface{}{
+					"group_id":        15,
+					"group_interval":  15,
+					"group_wait_time": 15,
+					"grouping_fields": []interface{}{"UpdateDispatchRuleValue3"},
+					"repeat_interval": 15,
+				},
+			},
+			"is_recover": false,
+			"label_match_expression_grid": []interface{}{
+				map[string]interface{}{
+					"label_match_expression_groups": []interface{}{
+						map[string]interface{}{
+							"label_match_expressions": []interface{}{
+								map[string]interface{}{
+									"key":      "UpdateDispatchRuleValue",
+									"operator": "UpdateDispatchRuleValue",
+									"value":    "UpdateDispatchRuleValue",
+								},
+							},
+						},
+					},
+				},
+			},
+			"notify_rules": []interface{}{
+				map[string]interface{}{
+					"notify_channels": []interface{}{"UpdateDispatchRuleValue3"},
+					"notify_objects": []interface{}{
+						map[string]interface{}{
+							"name":             "UpdateDispatchRuleValue",
+							"notify_object_id": "15",
+							"notify_type":      "UpdateDispatchRuleValue",
+						},
+					},
+				},
+			},
+		}
+		diff, err := newInstanceDiff("alicloud_arms_dispatch_rule", attributes, attributesDiff, dInit.State())
+		if err != nil {
+			t.Error(err)
+		}
+		dExisted, _ = schema.InternalMap(p["alicloud_arms_dispatch_rule"].Schema).Data(dInit.State(), diff)
+		ReadMockResponseDiff = map[string]interface{}{
+			// DescribeDispatchRule Response
+			"DispatchRule": map[string]interface{}{
+				"Name":         "UpdateDispatchRuleValue",
+				"DispatchType": "UpdateDispatchRuleValue",
+				"GroupRules": []interface{}{
+					map[string]interface{}{
+						"GroupId":       15,
+						"GroupInterval": 15,
+						"GroupWaitTime": 15,
+						"GroupingFields": []interface{}{
+							"UpdateDispatchRuleValue3",
+						},
+						"RepeatInterval": 15,
+					},
+				},
+				"IsRecover": false,
+				"LabelMatchExpressionGrid": map[string]interface{}{
+					"LabelMatchExpressionGroups": []interface{}{
+						map[string]interface{}{
+							"LabelMatchExpressions": []interface{}{
+								map[string]interface{}{
+									"Key":      "UpdateDispatchRuleValue",
+									"Operator": "UpdateDispatchRuleValue",
+									"Value":    "UpdateDispatchRuleValue",
+								},
+							},
+						},
+					},
+				},
+				"NotifyRules": []interface{}{
+					map[string]interface{}{
+						"NotifyChannels": []interface{}{
+							"UpdateDispatchRuleValue3",
+						},
+						"NotifyObjects": []interface{}{
+							map[string]interface{}{
+								"Name":           "UpdateDispatchRuleValue",
+								"NotifyObjectId": 15,
+								"NotifyType":     "UpdateDispatchRuleValue",
+							},
+						},
+					},
+				},
+			},
+		}
+		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1
+			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "UpdateDispatchRule" {
+					switch errorCode {
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if retryIndex >= len(errorCodes)-1 {
+							return successResponseMock(ReadMockResponseDiff)
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudArmsDispatchRuleUpdate(dExisted, rawClient)
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			default:
+				assert.Nil(t, err)
+				dCompare, _ := schema.InternalMap(p["alicloud_arms_dispatch_rule"].Schema).Data(dExisted.State(), nil)
+				for key, value := range attributes {
+					dCompare.Set(key, value)
+				}
+				assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+			}
+			if retryIndex >= len(errorCodes)-1 {
+				break
+			}
+		}
+	})
+
+	// Read
+	t.Run("Read", func(t *testing.T) {
+		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "{}"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1
+			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "DescribeDispatchRule" {
+					switch errorCode {
+					case "{}":
+						return notFoundResponseMock(errorCode)
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if errorCodes[retryIndex] == "nil" {
+							return ReadMockResponse, nil
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudArmsDispatchRuleRead(dExisted, rawClient)
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			case "{}":
+				assert.Nil(t, err)
+			}
+		}
+	})
+
+	// Delete
+	t.Run("Delete", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewArmsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudArmsDispatchRuleDelete(dExisted, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1
+			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "DeleteDispatchRule" {
+					switch errorCode {
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if errorCodes[retryIndex] == "nil" {
+							ReadMockResponse = map[string]interface{}{}
+							return ReadMockResponse, nil
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudArmsDispatchRuleDelete(dExisted, rawClient)
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			}
+		}
+	})
 }
