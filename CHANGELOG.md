@@ -1,6 +1,32 @@
 ## 1.159.0 (Unreleased)
 
-- resource/alicloud_ess_scaling_group: Adds new parameter launch_template_version
+- **New Resource:** `alicloud_sddp_data_limit` [GH-4622]
+- **New Resource:** `alicloud_ecs_image_component` [GH-4630]
+- **New Resource:** `alicloud_sea_application_scaling_rule` [GH-4624]
+- **New Data Source:** `alicloud_sea_application_scaling_rules` [GH-4624]
+- **New Data Source:** `alicloud_ecs_image_components` [GH-4630]	
+- **New Data Source:** `alicloud_sddp_data_limits` [GH-4622]
+
+ENHANCEMENTS:
+
+- resource/alicloud_alikafka_sasl_user: change sdk to common api;Support for new parameter type [GH-4635]
+- resource/alicloud_ess_scaling_group: new parameter launch_template_version [GH-4598]
+- resource/alicloud_dts_synchronization_instance: Add support for output parameters auto_start, auto_pay [GH-4614]
+- resource/alicloud_ram_role: supports setting timeouts when creating and deleting [GH-4631]
+- testcase: Adds new unit test case for resource testcase: alicloud_resource_manager_folder alicloud_resource_manager_handshake alicloud_ga_ip_set [GH-4636]
+- testcase: Adds two method used to write unit test [GH-4568]
+- testcase: Improve the effectiveness of test cases [GH-4617]
+- testcase: Adds unit test for resource alicloud_arms_dispatch_rule [GH-4642]	
+- Improves the retry strategy when the error is Throttling [GH-4618]
+- Addes two method to improve unit testcase [GH-4625]
+- errors: Checking NotFoundError by http status code [GH-4641]
+
+BUG FIXES:
+
+- resource/alicloud_datahub_project: Fix the updating project comment diff error [GH-4640]
+- resource/alicloud_datahub_project: Fix the updating project comment diff error [GH-4639]
+- resource/alicloud_ram_role: Fixes the Throttling.User error on ListPoliciesForRole [GH-4637]
+- resource/alicloud_nat_gateway: fixes the TaskConflict error when there are multi nat gateways to create [GH-4619]
 
 ## 1.158.0 (February 27, 2022)
 
