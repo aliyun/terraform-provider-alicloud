@@ -1,4 +1,5 @@
-## 1.159.0 (Unreleased)
+## 1.160.0 (Unreleased)
+## 1.159.0 (March 06, 2022)
 
 - **New Resource:** `alicloud_sddp_data_limit` ([#4622](https://github.com/aliyun/terraform-provider-alicloud/issues/4622))
 - **New Resource:** `alicloud_ecs_image_component` ([#4630](https://github.com/aliyun/terraform-provider-alicloud/issues/4630))
