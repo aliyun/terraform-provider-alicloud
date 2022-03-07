@@ -671,6 +671,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_image_components":                        dataSourceAlicloudEcsImageComponents(),
 			"alicloud_sae_application_scaling_rules":               dataSourceAlicloudSaeApplicationScalingRules(),
 			"alicloud_sae_grey_tag_routes":                         dataSourceAlicloudSaeGreyTagRoutes(),
+			"alicloud_ecs_snapshot_groups":                         dataSourceAlicloudEcsSnapshotGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1230,6 +1231,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_image_component":                                  resourceAlicloudEcsImageComponent(),
 			"alicloud_sae_application_scaling_rule":                         resourceAlicloudSaeApplicationScalingRule(),
 			"alicloud_sae_grey_tag_route":                                   resourceAlicloudSaeGreyTagRoute(),
+			"alicloud_ecs_snapshot_group":                                   resourceAlicloudEcsSnapshotGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
