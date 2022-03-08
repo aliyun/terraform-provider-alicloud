@@ -291,9 +291,10 @@ func TestAccAlicloudECSPrefixList_unit(t *testing.T) {
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
 		"RetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:    String(errorCode),
-				Data:    String(errorCode),
-				Message: String(errorCode),
+				Code:       String(errorCode),
+				Data:       String(errorCode),
+				Message:    String(errorCode),
+				StatusCode: tea.Int(400),
 			}
 		},
 		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
@@ -301,9 +302,10 @@ func TestAccAlicloudECSPrefixList_unit(t *testing.T) {
 		},
 		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:    String(errorCode),
-				Data:    String(errorCode),
-				Message: String(errorCode),
+				Code:       String(errorCode),
+				Data:       String(errorCode),
+				Message:    String(errorCode),
+				StatusCode: tea.Int(400),
 			}
 		},
 		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
@@ -327,9 +329,10 @@ func TestAccAlicloudECSPrefixList_unit(t *testing.T) {
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEcsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
 			}
 		})
 		err := resourceAlicloudEcsPrefixListCreate(d, rawClient)
@@ -339,9 +342,10 @@ func TestAccAlicloudECSPrefixList_unit(t *testing.T) {
 	t.Run("UpdateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEcsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
 			}
 		})
 
@@ -353,9 +357,10 @@ func TestAccAlicloudECSPrefixList_unit(t *testing.T) {
 
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEcsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
 			}
 		})
 		err := resourceAlicloudEcsPrefixListDelete(d, rawClient)
@@ -444,7 +449,7 @@ func TestAccAlicloudECSPrefixList_unit(t *testing.T) {
 		noRetryFlag := true
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if retryFlag {
-				// retry until the timeout comes
+				retryFlag = false
 				return responseMock["RetryError"]("Throttling")
 			} else if noRetryFlag {
 				noRetryFlag = false

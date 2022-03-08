@@ -173,9 +173,10 @@ func TestAccAlicloudAlidnsCustomLine_unit(t *testing.T) {
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
 		"RetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:    String(errorCode),
-				Data:    String(errorCode),
-				Message: String(errorCode),
+				Code:       String(errorCode),
+				Data:       String(errorCode),
+				Message:    String(errorCode),
+				StatusCode: tea.Int(400),
 			}
 		},
 		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
@@ -183,9 +184,10 @@ func TestAccAlicloudAlidnsCustomLine_unit(t *testing.T) {
 		},
 		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:    String(errorCode),
-				Data:    String(errorCode),
-				Message: String(errorCode),
+				Code:       String(errorCode),
+				Data:       String(errorCode),
+				Message:    String(errorCode),
+				StatusCode: tea.Int(400),
 			}
 		},
 		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
@@ -210,9 +212,10 @@ func TestAccAlicloudAlidnsCustomLine_unit(t *testing.T) {
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
 			}
 		})
 		err := resourceAlicloudAlidnsCustomLineCreate(d, rawClient)
@@ -260,9 +263,10 @@ func TestAccAlicloudAlidnsCustomLine_unit(t *testing.T) {
 	t.Run("UpdateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
 			}
 		})
 
@@ -343,9 +347,10 @@ func TestAccAlicloudAlidnsCustomLine_unit(t *testing.T) {
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
 			}
 		})
 		err := resourceAlicloudAlidnsCustomLineDelete(d, rawClient)
