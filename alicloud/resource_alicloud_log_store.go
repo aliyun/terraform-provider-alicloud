@@ -189,7 +189,7 @@ func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) er
 	// Wait for the store to be available
 	time.Sleep(60 * time.Second)
 	d.SetId(fmt.Sprintf("%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("name").(string)))
-
+	fmt.Println(11)
 	return resourceAlicloudLogStoreUpdate(d, meta)
 }
 

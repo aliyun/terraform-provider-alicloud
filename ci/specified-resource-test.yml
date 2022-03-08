@@ -1,0 +1,29 @@
+shared:
+  - &clone-provider
+    get: terraform-provider-alicloud
+    resource: terraform-provider-alicloud
+    trigger: true
+
+  - &run
+    task: terraform ci
+    file: terraform-provider-alicloud/ci/tasks/resource-test.yml
+    params:
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
+      ALICLOUD_REGION: {{alicloud_region}}
+      RESOURCE_NAME: {{resource_name}}
+
+jobs:
+  - name: specified-resource-test
+    plan:
+      - <<: *clone-provider
+      - <<: *run
+
+
+
+resources:
+  - name: terraform-provider-alicloud
+    type: git
+    source:
+      uri: https://github.com/wanghx0991/terraform-provider-alicloud.git
+      branch: point_module_test
