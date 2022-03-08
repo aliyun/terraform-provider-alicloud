@@ -296,16 +296,18 @@ func TestAccAlicloudVPCTrafficMirrorFilter_unit(t *testing.T) {
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
 		"RetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:    String(errorCode),
-				Data:    String(errorCode),
-				Message: String(errorCode),
+				Code:       String(errorCode),
+				Data:       String(errorCode),
+				Message:    String(errorCode),
+				StatusCode: tea.Int(400),
 			}
 		},
 		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:    String(errorCode),
-				Data:    String(errorCode),
-				Message: String(errorCode),
+				Code:       String(errorCode),
+				Data:       String(errorCode),
+				Message:    String(errorCode),
+				StatusCode: tea.Int(400),
 			}
 		},
 		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
@@ -336,9 +338,10 @@ func TestAccAlicloudVPCTrafficMirrorFilter_unit(t *testing.T) {
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
 			}
 		})
 		err := resourceAlicloudVpcTrafficMirrorFilterCreate(d, rawClient)
@@ -389,9 +392,10 @@ func TestAccAlicloudVPCTrafficMirrorFilter_unit(t *testing.T) {
 	t.Run("UpdateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
 			}
 		})
 
@@ -474,9 +478,10 @@ func TestAccAlicloudVPCTrafficMirrorFilter_unit(t *testing.T) {
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+				Code:       String("loadEndpoint error"),
+				Data:       String("loadEndpoint error"),
+				Message:    String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
 			}
 		})
 		err := resourceAlicloudVpcTrafficMirrorFilterDelete(d, rawClient)
@@ -486,10 +491,9 @@ func TestAccAlicloudVPCTrafficMirrorFilter_unit(t *testing.T) {
 
 	t.Run("DeleteMockAbnormal", func(t *testing.T) {
 		retryFlag := true
-		noRetryFlag := false
+		noRetryFlag := true
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if retryFlag {
-				// retry until the timeout comes
 				retryFlag = false
 				return responseMock["RetryError"]("IncorrectStatus.TrafficMirrorFilter")
 			} else if noRetryFlag {
@@ -525,7 +529,7 @@ func TestAccAlicloudVPCTrafficMirrorFilter_unit(t *testing.T) {
 		noRetryFlag := true
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if retryFlag {
-				// retry until the timeout comes
+				retryFlag = false
 				return responseMock["RetryError"]("Throttling")
 			} else if noRetryFlag {
 				noRetryFlag = false
