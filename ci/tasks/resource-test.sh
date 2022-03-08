@@ -10,17 +10,13 @@ export ALICLOUD_ACCESS_KEY=${ALICLOUD_ACCESS_KEY}
 export ALICLOUD_SECRET_KEY=${ALICLOUD_SECRET_KEY}
 export ALICLOUD_REGION=${ALICLOUD_REGION}
 
-go version
 
 CURRENT_PATH=$(pwd)
-
 PINK='\E[1;35m'        #粉红
 RES='\E[0m'
 
 
-echo -e  "Current Go Version: $(go version)"
-
-
+echo -e  "${PINK} Current Go Version: $(go version) ${RES}"
 CURRENT_PATH=$(pwd)
 TERRAFORM_SOURCE_PATH=$CURRENT_PATH/terraform-provider-alicloud
 
@@ -31,7 +27,7 @@ mkdir -p src/github.com/aliyun
 cd src/github.com/aliyun
 
 cp -rf ${CURRENT_PATH}/terraform-provider-alicloud ./
-echo -e  "${PINK} 31line${RES}"
+
 cd ./terraform-provider-alicloud
 
 resourceArray=(`echo $RESOURCE_NAME | tr ',' ' '`)
@@ -72,11 +68,10 @@ do
       fi
     }
   done
-  echo -e "\033[34mFinished\033[0m"
+  echo -e "\033[34m The Relative Resource $res Task Finished\033[0m"
 done
 
 # read var from failed file and remove this file
-read FAILED_COUNT < failed.txt
 if [[ $FAILED_COUNT -gt 0 ]]; then
   echo -e "\033[31mThere gets $FAILED_COUNT failed testcase.\033[0m"
 fi
