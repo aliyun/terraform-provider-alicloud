@@ -282,12 +282,6 @@ func TestAccAlicloudNasRecycleBin_unit(t *testing.T) {
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
-	t.Run("UpdateParseResourceIdAbnormal", func(t *testing.T) {
-		d.SetId("file_system_id")
-		err := resourceAlicloudNasRecycleBinUpdate(d, rawClient)
-		assert.NotNil(t, err)
-	})
-
 	// Set ID for Update and Delete Method
 	d.SetId("file_system_id")
 

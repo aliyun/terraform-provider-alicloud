@@ -431,6 +431,13 @@ func TestAccAlicloudMongodbShardingNetworkPrivateAddress_unit(t *testing.T) {
 	})
 	t.Run("ReadDescribeAbnormal", func(t *testing.T) {
 		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			retryFlag := false
+			noRetryFlag := true
+			if retryFlag {
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
 			return responseMock["ReadNormal"]("")
 		})
 		err := resourceAlicloudMongodbShardingNetworkPrivateAddressRead(d, rawClient)
