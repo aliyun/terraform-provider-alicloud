@@ -47,7 +47,7 @@ resources:
     type: git
     source:
       uri: https://github.com/wanghx0991/terraform-provider-alicloud.git
-      branch: service
+      branch: point_module_test
   - name: trigger-every-day
     type: time
     source:
