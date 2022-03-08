@@ -15,6 +15,8 @@ Provides a VPN gateway resource.
 
 -> Currently International-Site account can open `PostPaid` VPN gateway and China-Site account can open `PrePaid` VPN gateway.
 
+For information about VPN gateway and how to use it, see [What is VPN gateway](https://www.alibabacloud.com/help/en/doc-detail/120365.html).
+
 ## Example Usage
 
 Basic Usage
@@ -66,6 +68,11 @@ The following arguments are supported:
                         This field is ignored when enable_ssl is false.
 * `description` - (Optional) The description of the VPN instance.
 * `vswitch_id` - (Optional, ForceNew, Available in v1.56.0+) The VPN belongs the vswitch_id, the field can't be changed.
+* `tags` - (Optional, Available in v1.160.0+) The tags of VPN gateway.
+* `auto_pay` - (Optional, Available in v1.160.0+)  Whether to pay automatically. Default value: `true`. Valid values:
+  `false`: If automatic payment is not enabled, you need to go to the order center to complete the payment after the order is generated.
+  `true`: Enable automatic payment, automatic payment order.
+
 
 ## Attributes Reference
 
@@ -75,6 +82,16 @@ The following attributes are exported:
 * `internet_ip` - The internet ip of the VPN.
 * `status` - The status of the VPN gateway.
 * `business_status` - The business status of the VPN gateway.
+
+
+#### Timeouts
+
+-> **NOTE:** Available in 1.160.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when create the vpn gateway.
+* `delete` - (Defaults to 10 mins) Used when delete the vpn gateway.
 
 ## Import
 

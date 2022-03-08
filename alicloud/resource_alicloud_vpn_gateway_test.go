@@ -442,3 +442,96 @@ var testAccVpnGatewayCheckMap = map[string]string{
 	"description":  "",
 	"vswitch_id":   CHECKSET,
 }
+
+func TestAccAlicloudVpnGateway_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_gateway.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayMap3)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpnGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpnGatewayBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":               "${data.alicloud_vpcs.default.ids.0}",
+					"name":                 name,
+					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"description":          name,
+					"bandwidth":            "10",
+					"enable_ssl":           "false",
+					"period":               "1",
+					"instance_charge_type": "PrePaid",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":               CHECKSET,
+						"name":                 name,
+						"vswitch_id":           CHECKSET,
+						"description":          name,
+						"bandwidth":            "10",
+						"enable_ssl":           "false",
+						"period":               "1",
+						"instance_charge_type": "PrePaid",
+						"tags.%":               "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "TestF-update",
+						"From":    "update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%": "3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period"},
+			},
+		},
+	})
+}
+
+var AlicloudVpnGatewayMap3 = map[string]string{}
+
+func AlicloudVpnGatewayBasicDependence3(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_vpcs" "default"	{
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+}
+
+`, name)
+}
