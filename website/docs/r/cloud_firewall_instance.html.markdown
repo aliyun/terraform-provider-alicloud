@@ -15,7 +15,6 @@ For information about Cloud Firewall Instance and how to use it, see [What is In
 
 -> **NOTE:** Available in v1.139.0+.
 
--> **NOTE:** The Cloud Firewall Instance is not support to be purchase automatically in the international site.
 
 ## Example Usage
 
@@ -32,7 +31,6 @@ resource "alicloud_cloud_firewall_instance" "example" {
   cfw_service     = false
   period          = 6
 }
-
 ```
 
 ## Argument Reference

@@ -217,6 +217,8 @@ func resourceAlicloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta in
 				return resource.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "cfw"
+				request["ProductType"] = "cfw_pre_intl"
 				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 				return resource.RetryableError(err)
 			}
@@ -284,6 +286,8 @@ func resourceAlicloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 					return resource.RetryableError(err)
 				}
 				if IsExpectedErrors(err, []string{"NotApplicable"}) {
+					renewInstancerequest["ProductCode"] = "cfw"
+					renewInstancerequest["ProductType"] = "cfw_pre_intl"
 					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 					return resource.RetryableError(err)
 				}
@@ -404,6 +408,8 @@ func resourceAlicloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 					return resource.RetryableError(err)
 				}
 				if IsExpectedErrors(err, []string{"NotApplicable"}) {
+					modifyInstanceRequest["ProductCode"] = "cfw"
+					modifyInstanceRequest["ProductType"] = "cfw_pre_intl"
 					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 					return resource.RetryableError(err)
 				}
