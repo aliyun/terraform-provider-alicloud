@@ -233,12 +233,6 @@ func TestAccAlicloudVPCVbrHa_unit(t *testing.T) {
 
 	// Set ID for Update and Delete Method
 	d.SetId("MockVbrHaId")
-	// Update
-	t.Run("UpdateClientNormal", func(t *testing.T) {
-		err := resourceAlicloudVpcVbrHaUpdate(d, rawClient)
-		assert.Nil(t, err)
-	})
-
 	// Delete
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {

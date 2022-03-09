@@ -310,13 +310,13 @@ func TestAccAlicloudGaIpSet_unit(t *testing.T) {
 		err := resourceAlicloudGaIpSetDelete(dExisted, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
-		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "StateError.IpSet", "StateError.Accelerator"}
+		errorCodes := []string{"NonRetryableError", "Throttling", "StateError.Accelerator", "StateError.IpSet", "nil", "NotExist.IpSets"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
 			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "DeleteIpSets" {
 					switch errorCode {
-					case "NonRetryableError", "StateError.IpSet", "StateError.Accelerator":
+					case "NonRetryableError", "NotExist.IpSets":
 						return failedResponseMock(errorCode)
 					default:
 						retryIndex++
@@ -333,7 +333,7 @@ func TestAccAlicloudGaIpSet_unit(t *testing.T) {
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
-			case "StateError.IpSet", "StateError.Accelerator":
+			case "NotExist.IpSets":
 				assert.Nil(t, err)
 			}
 		}

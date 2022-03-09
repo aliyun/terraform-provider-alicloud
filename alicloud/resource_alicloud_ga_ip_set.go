@@ -193,9 +193,9 @@ func resourceAlicloudGaIpSetDelete(d *schema.ResourceData, meta interface{}) err
 		"IpSetId":  d.Id(),
 		"RegionId": client.RegionId,
 	}
-	action := "DeleteIpSets"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
+	action := "DeleteIpSets"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeleteIpSet")
@@ -211,6 +211,9 @@ func resourceAlicloudGaIpSetDelete(d *schema.ResourceData, meta interface{}) err
 		return nil
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NotExist.IpSets"}) || NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, gaService.GaIpSetStateRefreshFunc(d, []string{}))

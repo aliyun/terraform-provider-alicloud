@@ -191,12 +191,6 @@ func TestAccAlicloudPrivateZoneUserVpcAuthorization_unit(t *testing.T) {
 	// Set ID for Update and Delete Method
 	d.SetId(fmt.Sprint("authorized_user_id", ":", "NORMAL"))
 
-	// Update
-	t.Run("UpdateAbnormal", func(t *testing.T) {
-		err := resourceAlicloudPvtzUserVpcAuthorizationUpdate(d, rawClient)
-		assert.NotNil(t, err)
-	})
-
 	// Delete
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewPvtzClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
