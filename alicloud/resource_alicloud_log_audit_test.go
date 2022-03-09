@@ -74,16 +74,17 @@ func TestAccAlicloudLogAudit_basic(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"resource_directory_type": "custom",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"resource_directory_type": "custom",
-					}),
-				),
-			},
+			// TODO: only when center account is resource directory master or resource directory admin need to check resource type config，otherwise pass it directly
+			// {
+			// 	Config: testAccConfig(map[string]interface{}{
+			// 		"resource_directory_type": "custom",
+			// 	}),
+			// 	Check: resource.ComposeTestCheckFunc(
+			// 		testAccCheck(map[string]string{
+			// 			"resource_directory_type": "custom",
+			// 		}),
+			// 	),
+			// },
 		},
 	})
 }
