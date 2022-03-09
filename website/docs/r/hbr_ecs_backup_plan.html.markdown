@@ -64,7 +64,7 @@ The following arguments are support:
     * `startTime` Backup start time, UNIX time seconds.
     * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart. 
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
-* `options` - (Optional) Windows operating system with application consistency using VSS, e.g: `{"UseVSS":false}`.
+* `options` - (Optional) Windows operating system with application consistency using VSS, e.g: `{\"UseVSS\":false}`.
 * `speed_limit` - (Optional) Flow control. The format is: `{start}|{end}|{bandwidth}`. Use `|` to separate multiple flow control configurations, multiple flow control configurations not allowed to have overlapping times.
     * `start` starting hour 
     * `end` end hour 
