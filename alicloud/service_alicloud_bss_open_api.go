@@ -93,6 +93,8 @@ func (s *BssOpenApiService) QueryAvailableInstance(id string) (object map[string
 				return resource.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "cfw"
+				request["ProductType"] = "cfw_pre_intl"
 				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 				return resource.RetryableError(err)
 			}
