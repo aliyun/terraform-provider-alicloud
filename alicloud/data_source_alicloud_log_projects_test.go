@@ -12,7 +12,7 @@ func TestAccAlicloudLogProjectsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudLogProjectsDataSourceName(rand, map[string]string{
-			"ids": `["terraform"]`,
+			"ids": `[alicloud_log_project.default.name]`,
 		}),
 		fakeConfig: testAccCheckAlicloudLogProjectsDataSourceName(rand, map[string]string{
 			"ids": `["fake"]`,
@@ -20,7 +20,7 @@ func TestAccAlicloudLogProjectsDataSource(t *testing.T) {
 	}
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudLogProjectsDataSourceName(rand, map[string]string{
-			"name_regex": `"terraform"`,
+			"name_regex": `alicloud_log_project.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudLogProjectsDataSourceName(rand, map[string]string{
 			"name_regex": `"fake"`,
@@ -28,18 +28,18 @@ func TestAccAlicloudLogProjectsDataSource(t *testing.T) {
 	}
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudLogProjectsDataSourceName(rand, map[string]string{
-			"ids":    `["terraform"]`,
+			"ids":    `[alicloud_log_project.default.name]`,
 			"status": `"Normal"`,
 		}),
 		fakeConfig: testAccCheckAlicloudLogProjectsDataSourceName(rand, map[string]string{
-			"ids":    `["terraform"]`,
+			"ids":    `["fake"]`,
 			"status": `"Disable"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudLogProjectsDataSourceName(rand, map[string]string{
-			"ids":        `["terraform"]`,
-			"name_regex": `"terraform"`,
+			"ids":        `[alicloud_log_project.default.name]`,
+			"name_regex": `alicloud_log_project.default.name`,
 			"status":     `"Normal"`,
 		}),
 		fakeConfig: testAccCheckAlicloudLogProjectsDataSourceName(rand, map[string]string{
@@ -55,7 +55,7 @@ func TestAccAlicloudLogProjectsDataSource(t *testing.T) {
 			"projects.#":                  "1",
 			"projects.0.id":               CHECKSET,
 			"projects.0.description":      CHECKSET,
-			"projects.0.project_name":     "terraform",
+			"projects.0.project_name":     fmt.Sprintf("tf-testacc-%d", rand),
 			"projects.0.region":           CHECKSET,
 			"projects.0.owner":            CHECKSET,
 			"projects.0.last_modify_time": CHECKSET,
@@ -85,9 +85,13 @@ func testAccCheckAlicloudLogProjectsDataSourceName(rand int, attrMap map[string]
 	}
 
 	config := fmt.Sprintf(`
+resource "alicloud_log_project" "default" {
+  name        = "tf-testacc-%d"
+  description = "created by terraform"
+}
 data "alicloud_log_projects" "default" {
 	%s	
 }
-`, strings.Join(pairs, " \n "))
+`, rand, strings.Join(pairs, " \n "))
 	return config
 }
