@@ -73,7 +73,6 @@ The following arguments are supported:
 * `complete_time` - (Optional, ForceNew) Timestamp of Snapshot completion. Note The time format of the API adopts the ISO 8601 format, such as 2021-07-09T15:45:30CST or 2021-07-09T07:45:30Z. **Note**: While `complete_time_checker` equals `BETWEEN`, this field should be formatted such as `"2021-08-20T14:17:15CST,2021-08-26T14:17:15CST"`, The first part of this string is the start time, the second part is the end time, and the two parts should be separated by commas.
 * `complete_time_checker` - (Optional, ForceNew) Complete time filter operator. Optional values: `MATCH_TERM`, `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL`, `BETWEEN`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 
 ## Argument Reference
 
