@@ -401,12 +401,6 @@ func TestAccAlicloudWAFCertificate_unit(t *testing.T) {
 
 	// Set ID for Update and Delete Method
 	d.SetId(fmt.Sprint("instance_id", ":", "domain", ":", "123456"))
-	// Update
-	t.Run("UpdateNormal", func(t *testing.T) {
-		err := resourceAlicloudWafCertificateUpdate(d, rawClient)
-		assert.NotNil(t, err)
-	})
-
 	//Delete
 	t.Run("DeleteNormal", func(t *testing.T) {
 		err := resourceAlicloudWafCertificateDelete(d, rawClient)
