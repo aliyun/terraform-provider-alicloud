@@ -77,7 +77,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Backup Job IDs.
 * `source_type` - (Required, ForceNew) The type of data source. Valid values: `ECS_FILE`, `NAS`, `OSS`, `UDM_DISK`.
 * `status` - (Optional, ForceNew) The status of backup job. Valid values: `COMPLETE`, `PARTIAL_COMPLETE`, `FAILED`, `UNAVAILABLE`.
-* `sort_direction` - (Optional, ForceNew) The sort direction. Valid values: `ASCEND`, `DESCEND`.
+* `sort_direction` - (Optional, ForceNew) The sort direction, sort results by ascending or descending order based on the value jobs id. Valid values: `ASCEND`, `DESCEND`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 
