@@ -53,8 +53,6 @@ The following attributes are exported in addition to the arguments listed above:
         * `startTime` Backup start time, UNIX time seconds.
         * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
     * `backup_type` - (Optional, Computed, ForceNew) Backup type. Valid values: `COMPLETE`.
-    * `created_time` - The creation time of the backup plan. UNIX time in seconds.
-    * `updated_time` - The update time of the backup plan. UNIX time in seconds.
     * `disabled` - Whether to be suspended. Valid values: `true`, `false`.
     * `created_time` - The creation time of the backup plan. UNIX time in seconds.
     * `updated_time` - The update time of the backup plan. UNIX time in seconds.
