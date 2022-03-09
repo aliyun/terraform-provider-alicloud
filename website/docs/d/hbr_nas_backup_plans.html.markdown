@@ -58,5 +58,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `path` - List of backup path. Up to 65536 Characters. e.g.`["/home", "/var"]`
     * `backup_type` - Backup type. Valid values: `COMPLETE`.
     * `disabled` - Whether to be suspended. Valid values: `true`, `false`.
-    * `options` - Options of nas.
+    * `options` - Options field of Nas backup plan.
+    * `created_time` - The creation time of the backup plan. UNIX time in seconds.
+    * `updated_time` - The update time of the backup plan. UNIX time in seconds.
 
