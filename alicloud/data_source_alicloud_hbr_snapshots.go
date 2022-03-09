@@ -203,11 +203,6 @@ func dataSourceAlicloudHbrSnapshots() *schema.Resource {
 					},
 				},
 			},
-			"enable_details": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
 		},
 	}
 }
