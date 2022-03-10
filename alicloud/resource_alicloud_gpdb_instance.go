@@ -24,7 +24,8 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
+			Create: schema.DefaultTimeout(60 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -69,14 +70,12 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 			"engine": {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"gpdb"}, false),
-				Optional:     true,
-				Computed:     true,
+				Required:     true,
 				ForceNew:     true,
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"tags": tagsSchema(),
@@ -209,13 +208,13 @@ func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}
 	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
 
-	err := resource.Retry(10*5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		raw, err := client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
 			return client.DeleteDBInstance(request)
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "IncorrectDBState"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

@@ -406,7 +406,6 @@ func TestAccAlicloudNatGateway_PayByLcu(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"specification":    "Small",
 					"description":      name,
 					"nat_gateway_name": name,
 					"tags": map[string]string{

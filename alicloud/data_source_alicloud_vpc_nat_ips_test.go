@@ -144,34 +144,19 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	cidr_block = "172.16.0.0/12"
+ name_regex = "^default-NODELETING"
 }
-
-resource "alicloud_vpc" "default" {
-	count = length(data.alicloud_vpcs.default.ids) > 0 ? 0 : 1
-	vpc_name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
 data "alicloud_vswitches" "default" {
-	vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-	zone_id = data.alicloud_zones.default.zones.0.id
-}
-resource "alicloud_vswitch" "default" {
-	count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-	vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-	cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-	zone_id = data.alicloud_zones.default.zones.0.id
-	vswitch_name = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_nat_gateway" "default" {
-	vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-	internet_charge_type = "PayByLcu"
+	vpc_id = data.alicloud_vpcs.default.ids[0]
 	nat_gateway_name = var.name
     description = "${var.name}_description"
 	nat_type = "Enhanced"
-	vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : alicloud_vswitch.default[0].id
+	vswitch_id = data.alicloud_vswitches.default.ids[0]
 	network_type = "intranet"
 }
 

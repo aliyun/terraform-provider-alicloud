@@ -108,120 +108,7 @@ func testSweepGpdbInstances(region string) error {
 	return nil
 }
 
-func SkipTestAccAlicloudGpdbInstance_classic(t *testing.T) {
-	var v gpdb.DBInstanceAttribute
-	resourceId := "alicloud_gpdb_instance.default"
-	serverFunc := func() interface{} {
-		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeGpdbInstance")
-	ra := resourceAttrInit(resourceId, nil)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, "", resourceGpdbClassicConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:      func() { testAccPreCheckWithRegions(t, false, connectivity.GpdbClassicNoSupportedRegions) },
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"availability_zone":    "${data.alicloud_zones.default.zones.0.id}",
-					"engine":               "gpdb",
-					"engine_version":       "4.3",
-					"instance_class":       "gpdb.group.segsdx2",
-					"instance_group_count": "2",
-					"description":          "tf-testAccGpdbInstance_new",
-					"instance_charge_type": "PostPaid",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description":          fmt.Sprintf("tf-testAccGpdbInstance_new"),
-						"instance_charge_type": "PostPaid",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// change description
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "tf-testAccGpdbInstance_test",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "tf-testAccGpdbInstance_test",
-					}),
-				),
-			},
-			// change security ips
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"security_ip_list": []string{"10.168.1.12"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"security_ip_list.#":          "1",
-						"security_ip_list.4095458986": "10.168.1.12",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "acceptance test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "acceptance test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "acceptance test",
-						"Updated": "TF",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "3",
-						"tags.Created": "TF",
-						"tags.For":     "acceptance test",
-						"tags.Updated": "TF",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       REMOVEKEY,
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-						"tags.Updated": REMOVEKEY,
-					}),
-				),
-			},
-		}})
-}
-
-func SkipTestAccAlicloudGpdbInstance_vpc(t *testing.T) {
+func TestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 	var v gpdb.DBInstanceAttribute
 	resourceId := "alicloud_gpdb_instance.default"
 	serverFunc := func() interface{} {
@@ -246,7 +133,7 @@ func SkipTestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 					"availability_zone":    "${data.alicloud_gpdb_zones.default.zones.0.id}",
 					"vswitch_id":           "${local.vswitch_id}",
 					"engine":               "gpdb",
-					"engine_version":       "4.3",
+					"engine_version":       "6.0",
 					"instance_class":       "gpdb.group.segsdx2",
 					"instance_group_count": "2",
 					"description":          "tf-testAccGpdbInstance_new",
@@ -281,13 +168,6 @@ func SkipTestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 				),
 			},
 		}})
-}
-
-func resourceGpdbClassicConfigDependence(s string) string {
-	return fmt.Sprintf(`
-        data "alicloud_zones" "default" {
-            available_resource_creation = "Gpdb"
-        }`)
 }
 
 func resourceGpdbVpcConfigDependence(s string) string {

@@ -236,7 +236,6 @@ func TestAccAlicloudGpdbElasticInstance_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccgpab%d", rand)
-	checkoutSupportedRegions(t, true, connectivity.GpdbElasticInstanceSupportRegions)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGpdbElasticInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -321,7 +320,7 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_gpdb_zones.default.zones.5.id
+  zone_id = data.alicloud_gpdb_zones.default.zones.0.id
 }
 
 resource "alicloud_kms_key" "default" {
