@@ -426,14 +426,24 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 		request.SystemDiskCategory = strings.TrimSpace(v.(string))
 	}
 
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeAvailableResource(request)
-	})
-	if err != nil {
+	var response *ecs.DescribeAvailableResourceResponse
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeAvailableResource(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{Throttling}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*ecs.DescribeAvailableResourceResponse)
+		return nil
+	}); err != nil {
 		return "", nil, "", WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ecs.DescribeAvailableResourceResponse)
 	requestId = response.RequestId
 
 	if len(response.AvailableZones.AvailableZone) < 1 {
