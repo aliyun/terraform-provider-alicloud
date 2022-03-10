@@ -1113,7 +1113,7 @@ func TestAccAlicloudEcsInstancePrepaid(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"period":             "2",
+						"period":             "0",
 						"period_unit":        "Month",
 						"renewal_status":     REMOVEKEY,
 						"auto_renew_period":  REMOVEKEY,

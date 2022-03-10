@@ -61,6 +61,8 @@ The following arguments are supported:
     * `PL1`: A single ESSD delivers up to 50,000 random read/write IOPS.
     * `PL2`: A single ESSD delivers up to 100,000 random read/write IOPS.
     * `PL3`: A single ESSD delivers up to 1,000,000 random read/write IOPS.
+* `tags` - (Optional) A mapping of tags to assign to the resource.  
+* `advanced_features` -   
 * `resource_group_id` - (Optional) The Id of resource group which the disk belongs.
 * `size` - (Optional) The size of the disk in GiBs. When resize the disk, the new size must be greater than the former value, or you would get an error `InvalidDiskSize.TooSmall`.
 * `snapshot_id` - (Optional, ForceNew) A snapshot to base the disk off of. If the disk size required by snapshot is greater than `size`, the `size` will be ignored, conflict with `encrypted`.
@@ -84,7 +86,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Disk.
-* `update` - (Defaults to 6 mins) Used when update the Disk.
+* `update` - (Defaults to 10 mins) Used when update the Disk.
+* `delete` - (Defaults to 2 mins) Used when delete the Disk.
 
 ## Import
 

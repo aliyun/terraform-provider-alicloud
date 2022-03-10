@@ -24,7 +24,7 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(2 * time.Minute),
 			Delete: schema.DefaultTimeout(2 * time.Minute),
-			Update: schema.DefaultTimeout(6 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"advanced_features": {
@@ -51,7 +51,7 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 			"delete_with_instance": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
+				Computed: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -449,7 +449,7 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 	modifyDiskChargeTypeReq["InstanceId"] = d.Get("instance_id")
 	modifyDiskChargeTypeReq["RegionId"] = client.RegionId
 	modifyDiskChargeTypeReq["AutoPay"] = true
-	if d.HasChange("payment_type") && (d.Get("payment_type").(string) == "Subscription" || !d.IsNewResource()) {
+	if !d.IsNewResource() && d.HasChange("payment_type") {
 		update = true
 		modifyDiskChargeTypeReq["DiskChargeType"] = convertEcsDiskPaymentTypeRequest(d.Get("payment_type").(string))
 	}
@@ -463,7 +463,7 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, modifyDiskChargeTypeReq, &util.RuntimeOptions{})
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDiskStatus"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -540,6 +540,20 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 }
 func resourceAlicloudEcsDiskDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
+	object, err := ecsService.DescribeEcsDisk(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ecs_disk ecsService.DescribeEcsDisk Failed!!! %s", err)
+			return nil
+		}
+		return WrapError(err)
+	}
+	if fmt.Sprint(object["DeleteWithInstance"]) == "true" {
+		log.Printf("[DEBUG] Resource alicloud_ecs_disk %s attribute DeleteWithInstance is true, so it will remove from state.", d.Id())
+		return nil
+	}
+
 	action := "DeleteDisk"
 	var response map[string]interface{}
 	conn, err := client.NewEcsClient()
