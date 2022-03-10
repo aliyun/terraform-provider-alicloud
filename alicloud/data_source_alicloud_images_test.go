@@ -197,17 +197,6 @@ func TestAccAlicloudEcsImagesDataSource_linux(t *testing.T) {
 		}),
 	}
 
-	slesConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "^sles.*",
-			"owners":     "system",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "^sles.*fake",
-			"owners":     "system",
-		}),
-	}
-
 	openSuseConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "^opensuse.*",
@@ -309,7 +298,7 @@ func TestAccAlicloudEcsImagesDataSource_linux(t *testing.T) {
 		fakeMapFunc:  fakeImagesMapFunc,
 	}
 
-	imagesCheckInfo.dataSourceTestCheck(t, rand, ubuntuConf, slesConf, openSuseConf, freebsdConf, centOsConf, debianConf, coreOsConf, aliyunConf)
+	imagesCheckInfo.dataSourceTestCheck(t, rand, ubuntuConf, openSuseConf, freebsdConf, centOsConf, debianConf, coreOsConf, aliyunConf)
 }
 
 func dataSourceImagesConfigDependence(name string) string {

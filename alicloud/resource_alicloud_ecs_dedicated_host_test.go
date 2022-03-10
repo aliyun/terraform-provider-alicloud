@@ -11,7 +11,6 @@ import (
 )
 
 func TestAccAlicloudEcsDedicatedHost_basic(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
@@ -34,13 +33,13 @@ func TestAccAlicloudEcsDedicatedHost_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"dedicated_host_type": "ddh.g5",
+					"dedicated_host_type": "ddh.g6",
 					"description":         "From_Terraform",
 					"dedicated_host_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"dedicated_host_type": "ddh.g5",
+						"dedicated_host_type": "ddh.g6",
 						"description":         "From_Terraform",
 						"dedicated_host_name": name,
 					}),
@@ -146,7 +145,6 @@ func TestAccAlicloudEcsDedicatedHost_basic(t *testing.T) {
 
 func TestAccAlicloudEcsDedicatedHost_basic1(t *testing.T) {
 	var v ecs.DedicatedHost
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -168,7 +166,7 @@ func TestAccAlicloudEcsDedicatedHost_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"dedicated_host_type": "ddh.g5",
+					"dedicated_host_type": "ddh.g6",
 					"description":         "From_Terraform",
 					"dedicated_host_name": name,
 					"auto_renew":          "true",
@@ -179,7 +177,7 @@ func TestAccAlicloudEcsDedicatedHost_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"dedicated_host_type": "ddh.g5",
+						"dedicated_host_type": "ddh.g6",
 						"description":         "From_Terraform",
 						"dedicated_host_name": name,
 						"sale_cycle":          "Week",
@@ -198,7 +196,6 @@ func TestAccAlicloudEcsDedicatedHost_basic1(t *testing.T) {
 }
 
 func TestAccAlicloudEcsDedicatedHost_basic2(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
@@ -221,7 +218,7 @@ func TestAccAlicloudEcsDedicatedHost_basic2(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"dedicated_host_type":   "ddh.r6",
+					"dedicated_host_type":   "ddh.g6",
 					"description":           "From_Terraform",
 					"dedicated_host_name":   name,
 					"action_on_maintenance": "Migrate",
@@ -242,7 +239,7 @@ func TestAccAlicloudEcsDedicatedHost_basic2(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"dedicated_host_type":   "ddh.r6",
+						"dedicated_host_type":   "ddh.g6",
 						"description":           "From_Terraform",
 						"dedicated_host_name":   name,
 						"action_on_maintenance": "Migrate",

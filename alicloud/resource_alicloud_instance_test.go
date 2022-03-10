@@ -831,8 +831,6 @@ func TestAccAlicloudEcsInstancePrepaid(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckPrePaidResources(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -852,10 +850,10 @@ func TestAccAlicloudEcsInstancePrepaid(t *testing.T) {
 					"spot_price_limit":              "0",
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "I_am_user_data",
-
-					"instance_charge_type": "PrePaid",
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
-					"role_name":            "${alicloud_ram_role.default.name}",
+					"period":                        "1",
+					"instance_charge_type":          "PrePaid",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"role_name":                     "${alicloud_ram_role.default.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -878,7 +876,7 @@ func TestAccAlicloudEcsInstancePrepaid(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "data_disks", "dry_run", "force_delete",
+				ImportStateVerifyIgnore: []string{"period", "security_enhancement_strategy", "data_disks", "dry_run", "force_delete",
 					"include_data_disks"},
 			},
 			{
@@ -1020,39 +1018,6 @@ func TestAccAlicloudEcsInstancePrepaid(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"tag0": "value0",
-						"tag1": "value1",
-						"tag2": "value2",
-						"tag3": "value3",
-						"tag4": "value4",
-						"tag5": "value5",
-						"tag6": "value6",
-						"tag7": "value7",
-						"tag8": "value8",
-						"tag9": "value9",
-						"tagA": "valueA",
-						"tagB": "valueB",
-						"tagC": "valueC",
-						"tagD": "valueD",
-						"tagE": "valueE",
-						"tagF": "valueF",
-						"tagG": "valueG",
-						"tagH": "valueH",
-						"tagI": "valueI",
-						"tagJ": "valueJ",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":    "20",
-						"tags.tag9": "value9",
-						"tags.tagJ": "valueJ",
-					}),
-				),
-			},
 			// Message: The operation is not permitted due to deletion protection only support postPaid instance
 			/*{
 				Config: testAccConfig(map[string]interface{}{
@@ -1139,8 +1104,6 @@ func TestAccAlicloudEcsInstancePrepaid(t *testing.T) {
 					"volume_tags":      REMOVEKEY,
 					"tags":             REMOVEKEY,
 
-					"deletion_protection": "false",
-
 					"period":             REMOVEKEY,
 					"period_unit":        REMOVEKEY,
 					"renewal_status":     REMOVEKEY,
@@ -1150,7 +1113,7 @@ func TestAccAlicloudEcsInstancePrepaid(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"period":             "1",
+						"period":             "2",
 						"period_unit":        "Month",
 						"renewal_status":     REMOVEKEY,
 						"auto_renew_period":  REMOVEKEY,
@@ -1163,7 +1126,7 @@ func TestAccAlicloudEcsInstancePrepaid(t *testing.T) {
 
 						"instance_name": name,
 
-						"volume_tags.%":    "0",
+						"volume_tags.%":    REMOVEKEY,
 						"volume_tags.tag1": REMOVEKEY,
 
 						"image_id":          CHECKSET,
@@ -1189,8 +1152,6 @@ func TestAccAlicloudEcsInstancePrepaid(t *testing.T) {
 
 						"internet_charge_type":       string(PayByBandwidth),
 						"internet_max_bandwidth_out": "0",
-
-						"deletion_protection": "false",
 					}),
 				),
 			},

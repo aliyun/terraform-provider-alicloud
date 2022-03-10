@@ -1275,7 +1275,9 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	}
 
 	if request.InstanceChargeType == string(PrePaid) {
-		request.Period = requests.NewInteger(d.Get("period").(int))
+		if v, ok := d.GetOk("period"); ok {
+			request.Period = requests.NewInteger(v.(int))
+		}
 		request.PeriodUnit = d.Get("period_unit").(string)
 	} else {
 		if v := d.Get("spot_strategy").(string); v != "" {
@@ -1396,17 +1398,19 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 		request.DryRun = requests.NewBoolean(d.Get("dry_run").(bool))
 		request.ClientToken = fmt.Sprintf("terraform-modify-instance-charge-type-%s", d.Id())
 		if chargeType == string(PrePaid) {
-			request.Period = requests.NewInteger(d.Get("period").(int))
+			if v, ok := d.GetOk("period"); ok {
+				request.Period = requests.NewInteger(v.(int))
+			}
 			request.PeriodUnit = d.Get("period_unit").(string)
 		}
 		request.InstanceChargeType = chargeType
-		if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+		if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.ModifyInstanceChargeType(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{Throttling}) {
-					time.Sleep(10 * time.Second)
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
+					time.Sleep(3 * time.Second)
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

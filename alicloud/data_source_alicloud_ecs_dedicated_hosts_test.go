@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudEcsDedicatedHostsDataSource(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_ecs_dedicated_hosts.default"
 	name := fmt.Sprintf("tf_testAccEcsDedicatedHostsDataSource_%d", rand)
@@ -134,7 +131,7 @@ func TestAccAlicloudEcsDedicatedHostsDataSource(t *testing.T) {
 func dataSourceEcsDedicatedHostsConfigDependence(name string) string {
 	return fmt.Sprintf(`
 		resource "alicloud_ecs_dedicated_host" "default" {
-		  dedicated_host_type = "ddh.g5"
+		  dedicated_host_type = "ddh.g6"
 		  description = "From_Terraform"
 		  dedicated_host_name = "%s"
           action_on_maintenance = "Migrate"
