@@ -6,6 +6,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -322,15 +324,27 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	var allImages []ecs.Image
-
+	var response *ecs.DescribeImagesResponse
 	for {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeImages(request)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeImages(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			response, _ = raw.(*ecs.DescribeImagesResponse)
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_images", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		response, _ := raw.(*ecs.DescribeImagesResponse)
 		if response == nil || len(response.Images.Image) < 1 {
 			break
 		}

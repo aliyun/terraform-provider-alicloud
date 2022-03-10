@@ -1452,7 +1452,7 @@ func (s *EcsService) ListTagResources(id string, resourceType string) (object in
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{Throttling}) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}

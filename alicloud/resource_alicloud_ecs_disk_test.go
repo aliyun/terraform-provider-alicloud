@@ -319,6 +319,26 @@ func TestAccAlicloudEcsDisk_basic1(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "Subscription",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "Subscription",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,

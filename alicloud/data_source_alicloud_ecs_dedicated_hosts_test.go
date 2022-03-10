@@ -45,11 +45,11 @@ func TestAccAlicloudEcsDedicatedHostsDataSource(t *testing.T) {
 	typeConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids":                 []string{"${alicloud_ecs_dedicated_host.default.id}"},
-			"dedicated_host_type": "ddh.g5",
+			"dedicated_host_type": "ddh.g6",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":                 []string{"${alicloud_ecs_dedicated_host.default.id}"},
-			"dedicated_host_type": "g6",
+			"dedicated_host_type": "ddh.g5",
 		}),
 	}
 	tagsConf := dataSourceTestAccConfig{
@@ -71,13 +71,13 @@ func TestAccAlicloudEcsDedicatedHostsDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids":                 []string{"${alicloud_ecs_dedicated_host.default.id}"},
-			"dedicated_host_type": "ddh.g5",
+			"dedicated_host_type": "ddh.g6",
 			"status":              "Available",
 			"name_regex":          name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":                 []string{"${alicloud_ecs_dedicated_host.default.id}"},
-			"dedicated_host_type": "g6",
+			"dedicated_host_type": "ddh.g6",
 			"name_regex":          name + "fake",
 			"status":              "UnderAssessment",
 		}),
