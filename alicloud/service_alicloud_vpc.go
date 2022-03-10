@@ -3139,3 +3139,35 @@ func (s *VpcService) VpnGatewayStateRefreshFunc(id string, failStates []string) 
 		return object, object["Status"].(string), nil
 	}
 }
+
+func (s *VpcService) DescribeVpnCustomerGateway(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeCustomerGateway"
+	request := map[string]interface{}{
+		"RegionId":          s.client.RegionId,
+		"CustomerGatewayId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidCustomerGatewayInstanceId"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("VpnCustomerGateway", id)), NotFoundWithResponse, response)
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+	return object, nil
+}
