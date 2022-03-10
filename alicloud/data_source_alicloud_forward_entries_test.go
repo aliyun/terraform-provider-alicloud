@@ -126,7 +126,6 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_nat_gateway" "default" {
 	vpc_id = "${alicloud_vswitch.default.vpc_id}"
     internet_charge_type = "PayByLcu"
-	specification = "Small"
 	nat_gateway_name = "${var.name}"
     nat_type = "Enhanced"
 	vswitch_id = alicloud_vswitch.default.id

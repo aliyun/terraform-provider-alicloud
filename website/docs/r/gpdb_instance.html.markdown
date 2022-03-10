@@ -77,7 +77,8 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 30 mins) Used when creating the DB instance (until it reaches the initial `Running` status). 
+* `create` - (Defaults to 60 mins) Used when creating the DB instance (until it reaches the initial `Running` status). 
+* `delete` - (Defaults to 10 mins) Used when terminating the ADB PG instance.
 
 ## Attributes Reference
 
