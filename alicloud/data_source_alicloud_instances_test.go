@@ -93,11 +93,11 @@ func TestAccAlicloudEcsInstancesDataSourceBasic(t *testing.T) {
 	resourceGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
 			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
-			"resource_group_id": `"${var.resource_group_id}"`,
+			"resource_group_id": `"${alicloud_instance.default.resource_group_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
 			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
-			"resource_group_id": `"${var.resource_group_id}_fake"`,
+			"resource_group_id": `"${alicloud_instance.default.resource_group_id}_fake"`,
 		}),
 	}
 
@@ -150,7 +150,7 @@ func TestAccAlicloudEcsInstancesDataSourceBasic(t *testing.T) {
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"`,
-			"resource_group_id": `"${var.resource_group_id}"`,
+			"resource_group_id": `"${alicloud_instance.default.resource_group_id}"`,
 			"page_number":       `1`,
 		},
 			`tags = {
@@ -171,7 +171,7 @@ func TestAccAlicloudEcsInstancesDataSourceBasic(t *testing.T) {
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"`,
-			"resource_group_id": `"${var.resource_group_id}"`,
+			"resource_group_id": `"${alicloud_instance.default.resource_group_id}"`,
 			"page_number":       `2`,
 		},
 			`tags = {
@@ -216,7 +216,7 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 		instance_name = "${var.name}"
 		system_disk_category = "cloud_efficiency"
 		security_groups = ["${alicloud_security_group.default.id}"]
-		resource_group_id = "${data.alicloud_resource_manager_resource_groups.default.groups[0].id}"
+		resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups[0].id
 		role_name = "${alicloud_ram_role.default.name}"
 		data_disks {
 				name  = "${var.name}-disk1"

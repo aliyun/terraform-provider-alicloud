@@ -634,6 +634,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudEcsNetworkInterfaceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 	action := "DeleteNetworkInterface"
 	var response map[string]interface{}
 	conn, err := client.NewEcsClient()
@@ -664,5 +665,10 @@ func resourceAlicloudEcsNetworkInterfaceDelete(d *schema.ResourceData, meta inte
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ecsService.EcsNetworkInterfaceStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return nil
 }
