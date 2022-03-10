@@ -159,13 +159,13 @@ The following arguments are supported:
 
 -> **NOTE:** Only Instances outside the Security Group to Access the Log Switch **accesslogenabled** Open, in Order to Set This Parameter to the **True**.
 * `access_log_tracing_config` - (Optional) Xtrace Configuration Information. See the following `Block access_log_tracing_config`.
-* `certificates` - (Optional) The Certificate List. See the following `Block certificates`.
+* `certificates` - (Optional) The default certificate of the Listener. See the following `Block certificates`. **NOTE:** When `listener_protocol` is `HTTPS`, The default certificate must be set one。
 * `default_actions` - (Optional) The Default Rule Action List. See the following `Block default_actions`.
 * `dry_run` - (Optional) The dry run.
 * `gzip_enabled` - (Optional, Computed) Whether to Enable Gzip Compression, as a Specific File Type on a Compression. Valid values: `false`, `true`. Default Value: `true`. .
 * `http2_enabled` - (Optional, Computed) Whether to Enable HTTP/2 Features. Valid Values: `True` Or `False`. Default Value: `True`.
 
--> **NOTE:** The attribute is valid when the attribute `ListenerProtocol` is `HTTPS`.
+-> **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
 * `idle_timeout` - (Optional, Computed) Specify the Connection Idle Timeout Value: `1` to `60`. Unit: Seconds.
 * `listener_description` - (Optional)The description of the listener. The description must be 2 to 256 characters in length. The name can contain only the characters in the following string: `/^([^\x00-\xff]|[\w.,;/@-]){2,256}$/`.
 * `listener_port` - (Required, ForceNew) The ALB Instance Front-End, and Those of the Ports Used. Value: `1` to `65535`.
@@ -175,13 +175,31 @@ The following arguments are supported:
 * `request_timeout` - (Optional, Computed) The Specified Request Timeout Time. Value: `1` to `180`. Unit: Seconds. Default Value: `60`. If the Timeout Time Within the Back-End Server Has Not Answered the ALB Will Give up Waiting, the Client Returns the HTTP 504 Error Code.
 * `security_policy_id` - (Optional, Computed) Security Policy.
 
--> **NOTE:** The attribute is valid when the attribute `ListenerProtocol` is `HTTPS`.
+-> **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
 
 * `status` - (Optional, Computed, Available in v1.133.0+) The state of the listener. Valid Values: `Running` Or `Stopped`. Valid values: `Running`: The listener is running. `Stopped`: The listener is stopped.
-* `xforwarded_for_config` - (Optional) xforwardfor Related Attribute Configuration. See the following `Block xforwarded_for_config`.
-
--> **NOTE:** The attribute is valid when the attribute `ListenerProtocol` is `HTTPS`.
+* `xforwarded_for_config` - (Optional, Deprecated from 1.161.0+) xforwardfor Related Attribute Configuration. See the following `Block xforwarded_for_config`. **NOTE:** 'xforwarded_for_config' has been deprecated from provider version 1.161.0+. Use 'x_forwarded_for_config' instead.",
+* `x_forwarded_for_config` - (Optiona, Available from 1.161.0+) The `x_forward_for` Related Attribute Configuration. See the following `Block x_forwarded_for_config`. **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
 * `acl_config` - (Optional, Available 1.136.0+)The configurations of the access control lists (ACLs). See the following `Block acl_config`.
+
+
+#### Block x_forwarded_for_config
+
+The x_forwarded_for_config supports the following:
+
+* `x_forwarded_for_client_cert_issuer_dn_enabled` - (Optional) Indicates Whether the `X-Forwarded-Clientcert-issuerdn` Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate after the Manifests Are Signed, the Publisher Information.
+* `x_forwarded_for_client_cert_client_verify_alias` - (Optional) The Custom Header Field Names Only When `x_forwarded_for_client_cert_client_verify_enabled` Has a Value of True, this Value Will Not Take Effect until.The name must be 1 to 40 characters in length, and can contain letters, hyphens (-), underscores (_), and digits.
+* `x_forwarded_for_client_cert_client_verify_enabled` - (Optional) Indicates Whether the `X-Forwarded-Clientcert-clientverify` Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate to Verify the Results.
+* `x_forwarded_for_client_cert_finger_print_alias` - (Optional) The Custom Header Field Names Only When `x_forwarded_for_client_certfingerprint_enabled`, Which Evaluates to True When the Entry into Force of.The name must be 1 to 40 characters in length, and can contain letters, hyphens (-), underscores (_), and digits.
+* `x_forwarded_for_client_cert_finger_print_enabled` - (Optional) Indicates Whether the `X-Forwarded-client_cert-fingerprint` Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate Fingerprint Value.
+* `x_forwarded_for_client_cert_subject_dn_alias` - (Optional) The name of the custom header. This parameter is valid only if `x_forwarded_for_client_certsubjectdn_enabled` is set to true. The name must be 1 to 40 characters in length, and can contain letters, hyphens (-), underscores (_), and digits.
+* `x_forwarded_for_client_cert_subject_dn_enabled` - (Optional) Specifies whether to use the `X-Forwarded-client_cert-subjectdn` header field to obtain information about the owner of the ALB client certificate. Valid values: true and false. Default value: false.
+* `x_forwarded_for_client_cert_issuer_dn_alias` - (Optional) The Custom Header Field Names Only When `x_forwarded_for_client_cert_issuer_dn_enabled`, Which Evaluates to True When the Entry into Force of.
+* `x_forwarded_for_client_src_port_enabled` - (Optional) Indicates Whether the X-Forwarded-Client-Port Header Field Is Used to Obtain Access to Server Load Balancer Instances to the Client, and Those of the Ports.
+* `x_forwarded_for_enabled` - (Optional) Whether to Enable by X-Forwarded-For Header Field Is Used to Obtain the Client IP Addresses.
+* `x_forwarded_for_proto_enabled` - (Optional) Indicates Whether the X-Forwarded-Proto Header Field Is Used to Obtain the Server Load Balancer Instance Snooping Protocols.
+* `x_forwarded_for_slb_id_enabled` - (Optional) Indicates Whether the SLB-ID Header Field Is Used to Obtain the Load Balancing Instance Id.
+* `x_forwarded_for_slb_port_enabled` - (Optional) Indicates Whether the X-Forwarded-Port Header Field Is Used to Obtain the Server Load Balancer Instance Listening Port.
 
 #### Block xforwarded_for_config
 
