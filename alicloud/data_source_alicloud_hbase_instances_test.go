@@ -117,6 +117,7 @@ locals {
 
 resource "alicloud_hbase_instance" "default" {
   name = var.name
+  engine = "hbaseue"
   engine_version = "2.0"
   master_instance_type = "hbase.sn1.large"
   core_instance_type = "hbase.sn1.large"
