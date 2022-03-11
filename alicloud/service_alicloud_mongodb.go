@@ -26,17 +26,29 @@ func (s *MongoDBService) DescribeMongoDBInstance(id string) (instance dds.DBInst
 	request := dds.CreateDescribeDBInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
-	raw, err := s.client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
-		return client.DescribeDBInstanceAttribute(request)
+	var response *dds.DescribeDBInstanceAttributeResponse
+	wait := incrementalWait(2*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
+			return client.DescribeDBInstanceAttribute(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*dds.DescribeDBInstanceAttributeResponse)
+		return nil
 	})
-	response, _ := raw.(*dds.DescribeDBInstanceAttributeResponse)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if response == nil || len(response.DBInstances.DBInstance) == 0 {
 		return instance, WrapErrorf(Error(GetNotFoundMessage("MongoDB Instance", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
@@ -172,13 +184,26 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 				request.NodeStorage = requests.NewInteger(node["node_storage"].(int))
 			}
 
-			raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-				return ddsClient.CreateNode(request)
+			wait := incrementalWait(2*time.Second, 3*time.Second)
+			err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
+					return ddsClient.CreateNode(request)
+				})
+
+				if err != nil {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
 			})
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, server.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 			if _, err := stateConf.WaitForState(); err != nil {
@@ -198,14 +223,26 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 			request.NodeId = node["node_id"].(string)
 			request.ClientToken = buildClientToken(request.GetActionName())
 
-			raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-				return ddsClient.DeleteNode(request)
+			wait := incrementalWait(2*time.Second, 3*time.Second)
+			err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
+					return ddsClient.DeleteNode(request)
+				})
+
+				if err != nil {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
 			})
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, server.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 			if _, err := stateConf.WaitForState(); err != nil {
@@ -337,13 +374,24 @@ func (s *MongoDBService) ResetAccountPassword(d *schema.ResourceData, password s
 	request.DBInstanceId = d.Id()
 	request.AccountName = "root"
 	request.AccountPassword = password
-	raw, err := s.client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-		return ddsClient.ResetAccountPassword(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
+			return ddsClient.ResetAccountPassword(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return err
 }
 
