@@ -53,7 +53,7 @@ The `sources` block supports the following:
 * `type` - (Required) The type of the source. Valid values are `ipaddr`, `domain` and `oss`.
 * `port` - (Optional, Type: int) The port of source. Valid values are `443` and `80`. Default value is `80`.
 * `priority` - (Optional, Type: int) Priority of the source. Valid values are `0` and `100`. Default value is `20`.
-* `weight` - (Optional, Type: int) Weight of the source. Valid values are from `0` to `100`. Default value is `10`, but if type is `ipaddr`, the value can only be `10`. 
+* `weight` - (Optional, Type: int) Weight of the source. Valid values are from `0` to `100`. Default value is `10`, but if type is `ipaddr`, the value can only be `10`.
 
 ### Block certificate_config
 
@@ -79,5 +79,5 @@ The following attributes are exported:
 CDN domain can be imported using the id, e.g.
 
 ```
-terraform import alicloud_cdn_domain_new.example xxxx.com
+terraform import alicloud_cdn_domain_new.example example.com
 ```

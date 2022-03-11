@@ -1,5 +1,5 @@
 variable "domain_name" {
-  default = "www.xxxxxx.com"
+  default = "www.example.com"
 }
 
 variable "cdn_type" {
@@ -10,9 +10,9 @@ variable "sources" {
   type = list(string)
 
   default = [
-    "xxx.com",
-    "xxxx.net",
-    "xxxxx.cn",
+    "example.com",
+    "example.net",
+    "example.cn",
   ]
 }
 
@@ -58,8 +58,7 @@ variable "refer_list" {
   type = list(string)
 
   default = [
-    "www.xxxx.com",
-    "www.xxxx.net",
+    "www.example.com",
+    "www.example.net",
   ]
 }
-

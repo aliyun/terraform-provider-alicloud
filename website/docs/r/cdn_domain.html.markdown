@@ -43,7 +43,7 @@ resource "alicloud_cdn_domain" "domain" {
   }
   refer_config {
     refer_type  = "block"
-    refer_list  = ["www.xxxx.com", "www.xxxx.cn"]
+    refer_list  = ["www.example.com", "www.example.cn"]
     allow_empty = "off"
   }
   auth_config {
@@ -99,7 +99,7 @@ The config supports the following:
 ### Block parameter_filter_config
 
 `parameter_filter_config` - (Optional, Type: set) Parameter filter config of the accelerated domain. It's a set and consists of at most one item.
-* `enable` - (Optional) This parameter indicates whether or not the `parameter_filter_config` is enable. Valid values are `on` and `off`. Default value is `off`.  
+* `enable` - (Optional) This parameter indicates whether or not the `parameter_filter_config` is enable. Valid values are `on` and `off`. Default value is `off`.
 * `hash_key_args` - (Optional, Type: list) Reserved parameters of `parameter_filter_config`. It's a list of string and consists of at most 10 items.
 
 ### Block page_404_config

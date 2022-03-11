@@ -19,8 +19,8 @@ variable "subscription_name" {
 }
 
 variable "endpoint" {
-  description = "Describe the terminal address of the message received in this subscription. email format: mail:directmail:XXX@YYY.com ,   queue format: http(s)://AccountId.mns.regionId.aliyuncs.com/, http format: http(s)://www.xxx.com/xxx"
-  default     = "http://www.xxx.com/xxx"
+  description = "Describe the terminal address of the message received in this subscription. email format: mail:directmail:XXX@YYY.com ,   queue format: http(s)://AccountId.mns.regionId.aliyuncs.com/, http format: http(s)://www.example.com/example"
+  default     = "http://www.example.com/example"
 }
 
 variable "notify_strategy" {
@@ -37,4 +37,3 @@ variable "filter_tag" {
   description = "Message Filter Label"
   default     = "tf-queue"
 }
-

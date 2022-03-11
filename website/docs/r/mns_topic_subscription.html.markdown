@@ -28,7 +28,7 @@ resource "alicloud_mns_topic_subscription" "subscription" {
   topic_name            = "tf-example-mnstopic"
   name                  = "tf-example-mnstopic-sub"
   filter_tag            = "test"
-  endpoint              = "http://www.xxx.com/xxx"
+  endpoint              = "http://www.example.com/example"
   notify_strategy       = "BACKOFF_RETRY"
   notify_content_format = "XML"
 }
@@ -43,7 +43,7 @@ The following arguments are supported:
 * `notify_strategy` - (Optional) The NotifyStrategy attribute of Subscription. This attribute specifies the retry strategy when message sending fails. The Valid values: `EXPONENTIAL_DECAY_RETRY` and `BACKOFF_RETRY`. Default value to `BACKOFF_RETRY` .
 * `notify_content_format` - (Optional, ForceNew) The NotifyContentFormat attribute of Subscription. This attribute specifies the content format of the messages pushed to users. The valid values: `SIMPLIFIED`, `XML` and `JSON`. Default to `SIMPLIFIED`.
 * `endpoint` - (Required, ForceNew) The endpoint has three format. Available values format:
- - `HTTP Format`: http://xxx.com/xxx
+ - `HTTP Format`: http://example.com/example
  - `Queue Format`: acs:mns:{REGION}:{AccountID}:queues/{QueueName}
  - `Email Format`: mail:directmail:{MailAddress}
 

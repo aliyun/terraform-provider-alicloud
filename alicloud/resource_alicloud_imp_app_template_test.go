@@ -96,19 +96,19 @@ func TestAccAlicloudIMPAppTemplate_basic0(t *testing.T) {
 					"config_list": []map[string]interface{}{
 						{
 							"key":   "config.appCallbackAuthKey",
-							"value": "tf-testAcc-jdD4qhGOxxxxxxxx",
+							"value": "tf-testAcc-jdD4qhGOexample",
 						},
 						{
 							"key":   "config.appCallbackUrl",
-							"value": "http://aliyun.com/tf-testAcc-jdD4qhGOxxxxxxxx",
+							"value": "http://aliyun.com/tf-testAcc-jdD4qhGOexample",
 						},
 						{
 							"key":   "config.livePullDomain",
-							"value": "tf-testAcc-jdD4qhGOxxxxxxxx.com",
+							"value": "tf-testAcc-jdD4qhGOexample.com",
 						},
 						{
 							"key":   "config.livePushDomain",
-							"value": "tf-testAcc-jdD4qhGOxxxxxxxx.com",
+							"value": "tf-testAcc-jdD4qhGOexample.com",
 						},
 						{
 							"key":   "config.regionId",
@@ -116,7 +116,7 @@ func TestAccAlicloudIMPAppTemplate_basic0(t *testing.T) {
 						},
 						{
 							"key":   "config.streamChangeCallbackUrl",
-							"value": "https://aliyun.com/tf-testAcc-jdD4qhGOxxxxxxxx",
+							"value": "https://aliyun.com/tf-testAcc-jdD4qhGOexample",
 						},
 					},
 				}),
@@ -143,7 +143,7 @@ var AlicloudIMPAppTemplateMap0 = map[string]string{
 }
 
 func AlicloudIMPAppTemplateBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
