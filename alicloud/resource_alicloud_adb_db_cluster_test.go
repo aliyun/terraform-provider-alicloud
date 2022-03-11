@@ -273,7 +273,7 @@ func TestAccAlicloudAdbDbCluster_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudAdbDbCluster_flexible(t *testing.T) {
+func TestAccAlicloudAdbDbCluster_flexible8C(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AlicloudAdbDbClusterMap1)
@@ -317,7 +317,7 @@ func TestAccAlicloudAdbDbCluster_flexible(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			// API does not support to updating the compute_resource
+			//// API does not support to updating the compute_resource
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
 			//		"compute_resource": "16Core64GB",
@@ -328,6 +328,7 @@ func TestAccAlicloudAdbDbCluster_flexible(t *testing.T) {
 			//		}),
 			//	),
 			//},
+			//// API does not support updating elastic_io_resource when compute_resource is 8Core32GB or 16Core64GB
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
 			//		"elastic_io_resource": "1",
@@ -396,8 +397,160 @@ func TestAccAlicloudAdbDbCluster_flexible(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"compute_resource":    "8Core32GB",
+					"compute_resource": "8Core32GB",
+					// API does not support updating elastic_io_resource when compute_resource is 8Core32GB or 16Core64GB
+					//"elastic_io_resource": "1",
+					"description":   name,
+					"maintain_time": "01:00Z-02:00Z",
+					"security_ips":  []string{"10.168.1.13"},
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compute_resource": "8Core32GB",
+						//"elastic_io_resource": "1",
+						"description":    name,
+						"maintain_time":  "01:00Z-02:00Z",
+						"security_ips.#": "1",
+						"tags.%":         "2",
+						"tags.Created":   "TF-update",
+						"tags.For":       "test-update",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudAdbDbCluster_flexible32C(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_adb_db_cluster.default"
+	ra := resourceAttrInit(resourceId, AlicloudAdbDbClusterMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAdbDbCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sadbCluster%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAdbDbClusterBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_category": "MixedStorage",
+					"description":         "${var.name}",
+					"mode":                "flexible",
+					"compute_resource":    "32Core128GB",
+					"vswitch_id":          "${local.vswitch_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_category": "MixedStorage",
+						"description":         name,
+						"mode":                "flexible",
+						"compute_resource":    "32Core128GB",
+						"vswitch_id":          CHECKSET,
+						"db_node_class":       "E32",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compute_resource": "48Core192GB",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compute_resource": "48Core192GB",
+						"db_node_count":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"elastic_io_resource": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"elastic_io_resource": "1",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_time": "23:00Z-00:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_time": "23:00Z-00:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": []string{"10.168.1.12"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compute_resource":    "64Core256GB",
+					"elastic_io_resource": "2",
 					"description":         name,
 					"maintain_time":       "01:00Z-02:00Z",
 					"security_ips":        []string{"10.168.1.13"},
@@ -408,11 +561,11 @@ func TestAccAlicloudAdbDbCluster_flexible(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"compute_resource":    "8Core32GB",
-						"elastic_io_resource": "1",
+						"compute_resource":    "64Core256GB",
+						"elastic_io_resource": "2",
 						"description":         name,
 						"maintain_time":       "01:00Z-02:00Z",
-						"security_ips.#":      "0",
+						"security_ips.#":      "1",
 						"tags.%":              "2",
 						"tags.Created":        "TF-update",
 						"tags.For":            "test-update",

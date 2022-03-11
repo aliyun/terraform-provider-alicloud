@@ -296,6 +296,45 @@ func testAccPreCheckWithTime(t *testing.T, days []int) {
 	}
 }
 
+func testAccPreCheckWithWeek(t *testing.T, days []int) {
+	skipped := true
+	for _, d := range days {
+		if d == 1 && time.Now().Weekday() == time.Monday {
+			skipped = false
+			break
+		}
+		if d == 2 && time.Now().Weekday() == time.Tuesday {
+			skipped = false
+			break
+		}
+		if d == 3 && time.Now().Weekday() == time.Wednesday {
+			skipped = false
+			break
+		}
+		if d == 4 && time.Now().Weekday() == time.Thursday {
+			skipped = false
+			break
+		}
+		if d == 5 && time.Now().Weekday() == time.Friday {
+			skipped = false
+			break
+		}
+		if d == 6 && time.Now().Weekday() == time.Saturday {
+			skipped = false
+			break
+		}
+		if d == 7 && time.Now().Weekday() == time.Sunday {
+			skipped = false
+			break
+		}
+
+	}
+	if skipped {
+		t.Skipf("Skipping the test case when not in specified days %#v of every month", days)
+		t.Skipped()
+	}
+}
+
 func testAccPreCheckWithAlikafkaAclEnable(t *testing.T) {
 	aclEnable := os.Getenv("ALICLOUD_ALIKAFKA_ACL_ENABLE")
 
