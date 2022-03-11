@@ -6,12 +6,11 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudCloudSsoGroup() *schema.Resource {
@@ -49,8 +48,6 @@ func resourceAlicloudCloudSsoGroup() *schema.Resource {
 
 func resourceAlicloudCloudSsoGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "CreateGroup"
 	request := make(map[string]interface{})
 	conn, err := client.NewCloudssoClient()
 	if err != nil {
@@ -61,9 +58,11 @@ func resourceAlicloudCloudSsoGroupCreate(d *schema.ResourceData, meta interface{
 	}
 	request["DirectoryId"] = d.Get("directory_id")
 	request["GroupName"] = d.Get("group_name")
+	var response map[string]interface{}
+	action := "CreateGroup"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -71,9 +70,10 @@ func resourceAlicloudCloudSsoGroupCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_sso_group", action, AlibabaCloudSdkGoERROR)
 	}
@@ -106,7 +106,10 @@ func resourceAlicloudCloudSsoGroupRead(d *schema.ResourceData, meta interface{})
 }
 func resourceAlicloudCloudSsoGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+	conn, err := client.NewCloudssoClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -116,6 +119,7 @@ func resourceAlicloudCloudSsoGroupUpdate(d *schema.ResourceData, meta interface{
 		"DirectoryId": parts[0],
 		"GroupId":     parts[1],
 	}
+
 	if d.HasChange("description") {
 		update = true
 		if v, ok := d.GetOk("description"); ok {
@@ -130,13 +134,9 @@ func resourceAlicloudCloudSsoGroupUpdate(d *schema.ResourceData, meta interface{
 	}
 	if update {
 		action := "UpdateGroup"
-		conn, err := client.NewCloudssoClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -144,9 +144,9 @@ func resourceAlicloudCloudSsoGroupUpdate(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, resp, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -159,8 +159,6 @@ func resourceAlicloudCloudSsoGroupDelete(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
-	action := "DeleteGroup"
-	var response map[string]interface{}
 	conn, err := client.NewCloudssoClient()
 	if err != nil {
 		return WrapError(err)
@@ -170,21 +168,22 @@ func resourceAlicloudCloudSsoGroupDelete(d *schema.ResourceData, meta interface{
 		"GroupId":     parts[1],
 	}
 
+	action := "DeleteGroup"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"DeletionConflict.Group.AccessAssigment"}) || NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"DeletionConflict.Group.AccessAssigment"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExists.Group"}) {
+		if IsExpectedErrors(err, []string{"EntityNotExists.Group"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)

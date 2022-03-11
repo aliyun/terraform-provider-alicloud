@@ -284,12 +284,10 @@ func (s *CloudssoService) DescribeCloudSsoScimServerCredential(id string) (objec
 }
 
 func (s *CloudssoService) DescribeCloudSsoGroup(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
 	conn, err := s.client.NewCloudssoClient()
 	if err != nil {
-		return nil, WrapError(err)
+		return object, WrapError(err)
 	}
-	action := "GetGroup"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
@@ -299,11 +297,14 @@ func (s *CloudssoService) DescribeCloudSsoGroup(id string) (object map[string]in
 		"DirectoryId": parts[0],
 		"GroupId":     parts[1],
 	}
+
+	var response map[string]interface{}
+	action := "GetGroup"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-05-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -311,9 +312,10 @@ func (s *CloudssoService) DescribeCloudSsoGroup(id string) (object map[string]in
 			}
 			return resource.NonRetryableError(err)
 		}
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Group"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:Group", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
@@ -324,8 +326,7 @@ func (s *CloudssoService) DescribeCloudSsoGroup(id string) (object map[string]in
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Group", response)
 	}
-	object = v.(map[string]interface{})
-	return object, nil
+	return v.(map[string]interface{}), nil
 }
 
 func (s *CloudssoService) DescribeCloudSsoUser(id string) (object map[string]interface{}, err error) {
