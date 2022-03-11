@@ -1,16 +1,18 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -115,24 +117,18 @@ func testSweepMongoDBShardingInstances(region string) error {
 	return nil
 }
 
-func testAccCheckMongoDBShardingInstanceDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	ddsService := MongoDBService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_mongodb_sharding_instance" {
-			continue
-		}
-		_, err := ddsService.DescribeMongoDBInstance(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return WrapError(err)
-		}
-		return err
+func resourceMongodbShardingInstanceClassicConfig(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
 	}
-	return nil
+
+	data "alicloud_mongodb_zones" "default" {}
+
+	resource "alicloud_security_group" "default" {
+		name = var.name
+	}
+`, name)
 }
 
 func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
@@ -145,17 +141,42 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBShardingInstanceClassicConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbShardingInstanceClassicConfig)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
-			testAccPreCheckWithTime(t, []int{30})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckMongoDBShardingInstanceDestroy,
+		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testMongoDBShardingInstance_classic_base,
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":        "${data.alicloud_mongodb_zones.default.zones.0.id}",
+					"engine_version": "3.4",
+					"name":           name,
+					"shard_list": []map[string]interface{}{
+						{
+							"node_class":   "dds.shard.mid",
+							"node_storage": "10",
+						},
+						{
+							"node_class":        "dds.shard.standard",
+							"node_storage":      "20",
+							"readonly_replicas": "1",
+						},
+					},
+					"mongo_list": []map[string]interface{}{
+						{
+							"node_class": "dds.mongos.mid",
+						},
+						{
+							"node_class": "dds.mongos.mid",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"zone_id":                        CHECKSET,
@@ -170,7 +191,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 						"mongo_list.#":                   "2",
 						"mongo_list.0.node_class":        "dds.mongos.mid",
 						"mongo_list.1.node_class":        "dds.mongos.mid",
-						"name":                           "tf-testaccMongoDBShardingInstance_classic_base",
+						"name":                           name,
 						"storage_engine":                 "WiredTiger",
 						"instance_charge_type":           "PostPaid",
 						"tags.%":                         "0",
@@ -185,15 +206,19 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"order_type", "auto_renew"},
 			},
 			{
-				Config: testMongoDBShardingInstance_classic_name,
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "update",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-testAccMongoDBShardingInstance_test",
+						"name": name + "update",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBShardingInstance_classic_account_password,
+				Config: testAccConfig(map[string]interface{}{
+					"account_password": "YourPassword_",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"account_password": "YourPassword_",
@@ -201,7 +226,19 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBShardingInstance_classic_mongos,
+				Config: testAccConfig(map[string]interface{}{
+					"mongo_list": []map[string]interface{}{
+						{
+							"node_class": "dds.mongos.mid",
+						},
+						{
+							"node_class": "dds.mongos.mid",
+						},
+						{
+							"node_class": "dds.mongos.mid",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"mongo_list.#":            "3",
@@ -212,7 +249,24 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBShardingInstance_classic_shard,
+				Config: testAccConfig(map[string]interface{}{
+					"shard_list": []map[string]interface{}{
+						{
+							"node_class":   "dds.shard.mid",
+							"node_storage": "10",
+						},
+						{
+							"node_class":        "dds.shard.standard",
+							"node_storage":      "20",
+							"readonly_replicas": "1",
+						},
+						{
+							"node_class":        "dds.shard.standard",
+							"node_storage":      "20",
+							"readonly_replicas": "2",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"shard_list.#":                   "3",
@@ -229,180 +283,107 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBShardingInstance_classic_backup,
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_list": []string{"10.168.1.12"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "1",
-						"backup_period.1970423419": "Wednesday",
-						"backup_time":              "11:00Z-12:00Z",
+						"security_ip_list.#": "1",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBShardingInstance_classic_tags,
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Wednesday"},
+					"backup_time":   "11:00Z-12:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#": "1",
+						"backup_time":     "11:00Z-12:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
 						"tags.Created": "TF",
-						"tags.for":     "terraform_test123",
+						"tags.For":     "acceptance test",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBShardingInstance_classic_together,
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"account_password": "YourPassword_123",
+					"security_ip_list": []string{"10.168.1.12", "10.168.1.13"},
+					"backup_period":    []string{"Tuesday", "Wednesday"},
+					"backup_time":      "10:00Z-11:00Z",
+					"shard_list": []map[string]interface{}{
+						{
+							"node_class":   "dds.shard.mid",
+							"node_storage": "10",
+						},
+						{
+							"node_class":        "dds.shard.standard",
+							"node_storage":      "20",
+							"readonly_replicas": "1",
+						},
+					},
+					"mongo_list": []map[string]interface{}{
+						{
+							"node_class": "dds.mongos.mid",
+						},
+						{
+							"node_class": "dds.mongos.mid",
+						},
+					},
+					"tags": REMOVEKEY,
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                        "tf-testAccMongoDBShardingInstance_test_together",
-						"account_password":            "YourPassword_123",
-						"security_ip_list.#":          "2",
-						"security_ip_list.4095458986": "10.168.1.12",
-						"security_ip_list.3976237035": "10.168.1.13",
-						"backup_period.#":             "2",
-						"backup_period.1592931319":    "Tuesday",
-						"backup_period.1970423419":    "Wednesday",
-						"backup_time":                 "10:00Z-11:00Z",
-						"tags.%":                      "0",
-						"tags.Created":                REMOVEKEY,
-						"tags.for":                    REMOVEKEY,
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudMongoDBShardingInstance_transform_charge_type(t *testing.T) {
-	var v dds.DBInstance
-	resourceId := "alicloud_mongodb_sharding_instance.default"
-	serverFunc := func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
-	ra := resourceAttrInit(resourceId, nil)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
-			testAccPreCheckWithTime(t, []int{1})
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckMongoDBShardingInstanceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testMongoDBShardingInstance_classic_base,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"zone_id":                        CHECKSET,
-						"engine_version":                 "3.4",
+						"name":                           name,
+						"account_password":               "YourPassword_123",
+						"security_ip_list.#":             "2",
+						"backup_period.#":                "2",
+						"backup_time":                    "10:00Z-11:00Z",
 						"shard_list.#":                   "2",
 						"shard_list.0.node_class":        "dds.shard.mid",
 						"shard_list.0.node_storage":      "10",
-						"shard_list.0.readonly_replicas": "0",
 						"shard_list.1.node_class":        "dds.shard.standard",
 						"shard_list.1.node_storage":      "20",
 						"shard_list.1.readonly_replicas": "1",
+						"shard_list.2.node_class":        REMOVEKEY,
+						"shard_list.2.readonly_replicas": REMOVEKEY,
+						"shard_list.2.node_storage":      REMOVEKEY,
 						"mongo_list.#":                   "2",
 						"mongo_list.0.node_class":        "dds.mongos.mid",
 						"mongo_list.1.node_class":        "dds.mongos.mid",
-						"name":                           "tf-testaccMongoDBShardingInstance_classic_base",
-						"storage_engine":                 "WiredTiger",
-						"instance_charge_type":           "PostPaid",
+						"mongo_list.2.node_class":        REMOVEKEY,
 						"tags.%":                         "0",
-						"config_server_list.#":           CHECKSET,
+						"tags.For":                       REMOVEKEY,
+						"tags.Created":                   REMOVEKEY,
 					}),
 				),
 			},
 			{
-				Config: testMongoDBShardingInstance_classic_transform_to_prepaid,
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PrePaid",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_id":                        CHECKSET,
-						"engine_version":                 "3.4",
-						"shard_list.#":                   "2",
-						"shard_list.0.node_class":        "dds.shard.mid",
-						"shard_list.0.node_storage":      "10",
-						"shard_list.0.readonly_replicas": "0",
-						"shard_list.1.node_class":        "dds.shard.standard",
-						"shard_list.1.node_storage":      "20",
-						"shard_list.1.readonly_replicas": "1",
-						"mongo_list.#":                   "2",
-						"mongo_list.0.node_class":        "dds.mongos.mid",
-						"mongo_list.1.node_class":        "dds.mongos.mid",
-						"name":                           "tf-testaccMongoDBShardingInstance_classic_transform_to_prepaid",
-						"storage_engine":                 "WiredTiger",
-						"instance_charge_type":           "PrePaid",
-						"tags.%":                         "0",
-						"config_server_list.#":           CHECKSET,
-						"auto_renew":                     "false",
+						"instance_charge_type": "PrePaid",
 					}),
 				),
 			},
 		},
-	})
-}
-
-func TestAccAlicloudMongoDBShardingInstance_classicVersion4(t *testing.T) {
-	var v dds.DBInstance
-	resourceId := "alicloud_mongodb_sharding_instance.default"
-	serverFunc := func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
-	ra := resourceAttrInit(resourceId, nil)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckMongoDBShardingInstanceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testMongoDBShardingInstance_classic_base4,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"zone_id":                   CHECKSET,
-						"engine_version":            "4.0",
-						"shard_list.#":              "2",
-						"shard_list.0.node_class":   "dds.shard.mid",
-						"shard_list.0.node_storage": "10",
-						"shard_list.1.node_class":   "dds.shard.standard",
-						"shard_list.1.node_storage": "20",
-						"mongo_list.#":              "2",
-						"mongo_list.0.node_class":   "dds.mongos.mid",
-						"mongo_list.1.node_class":   "dds.mongos.mid",
-						"name":                      "tf-testaccMongoDBShardingInstance_classic_base4",
-						"storage_engine":            "WiredTiger",
-						"instance_charge_type":      "PostPaid",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"order_type", "auto_renew"},
-			},
-			{
-				Config: testMongoDBShardingInstance_classic_tde,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tde_status": "enabled",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBShardingInstance_classic_security_group_id,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"security_group_id": CHECKSET,
-					}),
-				),
-			}},
 	})
 }
 
@@ -416,21 +397,48 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBShardingInstanceVpcConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbShardingInstanceVpcConfig)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckMongoDBShardingInstanceDestroy,
+		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testMongoDBShardingInstance_vpc_base,
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":        "${data.alicloud_mongodb_zones.default.zones.0.id}",
+					"vswitch_id":     "${data.alicloud_vswitches.default.ids.0}",
+					"engine_version": "4.0",
+					"name":           name,
+					"shard_list": []map[string]interface{}{
+						{
+							"node_class":   "dds.shard.mid",
+							"node_storage": "10",
+						},
+						{
+							"node_class":        "dds.shard.standard",
+							"node_storage":      "20",
+							"readonly_replicas": "1",
+						},
+					},
+					"mongo_list": []map[string]interface{}{
+						{
+							"node_class": "dds.mongos.mid",
+						},
+						{
+							"node_class": "dds.mongos.mid",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vswitch_id":                     CHECKSET,
 						"zone_id":                        CHECKSET,
-						"engine_version":                 "3.4",
+						"vswitch_id":                     CHECKSET,
+						"engine_version":                 "4.0",
 						"shard_list.#":                   "2",
 						"shard_list.0.node_class":        "dds.shard.mid",
 						"shard_list.0.node_storage":      "10",
@@ -441,9 +449,11 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 						"mongo_list.#":                   "2",
 						"mongo_list.0.node_class":        "dds.mongos.mid",
 						"mongo_list.1.node_class":        "dds.mongos.mid",
-						"name":                           "tf-testAccMongoDBShardingInstance_vpc",
+						"name":                           name,
 						"storage_engine":                 "WiredTiger",
 						"instance_charge_type":           "PostPaid",
+						"tags.%":                         "0",
+						"config_server_list.#":           CHECKSET,
 					}),
 				),
 			},
@@ -454,15 +464,29 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"order_type", "auto_renew"},
 			},
 			{
-				Config: testMongoDBShardingInstance_vpc_name,
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "update",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-testAccMongoDBShardingInstance_test",
+						"name": name + "update",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBShardingInstance_vpc_account_password,
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status": "enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status": "enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password": "YourPassword_",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"account_password": "YourPassword_",
@@ -470,7 +494,19 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBShardingInstance_vpc_mongos,
+				Config: testAccConfig(map[string]interface{}{
+					"mongo_list": []map[string]interface{}{
+						{
+							"node_class": "dds.mongos.mid",
+						},
+						{
+							"node_class": "dds.mongos.mid",
+						},
+						{
+							"node_class": "dds.mongos.mid",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"mongo_list.#":            "3",
@@ -481,7 +517,24 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBShardingInstance_vpc_shard,
+				Config: testAccConfig(map[string]interface{}{
+					"shard_list": []map[string]interface{}{
+						{
+							"node_class":   "dds.shard.mid",
+							"node_storage": "10",
+						},
+						{
+							"node_class":        "dds.shard.standard",
+							"node_storage":      "20",
+							"readonly_replicas": "1",
+						},
+						{
+							"node_class":        "dds.shard.standard",
+							"node_storage":      "20",
+							"readonly_replicas": "2",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"shard_list.#":                   "3",
@@ -498,957 +551,113 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBShardingInstance_vpc_backup,
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_list": []string{"10.168.1.12"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "1",
-						"backup_period.1970423419": "Wednesday",
-						"backup_time":              "11:00Z-12:00Z",
+						"security_ip_list.#": "1",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBShardingInstance_vpc_together,
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Wednesday"},
+					"backup_time":   "11:00Z-12:00Z",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                        "tf-testAccMongoDBShardingInstance_test_together",
-						"account_password":            "YourPassword_123",
-						"security_ip_list.#":          "2",
-						"security_ip_list.4095458986": "10.168.1.12",
-						"security_ip_list.3976237035": "10.168.1.13",
-						"backup_period.#":             "2",
-						"backup_period.1592931319":    "Tuesday",
-						"backup_period.1970423419":    "Wednesday",
-						"backup_time":                 "10:00Z-11:00Z",
+						"backup_period.#": "1",
+						"backup_time":     "11:00Z-12:00Z",
 					}),
 				),
-			}},
-	})
-}
-
-func TestAccAlicloudMongoDBShardingInstance_multi_instance(t *testing.T) {
-	var v dds.DBInstance
-	resourceId := "alicloud_mongodb_sharding_instance.default.2"
-	serverFunc := func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
-	ra := resourceAttrInit(resourceId, nil)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"account_password": "YourPassword_123",
+					"security_ip_list": []string{"10.168.1.12", "10.168.1.13"},
+					"backup_period":    []string{"Tuesday", "Wednesday"},
+					"backup_time":      "10:00Z-11:00Z",
+					"shard_list": []map[string]interface{}{
+						{
+							"node_class":   "dds.shard.mid",
+							"node_storage": "10",
+						},
+						{
+							"node_class":        "dds.shard.standard",
+							"node_storage":      "20",
+							"readonly_replicas": "1",
+						},
+					},
+					"mongo_list": []map[string]interface{}{
+						{
+							"node_class": "dds.mongos.mid",
+						},
+						{
+							"node_class": "dds.mongos.mid",
+						},
+					},
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                           name,
+						"account_password":               "YourPassword_123",
+						"security_ip_list.#":             "2",
+						"backup_period.#":                "2",
+						"backup_time":                    "10:00Z-11:00Z",
+						"shard_list.#":                   "2",
+						"shard_list.0.node_class":        "dds.shard.mid",
+						"shard_list.0.node_storage":      "10",
+						"shard_list.1.node_class":        "dds.shard.standard",
+						"shard_list.1.node_storage":      "20",
+						"shard_list.1.readonly_replicas": "1",
+						"shard_list.2.node_class":        REMOVEKEY,
+						"shard_list.2.readonly_replicas": REMOVEKEY,
+						"shard_list.2.node_storage":      REMOVEKEY,
+						"mongo_list.#":                   "2",
+						"mongo_list.0.node_class":        "dds.mongos.mid",
+						"mongo_list.1.node_class":        "dds.mongos.mid",
+						"mongo_list.2.node_class":        REMOVEKEY,
+						"tags.%":                         "0",
+						"tags.For":                       REMOVEKEY,
+						"tags.Created":                   REMOVEKEY,
+					}),
+				),
+			},
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckMongoDBShardingInstanceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testMongoDBShardingInstance_multi_instance_base,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"zone_id":                   CHECKSET,
-						"engine_version":            "3.4",
-						"shard_list.#":              "2",
-						"shard_list.0.node_class":   "dds.shard.mid",
-						"shard_list.0.node_storage": "10",
-						"shard_list.1.node_class":   "dds.shard.standard",
-						"shard_list.1.node_storage": "20",
-						"mongo_list.#":              "2",
-						"mongo_list.0.node_class":   "dds.mongos.mid",
-						"mongo_list.1.node_class":   "dds.mongos.mid",
-						"name":                      "tf-testAccMongoDBShardingInstance_multi_instance",
-						"storage_engine":            "WiredTiger",
-						"instance_charge_type":      "PostPaid",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBShardingInstance_multi_instance_name,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name": "tf-testAccMongoDBShardingInstance_test",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBShardingInstance_multi_instance_account_password,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_password": "YourPassword_",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBShardingInstance_multi_instance_mongos,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"mongo_list.#":            "3",
-						"mongo_list.0.node_class": "dds.mongos.mid",
-						"mongo_list.1.node_class": "dds.mongos.mid",
-						"mongo_list.2.node_class": "dds.mongos.mid",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBShardingInstance_multi_instance_shard,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"shard_list.#":              "3",
-						"shard_list.0.node_class":   "dds.shard.mid",
-						"shard_list.0.node_storage": "10",
-						"shard_list.1.node_class":   "dds.shard.standard",
-						"shard_list.1.node_storage": "20",
-						"shard_list.2.node_class":   "dds.shard.standard",
-						"shard_list.2.node_storage": "20",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBShardingInstance_multi_instance_backup,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"backup_period.#":          "1",
-						"backup_period.1970423419": "Wednesday",
-						"backup_time":              "11:00Z-12:00Z",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBShardingInstance_multi_instance_together,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":                        "tf-testAccMongoDBShardingInstance_test_together",
-						"account_password":            "YourPassword_123",
-						"security_ip_list.#":          "2",
-						"security_ip_list.4095458986": "10.168.1.12",
-						"security_ip_list.3976237035": "10.168.1.13",
-						"backup_period.#":             "2",
-						"backup_period.1592931319":    "Tuesday",
-						"backup_period.1970423419":    "Wednesday",
-						"backup_time":                 "10:00Z-11:00Z",
-					}),
-				),
-			}},
 	})
 }
+func resourceMongodbShardingInstanceVpcConfig(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
 
-const testMongoDBShardingInstance_classic_base = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  name = "tf-testaccMongoDBShardingInstance_classic_base"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-	readonly_replicas = 1
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-}`
-const testMongoDBShardingInstance_classic_transform_to_prepaid = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id             = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  auto_renew 		  = "false"
-  instance_charge_type = "PrePaid"
-  engine_version = "3.4"
-  name = "tf-testaccMongoDBShardingInstance_classic_transform_to_prepaid"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-	readonly_replicas = 1
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-}`
+	data "alicloud_mongodb_zones" "default" {}
+	data "alicloud_vpcs" "default" {
+		name_regex = "default-NODELETING"
+	}
 
-const testMongoDBShardingInstance_classic_base4 = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "4.0"
-  name = "tf-testaccMongoDBShardingInstance_classic_base4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-}`
-
-const testMongoDBShardingInstance_classic_tde = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "4.0"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  tde_status    = "enabled"
-}`
-
-const testMongoDBShardingInstance_classic_security_group_id = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_security_group" "default" {
-	name = "tf-testaccformongodbsharding"
+	data "alicloud_vswitches" "default" {
+	  vpc_id = data.alicloud_vpcs.default.ids.0
+	  zone_id = "${data.alicloud_mongodb_zones.default.zones.0.id}"
+	}
+`, name)
 }
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "4.0"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  tde_status    = "enabled"
-  security_group_id    = alicloud_security_group.default.id
-}`
-
-const testMongoDBShardingInstance_classic_name = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name = "tf-testAccMongoDBShardingInstance_test"
-}`
-
-const testMongoDBShardingInstance_classic_account_password = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-}`
-
-const testMongoDBShardingInstance_classic_mongos = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-   mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-}`
-
-const testMongoDBShardingInstance_classic_shard = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-	readonly_replicas = 2
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-   mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-}`
-
-const testMongoDBShardingInstance_classic_backup = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-   mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-  backup_period    = ["Wednesday"]
-  backup_time      = "11:00Z-12:00Z"
-}`
-
-const testMongoDBShardingInstance_classic_tags = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-   mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-  backup_period    = ["Wednesday"]
-  backup_time      = "11:00Z-12:00Z"
-  tags = {
-	Created = "TF"
-	for = "terraform_test123"
-  }
-}`
-
-const testMongoDBShardingInstance_classic_together = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-   mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test_together"
-  account_password = "YourPassword_123"
-  backup_period    = ["Tuesday", "Wednesday"]
-  backup_time      = "10:00Z-11:00Z"
-  security_ip_list = ["10.168.1.12", "10.168.1.13"]
-}`
-
-const testMongoDBShardingInstance_vpc_base = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_vpc"
-}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = data.alicloud_vswitches.default.ids.0
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  name = var.name
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-	readonly_replicas = 1
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-}`
-
-const testMongoDBShardingInstance_vpc_name = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_vpc"
-}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = data.alicloud_vswitches.default.ids.0
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name = "tf-testAccMongoDBShardingInstance_test"
-}`
-
-const testMongoDBShardingInstance_vpc_account_password = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_vpc"
-}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = data.alicloud_vswitches.default.ids.0
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-}`
-
-const testMongoDBShardingInstance_vpc_mongos = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_vpc"
-}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = data.alicloud_vswitches.default.ids.0
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-   mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-}`
-
-const testMongoDBShardingInstance_vpc_shard = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_vpc"
-}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = data.alicloud_vswitches.default.ids.0
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-	readonly_replicas = 1
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-    readonly_replicas = 2
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-   mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-}`
-
-const testMongoDBShardingInstance_vpc_backup = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_vpc"
-}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = data.alicloud_vswitches.default.ids.0
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-   mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-  backup_period    = ["Wednesday"]
-  backup_time      = "11:00Z-12:00Z"
-}`
-
-const testMongoDBShardingInstance_vpc_together = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_vpc"
-}
-resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = data.alicloud_vswitches.default.ids.0
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-   mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test_together"
-  account_password = "YourPassword_123"
-  backup_period    = ["Tuesday", "Wednesday"]
-  backup_time      = "10:00Z-11:00Z"
-  security_ip_list = ["10.168.1.12", "10.168.1.13"]
-}`
-
-const testMongoDBShardingInstance_multi_instance_base = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_multi_instance"
-}
-
-resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 3
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  name = var.name
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-}`
-
-const testMongoDBShardingInstance_multi_instance_name = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_multi_instance"
-}
-
-resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 3
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name = "tf-testAccMongoDBShardingInstance_test"
-}`
-
-const testMongoDBShardingInstance_multi_instance_account_password = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_multi_instance"
-}
-
-resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 3
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-}`
-
-const testMongoDBShardingInstance_multi_instance_mongos = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_multi_instance"
-}
-
-resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 3
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-}`
-
-const testMongoDBShardingInstance_multi_instance_shard = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_multi_instance"
-}
-
-resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 3
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-}`
-
-const testMongoDBShardingInstance_multi_instance_backup = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_multi_instance"
-}
-
-resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 3
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-   mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test"
-  account_password = "YourPassword_"
-  backup_period    = ["Wednesday"]
-  backup_time      = "11:00Z-12:00Z"
-}`
-
-const testMongoDBShardingInstance_multi_instance_together = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBShardingInstance_multi_instance"
-}
-
-resource "alicloud_mongodb_sharding_instance" "default" {
-  count          = 3
-  zone_id        = "${data.alicloud_mongodb_zones.default.zones.0.id}"
-  engine_version = "3.4"
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-    }
-  shard_list {
-    node_class   = "dds.shard.standard"
-    node_storage = 20
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-    }
-   mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  name             = "tf-testAccMongoDBShardingInstance_test_together"
-  account_password = "YourPassword_123"
-  backup_period    = ["Tuesday", "Wednesday"]
-  backup_time      = "10:00Z-11:00Z"
-  security_ip_list = ["10.168.1.12", "10.168.1.13"]
-}`
