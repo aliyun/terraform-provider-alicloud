@@ -54,11 +54,16 @@ func testAccCheckAlicloudCmsMonitorGroupInstancesDataSourceName(rand int, attrMa
 variable "name" {	
 	default = "tf-testAccMonitorGroupInstances-%d"
 }
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+data "alicloud_vpcs" "default"{
+	name_regex = "default-NODELETING"
 }
+data "alicloud_slb_zones" "default" {
+	available_slb_address_type = "vpc"
+}
+
 data "alicloud_vswitches" "default" {
-  ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_slb_zones.default.zones.0.id
 }
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = var.name

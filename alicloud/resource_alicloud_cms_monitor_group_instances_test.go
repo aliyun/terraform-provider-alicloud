@@ -92,37 +92,31 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_vpcs" "vpc" {
-  name_regex = "default-NODELETING"
-}
 resource "alicloud_cms_monitor_group" "default" {
-monitor_group_name = var.name
+	monitor_group_name = var.name
+}
+
+data "alicloud_vpcs" "default"{
+	name_regex = "default-NODELETING"
+}
+data "alicloud_slb_zones" "default" {
+	available_slb_address_type = "vpc"
 }
 
 data "alicloud_vswitches" "default" {
-  ids = [data.alicloud_vpcs.vpc.vpcs.0.vswitch_ids.0]
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.vpc.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.vpc.vpcs[0].cidr_block, 8, 8)
-  vswitch_name      = var.name
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_slb_zones.default.zones.0.id
 }
 
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = var.name
   load_balancer_spec = "slb.s2.small"
-  vswitch_id = local.vswitch_id
+  vswitch_id = data.alicloud_vswitches.default.ids[0]
 }
 resource "alicloud_slb_load_balancer" "default1" {
   load_balancer_name = "${var.name}1"
   load_balancer_spec = "slb.s2.small"
-  vswitch_id = local.vswitch_id
+  vswitch_id = data.alicloud_vswitches.default.ids[0]
 }
 `, name)
 }

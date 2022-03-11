@@ -314,33 +314,21 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSlbListenersDataSourceHttp-%d"
 }
 
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-data "alicloud_vpcs" "default" {
+data "alicloud_vpcs" "default"{
 	name_regex = "default-NODELETING"
 }
+data "alicloud_slb_zones" "default" {
+	available_slb_address_type = "vpc"
+}
+
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_slb_zones.default.zones.0.id
 }
 
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = "${var.name}"
-  vswitch_id = local.vswitch_id
+  vswitch_id = data.alicloud_vswitches.default.ids[0]
   load_balancer_spec = "slb.s1.small"
 }
 
@@ -468,33 +456,21 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSlbListenersDataSourceTcp-%d"
 }
 
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-data "alicloud_vpcs" "default" {
+data "alicloud_vpcs" "default"{
 	name_regex = "default-NODELETING"
 }
+data "alicloud_slb_zones" "default" {
+	available_slb_address_type = "vpc"
+}
+
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_slb_zones.default.zones.0.id
 }
 
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = "${var.name}"
-  vswitch_id = local.vswitch_id
+  vswitch_id = data.alicloud_vswitches.default.ids[0]
   load_balancer_spec = "slb.s1.small"
 }
 
@@ -531,33 +507,21 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSlbListenersDataSourceUdp-%d"
 }
 
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-data "alicloud_vpcs" "default" {
+data "alicloud_vpcs" "default"{
 	name_regex = "default-NODELETING"
 }
+data "alicloud_slb_zones" "default" {
+	available_slb_address_type = "vpc"
+}
+
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_slb_zones.default.zones.0.id
 }
 
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = "${var.name}"
-  vswitch_id = local.vswitch_id
+  vswitch_id = data.alicloud_vswitches.default.ids[0]
   load_balancer_spec = "slb.s1.small"
 }
 
