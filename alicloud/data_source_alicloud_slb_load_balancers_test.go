@@ -54,11 +54,11 @@ func TestAccAlicloudSlbLoadBalancersDataSource(t *testing.T) {
 	masterZoneConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbLoadBalancersDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_slb_load_balancer.default.id}"]`,
-			"master_zone_id": `"${data.alicloud_zones.default.zones.0.id}"`,
+			"master_zone_id": `"${data.alicloud_slb_zones.default.zones.0.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbLoadBalancersDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_slb_load_balancer.default.id}"]`,
-			"master_zone_id": `"${data.alicloud_zones.default.zones.0.id}_fake"`,
+			"master_zone_id": `"${data.alicloud_slb_zones.default.zones.0.id}_fake"`,
 		}),
 	}
 	resourceGroupIdConf := dataSourceTestAccConfig{
@@ -118,7 +118,7 @@ func TestAccAlicloudSlbLoadBalancersDataSource(t *testing.T) {
 			"vpc_id":            `"${data.alicloud_vpcs.default.ids.0}"`,
 			"vswitch_id":        `"${alicloud_slb_load_balancer.default.vswitch_id}"`,
 			"network_type":      `"vpc"`,
-			"master_zone_id":    `"${data.alicloud_zones.default.zones.0.id}"`,
+			"master_zone_id":    `"${data.alicloud_slb_zones.default.zones.0.id}"`,
 			"resource_group_id": `"${alicloud_slb_load_balancer.default.resource_group_id}"`,
 			"status":            `"active"`,
 			"tags": fmt.Sprintf(`{
@@ -132,7 +132,7 @@ func TestAccAlicloudSlbLoadBalancersDataSource(t *testing.T) {
 			"vpc_id":            `"${data.alicloud_vpcs.default.ids.0}_fake"`,
 			"vswitch_id":        `"${alicloud_slb_load_balancer.default.vswitch_id}_fake"`,
 			"network_type":      `"classic"`,
-			"master_zone_id":    `"${data.alicloud_zones.default.zones.0.id}_fake"`,
+			"master_zone_id":    `"${data.alicloud_slb_zones.default.zones.0.id}_fake"`,
 			"resource_group_id": `"${alicloud_slb_load_balancer.default.resource_group_id}_fake"`,
 			"status":            `"inactive"`,
 			"tags": fmt.Sprintf(`{
@@ -191,40 +191,28 @@ variable "name" {
 	default = "tf-testAccLoadBalancer-%[1]d"
 }
 
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
 data "alicloud_resource_manager_resource_groups" "default" {
 	name_regex = "^default$"
 }
 
-data "alicloud_vpcs" "default" {
+data "alicloud_vpcs" "default"{
 	name_regex = "default-NODELETING"
 }
+data "alicloud_slb_zones" "default" {
+	available_slb_address_type = "vpc"
+}
+
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_slb_zones.default.zones.0.id
 }
 
 resource "alicloud_slb_load_balancer" "default" {
 	address_type = "intranet"
-	vswitch_id = local.vswitch_id
+	vswitch_id = data.alicloud_vswitches.default.ids[0]
 	load_balancer_name = var.name
 	load_balancer_spec = "slb.s1.small"
-    master_zone_id = "${data.alicloud_zones.default.zones.0.id}"
+    master_zone_id = "${data.alicloud_slb_zones.default.zones.0.id}"
   	resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
 	tags =  {
 		Created = "TF-%[1]d"
