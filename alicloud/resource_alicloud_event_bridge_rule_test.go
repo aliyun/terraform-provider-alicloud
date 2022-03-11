@@ -50,6 +50,11 @@ func TestAccAlicloudEventBridgeRule_basic0(t *testing.T) {
 									"form":         "ORIGINAL",
 									"resource_key": "Body",
 								},
+								{
+									"form":         "CONSTANT",
+									"resource_key": "IsBase64Encode",
+									"value":        "true",
+								},
 							},
 						},
 					},

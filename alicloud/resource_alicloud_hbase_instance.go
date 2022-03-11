@@ -679,7 +679,7 @@ func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
 			return hbaseClient.DeleteInstance(request)
 		})

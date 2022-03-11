@@ -212,6 +212,10 @@ func resourceAlicloudEventBridgeRuleRead(d *schema.ResourceData, meta interface{
 					for _, paramListMapItem := range paramListMap.([]interface{}) {
 						paramListMap := make(map[string]interface{})
 						if paramListMapItemMap, ok := paramListMapItem.(map[string]interface{}); ok {
+							// There is an api bug that the event bridge service will return a default param which ResourceKey is IsBase64Encode and the value is false
+							if fmt.Sprint(paramListMapItemMap["ResourceKey"]) == "IsBase64Encode" && fmt.Sprint(paramListMapItemMap["Value"]) == "false" {
+								continue
+							}
 							paramListMap["form"] = paramListMapItemMap["Form"]
 							paramListMap["resource_key"] = paramListMapItemMap["ResourceKey"]
 							paramListMap["template"] = paramListMapItemMap["Template"]
