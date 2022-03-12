@@ -108,7 +108,6 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 				},
 				ValidateFunc: validation.StringInSlice([]string{"enabled"}, false),
 				Optional:     true,
-				ForceNew:     true,
 			},
 			"backup_period": {
 				Type:     schema.TypeSet,
@@ -491,6 +490,10 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("tde_status")
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	if d.HasChange("security_group_id") {
