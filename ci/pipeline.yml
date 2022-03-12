@@ -5,7 +5,7 @@ groups:
       # ECS
       - Regions
       - Zones
-      - Dataworks
+      - DataWorks
       - Hbr
       - Sae
       - EventBridge
@@ -130,7 +130,7 @@ groups:
       # ECS
       - Regions
       - Zones
-      - Dataworks
+      - DataWorks
       - Hbr
       - Lindorm
       - Sae
@@ -649,7 +649,7 @@ jobs:
           TEST_CASE_CODE: "FC"
           SWEEPER_CODE: "alicloud_fc_service"
 
-  - name: Dataworks
+  - name: DataWorks
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -660,7 +660,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Dataworks"
+          TEST_CASE_CODE: "DataWorks"
 
   - name: Kms
     plan:
