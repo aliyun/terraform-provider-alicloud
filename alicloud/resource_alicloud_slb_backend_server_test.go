@@ -340,10 +340,6 @@ resource "alicloud_slb_load_balancer" "default" {
 }
 
 
-data "alicloud_instance_types" "new" {
- 	availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-	eni_amount = 2
-}
 resource "alicloud_network_interface" "default" {
     count = 1
     name = "${var.name}"

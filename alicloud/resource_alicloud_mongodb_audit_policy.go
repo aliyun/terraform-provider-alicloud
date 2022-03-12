@@ -118,7 +118,7 @@ func resourceAlicloudMongodbAuditPolicyUpdate(d *schema.ResourceData, meta inter
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
