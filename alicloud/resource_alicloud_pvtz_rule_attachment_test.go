@@ -45,7 +45,7 @@ func TestAccAlicloudPrivateZoneRuleAttachment_basic0(t *testing.T) {
 					"rule_id": "${alicloud_pvtz_rule.default.id}",
 					"vpcs": []map[string]interface{}{
 						{
-							"vpc_id":    "${alicloud_vpc.default.0.id}",
+							"vpc_id":    "${alicloud_vpc.default[0].id}",
 							"region_id": "${var.region}",
 						},
 					},
@@ -61,11 +61,11 @@ func TestAccAlicloudPrivateZoneRuleAttachment_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"vpcs": []map[string]interface{}{
 						{
-							"vpc_id":    "${alicloud_vpc.default.0.id}",
+							"vpc_id":    "${alicloud_vpc.default[0].id}",
 							"region_id": "${var.region}",
 						},
 						{
-							"vpc_id":    "${alicloud_vpc.default.1.id}",
+							"vpc_id":    "${alicloud_vpc.default[1].id}",
 							"region_id": "${var.region}",
 						},
 					},
@@ -100,7 +100,7 @@ variable "region" {
 resource "alicloud_vpc" "default" {
   count      = 3
   vpc_name   = var.name
-  cidr_block = cidrsubnet("172.16.0.0/16", 8, count.index)
+  cidr_block = "172.16.0.0/16"
 }
 
 data "alicloud_pvtz_resolver_zones" "default" {
@@ -109,20 +109,20 @@ data "alicloud_pvtz_resolver_zones" "default" {
 
 resource "alicloud_vswitch" "default" {
   count      = 2
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = cidrsubnet(alicloud_vpc.default.2.cidr_block, 8, count.index)
+  vpc_id     = alicloud_vpc.default[2].id
+  cidr_block = cidrsubnet(alicloud_vpc.default[2].cidr_block, 8, count.index)
   zone_id    = data.alicloud_pvtz_resolver_zones.default.zones[count.index].zone_id
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = alicloud_vpc.default.2.id
+  vpc_id = alicloud_vpc.default[2].id
   name   = var.name
 }
 
 resource "alicloud_pvtz_endpoint" "default" {
   endpoint_name     = var.name
   security_group_id = alicloud_security_group.default.id
-  vpc_id            = alicloud_vpc.default.2.id
+  vpc_id            = alicloud_vpc.default[2].id
   vpc_region_id     = var.region
   ip_configs {
     zone_id    = alicloud_vswitch.default[0].zone_id
