@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/denverdino/aliyungo/common"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -47,9 +49,9 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				Required: true,
 			},
 			"deploy_type": {
-				Type:     schema.TypeInt,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeInt,
+				Required:     true,
+				ValidateFunc: validation.IntInSlice([]int{4, 5}),
 			},
 			"io_max": {
 				Type:     schema.TypeInt,
@@ -70,6 +72,9 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("deploy_type").(int) == 5
+				},
 			},
 			"security_group": {
 				Type:     schema.TypeString,
@@ -376,71 +381,89 @@ func resourceAlicloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		d.SetPartial("paid_type")
 	}
 
-	attributeUpdate := false
-
-	upgradeReq := alikafka.CreateUpgradePostPayOrderRequest()
-	upgradeReq.RegionId = client.RegionId
-	upgradeReq.InstanceId = d.Id()
-	upgradeReq.TopicQuota = requests.NewInteger(d.Get("topic_quota").(int))
-	upgradeReq.DiskSize = requests.NewInteger(d.Get("disk_size").(int))
-	upgradeReq.IoMax = requests.NewInteger(d.Get("io_max").(int))
-	upgradeReq.SpecType = d.Get("spec_type").(string)
-
-	if d.HasChange("topic_quota") || d.HasChange("disk_size") || d.HasChange("io_max") || d.HasChange("spec_type") {
-		attributeUpdate = true
+	conn, err := client.NewAlikafkaClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	eipMax := 0
-	if v, ok := d.GetOk("eip_max"); ok {
-		eipMax = v.(int)
+	update := false
+	request := map[string]interface{}{
+		"InstanceId": d.Id(),
+		"RegionId":   client.RegionId,
+	}
+	if d.HasChange("topic_quota") {
+		update = true
+	}
+	request["TopicQuota"] = d.Get("topic_quota")
+	if d.HasChange("disk_size") {
+		update = true
+	}
+	request["DiskSize"] = d.Get("disk_size")
+	if d.HasChange("io_max") {
+		update = true
+	}
+	request["IoMax"] = d.Get("io_max")
+	if d.HasChange("spec_type") {
+		update = true
+	}
+	request["SpecType"] = d.Get("spec_type")
+
+	if d.HasChange("deploy_type") {
+		update = true
+	}
+	if d.Get("deploy_type").(int) == 4 {
+		request["EipModel"] = true
+	} else {
+		request["EipModel"] = false
 	}
 	if d.HasChange("eip_max") {
-		if v, ok := d.GetOk("eip_max"); ok {
-			eipMax = v.(int)
-		}
-		upgradeReq.EipMax = requests.NewInteger(eipMax)
-		attributeUpdate = true
+		update = true
 	}
+	request["EipMax"] = d.Get("eip_max").(int)
 
-	if attributeUpdate {
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-				return alikafkaClient.UpgradePostPayOrder(upgradeReq)
-			})
+	if update {
+		action := "UpgradePostPayOrder"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
-					time.Sleep(10 * time.Second)
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) {
+					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(upgradeReq.GetActionName(), raw, upgradeReq.RpcRequest, upgradeReq)
+			addDebug(action, raw, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), upgradeReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alikafka_instances", action, AlibabaCloudSdkGoERROR)
+		}
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("topic_quota")
 		d.SetPartial("disk_size")
 		d.SetPartial("io_max")
 		d.SetPartial("spec_type")
 		d.SetPartial("eip_max")
-	}
 
-	paidType := 1
-	if d.Get("paid_type").(string) == string(PrePaid) {
-		paidType = 0
-	}
-	err := alikafkaService.WaitForAlikafkaInstanceUpdated(d.Id(), d.Get("topic_quota").(int), d.Get("disk_size").(int),
-		d.Get("io_max").(int), eipMax, paidType, d.Get("spec_type").(string), DefaultTimeoutMedium)
+		paidType := 1
+		if d.Get("paid_type").(string) == string(PrePaid) {
+			paidType = 0
+		}
+		err = alikafkaService.WaitForAlikafkaInstanceUpdated(d.Id(), d.Get("topic_quota").(int), d.Get("disk_size").(int),
+			d.Get("io_max").(int), d.Get("eip_max").(int), paidType, d.Get("spec_type").(string), DefaultTimeoutMedium)
 
-	if err != nil {
-		return WrapError(err)
-	}
+		if err != nil {
+			return WrapError(err)
+		}
 
-	err = alikafkaService.WaitForAlikafkaInstance(d.Id(), Running, 6000)
+		err = alikafkaService.WaitForAlikafkaInstance(d.Id(), Running, 6000)
 
-	if err != nil {
-		return WrapError(err)
+		if err != nil {
+			return WrapError(err)
+		}
 	}
 
 	if d.HasChange("service_version") {
