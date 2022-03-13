@@ -99,7 +99,6 @@ func testSweepEciContainerGroup(region string) error {
 
 func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	resourceId := "alicloud_eci_container_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -113,7 +112,6 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			//testAccPreCheckWithRegions(t, true, connectivity.EciContainerGroupRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -128,7 +126,7 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
-							"image":             "registry-vpc.cn-beijing.aliyuncs.com/eci_open/nginx:alpine",
+							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
 							"image_pull_policy": "IfNotPresent",
 							"commands":          []string{"/bin/sh", "-c", "sleep 9999"},
 						},
@@ -136,7 +134,7 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 					"init_containers": []map[string]interface{}{
 						{
 							"name":              "init-busybox",
-							"image":             "registry-vpc.cn-beijing.aliyuncs.com/eci_open/busybox:1.30",
+							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/busybox:1.30", defaultRegionToTest),
 							"image_pull_policy": "IfNotPresent",
 							"commands":          []string{"echo"},
 							"args":              []string{"hello initcontainer"},
@@ -184,7 +182,7 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"image_registry_credential": CHECKSET,
+						"image_registry_credential.#": "2",
 					}),
 				),
 			},
@@ -199,7 +197,7 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
-							"image":             "registry-vpc.cn-beijing.aliyuncs.com/eci_open/nginx:alpine",
+							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
 							"image_pull_policy": "IfNotPresent",
 							"volume_mounts": []map[string]interface{}{
 								{
@@ -258,7 +256,7 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 					},
 					"containers": []map[string]interface{}{
 						{
-							"image":    "registry-vpc.cn-beijing.aliyuncs.com/eci_open/centos:7",
+							"image":    fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/centos:7", defaultRegionToTest),
 							"name":     "centos",
 							"commands": []string{"/bin/sh", "-c", "sleep 9999"},
 						},

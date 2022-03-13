@@ -50,7 +50,7 @@ func TestAccAlicloudEciImageCachesDataSource(t *testing.T) {
 			"caches.0.image_cache_id":     CHECKSET,
 			"caches.0.image_cache_name":   name,
 			"caches.0.images.#":           "1",
-			"caches.0.images.0":           "registry.cn-beijing.aliyuncs.com/sceneplatform/sae-image-demo:latest",
+			"caches.0.images.0":           fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
 			"caches.0.progress":           "100%",
 			"caches.0.snapshot_id":        CHECKSET,
 			"caches.0.status":             "Ready",
@@ -96,9 +96,9 @@ resource "alicloud_eip_address" "default" {
 
 resource "alicloud_eci_image_cache" "default" {
   image_cache_name = var.name
-  images            = ["registry.cn-beijing.aliyuncs.com/sceneplatform/sae-image-demo:latest"]
+  images            = ["registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine"]
   security_group_id = alicloud_security_group.default.id
   vswitch_id        = data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0
   eip_instance_id = alicloud_eip_address.default.id
-}`, name)
+}`, name, defaultRegionToTest)
 }
