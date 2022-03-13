@@ -1,44 +1,47 @@
-## 1.160.0 (Unreleased)
+## 1.161.0 (Unreleased)
+## 1.160.0 (March 13, 2022)
 
-- **New Resource:** `alicloud_sae_grey_tag_route` [GH-4644]
-- **New Resource:** `alicloud_ecs_snapshot_group` [GH-4666]
-- **New Data Source:** `alicloud_ecs_snapshot_groups` [GH-4666]	
-- **New Data Source:** `alicloud_sae_grey_tag_routes` [GH-4644]
+- **New Resource:** `alicloud_sae_grey_tag_route` ([#4644](https://github.com/aliyun/terraform-provider-alicloud/issues/4644))
+- **New Resource:** `alicloud_ecs_snapshot_group` ([#4666](https://github.com/aliyun/terraform-provider-alicloud/issues/4666))
+- **New Data Source:** `alicloud_ecs_snapshot_groups` ([#4666](https://github.com/aliyun/terraform-provider-alicloud/issues/4666))	
+- **New Data Source:** `alicloud_sae_grey_tag_routes` ([#4644](https://github.com/aliyun/terraform-provider-alicloud/issues/4644))
 
 ENHANCEMENTS:
 
-- resource/alicloud_mongodb_sharding_instance: Supports to update attribute tde_status [GH-4686]
-- resource/alicloud_mongodb_instance: Adds retry for invoking DescribeDBInstanceAttribute and ResetPassword [GH-4682]
-- resource/alicloud_adb_cluster: Adds retry for invoking DescribeTaskInfo [GH-4678]
-- resource/alicloud_instance: Adds checking empty before setting period to avoid a invalid value 0 [GH-4671]
-- resource/alicloud_vpn_customer_gateway: change sdk to common api;Support for new parameter asn [GH-4669]
-- resource/alicloud_vpn_gateway: change sdk to common api;Support for new parameters auto_pay, tags [GH-4656]
-- resource/alicloud_ess_scaling_group: Add support for new parameter tags [GH-4648]
-- resource/cloud_firewall_instance: Add Support for the international site [GH-4655]
-- resource/alicloud_gpdb_instance: Enlarges the default creating timeout [GH-4665]
-- datasource/alicloud_ess_scalinggroups: Add support for new parameter tags [GH-4648]	
-- testcase: Adds new unit test case for resource alicloud_cloud_sso_user alicloud_cloud_sso_group alicloud_cloud_sso_scim_server_credential [GH-4680]
-- testcase: Improves the slb resources testcase [GH-4681]	
-- testcase: Adds SDK error status code for resource testcase [GH-4649]
-- testcase: Improves the cen instance unit test [GH-4657]
-- docs/alicloud_hbr_nas_backup_plan: document optimization [GH-4663]
-- docs/alicloud_hbr_ecs_backup_plan: document optimization [GH-4664]
-- docs/alicloud_hbr_nas_backup_plans,alicloud_hbr_oss_backup_plans: doc [GH-4661]
-- docs/alicloud_hbr_restore_jobs: document optimization [GH-4660]
-- docs/alicloud_hbr_snapshots: document optimization [GH-4659]
-- docs/alicloud_hbr_backup_jobs: document optimization [GH-4662]
+- resource/alicloud_lindorm_instance: Enlarges the its default creating timeout ([#4688](https://github.com/aliyun/terraform-provider-alicloud/issues/4688))
+- resource/alicloud_mongodb_sharding_instance: Supports to update attribute tde_status ([#4686](https://github.com/aliyun/terraform-provider-alicloud/issues/4686))
+- resource/alicloud_mongodb_instance: Adds retry for invoking DescribeDBInstanceAttribute and ResetPassword ([#4682](https://github.com/aliyun/terraform-provider-alicloud/issues/4682))
+- resource/alicloud_adb_cluster: Adds retry for invoking DescribeTaskInfo ([#4678](https://github.com/aliyun/terraform-provider-alicloud/issues/4678))
+- resource/alicloud_instance: Adds checking empty before setting period to avoid an invalid value 0 ([#4671](https://github.com/aliyun/terraform-provider-alicloud/issues/4671))
+- resource/alicloud_vpn_customer_gateway: change sdk to common api;Support for new parameter asn ([#4669](https://github.com/aliyun/terraform-provider-alicloud/issues/4669))
+- resource/alicloud_vpn_gateway: change sdk to common api;Support for new parameters auto_pay, tags ([#4656](https://github.com/aliyun/terraform-provider-alicloud/issues/4656))
+- resource/alicloud_ess_scaling_group: Add support for new parameter tags ([#4648](https://github.com/aliyun/terraform-provider-alicloud/issues/4648))
+- resource/cloud_firewall_instance: Add Support for the international site ([#4655](https://github.com/aliyun/terraform-provider-alicloud/issues/4655))
+- resource/alicloud_gpdb_instance: Enlarges the default creating timeout ([#4665](https://github.com/aliyun/terraform-provider-alicloud/issues/4665))
+- datasource/alicloud_ess_scalinggroups: Add support for new parameter tags ([#4648](https://github.com/aliyun/terraform-provider-alicloud/issues/4648))	
+- testcase: Adds new unit test case for resource alicloud_cloud_sso_user alicloud_cloud_sso_group alicloud_cloud_sso_scim_server_credential ([#4680](https://github.com/aliyun/terraform-provider-alicloud/issues/4680))
+- testcase: Improves the slb resources testcase ([#4681](https://github.com/aliyun/terraform-provider-alicloud/issues/4681))	
+- testcase: Adds SDK error status code for resource testcase ([#4649](https://github.com/aliyun/terraform-provider-alicloud/issues/4649))
+- testcase: Improves the cen instance unit test ([#4657](https://github.com/aliyun/terraform-provider-alicloud/issues/4657))
+- docs/alicloud_hbr_nas_backup_plan: document optimization ([#4663](https://github.com/aliyun/terraform-provider-alicloud/issues/4663))
+- docs/alicloud_hbr_ecs_backup_plan: document optimization ([#4664](https://github.com/aliyun/terraform-provider-alicloud/issues/4664))
+- docs/alicloud_hbr_nas_backup_plans,alicloud_hbr_oss_backup_plans: doc ([#4661](https://github.com/aliyun/terraform-provider-alicloud/issues/4661))
+- docs/alicloud_hbr_restore_jobs: document optimization ([#4660](https://github.com/aliyun/terraform-provider-alicloud/issues/4660))
+- docs/alicloud_hbr_snapshots: document optimization ([#4659](https://github.com/aliyun/terraform-provider-alicloud/issues/4659))
+- docs/alicloud_hbr_backup_jobs: document optimization ([#4662](https://github.com/aliyun/terraform-provider-alicloud/issues/4662))
 
 BUG FIXES:
 
-- resource/alicoud_mongodb_audit_policy: Fixes the OperationDenied.DBInstanceStatus error when creating or updating this resource [GH-4685]
-- resource/alicloud_ecs_disk: Fixes the DiskNotPortable error while modifying disk payment type [GH-4673]
-- resource/alicloud_event_bridge_rule: Fixes the diff error which caused by system default value [GH-4679]
-- resource/alicloud_hbase_instance: Fixes the Instance.InvalidStatus error while deleting it [GH-4675]
-- resource/resource_alicloud_express_connect_virtual_border_router: Fixes the DependencyViolation.BgpGroup error when deleting the resource [GH-4670]
-- resource/alicloud_gpdb_elastic_instance: Fixes the IncorrectDBState error while deleting the resource [GH-4665]
-- testcases: Fixes the resource testcase bug [GH-4665]
-- testcase: Fix the unit for resource testcase [GH-4652]
-- testcase: Fix the unit for resource testcase:alicloud_ga_ip_set [GH-4654]
+- resource/alicloud_dcdn_domain: Fixes the wait timeout error when offline the domain ([#4690](https://github.com/aliyun/terraform-provider-alicloud/issues/4690))
+- resource/alicoud_mongodb_audit_policy: Fixes the OperationDenied.DBInstanceStatus error when creating or updating this resource ([#4685](https://github.com/aliyun/terraform-provider-alicloud/issues/4685))
+- resource/alicloud_ecs_disk: Fixes the DiskNotPortable error while modifying disk payment type ([#4673](https://github.com/aliyun/terraform-provider-alicloud/issues/4673))
+- resource/alicloud_event_bridge_rule: Fixes the diff error which caused by system default value ([#4679](https://github.com/aliyun/terraform-provider-alicloud/issues/4679))
+- resource/alicloud_hbase_instance: Fixes the Instance.InvalidStatus error while deleting it ([#4675](https://github.com/aliyun/terraform-provider-alicloud/issues/4675))
+- resource/resource_alicloud_express_connect_virtual_border_router: Fixes the DependencyViolation.BgpGroup error when deleting the resource ([#4670](https://github.com/aliyun/terraform-provider-alicloud/issues/4670))
+- resource/alicloud_gpdb_elastic_instance: Fixes the IncorrectDBState error while deleting the resource ([#4665](https://github.com/aliyun/terraform-provider-alicloud/issues/4665))
+- testcases: Fixes the resource testcase bug ([#4665](https://github.com/aliyun/terraform-provider-alicloud/issues/4665))
+- testcase: Fix the unit for resource testcase ([#4652](https://github.com/aliyun/terraform-provider-alicloud/issues/4652))
+- testcase: Fix the unit for resource testcase:alicloud_ga_ip_set ([#4654](https://github.com/aliyun/terraform-provider-alicloud/issues/4654))
 
 ## 1.159.0 (March 06, 2022)
 
