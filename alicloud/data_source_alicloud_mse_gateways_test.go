@@ -9,9 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudMseGatewaysDataSource(t *testing.T) {
+func TestAccAlicloudMSEGatewaysDataSource(t *testing.T) {
 	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.MSESupportRegions)
+	checkoutSupportedRegions(t, true, connectivity.MSEGatewaySupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudMseGatewaysDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_mse_gateway.default.id}"]`,
