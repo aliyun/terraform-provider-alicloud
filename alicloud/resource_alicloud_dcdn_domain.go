@@ -323,6 +323,11 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, dcdnService.DcdnDomainStateRefreshFunc(d.Id(), []string{"configure_failed"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("scope")
 		d.SetPartial("ssl_protocol")
 		d.SetPartial("cert_name")
 		d.SetPartial("ssl_pub")
@@ -455,10 +460,6 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 	d.Partial(false)
-	stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dcdnService.DcdnDomainStateRefreshFunc(d.Id(), []string{"check_failed", "configure_failed"}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
-	}
 	return resourceAlicloudDcdnDomainRead(d, meta)
 }
 func resourceAlicloudDcdnDomainDelete(d *schema.ResourceData, meta interface{}) error {
