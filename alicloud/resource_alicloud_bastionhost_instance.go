@@ -53,7 +53,7 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"security_group_ids": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
@@ -144,7 +144,7 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	rawSecurityGroupIds := d.Get("security_group_ids").([]interface{})
+	rawSecurityGroupIds := d.Get("security_group_ids").(*schema.Set).List()
 	securityGroupIds := make([]string, len(rawSecurityGroupIds))
 	for index, rawSecurityGroupId := range rawSecurityGroupIds {
 		securityGroupIds[index] = rawSecurityGroupId.(string)
@@ -226,7 +226,7 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 	}
 
 	if !d.IsNewResource() && d.HasChange("security_group_ids") {
-		securityGroupIds := d.Get("security_group_ids").([]interface{})
+		securityGroupIds := d.Get("security_group_ids").(*schema.Set).List()
 		sgs := make([]string, 0, len(securityGroupIds))
 		for _, rawSecurityGroupId := range securityGroupIds {
 			sgs = append(sgs, rawSecurityGroupId.(string))

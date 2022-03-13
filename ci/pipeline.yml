@@ -377,7 +377,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 2245
+        resource: sweeper2
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -391,7 +391,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 23
+        resource: sweeper3
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -405,7 +405,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 2315
+        resource: sweeper4
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -419,7 +419,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 2330
+        resource: sweeper5
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1935,41 +1935,41 @@ resources:
   - name: 2230
     type: time
     source:
-      start: 10:30 PM
-      stop: 11:50 PM
-      #    days: [Sunday, Monday, Tuesday, Saturday]
+      start: 01:00 AM
+      stop: 10:00 PM
+      days: [Sunday, Saturday]
       location: {{time_location}}
 
-  - name: 2245
+  - name: sweeper2
     type: time
     source:
-      start: 10:45 PM
-      stop: 11:50 PM
-      #    days: [Sunday, Monday, Tuesday, Saturday]
+      start: 02:00 AM
+      stop: 10:00 PM
+      days: [Sunday, Saturday]
       location: {{time_location}}
 
-  - name: 23
+  - name: sweeper3
     type: time
     source:
-      start: 11:00 PM
-      stop: 11:50 PM
-      #    days: [Sunday, Monday, Tuesday, Saturday]
+      start: 03:00 AM
+      stop: 10:00 PM
+      days: [Sunday, Saturday]
       location: {{time_location}}
 
-  - name: 2315
+  - name: sweeper4
     type: time
     source:
-      start: 11:15 PM
-      stop: 11:50 PM
-      #    days: [Sunday, Monday, Tuesday, Saturday]
+      start: 04:00 AM
+      stop: 10:00 PM
+      days: [Sunday, Saturday]
       location: {{time_location}}
 
-  - name: 2330
+  - name: sweeper5
     type: time
     source:
-      start: 11:30 PM
-      stop: 11:50 PM
-      #    days: [Sunday, Monday, Tuesday, Saturday]
+      start: 05:00 AM
+      stop: 10:00 PM
+      days: [Sunday, Saturday]
       location: {{time_location}}
 
   - name: 00Tue
