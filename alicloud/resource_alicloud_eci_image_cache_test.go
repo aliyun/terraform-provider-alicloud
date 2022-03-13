@@ -61,9 +61,8 @@ func testSweepEciImageCache(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECIOpenAPIImageCache_basic(t *testing.T) {
+func TestAccAlicloudEciImageCache_basic(t *testing.T) {
 	var v eci.DescribeImageCachesImageCache0
-	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	resourceId := "alicloud_eci_image_cache.default"
 	ra := resourceAttrInit(resourceId, EciOpenapiImageCacheMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -86,7 +85,7 @@ func TestAccAlicloudECIOpenAPIImageCache_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"image_cache_name":  strings.ToLower(name),
-					"images":            []string{fmt.Sprintf("registry-vpc.%s.aliyuncs.com/sae-demo-image/consumer:1.0", defaultRegionToTest)},
+					"images":            []string{fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest)},
 					"security_group_id": "${alicloud_security_group.group.id}",
 					"vswitch_id":        "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
 					"eip_instance_id":   "${alicloud_eip_address.default.id}",

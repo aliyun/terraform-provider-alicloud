@@ -115,7 +115,7 @@ func testSweepECIVirtualNode(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECIVirtualNode_basic0(t *testing.T) {
+func TestAccAlicloudEciVirtualNode_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_virtual_node.default"
 	ra := resourceAttrInit(resourceId, AlicloudECIVirtualNodeMap0)
@@ -178,7 +178,7 @@ func TestAccAlicloudECIVirtualNode_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECIVirtualNode_basic2(t *testing.T) {
+func TestAccAlicloudEciVirtualNode_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_virtual_node.default"
 	ra := resourceAttrInit(resourceId, AlicloudECIVirtualNodeMap0)
@@ -193,6 +193,7 @@ func TestAccAlicloudECIVirtualNode_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithEnvVariable(t, "KUBE_CONFIG")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
