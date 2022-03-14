@@ -673,6 +673,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_application_scaling_rules":               dataSourceAlicloudSaeApplicationScalingRules(),
 			"alicloud_sae_grey_tag_routes":                         dataSourceAlicloudSaeGreyTagRoutes(),
 			"alicloud_ecs_snapshot_groups":                         dataSourceAlicloudEcsSnapshotGroups(),
+			"alicloud_vpn_ipsec_servers":                           dataSourceAlicloudVpnIpsecServers(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1235,6 +1236,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_grey_tag_route":                                   resourceAlicloudSaeGreyTagRoute(),
 			"alicloud_ecs_snapshot_group":                                   resourceAlicloudEcsSnapshotGroup(),
 			"alicloud_alb_listener_additional_certificate_attachment":       resourceAlicloudAlbListenerAdditionalCertificateAttachment(),
+			"alicloud_vpn_ipsec_server":                                     resourceAlicloudVpnIpsecServer(),
 		},
 
 		ConfigureFunc: providerConfigure,

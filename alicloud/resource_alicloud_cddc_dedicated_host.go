@@ -56,7 +56,7 @@ func resourceAlicloudCddcDedicatedHost() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA_Z][a-zA-Z0-9_-]{1,63}`), "The name must be `1` to `64` characters in length and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter."),
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]{1,63}`), "The name must be `1` to `64` characters in length and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter."),
 			},
 			"image_category": {
 				Type:         schema.TypeString,
