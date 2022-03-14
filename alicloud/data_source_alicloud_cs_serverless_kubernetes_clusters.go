@@ -139,7 +139,7 @@ func dataSourceAlicloudCSServerlessKubernetesClustersRead(d *schema.ResourceData
 
 	var filteredClusterTypes []*cs.ServerlessClusterResponse
 	for _, v := range allClusterTypes {
-		if v.ClusterType != cs.ClusterTypeServerlessKubernetes {
+		if v.ClusterType != cs.ClusterTypeServerlessKubernetes && (v.ClusterType != cs.ClusterTypeManagedKubernetes || v.Profile != cs.ProfileServerlessKubernetes) {
 			continue
 		}
 		if nameRegex, ok := d.GetOk("name_regex"); ok {

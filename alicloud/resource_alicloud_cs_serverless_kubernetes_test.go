@@ -64,11 +64,10 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                           name,
-					"vpc_id":                         "${alicloud_vpc.default.id}",
-					"vswitch_ids":                    []string{"${alicloud_vswitch.default.id}"},
-					"zone_id":                        "",
+					"vpc_id":                         "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_ids":                    []string{"${local.vswitch_id}"},
 					"new_nat_gateway":                "true",
-					"deletion_protection":            "true",
+					"deletion_protection":            "false",
 					"endpoint_public_access_enabled": "true",
 					"load_balancer_spec":             "slb.s2.small",
 					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
@@ -79,17 +78,19 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 					"service_discovery_types": []string{"PrivateZone"},
 					"logging_type":            "SLS",
 					"time_zone":               timeZone,
+					"cluster_spec":            "ack.pro.small",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                           name,
-						"deletion_protection":            "true",
+						"deletion_protection":            "false",
 						"new_nat_gateway":                "true",
 						"endpoint_public_access_enabled": "true",
 						"resource_group_id":              CHECKSET,
 						"vswitch_ids.#":                  "1",
-						"tags.%":                         "1",
-						"tags.Platform":                  "TF",
+						"tags.#":                         "1",
+						"tags.0.Platform":                "TF",
+						"cluster_spec":                   "ack.pro.small",
 					}),
 				),
 			},
@@ -127,22 +128,29 @@ variable "name" {
 	default = "%s"
 }
 
-data "alicloud_zones" default {
-  available_resource_creation = "VSwitch"
-}
+data "alicloud_eci_zones" "default" {}
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
-resource "alicloud_vpc" "default" {
-  vpc_name    = var.name
-  cidr_block  = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
-resource "alicloud_vswitch" "default" {
+data "alicloud_vswitches" "default" {
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_eci_zones.default.zones.0.zone_ids.0
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_eci_zones.default.zones.0.zone_ids.0
   vswitch_name      = var.name
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "10.1.1.0/24"
-  availability_zone = data.alicloud_zones.default.zones.0.id
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 `, name)
 }
