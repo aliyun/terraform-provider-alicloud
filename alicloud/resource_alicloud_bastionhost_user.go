@@ -178,6 +178,10 @@ func resourceAlicloudBastionhostUserRead(d *schema.ResourceData, meta interface{
 func resourceAlicloudBastionhostUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	yundunBastionhostService := YundunBastionhostService{client}
+	conn, err := client.NewBastionhostClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -234,10 +238,6 @@ func resourceAlicloudBastionhostUserUpdate(d *schema.ResourceData, meta interfac
 	request["RegionId"] = client.RegionId
 	if update {
 		action := "ModifyUser"
-		conn, err := client.NewBastionhostClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -275,10 +275,6 @@ func resourceAlicloudBastionhostUserUpdate(d *schema.ResourceData, meta interfac
 				}
 				request["RegionId"] = client.RegionId
 				action := "LockUsers"
-				conn, err := client.NewBastionhostClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -303,10 +299,6 @@ func resourceAlicloudBastionhostUserUpdate(d *schema.ResourceData, meta interfac
 				}
 				request["RegionId"] = client.RegionId
 				action := "UnlockUsers"
-				conn, err := client.NewBastionhostClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

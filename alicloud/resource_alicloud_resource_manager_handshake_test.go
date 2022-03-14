@@ -241,7 +241,7 @@ func TestAccAlicloudResourceManagerHandshake_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "InviteAccountToResourceDirectory" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -258,6 +258,7 @@ func TestAccAlicloudResourceManagerHandshake_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudResourceManagerHandshakeCreate(dInit, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -280,7 +281,7 @@ func TestAccAlicloudResourceManagerHandshake_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "{}"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "GetHandshake" {
 					switch errorCode {
 					case "{}":
@@ -298,6 +299,7 @@ func TestAccAlicloudResourceManagerHandshake_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudResourceManagerHandshakeRead(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -322,7 +324,7 @@ func TestAccAlicloudResourceManagerHandshake_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "EntityNotExists.Handshake", "HandshakeStatusMismatch"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "CancelHandshake" {
 					switch errorCode {
 					case "NonRetryableError", "EntityNotExists.Handshake", "HandshakeStatusMismatch":
@@ -339,6 +341,7 @@ func TestAccAlicloudResourceManagerHandshake_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudResourceManagerHandshakeDelete(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
