@@ -77,6 +77,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of App Group. It is the same as `app_group_name`.
 * `status` - The status of the resource. Valid values: `producing`,`review_pending`,`config_pending`,`normal`,`frozen`.
+* `instance_id` - The instance id.
 
 ## Import
 
