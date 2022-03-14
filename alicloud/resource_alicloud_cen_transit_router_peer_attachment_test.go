@@ -142,9 +142,6 @@ func TestAccAlicloudCenTransitRouterPeerAttachment_basic(t *testing.T) {
 }
 
 func TestAccAlicloudCenTransitRouterPeerAttachment_basic1(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_peer_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterPeerAttachmentMap)

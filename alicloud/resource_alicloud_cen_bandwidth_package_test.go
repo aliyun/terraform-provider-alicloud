@@ -365,7 +365,6 @@ func TestAccAlicloudCenBandwidthPackage_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 
 		IDRefreshName: resourceId,
@@ -415,7 +414,6 @@ func TestAccAlicloudCenBandwidthPackage_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 
 		IDRefreshName: resourceId,
