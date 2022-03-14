@@ -27,6 +27,8 @@ after creating cluster successfully, and you can put them into the specified loc
 -> **NOTE:** You need to activate several other products and confirm Authorization Policy used by Container Service before using this resource.
 Please refer to the `Authorization management` and `Cluster management` sections in the [Document Center](https://www.alibabacloud.com/help/doc-detail/86488.htm).
 
+-> **NOTE:** From version 1.162.0, support for creating professional serverless cluster.
+
 ## Example Usage
 
 Basic Usage
@@ -98,7 +100,7 @@ The following arguments are supported:
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
 * `version` - (Optional, Available since 1.97.0) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used.
 * `vpc_id` - (Required, ForceNew) The vpc where new kubernetes cluster will be located. Specify one vpc's id, if it is not specified, a new VPC  will be built.
-* `vswitch_ids` - (Required, ForceNew) The vswitches where new kubernetes cluster will be located.
+* `vswitch_ids` - (Required) The vswitches where new kubernetes cluster will be located.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. SNAT must be configured when a new VPC is automatically created. Default is `true`.
 * `endpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
 * `service_discovery_types` - (ForceNew, Available in 1.123.1+) Service discovery type. If the value is empty, it means that service discovery is not enabled. Valid values are `CoreDNS` and `PrivateZone`. 
@@ -113,7 +115,7 @@ The following arguments are supported:
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
 * `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `load_balancer_spec` - (ForceNew, Available in 1.117.0+) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
+* `load_balancer_spec` - (Optional, Available in 1.117.0+) The cluster api server load balance instance specification, default `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
 * `addons` - (Available in 1.91.0+)) You can specific network plugin,log component,ingress component and so on.Detailed below.
 * `time_zone` - (Optional, ForceNew, Available in 1.123.1+) The time zone of the cluster.
 * `zone_id` - (Optional, ForceNew, Available in 1.123.1+) When creating a cluster using automatic VPC creation, you need to specify the zone where the VPC is located. 
@@ -121,6 +123,9 @@ The following arguments are supported:
 * `logging_type` - (ForceNew, Available in 1.123.1+) Enable log service, Valid value `SLS`. 
 * `sls_project_name` - (ForceNew, Available in 1.123.1+) If you use an existing SLS project, you must specify `sls_project_name`.
 * `retain_resources` - (Optional, Available in 1.141.0+) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
+* `cluster_spec` - (Optional, ForceNew, Available in 1.162.0+) The cluster specifications of serverless kubernetes cluster, which can be empty. Valid values:
+    - ack.standard: Standard serverless clusters.
+    - ack.pro.small: Professional serverless clusters.
 
 #### addons 
 It is a new field since 1.91.0. You can specific network plugin,log component,ingress component and so on. 

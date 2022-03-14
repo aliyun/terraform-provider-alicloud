@@ -96,23 +96,23 @@ variable "name" {
 	default = "%s"
 }
 
-data "alicloud_zones" default {
-  available_resource_creation = "VSwitch"
+data "alicloud_eci_zones" "default" {
 }
 
 data "alicloud_vpcs" "default" {
 	name_regex = "default-NODELETING"
 }
+
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+	vpc_id   = data.alicloud_vpcs.default.ids.0
+	zone_id  = data.alicloud_eci_zones.default.zones.0.zone_ids.0
 }
 
 resource "alicloud_vswitch" "vswitch" {
   count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
   vpc_id            = data.alicloud_vpcs.default.ids.0
   cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
+  zone_id           = data.alicloud_eci_zones.default.zones.0.zone_ids.0
   vswitch_name      = var.name
 }
 
@@ -123,11 +123,14 @@ locals {
 resource "alicloud_cs_serverless_kubernetes" "default" {
   name_prefix = "${var.name}"
   vpc_id = data.alicloud_vpcs.default.ids.0
-  vswitch_id = local.vswitch_id
+  vswitch_ids = [local.vswitch_id]
   new_nat_gateway = true
+  cluster_spec = "ack.pro.small" 
   endpoint_public_access_enabled = true
   private_zone = false
   deletion_protection = false
+  service_cidr = "10.0.1.0/24"
+  load_balancer_spec = "slb.s2.small"
   tags = {
 		"k-aa":"v-aa"
 		"k-bb":"v-aa",
