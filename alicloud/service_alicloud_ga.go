@@ -444,7 +444,7 @@ func (s *GaService) DescribeAcceleratorAutoRenewAttribute(id string) (object map
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
 				wait()
 				return resource.RetryableError(err)
 			}

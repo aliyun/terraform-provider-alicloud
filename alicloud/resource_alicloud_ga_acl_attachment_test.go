@@ -72,41 +72,26 @@ data "alicloud_ga_accelerators" "default" {
   status = "active"
 }
 
-data "alicloud_ga_bandwidth_packages" "default" {
-  status = "active"
-}
-
-resource "alicloud_ga_accelerator" "default" {
-  count            = length(data.alicloud_ga_accelerators.default.accelerators) > 0 ? 0 : 1
-  duration         = 1
-  auto_use_coupon  = true
-  spec             = "1"
-}
-
 resource "alicloud_ga_bandwidth_package" "default" {
-  count                  = length(data.alicloud_ga_bandwidth_packages.default.packages) > 0 ? 0 : 1
-  bandwidth              = 20
-  type                   = "Basic"
-  bandwidth_type         = "Basic"
-  duration               = 1
-  ratio                  = 30
-  auto_pay               = true
-  auto_use_coupon        = true
-}
-
-locals {
-  accelerator_id       = length(data.alicloud_ga_accelerators.default.accelerators) > 0 ? data.alicloud_ga_accelerators.default.accelerators.0.id : alicloud_ga_accelerator.default.0.id
-  bandwidth_package_id = length(data.alicloud_ga_bandwidth_packages.default.packages) > 0 ? data.alicloud_ga_bandwidth_packages.default.packages.0.id : alicloud_ga_bandwidth_package.default.0.id
+   	bandwidth              =  100
+  	type                   = "Basic"
+  	bandwidth_type         = "Basic"
+	payment_type           = "PayAsYouGo"
+  	billing_type           = "PayBy95"
+	ratio       = 30
+	bandwidth_package_name = var.name
+    auto_pay               = true
+    auto_use_coupon        = true
 }
 
 resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  accelerator_id       = local.accelerator_id
-  bandwidth_package_id = local.bandwidth_package_id
+	// Please run resource ga_accelerator test case to ensure this account has at least one accelerator before run this case.
+	accelerator_id = data.alicloud_ga_accelerators.default.ids.0
+	bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
 
 resource "alicloud_ga_listener" "default" {
-  depends_on     = [alicloud_ga_bandwidth_package_attachment.default]
-  accelerator_id = local.accelerator_id
+  accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
   port_ranges {
     from_port = 60
     to_port   = 70

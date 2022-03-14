@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -9,6 +10,7 @@ import (
 
 func TestAccAlicloudGaBandwidthPackagesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "data.alicloud_ga_bandwidth_packages.default"
 	name := fmt.Sprintf("tf-testBandwidthPackages_datasource-%d", rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceGaBandwidthPackagesConfigDependence)

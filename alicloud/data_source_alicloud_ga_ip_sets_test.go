@@ -84,19 +84,34 @@ func TestAccAlicloudGaIpSetsDataSource(t *testing.T) {
 
 func dataSourceGaIpSetsConfigDependence(name string) string {
 	return fmt.Sprintf(`
-data "alicloud_ga_accelerators" "default"{
+variable "name" {
+  default  = "%s"
 }
-data "alicloud_ga_bandwidth_packages" "default"{
+data "alicloud_ga_accelerators" "default" {
+  status = "active"
 }
+
+resource "alicloud_ga_bandwidth_package" "default" {
+   	bandwidth              =  100
+  	type                   = "Basic"
+  	bandwidth_type         = "Basic"
+	payment_type           = "PayAsYouGo"
+  	billing_type           = "PayBy95"
+	ratio       = 30
+	bandwidth_package_name = var.name
+    auto_pay               = true
+    auto_use_coupon        = true
+}
+
 resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  count = length(data.alicloud_ga_accelerators.default.ids) > 0 ? (length(data.alicloud_ga_accelerators.default.accelerators.0.basic_bandwidth_package) > 0 ? 0 : 1 ) :1
-  accelerator_id       = "${data.alicloud_ga_accelerators.default.ids.0}"
-  bandwidth_package_id = "${data.alicloud_ga_bandwidth_packages.default.ids.0}"
+	// Please run resource ga_accelerator test case to ensure this account has at least one accelerator before run this case.
+	accelerator_id = data.alicloud_ga_accelerators.default.ids.0
+	bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
+
 resource "alicloud_ga_ip_set" "default" {
-  depends_on           = [alicloud_ga_bandwidth_package_attachment.default]
   accelerate_region_id = "%s"
   bandwidth            = "5"
-  accelerator_id       = "${data.alicloud_ga_accelerators.default.ids.0}"
-}`, defaultRegionToTest)
+  accelerator_id       = "${alicloud_ga_bandwidth_package_attachment.default.accelerator_id}"
+}`, name, defaultRegionToTest)
 }
