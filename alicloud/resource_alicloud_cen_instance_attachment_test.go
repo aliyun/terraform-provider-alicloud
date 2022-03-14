@@ -181,7 +181,7 @@ func TestAccAlicloudCenInstanceAttachment_multi_same_region(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
+			//testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 
 		// module name
@@ -269,8 +269,11 @@ func testAccCenInstanceAttachmentBasic(rand int, region string) string {
 }
 func testAccCenInstanceAttachmentMultiSameRegion(rand int, region string) string {
 	return fmt.Sprintf(`
+	provider "alicloud" {
+		region = "%[1]s"
+	}
 	variable "name"{
-	    default = "tf-testAcc%sCenInstanceAttachmentBasic-%d"
+	    default = "tf-testAcc%[1]sCenInstanceAttachmentBasic-%d"
 	}
 
 	resource "alicloud_cen_instance" "default" {
@@ -286,16 +289,16 @@ func testAccCenInstanceAttachmentMultiSameRegion(rand int, region string) string
 	    instance_id = "${alicloud_cen_instance.default.id}"
 	    child_instance_id = data.alicloud_vpcs.default.ids.0
 	    child_instance_type = "VPC"
-	    child_instance_region_id = "%s"
+	    child_instance_region_id = "%[1]s"
 	}
 
 	resource "alicloud_cen_instance_attachment" "default1" {
 	    instance_id = "${alicloud_cen_instance.default.id}"
 	    child_instance_id = data.alicloud_vpcs.default.ids.0
 	    child_instance_type = "VPC"
-	    child_instance_region_id = "%s"
+	    child_instance_region_id = "%[1]s"
 	}
-	`, region, rand, region, region)
+	`, region, rand)
 }
 
 func testAccCenInstanceAttachmentMultiDifferentRegion(rand int, region string) string {

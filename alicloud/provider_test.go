@@ -174,12 +174,22 @@ func checkoutSupportedRegions(t *testing.T, supported bool, regions []connectivi
 
 func checkoutAccount(t *testing.T, SLAVE bool) {
 	if SLAVE {
-		os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE"))
-		os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY_SLAVE"))
-		t.Logf("%s is using the slave account", t.Name())
+		if os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE") == "" || os.Getenv("ALICLOUD_SECRET_KEY_SLAVE") == "" {
+			t.Logf("\nALICLOUD_ACCESS_KEY_SLAVE or ALICLOUD_SECRET_KEY_SLAVE is empty and please add them.")
+		} else {
+			os.Setenv("ALICLOUD_ACCESS_KEY_MASTER", os.Getenv("ALICLOUD_ACCESS_KEY"))
+			os.Setenv("ALICLOUD_SECRET_KEY_MASTER", os.Getenv("ALICLOUD_SECRET_KEY"))
+			os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE"))
+			os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY_SLAVE"))
+			t.Logf("%s is using the slave account", t.Name())
+		}
 	} else {
-		os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY_MASTER"))
-		os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY_MASTER"))
+		if os.Getenv("ALICLOUD_ACCESS_KEY_MASTER") == "" || os.Getenv("ALICLOUD_SECRET_KEY_MASTER") == "" {
+			t.Logf("\nALICLOUD_ACCESS_KEY_MASTER or ALICLOUD_SECRET_KEY_MASTER is empty and please add them.")
+		} else {
+			os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY_MASTER"))
+			os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY_MASTER"))
+		}
 	}
 }
 
