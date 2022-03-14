@@ -37,6 +37,7 @@ var (
 	filterList   = map[string][]string{
 		"alicloud_amqp_instance": []string{"logistics"},
 		"alicloud_cms_alarm":     []string{"notify_type"},
+		"alicloud_cs_serverless_kubernetes": {"private_zone","create_v2_cluster"},
 	}
 )
 
