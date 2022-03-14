@@ -67,6 +67,17 @@ func TestAccAlicloudVpnGatewaysDataSourceBasic(t *testing.T) {
 		}),
 	}
 
+	enableIpsecConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
+			"name_regex":   `"${alicloud_vpn_gateway.default.name}"`,
+			"enable_ipsec": `true`,
+		}),
+		fakeConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
+			"name_regex":   `"${alicloud_vpn_gateway.default.name}"`,
+			"enable_ipsec": `false`,
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
 			"ids":             `[ "${alicloud_vpn_gateway.default.id}" ]`,
@@ -74,6 +85,7 @@ func TestAccAlicloudVpnGatewaysDataSourceBasic(t *testing.T) {
 			"vpc_id":          `"${alicloud_vpn_gateway.default.vpc_id}"`,
 			"status":          `"Active"`,
 			"business_status": `"Normal"`,
+			"enable_ipsec":    `true`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
 			"ids":             `[ "${alicloud_vpn_gateway.default.id}" ]`,
@@ -81,10 +93,11 @@ func TestAccAlicloudVpnGatewaysDataSourceBasic(t *testing.T) {
 			"vpc_id":          `"${alicloud_vpn_gateway.default.vpc_id}"`,
 			"status":          `"Active"`,
 			"business_status": `"FinancialLocked"`,
+			"enable_ipsec":    `false`,
 		}),
 	}
 
-	vpnGatewaysCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, vpcIdConf, statusConf, businessStatusConf, allConf)
+	vpnGatewaysCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, vpcIdConf, statusConf, businessStatusConf, enableIpsecConf, allConf)
 }
 
 func testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -126,6 +139,7 @@ resource "alicloud_vpn_gateway" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
 	bandwidth = "10"
 	enable_ssl = true
+	enable_ipsec = true
 	instance_charge_type = "PrePaid"
 	description = "${var.name}"
 	vswitch_id = local.vswitch_id
