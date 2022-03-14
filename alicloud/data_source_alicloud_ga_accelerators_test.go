@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -9,6 +10,7 @@ import (
 
 func TestAccAlicloudGaAcceleratorsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "data.alicloud_ga_accelerators.default"
 	name := fmt.Sprintf("tf-testAccelerators_datasource-%d", rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceGaAcceleratorsConfigDependence)
@@ -92,22 +94,8 @@ resource "alicloud_ga_accelerator" "default" {
   duration         = 1
   spec             = "1"
   accelerator_name = var.name
-  auto_use_coupon  = false
+  auto_use_coupon  = true
   description      = var.name
 }
-resource "alicloud_ga_bandwidth_package" "default" {
-   	bandwidth              =  100
-  	type                   = "Basic"
-  	bandwidth_type         = "Basic"
-	payment_type           = "PayAsYouGo"
-  	billing_type           = "PayBy95"
-	ratio       = 30
-	bandwidth_package_name = var.name
-}
-resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  accelerator_id       = alicloud_ga_accelerator.default.id
-  bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
-}
-
 `, name)
 }
