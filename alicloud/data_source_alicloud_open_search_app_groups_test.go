@@ -42,18 +42,6 @@ func TestAccAlicloudOpenSearchAppGroupDataSource(t *testing.T) {
 			"enable_details": "true",
 		}),
 	}
-	resourceGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudOpenSearchAppGroupDataSourceName(rand, map[string]string{
-			"resource_group_id": `"${alicloud_open_search_app_group.default.resource_group_id}"`,
-			"instance_id":       `"${alicloud_open_search_app_group.default.instance_id}"`,
-			"enable_details":    "true",
-		}),
-		fakeConfig: testAccCheckAlicloudOpenSearchAppGroupDataSourceName(rand, map[string]string{
-			"resource_group_id": `"${alicloud_open_search_app_group.default.resource_group_id}_fake"`,
-			"instance_id":       `"${alicloud_open_search_app_group.default.instance_id}"`,
-			"enable_details":    "true",
-		}),
-	}
 	typeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudOpenSearchAppGroupDataSourceName(rand, map[string]string{
 			"type":           `"${alicloud_open_search_app_group.default.type}"`,
@@ -104,7 +92,7 @@ func TestAccAlicloudOpenSearchAppGroupDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.OpenSearchSupportRegions)
 	}
-	alicloudOpenSearchAppGroupCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, instanceIdConf, resourceGroupIdConf, typeConf, allConf)
+	alicloudOpenSearchAppGroupCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, instanceIdConf, typeConf, allConf)
 }
 func testAccCheckAlicloudOpenSearchAppGroupDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
