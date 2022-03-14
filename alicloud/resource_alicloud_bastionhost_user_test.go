@@ -2,8 +2,18 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"reflect"
 	"testing"
 
+	"github.com/agiledragon/gomonkey/v2"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -736,4 +746,402 @@ resource "alicloud_bastionhost_instance" "default" {
  security_group_ids = [alicloud_security_group.default.id]
 }
 `, name)
+}
+
+func TestAccAlicloudBastionhostUser_unit(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_bastionhost_user"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_bastionhost_user"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"comment":             "CreateBastionhostUserValue",
+		"display_name":        "CreateBastionhostUserValue",
+		"email":               "CreateBastionhostUserValue",
+		"instance_id":         "CreateBastionhostUserValue",
+		"mobile_country_code": "CreateBastionhostUserValue",
+		"mobile":              "CreateBastionhostUserValue",
+		"password":            "CreateBastionhostUserValue",
+		"source":              "CreateBastionhostUserValue",
+		"user_name":           "CreateBastionhostUserValue",
+		"source_user_id":      "CreateBastionhostUserValue",
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		// GetUser
+		"User": map[string]interface{}{
+			"InstanceId":        "CreateBastionhostUserValue",
+			"UserId":            "CreateBastionhostUserValue",
+			"Comment":           "CreateBastionhostUserValue",
+			"DisplayName":       "CreateBastionhostUserValue",
+			"Email":             "CreateBastionhostUserValue",
+			"Mobile":            "CreateBastionhostUserValue",
+			"MobileCountryCode": "CreateBastionhostUserValue",
+			"Source":            "CreateBastionhostUserValue",
+			"SourceUserId":      "CreateBastionhostUserValue",
+			"UserState": []interface{}{
+				"CreateBastionhostUserValue",
+			},
+			"UserName": "CreateBastionhostUserValue",
+		},
+		"UserId": "CreateBastionhostUserValue",
+	}
+	CreateMockResponse := map[string]interface{}{
+		// CreateUser
+		"User": map[string]interface{}{
+			"UserId": "CreateBastionhostUserValue",
+		},
+		"UserId": "CreateBastionhostUserValue",
+	}
+	ReadMockResponseDiff := map[string]interface{}{}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       String(errorCode),
+			Data:       String(errorCode),
+			Message:    String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_bastionhost_user", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			mapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+
+	// Create
+	t.Run("Create", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBastionhostClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudBastionhostUserCreate(dInit, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+		ReadMockResponseDiff = map[string]interface{}{
+			// GetUser Response
+			"User": map[string]interface{}{
+				"UserId": "CreateBastionhostUserValue",
+			},
+		}
+		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "CreateUser" {
+					switch errorCode {
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if retryIndex >= len(errorCodes)-1 {
+							successResponseMock(ReadMockResponseDiff)
+							return CreateMockResponse, nil
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudBastionhostUserCreate(dInit, rawClient)
+			patches.Reset()
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			default:
+				assert.Nil(t, err)
+				dCompare, _ := schema.InternalMap(p["alicloud_bastionhost_user"].Schema).Data(dInit.State(), nil)
+				for key, value := range attributes {
+					_ = dCompare.Set(key, value)
+				}
+				assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+			}
+			if retryIndex >= len(errorCodes)-1 {
+				break
+			}
+		}
+	})
+
+	// Update
+	t.Run("Update", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBastionhostClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudBastionhostUserUpdate(dExisted, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+		// ModifyUser
+		attributesDiff := map[string]interface{}{
+			"comment":             "ModifyUserValue",
+			"display_name":        "ModifyUserValue",
+			"email":               "ModifyUserValue",
+			"mobile":              "ModifyUserValue",
+			"mobile_country_code": "ModifyUserValue",
+			"password":            "ModifyUserValue",
+			"source":              "ModifyUserValue",
+		}
+		diff, err := newInstanceDiff("alicloud_bastionhost_user", attributes, attributesDiff, dInit.State())
+		if err != nil {
+			t.Error(err)
+		}
+		dExisted, _ = schema.InternalMap(p["alicloud_bastionhost_user"].Schema).Data(dInit.State(), diff)
+		ReadMockResponseDiff = map[string]interface{}{
+			// GetUser Response
+			"User": map[string]interface{}{
+				"Comment":           "ModifyUserValue",
+				"DisplayName":       "ModifyUserValue",
+				"Email":             "ModifyUserValue",
+				"Mobile":            "ModifyUserValue",
+				"MobileCountryCode": "ModifyUserValue",
+				"Password":          "ModifyUserValue",
+				"Source":            "ModifyUserValue",
+			},
+		}
+		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "ModifyUser" {
+					switch errorCode {
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if retryIndex >= len(errorCodes)-1 {
+							return successResponseMock(ReadMockResponseDiff)
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudBastionhostUserUpdate(dExisted, rawClient)
+			patches.Reset()
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			default:
+				assert.Nil(t, err)
+				dCompare, _ := schema.InternalMap(p["alicloud_bastionhost_user"].Schema).Data(dExisted.State(), nil)
+				for key, value := range attributes {
+					_ = dCompare.Set(key, value)
+				}
+				assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+			}
+			if retryIndex >= len(errorCodes)-1 {
+				break
+			}
+		}
+
+		// UnlockUsers
+		attributesDiff = map[string]interface{}{
+			"status": "Normal",
+		}
+		diff, err = newInstanceDiff("alicloud_bastionhost_user", attributes, attributesDiff, dExisted.State())
+		if err != nil {
+			t.Error(err)
+		}
+		dExisted, _ = schema.InternalMap(p["alicloud_bastionhost_user"].Schema).Data(dExisted.State(), diff)
+		ReadMockResponseDiff = map[string]interface{}{
+			// GetUser Response
+			"User": map[string]interface{}{
+				"UserState": []interface{}{
+					"Normal",
+				},
+			},
+		}
+		errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "UnlockUsers" {
+					switch errorCode {
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if retryIndex >= len(errorCodes)-1 {
+							return successResponseMock(ReadMockResponseDiff)
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudBastionhostUserUpdate(dExisted, rawClient)
+			patches.Reset()
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			default:
+				assert.Nil(t, err)
+				dCompare, _ := schema.InternalMap(p["alicloud_bastionhost_user"].Schema).Data(dExisted.State(), nil)
+				for key, value := range attributes {
+					_ = dCompare.Set(key, value)
+				}
+				assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+			}
+			if retryIndex >= len(errorCodes)-1 {
+				break
+			}
+		}
+
+		// LockUsers
+		attributesDiff = map[string]interface{}{
+			"status": "Frozen",
+		}
+		diff, err = newInstanceDiff("alicloud_bastionhost_user", attributes, attributesDiff, dExisted.State())
+		if err != nil {
+			t.Error(err)
+		}
+		dExisted, _ = schema.InternalMap(p["alicloud_bastionhost_user"].Schema).Data(dExisted.State(), diff)
+		ReadMockResponseDiff = map[string]interface{}{
+			// GetUser Response
+			"User": map[string]interface{}{
+				"UserState": []interface{}{
+					"Frozen",
+				},
+			},
+		}
+		errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "LockUsers" {
+					switch errorCode {
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if retryIndex >= len(errorCodes)-1 {
+							return successResponseMock(ReadMockResponseDiff)
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudBastionhostUserUpdate(dExisted, rawClient)
+			patches.Reset()
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			default:
+				assert.Nil(t, err)
+				dCompare, _ := schema.InternalMap(p["alicloud_bastionhost_user"].Schema).Data(dExisted.State(), nil)
+				for key, value := range attributes {
+					_ = dCompare.Set(key, value)
+				}
+				assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+			}
+			if retryIndex >= len(errorCodes)-1 {
+				break
+			}
+		}
+	})
+
+	// Read
+	t.Run("Read", func(t *testing.T) {
+		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "{}"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "GetUser" {
+					switch errorCode {
+					case "{}":
+						return notFoundResponseMock(errorCode)
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if errorCodes[retryIndex] == "nil" {
+							return ReadMockResponse, nil
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudBastionhostUserRead(dExisted, rawClient)
+			patches.Reset()
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			case "{}":
+				assert.Nil(t, err)
+			}
+		}
+	})
+
+	// Delete
+	t.Run("Delete", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBastionhostClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudBastionhostUserDelete(dExisted, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+		attributesDiff := map[string]interface{}{}
+		diff, err := newInstanceDiff("alicloud_bastionhost_user", attributes, attributesDiff, dInit.State())
+		if err != nil {
+			t.Error(err)
+		}
+		dExisted, _ = schema.InternalMap(p["alicloud_bastionhost_user"].Schema).Data(dInit.State(), diff)
+		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "OBJECT_NOT_FOUND"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "DeleteUser" {
+					switch errorCode {
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if errorCodes[retryIndex] == "nil" {
+							ReadMockResponse = map[string]interface{}{}
+							return ReadMockResponse, nil
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudBastionhostUserDelete(dExisted, rawClient)
+			patches.Reset()
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			case "OBJECT_NOT_FOUND":
+				assert.Nil(t, err)
+			}
+		}
+	})
 }

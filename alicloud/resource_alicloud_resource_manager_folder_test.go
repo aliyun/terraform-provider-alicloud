@@ -252,7 +252,7 @@ func TestAccAlicloudResourceManagerFolder_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "CreateFolder" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -269,6 +269,7 @@ func TestAccAlicloudResourceManagerFolder_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudResourceManagerFolderCreate(dInit, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -316,7 +317,7 @@ func TestAccAlicloudResourceManagerFolder_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "UpdateFolder" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -332,6 +333,7 @@ func TestAccAlicloudResourceManagerFolder_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudResourceManagerFolderUpdate(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -354,7 +356,7 @@ func TestAccAlicloudResourceManagerFolder_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "{}"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "GetFolder" {
 					switch errorCode {
 					case "{}":
@@ -372,6 +374,7 @@ func TestAccAlicloudResourceManagerFolder_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudResourceManagerFolderRead(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -396,7 +399,7 @@ func TestAccAlicloudResourceManagerFolder_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "EntityNotExists.Folder", "EntityNotExists.ResourceDirectory"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "DeleteFolder" {
 					switch errorCode {
 					case "NonRetryableError", "EntityNotExists.Folder", "EntityNotExists.ResourceDirectory":
@@ -413,6 +416,7 @@ func TestAccAlicloudResourceManagerFolder_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudResourceManagerFolderDelete(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)

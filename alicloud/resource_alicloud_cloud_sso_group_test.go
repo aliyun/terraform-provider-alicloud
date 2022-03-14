@@ -199,7 +199,7 @@ func TestAccAlicloudCloudSsoGroup_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "CreateGroup" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -216,6 +216,7 @@ func TestAccAlicloudCloudSsoGroup_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoGroupCreate(dInit, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -266,7 +267,7 @@ func TestAccAlicloudCloudSsoGroup_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "UpdateGroup" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -282,6 +283,7 @@ func TestAccAlicloudCloudSsoGroup_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoGroupUpdate(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -304,7 +306,7 @@ func TestAccAlicloudCloudSsoGroup_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "{}"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "GetGroup" {
 					switch errorCode {
 					case "{}":
@@ -322,6 +324,7 @@ func TestAccAlicloudCloudSsoGroup_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoGroupRead(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -353,7 +356,7 @@ func TestAccAlicloudCloudSsoGroup_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "DeletionConflict.Group.AccessAssigment", "nil", "EntityNotExists.Group"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "DeleteGroup" {
 					switch errorCode {
 					case "NonRetryableError", "EntityNotExists.Group":
@@ -370,6 +373,7 @@ func TestAccAlicloudCloudSsoGroup_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoGroupDelete(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
