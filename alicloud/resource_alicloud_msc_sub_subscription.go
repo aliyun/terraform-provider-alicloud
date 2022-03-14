@@ -105,7 +105,13 @@ func resourceAlicloudMscSubSubscriptionCreate(d *schema.ResourceData, meta inter
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	responseSubscriptionItem := response["SubscriptionItem"].(map[string]interface{})
+	responseSubscriptionItem := make(map[string]interface{}, 0)
+	if v, ok := response["SubscriptionItem"].(map[string]interface{}); ok {
+		responseSubscriptionItem = v
+	}
+	if len(responseSubscriptionItem) == 0 {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_msc_sub_subscription", action, fmt.Sprintf("The item name %s does not support subscription.", request["ItemName"]))
+	}
 	d.SetId(fmt.Sprint(responseSubscriptionItem["ItemId"]))
 
 	return resourceAlicloudMscSubSubscriptionUpdate(d, meta)
