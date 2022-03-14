@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCrEERepo_Basic(t *testing.T) {
+func TestAccAlicloudCREERepo_Basic(t *testing.T) {
 	var v *cr_ee.GetRepositoryResponse
 	resourceId := "alicloud_cr_ee_repo.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -114,7 +114,7 @@ func TestAccAlicloudCrEERepo_Basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCrEERepo_Multi(t *testing.T) {
+func TestAccAlicloudCREERepo_Multi(t *testing.T) {
 	var v *cr_ee.GetRepositoryResponse
 	resourceId := "alicloud_cr_ee_repo.default.4"
 	ra := resourceAttrInit(resourceId, nil)
@@ -168,9 +168,7 @@ variable "name" {
 	default = "%s"
 }
 
-	data "alicloud_cr_ee_instances" "default" {
-		name_regex = "^tf-testacc"
-	}
+	data "alicloud_cr_ee_instances" "default" {}
 
 resource "alicloud_cr_ee_namespace" "default" {
 	instance_id = data.alicloud_cr_ee_instances.default.ids.0

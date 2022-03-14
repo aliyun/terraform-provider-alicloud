@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCrEEInstance_Basic(t *testing.T) {
+func TestAccAlicloudCREEInstance_Basic(t *testing.T) {
 	var v *cr_ee.GetInstanceResponse
 	resourceId := "alicloud_cr_ee_instance.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -27,7 +27,6 @@ func TestAccAlicloudCrEEInstance_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -84,7 +83,7 @@ func TestAccAlicloudCrEEInstance_Basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCrEEInstance_Standard(t *testing.T) {
+func TestAccAlicloudCREEInstance_Standard(t *testing.T) {
 	var v *cr_ee.GetInstanceResponse
 	resourceId := "alicloud_cr_ee_instance.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -158,7 +157,7 @@ func TestAccAlicloudCrEEInstance_Standard(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCrEEInstance_Advanced(t *testing.T) {
+func TestAccAlicloudCREEInstance_Advanced(t *testing.T) {
 	var v *cr_ee.GetInstanceResponse
 	resourceId := "alicloud_cr_ee_instance.default"
 	ra := resourceAttrInit(resourceId, nil)

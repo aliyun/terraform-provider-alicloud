@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCrEENamespacesDataSource(t *testing.T) {
+func TestAccAlicloudCREENamespacesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	namespaceName := fmt.Sprintf("tf-testacc-cr-ee-ns-%d", rand)
 	resourceId := "data.alicloud_cr_ee_namespaces.default"
@@ -17,32 +17,32 @@ func TestAccAlicloudCrEENamespacesDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${local.instance_id}",
+			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
 			"name_regex":  "${alicloud_cr_ee_namespace.default.name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${local.instance_id}",
+			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
 			"name_regex":  "${alicloud_cr_ee_namespace.default.name}-fake",
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${local.instance_id}",
+			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${local.instance_id}",
+			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
 			"ids":         []string{"test-id-fake"},
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${local.instance_id}",
+			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
 			"name_regex":  "${alicloud_cr_ee_namespace.default.name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${local.instance_id}",
+			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
 			"name_regex":  "${alicloud_cr_ee_namespace.default.name}-fake",
 			"ids":         []string{"test-id-fake"},
 		}),
@@ -83,27 +83,11 @@ func dataSourceCrEENamespacesConfigDependence(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-
-	resource "alicloud_cr_ee_instance" "default" {
-	  count = length(data.alicloud_cr_ee_instances.default.ids) > 0 ? 0 : 1
-	  period = 1
-	  renew_period = 0
-	  payment_type = "Subscription"
-	  instance_type = "Basic"
-	  renewal_status = "ManualRenewal"
-	  instance_name = "tf-testacc-basic"
-	}
 	
-	data "alicloud_cr_ee_instances" "default"{
-	  name_regex = "tf-testacc"
-	}
-
-	locals {
-	  instance_id=length(data.alicloud_cr_ee_instances.default.ids)>0? data.alicloud_cr_ee_instances.default.ids[0] : concat(alicloud_cr_ee_instance.default.*.id, [""])[0]
-	}
+	data "alicloud_cr_ee_instances" "default"{}
 	
 	resource "alicloud_cr_ee_namespace" "default" {
-		instance_id = local.instance_id
+		instance_id = data.alicloud_cr_ee_instances.default.ids.0
 		name = "${var.name}"
 		auto_create	= true
 		default_visibility = "PRIVATE"

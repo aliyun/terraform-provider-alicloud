@@ -60,7 +60,7 @@ func testSweepCrEENamespace(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCrEENamespace_Basic(t *testing.T) {
+func TestAccAlicloudCREENamespace_Basic(t *testing.T) {
 	var v *cr_ee.GetNamespaceResponse
 	resourceId := "alicloud_cr_ee_namespace.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -141,7 +141,7 @@ func TestAccAlicloudCrEENamespace_Basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCrEENamespace_Multi(t *testing.T) {
+func TestAccAlicloudCREENamespace_Multi(t *testing.T) {
 	var v *cr_ee.GetNamespaceResponse
 	resourceId := "alicloud_cr_ee_namespace.default.4"
 	ra := resourceAttrInit(resourceId, nil)
@@ -188,8 +188,6 @@ func resourceCrEENamespaceConfigDependence(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-	data "alicloud_cr_ee_instances" "default" {
-		name_regex = "^tf-testacc"
-	}
+	data "alicloud_cr_ee_instances" "default" {}
 `, name)
 }
