@@ -303,7 +303,11 @@ func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]in
 		return object, err
 	}
 	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		err = Error("DescribeMetricRuleList failed for " + response["Message"].(string))
+		if _, ok := response["Message"]; ok {
+			err = Error("DescribeMetricRuleList failed for " + response["Message"].(string))
+		} else {
+			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
 		return object, err
 	}
 	v, err := jsonpath.Get("$.Alarms.Alarm", response)
