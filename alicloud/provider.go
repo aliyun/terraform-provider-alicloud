@@ -378,6 +378,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_waf_instances":                               dataSourceAlicloudWafInstances(),
 			"alicloud_eci_image_caches":                            dataSourceAlicloudEciImageCaches(),
 			"alicloud_dms_enterprise_users":                        dataSourceAlicloudDmsEnterpriseUsers(),
+			"alicloud_dms_user_tenants":                            dataSourceAlicloudDmsUserTenants(),
 			"alicloud_ecs_dedicated_hosts":                         dataSourceAlicloudEcsDedicatedHosts(),
 			"alicloud_oos_templates":                               dataSourceAlicloudOosTemplates(),
 			"alicloud_oos_executions":                              dataSourceAlicloudOosExecutions(),
