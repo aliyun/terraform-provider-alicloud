@@ -164,7 +164,6 @@ func TestAccAlicloudVpcTrafficMirrorSessionsDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithEnvVariable(t, "ALICLOUD_USE_HOLOGRAPHIC_ACCOUNT")
 	}
 
 	vpcTrafficMirrorSessionCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, enabledConf, priorityConf, filterIdConf, sessionNameConf, sourceIdConf, targetIdConf, statusConf, allConf)
