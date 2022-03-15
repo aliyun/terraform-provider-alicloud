@@ -9,40 +9,41 @@ import (
 )
 
 func TestAccAlicloudPvtzEndpointsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000, 9999)
+	rand := acctest.RandIntRange(1, 9999)
+	name := fmt.Sprintf("tf-testacc%d", rand)
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(name, map[string]string{
 			"ids": `["${alicloud_pvtz_endpoint.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(name, map[string]string{
 			"ids": `["${alicloud_pvtz_endpoint.default.id}_fake"]`,
 		}),
 	}
 	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(name, map[string]string{
 			"ids":    `["${alicloud_pvtz_endpoint.default.id}"]`,
 			"status": `"SUCCESS"`,
 		}),
-		fakeConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(name, map[string]string{
 			"ids":    `["${alicloud_pvtz_endpoint.default.id}"]`,
 			"status": `"INIT"`,
 		}),
 	}
 	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(name, map[string]string{
 			"name_regex": `"${alicloud_pvtz_endpoint.default.endpoint_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(name, map[string]string{
 			"name_regex": `"${alicloud_pvtz_endpoint.default.endpoint_name}_fake"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(name, map[string]string{
 			"ids":        `["${alicloud_pvtz_endpoint.default.id}"]`,
 			"name_regex": `"${alicloud_pvtz_endpoint.default.endpoint_name}"`,
 			"status":     `"SUCCESS"`,
 		}),
-		fakeConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(name, map[string]string{
 			"ids":        `["${alicloud_pvtz_endpoint.default.id}_fake"]`,
 			"name_regex": `"${alicloud_pvtz_endpoint.default.endpoint_name}_fake"`,
 			"status":     `"INIT"`,
@@ -53,7 +54,7 @@ func TestAccAlicloudPvtzEndpointsDataSource(t *testing.T) {
 			"ids.#":                               "1",
 			"names.#":                             "1",
 			"endpoints.#":                         "1",
-			"endpoints.0.endpoint_name":           fmt.Sprintf("tf-testacc%d", rand),
+			"endpoints.0.endpoint_name":           name,
 			"endpoints.0.id":                      CHECKSET,
 			"endpoints.0.status":                  CHECKSET,
 			"endpoints.0.security_group_id":       CHECKSET,
@@ -89,7 +90,7 @@ func TestAccAlicloudPvtzEndpointsDataSource(t *testing.T) {
 	}
 	alicloudPvtzEndpointsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, nameRegexConf, allConf)
 }
-func testAccCheckAlicloudPvtzEndpointsDataSourceName(rand int, attrMap map[string]string) string {
+func testAccCheckAlicloudPvtzEndpointsDataSourceName(name string, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
@@ -98,7 +99,7 @@ func testAccCheckAlicloudPvtzEndpointsDataSourceName(rand int, attrMap map[strin
 	config := fmt.Sprintf(`
 
 variable "name" {  
-   default = "tf-testacc%d"
+   default = "%s"
 }
 
 data "alicloud_pvtz_resolver_zones" "default" {
@@ -113,33 +114,9 @@ data "alicloud_vswitches" "default" {
    zone_id      = data.alicloud_pvtz_resolver_zones.default.zones.0.zone_id
 }
 
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_pvtz_resolver_zones.default.zones.0.zone_id
-  vswitch_name      = var.name
-}
-
 data "alicloud_vswitches" "default1" {
    vpc_id = data.alicloud_vpcs.default.ids.0
    zone_id      = data.alicloud_pvtz_resolver_zones.default.zones.1.zone_id
-}
-
-resource "alicloud_vswitch" "vswitch1" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_pvtz_resolver_zones.default.zones.1.zone_id
-  vswitch_name      = var.name
-}
-
-locals {
-  zone_id_1 =  data.alicloud_pvtz_resolver_zones.default.zones.0.zone_id
-  zone_id_2 =  data.alicloud_pvtz_resolver_zones.default.zones.1.zone_id
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-  vswitch_id_1 = length(data.alicloud_vswitches.default1.ids) > 0 ? data.alicloud_vswitches.default1.ids[0] : concat(alicloud_vswitch.vswitch1.*.id, [""])[0]
-
 }
 
 resource "alicloud_security_group" "default" {
@@ -153,20 +130,20 @@ resource "alicloud_pvtz_endpoint" "default" {
   vpc_id            = data.alicloud_vpcs.default.ids.0
   vpc_region_id     = "%s"
   ip_configs {
-    zone_id    = local.zone_id_1
+    zone_id    = data.alicloud_vswitches.default.vswitches[0].zone_id
     cidr_block = data.alicloud_vswitches.default.vswitches[0].cidr_block
-    vswitch_id = local.vswitch_id
+    vswitch_id = data.alicloud_vswitches.default.vswitches[0].vswitch_id
   }
  ip_configs {
-   zone_id    = local.zone_id_2
+   zone_id    = data.alicloud_vswitches.default1.vswitches[0].zone_id
     cidr_block = data.alicloud_vswitches.default1.vswitches[0].cidr_block
-    vswitch_id = local.vswitch_id_1
+    vswitch_id = data.alicloud_vswitches.default1.vswitches[0].vswitch_id
   }
 }
 
 data "alicloud_pvtz_endpoints" "default" { 
    %s
 }
-`, rand, defaultRegionToTest, strings.Join(pairs, " \n "))
+`, name, defaultRegionToTest, strings.Join(pairs, " \n "))
 	return config
 }

@@ -11,6 +11,7 @@ import (
 )
 
 func TestAccAlicloudEventBridgeRulesDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.EventBridgeSupportRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEventBridgeRulesDataSourceName(rand, map[string]string{
@@ -88,10 +89,7 @@ func TestAccAlicloudEventBridgeRulesDataSource(t *testing.T) {
 		existMapFunc: existAlicloudEventBridgeRulesDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudEventBridgeRulesDataSourceNameMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
-	}
-	alicloudEventBridgeRulesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, namePrefixConf, nameRegexConf, statusConf, allConf)
+	alicloudEventBridgeRulesCheckInfo.dataSourceTestCheck(t, rand, idsConf, namePrefixConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudEventBridgeRulesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

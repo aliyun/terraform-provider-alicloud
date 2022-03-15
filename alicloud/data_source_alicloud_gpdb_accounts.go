@@ -149,7 +149,7 @@ func dataSourceAlicloudGpdbAccountsRead(d *schema.ResourceData, meta interface{}
 				continue
 			}
 		}
-		if statusOk && status.(string) != "" && status.(string) != item["AccountStatus"].(string) {
+		if statusOk && status.(string) != "" && status.(string) != convertGpdbAccountStatusResponse(item["AccountStatus"]).(string) {
 			continue
 		}
 		objects = append(objects, item)

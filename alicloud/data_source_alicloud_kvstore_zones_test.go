@@ -11,12 +11,12 @@ func TestAccAlicloudKVStoreZonesDataSource_basic(t *testing.T) {
 	resourceId := "data.alicloud_kvstore_zones.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceKVStoreZonesDependence)
-
-	multiConfig := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"multi": "true",
-		}),
-	}
+	// // Redis has no multi zone
+	//multiConfig := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"multi": "true",
+	//	}),
+	//}
 
 	chargeTypeConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -26,7 +26,7 @@ func TestAccAlicloudKVStoreZonesDataSource_basic(t *testing.T) {
 
 	allconfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"multi":                "true",
+			//"multi":                "true",
 			"instance_charge_type": "PrePaid",
 		}),
 	}
@@ -37,7 +37,7 @@ func TestAccAlicloudKVStoreZonesDataSource_basic(t *testing.T) {
 			"ids.0":                    CHECKSET,
 			"zones.#":                  CHECKSET,
 			"zones.0.id":               CHECKSET,
-			"zones.0.multi_zone_ids.#": CHECKSET,
+			"zones.0.multi_zone_ids.#": NOSET,
 		}
 	}
 
@@ -54,7 +54,7 @@ func TestAccAlicloudKVStoreZonesDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeKVStoreDBZonesMapFunc,
 	}
 
-	kvStoreDBZonesCheckInfo.dataSourceTestCheck(t, rand, multiConfig, chargeTypeConfig, allconfig)
+	kvStoreDBZonesCheckInfo.dataSourceTestCheck(t, rand, chargeTypeConfig, allconfig)
 }
 
 func dataSourceKVStoreZonesDependence(name string) string {

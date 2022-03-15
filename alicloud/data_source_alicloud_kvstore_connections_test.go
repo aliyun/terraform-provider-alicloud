@@ -15,7 +15,7 @@ func TestAccAlicloudKvstoreConnectionsDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_kvstore_instance.default.id}"},
+			"ids": []string{"${alicloud_kvstore_connection.default.instance_id}"},
 		}),
 	}
 	var existKvstoreConnectionMapFunc = func(rand int) map[string]string {
