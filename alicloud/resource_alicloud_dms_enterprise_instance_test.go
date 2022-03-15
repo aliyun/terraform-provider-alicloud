@@ -130,7 +130,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 					"port":              "3306",
 					"network_type":      "VPC",
 					"safe_rule":         "自由操作",
-					"tid":               "13429",
+					"tid":               "${data.alicloud_dms_user_tenants.default.ids.0}",
 					"instance_type":     "mysql",
 					"instance_source":   "RDS",
 					"env_type":          "test",
@@ -151,7 +151,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 						"port":            "3306",
 						"network_type":    "VPC",
 						"safe_rule":       "自由操作",
-						"tid":             "13429",
+						"tid":             CHECKSET,
 						"instance_type":   "mysql",
 						"instance_source": "RDS",
 						"env_type":        "test",
@@ -184,11 +184,11 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_alias": "other_name",
+					"instance_alias": name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_alias": "other_name",
+						"instance_alias": name + "update",
 					}),
 				),
 			},
@@ -210,7 +210,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 					"port":              "3306",
 					"network_type":      "VPC",
 					"safe_rule":         "自由操作",
-					"tid":               "13429",
+					"tid":               "${data.alicloud_dms_user_tenants.default.ids.0}",
 					"instance_type":     "mysql",
 					"instance_source":   "RDS",
 					"env_type":          "test",
@@ -231,7 +231,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 						"port":            "3306",
 						"network_type":    "VPC",
 						"safe_rule":       "自由操作",
-						"tid":             "13429",
+						"tid":             CHECKSET,
 						"instance_type":   "mysql",
 						"instance_source": "RDS",
 						"env_type":        "test",
@@ -254,30 +254,58 @@ var testAccCheckKeyValueInMapsForDMS = map[string]string{}
 
 func resourceDmsConfigDependence(name string) string {
 	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
 	data "alicloud_account" "current" {
+	}
+	data "alicloud_dms_user_tenants" "default" {
+		status = "ACTIVE"
+	}
+	
+	data "alicloud_db_zones" "default"{
+		engine = "MySQL"
+		engine_version = "8.0"
+		instance_charge_type = "PostPaid"
+		category = "HighAvailability"
+		db_instance_storage_type = "cloud_essd"
+	}
+	
+	data "alicloud_db_instance_classes" "default" {
+		zone_id = data.alicloud_db_zones.default.zones.0.id
+		engine = "MySQL"
+		engine_version = "8.0"
+		category = "HighAvailability"
+		db_instance_storage_type = "cloud_essd"
+		instance_charge_type = "PostPaid"
 	}
 	
 	data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	 name_regex = "^default-NODELETING"
 	}
 	data "alicloud_vswitches" "default" {
-	ids = [
-	  data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
+	  vpc_id = data.alicloud_vpcs.default.ids.0
+	  zone_id = data.alicloud_db_zones.default.zones.0.id
 	}
 	
 	resource "alicloud_security_group" "default" {
-	name = "%[1]s"
-	vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+		name = var.name
+		vpc_id = data.alicloud_vpcs.default.ids.0
 	}
 	
 	resource "alicloud_db_instance" "instance" {
-	engine           = "MySQL"
-	engine_version   = "5.7"
-	instance_type    = "rds.mysql.t1.small"
-	instance_storage = "10"
-	vswitch_id       = "${data.alicloud_vswitches.default.ids.0}"
-	instance_name    = "%[1]s"
-	security_ips     = ["100.104.5.0/24","192.168.0.6"]
+		engine = "MySQL"
+		engine_version = "8.0"
+		db_instance_storage_type = "cloud_essd"
+		instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+		vswitch_id       = data.alicloud_vswitches.default.ids.0
+		instance_name    = var.name
+		security_ips     = ["100.104.5.0/24","192.168.0.6"]
+		tags = {
+			"key1" = "value1"
+			"key2" = "value2"
+		}
 	}
 	
 	resource "alicloud_db_account" "account" {

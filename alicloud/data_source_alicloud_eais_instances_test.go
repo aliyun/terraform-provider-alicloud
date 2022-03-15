@@ -38,7 +38,7 @@ func TestAccAlicloudEaisInstancesDataSource(t *testing.T) {
 	instanceTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids":           []string{"${alicloud_eais_instance.default.id}"},
-			"instance_type": "eais.ei-a6.4xlarge",
+			"instance_type": "eais.ei-a6.medium",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":           []string{"${alicloud_eais_instance.default.id}_fake"},
@@ -62,7 +62,7 @@ func TestAccAlicloudEaisInstancesDataSource(t *testing.T) {
 			"name_regex":    "${alicloud_eais_instance.default.instance_name}",
 			"ids":           []string{"${alicloud_eais_instance.default.id}"},
 			"status":        "Available",
-			"instance_type": "eais.ei-a6.4xlarge",
+			"instance_type": "eais.ei-a6.medium",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex":    "${alicloud_eais_instance.default.instance_name}",
@@ -105,35 +105,27 @@ func dataSourceEaisInstancesConfigDependence(name string) string {
 		variable "name" {
 		 default = "%v"
 		}
-		data "alicloud_vpcs" "default" {
-		  cidr_block = "172.16.0.0/12"
+		data "alicloud_zones" "default" {
+			available_resource_creation = "VSwitch"
 		}
-		resource "alicloud_vpc" "default" {
-		  count      = length(data.alicloud_vpcs.default.ids) > 0 ? 0 : 1
-		  vpc_name   = var.name
-		  cidr_block = "172.16.0.0/12"
+		data "alicloud_vpcs" "default"{
+			name_regex = "default-NODELETING"
 		}
 		data "alicloud_vswitches" "default" {
-		  vpc_id  = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-
+		  vpc_id  = data.alicloud_vpcs.default.ids.0
+          zone_id = data.alicloud_zones.default.ids.0
 		}
-		resource "alicloud_vswitch" "default" {
-		  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-		  vpc_id       = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-		  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-		  zone_id      = "cn-hangzhou-h"
-		  vswitch_name = var.name
-		}
+		
 		resource "alicloud_security_group" "default" {
 		  name        = var.name
 		  description = "tf test"
-		  vpc_id      = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
+		  vpc_id      = data.alicloud_vpcs.default.ids.0
 		}
 		resource "alicloud_eais_instance" "default" {
-		  instance_type     = "eais.ei-a6.4xlarge"
+		  instance_type     = "eais.ei-a6.medium"
 		  instance_name     = var.name
 		  security_group_id = alicloud_security_group.default.id
-		  vswitch_id        = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : alicloud_vswitch.default[0].id
+		  vswitch_id        = data.alicloud_vswitches.default.ids.0
 		}
 		`, name)
 }

@@ -111,10 +111,10 @@ func testSweepEaisInstance(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEAISInstance_basic0(t *testing.T) {
+func TestAccAlicloudEaisInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eais_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudEAISInstanceMap0)
+	ra := resourceAttrInit(resourceId, AlicloudEaisInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EaisService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEaisInstance")
@@ -122,7 +122,7 @@ func TestAccAlicloudEAISInstance_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%seaisinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEAISInstanceBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEaisInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -135,14 +135,14 @@ func TestAccAlicloudEAISInstance_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_name":     name,
-					"instance_type":     "eais.ei-a6.4xlarge",
-					"security_group_id": "${local.security_group_id}",
-					"vswitch_id":        "${local.vswitch_id}",
+					"instance_type":     "eais.ei-a6.medium",
+					"security_group_id": "${alicloud_security_group.default.id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name": name,
-						"instance_type": "eais.ei-a6.4xlarge",
+						"instance_type": "eais.ei-a6.medium",
 					}),
 				),
 			},
@@ -156,40 +156,28 @@ func TestAccAlicloudEAISInstance_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudEAISInstanceMap0 = map[string]string{}
+var AlicloudEaisInstanceMap0 = map[string]string{}
 
-func AlicloudEAISInstanceBasicDependence0(name string) string {
+func AlicloudEaisInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_vpcs" "default" {
-  cidr_block = "172.16.0.0/12"
-}
-resource "alicloud_vpc" "default" {
-  count      = length(data.alicloud_vpcs.default.ids) > 0 ? 0 : 1
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/12"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id  = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-  zone_id = "cn-hangzhou-h"
-}
-resource "alicloud_vswitch" "default" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-  zone_id      = "cn-hangzhou-h"
-  vswitch_name = var.name
-}
-resource "alicloud_security_group" "default" {
-  name        = var.name
-  description = "tf test"
-  vpc_id  = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-}
-locals{
-  vswitch_id        = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : alicloud_vswitch.default[0].id
-  security_group_id = alicloud_security_group.default.id
-}
+		variable "name" {
+		  default = "%s"
+		}
+		data "alicloud_zones" "default" {
+			available_resource_creation = "VSwitch"
+		}
+		data "alicloud_vpcs" "default"{
+			name_regex = "default-NODELETING"
+		}
+		data "alicloud_vswitches" "default" {
+		  vpc_id  = data.alicloud_vpcs.default.ids.0
+          zone_id = data.alicloud_zones.default.ids.0
+		}
+		
+		resource "alicloud_security_group" "default" {
+		  name        = var.name
+		  description = "tf test"
+		  vpc_id      = data.alicloud_vpcs.default.ids.0
+		}
 `, name)
 }
