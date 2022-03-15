@@ -13,30 +13,31 @@ import (
 func TestAccAlicloudDdoscooDomainResourcesDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%d.qq.com", rand)
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
 			"ids": `["${alicloud_ddoscoo_domain_resource.default.domain}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
 			"ids": `["${alicloud_ddoscoo_domain_resource.default.domain}_fake"]`,
 		}),
 	}
 	instanceIdsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
 			"ids":          `["${alicloud_ddoscoo_domain_resource.default.domain}"]`,
 			"instance_ids": `["${data.alicloud_ddoscoo_instances.default.ids.0}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
 			"ids":          `["${alicloud_ddoscoo_domain_resource.default.domain}"]`,
 			"instance_ids": `["${data.alicloud_ddoscoo_instances.default.ids.1}"]`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
 			"ids":          `["${alicloud_ddoscoo_domain_resource.default.domain}"]`,
 			"instance_ids": `["${data.alicloud_ddoscoo_instances.default.ids.0}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
 			"ids":          `["${alicloud_ddoscoo_domain_resource.default.domain}_fake"]`,
 			"instance_ids": `["${data.alicloud_ddoscoo_instances.default.ids.1}"]`,
 		}),
@@ -45,7 +46,7 @@ func TestAccAlicloudDdoscooDomainResourcesDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                                   "1",
 			"resources.#":                             "1",
-			"resources.0.domain":                      `liduotesttf.qq.com`,
+			"resources.0.domain":                      name,
 			"resources.0.instance_ids.#":              `1`,
 			"resources.0.proxy_types.#":               `1`,
 			"resources.0.proxy_types.0.proxy_ports.#": `1`,
@@ -69,7 +70,7 @@ func TestAccAlicloudDdoscooDomainResourcesDataSource(t *testing.T) {
 	}
 	alicloudDdoscooDomainResourcesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, instanceIdsConf, allConf)
 }
-func testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(rand int, attrMap map[string]string) string {
+func testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name string, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
@@ -79,7 +80,7 @@ func testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(rand int, attrMap 
 data "alicloud_ddoscoo_instances" "default" {}
 
 resource "alicloud_ddoscoo_domain_resource" "default" {
-	domain = "liduotesttf.qq.com"
+	domain = "%s"
 	instance_ids = [data.alicloud_ddoscoo_instances.default.ids.0]
   	proxy_types {   
     	proxy_ports = [443]
@@ -92,6 +93,6 @@ resource "alicloud_ddoscoo_domain_resource" "default" {
 data "alicloud_ddoscoo_domain_resources" "default" {	
 	%s
 }
-`, strings.Join(pairs, " \n "))
+`, name, strings.Join(pairs, " \n "))
 	return config
 }

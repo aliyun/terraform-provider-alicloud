@@ -42,8 +42,8 @@ resource "alicloud_ddoscoo_port" "example" {
 
 The following arguments are supported:
 
-* `backend_port` - (Optional, ForceNew) The port of the origin server.
-* `frontend_port` - (Required, ForceNew) The forwarding port.
+* `backend_port` - (Optional, ForceNew) The port of the origin server. Valid values: [1~65535].
+* `frontend_port` - (Required, ForceNew) The forwarding port. Valid values: [1~65535].
 * `instance_id` - (Required, ForceNew) The ID of Ddoscoo instance.
 * `frontend_protocol` - (Required, ForceNew) The forwarding protocol. Valid values `tcp` and `udp`.
 * `real_servers` - (Required) List of source IP addresses.

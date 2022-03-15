@@ -280,6 +280,9 @@ func (s *DdoscooService) DescribeDdoscooPort(id string) (object map[string]inter
 		return nil
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"anycast_controller3006"}) || NotFoundError(err) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo", id)), NotFoundWithResponse, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.NetworkRules", response)

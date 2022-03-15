@@ -1005,7 +1005,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: false
+        trigger: true
         resource: 03
       - aggregate:
           - *get-aliyun-cli
@@ -1096,7 +1096,7 @@ jobs:
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: false
+        trigger: true
         resource: 10
       - aggregate:
           - *get-aliyun-cli
