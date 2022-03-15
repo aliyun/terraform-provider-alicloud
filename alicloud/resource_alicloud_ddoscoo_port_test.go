@@ -19,7 +19,7 @@ func TestAccAlicloudDdoscooPort_basic(t *testing.T) {
 	}, "DescribeDdoscooPort")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(100, 10000)
 	name := fmt.Sprintf("tf-testacc%sddoscooport%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdoscooPortBasicDependence0)
 	resource.Test(t, resource.TestCase{
@@ -34,16 +34,16 @@ func TestAccAlicloudDdoscooPort_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"frontend_port":     `7001`,
-					"backend_port":      `7002`,
+					"frontend_port":     fmt.Sprint(rand),
+					"backend_port":      fmt.Sprint(rand + 1),
 					"instance_id":       "${data.alicloud_ddoscoo_instances.default.ids.0}",
 					"frontend_protocol": "tcp",
 					"real_servers":      []string{"192.168.0.1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"frontend_port":     `7001`,
-						"backend_port":      `7002`,
+						"frontend_port":     fmt.Sprint(rand),
+						"backend_port":      fmt.Sprint(rand + 1),
 						"frontend_protocol": "tcp",
 						"real_servers.#":    "1",
 					}),
@@ -79,8 +79,6 @@ func TestAccAlicloudDdoscooPort_basic(t *testing.T) {
 }
 
 var AlicloudDdoscooPortMap0 = map[string]string{
-	"backend_port":      "7002",
-	"frontend_port":     "7001",
 	"instance_id":       CHECKSET,
 	"frontend_protocol": "tcp",
 	"real_servers.#":    "1",
@@ -105,7 +103,7 @@ func TestAccAlicloudDdoscooPort_basic1(t *testing.T) {
 	}, "DescribeDdoscooPort")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(100, 10000)
 	name := fmt.Sprintf("tf-testacc%sddoscooport%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdoscooPortBasicDependence1)
 	resource.Test(t, resource.TestCase{
@@ -120,16 +118,16 @@ func TestAccAlicloudDdoscooPort_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"frontend_port":     `7001`,
-					"backend_port":      `7002`,
+					"frontend_port":     fmt.Sprint(rand),
+					"backend_port":      fmt.Sprint(rand + 1),
 					"instance_id":       "${data.alicloud_ddoscoo_instances.default.ids.0}",
 					"frontend_protocol": "udp",
 					"real_servers":      []string{"192.168.0.1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"frontend_port":     `7001`,
-						"backend_port":      `7002`,
+						"frontend_port":     fmt.Sprint(rand),
+						"backend_port":      fmt.Sprint(rand + 1),
 						"frontend_protocol": "udp",
 						"real_servers.#":    "1",
 					}),
@@ -165,8 +163,6 @@ func TestAccAlicloudDdoscooPort_basic1(t *testing.T) {
 }
 
 var AlicloudDdoscooPortMap1 = map[string]string{
-	"backend_port":      "7002",
-	"frontend_port":     "7001",
 	"instance_id":       CHECKSET,
 	"frontend_protocol": "udp",
 	"real_servers.#":    "1",

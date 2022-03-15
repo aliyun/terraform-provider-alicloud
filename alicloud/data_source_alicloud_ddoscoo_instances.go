@@ -3,6 +3,9 @@ package alicloud
 import (
 	"regexp"
 	"strconv"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
@@ -185,17 +188,26 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 
 	specReq := ddoscoo.CreateDescribeInstanceSpecsRequest()
 	specReq.InstanceIds = &instanceIds
-
-	raw, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-		return ddoscooClient.DescribeInstanceSpecs(specReq)
+	var response *ddoscoo.DescribeInstanceSpecsResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+			return ddoscooClient.DescribeInstanceSpecs(specReq)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(specReq.GetActionName(), raw, specReq.RpcRequest, specReq)
+		response, _ = raw.(*ddoscoo.DescribeInstanceSpecsResponse)
+		return nil
 	})
-
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddoscoo_instances", specReq.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	addDebug(specReq.GetActionName(), raw, specReq.RpcRequest, specReq)
-	response, _ := raw.(*ddoscoo.DescribeInstanceSpecsResponse)
 
 	return WrapError(extractDdoscooInstance(d, nameMap, response.InstanceSpecs, instances))
 }

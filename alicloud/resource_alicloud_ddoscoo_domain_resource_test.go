@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -17,7 +19,9 @@ func TestAccAlicloudDdoscooDomainResource_basic(t *testing.T) {
 	}, "DescribeDdoscooDomainResource")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, "", AlicloudDdoscooDomainResourceBasicDependence0)
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%d.qq.com", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdoscooDomainResourceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -30,7 +34,7 @@ func TestAccAlicloudDdoscooDomainResource_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain": "liduotesttf.qq.com",
+					"domain": name,
 					"proxy_types": []map[string]interface{}{
 						{
 							"proxy_ports": []string{"443"},
@@ -43,6 +47,7 @@ func TestAccAlicloudDdoscooDomainResource_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"domain":         name,
 						"instance_ids.#": "1",
 						"proxy_types.#":  "1",
 						"real_servers.#": "1",
@@ -104,7 +109,6 @@ func TestAccAlicloudDdoscooDomainResource_basic(t *testing.T) {
 }
 
 var AlicloudDdoscooDomainResourceMap0 = map[string]string{
-	"domain":         CHECKSET,
 	"https_ext":      CHECKSET,
 	"instance_ids.#": "1",
 	"proxy_types.#":  "1",

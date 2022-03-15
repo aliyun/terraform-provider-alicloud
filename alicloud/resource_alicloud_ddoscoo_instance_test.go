@@ -2,8 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"strconv"
 	"testing"
+	"time"
 
 	"log"
 	"strings"
@@ -22,10 +25,6 @@ func init() {
 }
 
 func testSweepDdoscooInstances(region string) error {
-	if testSweepPreCheckWithRegions(region, true, []connectivity.Region{connectivity.Hangzhou}) {
-		log.Printf("[INFO] only supported region: cn-hangzhou")
-		return nil
-	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -67,11 +66,130 @@ func testSweepDdoscooInstances(region string) error {
 
 	for _, v := range insts {
 		name := v.Remark
+		instanceId := v.InstanceId
 		skip := true
 		for _, prefix := range prefixes {
 			if name != "" && strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 				skip = false
 				break
+			}
+		}
+		// Delete the domain resources
+		action := "DescribeDomainResource"
+		request := map[string]interface{}{
+			"InstanceIds": []string{instanceId},
+			"PageSize":    PageSizeSmall,
+			"PageNumber":  1,
+		}
+
+		var response map[string]interface{}
+		conn, err := client.NewDdoscooClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s got an error: %v", action, err)
+		}
+		resp, err := jsonpath.Get("$.WebRules", response)
+		if err != nil {
+			log.Println(err)
+		} else {
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				domain := fmt.Sprint(v.(map[string]interface{})["Domain"])
+				action := "DeleteDomainResource"
+				request := map[string]interface{}{
+					"Domain": domain,
+				}
+
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				if err != nil {
+					log.Printf("[ERROR] %s got an error: %s", action, err)
+				}
+			}
+		}
+
+		// Delete the ports
+		action = "DescribePort"
+		request = map[string]interface{}{
+			"InstanceId": instanceId,
+			"PageSize":   PageSizeLarge,
+			"PageNumber": 1,
+		}
+
+		wait = incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s got an error: %v", action, err)
+		}
+		resp, err = jsonpath.Get("$.NetworkRules", response)
+		if err != nil {
+			log.Println(err)
+		} else {
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				action := "DeletePort"
+				conn, err := client.NewDdoscooClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request := map[string]interface{}{
+					"FrontendPort":     v.(map[string]interface{})["FrontendPort"],
+					"FrontendProtocol": v.(map[string]interface{})["FrontendProtocol"],
+					"InstanceId":       instanceId,
+				}
+
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				if err != nil {
+					log.Printf("[ERROR] %s got an error: %s", action, err)
+				}
 			}
 		}
 		if skip {
@@ -84,7 +202,7 @@ func testSweepDdoscooInstances(region string) error {
 		releaseReq := ddoscoo.CreateReleaseInstanceRequest()
 		releaseReq.InstanceId = v.InstanceId
 
-		_, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+		_, err = client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
 			return ddoscooClient.ReleaseInstance(releaseReq)
 		})
 		if err != nil {
@@ -114,7 +232,6 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithTime(t, []int{15})
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 		},
@@ -261,7 +378,6 @@ func TestAccAlicloudDdoscooInstance_intl(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithTime(t, []int{15})
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 		},

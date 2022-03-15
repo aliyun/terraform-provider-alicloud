@@ -38,7 +38,7 @@ func resourceAlicloudDdoscooDomainResource() *schema.Resource {
 				},
 			},
 			"instance_ids": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -95,7 +95,7 @@ func resourceAlicloudDdoscooDomainResourceCreate(d *schema.ResourceData, meta in
 		request["HttpsExt"] = v
 	}
 
-	request["InstanceIds"] = d.Get("instance_ids")
+	request["InstanceIds"] = d.Get("instance_ids").(*schema.Set).List()
 	proxyTypesMaps := make([]map[string]interface{}, 0)
 	for _, proxyTypes := range d.Get("proxy_types").(*schema.Set).List() {
 		proxyTypesMap := make(map[string]interface{})
@@ -195,7 +195,7 @@ func resourceAlicloudDdoscooDomainResourceUpdate(d *schema.ResourceData, meta in
 	if d.HasChange("instance_ids") {
 		update = true
 	}
-	request["InstanceIds"] = d.Get("instance_ids")
+	request["InstanceIds"] = d.Get("instance_ids").(*schema.Set).List()
 	if update {
 		action := "ModifyDomainResource"
 		conn, err := client.NewDdoscooClient()
