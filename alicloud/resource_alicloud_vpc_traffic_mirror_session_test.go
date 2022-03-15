@@ -125,7 +125,6 @@ func TestAccAlicloudVPCTrafficMirrorSession_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithEnvVariable(t, "ALICLOUD_USE_HOLOGRAPHIC_ACCOUNT")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -295,7 +294,6 @@ func TestAccAlicloudVPCTrafficMirrorSession_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithEnvVariable(t, "ALICLOUD_USE_HOLOGRAPHIC_ACCOUNT")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

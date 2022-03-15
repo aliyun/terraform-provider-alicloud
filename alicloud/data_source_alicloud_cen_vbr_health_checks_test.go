@@ -21,27 +21,16 @@ func TestAccAlicloudCenVbrHealthCheckDataSource(t *testing.T) {
 			"cen_id":          `"${alicloud_cen_instance.default.id}"`,
 			"vbr_instance_id": `"${alicloud_cen_instance_attachment.vbr.child_instance_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
-			"cen_id":          `"${alicloud_cen_instance.default.id}"`,
-			"vbr_instance_id": `"fake"`,
-		}),
 	}
 	vbrInstanceIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
 			"vbr_instance_id": `"${alicloud_cen_instance_attachment.vbr.child_instance_id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
-			"vbr_instance_id": `"fake"`,
 		}),
 	}
 
 	vbrInstanceOwnerIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
 			"vbr_instance_owner_id": `"${alicloud_cen_instance_attachment.vbr.child_instance_owner_id}"`,
-			"vbr_instance_id":       `"${alicloud_cen_instance_attachment.vbr.child_instance_id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
-			"vbr_instance_owner_id": `123456`,
 			"vbr_instance_id":       `"${alicloud_cen_instance_attachment.vbr.child_instance_id}"`,
 		}),
 	}
@@ -51,11 +40,6 @@ func TestAccAlicloudCenVbrHealthCheckDataSource(t *testing.T) {
 			"cen_id":                `"${alicloud_cen_instance.default.id}"`,
 			"vbr_instance_id":       `"${alicloud_cen_instance_attachment.vbr.child_instance_id}"`,
 			"vbr_instance_owner_id": `"${alicloud_cen_instance_attachment.vbr.child_instance_owner_id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
-			"cen_id":                `"${alicloud_cen_instance.default.id}"`,
-			"vbr_instance_id":       `"fake"`,
-			"vbr_instance_owner_id": `123456`,
 		}),
 	}
 
