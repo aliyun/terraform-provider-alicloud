@@ -53,8 +53,6 @@ The following attributes are exported in addition to the arguments listed above:
         * `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
     * `file_system_id` - The File System ID of Nas.
     * `create_time` - File System Creation Time. **Note** The time format of the API adopts the ISO 8601 format, such as `2021-07-09T15:45:30CST`.
-    * `include` - The include path. String of Json list, up to 255 characters. e.g. `"[\"/home/work\"]"`
-    * `exclude` - The exclude path. String of Json list, up to 255 characters. e.g. `"[\"/var\"]"`
     * `path` - List of backup path. Up to 65536 Characters. e.g.`["/home", "/var"]`
     * `backup_type` - Backup type. Valid values: `COMPLETE`.
     * `disabled` - Whether to be suspended. Valid values: `true`, `false`.

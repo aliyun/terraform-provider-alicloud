@@ -34,7 +34,7 @@ func dataSourceAlicloudHbrBackupJobs() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ECS_FILE", "NAS", "OSS"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"ECS_FILE", "NAS", "OSS", "UDM_ECS", "UDM_ECS_DISK"}, false),
 			},
 			"filter": {
 				Type:     schema.TypeList,

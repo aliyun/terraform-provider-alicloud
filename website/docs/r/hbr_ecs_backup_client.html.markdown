@@ -46,7 +46,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The ID of ECS instance.
 * `use_https` - (Optional) Indicates whether to use the HTTPS protocol. Valid values: `true`, `false`.
 * `status` - (Optional, Computed) Status of client. Valid values: `ACTIVATED`, `STOPPED`. You can start or stop the client by specifying the status.
-* `data_network_type` - (Optional) The data plane access point type. Valid values: `CLASSIC`, `PUBLIC`, `VPC`.
+* `data_network_type` - (Optional) The data plane access point type. Valid values: `CLASSIC`, `PUBLIC`, `VPC`. **NOTE:** The value of `CLASSIC` has been deprecated in v1.161.0+.
 * `data_proxy_setting` - (Optional, Computed) The data plane proxy settings. Valid values: `CUSTOM`, `DISABLE`, `USE_CONTROL_PROXY`.
 * `max_cpu_core` - (Optional) The number of CPU cores used by a single backup task, 0 means no restrictions.
 * `max_worker` - (Optional) The number of concurrent jobs for a single backup task, 0 means no restrictions.

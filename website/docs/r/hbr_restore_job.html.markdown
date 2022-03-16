@@ -100,9 +100,9 @@ The following arguments are supported:
 * `restore_type` - (Required, ForceNew) The type of recovery destination. Valid values: `ECS_FILE`, `NAS`, `OSS`. **Note**: Currently, there is a one-to-one correspondence between the data source type with the recovery destination type.
 * `snapshot_id` - (Required, ForceNew) The ID of Snapshot.
 * `snapshot_hash` - (Required, ForceNew) The hashcode of Snapshot.
-* `options` - (Optional, ForceNew) Recovery options. It's a json string with format:`"{"includes":[],"excludes":[]}",`.
-* `exclude` - (Optional) The exclude path. It's a json string with format:`["/excludePath]`, up to 255 characters. **WARNING:** If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
-* `include` - (Optional) The include path. It's a json string with format:`["/includePath"]`, Up to 255 characters. **WARNING:** If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
+* `options` - (Optional, ForceNew) Recovery options. **NOTE:** Required while source_type equals `OSS` or `NAS`, invalid while source_type equals `ECS_FILE`. It's a json string with format:`"{"includes":[],"excludes":[]}",`.
+* `exclude` - (Optional) The exclude path. **NOTE:** Invalid while source_type equals `OSS` or `NAS`. It's a json string with format:`["/excludePath]`, up to 255 characters. **WARNING:** If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
+* `include` - (Optional) The include path. **NOTE:** Invalid while source_type equals `OSS` or `NAS`. It's a json string with format:`["/includePath"]`, Up to 255 characters. **WARNING:** If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
 * `target_bucket` - (Required while source_type equals `OSS`, ForceNew) The target name of OSS bucket.
 * `target_prefix` - (Required while source_type equals `OSS`, ForceNew) The target prefix of the OSS object. **WARNING:** If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
 * `target_file_system_id` - (Required while source_type equals `NAS`, ForceNew) The ID of destination File System.
