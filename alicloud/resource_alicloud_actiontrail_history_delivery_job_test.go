@@ -114,7 +114,7 @@ func testSweepActionTrailHistoryDeliveryJob(region string) error {
 	return nil
 }
 
-func TestAccAlicloudActionTrailHistoryDeliveryJob_basic0(t *testing.T) {
+func TestAccAlicloudActiontrailHistoryDeliveryJob_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.ActiontrailSupportRegions)
 	resourceId := "alicloud_actiontrail_history_delivery_job.default"
@@ -174,7 +174,7 @@ resource "alicloud_log_project" "default" {
 }
 
 data "alicloud_ram_roles" "default" {
-  name_regex = "AliyunActionTrailDefaultRole"
+  name_regex = "AliyunServiceRoleForActionTrail"
 }
 
 resource "alicloud_actiontrail_trail" "default" {
@@ -185,7 +185,7 @@ resource "alicloud_actiontrail_trail" "default" {
 `, name)
 }
 
-func TestAccAlicloudActionTrailHistoryDeliveryJob_unit(t *testing.T) {
+func TestAccAlicloudActiontrailHistoryDeliveryJob_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_actiontrail_history_delivery_job"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_actiontrail_history_delivery_job"].Schema).Data(nil, nil)
