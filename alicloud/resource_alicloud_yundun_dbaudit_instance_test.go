@@ -122,7 +122,6 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithTime(t, []int{1})
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.YundunDbauditSupportedRegions)
 		},
@@ -135,7 +134,7 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 					"description":       "${var.name}",
 					"plan_code":         "alpha.professional",
 					"period":            "1",
-					"vswitch_id":        "${local.vswitch_id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -239,88 +238,29 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudYundunDbauditInstance_Multi(t *testing.T) {
-	var v yundun_dbaudit.Instance
-
-	resourceId := "alicloud_yundun_dbaudit_instance.default.1"
-	ra := resourceAttrInit(resourceId, dbauditInstanceBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &DbauditService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf_testAcc%d", rand)
-
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDbauditInstanceDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.YundunDbauditSupportedRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		//CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"count":       "2",
-					"description": "${var.name}-${count.index}",
-					"plan_code":   "alpha.professional",
-					"period":      "1",
-					"vswitch_id":  "${local.vswitch_id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
-				),
-			},
-		},
-	})
+func resourceDbauditInstanceDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_zones" "default" {
+		available_resource_creation = "VSwitch"
+  }
+	
+data "alicloud_resource_manager_resource_groups" "default"{
+	status="OK"
 }
 
-func resourceDbauditInstanceDependence(name string) string {
-	return fmt.Sprintf(
-		`  data "alicloud_zones" "default" {
-    				available_resource_creation = "VSwitch"
-			  }
-				
-				data "alicloud_resource_manager_resource_groups" "default"{
-					status="OK"
-				}
+  variable "name" {
+	default = "%s"
+  }
 
-			  variable "name" {
-				default = "%s"
-			  }
+  data "alicloud_vpcs" "default" {
+	  name_regex = "default-NODELETING"
+  }
+  data "alicloud_vswitches" "default" {
+	  vpc_id = data.alicloud_vpcs.default.ids.0
+	  zone_id      = data.alicloud_zones.default.zones.0.id
+  }
 
-			  data "alicloud_vpcs" "default" {
-				  name_regex = "default-NODELETING"
-			  }
-			  data "alicloud_vswitches" "default" {
-				  vpc_id = data.alicloud_vpcs.default.ids.0
-				  zone_id      = data.alicloud_zones.default.zones.0.id
-			  }
-			
-			  resource "alicloud_vswitch" "vswitch" {
-			    count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-			    vpc_id            = data.alicloud_vpcs.default.ids.0
-			    cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-			    zone_id           = data.alicloud_zones.default.zones.0.id
-			    vswitch_name      = var.name
-			  }
-			
-			  locals {
-			    vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-			  }
-			
-			  provider "alicloud" {
-				endpoints {
-					bssopenapi = "business.aliyuncs.com"
-					}
-			  }`, name)
+ `, name)
 }
 
 var dbauditInstanceBasicMap = map[string]string{
