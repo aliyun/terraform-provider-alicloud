@@ -2,9 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"log"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -185,15 +187,27 @@ func dataSourceAlicloudBastionhostInstancesRead(d *schema.ResourceData, meta int
 			request.RegionId = client.RegionId
 			request.ResourceType = strings.ToUpper(string(TagResourceInstance))
 			request.ResourceId = &[]string{instanceId}
-			raw, err := client.WithBastionhostClient(func(client *yundun_bastionhost.Client) (interface{}, error) {
-				return client.ListTagResources(request)
+			var response *yundun_bastionhost.ListTagResourcesResponse
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+				raw, err := client.WithBastionhostClient(func(client *yundun_bastionhost.Client) (interface{}, error) {
+					return client.ListTagResources(request)
+				})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				response, _ = raw.(*yundun_bastionhost.ListTagResourcesResponse)
+				return nil
 			})
 			if err != nil {
 				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_bastionhost_tags ", request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			res, _ := raw.(*yundun_bastionhost.ListTagResourcesResponse)
-			tags = append(tags, res.TagResources)
+			tags = append(tags, response.TagResources)
 		}
 	}
 	return WrapError(extractBastionhostInstance(d, specs, tags))
