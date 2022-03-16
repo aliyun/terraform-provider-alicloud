@@ -134,7 +134,7 @@ func resourceAlicloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) && IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -187,7 +187,7 @@ func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if NeedRetry(err) && IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -248,7 +248,7 @@ func resourceAlicloudNasFileSystemDelete(d *schema.ResourceData, meta interface{
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) && IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
 				wait()
 				return resource.RetryableError(err)
 			}
