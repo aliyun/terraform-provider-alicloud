@@ -43,7 +43,7 @@ func TestAccAlicloudBastionhostUser_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"user_name":   "tf-testAccBastionHostUser-12345",
 					"source":      "Local",
-					"instance_id": "${alicloud_bastionhost_instance.default.id}",
+					"instance_id": "${data.alicloud_bastionhost_instances.default.ids.0}",
 					"password":    "tf-testAcc-oAupFqRaH24MdOSrsIKsu3qw",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -349,38 +349,8 @@ func AlicloudBastionhostUserBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
-data "alicloud_zones" "default" {
- available_resource_creation = "VSwitch"
-}
-data "alicloud_vpcs" "default" {
- name_regex = "default-NODELETING"
-}
-data "alicloud_vswitches" "default" {
- zone_id = local.zone_id
- vpc_id  = data.alicloud_vpcs.default.ids.0
-}
-resource "alicloud_vswitch" "this" {
- count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
- vswitch_name = var.name
- vpc_id       = data.alicloud_vpcs.default.ids.0
- zone_id      = data.alicloud_zones.default.ids.0
- cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
-}
-resource "alicloud_security_group" "default" {
- vpc_id = data.alicloud_vpcs.default.ids.0
- name   = var.name
-}
-locals {
- vswitch_id  = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
- zone_id     = data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]
-}
-resource "alicloud_bastionhost_instance" "default" {
- description        = var.name
- license_code       = "bhah_ent_50_asset"
- period             = "1"
- vswitch_id         = local.vswitch_id
- security_group_ids = [alicloud_security_group.default.id]
-}
+data "alicloud_bastionhost_instances" "default" {}
+
 `, name)
 }
 func TestAccAlicloudBastionhostUser_basic1(t *testing.T) {
@@ -407,7 +377,7 @@ func TestAccAlicloudBastionhostUser_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"user_name":      "tf-testAccBastionhostUserRam-123456",
 					"source":         "Ram",
-					"instance_id":    "${alicloud_bastionhost_instance.default.id}",
+					"instance_id":    "${data.alicloud_bastionhost_instances.default.ids.0}",
 					"source_user_id": "247823888127488180",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -713,38 +683,8 @@ func AlicloudBastionhostUserBasicDependence1(name string) string {
 variable "name" {
   default = "%s"
 }
-data "alicloud_zones" "default" {
- available_resource_creation = "VSwitch"
-}
-data "alicloud_vpcs" "default" {
- name_regex = "default-NODELETING"
-}
-data "alicloud_vswitches" "default" {
- zone_id = local.zone_id
- vpc_id  = data.alicloud_vpcs.default.ids.0
-}
-resource "alicloud_vswitch" "this" {
- count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
- vswitch_name = var.name
- vpc_id       = data.alicloud_vpcs.default.ids.0
- zone_id      = data.alicloud_zones.default.ids.0
- cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
-}
-resource "alicloud_security_group" "default" {
- vpc_id = data.alicloud_vpcs.default.ids.0
- name   = var.name
-}
-locals {
- vswitch_id  = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
- zone_id     = data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]
-}
-resource "alicloud_bastionhost_instance" "default" {
- description        = var.name
- license_code       = "bhah_ent_50_asset"
- period             = "1"
- vswitch_id         = local.vswitch_id
- security_group_ids = [alicloud_security_group.default.id]
-}
+data "alicloud_bastionhost_instances" "default" {}
+
 `, name)
 }
 
