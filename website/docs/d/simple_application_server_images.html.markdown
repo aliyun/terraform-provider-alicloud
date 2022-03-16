@@ -32,6 +32,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Image IDs.
 * `image_type` - (Optional, ForceNew) The image type. Valid values: `app`, `custom`, `system`.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Image name.
+* `platform` - (Available in v1.161.0) The platform of Image supported. Valid values: ["Linux", "Windows"].
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Argument Reference
@@ -44,6 +45,7 @@ The following attributes are exported in addition to the arguments listed above:
 	* `id` - The ID of the Instance Image.
 	* `image_id` - The ID of the image.
 	* `image_name` - The name of the resource.
+	* `platform` - (Available in v1.161.0) The platform of Plan supported.
 	* `image_type` - The type of the image. Valid values: `app`, `custom`, `system`.
 		* `system`: operating system (OS) image.
 		* `app`: application image.

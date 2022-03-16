@@ -41,6 +41,7 @@ The following arguments are supported:
 * `disk_size` - The size of the enhanced SSD (ESSD). Unit: GB.
 * `flow` - The monthly data transfer quota. Unit: GB.
 * `memory` - The memory size. Unit: GB.
+* `platform` - (Available in v1.161.0) The platform of Plan supported. Valid values: ["Linux", "Windows"].
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Argument Reference
@@ -55,3 +56,4 @@ The following attributes are exported in addition to the arguments listed above:
 	* `id` - The ID of the Instance Plan.
 	* `plan_id` - The ID of the Instance Plan.
 	* `memory` - The memory size. Unit: GB.
+	* `support_platform` - (Available in v1.161.0) The platform of Plan supported.

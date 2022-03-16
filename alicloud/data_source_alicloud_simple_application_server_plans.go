@@ -2,6 +2,8 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -42,6 +44,12 @@ func dataSourceAlicloudSimpleApplicationServerPlans() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"platform": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Linux", "Windows"}, false),
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -77,6 +85,10 @@ func dataSourceAlicloudSimpleApplicationServerPlans() *schema.Resource {
 						},
 						"memory": {
 							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"support_platform": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
@@ -166,19 +178,24 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 			continue
 		}
 
+		if v, ok := d.GetOk("platform"); ok && v.(string) != "" && !strings.Contains(fmt.Sprint(item["SupportPlatform"]), v.(string)) {
+			continue
+		}
+
 		objects = append(objects, item)
 	}
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"bandwidth": formatInt(object["Bandwidth"]),
-			"core":      formatInt(object["Core"]),
-			"disk_size": formatInt(object["DiskSize"]),
-			"flow":      formatInt(object["Flow"]),
-			"id":        fmt.Sprint(object["PlanId"]),
-			"plan_id":   fmt.Sprint(object["PlanId"]),
-			"memory":    formatInt(object["Memory"]),
+			"bandwidth":        formatInt(object["Bandwidth"]),
+			"core":             formatInt(object["Core"]),
+			"disk_size":        formatInt(object["DiskSize"]),
+			"flow":             formatInt(object["Flow"]),
+			"id":               fmt.Sprint(object["PlanId"]),
+			"plan_id":          fmt.Sprint(object["PlanId"]),
+			"memory":           formatInt(object["Memory"]),
+			"support_platform": fmt.Sprint(object["SupportPlatform"]),
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)

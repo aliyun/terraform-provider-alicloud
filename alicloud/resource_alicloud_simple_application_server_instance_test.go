@@ -10,9 +10,6 @@ import (
 )
 
 func TestAccAlicloudSimpleApplicationServerInstance_basic0(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_simple_application_server_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudSimpleApplicationServerInstanceMap0)
@@ -22,11 +19,12 @@ func TestAccAlicloudSimpleApplicationServerInstance_basic0(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sswas%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testaccswasinstance%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSimpleApplicationServerInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -131,7 +129,12 @@ func AlicloudSimpleApplicationServerInstanceBasicDependence0(name string) string
 variable "name" {
   default = "%s"
 }
-data "alicloud_simple_application_server_images" "default" {}
-data "alicloud_simple_application_server_plans" "default" {}
+data "alicloud_simple_application_server_images" "default" {
+	platform = "Linux"
+}
+data "alicloud_simple_application_server_plans" "default" {
+	platform = "Linux"
+}
+
 `, name)
 }

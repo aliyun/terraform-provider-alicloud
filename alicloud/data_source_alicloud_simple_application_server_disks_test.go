@@ -10,12 +10,9 @@ import (
 )
 
 func TestAccAlicloudSimpleApplicationServerDisksDataSource(t *testing.T) {
-	defer checkoutAccount(t, false)
-	checkoutAccount(t, true)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "data.alicloud_simple_application_server_disks.default"
 	rand := acctest.RandIntRange(100000, 999999)
-	name := fmt.Sprintf("tf-testacc-simpleapplicationserverdisk-%d", rand)
+	name := fmt.Sprintf("tf-testacc-swasdisk-%d", rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceSimpleApplicationServerDisksDependence)
 
 	diskTypeConf := dataSourceTestAccConfig{
@@ -27,7 +24,7 @@ func TestAccAlicloudSimpleApplicationServerDisksDataSource(t *testing.T) {
 
 	instanceIdConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${local.instance_id}",
+			"instance_id": "${alicloud_simple_application_server_instance.default.id}",
 		}),
 		fakeConfig: "",
 	}
@@ -41,7 +38,7 @@ func TestAccAlicloudSimpleApplicationServerDisksDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${local.instance_id}",
+			"instance_id": "${alicloud_simple_application_server_instance.default.id}",
 			"status":      "In_use",
 			"disk_type":   "System",
 		}),
@@ -79,7 +76,11 @@ func TestAccAlicloudSimpleApplicationServerDisksDataSource(t *testing.T) {
 		fakeMapFunc:  fakeSimpleApplicationServerDiskMapFunc,
 	}
 
-	SimpleApplicationServerDiskCheckInfo.dataSourceTestCheck(t, rand, diskTypeConf, instanceIdConf, statusConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
+	}
+
+	SimpleApplicationServerDiskCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, diskTypeConf, instanceIdConf, statusConf, allConf)
 }
 
 func dataSourceSimpleApplicationServerDisksDependence(name string) string {
@@ -88,23 +89,20 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_simple_application_server_instances" "default" {}
-
-data "alicloud_simple_application_server_images" "default" {}
-
-data "alicloud_simple_application_server_plans" "default" {}
-
-resource "alicloud_simple_application_server_instance" "default" {
-  count          = length(data.alicloud_simple_application_server_instances.default.ids) > 0 ? 0 : 1
-  payment_type   = "Subscription"
-  plan_id        = data.alicloud_simple_application_server_plans.default.plans.0.id
-  instance_name  = "tf-testaccswas-disks"
-  image_id       = data.alicloud_simple_application_server_images.default.images.0.id
-  period         = 1
+data "alicloud_simple_application_server_images" "default" {
+	platform = "Linux"
+}
+data "alicloud_simple_application_server_plans" "default" {
+	platform = "Linux"
 }
 
-locals {
-  instance_id = length(data.alicloud_simple_application_server_instances.default.ids) > 0 ? data.alicloud_simple_application_server_instances.default.ids.0 : alicloud_simple_application_server_instance.default.0.id
+resource "alicloud_simple_application_server_instance" "default" {
+  payment_type   = "Subscription"
+  plan_id        = data.alicloud_simple_application_server_plans.default.plans.0.id
+  instance_name  = var.name
+  image_id       = data.alicloud_simple_application_server_images.default.images.0.id
+  period         = 1
+  data_disk_size = 100
 }
 `, name)
 }
