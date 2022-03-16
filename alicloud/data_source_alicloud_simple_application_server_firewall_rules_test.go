@@ -10,13 +10,10 @@ import (
 )
 
 func TestAccAlicloudSimpleApplicationServerFirewallRulesDataSource(t *testing.T) {
-	defer checkoutAccount(t, false)
-	checkoutAccount(t, true)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "data.alicloud_simple_application_server_firewall_rules.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	checkoutSupportedRegions(t, true, connectivity.SWASSupportRegions)
-	name := fmt.Sprintf("tf-testacc-simpleapplicationserverfirewallrule-%d", rand)
+	name := fmt.Sprintf("tf-testacc-swasfirewallrule-%d", rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceSimpleApplicationServerFirewallRulesDependence)
 
 	idsConf := dataSourceTestAccConfig{
@@ -56,7 +53,10 @@ func TestAccAlicloudSimpleApplicationServerFirewallRulesDataSource(t *testing.T)
 		fakeMapFunc:  fakeSimpleApplicationServerFirewallRuleMapFunc,
 	}
 
-	SimpleApplicationServerFirewallRuleCheckInfo.dataSourceTestCheck(t, rand, idsConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
+	}
+	SimpleApplicationServerFirewallRuleCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
 }
 
 func dataSourceSimpleApplicationServerFirewallRulesDependence(name string) string {
@@ -65,24 +65,24 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_simple_application_server_instances" "default" {}
-
-data "alicloud_simple_application_server_images" "default" {}
-
-data "alicloud_simple_application_server_plans" "default" {}
+data "alicloud_simple_application_server_images" "default" {
+	platform = "Linux"
+}
+data "alicloud_simple_application_server_plans" "default" {
+	platform = "Linux"
+}
 
 resource "alicloud_simple_application_server_instance" "default" {
-  count          = length(data.alicloud_simple_application_server_instances.default.ids) > 0 ? 0 : 1
   payment_type   = "Subscription"
   plan_id        = data.alicloud_simple_application_server_plans.default.plans.0.id
-  instance_name  = "tf-testaccswas-firewallrule"
+  instance_name  = var.name
   image_id       = data.alicloud_simple_application_server_images.default.images.0.id
   period         = 1
   data_disk_size = 100
 }
 
 resource "alicloud_simple_application_server_firewall_rule" "default" {
-  instance_id   = length(data.alicloud_simple_application_server_instances.default.ids) > 0 ? data.alicloud_simple_application_server_instances.default.ids.0 : alicloud_simple_application_server_instance.default.0.id
+  instance_id   = alicloud_simple_application_server_instance.default.id
   rule_protocol = "Tcp"
   port          = "9999"
   remark        = var.name

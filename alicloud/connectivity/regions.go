@@ -183,3 +183,4 @@ var DCDNSupportRegions = []Region{Hangzhou, APSouthEast1, APNorthEast1}
 var GpdbElasticInstanceSupportRegions = []Region{Beijing, Hangzhou, Shanghai, Shenzhen, APSouthEast1, APSouthEast5, Hongkong}
 var PolarDBSupportRegions = []Region{Hangzhou}
 var ESSSupportRegions = []Region{Beijing}
+var SimpleApplicationServerNotSupportRegions = []Region{EUCentral1}

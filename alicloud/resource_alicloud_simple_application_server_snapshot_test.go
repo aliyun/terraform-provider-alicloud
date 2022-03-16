@@ -11,7 +11,6 @@ import (
 
 func TestAccAlicloudSimpleApplicationServerSnapshot_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.SWASSupportRegions)
 	resourceId := "alicloud_simple_application_server_snapshot.default"
 	ra := resourceAttrInit(resourceId, AlicloudSimpleApplicationServerSnapshotMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -25,7 +24,7 @@ func TestAccAlicloudSimpleApplicationServerSnapshot_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{12})
+			testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -62,23 +61,24 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_simple_application_server_instances" "default" {}
-
-data "alicloud_simple_application_server_images" "default" {}
-
-data "alicloud_simple_application_server_plans" "default" {}
+data "alicloud_simple_application_server_images" "default" {
+	platform = "Linux"
+}
+data "alicloud_simple_application_server_plans" "default" {
+	platform = "Linux"
+}
 
 resource "alicloud_simple_application_server_instance" "default" {
-  count          = length(data.alicloud_simple_application_server_instances.default.ids) > 0 ? 0 : 1
   payment_type   = "Subscription"
   plan_id        = data.alicloud_simple_application_server_plans.default.plans.0.id
-  instance_name  = "tf-testaccswas-disks"
+  instance_name  = var.name
   image_id       = data.alicloud_simple_application_server_images.default.images.0.id
   period         = 1
+  data_disk_size = 100
 }
 
 data "alicloud_simple_application_server_disks" "default" {
-  instance_id = length(data.alicloud_simple_application_server_instances.default.ids) > 0 ? data.alicloud_simple_application_server_instances.default.ids.0 : alicloud_simple_application_server_instance.default.0.id
+  instance_id = alicloud_simple_application_server_instance.default.id
 }
 `, name)
 }
