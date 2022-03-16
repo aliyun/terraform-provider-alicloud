@@ -382,6 +382,11 @@ func convertBoolToString(configured bool) string {
 	return strconv.FormatBool(configured)
 }
 
+func convertStringToBool(configured string) bool {
+	v, _ := strconv.ParseBool(configured)
+	return v
+}
+
 func convertIntergerToString(configured int) string {
 	return strconv.Itoa(configured)
 }
