@@ -116,9 +116,10 @@ func TestAccAlicloudALBListener_basic0(t *testing.T) {
 	}, "DescribeAlbListener")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 1000)
-	port := fmt.Sprintf("%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, port, AlicloudALBListenerBasicDependence0)
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testaccalblistener%d", rand)
+	port := fmt.Sprintf("%d", acctest.RandIntRange(1, 1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBListenerBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -131,7 +132,7 @@ func TestAccAlicloudALBListener_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id":     "${local.load_balancer_id}",
 					"listener_protocol":    "HTTPS",
-					"listener_port":        "${var.port}",
+					"listener_port":        port,
 					"listener_description": "tf-testAccListener_new",
 					"default_actions": []map[string]interface{}{
 						{
@@ -434,9 +435,10 @@ func TestAccAlicloudALBListener_basic1(t *testing.T) {
 	}, "DescribeAlbListener")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 1000)
-	port := fmt.Sprintf("%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, port, AlicloudALBListenerBasicDependence0)
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testaccalblistener%d", rand)
+	port := fmt.Sprintf("%d", acctest.RandIntRange(1, 1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBListenerBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -449,7 +451,7 @@ func TestAccAlicloudALBListener_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id":     "${local.load_balancer_id}",
 					"listener_protocol":    "HTTPS",
-					"listener_port":        "${var.port}",
+					"listener_port":        port,
 					"listener_description": "tf-testAccListener_new",
 					"default_actions": []map[string]interface{}{
 						{
@@ -553,9 +555,10 @@ func TestAccAlicloudALBListener_basic2(t *testing.T) {
 	}, "DescribeAlbListener")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 1000)
-	port := fmt.Sprintf("%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, port, AlicloudALBListenerBasicDependence0)
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testaccalblistener%d", rand)
+	port := fmt.Sprintf("%d", acctest.RandIntRange(1, 1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBListenerBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -568,7 +571,7 @@ func TestAccAlicloudALBListener_basic2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id":     "${local.load_balancer_id}",
 					"listener_protocol":    "HTTPS",
-					"listener_port":        "${var.port}",
+					"listener_port":        port,
 					"listener_description": "tf-testAccListener_new",
 					"default_actions": []map[string]interface{}{
 						{
@@ -655,12 +658,8 @@ var AlicloudALBListenerMap0 = map[string]string{
 	"dry_run": NOSET,
 }
 
-func AlicloudALBListenerBasicDependence0(port string) string {
+func AlicloudALBListenerBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-variable "port" {
-   default = "%s"
-}
-
 variable "name" {	
 	default = "tf-testaccalblistener%s"
 }
@@ -807,5 +806,5 @@ locals {
  server_group_id = alicloud_alb_server_group.default_4.id
  certificate_id = join("",[alicloud_ssl_certificates_service_certificate.default.id,"-%s"])
 }
-`, port, port, defaultRegionToTest)
+`, name, defaultRegionToTest)
 }

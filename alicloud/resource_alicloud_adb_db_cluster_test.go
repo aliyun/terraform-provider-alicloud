@@ -107,8 +107,6 @@ func testSweepAdbDbInstances(region string) error {
 }
 
 func TestAccAlicloudAdbDbCluster_basic(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AlicloudAdbDbClusterMap0)
