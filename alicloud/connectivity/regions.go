@@ -117,7 +117,6 @@ var PrivateLinkRegions = []Region{EUCentral1}
 var BrainIndustrialRegions = []Region{Hangzhou}
 var EciContainerGroupRegions = []Region{Hangzhou}
 var TsdbInstanceSupportRegions = []Region{Beijing, Hangzhou, Shenzhen, Shanghai, ShenZhenFinance, Qingdao, Zhangjiakou, ShanghaiFinance, Hongkong, USWest1, APNorthEast1, EUWest1, APSouthEast1, APSouthEast2, APSouthEast3, EUCentral1, APSouthEast5, Zhangjiakou, CnNorth2Gov1}
-var EipanycastSupportRegions = []Region{Hangzhou}
 var VpcIpv6SupportRegions = []Region{Hangzhou, Shanghai, Shenzhen, Beijing, Huhehaote, Hongkong, APSouthEast1}
 var EssdSupportRegions = []Region{Zhangjiakou, Huhehaote}
 var AdbReserverUnSupportRegions = []Region{EUCentral1}
