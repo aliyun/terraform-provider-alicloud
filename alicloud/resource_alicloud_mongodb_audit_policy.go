@@ -21,6 +21,10 @@ func resourceAlicloudMongodbAuditPolicy() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(1 * time.Minute),
+			Update: schema.DefaultTimeout(1 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"db_instance_id": {
 				Type:     schema.TypeString,
@@ -52,6 +56,7 @@ func resourceAlicloudMongodbAuditPolicyCreate(d *schema.ResourceData, meta inter
 	}
 	request["DBInstanceId"] = d.Get("db_instance_id")
 	request["AuditStatus"] = d.Get("audit_status")
+	request["ServiceType"] = "Standard"
 	if v, ok := d.GetOk("storage_period"); ok {
 		request["StoragePeriod"] = v
 	}
@@ -73,6 +78,11 @@ func resourceAlicloudMongodbAuditPolicyCreate(d *schema.ResourceData, meta inter
 	}
 
 	d.SetId(fmt.Sprint(request["DBInstanceId"]))
+	ddsService := MongoDBService{client}
+	stateConf := BuildStateConf([]string{"AuditLogOpening"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"AuditLogClosing"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
+	}
 
 	return resourceAlicloudMongodbAuditPolicyRead(d, meta)
 }
@@ -130,6 +140,12 @@ func resourceAlicloudMongodbAuditPolicyUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+	}
+	d.SetId(fmt.Sprint(request["DBInstanceId"]))
+	ddsService := MongoDBService{client}
+	stateConf := BuildStateConf([]string{"AuditLogOpening", "AuditLogClosing"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
 	}
 
 	return resourceAlicloudMongodbAuditPolicyRead(d, meta)
