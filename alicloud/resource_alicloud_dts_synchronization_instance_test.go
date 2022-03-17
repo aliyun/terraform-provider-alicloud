@@ -60,7 +60,6 @@ func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
 
 var AlicloudDTSSynchronizationInstanceMap0 = map[string]string{
 	"sync_architecture":         NOSET,
-	"auto_start":                NOSET,
 	"compute_unit":              NOSET,
 	"period":                    NOSET,
 	"used_time":                 NOSET,
