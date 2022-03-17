@@ -86,24 +86,11 @@ resource "alicloud_cen_transit_router_route_table_association" "default" {
 
 The following arguments are supported:
 
-* `vpc_id` - (Required, ForceNew) The ID of the VPC.
-* `cen_id` - (Optional, ForceNew) The ID of the CEN.
-* `transit_router_id` - (Optional, ForceNew) The ID of the transit router.
-* `zone_mapping` - (Required, ForceNew) The list of zone mapping of the VPC.
-* `transit_router_attachment_name` - (Optional) The name of the transit router vbr attachment.
-* `transit_router_attachment_description` - (Optional) The description of the transit router vbr attachment.
 * `transit_router_route_table_id` - (Required, ForceNew) The ID of the transit router route table.
 * `transit_router_attachment_id` - (Required, ForceNew) The ID the transit router attachment.
 * `dry_run` - (Optional) The dry run.
 
 -> **NOTE:** The Zone of CEN has MasterZone and SlaveZone, first zone_id of zone_mapping need be MasterZone. We have a API to describeZones[API](https://help.aliyun.com/document_detail/261356.html)
-
-#### ZoneMapping Block
-
-The `zone_mapping` supports the following:
-
-* `vswitch_id` - (Optional, ForceNew) The VSwitch id of attachment.
-* `zone_id` - (Optional, ForceNew) The zone Id of VSwitch.
 
 ## Attributes Reference
 

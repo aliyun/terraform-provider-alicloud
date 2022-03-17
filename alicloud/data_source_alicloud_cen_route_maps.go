@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -248,7 +249,7 @@ func dataSourceAlicloudCenRouteMapsRead(d *schema.ResourceData, meta interface{}
 				}
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.RouteMapId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item.CenId, ":", item.RouteMapId)]; !ok {
 					continue
 				}
 			}
@@ -270,6 +271,7 @@ func dataSourceAlicloudCenRouteMapsRead(d *schema.ResourceData, meta interface{}
 	ids := make([]string, len(objects))
 	s := make([]map[string]interface{}, len(objects))
 	for i, object := range objects {
+		id := fmt.Sprint(object.CenId, ":", object.RouteMapId)
 		mapping := map[string]interface{}{
 			"as_path_match_mode":                     object.AsPathMatchMode,
 			"cen_id":                                 object.CenId,
@@ -291,7 +293,7 @@ func dataSourceAlicloudCenRouteMapsRead(d *schema.ResourceData, meta interface{}
 			"preference":                             object.Preference,
 			"prepend_as_path":                        object.PrependAsPath.AsPath,
 			"priority":                               object.Priority,
-			"id":                                     object.RouteMapId,
+			"id":                                     id,
 			"route_map_id":                           object.RouteMapId,
 			"route_types":                            object.RouteTypes.RouteType,
 			"source_child_instance_types":            object.SourceChildInstanceTypes.SourceChildInstanceType,
@@ -302,7 +304,7 @@ func dataSourceAlicloudCenRouteMapsRead(d *schema.ResourceData, meta interface{}
 			"status":                                 object.Status,
 			"transmit_direction":                     object.TransmitDirection,
 		}
-		ids[i] = object.RouteMapId
+		ids[i] = id
 		s[i] = mapping
 	}
 

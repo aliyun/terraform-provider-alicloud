@@ -358,7 +358,8 @@ func TestAccAlicloudCenRouteMap_multi(t *testing.T) {
 }
 
 var cenRouteMapBasicMap = map[string]string{
-	"cen_id": CHECKSET,
+	"cen_id":       CHECKSET,
+	"route_map_id": CHECKSET,
 }
 
 func resourceCenRouteMapChildInstanceSameRegionConfigDependence(name string) string {

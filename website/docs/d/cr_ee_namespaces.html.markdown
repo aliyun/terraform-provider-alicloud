@@ -41,11 +41,11 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of matched Container Registry Enterprise Edition namespaces. Each item formats as `<instance_id>:<namespace_name>`. Before 1.161.0, tts element is a namespace uuid.
+* `ids` - A list of matched Container Registry Enterprise Edition namespaces. Each item formats as `<instance_id>:<namespace_name>`. Before 1.161.0, its element is a namespace uuid.
 * `names` - A list of namespace names.
 * `namespaces` - A list of matched Container Registry Enterprise Edition namespaces. Each element contains the following attributes:
   * `instance_id` - ID of Container Registry Enterprise Edition instance.
-  * `id` - ID of Container Registry Enterprise Edition namespace. Each item formats as `<instance_id>:<namespace_name>`. Before 1.161.0, tts element is a namespace uuid.
+  * `id` - ID of Container Registry Enterprise Edition namespace. It formats as `<instance_id>:<namespace_name>`. Before 1.161.0, it is a namespace uuid.
   * `name` - Name of Container Registry Enterprise Edition namespace.
   * `namespace_name` - Name of Container Registry Enterprise Edition namespace.
   * `namespace_id` - Container Registry Enterprise Edition namespace id. It is a uuid. 
