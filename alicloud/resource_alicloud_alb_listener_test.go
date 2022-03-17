@@ -679,7 +679,7 @@ func TestAccAlicloudALBListener_basic3(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id":     "${local.load_balancer_id}",
 					"listener_protocol":    "HTTPS",
-					"listener_port":        "${var.port}",
+					"listener_port":        port,
 					"listener_description": "tf-testAccListener_new",
 					"default_actions": []map[string]interface{}{
 						{

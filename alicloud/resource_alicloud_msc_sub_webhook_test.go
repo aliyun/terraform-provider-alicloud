@@ -116,7 +116,7 @@ func TestAccAlicloudMscSubWebhook_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithEnvVariable(t, "ALICLOUD_WAF_MSC_SUB_TOKEN")
+			testAccPreCheckWithEnvVariable(t, "ALICLOUD_MSC_SUB_WEBHOOK_TOKEN")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -130,7 +130,7 @@ func TestAccAlicloudMscSubWebhook_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"webhook_name": name,
-						"server_url":   "https://oapi.dingtalk.com/robot/send?access_token=" + os.Getenv("ALICLOUD_WAF_MSC_SUB_TOKEN"),
+						"server_url":   "https://oapi.dingtalk.com/robot/send?access_token=" + os.Getenv("ALICLOUD_MSC_SUB_WEBHOOK_TOKEN"),
 					}),
 				),
 			},
@@ -150,7 +150,7 @@ func TestAccAlicloudMscSubWebhook_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"server_url": "https://oapi.dingtalk.com/robot/send?access_token=" + os.Getenv("ALICLOUD_WAF_MSC_SUB_TOKEN"),
+						"server_url": "https://oapi.dingtalk.com/robot/send?access_token=" + os.Getenv("ALICLOUD_MSC_SUB_WEBHOOK_TOKEN"),
 					}),
 				),
 			},
@@ -162,7 +162,7 @@ func TestAccAlicloudMscSubWebhook_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"webhook_name": name,
-						"server_url":   "https://oapi.dingtalk.com/robot/send?access_token=" + os.Getenv("ALICLOUD_WAF_MSC_SUB_TOKEN"),
+						"server_url":   "https://oapi.dingtalk.com/robot/send?access_token=" + os.Getenv("ALICLOUD_MSC_SUB_WEBHOOK_TOKEN"),
 					}),
 				),
 			},
@@ -188,5 +188,5 @@ variable "name" {
 variable "token" {
   default = "%s"
 }
-`, name, os.Getenv("ALICLOUD_WAF_MSC_SUB_TOKEN"))
+`, name, os.Getenv("ALICLOUD_MSC_SUB_WEBHOOK_TOKEN"))
 }
