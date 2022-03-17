@@ -188,15 +188,15 @@ resource "alicloud_alb_listener" "default" {
     }
   }
   certificates {
-    certificate_id = join("", [alicloud_ssl_certificates_service_certificate.default.0.id, "-cn-hangzhou"])
+    certificate_id = join("", [alicloud_ssl_certificates_service_certificate.default.0.id, "-%s"])
   }
 }
 
 locals{
-  certificate_id = join("", [alicloud_ssl_certificates_service_certificate.default.1.id, "-cn-hangzhou"])
+  certificate_id = join("", [alicloud_ssl_certificates_service_certificate.default.1.id, "-%s"])
 }
 
-`, name)
+`, name, defaultRegionToTest, defaultRegionToTest)
 }
 
 func TestAccAlicloudAlbListenerAdditionalCertificateAttachment_unit(t *testing.T) {
