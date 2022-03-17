@@ -26,9 +26,10 @@ func dataSourceAlicloudCddcDedicatedHostGroups() *schema.Resource {
 				Computed: true,
 			},
 			"engine": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Redis", "SQLServer", "MySQL", "PostgreSQL", "MongoDB"}, false),
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -274,7 +275,7 @@ func dataSourceAlicloudCddcDedicatedHostGroupsRead(d *schema.ResourceData, meta 
 			"disk_allocation_ratio":     formatInt(object["DiskAllocationRatio"]),
 			"disk_used_amount":          object["DiskUsedAmount"],
 			"disk_utility":              object["DiskUtility"],
-			"engine":                    object["Engine"],
+			"engine":                    convertCddcDedicatedHostGroupEngineResponse(object["Engine"]),
 			"host_number":               formatInt(object["HostNumber"]),
 			"host_replace_policy":       object["HostReplacePolicy"],
 			"instance_number":           formatInt(object["InstanceNumber"]),

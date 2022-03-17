@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCDDCDedicatedHost_basic0(t *testing.T) {
+func TestAccAlicloudCddcDedicatedHost_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostMap0)
@@ -24,7 +24,6 @@ func TestAccAlicloudCDDCDedicatedHost_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -121,7 +120,7 @@ func TestAccAlicloudCDDCDedicatedHost_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDDCDedicatedHost_basic1(t *testing.T) {
+func TestAccAlicloudCddcDedicatedHost_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostMap0)
@@ -136,7 +135,6 @@ func TestAccAlicloudCDDCDedicatedHost_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -214,7 +212,6 @@ data "alicloud_vswitches" "default" {
 
 data "alicloud_cddc_dedicated_host_groups" "default" {
   engine     = "MySQL"
-  name_regex = "default-NODELETING"
 }
 `, name)
 }

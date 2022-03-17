@@ -281,46 +281,55 @@ func (s *CddcService) DescribeCddcDedicatedHostAccount(id string) (object map[st
 		"DedicatedHostId": parts[0],
 		"PageSize":        PageSizeMedium,
 	}
-	idExist := false
-	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &runtime)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		}
-		v, err := jsonpath.Get("$.DedicatedHosts.DedicatedHosts", response)
-		if err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DedicatedHosts.DedicatedHosts", response)
-		}
-		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CDDC", id)), NotFoundWithResponse, response)
-		}
-		for _, v := range v.([]interface{}) {
-			if fmt.Sprint(v.(map[string]interface{})["AccountName"]) == parts[1] {
-				idExist = true
-				return v.(map[string]interface{}), nil
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
 			}
+			return resource.NonRetryableError(err)
 		}
-		if len(v.([]interface{})) < request["PageSize"].(int) {
-			break
-		}
-		request["PageNumber"] = request["PageNumber"].(int) + 1
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if !idExist {
+	v, err := jsonpath.Get("$.DedicatedHosts.DedicatedHosts", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DedicatedHosts.DedicatedHosts", response)
+	}
+	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CDDC", id)), NotFoundWithResponse, response)
 	}
-	return
+	for _, v := range v.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["AccountName"]) == parts[1] {
+			return v.(map[string]interface{}), nil
+		}
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("CDDC", id)), NotFoundWithResponse, response)
+}
+
+func (s *CddcService) CddcDedicatedHostAccountStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCddcDedicatedHostAccount(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["AccountName"]) == failState {
+				return object, fmt.Sprint(object["AccountName"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["AccountName"])))
+			}
+		}
+		return object, fmt.Sprint(object["AccountName"]), nil
+	}
 }

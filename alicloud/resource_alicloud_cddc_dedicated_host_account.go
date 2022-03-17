@@ -87,13 +87,18 @@ func resourceAlicloudCddcDedicatedHostAccountCreate(d *schema.ResourceData, meta
 	}
 
 	d.SetId(fmt.Sprint(request["DedicatedHostId"], ":", request["AccountName"]))
+	cddcService := CddcService{client}
+	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(request["AccountName"])}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cddcService.CddcDedicatedHostAccountStateRefreshFunc(d, []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return resourceAlicloudCddcDedicatedHostAccountRead(d, meta)
 }
 func resourceAlicloudCddcDedicatedHostAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cddcService := CddcService{client}
-	_, err := cddcService.DescribeCddcDedicatedHostAccount(d.Id())
+	object, err := cddcService.DescribeCddcDedicatedHostAccount(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cddc_dedicated_host_account cddcService.DescribeCddcDedicatedHostAccount Failed!!! %s", err)
@@ -102,12 +107,9 @@ func resourceAlicloudCddcDedicatedHostAccountRead(d *schema.ResourceData, meta i
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("account_name", parts[1])
-	d.Set("dedicated_host_id", parts[0])
+	d.Set("account_name", object["AccountName"])
+	d.Set("account_type", object["AccountType"])
+	d.Set("dedicated_host_id", object["DedicatedHostId"])
 	return nil
 }
 func resourceAlicloudCddcDedicatedHostAccountUpdate(d *schema.ResourceData, meta interface{}) error {

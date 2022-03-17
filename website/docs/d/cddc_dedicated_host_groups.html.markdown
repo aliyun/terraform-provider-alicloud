@@ -31,7 +31,7 @@ output "cddc_dedicated_host_group_id" {
 The following arguments are supported:
 
 * `name_regex` - (Optional, ForceNew, Available in 1.147.0+) A regex string to filter results by Dedicated Host Group name.
-* `engine` - (Optional, ForceNew) Database Engine Type.
+* `engine` - (Optional, ForceNew) Database Engine Type. Valid values:`Redis`, `SQLServer`, `MySQL`, `PostgreSQL`, `MongoDB`
 * `ids` - (Optional, ForceNew, Computed)  A list of Dedicated Host Group IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
