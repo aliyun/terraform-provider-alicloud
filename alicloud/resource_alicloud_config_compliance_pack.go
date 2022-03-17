@@ -360,6 +360,9 @@ func resourceAlicloudConfigCompliancePackUpdate(d *schema.ResourceData, meta int
 			})
 			addDebug(action, response, removeRulesReq)
 			if err != nil {
+				if IsExpectedErrors(err, []string{"Invalid.ConfigRuleId.Value"}) {
+					return nil
+				}
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 		}
@@ -433,6 +436,9 @@ func resourceAlicloudConfigCompliancePackDelete(d *schema.ResourceData, meta int
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"Invalid.CompliancePackId.Value"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil

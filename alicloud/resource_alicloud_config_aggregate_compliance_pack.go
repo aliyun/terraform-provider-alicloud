@@ -385,6 +385,9 @@ func resourceAlicloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData,
 			})
 			addDebug(action, response, removeRulesReq)
 			if err != nil {
+				if IsExpectedErrors(err, []string{"Invalid.ConfigRuleId.Value"}) {
+					return nil
+				}
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 		}
