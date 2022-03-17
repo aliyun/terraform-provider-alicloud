@@ -2,10 +2,19 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"reflect"
 	"testing"
 
+	"github.com/agiledragon/gomonkey/v2"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
 
+	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -780,4 +789,405 @@ resource "alicloud_oss_bucket" "default" {
   bucket = var.name
 }
 `, name)
+}
+
+func TestAccAlicloudCloudStorageGatewayGatewayFileShare_unit(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_file_share"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_file_share"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"access_based_enumeration": true,
+		"backend_limit":            1,
+		"browsable":                true,
+		"cache_mode":               "Cache",
+		"direct_io":                true,
+		"download_limit":           1,
+		"fast_reclaim":             true,
+		"fe_limit":                 1,
+		"bypass_cache_read":        true,
+		"gateway_file_share_name":  "CreateGatewayFileShareValue",
+		"ignore_delete":            true,
+		"in_place":                 true,
+		"lag_period":               5,
+		"local_path":               "CreateGatewayFileShareValue",
+		"nfs_v4_optimization":      true,
+		"oss_bucket_name":          "CreateGatewayFileShareValue",
+		"oss_bucket_ssl":           true,
+		"oss_endpoint":             "CreateGatewayFileShareValue",
+		"partial_sync_paths":       "CreateGatewayFileShareValue",
+		"path_prefix":              "CreateGatewayFileShareValue",
+		"polling_interval":         1,
+		"protocol":                 "CreateGatewayFileShareValue",
+		"remote_sync":              true,
+		"remote_sync_download":     true,
+		"ro_client_list":           "CreateGatewayFileShareValue",
+		"ro_user_list":             "CreateGatewayFileShareValue",
+		"rw_client_list":           "CreateGatewayFileShareValue",
+		"rw_user_list":             "CreateGatewayFileShareValue",
+		"squash":                   "none",
+		"support_archive":          true,
+		"transfer_acceleration":    true,
+		"windows_acl":              true,
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		// DescribeGatewayFileShares
+		"FileShares": map[string]interface{}{
+			"FileShare": []interface{}{
+				map[string]interface{}{
+					"GatewayId":              "CreateGatewayFileShareValue",
+					"IndexId":                "CreateGatewayFileShareValue",
+					"AccessBasedEnumeration": true,
+					"BeLimit":                1,
+					"Browsable":              true,
+					"CacheMode":              "Cache",
+					"DirectIO":               true,
+					"DownloadLimit":          1,
+					"FastReclaim":            true,
+					"FeLimit":                1,
+					"Name":                   "CreateGatewayFileShareValue",
+					"IgnoreDelete":           true,
+					"InPlace":                true,
+					"LagPeriod":              5,
+					"LocalPath":              "CreateGatewayFileShareValue",
+					"NfsV4Optimization":      true,
+					"OssBucketName":          "CreateGatewayFileShareValue",
+					"OssBucketSsl":           true,
+					"OssEndpoint":            "CreateGatewayFileShareValue",
+					"PartialSyncPaths":       "CreateGatewayFileShareValue",
+					"PathPrefix":             "CreateGatewayFileShareValue",
+					"PollingInterval":        1,
+					"Protocol":               "CreateGatewayFileShareValue",
+					"BypassCacheRead":        true,
+					"RemoteSync":             true,
+					"RemoteSyncDownload":     true,
+					"RoClientList":           "CreateGatewayFileShareValue",
+					"RoUserList":             "CreateGatewayFileShareValue",
+					"RwClientList":           "CreateGatewayFileShareValue",
+					"RwUserList":             "CreateGatewayFileShareValue",
+					"Squash":                 "none",
+					"SupportArchive":         true,
+					"TransferAcceleration":   true,
+					"WindowsAcl":             true,
+				},
+			},
+		},
+		"Tasks": map[string]interface{}{
+			"SimpleTask": []interface{}{
+				map[string]interface{}{
+					"TaskId":            "CreateGatewayFileShareValue",
+					"StateCode":         "task.state.completed",
+					"RelatedResourceId": "CreateGatewayFileShareValue",
+				},
+			},
+		},
+		"TaskId":  "CreateGatewayFileShareValue",
+		"Success": true,
+	}
+	CreateMockResponse := map[string]interface{}{
+		// CreateGatewayFileShare
+		"FileShares": map[string]interface{}{
+			"FileShare": []interface{}{
+				map[string]interface{}{
+					"IndexId": "CreateGatewayFileShareValue",
+				},
+			},
+		},
+		"Tasks": map[string]interface{}{
+			"SimpleTask": []interface{}{
+				map[string]interface{}{
+					"TaskId":            "CreateGatewayFileShareValue",
+					"StateCode":         "task.state.completed",
+					"RelatedResourceId": "CreateGatewayFileShareValue",
+				},
+			},
+		},
+		"TaskId":  "CreateGatewayFileShareValue",
+		"Success": true,
+	}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       String(errorCode),
+			Data:       String(errorCode),
+			Message:    String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_cloud_storage_gateway_gateway_file_share", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			mapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+
+	// Create
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewHcsSgwClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:    String("loadEndpoint error"),
+			Data:    String("loadEndpoint error"),
+			Message: String("loadEndpoint error"),
+		}
+	})
+	err = resourceAlicloudCloudStorageGatewayGatewayFileShareCreate(dInit, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	ReadMockResponseDiff := map[string]interface{}{
+		// DescribeGatewayFileShares Response
+		"FileShares": map[string]interface{}{
+			"FileShare": []interface{}{
+				map[string]interface{}{
+					"IndexId": "CreateGatewayFileShareValue",
+				},
+			},
+		},
+	}
+	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+		gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "CreateGatewayFileShare" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						successResponseMock(ReadMockResponseDiff)
+						return CreateMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudCloudStorageGatewayGatewayFileShareCreate(dInit, rawClient)
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_file_share"].Schema).Data(dInit.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Update
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewHcsSgwClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:    String("loadEndpoint error"),
+			Data:    String("loadEndpoint error"),
+			Message: String("loadEndpoint error"),
+		}
+	})
+	err = resourceAlicloudCloudStorageGatewayGatewayFileShareUpdate(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	// UpdateGatewayFileShare
+	attributesDiff := map[string]interface{}{
+		"gateway_file_share_name":  "UpdateGatewayFileShareValue",
+		"access_based_enumeration": false,
+		"backend_limit":            2,
+		"browsable":                false,
+		"bypass_cache_read":        false,
+		"cache_mode":               "Sync",
+		"download_limit":           2,
+		"fast_reclaim":             false,
+		"fe_limit":                 2,
+		"ignore_delete":            false,
+		"in_place":                 false,
+		"lag_period":               10,
+		"nfs_v4_optimization":      false,
+		"polling_interval":         2,
+		"remote_sync":              false,
+		"remote_sync_download":     false,
+		"ro_client_list":           "UpdateGatewayFileShareValue",
+		"ro_user_list":             "UpdateGatewayFileShareValue",
+		"rw_client_list":           "UpdateGatewayFileShareValue",
+		"rw_user_list":             "UpdateGatewayFileShareValue",
+		"squash":                   "root_squash",
+		"transfer_acceleration":    false,
+		"windows_acl":              false,
+	}
+	diff, err := newInstanceDiff("alicloud_cloud_storage_gateway_gateway_file_share", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_file_share"].Schema).Data(dInit.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeGatewayFileShares Response
+		"FileShares": map[string]interface{}{
+			"FileShare": []interface{}{
+				map[string]interface{}{
+					"AccessBasedEnumeration": false,
+					"Name":                   "UpdateGatewayFileShareValue",
+					"BeLimit":                2,
+					"Browsable":              false,
+					"BypassCacheRead":        false,
+					"CacheMode":              "Sync",
+					"DownloadLimit":          2,
+					"FastReclaim":            false,
+					"FeLimit":                2,
+					"IgnoreDelete":           false,
+					"InPlace":                false,
+					"KmsRotatePeriod":        2,
+					"LagPeriod":              10,
+					"NfsV4Optimization":      false,
+					"PollingInterval":        2,
+					"RemoteSync":             false,
+					"RemoteSyncDownload":     false,
+					"RoClientList":           "UpdateGatewayFileShareValue",
+					"RoUserList":             "UpdateGatewayFileShareValue",
+					"RwClientList":           "UpdateGatewayFileShareValue",
+					"RwUserList":             "UpdateGatewayFileShareValue",
+					"Squash":                 "root_squash",
+					"TransferAcceleration":   false,
+					"WindowsAcl":             false,
+				},
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "UpdateGatewayFileShare" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudCloudStorageGatewayGatewayFileShareUpdate(dExisted, rawClient)
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_file_share"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Read
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DescribeGatewayFileShares" {
+				switch errorCode {
+				case "{}":
+					return notFoundResponseMock(errorCode)
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudCloudStorageGatewayGatewayFileShareRead(dExisted, rawClient)
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "{}":
+			assert.Nil(t, err)
+		}
+	}
+
+	// Delete
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewHcsSgwClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:    String("loadEndpoint error"),
+			Data:    String("loadEndpoint error"),
+			Message: String("loadEndpoint error"),
+		}
+	})
+	err = resourceAlicloudCloudStorageGatewayGatewayFileShareDelete(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	attributesDiff = map[string]interface{}{}
+	diff, err = newInstanceDiff("alicloud_cloud_storage_gateway_gateway_file_share", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_file_share"].Schema).Data(dInit.State(), diff)
+	errorCodes = []string{"NonRetryableError", "Throttling", "GatewayDeletionError", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DeleteGatewayFileShares" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						ReadMockResponse = map[string]interface{}{
+							"Tasks": map[string]interface{}{
+								"SimpleTask": []interface{}{
+									map[string]interface{}{
+										"TaskId":    "CreateGatewayFileShareValue",
+										"StateCode": "task.state.completed",
+									},
+								},
+							},
+							"TaskId":  "CreateGatewayFileShareValue",
+							"Success": true,
+						}
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudCloudStorageGatewayGatewayFileShareDelete(dExisted, rawClient)
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		}
+	}
+
 }
