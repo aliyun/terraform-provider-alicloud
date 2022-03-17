@@ -27,7 +27,7 @@ func resourceAlicloudMscSubSubscription() *schema.Resource {
 				Computed: true,
 			},
 			"contact_ids": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -196,7 +196,7 @@ func resourceAlicloudMscSubSubscriptionUpdate(d *schema.ResourceData, meta inter
 	if d.HasChange("contact_ids") {
 		update = true
 		if v, ok := d.GetOk("contact_ids"); ok {
-			request["ContactIds"] = convertListToJsonString(v.([]interface{}))
+			request["ContactIds"] = convertListToJsonString(v.(*schema.Set).List())
 		}
 	}
 	request["Locale"] = "en"
