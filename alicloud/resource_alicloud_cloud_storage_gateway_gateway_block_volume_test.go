@@ -361,7 +361,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayBlockVolume_unit(t *testing.T) {
 		err := resourceAlicloudCloudStorageGatewayGatewayBlockVolumeUpdate(dExisted, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
-		// ModifyUser
+		//UpdateGatewayBlockVolume
 		attributesDiff := map[string]interface{}{
 			"chap_enabled":     false,
 			"chap_in_password": "UpdateGatewayBlockVolumeValue",
