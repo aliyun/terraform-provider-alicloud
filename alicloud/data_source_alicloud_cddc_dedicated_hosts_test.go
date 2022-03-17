@@ -4,15 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudCddcDedicatedHostsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_cddc_dedicated_hosts.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
-	checkoutSupportedRegions(t, true, connectivity.CddcSupportRegions)
 	name := fmt.Sprintf("tf-testacc-cddcdedicatedhost-%d", rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceCddcDedicatedHostsDependence)
 
@@ -211,7 +208,6 @@ data "alicloud_vswitches" "default" {
 
 data "alicloud_cddc_dedicated_host_groups" "default" {
   engine     = "MySQL"
-  name_regex = "default-NODELETING"
 }
 
 resource "alicloud_cddc_dedicated_host" "default" {
