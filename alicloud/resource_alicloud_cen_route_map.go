@@ -406,15 +406,13 @@ func resourceAlicloudCenRouteMapUpdate(d *schema.ResourceData, meta interface{})
 	}
 	if d.HasChange("destination_cidr_blocks") {
 		update = true
-		destinationCidrBlocks := expandStringList(d.Get("destination_cidr_blocks").(*schema.Set).List())
-		request.DestinationCidrBlocks = &destinationCidrBlocks
-
 	}
+	destinationCidrBlocks := expandStringList(d.Get("destination_cidr_blocks").(*schema.Set).List())
+	request.DestinationCidrBlocks = &destinationCidrBlocks
 	if d.HasChange("destination_instance_ids") {
 		update = true
 		destinationInstanceIds := expandStringList(d.Get("destination_instance_ids").(*schema.Set).List())
 		request.DestinationInstanceIds = &destinationInstanceIds
-
 	}
 	if d.HasChange("destination_instance_ids_reverse_match") {
 		update = true

@@ -191,7 +191,7 @@ func testSweepCenInstances(region string) error {
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 					if err != nil {
-						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"Operation.Blocking", "InvalidOperation.ChildInstanceStatus"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
