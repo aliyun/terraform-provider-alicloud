@@ -12,10 +12,8 @@ import (
 func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(0, 9999)
 	resourceId := "data.alicloud_drds_instances.default"
-
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
-		fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand),
-		dataSourceDRDSInstancesConfigDependence)
+	name := fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceDRDSInstancesConfigDependence)
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -62,13 +60,12 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 			"ids.#":                    "1",
 			"descriptions.#":           "1",
 			"ids.0":                    CHECKSET,
-			"descriptions.0":           fmt.Sprintf("tf-testAcc%sDRDSInstancesDataSource-%d", defaultRegionToTest, rand),
 			"instances.#":              "1",
-			"instances.0.description":  fmt.Sprintf("tf-testAcc%sDRDSInstancesDataSource-%d", defaultRegionToTest, rand),
-			"instances.0.type":         "1",
+			"instances.0.description":  name,
+			"instances.0.type":         "PRIVATE",
 			"instances.0.zone_id":      CHECKSET,
 			"instances.0.id":           CHECKSET,
-			"instances.0.network_type": "vpc",
+			"instances.0.network_type": "VPC",
 			"instances.0.create_time":  CHECKSET,
 		}
 	}
@@ -107,11 +104,12 @@ func dataSourceDRDSInstancesConfigDependence(name string) string {
 	}
 	data "alicloud_vswitches" "default" {
 	  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+      zone_id = data.alicloud_zones.default.ids.0
 	}
  	resource "alicloud_drds_instance" "default" {
   		description = "${var.name}"
   		zone_id = "${data.alicloud_vswitches.default.vswitches.0.zone_id}"
-  		instance_series = "drds.sn2.4c16g"
+  		instance_series = "drds.sn1.4c8g"
   		instance_charge_type = "PostPaid"
 		vswitch_id = "${data.alicloud_vswitches.default.vswitches.0.id}"
   		specification = "drds.sn1.4c8g.8C16G"

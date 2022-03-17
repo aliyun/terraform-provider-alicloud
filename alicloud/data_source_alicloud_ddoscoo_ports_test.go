@@ -11,7 +11,7 @@ import (
 )
 
 func TestAccAlicloudDdoscooPortsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(100, 10000)
+	rand := acctest.RandIntRange(1, 65535)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDdoscooPortsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ddoscoo_port.default.id}"]`,

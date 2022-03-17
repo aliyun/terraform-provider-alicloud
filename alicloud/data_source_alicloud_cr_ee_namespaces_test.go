@@ -29,6 +29,7 @@ func TestAccAlicloudCREENamespacesDataSource(t *testing.T) {
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
+			"ids":         []string{"${alicloud_cr_ee_namespace.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
@@ -40,6 +41,7 @@ func TestAccAlicloudCREENamespacesDataSource(t *testing.T) {
 		existConfig: testAccConfig(map[string]interface{}{
 			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
 			"name_regex":  "${alicloud_cr_ee_namespace.default.name}",
+			"ids":         []string{"${alicloud_cr_ee_namespace.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
@@ -59,6 +61,9 @@ func TestAccAlicloudCREENamespacesDataSource(t *testing.T) {
 			"namespaces.0.default_visibility": "PRIVATE",
 			"namespaces.0.auto_create":        "true",
 			"namespaces.0.instance_id":        CHECKSET,
+			"namespaces.0.id":                 CHECKSET,
+			"namespaces.0.namespace_name":     namespaceName,
+			"namespaces.0.namespace_id":       CHECKSET,
 		}
 	}
 

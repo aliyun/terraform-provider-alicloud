@@ -19,7 +19,7 @@ func TestAccAlicloudDdoscooPort_basic(t *testing.T) {
 	}, "DescribeDdoscooPort")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 10000)
+	rand := acctest.RandIntRange(1, 65530)
 	name := fmt.Sprintf("tf-testacc%sddoscooport%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdoscooPortBasicDependence0)
 	resource.Test(t, resource.TestCase{
@@ -103,8 +103,8 @@ func TestAccAlicloudDdoscooPort_basic1(t *testing.T) {
 	}, "DescribeDdoscooPort")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 10000)
-	name := fmt.Sprintf("tf-testacc%sddoscooport%d", defaultRegionToTest, rand)
+	rand := acctest.RandIntRange(1, 65530)
+	name := fmt.Sprintf("tf-testacc%sddoscooport1%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdoscooPortBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
