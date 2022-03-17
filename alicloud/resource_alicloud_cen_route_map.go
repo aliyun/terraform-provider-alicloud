@@ -139,7 +139,6 @@ func resourceAlicloudCenRouteMap() *schema.Resource {
 			"route_map_id": {
 				Type:     schema.TypeString,
 				Computed: true,
-				ForceNew: true,
 			},
 			"route_types": {
 				Type:     schema.TypeSet,
@@ -347,6 +346,7 @@ func resourceAlicloudCenRouteMapRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("prepend_as_path", object.PrependAsPath.AsPath)
 	d.Set("priority", object.Priority)
 	d.Set("route_types", object.RouteTypes.RouteType)
+	d.Set("route_map_id", object.RouteMapId)
 	d.Set("source_child_instance_types", object.SourceChildInstanceTypes.SourceChildInstanceType)
 	d.Set("source_instance_ids", object.SourceInstanceIds.SourceInstanceId)
 	d.Set("source_instance_ids_reverse_match", object.SourceInstanceIdsReverseMatch)
