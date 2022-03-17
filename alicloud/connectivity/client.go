@@ -555,6 +555,42 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 	return do(client.essconn)
 }
 
+type ossCredentials struct {
+	client *AliyunClient
+}
+
+func (defCre *ossCredentials) GetAccessKeyID() string {
+	value, err := defCre.client.teaSdkConfig.Credential.GetAccessKeyId()
+	if err == nil && value != nil {
+		return *value
+	}
+	return defCre.client.config.AccessKey
+}
+
+func (defCre *ossCredentials) GetAccessKeySecret() string {
+	value, err := defCre.client.teaSdkConfig.Credential.GetAccessKeySecret()
+	if err == nil && value != nil {
+		return *value
+	}
+	return defCre.client.config.SecretKey
+}
+
+func (defCre *ossCredentials) GetSecurityToken() string {
+	value, err := defCre.client.teaSdkConfig.Credential.GetSecurityToken()
+	if err == nil && value != nil {
+		return *value
+	}
+	return defCre.client.config.SecurityToken
+}
+
+type ossCredentialsProvider struct {
+	client *AliyunClient
+}
+
+func (defBuild *ossCredentialsProvider) GetCredentials() oss.Credentials {
+	return &ossCredentials{client: defBuild.client}
+}
+
 func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
@@ -580,8 +616,7 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 			endpoint = fmt.Sprintf("%s://%s", schma, endpoint)
 		}
 
-		clientOptions := []oss.ClientOption{oss.UserAgent(client.getUserAgent()),
-			oss.SecurityToken(client.config.SecurityToken)}
+		clientOptions := []oss.ClientOption{oss.UserAgent(client.getUserAgent())}
 		proxy, err := client.getHttpProxy()
 		if proxy != nil {
 			skip, err := client.skipProxy(endpoint)
@@ -593,7 +628,9 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 			}
 		}
 
-		ossconn, err := oss.New(endpoint, client.config.AccessKey, client.config.SecretKey, clientOptions...)
+		clientOptions = append(clientOptions, oss.SetCredentialsProvider(&ossCredentialsProvider{client: client}))
+
+		ossconn, err := oss.New(endpoint, "", "", clientOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the OSS client: %#v", err)
 		}
