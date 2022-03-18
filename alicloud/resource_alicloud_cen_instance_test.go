@@ -826,7 +826,7 @@ func TestAccAlicloudCenInstance_unit(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err = resourceAlicloudCenInstanceCreate(dInit, rawClient)
+		err := resourceAlicloudCenInstanceCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -896,7 +896,7 @@ func TestAccAlicloudCenInstance_unit(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err = resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
+		err := resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -965,7 +965,7 @@ func TestAccAlicloudCenInstance_unit(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err = resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
+		err := resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1034,7 +1034,7 @@ func TestAccAlicloudCenInstance_unit(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err = resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
+		err := resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1073,7 +1073,7 @@ func TestAccAlicloudCenInstance_unit(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err = resourceAlicloudCenInstanceRead(dExisted, rawClient)
+		err := resourceAlicloudCenInstanceRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1113,7 +1113,7 @@ func TestAccAlicloudCenInstance_unit(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err = resourceAlicloudCenInstanceDelete(dExisted, rawClient)
+		err := resourceAlicloudCenInstanceDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
