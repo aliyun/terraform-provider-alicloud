@@ -104,7 +104,7 @@ func TestAccAlicloudOssBucketReplicationBasic(t *testing.T) {
 						"historical_object_replication": "enabled",
 						"rule_id":                       CHECKSET,
 						"status":                        CHECKSET,
-						"sync_role":                     "testrole",
+						"sync_role":                     name + "-t-ramrole",
 						"encryption_configuration.#":    "1",
 						"encryption_configuration.0.replica_kms_key_id":                  CHECKSET,
 						"source_selection_criteria.#":                                    "1",
@@ -143,7 +143,7 @@ func resourceOssBucketReplicationDependence(name string) string {
 	}
 
 	resource "alicloud_ram_role" "role" {
-		name     = "testrole"
+		name     = "${var.name}-ramrole"
 		document = <<EOF
 		{
 		  "Statement": [
@@ -165,7 +165,7 @@ func resourceOssBucketReplicationDependence(name string) string {
 	}
 
 	resource "alicloud_ram_policy" "policy" {
-		policy_name        = "policyName"
+		policy_name        = "${var.name}-rampolicy"
 		policy_document    = <<EOF
 		{
 		  "Statement": [
