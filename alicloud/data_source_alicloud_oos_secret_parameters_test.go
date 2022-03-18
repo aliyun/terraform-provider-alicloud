@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudOosSecretParametersDataSource(t *testing.T) {
+func TestAccAlicloudOOSSecretParametersDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
 	idsConf := dataSourceTestAccConfig{

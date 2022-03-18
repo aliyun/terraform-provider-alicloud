@@ -108,7 +108,7 @@ groups:
       - Privatelink
       - Tsdb
       - Eci
-      - Oos
+      - OOS
       - Amqp
       - CloudFirewall
       - SDDP
@@ -154,7 +154,7 @@ groups:
       - Fnf
       - Ros
       - Eci
-      - Oos
+      - OOS
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -1460,7 +1460,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Eci"
 
-  - name: Oos
+  - name: OOS
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1471,7 +1471,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Oos"
+          TEST_CASE_CODE: "OOS"
 
   - name: ECD
     plan:

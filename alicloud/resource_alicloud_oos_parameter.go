@@ -158,9 +158,9 @@ func resourceAlicloudOosParameterUpdate(d *schema.ResourceData, meta interface{}
 	request["Value"] = d.Get("value")
 	if d.HasChange("description") {
 		update = true
-		if v, ok := d.GetOk("description"); ok {
-			request["Description"] = v
-		}
+	}
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
 	}
 	if d.HasChange("resource_group_id") {
 		update = true
