@@ -94,6 +94,10 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"cluster_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -181,6 +185,7 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_count", formatInt(object["InstanceCount"]))
 	d.Set("pub_network_flow", object["PubNetworkFlow"])
 	d.Set("status", object["InitStatus"])
+	d.Set("cluster_id", object["ClusterId"])
 	return nil
 }
 func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) error {

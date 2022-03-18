@@ -44,7 +44,7 @@ The following arguments are supported:
 * `cluster_type` - (Required, ForceNew) The type of MSE Cluster.
 * `cluster_version` - (Required, ForceNew) The version of MSE Cluster.
 * `disk_type` - (Optional, ForceNew) The type of Disk.
-* `instance_count` - (Optional, ForceNew) The count of instance.
+* `instance_count` - (Required, ForceNew) The count of instance.
 * `net_type` - (Required, ForceNew) The type of network. Valid values: "privatenet" and "pubnet".
 * `private_slb_specification` - (Optional, ForceNew) The specification of private network SLB.
 * `pub_network_flow` - (Optional, ForceNew) The public network bandwidth. `0` means no access to the public network.
@@ -55,8 +55,9 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The id of MSE Cluster.
+* `id` - The id of the resource.
 * `status` - The status of MSE Cluster.
+* `cluster_id` - (Available in v1.162.0+)  The id of Cluster.
 
 ## Import
 
