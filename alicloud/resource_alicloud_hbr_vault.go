@@ -51,6 +51,12 @@ func resourceAlicloudHbrVault() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"STANDARD"}, false),
 			},
+			"redundancy_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"LRS", "ZRS"}, false),
+			},
 		},
 	}
 }
@@ -75,6 +81,10 @@ func resourceAlicloudHbrVaultCreate(d *schema.ResourceData, meta interface{}) er
 	if v, ok := d.GetOk("vault_type"); ok {
 		request["VaultType"] = v
 	}
+	if v, ok := d.GetOk("redundancy_type"); ok {
+		request["RedundancyType"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -121,6 +131,8 @@ func resourceAlicloudHbrVaultRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("vault_name", object["VaultName"])
 	d.Set("vault_storage_class", object["VaultStorageClass"])
 	d.Set("vault_type", object["VaultType"])
+	d.Set("redundancy_type", object["RedundancyType"])
+
 	return nil
 }
 func resourceAlicloudHbrVaultUpdate(d *schema.ResourceData, meta interface{}) error {

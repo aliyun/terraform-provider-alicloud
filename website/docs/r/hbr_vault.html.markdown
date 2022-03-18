@@ -33,6 +33,9 @@ The following arguments are supported:
 * `description` - (Optional) The description of Vault. Defaults to an empty string.
 * `vault_type` - (Optional, Computed, ForceNew) The type of Vault. Valid values: `STANDARD`. 
 * `vault_storage_class` - (Optional, Computed, ForceNew) The storage class of Vault. Valid values: `STANDARD`.
+* `redundancy_type`- (Optional, Computed,Available in v1.161.0+) The redundancy type of the vault. Valid values: `LRS`, and `ZRS`. Defaults to `LRS`.
+  `LRS` -  means locally redundant storage, data will be stored on different storage devices in the same zone.
+  `ZRS` -  means zone-redundant storage, the data will be replicated across three storage clusters in a single region. Each storage cluster is physically separated but within the same region.
 
 ## Attributes Reference
 
