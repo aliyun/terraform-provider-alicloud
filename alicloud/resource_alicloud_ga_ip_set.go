@@ -190,8 +190,8 @@ func resourceAlicloudGaIpSetDelete(d *schema.ResourceData, meta interface{}) err
 		return WrapError(err)
 	}
 	request := map[string]interface{}{
-		"IpSetId":  d.Id(),
-		"RegionId": client.RegionId,
+		"IpSetIds.1": d.Id(),
+		"RegionId":   client.RegionId,
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
