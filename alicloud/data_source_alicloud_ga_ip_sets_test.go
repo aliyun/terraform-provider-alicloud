@@ -77,9 +77,8 @@ func TestAccAlicloudGaIpSetsDataSource(t *testing.T) {
 		existMapFunc: existMapFunc,
 		fakeMapFunc:  fakeMapFunc,
 	}
-	preCheck := func() {}
 
-	CheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, allConf)
+	CheckInfo.dataSourceTestCheck(t, rand, idsConf, statusConf, allConf)
 }
 
 func dataSourceGaIpSetsConfigDependence(name string) string {
