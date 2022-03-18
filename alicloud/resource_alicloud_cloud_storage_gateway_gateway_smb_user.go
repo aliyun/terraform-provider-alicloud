@@ -139,6 +139,9 @@ func resourceAlicloudCloudStorageGatewayGatewaySmbUserDelete(d *schema.ResourceD
 		return nil
 	})
 	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
