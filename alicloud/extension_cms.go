@@ -8,6 +8,7 @@ const (
 	Value            = "Value"
 	Sum              = "Sum"
 	Count            = "Count"
+	Availability     = "Availability"
 )
 
 const (

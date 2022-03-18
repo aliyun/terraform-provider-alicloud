@@ -129,6 +129,11 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+			"min_ready_instance_ratio": {
+				Type:     schema.TypeInt,
+				Computed: true,
+				Optional: true,
+			},
 			"mount_desc": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -259,72 +264,6 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 			"web_container": {
 				Type:     schema.TypeString,
 				Optional: true,
-			},
-			"intranet": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"https_cert_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"protocol": {
-							Type:         schema.TypeString,
-							ValidateFunc: validation.StringInSlice([]string{"TCP", "HTTP", "HTTPS"}, false),
-							Optional:     true,
-						},
-						"target_port": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-						"port": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-					},
-				},
-			},
-			"internet": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"https_cert_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"protocol": {
-							Type:         schema.TypeString,
-							ValidateFunc: validation.StringInSlice([]string{"TCP", "HTTP", "HTTPS"}, false),
-							Optional:     true,
-						},
-						"target_port": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-						"port": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-					},
-				},
-			},
-			"internet_slb_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"intranet_slb_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"internet_ip": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"intranet_ip": {
-				Type:     schema.TypeString,
-				Computed: true,
 			},
 		},
 	}
@@ -527,6 +466,9 @@ func resourceAlicloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 	if v, ok := object["MinReadyInstances"]; ok && fmt.Sprint(v) != "0" {
 		d.Set("min_ready_instances", formatInt(v))
 	}
+	if v, ok := object["MinReadyInstanceRatio"]; ok && fmt.Sprint(v) != "0" {
+		d.Set("min_ready_instance_ratio", formatInt(v))
+	}
 
 	if v, ok := object["MountDesc"].([]interface{}); ok {
 		mountDesc, err := convertListObjectToCommaSeparate(v)
@@ -570,46 +512,6 @@ func resourceAlicloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	d.Set("status", describeApplicationStatusObject["CurrentStatus"])
-
-	describeApplicationSlbObject, err := saeService.DescribeApplicationSlb(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
-
-	d.Set("internet_ip", describeApplicationSlbObject["InternetIp"])
-	d.Set("intranet_ip", describeApplicationSlbObject["IntranetIp"])
-	d.Set("intranet_slb_id", describeApplicationSlbObject["IntranetSlbId"])
-	d.Set("internet_slb_id", describeApplicationSlbObject["InternetSlbId"])
-	intranetArray := make([]interface{}, 0)
-	if v, ok := describeApplicationSlbObject["Intranet"]; ok {
-		for _, intranet := range v.([]interface{}) {
-			intranetObject := intranet.(map[string]interface{})
-			intranetObj := map[string]interface{}{
-				"https_cert_id": intranetObject["HttpsCertId"],
-				"protocol":      intranetObject["Protocol"],
-				"target_port":   intranetObject["TargetPort"],
-				"port":          intranetObject["Port"],
-			}
-			intranetArray = append(intranetArray, intranetObj)
-		}
-	}
-	d.Set("intranet", intranetArray)
-
-	internetArray := make([]interface{}, 0)
-	if v, ok := describeApplicationSlbObject["Internet"]; ok {
-		for _, internet := range v.([]interface{}) {
-			internetObject := internet.(map[string]interface{})
-			internetObj := map[string]interface{}{
-				"https_cert_id": internetObject["HttpsCertId"],
-				"protocol":      internetObject["Protocol"],
-				"target_port":   internetObject["TargetPort"],
-				"port":          internetObject["Port"],
-			}
-			internetArray = append(internetArray, internetObj)
-		}
-	}
-	d.Set("internet", internetArray)
-
 	return nil
 }
 func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -886,6 +788,12 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("min_ready_instances"); ok {
 		request["MinReadyInstances"] = StringPointer(strconv.Itoa(v.(int)))
 	}
+	if d.HasChange("min_ready_instance_ratio") {
+		update = true
+	}
+	if v, ok := d.GetOk("min_ready_instance_ratio"); ok {
+		request["MinReadyInstanceRatio"] = StringPointer(strconv.Itoa(v.(int)))
+	}
 
 	if v, ok := d.GetOk("batch_wait_time"); ok {
 		request["BatchWaitTime"] = StringPointer(strconv.Itoa(v.(int)))
@@ -918,11 +826,18 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("update_strategy"); ok {
 		request["UpdateStrategy"] = StringPointer(v.(string))
 	}
-
+	if d.HasChange("package_version") {
+		update = true
+	}
+	if v, ok := d.GetOk("package_version"); ok {
+		request["PackageVersion"] = StringPointer(v.(string))
+	}
 	if update {
 		action := "/pop/v1/sam/app/deployApplication"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		request["PackageVersion"] = StringPointer(strconv.FormatInt(time.Now().Unix(), 10))
+		if _, exist := request["PackageVersion"]; !exist {
+			request["PackageVersion"] = StringPointer(strconv.FormatInt(time.Now().Unix(), 10))
+		}
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 			if err != nil {
@@ -979,12 +894,6 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("tomcat_config")
 		d.SetPartial("war_start_options")
 		d.SetPartial("web_container")
-	}
-
-	// update SLB
-	update = false
-	if err := saeService.UpdateSlb(d); err != nil {
-		return WrapError(err)
 	}
 
 	// 【Exists】update security_group_id
@@ -1151,7 +1060,7 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		}
 	}
 	d.Partial(false)
-	stateConf := BuildStateConf([]string{}, []string{"SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, saeService.SaeApplicationStateRefreshFunc(d.Id(), []string{"FAIL", "ABORT", "SYSTEM_FAIL"}))
+	stateConf := BuildStateConf([]string{}, []string{"SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, saeService.SaeApplicationStateRefreshFunc(d.Id(), []string{"FAIL", "AUTO_BATCH_WAIT", "APPROVED", "WAIT_APPROVAL", "WAIT_BATCH_CONFIRM", "ABORT", "SYSTEM_FAIL"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

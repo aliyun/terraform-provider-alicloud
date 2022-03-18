@@ -201,38 +201,6 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"internet": []map[string]interface{}{
-						{
-							"port":        "90",
-							"protocol":    "TCP",
-							"target_port": "8080",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"internet.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"intranet": []map[string]interface{}{
-						{
-							"port":        "34",
-							"protocol":    "TCP",
-							"target_port": "8080",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"intranet.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"replicas": "6",
 				}),
 				Check: resource.ComposeTestCheckFunc(

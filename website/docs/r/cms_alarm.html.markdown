@@ -46,21 +46,21 @@ The following arguments are supported:
 * `project` - (Required, ForceNew) Monitor project name, such as "acs_ecs_dashboard" and "acs_rds_dashboard". For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
 * `metric` - (Required, ForceNew) Name of the monitoring metrics corresponding to a project, such as "CPUUtilization" and "networkin_rate". For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
 * `dimensions` - (Required, ForceNew) Map of the resources associated with the alarm rule, such as "instanceId", "device" and "port". Each key's value is a string and it uses comma to split multiple items. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
-* `period` - Index query cycle, which must be consistent with that defined for metrics. Default to 300, in seconds.
+* `period` - (Optional) Index query cycle, which must be consistent with that defined for metrics. Default to 300, in seconds.
 * `escalations_critical` - (Optional, Available in 1.94.0+) A configuration of critical alarm (documented below).
 * `escalations_warn` - (Optional, Available in 1.94.0+) A configuration of critical warn (documented below).
 * `escalations_info` - (Optional, Available in 1.94.0+) A configuration of critical info (documented below).
-* `statistics` - It has been deprecated from provider version 1.94.0 and 'escalations_critical.statistics' instead.
-* `operator` - It has been deprecated from provider version 1.94.0 and 'escalations_critical.comparison_operator' instead.
-* `threshold` - It has been deprecated from provider version 1.94.0 and 'escalations_critical.threshold' instead.
-* `triggered_count` - It has been deprecated from provider version 1.94.0 and 'escalations_critical.times' instead.
+* `statistics` - (Optional,Deprecated) It has been deprecated from provider version 1.94.0 and 'escalations_critical.statistics' instead.
+* `operator` - (Optional,Deprecated) It has been deprecated from provider version 1.94.0 and 'escalations_critical.comparison_operator' instead.
+* `threshold` - (Optional,Deprecated) It has been deprecated from provider version 1.94.0 and 'escalations_critical.threshold' instead.
+* `triggered_count` - (Optional,Deprecated) It has been deprecated from provider version 1.94.0 and 'escalations_critical.times' instead.
 * `contact_groups` - (Required) List contact groups of the alarm rule, which must have been created on the console.
 * `effective_interval` - (Available in 1.50.0+) The interval of effecting alarm rule. It format as "hh:mm-hh:mm", like "0:00-4:00". Default to "00:00-23:59".
-* `start_time` - It has been deprecated from provider version 1.50.0 and 'effective_interval' instead.
-* `end_time` - It has been deprecated from provider version 1.50.0 and 'effective_interval' instead.
-* `silence_time` - Notification silence period in the alarm state, in seconds. Valid value range: [300, 86400]. Default to 86400
+* `start_time` - (Optional,Deprecated) It has been deprecated from provider version 1.50.0 and 'effective_interval' instead.
+* `end_time` - (Optional,Deprecated) It has been deprecated from provider version 1.50.0 and 'effective_interval' instead.
+* `silence_time` - (Optional,Deprecated) Notification silence period in the alarm state, in seconds. Valid value range: [300, 86400]. Default to 86400
 * `notify_type` - Notification type. Valid value [0, 1]. The value 0 indicates TradeManager+email, and the value 1 indicates that TradeManager+email+SMS
-* `enabled` - Whether to enable alarm rule. Default to true.
+* `enabled` - (Optional) Whether to enable alarm rule. Default to true.
 * `webhook`- (Optional, Available in 1.46.0+) The webhook that should be called when the alarm is triggered. Currently, only http protocol is supported. Default is empty string.
 
 -> **NOTE:** Each resource supports the creation of one of the following three levels.
@@ -69,7 +69,7 @@ The following arguments are supported:
 
 The escalations_critical supports the following:
 
-* `statistics` - Critical level alarm statistics method. It must be consistent with that defined for metrics. Valid values: ["Average", "Minimum", "Maximum", "Value", "ErrorCodeMaximum", "Sum", "Count"]. Default to "Average".
+* `statistics` - Critical level alarm statistics method. It must be consistent with that defined for metrics. Valid values: ["Availability, "Average", "Minimum", "Maximum", "Value", "ErrorCodeMaximum", "Sum", "Count"]. Default to "Average".
 * `comparison_operator` - Critical level alarm comparison operator. Valid values: ["<=", "<", ">", ">=", "==", "!="]. Default to "==".
 * `threshold` - Critical level alarm threshold value, which must be a numeric value currently.
 * `times` - Critical level alarm retry times. Default to 3.

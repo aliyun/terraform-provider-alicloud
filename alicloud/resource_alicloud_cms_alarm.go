@@ -62,7 +62,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      Average,
-							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
+							ValidateFunc: validation.StringInSlice([]string{Availability, Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
 						},
 						"comparison_operator": {
 							Type:     schema.TypeString,

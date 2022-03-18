@@ -36,6 +36,7 @@ var (
 	fileName     = flag.String("file_name", "", "the file to check diff")
 	filterList   = map[string][]string{
 		"alicloud_amqp_instance": []string{"logistics"},
+		"alicloud_cms_alarm":     []string{"notify_type"},
 	}
 )
 
