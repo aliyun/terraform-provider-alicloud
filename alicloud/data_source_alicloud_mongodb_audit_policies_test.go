@@ -39,6 +39,7 @@ func TestAccAlicloudMongodbAuditPoliciesDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckEnterpriseAccountEnabled(t)
 	}
 	alicloudMongodbAuditPoliciesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
 }

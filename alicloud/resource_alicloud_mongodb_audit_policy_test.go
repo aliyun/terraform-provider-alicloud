@@ -25,6 +25,7 @@ func TestAccAlicloudMongoDBAuditPolicy_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
