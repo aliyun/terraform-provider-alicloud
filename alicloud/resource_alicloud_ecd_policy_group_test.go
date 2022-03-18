@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEcdPolicyGroup_basic0(t *testing.T) {
+func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_policy_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudECDPolicyGroupMap0)

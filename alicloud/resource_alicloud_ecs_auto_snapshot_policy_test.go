@@ -97,7 +97,7 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEcsAutoSnapshotPolicyBasic(t *testing.T) {
+func TestAccAlicloudECSAutoSnapshotPolicyBasic(t *testing.T) {
 
 	resourceId := "alicloud_ecs_auto_snapshot_policy.default"
 	randInt := acctest.RandIntRange(10000, 99999)
@@ -295,7 +295,7 @@ func TestAccAlicloudSnapshotPolicyMulti(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsAutoSnapshotPolicyBasic1(t *testing.T) {
+func TestAccAlicloudECSAutoSnapshotPolicyBasic1(t *testing.T) {
 
 	resourceId := "alicloud_ecs_auto_snapshot_policy.default"
 	randInt := acctest.RandIntRange(10000, 99999)
@@ -368,7 +368,7 @@ func TestAccAlicloudEcsAutoSnapshotPolicyBasic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsAutoSnapshotPolicy_unit(t *testing.T) {
+func TestAccAlicloudECSAutoSnapshotPolicy_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy"].Schema).Data(nil, nil)

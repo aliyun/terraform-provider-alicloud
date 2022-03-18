@@ -131,7 +131,7 @@ func testAlicloudEcsNetworkInterface(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEcsNetworkInterface_basic(t *testing.T) {
+func TestAccAlicloudECSNetworkInterface_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceMap)
@@ -140,7 +140,7 @@ func TestAccAlicloudEcsNetworkInterface_basic(t *testing.T) {
 	}, "DescribeEcsNetworkInterface")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(1, 9999)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
 	resource.Test(t, resource.TestCase{
@@ -155,7 +155,7 @@ func TestAccAlicloudEcsNetworkInterface_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"network_interface_name": name,
-					"vswitch_id":             "${local.vswitch_id}",
+					"vswitch_id":             "${data.alicloud_vswitches.default.ids.0}",
 					"security_group_ids":     []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
@@ -175,7 +175,7 @@ func TestAccAlicloudEcsNetworkInterface_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"private_ip_addresses": []string{"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 3)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 7)}"},
+					"private_ip_addresses": []string{fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand), fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand+1), fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand+2)},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -230,7 +230,7 @@ func TestAccAlicloudEcsNetworkInterface_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"private_ip_addresses": []string{"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 3)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 7)}"},
+					"private_ip_addresses": []string{fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand+1), fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand+2)},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -240,7 +240,7 @@ func TestAccAlicloudEcsNetworkInterface_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"private_ip_addresses":   []string{"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 3)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 5)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 6)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 8)}"},
+					"private_ip_addresses":   []string{fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand), fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand+1), fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand+2)},
 					"network_interface_name": name,
 					"description":            "Test For Terraform Update",
 					"queue_number":           "2",
@@ -251,7 +251,7 @@ func TestAccAlicloudEcsNetworkInterface_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"private_ip_addresses.#": "4",
+						"private_ip_addresses.#": "3",
 						"network_interface_name": name,
 						"description":            "Test For Terraform Update",
 						"queue_number":           "2",
@@ -265,7 +265,7 @@ func TestAccAlicloudEcsNetworkInterface_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsNetworkInterface_primary_ip_address(t *testing.T) {
+func TestAccAlicloudECSNetworkInterface_primary_ip_address(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceMap)
@@ -274,7 +274,7 @@ func TestAccAlicloudEcsNetworkInterface_primary_ip_address(t *testing.T) {
 	}, "DescribeEcsNetworkInterface")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(1, 9999)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
 	resource.Test(t, resource.TestCase{
@@ -289,10 +289,10 @@ func TestAccAlicloudEcsNetworkInterface_primary_ip_address(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"network_interface_name": name,
-					"vswitch_id":             "${local.vswitch_id}",
+					"vswitch_id":             "${data.alicloud_vswitches.default.ids.0}",
 					"security_group_ids":     []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"primary_ip_address":     "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)}",
+					"primary_ip_address":     fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -311,7 +311,7 @@ func TestAccAlicloudEcsNetworkInterface_primary_ip_address(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"primary_ip_address": "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 7)}",
+					"primary_ip_address": fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand+1),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -323,7 +323,7 @@ func TestAccAlicloudEcsNetworkInterface_primary_ip_address(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsNetworkInterface_secondary_private_ip_address_count(t *testing.T) {
+func TestAccAlicloudECSNetworkInterface_secondary_private_ip_address_count(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceMap)
@@ -347,7 +347,7 @@ func TestAccAlicloudEcsNetworkInterface_secondary_private_ip_address_count(t *te
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"network_interface_name": name,
-					"vswitch_id":             "${local.vswitch_id}",
+					"vswitch_id":             "${data.alicloud_vswitches.default.ids.0}",
 					"security_group_ids":     []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
@@ -399,7 +399,7 @@ var AlicloudEcsNetworkInterfaceMap = map[string]string{
 	"vswitch_id":             CHECKSET,
 }
 
-func TestAccAlicloudEcsNetworkInterface_basic1(t *testing.T) {
+func TestAccAlicloudECSNetworkInterface_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceMap)
@@ -408,7 +408,7 @@ func TestAccAlicloudEcsNetworkInterface_basic1(t *testing.T) {
 	}, "DescribeEcsNetworkInterface")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(1, 9999)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
 	resource.Test(t, resource.TestCase{
@@ -423,11 +423,11 @@ func TestAccAlicloudEcsNetworkInterface_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                               name,
-					"vswitch_id":                         "${local.vswitch_id}",
+					"vswitch_id":                         "${data.alicloud_vswitches.default.ids.0}",
 					"security_groups":                    []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":                  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":                        name,
-					"private_ip":                         "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 3)}",
+					"private_ip":                         fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand),
 					"queue_number":                       "1",
 					"secondary_private_ip_address_count": "1",
 					"tags": map[string]string{
@@ -460,7 +460,7 @@ func TestAccAlicloudEcsNetworkInterface_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsNetworkInterface_basic2(t *testing.T) {
+func TestAccAlicloudECSNetworkInterface_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceMap)
@@ -469,7 +469,7 @@ func TestAccAlicloudEcsNetworkInterface_basic2(t *testing.T) {
 	}, "DescribeEcsNetworkInterface")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(1, 9999)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
 	resource.Test(t, resource.TestCase{
@@ -484,11 +484,11 @@ func TestAccAlicloudEcsNetworkInterface_basic2(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":              name,
-					"vswitch_id":        "${local.vswitch_id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
 					"security_groups":   []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":       name,
-					"private_ip":        "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)}",
+					"private_ip":        fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand),
 					"queue_number":      "1",
 					"private_ips_count": "1",
 					"tags": map[string]string{
@@ -521,7 +521,7 @@ func TestAccAlicloudEcsNetworkInterface_basic2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsNetworkInterface_basic3(t *testing.T) {
+func TestAccAlicloudECSNetworkInterface_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceMap)
@@ -530,7 +530,7 @@ func TestAccAlicloudEcsNetworkInterface_basic3(t *testing.T) {
 	}, "DescribeEcsNetworkInterface")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(1, 9999)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
 	resource.Test(t, resource.TestCase{
@@ -545,11 +545,11 @@ func TestAccAlicloudEcsNetworkInterface_basic3(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                 name,
-					"vswitch_id":           "${local.vswitch_id}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
 					"security_groups":      []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":          name,
-					"private_ip_addresses": []string{"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 3)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 7)}"},
+					"private_ip_addresses": []string{fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand), fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand+1)},
 					"tags": map[string]string{
 						"Created": "TF-update",
 						"For":     "Test-update",
@@ -578,7 +578,7 @@ func TestAccAlicloudEcsNetworkInterface_basic3(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsNetworkInterface_basic4(t *testing.T) {
+func TestAccAlicloudECSNetworkInterface_basic4(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceMap)
@@ -587,7 +587,7 @@ func TestAccAlicloudEcsNetworkInterface_basic4(t *testing.T) {
 	}, "DescribeEcsNetworkInterface")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(1, 9999)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
 	resource.Test(t, resource.TestCase{
@@ -602,11 +602,11 @@ func TestAccAlicloudEcsNetworkInterface_basic4(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                 name,
-					"vswitch_id":           "${local.vswitch_id}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
 					"security_groups":      []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":          name,
-					"private_ip_addresses": []string{"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 3)}", "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 7)}"},
+					"private_ip_addresses": []string{fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand), fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand+1)},
 					"tags": map[string]string{
 						"Created": "TF-update",
 						"For":     "Test-update",
@@ -651,18 +651,6 @@ data "alicloud_vpcs" "default" {
 data "alicloud_vswitches" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
 	zone_id      = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_security_group" "default" {

@@ -108,7 +108,7 @@ func testSweepGpdbElasticInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudGpdbElasticInstanceVpc(t *testing.T) {
+func TestAccAlicloudGPDBElasticInstanceVpc(t *testing.T) {
 	var instance gpdb.DBInstanceAttribute
 	resourceId := "alicloud_gpdb_elastic_instance.default"
 	serverFunc := func() interface{} {
@@ -225,7 +225,7 @@ func resourceGpdbElasticInstanceConfigDependence(name string) string {
         `, name)
 }
 
-func TestAccAlicloudGpdbElasticInstance_basic0(t *testing.T) {
+func TestAccAlicloudGPDBElasticInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_elastic_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudGpdbElasticInstanceMap0)

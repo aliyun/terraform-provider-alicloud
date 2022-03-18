@@ -108,7 +108,7 @@ func testSweepGpdbInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudGpdbInstance_vpc(t *testing.T) {
+func TestAccAlicloudGPDBInstance_vpc(t *testing.T) {
 	var v gpdb.DBInstanceAttribute
 	resourceId := "alicloud_gpdb_instance.default"
 	serverFunc := func() interface{} {

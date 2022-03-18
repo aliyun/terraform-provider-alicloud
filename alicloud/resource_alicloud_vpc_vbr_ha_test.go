@@ -19,9 +19,7 @@ import (
 )
 
 func TestAccAlicloudVPCVbrHa_basic0(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_vbr_ha.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCVbrHaMap0)

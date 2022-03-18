@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDtsMigrationJobsDataSource(t *testing.T) {
+func TestAccAlicloudDTSMigrationJobsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.DTSSupportRegions)
 	idConf := dataSourceTestAccConfig{

@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudNasAccessRuleDataSource(t *testing.T) {
+func TestAccAlicloudNASAccessRuleDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100000, 999999)
 	ipConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{

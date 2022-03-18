@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudHbrReplicationVaultRegionsDataSource(t *testing.T) {
+func TestAccAlicloudHBRReplicationVaultRegionsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100, 999)
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrVaultReplicationRegionsDataSourceName(rand, map[string]string{}),

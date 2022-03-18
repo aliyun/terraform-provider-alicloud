@@ -18,10 +18,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVPCBgpNetwork_basic0(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+func TestAccAlicloudVpcBgpNetwork_basic0(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_network.default"
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
@@ -92,7 +90,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
 `, name)
 }
 
-func TestAccAlicloudVPCBgpNetwork_unit(t *testing.T) {
+func TestAccAlicloudVpcBgpNetwork_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_bgp_network"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_bgp_network"].Schema).Data(nil, nil)

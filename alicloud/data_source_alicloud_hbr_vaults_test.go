@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudHbrVaultsDataSource(t *testing.T) {
+func TestAccAlicloudHBRVaultsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	vaultIdConf := dataSourceTestAccConfig{

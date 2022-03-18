@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcsLaunchTemplatesDataSource(t *testing.T) {
+func TestAccAlicloudECSLaunchTemplatesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_ecs_launch_templates.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%d", rand)

@@ -103,7 +103,7 @@ func testSweepNasAccessGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudNasAccessGroup_basic(t *testing.T) {
+func TestAccAlicloudNASAccessGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_access_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudNasAccessGroup0)
@@ -177,7 +177,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudNasAccessGroup_unit(t *testing.T) {
+func TestAccAlicloudNASAccessGroup_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_access_group"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_nas_access_group"].Schema).Data(nil, nil)

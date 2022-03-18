@@ -121,10 +121,8 @@ func testSweepVpcBgpGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCBgpGroup_basic0(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+func TestAccAlicloudVpcBgpGroup_basic0(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_group.default"
 	checkoutSupportedRegions(t, true, connectivity.VPCBgpGroupSupportRegions)
@@ -235,10 +233,8 @@ func TestAccAlicloudVPCBgpGroup_basic0(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudVPCBgpGroup_basic1(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+func TestAccAlicloudVpcBgpGroup_basic1(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_group.default"
 	checkoutSupportedRegions(t, true, connectivity.VPCBgpGroupSupportRegions)
@@ -316,7 +312,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
 `, name)
 }
 
-func TestAccAlicloudVPCBgpGroup_unit(t *testing.T) {
+func TestAccAlicloudVpcBgpGroup_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_bgp_group"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_bgp_group"].Schema).Data(nil, nil)

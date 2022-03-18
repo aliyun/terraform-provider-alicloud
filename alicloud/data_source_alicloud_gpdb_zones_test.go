@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudGpdbZonesDataSource_basic(t *testing.T) {
+func TestAccAlicloudGPDBZonesDataSource_basic(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_gpdb_zones.default"
 

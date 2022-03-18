@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcsDedicatedHostsDataSource(t *testing.T) {
+func TestAccAlicloudECSDedicatedHostsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_ecs_dedicated_hosts.default"
 	name := fmt.Sprintf("tf_testAccEcsDedicatedHostsDataSource_%d", rand)

@@ -20,9 +20,7 @@ import (
 )
 
 func TestAccAlicloudCenTransitRouterRouteTablePropagation_basic(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_route_table_propagation.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTablePropagationMap0)
@@ -37,7 +35,6 @@ func TestAccAlicloudCenTransitRouterRouteTablePropagation_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VbrSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -67,9 +64,7 @@ func TestAccAlicloudCenTransitRouterRouteTablePropagation_basic(t *testing.T) {
 }
 
 func TestAccAlicloudCenTransitRouterRouteTablePropagation_basic1(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_route_table_propagation.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTablePropagationMap0)
@@ -84,7 +79,6 @@ func TestAccAlicloudCenTransitRouterRouteTablePropagation_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VbrSupportRegions)
 		},
 
 		IDRefreshName: resourceId,

@@ -96,7 +96,7 @@ func testAlicloudEcsLaunchTemplate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEcsLaunchTemplateBasic(t *testing.T) {
+func TestAccAlicloudECSLaunchTemplateBasic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_launch_template.default"
 	ra := resourceAttrInit(resourceId, testAccLaunchTemplateCheckMap)
@@ -686,7 +686,7 @@ func TestAccAlicloudLaunchTemplateMulti(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsLaunchTemplateBasic1(t *testing.T) {
+func TestAccAlicloudECSLaunchTemplateBasic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_launch_template.default"
 	ra := resourceAttrInit(resourceId, testAccLaunchTemplateCheckMap1)

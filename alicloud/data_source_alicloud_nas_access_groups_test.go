@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudNasAccessGroupDataSource(t *testing.T) {
+func TestAccAlicloudNASAccessGroupDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100000, 999999)
 	vpcTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
@@ -73,7 +73,7 @@ func TestAccAlicloudNasAccessGroupDataSource(t *testing.T) {
 	accessGroupCheckInfo.dataSourceTestCheck(t, rand, vpcTypeConf, descriptionConf, nameRegexConf, accessGroupNameConf, allConf)
 }
 
-func TestAccAlicloudNasAccessGroupDataSourceClassic(t *testing.T) {
+func TestAccAlicloudNASAccessGroupDataSourceClassic(t *testing.T) {
 	rand := acctest.RandIntRange(100000, 999999)
 	classicTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{

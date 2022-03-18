@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEcsDedicatedHost_basic(t *testing.T) {
+func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
@@ -143,7 +143,7 @@ func TestAccAlicloudEcsDedicatedHost_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsDedicatedHost_basic1(t *testing.T) {
+func TestAccAlicloudECSDedicatedHost_basic1(t *testing.T) {
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
@@ -195,7 +195,7 @@ func TestAccAlicloudEcsDedicatedHost_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsDedicatedHost_basic2(t *testing.T) {
+func TestAccAlicloudECSDedicatedHost_basic2(t *testing.T) {
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
