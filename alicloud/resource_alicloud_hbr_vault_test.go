@@ -31,11 +31,13 @@ func TestAccAlicloudHBRVault_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vault_name": name,
+					"vault_name":      name,
+					"redundancy_type": "LRS",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vault_name": name,
+						"vault_name":      name,
+						"redundancy_type": "LRS",
 					}),
 				),
 			},
