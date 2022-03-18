@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDtsConsumerChannelsDataSource(t *testing.T) {
+func TestAccAlicloudDTSConsumerChannelsDataSource(t *testing.T) {
 	defer checkoutAccount(t, false)
 	checkoutAccount(t, true)
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)

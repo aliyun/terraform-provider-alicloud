@@ -40,7 +40,7 @@ func testAccCheckEIPAssociationDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudEipAssociationBasic(t *testing.T) {
+func TestAccAlicloudEIPAssociationBasic(t *testing.T) {
 	var v vpc.EipAddress
 	resourceId := "alicloud_eip_association.default"
 	ra := resourceAttrInit(resourceId, testAccCheckEipAssociationBasicMap)
@@ -74,7 +74,7 @@ func TestAccAlicloudEipAssociationBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEipAssociationMulti(t *testing.T) {
+func TestAccAlicloudEIPAssociationMulti(t *testing.T) {
 	var v vpc.EipAddress
 	resourceId := "alicloud_eip_association.default.1"
 	ra := resourceAttrInit(resourceId, testAccCheckEipAssociationBasicMap)
@@ -108,7 +108,7 @@ func TestAccAlicloudEipAssociationMulti(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEipAssociationEni(t *testing.T) {
+func TestAccAlicloudEIPAssociationEni(t *testing.T) {
 	var v vpc.EipAddress
 	resourceId := "alicloud_eip_association.default"
 	ra := resourceAttrInit(resourceId, testAccCheckEipAssociationBasicMap)

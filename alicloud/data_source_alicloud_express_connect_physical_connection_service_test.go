@@ -7,8 +7,6 @@ import (
 )
 
 func TestAccAlicloudExpressConnectPhysicalConnectionServiceDataSource(t *testing.T) {
-	defer checkoutAccount(t, false)
-	checkoutAccount(t, true)
 	resourceId := "data.alicloud_express_connect_physical_connection_service.current"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{

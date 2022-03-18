@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcsImageComponentsDataSource(t *testing.T) {
+func TestAccAlicloudECSImageComponentsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcsImageComponentsDataSourceName(rand, map[string]string{

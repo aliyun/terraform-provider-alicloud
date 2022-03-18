@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudNasFileSystem_DataSource(t *testing.T) {
+func TestAccAlicloudNASFileSystem_DataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100000, 999999)
 	storageTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{

@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEcsImageBasic(t *testing.T) {
+func TestAccAlicloudECSImageBasic(t *testing.T) {
 	var v ecs.Image
 
 	resourceId := "alicloud_image.default"
@@ -112,7 +112,7 @@ func TestAccAlicloudEcsImageBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsImageBasic1(t *testing.T) {
+func TestAccAlicloudECSImageBasic1(t *testing.T) {
 	var v ecs.Image
 
 	resourceId := "alicloud_image.default"
@@ -161,7 +161,7 @@ func TestAccAlicloudEcsImageBasic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsImageBasic2(t *testing.T) {
+func TestAccAlicloudECSImageBasic2(t *testing.T) {
 	var v ecs.Image
 
 	resourceId := "alicloud_image.default"

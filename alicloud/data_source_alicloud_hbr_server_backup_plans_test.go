@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudHbrServerBackupPlansDataSource(t *testing.T) {
+func TestAccAlicloudHBRServerBackupPlansDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	checkoutSupportedRegions(t, true, connectivity.HbrSupportRegions)
 	resourceId := "data.alicloud_hbr_server_backup_plans.default"

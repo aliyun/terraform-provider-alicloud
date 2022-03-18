@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudEcsSecurityGroupRuleBasic(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRuleBasic(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.default"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityGroupRuleBasicMap)
@@ -74,7 +74,7 @@ func TestAccAlicloudEcsSecurityGroupRuleBasic(t *testing.T) {
 
 }
 
-func TestAccAlicloudEcsSecurityGroupEgressRule(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupEgressRule(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.default"
 	ra := resourceAttrInit(resourceId, map[string]string{
@@ -123,7 +123,7 @@ func TestAccAlicloudEcsSecurityGroupEgressRule(t *testing.T) {
 
 }
 
-func TestAccAlicloudEcsSecurityGroupRuleMulti(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRuleMulti(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.default.2"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityGroupRuleBasicMap)
@@ -158,7 +158,7 @@ func TestAccAlicloudEcsSecurityGroupRuleMulti(t *testing.T) {
 
 }
 
-func TestAccAlicloudEcsSecurityGroupRulePrefixList(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulePrefixList(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.default"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityGroupRulePrefixList)

@@ -10,11 +10,9 @@ import (
 )
 
 func TestAccAlicloudExpressConnectVirtualBorderRoutersDataSource(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	resourceId := "data.alicloud_express_connect_virtual_border_routers.default"
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(1, 2999)
 	name := fmt.Sprintf("tf-testAccExpressConnectVirtualBorderRoutersTest%d", rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceExpressConnectVirtualBorderRoutersDependence)
 
@@ -146,11 +144,7 @@ func TestAccAlicloudExpressConnectVirtualBorderRoutersDataSource(t *testing.T) {
 		existMapFunc: existExpressConnectVirtualBorderRoutersMapFunc,
 		fakeMapFunc:  fakeExpressConnectVirtualBorderRoutersMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.VbrSupportRegions)
-	}
-
-	ExpressConnectVirtualBorderRoutersInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, idsConf, nameRegexConf, statusConf, filterConf, allConf)
+	ExpressConnectVirtualBorderRoutersInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, statusConf, filterConf, allConf)
 }
 
 func dataSourceExpressConnectVirtualBorderRoutersDependence(name string) string {

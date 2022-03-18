@@ -10,9 +10,7 @@ import (
 )
 
 func TestAccAlicloudExpressConnectPhysicalConnection_domesic(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_physical_connection.default"
 	ra := resourceAttrInit(resourceId, AlicloudExpressConnectPhysicalConnectionMap0)
@@ -27,7 +25,6 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou, connectivity.Beijing, connectivity.Shanghai})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -192,9 +189,7 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic(t *testing.T) {
 }
 
 func TestAccAlicloudExpressConnectPhysicalConnection_intl(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_physical_connection.default"
 	ra := resourceAttrInit(resourceId, AlicloudExpressConnectPhysicalConnectionMap0)
@@ -209,7 +204,7 @@ func TestAccAlicloudExpressConnectPhysicalConnection_intl(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.EUCentral1, connectivity.APSouthEast1})
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -355,9 +350,7 @@ func TestAccAlicloudExpressConnectPhysicalConnection_intl(t *testing.T) {
 }
 
 func TestAccAlicloudExpressConnectPhysicalConnection_domesic1(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_physical_connection.default"
 	ra := resourceAttrInit(resourceId, AlicloudExpressConnectPhysicalConnectionMap0)
@@ -372,7 +365,6 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou, connectivity.Beijing, connectivity.Shanghai})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

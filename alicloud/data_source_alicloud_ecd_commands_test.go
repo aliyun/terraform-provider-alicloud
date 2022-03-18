@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcdCommandsDataSource(t *testing.T) {
+func TestAccAlicloudECDCommandsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcdCommandsDataSourceName(rand, map[string]string{

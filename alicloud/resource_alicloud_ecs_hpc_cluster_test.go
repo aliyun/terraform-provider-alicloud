@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEcsHpcCluster_basic(t *testing.T) {
+func TestAccAlicloudECSHpcCluster_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_hpc_cluster.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsHpcClusterMap)
@@ -100,7 +100,7 @@ func AlicloudEcsHpcClusterBasicDependence(name string) string {
 	return ""
 }
 
-func TestAccAlicloudEcsHpcCluster_unit(t *testing.T) {
+func TestAccAlicloudECSHpcCluster_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_hpc_cluster"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_hpc_cluster"].Schema).Data(nil, nil)

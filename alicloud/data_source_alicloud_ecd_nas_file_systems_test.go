@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcdNasFileSystemsDataSource(t *testing.T) {
+func TestAccAlicloudECDNasFileSystemsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcdNasFileSystemsDataSourceName(rand, map[string]string{

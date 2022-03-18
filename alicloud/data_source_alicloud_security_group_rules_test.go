@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithDirection(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulesDataSourceWithDirection(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -41,7 +41,7 @@ func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithDirection(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithGroupId(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulesDataSourceWithGroupId(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -74,7 +74,7 @@ func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithGroupId(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EcsClassicSupportedRegions)
@@ -107,7 +107,7 @@ func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithPolicy(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulesDataSourceWithPolicy(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -141,7 +141,7 @@ func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithPolicy(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithIp_Protocol(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulesDataSourceWithIp_Protocol(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -174,7 +174,7 @@ func TestAccAlicloudEcsSecurityGroupRulesDataSourceWithIp_Protocol(t *testing.T)
 	})
 }
 
-func TestAccAlicloudEcsSecurityGroupRulesDataSourceEmpty(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulesDataSourceEmpty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)

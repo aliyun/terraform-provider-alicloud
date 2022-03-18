@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcdBundlesDataSource(t *testing.T) {
+func TestAccAlicloudECDBundlesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	bundleTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcdBundlesDataSourceName(rand, map[string]string{

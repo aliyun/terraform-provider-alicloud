@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudNasAccessRule_basic(t *testing.T) {
+func TestAccAlicloudNASAccessRule_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_access_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudNasAccessRule0)
@@ -133,7 +133,7 @@ resource "alicloud_nas_access_group" "example" {
 `, name)
 }
 
-func TestAccAlicloudNasAccessRule_unit(t *testing.T) {
+func TestAccAlicloudNASAccessRule_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_access_rule"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_nas_access_rule"].Schema).Data(nil, nil)

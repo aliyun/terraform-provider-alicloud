@@ -90,7 +90,7 @@ func testAlicloudEcsDisk(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEcsDisk_basic(t *testing.T) {
+func TestAccAlicloudECSDisk_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
@@ -270,7 +270,7 @@ func TestAccAlicloudEcsDisk_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsDisk_basic1(t *testing.T) {
+func TestAccAlicloudECSDisk_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
@@ -353,7 +353,7 @@ var AlicloudEcsDiskMap = map[string]string{
 	"performance_level": "",
 }
 
-func TestAccAlicloudEcsDisk_basic2(t *testing.T) {
+func TestAccAlicloudECSDisk_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap1)

@@ -10,9 +10,7 @@ import (
 )
 
 func TestAccAlicloudExpressConnectPhysicalConnectionsDataSource(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	resourceId := "data.alicloud_express_connect_physical_connections.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccExpressConnectPhysicalConnectionsTest%d", rand)
@@ -105,11 +103,8 @@ func TestAccAlicloudExpressConnectPhysicalConnectionsDataSource(t *testing.T) {
 		existMapFunc: existExpressConnectPhysicalConnectionsMapFunc,
 		fakeMapFunc:  fakeExpressConnectPhysicalConnectionsMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou, connectivity.Beijing, connectivity.Shanghai})
-	}
 
-	ExpressConnectPhysicalConnectionsInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, idsConf, nameRegexConf, statusConf, allConf)
+	ExpressConnectPhysicalConnectionsInfo.dataSourceTestCheck(t, 0, idsConf, nameRegexConf, statusConf, allConf)
 }
 
 func dataSourceExpressConnectPhysicalConnectionsDependence(name string) string {

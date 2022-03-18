@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudNasFilesetsDataSource(t *testing.T) {
+func TestAccAlicloudNASFilesetsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.NASCPFSSupportRegions)
 	idsConf := dataSourceTestAccConfig{

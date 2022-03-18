@@ -107,7 +107,7 @@ func testSweepEcsSnapshots(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEcsSnapshot_basic(t *testing.T) {
+func TestAccAlicloudECSSnapshot_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_snapshot.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsSnapshotMap)
@@ -206,7 +206,7 @@ func TestAccAlicloudEcsSnapshot_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsSnapshot_basic1(t *testing.T) {
+func TestAccAlicloudECSSnapshot_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_snapshot.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsSnapshotMap)
@@ -398,7 +398,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 `, name)
 }
 
-func TestAccAlicloudEcsSnapshot_unit(t *testing.T) {
+func TestAccAlicloudECSSnapshot_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_snapshot"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_snapshot"].Schema).Data(nil, nil)

@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEcsStorageCapacityUnit_basic0(t *testing.T) {
+func TestAccAlicloudECSStorageCapacityUnit_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_storage_capacity_unit.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsStorageCapacityUnitMap0)
@@ -76,7 +76,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudEcsStorageCapacityUnit_basic1(t *testing.T) {
+func TestAccAlicloudECSStorageCapacityUnit_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_storage_capacity_unit.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsStorageCapacityUnitMap1)
@@ -160,7 +160,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudEcsStorageCapacityUnit_unit(t *testing.T) {
+func TestAccAlicloudECSStorageCapacityUnit_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_storage_capacity_unit"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_storage_capacity_unit"].Schema).Data(nil, nil)

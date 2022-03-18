@@ -6,7 +6,7 @@ groups:
       - Regions
       - Zones
       - DataWorks
-      - Hbr
+      - HBR
       - Sae
       - EventBridge
       # ESS
@@ -27,7 +27,7 @@ groups:
       - Arms
       - Scdn
       - Lindorm
-      - Ecd
+      - ECD
       - CommonBandwidth
       - Cen
       - Vpn
@@ -41,7 +41,7 @@ groups:
       # Redis and Memcache
       - KVStore
       - DRDS
-      - Gpdb
+      - GPDB
       # RAM
       - Ram
       # Msc and Pvtz
@@ -62,8 +62,8 @@ groups:
       - Ons
       # Kafka
       - Alikafka
-      # Nas
-      - Nas
+      # NAS
+      - NAS
       # Ots
       - Ots
       # Kms
@@ -122,6 +122,8 @@ groups:
       - Eais
       - Sddp
       - SimpleApplicationServer
+      - DTS
+      - ExpressConnect
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -136,7 +138,7 @@ groups:
       - Regions
       - Zones
       - DataWorks
-      - Hbr
+      - HBR
       - Lindorm
       - Sae
       - EventBridge
@@ -162,8 +164,8 @@ groups:
 
   - name: Storage and CDN
     jobs:
-      # Nas
-      - Nas
+      # NAS
+      - NAS
       # OSS
       - Oss
       # Cdn
@@ -188,7 +190,7 @@ groups:
       - DRDS
       # MongoDB
       - MongoDB
-      - Gpdb
+      - GPDB
       - PolarDB
       - HBase
       - Cassandra
@@ -211,7 +213,6 @@ groups:
       - Arms
       - Scdn
       - Lindorm
-      - Ecd
       - CommonBandwidth
       - Cen
       - Vpn
@@ -608,7 +609,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Eip"
+          TEST_CASE_CODE: "EIP"
           CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME: "EIP"
           SWEEPER_CODE: "alicloud_eip"
 
@@ -626,7 +627,7 @@ jobs:
           TEST_CASE_CODE: "Ess"
           SWEEPER_CODE: "alicloud_ess_scaling_group"
   #
-  - name: Hbr
+  - name: HBR
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -637,7 +638,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Hbr"
+          TEST_CASE_CODE: "HBR"
           SWEEPER_CODE: "alicloud_hbr"
 
   - name: FC
@@ -952,7 +953,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Mns"
 
-  - name: Nas
+  - name: NAS
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -963,7 +964,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Nas"
+          TEST_CASE_CODE: "NAS"
 
   - name: Actiontrail
     plan:
@@ -1056,7 +1057,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Cms"
 
-  - name: Gpdb
+  - name: GPDB
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1067,7 +1068,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Gpdb"
+          TEST_CASE_CODE: "GPDB"
 
   - name: Ons
     plan:
@@ -1472,7 +1473,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Oos"
 
-  - name: Ecd
+  - name: ECD
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1483,7 +1484,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Ecd"
+          TEST_CASE_CODE: "ECD"
 
   - name: SDDP
     plan:
@@ -1628,13 +1629,40 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "SimpleApplicationServer"
+
+  - name: DTS
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0830Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "DTS"
+
+  - name: ExpressConnect
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0930Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "ExpressConnect"
+
   - name: SweeperAfter
     plan:
       - get: terraform-provider-alicloud
         resource: terraform-provider-alicloud
         trigger: true
         passed: [
-            Hbr, Ess, CS, FC, Ecs,
+            HBR, Ess, CS, FC, Ecs,
             Vpc, EIP, Cddc, Arms, Scdn, Amqp, CommonBandwidth,
             Slb, ALB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, Sae, EventBridge
         ]

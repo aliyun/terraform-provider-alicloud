@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-func TestAccAlicloudEcsInstancesDataSourceBasic(t *testing.T) {
+func TestAccAlicloudECSInstancesDataSourceBasic(t *testing.T) {
 	rand := acctest.RandInt()
 
 	nameRegexConf := dataSourceTestAccConfig{
