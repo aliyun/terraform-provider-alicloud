@@ -101,7 +101,7 @@ func testSweepOosTemplate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOosTemplate_basic(t *testing.T) {
+func TestAccAlicloudOOSTemplate_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_template.default"
 	ra := resourceAttrInit(resourceId, OosTemplateMap)
@@ -227,7 +227,7 @@ func OosTemplateBasicdependence(name string) string {
 	return ""
 }
 
-func TestAccAlicloudOosTemplate_unit(t *testing.T) {
+func TestAccAlicloudOOSTemplate_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_oos_template"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_oos_template"].Schema).Data(nil, nil)
