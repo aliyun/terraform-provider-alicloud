@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Sae Applications of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.133.0+.
+-> **NOTE:** Available in v1.161.0+.
 
 ## Example Usage
 
@@ -102,7 +102,7 @@ The following attributes are exported in addition to the arguments listed above:
 	* `liveness` - Container health check. Containers that fail the health check will be shut down and restored. Currently, only the method of issuing commands in the container is supported.
 	* `memory` - The memory required for each instance, in MB, cannot be 0. One-to-one correspondence with CPU.
 	* `min_ready_instances` - The Minimum Available Instance. On the Change Had Promised during the Available Number of Instances to Be.
-	* `mount_desc` - Mount description.
+	* `mount_desc` - Mount description information. The details see Block mount_desc.
 	* `mount_host` - Mount point of NAS in application VPC.
 	* `namespace_id` - SAE namespace ID. Only namespaces whose names are lowercase letters and dashes (-) are supported, and must start with a letter. The namespace can be obtained by calling the DescribeNamespaceList interface.
 	* `nas_id` - ID of the mounted NAS, Must be in the same region as the cluster. It must have an available mount point creation quota, or its mount point must be on a switch in the VPC. If it is not filled in and the mountDescs field is present, a NAS will be automatically purchased and mounted on the switch in the VPC by default.
@@ -129,3 +129,8 @@ The following attributes are exported in addition to the arguments listed above:
 	* `vswitch_id` - The vswitch id.
 	* `war_start_options` - WAR package launch application option. Application default startup command: java $JAVA_OPTS $CATALINA_OPTS [-Options] org.apache.catalina.startup.Bootstrap "$@" start.
 	* `web_container` - The version of tomcat that the deployment package depends on. Image type applications are not supported.
+
+#### mount_desc
+The mount_desc supports the following:
+* `mount_path` - Container mount path.
+* `nas_path` - NAS relative file directory.
