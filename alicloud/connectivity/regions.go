@@ -182,3 +182,5 @@ var GpdbElasticInstanceSupportRegions = []Region{Beijing, Hangzhou, Shanghai, Sh
 var PolarDBSupportRegions = []Region{Hangzhou}
 var ESSSupportRegions = []Region{Beijing}
 var SimpleApplicationServerNotSupportRegions = []Region{EUCentral1}
+
+var CRSupportRegions = []Region{WuLanChaBu, APSouthEast2, Hangzhou, ShenZhenFinance, MEEast1, APSouth1, ShanghaiFinance, APNorthEast1, APSouthEast5, CnNorth2Gov1, Hongkong, Huhehaote, Beijing, ChengDu, APSouthEast3, Shenzhen, USEast1, GuangZhou, Qingdao, Zhangjiakou, EUWest1, Shanghai, APSouthEast1, HeYuan, EUCentral1, USWest1}
