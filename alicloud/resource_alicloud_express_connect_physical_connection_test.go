@@ -350,6 +350,7 @@ func TestAccAlicloudExpressConnectPhysicalConnection_intl(t *testing.T) {
 }
 
 func TestAccAlicloudExpressConnectPhysicalConnection_domesic1(t *testing.T) {
+	t.Skipf("There is an api bug that its describe response does not return CircuitCode. If the bug fixed, reopen this case")
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_physical_connection.default"

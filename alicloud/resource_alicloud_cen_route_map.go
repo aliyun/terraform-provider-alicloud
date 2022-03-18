@@ -289,7 +289,7 @@ func resourceAlicloudCenRouteMapCreate(d *schema.ResourceData, meta interface{})
 			return cbnClient.CreateCenRouteMap(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"Operation.Blocking", "InternalError"}) {
 				wait()
 				return resource.RetryableError(err)
 			}

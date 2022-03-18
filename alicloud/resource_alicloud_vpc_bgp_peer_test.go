@@ -132,7 +132,9 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_express_connect_physical_connections" "default" {}
+data "alicloud_express_connect_physical_connections" "default" {
+	name_regex = "^preserved-NODELETING"
+}
 
 resource "alicloud_express_connect_virtual_border_router" "default" {
   local_gateway_ip           = "10.0.0.1"
