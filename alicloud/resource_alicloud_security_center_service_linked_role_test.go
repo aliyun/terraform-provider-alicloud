@@ -17,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSecurityCenterServiceLinkedRole_basic0(t *testing.T) {
+func TestAccAlicloudSASServiceLinkedRole_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_security_center_service_linked_role.default"
 	ra := resourceAttrInit(resourceId, AlicloudSecurityCenterServiceLinkedRoleMap0)
@@ -58,7 +58,7 @@ func testAccCheckAlicloudSecurityCenterServiceLinkedRoleDependence(name string) 
 	return ""
 }
 
-func TestAccAlicloudSecurityCenterServiceLinkedRole_unit(t *testing.T) {
+func TestAccAlicloudSASServiceLinkedRole_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_security_center_service_linked_role"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_security_center_service_linked_role"].Schema).Data(nil, nil)
