@@ -72,7 +72,7 @@ func testSweepAccountAliases(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRamAccountAlias_basic(t *testing.T) {
+func TestAccAlicloudRAMAccountAlias_basic(t *testing.T) {
 	randInt := acctest.RandIntRange(1000, 9999)
 	var v *ram.GetAccountAliasResponse
 	resourceId := "alicloud_ram_account_alias.default"

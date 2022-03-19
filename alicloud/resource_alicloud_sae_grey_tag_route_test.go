@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSaeGreyTagRoute_basic0(t *testing.T) {
+func TestAccAlicloudSAEGreyTagRoute_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_grey_tag_route.default"
@@ -274,7 +274,7 @@ resource "alicloud_sae_application" "default" {
 `, name, defaultRegionToTest)
 }
 
-func TestAccAlicloudSaeGreyTagRoute_unit(t *testing.T) {
+func TestAccAlicloudSAEGreyTagRoute_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_sae_grey_tag_route"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_sae_grey_tag_route"].Schema).Data(nil, nil)

@@ -164,7 +164,7 @@ func testSweepRamUsers(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRamUser(t *testing.T) {
+func TestAccAlicloudRAMUser(t *testing.T) {
 	var v *ram.UserInGetUser
 	randInt := acctest.RandIntRange(1000000, 99999999)
 

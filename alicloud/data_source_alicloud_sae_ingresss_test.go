@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSaeIngressesDataSource(t *testing.T) {
+func TestAccAlicloudSAEIngressesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1, 100)
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	idsConf := dataSourceTestAccConfig{

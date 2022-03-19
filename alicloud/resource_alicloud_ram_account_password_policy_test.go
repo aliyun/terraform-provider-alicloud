@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudRamAccountPasswordPolicy_basic(t *testing.T) {
+func TestAccAlicloudRAMAccountPasswordPolicy_basic(t *testing.T) {
 	var v *ram.GetPasswordPolicyResponse
 
 	resourceId := "alicloud_ram_account_password_policy.default"

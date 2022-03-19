@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudRamUserPolicyAttachment_basic(t *testing.T) {
+func TestAccAlicloudRAMUserPolicyAttachment_basic(t *testing.T) {
 	var v *ram.PolicyInListPoliciesForUser
 	var u *ram.UserInGetUser
 	resourceId := "alicloud_ram_user_policy_attachment.default"

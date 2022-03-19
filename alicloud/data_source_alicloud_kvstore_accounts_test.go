@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudKvstoreAccountsDataSource(t *testing.T) {
+func TestAccAlicloudKVStoreAccountsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_kvstore_accounts.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKvstoreAccount-%d", rand)

@@ -7,7 +7,7 @@ groups:
       - Zones
       - DataWorks
       - HBR
-      - Sae
+      - SAE
       - EventBridge
       # ESS
       - Ess
@@ -43,7 +43,7 @@ groups:
       - DRDS
       - GPDB
       # RAM
-      - Ram
+      - RAM
       # Msc and Pvtz
       - Msc
       # PrivateZone
@@ -124,6 +124,7 @@ groups:
       - SimpleApplicationServer
       - DTS
       - ExpressConnect
+      - SecurityCenter
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -140,7 +141,7 @@ groups:
       - DataWorks
       - HBR
       - Lindorm
-      - Sae
+      - SAE
       - EventBridge
       - Ecs
       # ESS
@@ -262,7 +263,7 @@ groups:
   - name: Management and Monitoring
     jobs:
       # RAM
-      - Ram
+      - RAM
       # Kms
       - Kms
       # Actiontrail
@@ -804,7 +805,7 @@ jobs:
           TEST_CASE_CODE: "Pvtz"
           SWEEPER_CODE: "alicloud_pvtz_zone"
 
-  - name: Ram
+  - name: RAM
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -815,7 +816,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Ram"
+          TEST_CASE_CODE: "RAM"
           SWEEPER_CODE: "alicloud_ram"
 
   - name: Regions
@@ -1018,7 +1019,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Ddoscoo"
 
-  - name: Sae
+  - name: SAE
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1029,7 +1030,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Sae"
+          TEST_CASE_CODE: "SAE"
 
   - name: EventBridge
     plan:
@@ -1656,6 +1657,19 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "ExpressConnect"
 
+  - name: SecurityCenter
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 1030Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "SecurityCenter"
+
   - name: SweeperAfter
     plan:
       - get: terraform-provider-alicloud
@@ -1664,7 +1678,7 @@ jobs:
         passed: [
             HBR, Ess, CS, FC, Ecs,
             Vpc, EIP, Cddc, Arms, Scdn, Amqp, CommonBandwidth,
-            Slb, ALB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, Sae, EventBridge
+            Slb, ALB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, SAE, EventBridge
         ]
       - aggregate:
           - *get-aliyun-cli

@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudRamLoginProfile_basic(t *testing.T) {
+func TestAccAlicloudRAMLoginProfile_basic(t *testing.T) {
 	var v *ram.GetLoginProfileResponse
 	resourceId := "alicloud_ram_login_profile.default"
 	ra := resourceAttrInit(resourceId, ramLoginProfilMap)

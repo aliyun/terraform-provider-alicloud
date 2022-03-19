@@ -119,7 +119,7 @@ func testSweepPrivateZoneEndpoint(region string) error {
 	return nil
 }
 
-func TestAccAlicloudPrivateZoneEndpoint_basic0(t *testing.T) {
+func TestAccAlicloudPvtzEndpoint_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_pvtz_endpoint.default"
@@ -256,7 +256,7 @@ resource "alicloud_vswitch" "default" {
 `, name)
 }
 
-func TestAccAlicloudPrivateZoneEndpoint_unit(t *testing.T) {
+func TestAccAlicloudPvtzEndpoint_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	rand := acctest.RandIntRange(1000, 9999)
 	d, _ := schema.InternalMap(p["alicloud_pvtz_endpoint"].Schema).Data(nil, nil)

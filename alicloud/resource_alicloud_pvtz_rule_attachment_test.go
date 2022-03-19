@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudPrivateZoneRuleAttachment_basic0(t *testing.T) {
+func TestAccAlicloudPvtzRuleAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pvtz_rule_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivateZoneRuleAttachmentMap0)
@@ -151,7 +151,7 @@ resource "alicloud_pvtz_rule" "default" {
 `, name, defaultRegionToTest)
 }
 
-func TestAccAlicloudPrivateZoneRuleAttachment_unit(t *testing.T) {
+func TestAccAlicloudPvtzRuleAttachment_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	rand := acctest.RandIntRange(10000, 99999)
 	d, _ := schema.InternalMap(p["alicloud_pvtz_rule_attachment"].Schema).Data(nil, nil)
