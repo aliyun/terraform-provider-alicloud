@@ -104,7 +104,7 @@ func testSweepRamPolicies(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRamPolicy_basic(t *testing.T) {
+func TestAccAlicloudRAMPolicy_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_policy.default"
 	ra := resourceAttrInit(resourceId, ramPolicyMap)
@@ -179,7 +179,7 @@ func TestAccAlicloudRamPolicy_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRamPolicy_multi(t *testing.T) {
+func TestAccAlicloudRAMPolicy_multi(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_policy.default.9"
 	ra := resourceAttrInit(resourceId, ramPolicyMap)

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSaeNamespace_basic0(t *testing.T) {
+func TestAccAlicloudSAENamespace_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_namespace.default"

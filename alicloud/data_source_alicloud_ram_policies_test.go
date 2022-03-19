@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudRamPoliciesDataSource(t *testing.T) {
+func TestAccAlicloudRAMPoliciesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 
 	groupConf := dataSourceTestAccConfig{

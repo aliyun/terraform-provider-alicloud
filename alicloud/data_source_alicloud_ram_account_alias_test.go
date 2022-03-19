@@ -6,7 +6,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudRamAccountAliasDataSource(t *testing.T) {
+func TestAccAlicloudRAMAccountAliasDataSource(t *testing.T) {
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccAlicloudRamAccountAliasDataSourceConfig(),
 	}

@@ -29,21 +29,20 @@ func resourceAlicloudSslCertificatesServiceCertificate() *schema.Resource {
 				ForceNew: true,
 			},
 			"certificate_name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ConflictsWith: []string{"name"},
-				ValidateFunc:  validation.StringLenBetween(1, 64),
-				ForceNew:      true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				AtLeastOneOf: []string{"certificate_name", "name"},
+				ValidateFunc: validation.StringLenBetween(1, 64),
+				ForceNew:     true,
 			},
 			"name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				ForceNew:      true,
-				Computed:      true,
-				Deprecated:    "Field 'name' has been deprecated from provider version 1.129.0 and it will be remove in the future version. Please use the new attribute 'certificate_name' instead.",
-				ConflictsWith: []string{"certificate_name"},
-				ValidateFunc:  validation.StringLenBetween(1, 64),
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				Deprecated:   "attribute 'name' has been deprecated from provider version 1.129.0 and it will be remove in the future version. Please use the new attribute 'certificate_name' instead.",
+				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
 			"key": {
 				Type:     schema.TypeString,
@@ -154,6 +153,11 @@ func resourceAlicloudSslCertificatesServiceCertificateDelete(d *schema.ResourceD
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	casService := CasService{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, casService.SslCertificatesServiceCertificateStateRefreshFunc(d, []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }

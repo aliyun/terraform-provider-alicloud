@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudKvstoreAccount_basic(t *testing.T) {
+func TestAccAlicloudKVStoreAccount_basic(t *testing.T) {
 	var v r_kvstore.Account
 	resourceId := "alicloud_kvstore_account.default"
 	ra := resourceAttrInit(resourceId, KvstoreAccountMap)
@@ -99,7 +99,7 @@ func TestAccAlicloudKvstoreAccount_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKvstoreAccount_basic_v5(t *testing.T) {
+func TestAccAlicloudKVStoreAccount_basic_v5(t *testing.T) {
 	var v r_kvstore.Account
 	resourceId := "alicloud_kvstore_account.default"
 	ra := resourceAttrInit(resourceId, KvstoreAccountMap)

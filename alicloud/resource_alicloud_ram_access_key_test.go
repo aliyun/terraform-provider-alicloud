@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/vault/helper/pgpkeys"
 )
 
-func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
+func TestAccAlicloudRAMAccessKey_basic(t *testing.T) {
 	var v ram.AccessKeyInListAccessKeys
 	var u ram.UserInGetUser
 	resourceAKId := "alicloud_ram_access_key.default"
@@ -67,7 +67,7 @@ func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRamAccessKey_multi(t *testing.T) {
+func TestAccAlicloudRAMAccessKey_multi(t *testing.T) {
 	var v ram.AccessKeyInListAccessKeys
 	var u ram.UserInGetUser
 	resourceAKId := "alicloud_ram_access_key.default.1"

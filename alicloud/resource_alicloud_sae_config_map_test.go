@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSaeConfigMap_basic0(t *testing.T) {
+func TestAccAlicloudSAEConfigMap_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_config_map.default"
