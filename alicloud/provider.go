@@ -561,6 +561,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_scim_server_credentials":           dataSourceAlicloudCloudSsoScimServerCredentials(),
 			"alicloud_dts_subscription_jobs":                       dataSourceAlicloudDtsSubscriptionJobs(),
 			"alicloud_service_mesh_service_meshes":                 dataSourceAlicloudServiceMeshServiceMeshes(),
+			"alicloud_service_mesh_versions":                       dataSourceAlicloudServiceMeshVersions(),
 			"alicloud_mhub_apps":                                   dataSourceAlicloudMhubApps(),
 			"alicloud_cloud_sso_groups":                            dataSourceAlicloudCloudSsoGroups(),
 			"alicloud_hbr_backup_jobs":                             dataSourceAlicloudHbrBackupJobs(),

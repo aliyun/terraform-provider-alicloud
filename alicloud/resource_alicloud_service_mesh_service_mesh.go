@@ -306,11 +306,10 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Default", "Pro"}, false),
 			},
 			"version": {
-				Type:         schema.TypeString,
-				Computed:     true,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"v1.9.7.31-g24cdcb43-aliyun", "v1.8.6.52-g60741c97-aliyun"}, false),
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
