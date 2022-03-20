@@ -333,7 +333,7 @@ func TestAccAlicloudFCFunction_custom_container(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFCFunctionConfigDependence)
 
 	// REQUIREMENT: the image must be in the repo already.
-	imgUrl := "registry.cn-hangzhou.aliyuncs.com/yhr-work/helloworld:v1beta1"
+	imgUrl := fmt.Sprintf("registry.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		Providers:    testAccProviders,

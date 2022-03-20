@@ -103,17 +103,22 @@ func resourceAlicloudGpdbInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("engine_version", instance.EngineVersion)
 	d.Set("status", instance.DBInstanceStatus)
 	d.Set("description", instance.DBInstanceDescription)
-	d.Set("instance_class", instance.DBInstanceClass)
-	d.Set("instance_group_count", instance.DBInstanceGroupCount)
 	d.Set("instance_network_type", instance.InstanceNetworkType)
 	security_ips, err := gpdbService.DescribeGpdbSecurityIps(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
 	d.Set("security_ip_list", security_ips)
-	d.Set("create_time", instance.CreationTime)
 	d.Set("tags", gpdbService.tagsToMap(instance.Tags.Tag))
 	d.Set("instance_charge_type", convertGpdbPayTypeResponse(instance.PayType))
+
+	object, err := gpdbService.DescribeDBInstanceAttribute(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("instance_class", object.DBInstanceClass)
+	d.Set("instance_group_count", object.DBInstanceGroupCount)
+	d.Set("create_time", object.CreationTime)
 
 	return nil
 }
