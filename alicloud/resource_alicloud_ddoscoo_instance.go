@@ -168,7 +168,6 @@ func resourceAlicloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 			d.SetId("")
 			return nil
 		}
-
 		return WrapError(err)
 	}
 
@@ -239,6 +238,10 @@ func resourceAlicloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		d.SetPartial("service_bandwidth")
 	}
+	stateConf := BuildStateConf([]string{""}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ddoscooService.DdosStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	d.Partial(false)
 	return resourceAlicloudDdoscooInstanceRead(d, meta)
@@ -266,7 +269,7 @@ func resourceAlicloudDdoscooInstanceDelete(d *schema.ResourceData, meta interfac
 
 		if DeleteResult.Code == "InstanceNotExpire" {
 			log.Printf("[INFO]  instance cannot be deleted and must wait it to be expired and release it automatically")
-			return WrapError(Error("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically."))
+			return nil
 		}
 		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
 			return nil

@@ -26,8 +26,22 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance,
 	request.PageNumber = "1"
 	request.PageSize = "10"
 
-	raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-		return ddoscooClient.DescribeInstances(request)
+	var response *ddoscoo.DescribeInstancesResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+			return ddoscooClient.DescribeInstances(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*ddoscoo.DescribeInstancesResponse)
+		return nil
 	})
 
 	if err != nil {
@@ -37,8 +51,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance,
 
 		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ddoscoo.DescribeInstancesResponse)
+
 	if len(response.Instances) == 0 || response.Instances[0].InstanceId != id {
 		return v, WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
 	}
@@ -74,24 +87,35 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(d *schema.ResourceData) (v 
 	id := d.Id()
 	request.InstanceIds = &[]string{id}
 
-	raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-		return ddoscooClient.DescribeInstanceSpecs(request)
+	var response *ddoscoo.DescribeInstanceSpecsResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+			return ddoscooClient.DescribeInstanceSpecs(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*ddoscoo.DescribeInstanceSpecsResponse)
+		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InstanceNotFound", "ddos_coop3301"}) {
+		if IsExpectedErrors(err, []string{"InstanceNotFound", "ddos_coop3301"}) || NotFoundError(err) {
 			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-
 		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	resp, _ := raw.(*ddoscoo.DescribeInstanceSpecsResponse)
-	if len(resp.InstanceSpecs) == 0 || resp.InstanceSpecs[0].InstanceId != id {
+	if len(response.InstanceSpecs) == 0 || response.InstanceSpecs[0].InstanceId != id {
 		return v, WrapErrorf(Error(GetNotFoundMessage("DdoscooInstanceSpec", id)), NotFoundMsg, ProviderERROR)
 	}
 
-	v = resp.InstanceSpecs[0]
+	v = response.InstanceSpecs[0]
 	return v, WrapError(err)
 }
 

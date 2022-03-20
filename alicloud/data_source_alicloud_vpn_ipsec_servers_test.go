@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudVpnIpsecServersDataSource(t *testing.T) {
+func TestAccAlicloudVPNIpsecServersDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpnIpsecServersDataSourceName(rand, map[string]string{

@@ -42,7 +42,7 @@ func testAccCheckVpnConnectionAttr(vpnConn *vpc.DescribeVpnConnectionResponse, l
 		return nil
 	}
 }
-func TestAccAlicloudVpnConnectionBasic(t *testing.T) {
+func TestAccAlicloudVPNConnectionBasic(t *testing.T) {
 	var v vpc.DescribeVpnConnectionResponse
 
 	resourceId := "alicloud_vpn_connection.default"
@@ -215,7 +215,7 @@ func TestAccAlicloudVpnConnectionBasic(t *testing.T) {
 
 }
 
-func TestAccAlicloudVpnConnectionMulti(t *testing.T) {
+func TestAccAlicloudVPNConnectionMulti(t *testing.T) {
 	var v vpc.DescribeVpnConnectionResponse
 
 	resourceId := "alicloud_vpn_connection.default.1"
@@ -328,7 +328,7 @@ resource "alicloud_vpn_customer_gateway" "default" {
 `, name)
 }
 
-func TestAccAlicloudVpnConnection_basic2(t *testing.T) {
+func TestAccAlicloudVPNConnection_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_connection.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnConnectionMap3)

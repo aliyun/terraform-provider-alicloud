@@ -131,7 +131,7 @@ func testAccCheckVpnGatewayDestroy(s *terraform.State) error {
 
 // At present, some properties of this resource do not support modification, including: period, bandwidth, enable_ipsec,
 // enable_ssl, ssl_connections etc.
-func TestAccAlicloudVpnGatewayBasic(t *testing.T) {
+func TestAccAlicloudVPNGatewayBasic(t *testing.T) {
 	var v vpc.DescribeVpnGatewayResponse
 
 	resourceId := "alicloud_vpn_gateway.default"
@@ -146,7 +146,6 @@ func TestAccAlicloudVpnGatewayBasic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 
 		// module name
@@ -198,40 +197,6 @@ func TestAccAlicloudVpnGatewayBasic(t *testing.T) {
 
 }
 
-func TestAccAlicloudVpnGatewayMulti(t *testing.T) {
-	var v vpc.DescribeVpnGatewayResponse
-
-	resourceId := "alicloud_vpn_gateway.default.4"
-	ra := resourceAttrInit(resourceId, map[string]string{})
-	serviceFunc := func() interface{} {
-		return &VpnGatewayService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
-		},
-
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckVpnGatewayDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccVpnConfig_multi(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(testAccVpnGatewayCheckMap),
-				),
-			},
-		},
-	})
-
-}
-
 func testAccVpnConfigBasic(rand int) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -262,47 +227,6 @@ locals {
 }
 
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	bandwidth = "10"
-	enable_ssl = false
-	instance_charge_type = "PrePaid"
-	vswitch_id = local.vswitch_id
-}
-`, rand)
-}
-
-func testAccVpnConfig_multi(rand int) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default =  "tf-testAccVpnConfig%d"
-}
-
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
-}
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
-}
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
-
-resource "alicloud_vpn_gateway" "default" {
-	count = 5
 	name = "${var.name}"
 	vpc_id = data.alicloud_vpcs.default.ids.0
 	bandwidth = "10"
@@ -443,7 +367,7 @@ var testAccVpnGatewayCheckMap = map[string]string{
 	"vswitch_id":   CHECKSET,
 }
 
-func TestAccAlicloudVpnGateway_basic2(t *testing.T) {
+func TestAccAlicloudVPNGateway_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayMap3)
@@ -458,7 +382,6 @@ func TestAccAlicloudVpnGateway_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 
 		IDRefreshName: resourceId,

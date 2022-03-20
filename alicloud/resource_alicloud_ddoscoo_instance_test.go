@@ -239,7 +239,7 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -380,6 +380,7 @@ func TestAccAlicloudDdoscooInstance_intl(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 		},
 		// module name

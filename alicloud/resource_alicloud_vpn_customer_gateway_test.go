@@ -122,7 +122,7 @@ func testAccCheckVpnCustomerGatewayDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudVpnCustomerGatewayBasic(t *testing.T) {
+func TestAccAlicloudVPNCustomerGatewayBasic(t *testing.T) {
 	var v vpc.DescribeCustomerGatewayResponse
 
 	resourceId := "alicloud_vpn_customer_gateway.default"
@@ -189,7 +189,7 @@ func TestAccAlicloudVpnCustomerGatewayBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpnCustomerGatewayMulti(t *testing.T) {
+func TestAccAlicloudVPNCustomerGatewayMulti(t *testing.T) {
 	var v vpc.DescribeCustomerGatewayResponse
 
 	resourceId := "alicloud_vpn_customer_gateway.default.4"
@@ -274,7 +274,7 @@ resource "alicloud_vpn_customer_gateway" "default" {
 `, rand)
 }
 
-func TestAccAlicloudVpnCustomerGateway_basic2(t *testing.T) {
+func TestAccAlicloudVPNCustomerGateway_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_customer_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnCustomerGatewayMap3)
