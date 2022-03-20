@@ -19,6 +19,10 @@ func resourceAlicloudGaAdditionalCertificate() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"accelerator_id": {
 				Type:     schema.TypeString,
@@ -79,6 +83,16 @@ func resourceAlicloudGaAdditionalCertificateCreate(d *schema.ResourceData, meta 
 	}
 
 	d.SetId(fmt.Sprint(request["AcceleratorId"], ":", request["ListenerId"], ":", request["Certificates.1.Domain"]))
+	gaService := GaService{client}
+	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 1*time.Second, gaService.GaListenerStateRefreshFunc(fmt.Sprint(request["ListenerId"]), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	stateConf = BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 1*time.Second, gaService.GaAcceleratorStateRefreshFunc(fmt.Sprint(request["AcceleratorId"]), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return resourceAlicloudGaAdditionalCertificateRead(d, meta)
 }
 func resourceAlicloudGaAdditionalCertificateRead(d *schema.ResourceData, meta interface{}) error {
@@ -140,6 +154,15 @@ func resourceAlicloudGaAdditionalCertificateDelete(d *schema.ResourceData, meta 
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	gaService := GaService{client}
+	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutDelete), 1*time.Second, gaService.GaListenerStateRefreshFunc(fmt.Sprint(parts[1]), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	stateConf = BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutDelete), 1*time.Second, gaService.GaAcceleratorStateRefreshFunc(fmt.Sprint(parts[0]), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }

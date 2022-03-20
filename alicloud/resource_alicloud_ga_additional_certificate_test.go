@@ -138,7 +138,7 @@ EOF
 
 locals {
   domain               = "test"
-  certificate_id       = join("-", [alicloud_ssl_certificates_service_certificate.default.1.id, "cn-hangzhou"])
+  certificate_id       = join("-", [alicloud_ssl_certificates_service_certificate.default.1.id, "%s"])
 }
 
 resource "alicloud_ga_listener" "default" {
@@ -154,5 +154,5 @@ resource "alicloud_ga_listener" "default" {
   }
 }
 
-`, name, defaultRegionToTest)
+`, name, defaultRegionToTest, defaultRegionToTest)
 }

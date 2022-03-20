@@ -47,7 +47,8 @@ func testSweepMHUBApp(region string) error {
 	var response map[string]interface{}
 	conn, err := client.NewMhubClient()
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		log.Printf("[ERROR] %s get an error: %#v", "NewMhubClient", err)
+		return nil
 	}
 	for {
 		runtime := util.RuntimeOptions{}

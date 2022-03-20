@@ -78,12 +78,8 @@ func TestAccAlicloudGaAcceleratorsDataSource(t *testing.T) {
 		existMapFunc: existMapFunc,
 		fakeMapFunc:  fakeMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckWithTime(t, []int{1})
-	}
 
-	CheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	CheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
 }
 
 func dataSourceGaAcceleratorsConfigDependence(name string) string {

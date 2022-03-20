@@ -154,7 +154,7 @@ resource "alicloud_eip_address" "default" {
 }
 
 resource "alicloud_ga_endpoint_group" "default" {
-  accelerator_id=alicloud_ga_accelerator.default.id
+  accelerator_id=alicloud_ga_listener.default.accelerator_id
   endpoint_configurations{
     endpoint=alicloud_eip_address.default.ip_address
     type="PublicIp"
