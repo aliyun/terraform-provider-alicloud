@@ -57,8 +57,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 
- *`id`  - This ID of this resource. It is formatted to `<file_system_id>:<mount_target_domain>`. Before version 1.95.0, the value is `<mount_target_domain>`.
-
+*`id` - This ID of this resource. It is formatted to `<file_system_id>:<mount_target_domain>`. Before version 1.95.0, the value is `<mount_target_domain>`.
+* `mount_target_domain` - The IPv4 domain name of the mount target. **NOTE:** Available in v1.161.0+.
 ### Timeouts
 
 -> **NOTE:** Available in v1.153.0+.
