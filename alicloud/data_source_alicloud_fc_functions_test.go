@@ -150,7 +150,7 @@ func TestAccAlicloudFCFunctionsDataSourceCustomContainerUpdate(t *testing.T) {
 			"functions.#":         "1",
 			"functions.0.name":    name,
 			"functions.0.runtime": "custom-container",
-			"functions.0.custom_container_config.0.image":   "registry.cn-hangzhou.aliyuncs.com/yhr-work/helloworld:v1beta1",
+			"functions.0.custom_container_config.0.image":   fmt.Sprintf("registry.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
 			"functions.0.custom_container_config.0.command": `["python", "server.py"]`,
 			"functions.0.custom_container_config.0.args":    `["a1", "a2"]`,
 			"functions.0.instance_concurrency":              "28",
@@ -258,7 +258,7 @@ resource "alicloud_fc_function" "default" {
 	instance_concurrency = "28"
 	ca_port = "9527"
 	custom_container_config {
-		image = "registry.cn-hangzhou.aliyuncs.com/yhr-work/helloworld:v1beta1"
+		image = "registry.%s.aliyuncs.com/eci_open/nginx:alpine"
 		command = "${local.container_command}"
 		args = "${local.container_args}"
 	}
@@ -277,5 +277,5 @@ resource "alicloud_ram_role_policy_attachment" "default" {
   policy_name = "AliyunContainerRegistryReadOnlyAccess"
   policy_type = "System"
 }
-`, name, testFCRoleTemplate)
+`, name, defaultRegionToTest, testFCRoleTemplate)
 }
