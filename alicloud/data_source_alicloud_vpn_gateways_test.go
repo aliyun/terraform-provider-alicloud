@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudVpnGatewaysDataSourceBasic(t *testing.T) {
+func TestAccAlicloudVPNGatewaysDataSourceBasic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	preCheck := func() {
 		testAccPreCheck(t)

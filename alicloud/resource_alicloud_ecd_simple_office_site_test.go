@@ -48,6 +48,8 @@ func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
 					//"enable_internet_access": "true",
 					"enable_admin_access": "true",
 					"office_site_name":    name,
+					// TODO: there is an api bug that the api does not return cen_id. It will be reopen after the bug is gone.
+					//"cen_id": "${alicloud_cen_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -88,30 +90,31 @@ func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"office_site_name":    name + "_update",
-					"desktop_access_type": "Any",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"office_site_name":    name + "_update",
-						"desktop_access_type": "Any",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"office_site_name":    name + "_update1",
-					"desktop_access_type": "VPC",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"office_site_name":    name + "_update1",
-						"desktop_access_type": "VPC",
-					}),
-				),
-			},
+			// TODO: Any or Vpc access type need a cen id and this needs fixing above api bug at first.
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"office_site_name":    name + "_update",
+			//		"desktop_access_type": "Any",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"office_site_name":    name + "_update",
+			//			"desktop_access_type": "Any",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"office_site_name":    name + "_update1",
+			//		"desktop_access_type": "VPC",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"office_site_name":    name + "_update1",
+			//			"desktop_access_type": "VPC",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"sso_enabled":                 "false",
@@ -147,6 +150,10 @@ func AlicloudECDSimpleOfficeSiteBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
+}
+resource "alicloud_cen_instance" "default" {
+  cen_instance_name = var.name
+  description       = var.name
 }
 `, name)
 }
