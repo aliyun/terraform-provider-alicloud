@@ -90,27 +90,33 @@ func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"office_site_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"office_site_name": name + "_update",
+					}),
+				),
+			},
 			// TODO: Any or Vpc access type need a cen id and this needs fixing above api bug at first.
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
-			//		"office_site_name":    name + "_update",
 			//		"desktop_access_type": "Any",
 			//	}),
 			//	Check: resource.ComposeTestCheckFunc(
 			//		testAccCheck(map[string]string{
-			//			"office_site_name":    name + "_update",
 			//			"desktop_access_type": "Any",
 			//		}),
 			//	),
 			//},
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
-			//		"office_site_name":    name + "_update1",
 			//		"desktop_access_type": "VPC",
 			//	}),
 			//	Check: resource.ComposeTestCheckFunc(
 			//		testAccCheck(map[string]string{
-			//			"office_site_name":    name + "_update1",
 			//			"desktop_access_type": "VPC",
 			//		}),
 			//	),
@@ -121,7 +127,7 @@ func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
 					"mfa_enabled":                 "false",
 					"enable_cross_desktop_access": "true",
 					"desktop_access_type":         "Internet",
-					"office_site_name":            name + "_update2",
+					"office_site_name":            name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -129,7 +135,7 @@ func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
 						"mfa_enabled":                 "false",
 						"enable_cross_desktop_access": "true",
 						"desktop_access_type":         "Internet",
-						"office_site_name":            name + "_update2",
+						"office_site_name":            name,
 					}),
 				),
 			},

@@ -287,9 +287,9 @@ func resourceAlicloudEcdSimpleOfficeSiteUpdate(d *schema.ResourceData, meta inte
 	}
 	if !d.IsNewResource() && d.HasChange("desktop_access_type") {
 		update = true
-	}
-	if v, ok := d.GetOk("desktop_access_type"); ok {
-		request["DesktopAccessType"] = v
+		if v, ok := d.GetOk("desktop_access_type"); ok {
+			request["DesktopAccessType"] = v
+		}
 	}
 	if !d.IsNewResource() && d.HasChange("office_site_name") {
 		update = true
