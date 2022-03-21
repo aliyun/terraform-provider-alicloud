@@ -119,6 +119,10 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 																Type:     schema.TypeString,
 																Computed: true,
 															},
+															"weight": {
+																Type:     schema.TypeInt,
+																Computed: true,
+															},
 														},
 													},
 												},
@@ -197,6 +201,50 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 												"query": {
 													Type:     schema.TypeString,
 													Computed: true,
+												},
+											},
+										},
+									},
+									"traffic_limit_config": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"qps": {
+													Type:     schema.TypeInt,
+													Computed: true,
+												},
+											},
+										},
+									},
+									"traffic_mirror_config": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"target_type": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"mirror_group_config": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"server_group_tuples": {
+																Type:     schema.TypeList,
+																Computed: true,
+																Elem: &schema.Resource{
+																	Schema: map[string]*schema.Schema{
+																		"server_group_id": {
+																			Type:     schema.TypeString,
+																			Computed: true,
+																		},
+																	},
+																},
+															},
+														},
+													},
 												},
 											},
 										},
@@ -320,6 +368,19 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 									"type": {
 										Type:     schema.TypeString,
 										Computed: true,
+									},
+									"source_ip_config": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"values": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem:     &schema.Schema{Type: schema.TypeString},
+												},
+											},
+										},
 									},
 								},
 							},
@@ -469,6 +530,7 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 								serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
 								serverGroupTuplesMap := map[string]interface{}{}
 								serverGroupTuplesMap["server_group_id"] = serverGroupTuplesArg["ServerGroupId"]
+								serverGroupTuplesMap["weight"] = serverGroupTuplesArg["Weight"]
 								serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 							}
 						}
@@ -479,6 +541,38 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 							forwardGroupConfigMaps = append(forwardGroupConfigMaps, forwardGroupConfigMap)
 							ruleActionsMap["forward_group_config"] = forwardGroupConfigMaps
 							ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
+						}
+					}
+				}
+
+				if trafficMirrorConfig, ok := ruleActionsArg["TrafficMirrorConfig"]; ok {
+					if trafficMirrorConfigArg, ok := trafficMirrorConfig.(map[string]interface{}); ok && len(trafficMirrorConfigArg) > 0 {
+						if mirrorGroupConfig, ok := trafficMirrorConfigArg["MirrorGroupConfig"]; ok {
+							if mirrorGroupConfigArg, ok := mirrorGroupConfig.(map[string]interface{}); ok && len(mirrorGroupConfigArg) > 0 {
+								if serverGroupTuples, ok := mirrorGroupConfigArg["ServerGroupTuples"].([]interface{}); ok {
+									serverGroupTuplesMaps := make([]map[string]interface{}, 0)
+									for _, item := range serverGroupTuples {
+										serverGroupTuplesArg := item.(map[string]interface{})
+										serverGroupTuplesMap := map[string]interface{}{}
+										serverGroupTuplesMap["server_group_id"] = serverGroupTuplesArg["ServerGroupId"]
+										serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
+									}
+
+									if len(serverGroupTuplesMaps) > 0 {
+										mirrorGroupConfigMaps := make([]map[string]interface{}, 0)
+										mirrorGroupConfigMaps = append(mirrorGroupConfigMaps, map[string]interface{}{
+											"server_group_tuples": serverGroupTuplesMaps,
+										})
+										trafficMirrorConfigMaps := make([]map[string]interface{}, 0)
+										trafficMirrorConfigMaps = append(trafficMirrorConfigMaps, map[string]interface{}{
+											"mirror_group_config": mirrorGroupConfigMaps,
+											"target_type":         trafficMirrorConfigArg["TargetType"],
+										})
+										ruleActionsMap["traffic_mirror_config"] = trafficMirrorConfigMaps
+										ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
+									}
+								}
+							}
 						}
 					}
 				}
@@ -538,6 +632,18 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 						rewriteConfigMap["query"] = rewriteConfigArg["Query"]
 						rewriteConfigMaps = append(rewriteConfigMaps, rewriteConfigMap)
 						ruleActionsMap["rewrite_config"] = rewriteConfigMaps
+						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
+					}
+				}
+
+				if trafficLimitConfig, ok := ruleActionsArg["TrafficLimitConfig"]; ok {
+					trafficLimitConfigArg := trafficLimitConfig.(map[string]interface{})
+					if len(trafficLimitConfigArg) > 0 {
+						trafficLimitConfigMaps := make([]map[string]interface{}, 0)
+						trafficLimitConfigMap := make(map[string]interface{}, 0)
+						trafficLimitConfigMap["qps"] = trafficLimitConfigArg["QPS"]
+						trafficLimitConfigMaps = append(trafficLimitConfigMaps, trafficLimitConfigMap)
+						ruleActionsMap["traffic_limit_config"] = trafficLimitConfigMaps
 						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 					}
 				}
@@ -637,6 +743,18 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 						pathConfigMap["values"] = pathConfigArg["Values"].([]interface{})
 						pathConfigMaps = append(pathConfigMaps, pathConfigMap)
 						ruleConditionsMap["path_config"] = pathConfigMaps
+						ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
+					}
+				}
+
+				if sourceIpConfig, ok := ruleConditionsArg["SourceIpConfig"]; ok {
+					sourceIpConfigArg := sourceIpConfig.(map[string]interface{})
+					if len(sourceIpConfigArg) > 0 {
+						sourceIpConfigMaps := make([]map[string]interface{}, 0)
+						sourceIpConfigMap := map[string]interface{}{}
+						sourceIpConfigMap["values"] = sourceIpConfigArg["Values"].([]interface{})
+						sourceIpConfigMaps = append(sourceIpConfigMaps, sourceIpConfigMap)
+						ruleConditionsMap["source_ip_config"] = sourceIpConfigMaps
 						ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
 					}
 				}
