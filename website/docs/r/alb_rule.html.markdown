@@ -146,19 +146,21 @@ The following arguments are supported:
 
 The rule_conditions supports the following: 
 
-* `type` - (Required) The type of the forwarding rule. Valid values: `Header`, `Host`, `Path`,  `Cookie`, `QueryString`, and `Method`.
+* `type` - (Required) The type of the forwarding rule. Valid values: `Header`, `Host`, `Path`,  `Cookie`, `QueryString`, `Method` and `SourceIp`.
   * `Host`: Requests are forwarded based on the domain name. 
   * `Path`: Requests are forwarded based on the path. 
   * `Header`: Requests are forwarded based on the HTTP header field. 
   * `QueryString`: Requests are forwarded based on the query string. 
   * `Method`: Request are forwarded based on the request method. 
   * `Cookie`: Requests are forwarded based on the cookie.
+  * `SourceIp`: Requests are forwarded based on the source ip. **NOTE:** The `SourceIp` option is available in 1.162.0+.
 * `header_config` - (Optional) The configuration of the header field. See the following `Block header_config`.
 * `cookie_config` - (Optional) The configuration of the cookie. See the following `Block cookie_config`.
 * `host_config` - (Optional) The configuration of the host field. See the following `Block host_config`.
 * `method_config` - (Optional) The configuration of the request method. See the following `Block method_config`.
 * `path_config` - (Optional) The configuration of the path for the request to be forwarded. See the following `Block path_config`.
 * `query_string_config` - (Optional) The configuration of the query string. See the following `Block query_string_config`.
+* `source_ip_config` - (Optional, Available in 1.162.0+) The Based on source IP traffic matching. Required and valid when Type is SourceIP. See the following `Block source_ip_config`.
 
 #### Block header_config
 
@@ -191,6 +193,12 @@ The path_config supports the following:
 
 * `values` - (Optional, Array) The path of the request to be forwarded. The path must be 1 to 128 characters in length and must start with a forward slash (/). The path can contain letters, digits, and the following special characters: $ - _ . + / & ~ @ :. It cannot contain the following special characters: " % # ; ! ( ) [ ] ^ , ". The value is case-sensitive, and can contain asterisks (*) and question marks (?).
 
+#### Block source_ip_config
+
+The source_ip_config supports the following:
+
+* `values` - (Optional, Array) Add one or more IP addresses or IP address segments. You can add up to 5 forwarding rules in a SourceIp.
+
 #### Block query_string_config
 
 The query_string_config supports the following:
@@ -204,12 +212,14 @@ The query_string_config supports the following:
 The rule_actions supports the following: 
 
 * `order` - (Required) The order of the forwarding rule actions. Valid values: 1 to 50000. The actions are performed in ascending order. You cannot leave this parameter empty. Each value must be unique.
-* `type` - (Required) The action. Valid values: `ForwardGroup`, `Redirect`, `FixedResponse`, `Rewrite`, `InsertHeader`. **Note:**  The preceding actions can be classified into two types:  `FinalType`: A forwarding rule can contain only one `FinalType` action, which is executed last. This type of action can contain only one `ForwardGroup`, `Redirect` or `FixedResponse` action. `ExtType`: A forwarding rule can contain one or more `ExtType` actions, which are executed before `FinalType` actions and need to coexist with the `FinalType` actions. This type of action can contain multiple `InsertHeader` actions or one `Rewrite` action.
+* `type` - (Required) The action. Valid values: `ForwardGroup`, `Redirect`, `FixedResponse`, `Rewrite`, `InsertHeader`, `TrafficLimit` and `TrafficMirror`. **Note:**  The preceding actions can be classified into two types:  `FinalType`: A forwarding rule can contain only one `FinalType` action, which is executed last. This type of action can contain only one `ForwardGroup`, `Redirect` or `FixedResponse` action. `ExtType`: A forwarding rule can contain one or more `ExtType` actions, which are executed before `FinalType` actions and need to coexist with the `FinalType` actions. This type of action can contain multiple `InsertHeader` actions or one `Rewrite` action. **NOTE:** The `TrafficLimit` and `TrafficMirror` option is available in 1.162.0+.
 * `fixed_response_config` - (Optional) The configuration of the fixed response. See the following `Block fixed_response_config`.
 * `insert_header_config` - (Optional) The configuration of the inserted header field. See the following `Block insert_header_config`.
 * `redirect_config` - (Optional) The configuration of the external redirect action. See the following `Block redirect_config`.
 * `rewrite_config` - (Optional) The redirect action within ALB. See the following `Block rewrite_config`.
 * `forward_group_config` - (Optional) The forward response action within ALB. See the following `Block forward_group_config`.
+* `traffic_limit_config` - (Optional, Available in 1.162.0+) The Flow speed limit. See the following `Block traffic_limit_config`.
+* `traffic_mirror_config` - (Optional, Available in 1.162.0+) The Traffic mirroring. See the following `Block traffic_mirror_config`.
 
 #### Block rewrite_config
 
@@ -251,7 +261,28 @@ The fixed_response_config supports the following:
 The forward_group_config supports the following:
 
 * `server_group_tuples` - (Optional, Array) The destination server group to which requests are forwarded.
- * `server_group_id` - (Optional) The ID of the destination server group to which requests are forwarded.
+  * `server_group_id` - (Optional) The ID of the destination server group to which requests are forwarded.
+  * `weight` - (Optional, Computed, Available in 1.162.0+) The Weight of server group.
+
+#### Block traffic_limit_config
+
+The traffic_limit_config supports the following:
+
+* `qps` - (Optional) The Number of requests per second. Value range: 1~100000.
+
+#### Block traffic_mirror_config
+
+The traffic_mirror_config supports the following:
+
+* `target_type` - (Optional) The Mirror target type.
+* `mirror_group_config` - (Optional) The Traffic is mirrored to the server group. See the following `Block mirror_group_config`.
+
+#### Block mirror_group_config
+
+The mirror_group_config supports the following:
+
+* `server_group_tuples` - (Optional, Array) The destination server group to which requests are forwarded.
+  * `server_group_id` - (Optional) The ID of the destination server group to which requests are forwarded.
 
 ## Attributes Reference
 

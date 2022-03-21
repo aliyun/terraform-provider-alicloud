@@ -57,7 +57,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `load_balancer_id` - The ID of the Application Load Balancer (ALB) instance to which the forwarding rule belongs.
     * `priority` - The priority of the rule. Valid values: 1 to 10000. A smaller value indicates a higher priority.  Note The priority of each rule within the same listener must be unique.
     * `rule_actions` - The actions of the forwarding rules.
-        * `type` - The action. Valid values: `ForwardGroup`, `Redirect`, `FixedResponse`, `Rewrite`, `InsertHeader`.
+        * `type` - The action type.
         * `fixed_response_config` - The configuration of the fixed response.
             * `content` - The fixed response. The response cannot exceed 1 KB in size and can contain only ASCII characters.
             * `content_type` - The format of the fixed response.  Valid values: text/plain, text/css, text/html, application/javascript, and application/json.
@@ -65,6 +65,7 @@ The following attributes are exported in addition to the arguments listed above:
         * `forward_group_config` - The configurations of the destination server groups.
             * `server_group_tuples` - The destination server group to which requests are forwarded.
                 * `server_group_id` - The ID of the destination server group to which requests are forwarded.
+                * `weight` - The Weight of server group.
         * `insert_header_config` - The configuration of the inserted header field.
             * `key` - The name of the inserted header field. The name must be 1 to 40 characters in length, and can contain letters, digits, underscores (_), and hyphens (-). You cannot use the same name in InsertHeader.  Note You cannot use Cookie or Host in the name.
             * `value` - The content of the inserted header field:  If the ValueType parameter is set to SystemDefined, the following values are used:  ClientSrcPort: the port of the client ClientSrcIp: the IP address of the client Protocol: the protocol used by client requests (HTTP or HTTPS) SLBId: the ID of the ALB instance SLBPort: the listener port of the ALB instance If the ValueType parameter is set to UserDefined: The header value must be 1 to 128 characters in length, and can contain lowercase letters, printable characters whose ASCII value is ch >= 32 && ch < 127, and wildcards such as asterisks (*) and question marks (?). The header value cannot start or end with a space.  If the ValueType parameter is set to ReferenceHeader: The header value must be 1 to 128 characters in length, and can contain lowercase letters, digits, underscores (_), and hyphens (-).
@@ -81,6 +82,13 @@ The following attributes are exported in addition to the arguments listed above:
             * `host` - The host name of the destination to which requests are redirected within ALB.  Valid values:  The host name must be 3 to 128 characters in length, and can contain letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?). The host name must contain at least one period (.), and cannot start or end with a period (.). The rightmost domain label can contain only letters, asterisks (*) and question marks (?) and cannot contain digits or hyphens (-). Other domain labels cannot start or end with a hyphen (-). You can include asterisks (*) and question marks (?) anywhere in a domain label. Default value: ${host}. You cannot use this value with other characters at the same time.
             * `path` - The path to which requests are to be redirected within ALB.  Valid values: The path must be 1 to 128 characters in length, and start with a forward slash (/). The path can contain letters, digits, asterisks (*), question marks (?)and the following special characters: $ - _ . + / & ~ @ :. It cannot contain the following special characters: " % # ; ! ( ) [ ] ^ , ”. The path is case-sensitive.  Default value: ${path}. This value can be used only once. You can use it with a valid string.
             * `query` - The query string of the request to be redirected within ALB.  The query string must be 1 to 128 characters in length, can contain letters and printable characters. It cannot contain the following special characters: # [ ] { } \ | < > &.  Default value: ${query}. This value can be used only once. You can use it with a valid string.
+        * `traffic_limit_config` - The Flow speed limit.
+            * `qps` - The Number of requests per second.
+        * `traffic_mirror_config` - The Traffic mirroring.
+            * `target_type` - The Mirror target type.
+            * `mirror_group_config` - The Traffic is mirrored to the server group.
+                * `server_group_tuples` - The destination server group to which requests are forwarded.
+                    * `server_group_id` - The ID of the destination server group to which requests are forwarded.
     * `rule_conditions` - The conditions of the forwarding rule.
         * `type` - The type of the forwarding rule.
         * `query_string_config` - The configuration of the query string.
@@ -98,6 +106,8 @@ The following attributes are exported in addition to the arguments listed above:
             * `values` - The request method. Valid values: `HEAD`, `GET`, `POST`, `OPTIONS`, `PUT`, `PATCH`, and `DELETE`.
         * `path_config` - The configuration of the path for the request to be forwarded.
             * `values` - The path of the request to be forwarded. The path must be 1 to 128 characters in length and must start with a forward slash (/). The path can contain letters, digits, and the following special characters: $ - _ . + / & ~ @ :. It cannot contain the following special characters: " % # ; ! ( ) [ ] ^ , ". The value is case-sensitive, and can contain asterisks (*) and question marks (?).
+        * `source_ip_config` - The Based on source IP traffic matching.
+            * `values` - Add one or more IP addresses or IP address segments.
     * `rule_id` - The first ID of the resource.
     * `rule_name` - The name of the forwarding rule. The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). The name must start with a letter.
     * `status` - The status of the resource.
