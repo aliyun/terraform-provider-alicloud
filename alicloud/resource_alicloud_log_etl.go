@@ -121,7 +121,6 @@ func resourceAlicloudLogETL() *schema.Resource {
 			"from_time": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Computed: true,
 			},
 			"to_time": {
 				Type:     schema.TypeInt,
