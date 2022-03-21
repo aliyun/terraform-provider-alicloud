@@ -284,10 +284,11 @@ func resourceAlicloudVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 		update = true
 		modifyVpcAttributeReq["VpcName"] = d.Get("name")
 	}
+	if !d.IsNewResource() && d.HasChange("enable_ipv6") {
+		update = true
+		modifyVpcAttributeReq["EnableIPv6"] = d.Get("enable_ipv6")
+	}
 	if update {
-		if _, ok := d.GetOkExists("enable_ipv6"); ok {
-			modifyVpcAttributeReq["EnableIPv6"] = d.Get("enable_ipv6")
-		}
 		action := "ModifyVpcAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {

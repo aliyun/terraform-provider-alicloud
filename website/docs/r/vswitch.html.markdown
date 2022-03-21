@@ -45,6 +45,8 @@ The following arguments are supported:
 * `vswitch_name` - (Optional, Available in 1.119.0+) The name of the switch. Defaults to null.
 * `description` - (Optional) The switch description. Defaults to null.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
+* `ipv6_last_eight_bits` - (Optional, Available in 1.154.0+) The last eight bits of the IPv6 CIDR block of the vSwitch. Valid values: 0 to 255.
+* `vpc_ipv6_cidr_block` - (Optional, Available in 1.154.0+) The IPv6 CIDR block of the VPC.
 
 ### Timeouts
 
@@ -66,6 +68,7 @@ The following attributes are exported:
 * `name` - The name of the switch.
 * `description` - The description of the switch.
 * `status` - (Available in 1.119.0+) The status of the switch.
+* `ipv6_cidr_block` - (Available in 1.154.0+) The IPv6 CIDR block of the vSwitch.
 
 ## Import
 

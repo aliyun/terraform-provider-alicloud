@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"log"
 	"time"
 
@@ -72,6 +73,19 @@ func resourceAlicloudVswitch() *schema.Resource {
 				ConflictsWith: []string{"zone_id"},
 				Deprecated:    "Field 'availability_zone' has been deprecated from provider version 1.119.0. New field 'zone_id' instead.",
 			},
+			"ipv6_cidr_block": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ipv6_last_eight_bits": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(0, 255),
+			},
+			"vpc_ipv6_cidr_block": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -105,6 +119,13 @@ func resourceAlicloudVswitchCreate(d *schema.ResourceData, meta interface{}) err
 		request["ZoneId"] = v
 	} else {
 		return WrapError(Error(`[ERROR] Argument "availability_zone" or "zone_id" must be set one!`))
+	}
+
+	if v, ok := d.GetOk("ipv6_last_eight_bits"); ok {
+		request["Ipv6CidrBlock"] = v
+	}
+	if v, ok := d.GetOk("vpc_ipv6_cidr_block"); ok {
+		request["VpcIpv6CidrBlock"] = v
 	}
 
 	runtime := util.RuntimeOptions{}
@@ -155,6 +176,7 @@ func resourceAlicloudVswitchRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("zone_id", object["ZoneId"])
 	d.Set("availability_zone", object["ZoneId"])
+	d.Set("ipv6_cidr_block", object["Ipv6CidrBlock"])
 
 	listTagResourcesObject, err := vpcService.ListTagResources(d.Id(), "VSWITCH")
 	if err != nil {
@@ -195,6 +217,14 @@ func resourceAlicloudVswitchUpdate(d *schema.ResourceData, meta interface{}) err
 	if !d.IsNewResource() && d.HasChange("name") {
 		update = true
 		request["VSwitchName"] = d.Get("name")
+	}
+	if !d.IsNewResource() && d.HasChange("ipv6_last_eight_bits") {
+		update = true
+		request["Ipv6CidrBlock"] = d.Get("ipv6_last_eight_bits")
+	}
+	if !d.IsNewResource() && d.HasChange("vpc_ipv6_cidr_block") {
+		update = true
+		request["VpcIpv6CidrBlock"] = d.Get("vpc_ipv6_cidr_block")
 	}
 	if update {
 		action := "ModifyVSwitchAttribute"

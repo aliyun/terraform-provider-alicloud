@@ -154,6 +154,10 @@ func dataSourceAlicloudVswitches() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"ipv6_cidr_block": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -286,6 +290,7 @@ func dataSourceAlicloudVswitchesRead(d *schema.ResourceData, meta interface{}) e
 			"name":                       object["VSwitchName"],
 			"vpc_id":                     object["VpcId"],
 			"zone_id":                    object["ZoneId"],
+			"ipv6_cidr_block":            object["Ipv6CidrBlock"],
 		}
 
 		tags := make(map[string]interface{})
