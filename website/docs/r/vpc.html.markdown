@@ -33,7 +33,7 @@ to create a VPC and several VSwitches one-click.
 
 The following arguments are supported:
 
-* `cidr_block` - (Required, ForceNew) The CIDR block for the VPC. The `cidr_block` is Optional and default value is `172.16.0.0/12` after v1.119.0+.
+* `cidr_block` - (Optional) The CIDR block for the VPC. The `cidr_block` is Optional and default value is `172.16.0.0/12` after v1.119.0+.
 * `vpc_name` - (Optional, Available in v1.119.0+) The name of the VPC. Defaults to null.
 * `name` - (Optional, Deprecated in v1.119.0+) Field `name` has been deprecated from provider version 1.119.0. New field `vpc_name` instead.
 * `description` - (Optional) The VPC description. Defaults to null.
@@ -42,7 +42,7 @@ The following arguments are supported:
 * `secondary_cidr_blocks` - (Optional,Available in v1.112.0+) The secondary CIDR blocks for the VPC.
 * `dry_run` - (Optional, ForceNew, Available in v1.119.0+) Specifies whether to precheck this request only. Valid values: `true` and `false`.
 * `user_cidrs` - (Optional, ForceNew, Available in v1.119.0+) The user cidrs of the VPC.
-* `enable_ipv6` - (Optional, ForceNew, Available in v1.119.0+) Specifies whether to enable the IPv6 CIDR block. Valid values: `false` (Default): disables IPv6 CIDR blocks. `true`: enables IPv6 CIDR blocks. If the `enable_ipv6` is `true`, the system will automatically create a free version of an IPv6 gateway for your private network and assign an IPv6 network segment assigned as /56.
+* `enable_ipv6` - (Optional, Available in v1.119.0+) Specifies whether to enable the IPv6 CIDR block. Valid values: `false` (Default): disables IPv6 CIDR blocks. `true`: enables IPv6 CIDR blocks. If the `enable_ipv6` is `true`, the system will automatically create a free version of an IPv6 gateway for your private network and assign an IPv6 network segment assigned as /56.
 
 -> **NOTE:** Currently, the IPv4 / IPv6 dual-stack VPC function is under public testing. Only the following regions support IPv4 / IPv6 dual-stack VPC: `cn-hangzhou`, `cn-shanghai`, `cn-shenzhen`, `cn-beijing`, `cn-huhehaote`, `cn-hongkong` and `ap-southeast-1`, and need to apply for public beta qualification. To use, please [submit an application](https://help.aliyun.com/document_detail/100334.html).
 
@@ -65,7 +65,9 @@ The following attributes are exported:
 * `description` - The description of the VPC.
 * `router_id` - The ID of the router created by default on VPC creation.
 * `route_table_id` - The route table ID of the router created by default on VPC creation.
+* `router_table_id` - (Deprecated) It has been deprecated and replaced with `route_table_id`.
 * `ipv6_cidr_block` - (Available in v1.119.0+) ) The ipv6 cidr block of VPC.
+* `status` - The status of the VPC.
 
 ## Import
 

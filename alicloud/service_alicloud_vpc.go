@@ -1450,7 +1450,7 @@ func (s *VpcService) DescribeRouteTableList(id string) (object map[string]interf
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+	return object, nil
 }
 
 func (s *VpcService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
