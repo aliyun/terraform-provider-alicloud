@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCassandraBackupPlansDataSource(t *testing.T) {
+func SkipTestAccAlicloudCassandraBackupPlansDataSource(t *testing.T) {
 	// Cassandra has been offline
 	t.Skip("Cassandra has been offline")
 	rand := acctest.RandInt()
