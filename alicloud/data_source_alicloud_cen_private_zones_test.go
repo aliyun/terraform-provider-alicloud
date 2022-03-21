@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -39,7 +40,7 @@ func TestAccAlicloudCenPrivateZonesDataSource(t *testing.T) {
 		existConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id":         `"${alicloud_cen_instance.default.id}"`,
 			"ids":            `[split(":",alicloud_cen_private_zone.default.id)[1]]`,
-			"host_region_id": fmt.Sprintf(`"%s"`, defaultRegionToTest),
+			"host_region_id": fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_REGION")),
 		}),
 		fakeConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id":         `"${alicloud_cen_instance.default.id}"`,
@@ -69,8 +70,8 @@ func TestAccAlicloudCenPrivateZonesDataSource(t *testing.T) {
 			"zones.#":                          "1",
 			"zones.0.cen_id":                   CHECKSET,
 			"zones.0.private_zone_dns_servers": CHECKSET,
-			"zones.0.access_region_id":         defaultRegionToTest,
-			"zones.0.host_region_id":           defaultRegionToTest,
+			"zones.0.access_region_id":         os.Getenv("ALICLOUD_REGION"),
+			"zones.0.host_region_id":           os.Getenv("ALICLOUD_REGION"),
 			"zones.0.host_vpc_id":              CHECKSET,
 			"zones.0.status":                   "Active",
 		}
@@ -130,6 +131,6 @@ resource "alicloud_cen_private_zone" "default" {
 data "alicloud_cen_private_zones" "default" {
 %s
 }
-`, rand, defaultRegionToTest, strings.Join(pairs, "\n   "))
+`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, "\n   "))
 	return config
 }
