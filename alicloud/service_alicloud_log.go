@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -553,8 +554,8 @@ func GetCharTitile(project, dashboard, char string, client *sls.Client) string {
 	return char
 }
 
-func (s *LogService) DescribeLogDashboard(id string) (*sls.Dashboard, error) {
-	dashboard := &sls.Dashboard{}
+func (s *LogService) DescribeLogDashboard(id string) (*DashBoardStr, error) {
+	dashboard := &DashBoardStr{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return dashboard, WrapError(err)
@@ -564,7 +565,7 @@ func (s *LogService) DescribeLogDashboard(id string) (*sls.Dashboard, error) {
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
-			return slsClient.GetDashboard(projectName, dashboardName)
+			return slsClient.GetDashboardString(projectName, dashboardName)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
@@ -578,7 +579,11 @@ func (s *LogService) DescribeLogDashboard(id string) (*sls.Dashboard, error) {
 				"dashboard_name": dashboardName,
 			})
 		}
-		dashboard, _ = raw.(*sls.Dashboard)
+		data := raw.(string)
+		err = json.Unmarshal([]byte(data), &dashboard)
+		if err != nil {
+			return resource.NonRetryableError(err)
+		}
 		return nil
 	})
 

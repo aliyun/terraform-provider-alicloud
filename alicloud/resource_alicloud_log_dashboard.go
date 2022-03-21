@@ -15,6 +15,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+type DashBoardStr struct {
+	DashboardName string        `json:"dashboardName"`
+	Description   string        `json:"description"`
+	ChartList     []interface{} `json:"charts"`
+	DisplayName   string        `json:"displayName"`
+}
+
 func resourceAlicloudLogDashboard() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudLogDashboardCreate,
@@ -52,20 +59,28 @@ func resourceAlicloudLogDashboard() *schema.Resource {
 func resourceAlicloudLogDashboardCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var requestInfo *sls.Client
-
-	dashBoard := sls.Dashboard{
+	var charts []interface{}
+	err := json.Unmarshal([]byte(d.Get("char_list").(string)), &charts)
+	if err != nil {
+		return WrapError(err)
+	}
+	if _, ok := charts[0].(map[string]interface{})["action"]; !ok {
+		charts[0].(map[string]interface{})["action"] = make(map[string]interface{})
+	}
+	dashBoard := DashBoardStr{
 		DashboardName: d.Get("dashboard_name").(string),
 		DisplayName:   d.Get("display_name").(string),
+		ChartList:     charts,
 	}
-	jsonErr := json.Unmarshal([]byte(d.Get("char_list").(string)), &dashBoard.ChartList)
-	if jsonErr != nil {
-		return WrapError(jsonErr)
+	jsonByte, err := json.Marshal(dashBoard)
+	if err != nil {
+		return WrapError(err)
 	}
-
+	dashboardStr := string(jsonByte)
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
-			return nil, slsClient.CreateDashboard(d.Get("project_name").(string), dashBoard)
+			return nil, slsClient.CreateDashboardString(d.Get("project_name").(string), dashboardStr)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
@@ -89,6 +104,9 @@ func resourceAlicloudLogDashboardRead(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
 	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 	object, err := logService.DescribeLogDashboard(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -112,14 +130,16 @@ func resourceAlicloudLogDashboardRead(d *schema.ResourceData, meta interface{}) 
 func resourceAlicloudLogDashboardUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	update := false
-	dashboard := sls.Dashboard{}
+	dashboard := DashBoardStr{}
 	dashboard.DisplayName = d.Get("display_name").(string)
 	data := d.Get("char_list").(string)
 	err := json.Unmarshal([]byte(data), &dashboard.ChartList)
 	if err != nil {
 		return WrapError(err)
 	}
-
+	if _, ok := dashboard.ChartList[0].(map[string]interface{})["action"]; !ok {
+		dashboard.ChartList[0].(map[string]interface{})["action"] = make(map[string]interface{})
+	}
 	if d.HasChange("display_name") {
 		update = true
 	}
@@ -133,8 +153,13 @@ func resourceAlicloudLogDashboardUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		dashboard.DashboardName = parts[1]
+		jsonByte, err := json.Marshal(dashboard)
+		if err != nil {
+			return WrapError(err)
+		}
+		dashboardStr := string(jsonByte)
 		_, err = client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return nil, slsClient.UpdateDashboard(parts[0], dashboard)
+			return nil, slsClient.UpdateDashboardString(parts[0], parts[1], dashboardStr)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateDashboard", AliyunLogGoSdkERROR)
