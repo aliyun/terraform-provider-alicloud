@@ -165,7 +165,7 @@ func resourceAlicloudCenInstanceAttachmentDelete(d *schema.ResourceData, meta in
 			return cbnClient.DetachCenChildInstance(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus", "Operation.Blocking"}) {
+			if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus", "Operation.Blocking", "InstanceStatus.NotSupport"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
