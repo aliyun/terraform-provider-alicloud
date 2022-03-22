@@ -173,16 +173,17 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"disk_allocation_ratio": "110",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"disk_allocation_ratio": "110",
-					}),
-				),
-			},
+			// SQLServer does not support to update disk_allocation_ratio
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"disk_allocation_ratio": "110",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"disk_allocation_ratio": "110",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"allocation_policy": "Intensively",
@@ -235,7 +236,6 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"disk_allocation_ratio":     "111",
 					"allocation_policy":         "Evenly",
 					"host_replace_policy":       "Auto",
 					"mem_allocation_ratio":      "61",
@@ -244,7 +244,6 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"disk_allocation_ratio":     "111",
 						"allocation_policy":         "Evenly",
 						"host_replace_policy":       "Auto",
 						"mem_allocation_ratio":      "61",
