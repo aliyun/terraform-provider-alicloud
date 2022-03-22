@@ -71,7 +71,7 @@ func (s *YundunBastionhostService) DescribeBastionhostInstance(id string) (objec
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidApi"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
