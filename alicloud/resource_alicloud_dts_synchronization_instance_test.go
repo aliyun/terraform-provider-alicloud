@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -35,17 +36,17 @@ func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
 					"auto_start":                       "false",
 					"payment_type":                     "PayAsYouGo",
 					"source_endpoint_engine_name":      "MySQL",
-					"source_endpoint_region":           "cn-hangzhou",
+					"source_endpoint_region":           os.Getenv("ALICLOUD_REGION"),
 					"destination_endpoint_engine_name": "MySQL",
-					"destination_endpoint_region":      "cn-hangzhou",
+					"destination_endpoint_region":      os.Getenv("ALICLOUD_REGION"),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":                     "PayAsYouGo",
 						"source_endpoint_engine_name":      "MySQL",
-						"source_endpoint_region":           "cn-hangzhou",
+						"source_endpoint_region":           os.Getenv("ALICLOUD_REGION"),
 						"destination_endpoint_engine_name": "MySQL",
-						"destination_endpoint_region":      "cn-hangzhou",
+						"destination_endpoint_region":      os.Getenv("ALICLOUD_REGION"),
 					}),
 				),
 			},

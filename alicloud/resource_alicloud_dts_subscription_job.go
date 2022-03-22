@@ -730,7 +730,7 @@ func resourceAlicloudDtsSubscriptionJobStatusFlow(d *schema.ResourceData, meta i
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{}, []string{"Starting", "Normal"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, dtsService.DtsSubscriptionJobStateRefreshFunc(d.Id(), []string{}))
+			stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, dtsService.DtsSubscriptionJobStateRefreshFunc(d.Id(), []string{}))
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
