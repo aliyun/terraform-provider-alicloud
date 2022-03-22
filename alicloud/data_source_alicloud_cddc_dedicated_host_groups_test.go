@@ -102,8 +102,7 @@ data "alicloud_cddc_dedicated_host_groups" "default" {
 	return config
 }
 
-// TODO there is an API error that the disk_allocation_ratio will not effect while creating the gorup. After it is fixed, please reopen it.
-func SkipTestAccAlicloudCddcDedicatedHostGroupsSqlServerDataSource(t *testing.T) {
+func TestAccAlicloudCddcDedicatedHostGroupsSqlServerDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1, 200)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCddcDedicatedHostGroupsSqlServerDataSourceName(rand, map[string]string{
@@ -123,18 +122,19 @@ func SkipTestAccAlicloudCddcDedicatedHostGroupsSqlServerDataSource(t *testing.T)
 			"name_regex": `"${alicloud_cddc_dedicated_host_group.default.dedicated_host_group_desc}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCddcDedicatedHostGroupsSqlServerDataSourceName(rand, map[string]string{
-			"ids":        `["${alicloud_cddc_dedicated_host_group.default.id}"]`,
-			"engine":     `"SQLServer"`,
-			"name_regex": `"${alicloud_cddc_dedicated_host_group.default.dedicated_host_group_desc}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudCddcDedicatedHostGroupsSqlServerDataSourceName(rand, map[string]string{
-			"ids":        `["${alicloud_cddc_dedicated_host_group.default.id}_fake"]`,
-			"engine":     `"SQLServer"`,
-			"name_regex": `"${alicloud_cddc_dedicated_host_group.default.dedicated_host_group_desc}_fake"`,
-		}),
-	}
+	// TODO: There is an api bug that the request parameter does not support SQLServer. This should reopen after the bug is fixed.
+	//allConf := dataSourceTestAccConfig{
+	//	existConfig: testAccCheckAlicloudCddcDedicatedHostGroupsSqlServerDataSourceName(rand, map[string]string{
+	//		"ids":        `["${alicloud_cddc_dedicated_host_group.default.id}"]`,
+	//		"engine":     `"SQLServer"`,
+	//		"name_regex": `"${alicloud_cddc_dedicated_host_group.default.dedicated_host_group_desc}"`,
+	//	}),
+	//	fakeConfig: testAccCheckAlicloudCddcDedicatedHostGroupsSqlServerDataSourceName(rand, map[string]string{
+	//		"ids":        `["${alicloud_cddc_dedicated_host_group.default.id}_fake"]`,
+	//		"engine":     `"SQLServer"`,
+	//		"name_regex": `"${alicloud_cddc_dedicated_host_group.default.dedicated_host_group_desc}_fake"`,
+	//	}),
+	//}
 	var existAlicloudCddcDedicatedHostGroupsNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"names.#":                            "1",
@@ -146,7 +146,7 @@ func SkipTestAccAlicloudCddcDedicatedHostGroupsSqlServerDataSource(t *testing.T)
 			"groups.0.allocation_policy":         "Evenly",
 			"groups.0.cpu_allocation_ratio":      "101",
 			"groups.0.mem_allocation_ratio":      "50",
-			"groups.0.disk_allocation_ratio":     "110",
+			"groups.0.disk_allocation_ratio":     "100",
 			"groups.0.host_replace_policy":       "Manual",
 			"groups.0.create_time":               CHECKSET,
 		}
@@ -163,7 +163,7 @@ func SkipTestAccAlicloudCddcDedicatedHostGroupsSqlServerDataSource(t *testing.T)
 		fakeMapFunc:  fakeAlicloudCddcDedicatedHostGroupsNameMapFunc,
 	}
 
-	alicloudSaeNamespaceCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
+	alicloudSaeNamespaceCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf)
 }
 func testAccCheckAlicloudCddcDedicatedHostGroupsSqlServerDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -185,7 +185,6 @@ resource "alicloud_cddc_dedicated_host_group" "default" {
 	open_permission = true
 	cpu_allocation_ratio = 101
 	mem_allocation_ratio = 50
-	disk_allocation_ratio = 110
 	allocation_policy = "Evenly"
 	host_replace_policy = "Manual"
 	dedicated_host_group_desc = var.name
