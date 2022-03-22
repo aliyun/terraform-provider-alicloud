@@ -36,7 +36,7 @@ func TestAccAlicloudSimpleApplicationServerFirewallRulesDataSource(t *testing.T)
 			"rules.0.instance_id":      CHECKSET,
 			"rules.0.port":             "9999",
 			"rules.0.rule_protocol":    "Tcp",
-			"rules.0.remark":           fmt.Sprintf("tf-testacc-simpleapplicationserverfirewallrule-%d", rand),
+			"rules.0.remark":           name,
 		}
 	}
 

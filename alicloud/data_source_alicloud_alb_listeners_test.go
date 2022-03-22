@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudAlbListenersDataSource(t *testing.T) {
+func TestAccAlicloudALBListenersDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1, 1000)
 
 	idsConf := dataSourceTestAccConfig{

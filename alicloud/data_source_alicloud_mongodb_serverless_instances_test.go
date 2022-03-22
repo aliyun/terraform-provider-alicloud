@@ -200,7 +200,6 @@ func TestAccAlicloudMongodbServerlessInstancesDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithTime(t, []int{1})
 	}
 	alicloudMongodbServerlessInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, dBInstanceClassConf, dBInstanceDescriptionConf, networkTypeConf, resourceGroupIdConf, tagsConf, vSwitchIdConf, vpcIdConf, zoneIdConf, statusConf, allConf)
 }

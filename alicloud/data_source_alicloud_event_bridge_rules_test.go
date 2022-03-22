@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -142,6 +143,6 @@ data "alicloud_event_bridge_rules" "default" {
 	event_bus_name = alicloud_event_bridge_event_bus.default.event_bus_name
 	%s
 }
-`, rand, defaultRegionToTest, strings.Join(pairs, " \n "))
+`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, " \n "))
 	return config
 }

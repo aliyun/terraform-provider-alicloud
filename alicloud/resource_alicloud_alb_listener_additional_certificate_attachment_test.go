@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudAlbListenerAdditionalCertificateAttachment_basic0(t *testing.T) {
+func TestAccAlicloudALBListenerAdditionalCertificateAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_listener_additional_certificate_attachment.default"
 	checkoutSupportedRegions(t, true, connectivity.AlbSupportRegions)
@@ -199,7 +199,7 @@ locals{
 `, name, defaultRegionToTest, defaultRegionToTest)
 }
 
-func TestAccAlicloudAlbListenerAdditionalCertificateAttachment_unit(t *testing.T) {
+func TestAccAlicloudALBListenerAdditionalCertificateAttachment_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_alb_listener_additional_certificate_attachment"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_alb_listener_additional_certificate_attachment"].Schema).Data(nil, nil)

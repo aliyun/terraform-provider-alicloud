@@ -23,7 +23,7 @@ func TestAccAlicloudKVStoreConnectionsDataSource(t *testing.T) {
 			"ids.#":                              "1",
 			"ids.0":                              CHECKSET,
 			"connections.#":                      "1",
-			"connections.0.connection_string":    "allocatetest.redis.rds.aliyuncs.com",
+			"connections.0.connection_string":    CHECKSET,
 			"connections.0.db_instance_net_type": "0",
 			"connections.0.expired_time":         "",
 			"connections.0.ip_address":           CHECKSET,

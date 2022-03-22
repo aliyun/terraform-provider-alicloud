@@ -176,6 +176,7 @@ var RDCupportRegions = []Region{Shanghai}
 var MSEGatewaySupportRegions = []Region{Shenzhen, Hangzhou, Shanghai, Beijing}
 var BrainIndustrialSupportRegions = []Region{Hangzhou}
 var TestSalveRegions = []Region{Hangzhou}
+var TestPvtzRegions = []Region{Hangzhou}
 var ECPSupportRegions = []Region{Beijing, Hangzhou}
 var DCDNSupportRegions = []Region{Hangzhou, APSouthEast1, APNorthEast1}
 var GpdbElasticInstanceSupportRegions = []Region{Beijing, Hangzhou, Shanghai, Shenzhen, APSouthEast1, APSouthEast5, Hongkong}
