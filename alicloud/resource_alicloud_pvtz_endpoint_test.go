@@ -120,7 +120,7 @@ func testSweepPrivateZoneEndpoint(region string) error {
 }
 
 func TestAccAlicloudPvtzEndpoint_basic0(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.TestPvtzRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_pvtz_endpoint.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivateZoneEndpointMap0)
@@ -129,7 +129,7 @@ func TestAccAlicloudPvtzEndpoint_basic0(t *testing.T) {
 	}, "DescribePvtzEndpoint")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
+	rand := acctest.RandIntRange(1000, 9999999)
 	name := fmt.Sprintf("tf-testacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateZoneEndpointBasicDependence0)
 	resource.Test(t, resource.TestCase{
@@ -176,11 +176,11 @@ func TestAccAlicloudPvtzEndpoint_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"endpoint_name": name + "update",
+					"endpoint_name": name + "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"endpoint_name": name + "update",
+						"endpoint_name": name + "1",
 					}),
 				),
 			},

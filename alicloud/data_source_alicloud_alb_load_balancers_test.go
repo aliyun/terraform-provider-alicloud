@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudAlbLoadBalancersDataSource(t *testing.T) {
+func TestAccAlicloudALBLoadBalancersDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAlbLoadBalancersDataSourceName(rand, map[string]string{

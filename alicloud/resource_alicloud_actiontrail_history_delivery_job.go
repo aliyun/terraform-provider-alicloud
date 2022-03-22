@@ -121,5 +121,7 @@ func resourceAlicloudActiontrailHistoryDeliveryJobDelete(d *schema.ResourceData,
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+	// There needs wait 1 minute after deleting the resource to ensure it has been destroy completely.
+	time.Sleep(1 * time.Minute)
 	return nil
 }

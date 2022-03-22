@@ -9,7 +9,7 @@ import (
 )
 
 func TestAccAlicloudPvtzEndpointsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1, 9999)
+	rand := acctest.RandIntRange(1, 99999999)
 	name := fmt.Sprintf("tf-testacc%d", rand)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudPvtzEndpointsDataSourceName(name, map[string]string{
