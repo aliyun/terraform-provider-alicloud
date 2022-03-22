@@ -36,7 +36,6 @@ func resourceAlicloudDtsJobMonitorRule() *schema.Resource {
 			"phone": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 			"state": {
 				Type:         schema.TypeString,

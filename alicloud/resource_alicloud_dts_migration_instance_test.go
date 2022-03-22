@@ -44,9 +44,9 @@ func TestAccAlicloudDTSMigrationInstance_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type":                     "PayAsYouGo",
 					"source_endpoint_engine_name":      "MySQL",
-					"source_endpoint_region":           "cn-hangzhou",
+					"source_endpoint_region":           os.Getenv("ALICLOUD_REGION"),
 					"destination_endpoint_engine_name": "MySQL",
-					"destination_endpoint_region":      "cn-hangzhou",
+					"destination_endpoint_region":      os.Getenv("ALICLOUD_REGION"),
 					"instance_class":                   "small",
 					"sync_architecture":                "oneway",
 				}),

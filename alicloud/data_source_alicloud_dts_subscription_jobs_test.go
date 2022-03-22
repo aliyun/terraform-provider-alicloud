@@ -2,18 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
-
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudDTSSubscriptionJobsDataSource(t *testing.T) {
-	defer checkoutAccount(t, false)
-	checkoutAccount(t, true)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	subscriptionJobidconf := dataSourceTestAccConfig{
@@ -59,31 +55,22 @@ func testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand int, attrMap map[st
 variable "name" {
 	default = "tf-testAccDtsSubscriptionJobs%d"
 }
-
-variable "creation" {
-  default = "Rds"
+variable "region_id" {
+	default = "%s"
 }
-
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
-}
-
-resource "alicloud_vpc" "default" {
-  vpc_name       = var.name
-  cidr_block     = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
-}
-
 data "alicloud_db_zones" "default"{
 	engine = "MySQL"
 	engine_version = "5.6"
 	instance_charge_type = "PostPaid"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids[0]
+  zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
 data "alicloud_db_instance_classes" "default" {
@@ -98,7 +85,7 @@ resource "alicloud_db_instance" "instance" {
   engine_version   = "5.6"
   instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
   instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  vswitch_id       = alicloud_vswitch.default.id
+  vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = var.name
 }
 
@@ -123,19 +110,11 @@ resource "alicloud_db_account_privilege" "privilege" {
   db_names     = alicloud_db_database.db.*.name
 }
 
-data "alicloud_vpcs" "default1" {
-  name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default_1" {
-  vpc_id = data.alicloud_vpcs.default1.ids[0]
-}
-
 resource "alicloud_dts_subscription_job" "default" {
     dts_job_name                        = var.name
     payment_type                        = "PayAsYouGo"
     source_endpoint_engine_name         = "MySQL"
-    source_endpoint_region              = "cn-hangzhou"
+    source_endpoint_region              = var.region_id
     source_endpoint_instance_type       = "RDS"
     source_endpoint_instance_id         = alicloud_db_instance.instance.id
     source_endpoint_database_name       = "tfaccountpri_0"
@@ -145,15 +124,15 @@ resource "alicloud_dts_subscription_job" "default" {
         {"dtstestdata": {"name": "tfaccountpri_0", "all": true}}
     EOF
     subscription_instance_network_type  = "vpc"
-    subscription_instance_vpc_id        = data.alicloud_vpcs.default1.ids[0]
-    subscription_instance_vswitch_id    = data.alicloud_vswitches.default_1.ids[0]
+    subscription_instance_vpc_id        = data.alicloud_vpcs.default.ids[0]
+    subscription_instance_vswitch_id    = data.alicloud_vswitches.default.ids[0]
     status                              = "Normal"
 }
 
 data "alicloud_dts_subscription_jobs" "default" {
 %s
 }
-`, rand, strings.Join(pairs, "\n   "))
+`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, "\n   "))
 	return config
 }
 
