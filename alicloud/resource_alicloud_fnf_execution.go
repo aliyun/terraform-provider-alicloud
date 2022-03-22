@@ -91,7 +91,7 @@ func resourceAlicloudFnFExecutionCreate(d *schema.ResourceData, meta interface{}
 
 	d.SetId(fmt.Sprint(request["FlowName"], ":", request["ExecutionName"]))
 	fnfService := FnfService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, fnfService.FnFExecutionStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, fnfService.FnFExecutionStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
