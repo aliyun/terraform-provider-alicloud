@@ -1244,6 +1244,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_ipsec_server":                                     resourceAlicloudVpnIpsecServer(),
 			"alicloud_cr_chain":                                             resourceAlicloudCrChain(),
 			"alicloud_vpn_pbr_route_entry":                                  resourceAlicloudVpnPbrRouteEntry(),
+			"alicloud_slb_acl_entry_attachment":                             resourceAlicloudSlbAclEntryAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,

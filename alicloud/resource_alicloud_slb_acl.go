@@ -44,17 +44,21 @@ func resourceAlicloudSlbAcl() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"ipv4", "ipv6"}, false),
 			},
 			"entry_list": {
-				Type:     schema.TypeSet,
-				Optional: true,
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'entry_list' has been deprecated from provider version 1.162.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_acl_entry_attachment'.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"entry": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+							Computed: true,
 						},
 						"comment": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
