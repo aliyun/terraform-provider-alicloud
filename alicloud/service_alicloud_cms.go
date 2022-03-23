@@ -493,7 +493,7 @@ func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[s
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Resources.Resource", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CmsMonitorGroupInstances", id)), NotFoundWithResponse, response)
+			break
 		}
 
 		for _, v := range v.([]interface{}) {
@@ -503,6 +503,10 @@ func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[s
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	if len(object) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CmsMonitorGroupInstances", id)), NotFoundWithResponse, response)
 	}
 
 	return object, nil
