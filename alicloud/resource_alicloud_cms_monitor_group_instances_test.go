@@ -38,7 +38,7 @@ func TestAccAlicloudCmsMonitorGroupInstances_basic(t *testing.T) {
 					"instances": []map[string]string{
 						{
 							"category":      "vpc",
-							"instance_id":   "${data.alicloud_vpcs.vpc.ids.0}",
+							"instance_id":   "${data.alicloud_vpcs.default.ids.0}",
 							"instance_name": "tf-testaccvpcname",
 							"region_id":     os.Getenv("ALICLOUD_REGION"),
 						},
@@ -61,7 +61,7 @@ func TestAccAlicloudCmsMonitorGroupInstances_basic(t *testing.T) {
 					"instances": []map[string]string{
 						{
 							"category":      "vpc",
-							"instance_id":   "${data.alicloud_vpcs.vpc.ids.0}",
+							"instance_id":   "${data.alicloud_vpcs.default.ids.0}",
 							"instance_name": "tf-testaccvpcname",
 							"region_id":     os.Getenv("ALICLOUD_REGION"),
 						},
