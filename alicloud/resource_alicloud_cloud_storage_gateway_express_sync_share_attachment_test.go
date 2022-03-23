@@ -25,7 +25,7 @@ func TestAccAlicloudCloudStorageGatewayExpressSyncShareAttachment_basic0(t *test
 	ra := resourceAttrInit(resourceId, AlicloudCloudStorageGatewayExpressSyncShareAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SgwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeExpressSyncShareshares")
+	}, "DescribeExpressSyncShares")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)

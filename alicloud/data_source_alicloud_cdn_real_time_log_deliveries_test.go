@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCdnRealTimeLogDeliveriesDataSource(t *testing.T) {
+func TestAccAlicloudCDNRealTimeLogDeliveriesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 
 	statusConf := dataSourceTestAccConfig{
