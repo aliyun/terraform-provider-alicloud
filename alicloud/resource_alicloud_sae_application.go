@@ -566,210 +566,210 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		"AppId": StringPointer(d.Id()),
 	}
 
-	if d.HasChange("command") {
+	if !d.IsNewResource() && d.HasChange("command") {
 		update = true
 	}
 	if v, ok := d.GetOk("command"); ok {
 		request["Command"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("command_args") {
+	if !d.IsNewResource() && d.HasChange("command_args") {
 		update = true
 	}
 	if v, ok := d.GetOk("command_args"); ok {
 		request["CommandArgs"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("config_map_mount_desc") {
+	if !d.IsNewResource() && d.HasChange("config_map_mount_desc") {
 		update = true
 	}
 	if v, ok := d.GetOk("config_map_mount_desc"); ok {
 		request["ConfigMapMountDesc"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("custom_host_alias") {
+	if !d.IsNewResource() && d.HasChange("custom_host_alias") {
 		update = true
 	}
 	if v, ok := d.GetOk("custom_host_alias"); ok {
 		request["CustomHostAlias"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("edas_container_version") {
+	if !d.IsNewResource() && d.HasChange("edas_container_version") {
 		update = true
 	}
 	if v, ok := d.GetOk("edas_container_version"); ok {
 		request["EdasContainerVersion"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("envs") {
+	if !d.IsNewResource() && d.HasChange("envs") {
 		update = true
 	}
 	if v, ok := d.GetOk("envs"); ok {
 		request["Envs"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("image_url") {
+	if !d.IsNewResource() && d.HasChange("image_url") {
 		update = true
 	}
 	if v, ok := d.GetOk("image_url"); ok {
 		request["ImageUrl"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("jar_start_args") {
+	if !d.IsNewResource() && d.HasChange("jar_start_args") {
 		update = true
 	}
 	if v, ok := d.GetOk("jar_start_args"); ok {
 		request["JarStartArgs"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("jar_start_options") {
+	if !d.IsNewResource() && d.HasChange("jar_start_options") {
 		update = true
 	}
 	if v, ok := d.GetOk("jar_start_options"); ok {
 		request["JarStartOptions"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("jdk") {
+	if !d.IsNewResource() && d.HasChange("jdk") {
 		update = true
 	}
 	if v, ok := d.GetOk("jdk"); ok {
 		request["Jdk"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("liveness") {
+	if !d.IsNewResource() && d.HasChange("liveness") {
 		update = true
 	}
 	if v, ok := d.GetOk("liveness"); ok {
 		request["Liveness"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("mount_desc") {
+	if !d.IsNewResource() && d.HasChange("mount_desc") {
 		update = true
 	}
 	if v, ok := d.GetOk("mount_desc"); ok {
 		request["MountDesc"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("mount_host") {
+	if !d.IsNewResource() && d.HasChange("mount_host") {
 		update = true
 	}
 	if v, ok := d.GetOk("mount_host"); ok {
 		request["MountHost"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("nas_id") {
+	if !d.IsNewResource() && d.HasChange("nas_id") {
 		update = true
 	}
 	if v, ok := d.GetOk("nas_id"); ok {
 		request["NasId"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("oss_ak_id") {
+	if !d.IsNewResource() && d.HasChange("oss_ak_id") {
 		update = true
 	}
 	if v, ok := d.GetOk("oss_ak_id"); ok {
 		request["OssAkId"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("oss_ak_secret") {
+	if !d.IsNewResource() && d.HasChange("oss_ak_secret") {
 		update = true
 	}
 	if v, ok := d.GetOk("oss_ak_secret"); ok {
 		request["OssAkSecret"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("oss_mount_descs") {
+	if !d.IsNewResource() && d.HasChange("oss_mount_descs") {
 		update = true
 	}
 	if v, ok := d.GetOk("oss_mount_descs"); ok {
 		request["OssMountDescs"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("package_url") {
+	if !d.IsNewResource() && d.HasChange("package_url") {
 		update = true
 	}
 	if v, ok := d.GetOk("package_url"); ok {
 		request["PackageUrl"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("php_arms_config_location") {
+	if !d.IsNewResource() && d.HasChange("php_arms_config_location") {
 		update = true
 	}
 	if v, ok := d.GetOk("php_arms_config_location"); ok {
 		request["PhpArmsConfigLocation"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("php_config") {
+	if !d.IsNewResource() && d.HasChange("php_config") {
 		update = true
 	}
 	if v, ok := d.GetOk("php_config"); ok {
 		request["PhpConfig"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("php_config_location") {
+	if !d.IsNewResource() && d.HasChange("php_config_location") {
 		update = true
 	}
 	if v, ok := d.GetOk("php_config_location"); ok {
 		request["PhpConfigLocation"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("post_start") {
+	if !d.IsNewResource() && d.HasChange("post_start") {
 		update = true
 	}
 	if v, ok := d.GetOk("post_start"); ok {
 		request["PostStart"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("pre_stop") {
+	if !d.IsNewResource() && d.HasChange("pre_stop") {
 		update = true
 	}
 	if v, ok := d.GetOk("pre_stop"); ok {
 		request["PreStop"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("readiness") {
+	if !d.IsNewResource() && d.HasChange("readiness") {
 		update = true
 	}
 	if v, ok := d.GetOk("readiness"); ok {
 		request["Readiness"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("sls_configs") {
+	if !d.IsNewResource() && d.HasChange("sls_configs") {
 		update = true
 	}
 	if v, ok := d.GetOk("sls_configs"); ok {
 		request["SlsConfigs"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("termination_grace_period_seconds") {
+	if !d.IsNewResource() && d.HasChange("termination_grace_period_seconds") {
 		update = true
 	}
 	if v, ok := d.GetOk("termination_grace_period_seconds"); ok {
 		request["TerminationGracePeriodSeconds"] = StringPointer(strconv.Itoa(v.(int)))
 	}
 
-	if d.HasChange("timezone") {
+	if !d.IsNewResource() && d.HasChange("timezone") {
 		update = true
 	}
 	if v, ok := d.GetOk("timezone"); ok {
 		request["Timezone"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("tomcat_config") {
+	if !d.IsNewResource() && d.HasChange("tomcat_config") {
 		update = true
 	}
 	if v, ok := d.GetOk("tomcat_config"); ok {
 		request["TomcatConfig"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("war_start_options") {
+	if !d.IsNewResource() && d.HasChange("war_start_options") {
 		update = true
 	}
 	if v, ok := d.GetOk("war_start_options"); ok {
 		request["WarStartOptions"] = StringPointer(v.(string))
 	}
 
-	if d.HasChange("web_container") {
+	if !d.IsNewResource() && d.HasChange("web_container") {
 		update = true
 	}
 	if v, ok := d.GetOk("web_container"); ok {
@@ -782,12 +782,14 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("auto_enable_application_scaling_rule"); ok {
 		request["AutoEnableApplicationScalingRule"] = StringPointer(strconv.FormatBool(v.(bool)))
 	}
+
 	if d.HasChange("min_ready_instances") {
 		update = true
 	}
 	if v, ok := d.GetOk("min_ready_instances"); ok {
 		request["MinReadyInstances"] = StringPointer(strconv.Itoa(v.(int)))
 	}
+
 	if d.HasChange("min_ready_instance_ratio") {
 		update = true
 	}
@@ -795,6 +797,9 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		request["MinReadyInstanceRatio"] = StringPointer(strconv.Itoa(v.(int)))
 	}
 
+	if d.HasChange("batch_wait_time") {
+		update = true
+	}
 	if v, ok := d.GetOk("batch_wait_time"); ok {
 		request["BatchWaitTime"] = StringPointer(strconv.Itoa(v.(int)))
 	}
@@ -826,6 +831,7 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("update_strategy"); ok {
 		request["UpdateStrategy"] = StringPointer(v.(string))
 	}
+
 	if d.HasChange("package_version") {
 		update = true
 	}
