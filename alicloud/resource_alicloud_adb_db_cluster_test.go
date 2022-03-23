@@ -106,7 +106,7 @@ func testSweepAdbDbInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudAdbDbCluster_basic(t *testing.T) {
+func TestAccAlicloudADBDbCluster_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AlicloudAdbDbClusterMap0)
@@ -271,7 +271,7 @@ func TestAccAlicloudAdbDbCluster_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudAdbDbCluster_flexible8C(t *testing.T) {
+func TestAccAlicloudADBDbCluster_flexible8C(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AlicloudAdbDbClusterMap1)
@@ -423,7 +423,7 @@ func TestAccAlicloudAdbDbCluster_flexible8C(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudAdbDbCluster_flexible32C(t *testing.T) {
+func TestAccAlicloudADBDbCluster_flexible32C(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AlicloudAdbDbClusterMap1)

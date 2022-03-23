@@ -40,7 +40,7 @@ The following arguments are supported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 6 mins) Used when creating the cen instance (until it reaches the initial `Active` status). 
-* `delete` - (Defaults to 6 mins) Used when terminating the cen instance. 
+* `delete` - (Defaults to 10 mins) Used when terminating the cen instance. 
 
 ## Attributes Reference
 

@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudAdbDbClustersDataSource(t *testing.T) {
+func TestAccAlicloudADBDbClustersDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	nameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAdbDbClusterDataSourceConfig(rand, map[string]string{

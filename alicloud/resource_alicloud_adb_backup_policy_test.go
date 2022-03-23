@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudAdbBackupPolicy(t *testing.T) {
+func TestAccAlicloudADBBackupPolicy(t *testing.T) {
 	var v *adb.DescribeBackupPolicyResponse
 	resourceId := "alicloud_adb_backup_policy.default"
 	serverFunc := func() interface{} {
