@@ -50,8 +50,8 @@ groups:
       - Pvtz
       # Datahub
       - Datahub
-      # Cdn
-      - Cdn
+      # CDN
+      - CDN
       # Dcdn
       - Dcdn
       # Api Gateway
@@ -170,8 +170,8 @@ groups:
       - NAS
       # OSS
       - Oss
-      # Cdn
-      - Cdn
+      # CDN
+      - CDN
       # Dcdn
       - Dcdn
       # Ots
@@ -463,7 +463,7 @@ jobs:
           TEST_CASE_CODE: "Apigateway"
           SWEEPER_CODE: "alicloud_api_gateway"
 
-  - name: Cdn
+  - name: CDN
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -474,7 +474,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "CdnDomain"
+          TEST_CASE_CODE: "CDN"
           CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME: "Cdn"
 
   - name: Cen
