@@ -15,7 +15,7 @@ func TestAccAlicloudCenPrivateZonesDataSource(t *testing.T) {
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id": `"${alicloud_cen_instance.default.id}"`,
-			"ids":    `[split(":",alicloud_cen_private_zone.default.id)[1]]`,
+			"ids":    `[alicloud_cen_private_zone.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id": `"${alicloud_cen_instance.default.id}"`,
@@ -26,12 +26,12 @@ func TestAccAlicloudCenPrivateZonesDataSource(t *testing.T) {
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id": `"${alicloud_cen_instance.default.id}"`,
-			"ids":    `[split(":",alicloud_cen_private_zone.default.id)[1]]`,
+			"ids":    `[alicloud_cen_private_zone.default.id]`,
 			"status": `"Active"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id": `"${alicloud_cen_instance.default.id}"`,
-			"ids":    `[split(":",alicloud_cen_private_zone.default.id)[1]]`,
+			"ids":    `[alicloud_cen_private_zone.default.id]`,
 			"status": `"Creating"`,
 		}),
 	}
@@ -39,12 +39,12 @@ func TestAccAlicloudCenPrivateZonesDataSource(t *testing.T) {
 	hostRegionIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id":         `"${alicloud_cen_instance.default.id}"`,
-			"ids":            `[split(":",alicloud_cen_private_zone.default.id)[1]]`,
+			"ids":            `[alicloud_cen_private_zone.default.id]`,
 			"host_region_id": fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_REGION")),
 		}),
 		fakeConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id":         `"${alicloud_cen_instance.default.id}"`,
-			"ids":            `[split(":",alicloud_cen_private_zone.default.id)[1]]`,
+			"ids":            `[alicloud_cen_private_zone.default.id]`,
 			"host_region_id": `"fake"`,
 		}),
 	}
@@ -52,13 +52,13 @@ func TestAccAlicloudCenPrivateZonesDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id":         `"${alicloud_cen_instance.default.id}"`,
-			"ids":            `[split(":",alicloud_cen_private_zone.default.id)[1]]`,
+			"ids":            `[alicloud_cen_private_zone.default.id]`,
 			"status":         `"Active"`,
-			"host_region_id": fmt.Sprintf(`"%s"`, defaultRegionToTest),
+			"host_region_id": fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_REGION")),
 		}),
 		fakeConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id":         `"${alicloud_cen_instance.default.id}"`,
-			"ids":            `[split(":",alicloud_cen_private_zone.default.id)[1]]`,
+			"ids":            `[alicloud_cen_private_zone.default.id]`,
 			"status":         `"Active"`,
 			"host_region_id": `"fake"`,
 		}),
@@ -68,6 +68,7 @@ func TestAccAlicloudCenPrivateZonesDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                            "1",
 			"zones.#":                          "1",
+			"zones.0.id":                       CHECKSET,
 			"zones.0.cen_id":                   CHECKSET,
 			"zones.0.private_zone_dns_servers": CHECKSET,
 			"zones.0.access_region_id":         os.Getenv("ALICLOUD_REGION"),

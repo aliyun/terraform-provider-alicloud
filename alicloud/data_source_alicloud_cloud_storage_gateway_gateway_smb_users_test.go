@@ -8,44 +8,44 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCsgSmbUsersDataSource(t *testing.T) {
+func TestAccAlicloudCloudStorageGatewaySmbUsersDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCsgSmbUsersDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudCloudStorageGatewaySmbUsersDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_cloud_storage_gateway_gateway_smb_user.default.id}"]`,
 			"gateway_id": `"${alicloud_cloud_storage_gateway_gateway.default.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCsgSmbUsersDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudCloudStorageGatewaySmbUsersDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_cloud_storage_gateway_gateway_smb_user.default.id}_fake"]`,
 			"gateway_id": `"${alicloud_cloud_storage_gateway_gateway.default.id}"`,
 		}),
 	}
 
 	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCsgSmbUsersDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudCloudStorageGatewaySmbUsersDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_cloud_storage_gateway_gateway_smb_user.default.username}"`,
 			"gateway_id": `"${alicloud_cloud_storage_gateway_gateway.default.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCsgSmbUsersDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudCloudStorageGatewaySmbUsersDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_cloud_storage_gateway_gateway_smb_user.default.username}_fake"`,
 			"gateway_id": `"${alicloud_cloud_storage_gateway_gateway.default.id}"`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCsgSmbUsersDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudCloudStorageGatewaySmbUsersDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_cloud_storage_gateway_gateway_smb_user.default.id}"]`,
 			"gateway_id": `"${alicloud_cloud_storage_gateway_gateway.default.id}"`,
 			"name_regex": `"${alicloud_cloud_storage_gateway_gateway_smb_user.default.username}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCsgSmbUsersDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudCloudStorageGatewaySmbUsersDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_cloud_storage_gateway_gateway_smb_user.default.id}_fake"]`,
 			"gateway_id": `"${alicloud_cloud_storage_gateway_gateway.default.id}"`,
 			"name_regex": `"${alicloud_cloud_storage_gateway_gateway_smb_user.default.username}_fake"`,
 		}),
 	}
 
-	var existAlicloudCsgSmbUsersDataSourceNameMapFunc = func(rand int) map[string]string {
+	var existAlicloudCloudStorageGatewaySmbUsersDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":              "1",
 			"users.#":            "1",
@@ -54,7 +54,7 @@ func TestAccAlicloudCsgSmbUsersDataSource(t *testing.T) {
 			"users.0.gateway_id": CHECKSET,
 		}
 	}
-	var fakeAlicloudCsgSmbUsersDataSourceNameMapFunc = func(rand int) map[string]string {
+	var fakeAlicloudCloudStorageGatewaySmbUsersDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":   "0",
 			"users.#": "0",
@@ -62,13 +62,13 @@ func TestAccAlicloudCsgSmbUsersDataSource(t *testing.T) {
 	}
 	var alicloudCsgSmbUsersCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_cloud_storage_gateway_gateway_smb_users.default",
-		existMapFunc: existAlicloudCsgSmbUsersDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudCsgSmbUsersDataSourceNameMapFunc,
+		existMapFunc: existAlicloudCloudStorageGatewaySmbUsersDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAlicloudCloudStorageGatewaySmbUsersDataSourceNameMapFunc,
 	}
 
 	alicloudCsgSmbUsersCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
 }
-func testAccCheckAlicloudCsgSmbUsersDataSourceName(rand int, attrMap map[string]string) string {
+func testAccCheckAlicloudCloudStorageGatewaySmbUsersDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)

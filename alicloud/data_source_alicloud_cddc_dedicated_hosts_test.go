@@ -220,6 +220,7 @@ resource "alicloud_cddc_dedicated_host_group" "default" {
 	allocation_policy = "Evenly"
 	host_replace_policy = "Manual"
 	dedicated_host_group_desc = var.name
+	open_permission = true
 }
 locals {
 	dedicated_host_group_id = length(data.alicloud_cddc_dedicated_host_groups.default.ids) > 0 ? data.alicloud_cddc_dedicated_host_groups.default.ids.0 : concat(alicloud_cddc_dedicated_host_group.default[*].id, [""])[0]

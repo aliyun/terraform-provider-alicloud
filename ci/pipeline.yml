@@ -93,7 +93,7 @@ groups:
       - PolarDB
       - HBase
       - Cassandra
-      - Adb
+      - ADB
       - Maxcompute
       - Dms
       - Waf
@@ -196,7 +196,7 @@ groups:
       - PolarDB
       - HBase
       - Cassandra
-      - Adb
+      - ADB
       - Dms
       - Tsdb
       - Sweeper-1
@@ -1213,7 +1213,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "HBase"
 
-  - name: Adb
+  - name: ADB
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1224,7 +1224,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Adb"
+          TEST_CASE_CODE: "ADB"
 
 
   - name: Maxcompute

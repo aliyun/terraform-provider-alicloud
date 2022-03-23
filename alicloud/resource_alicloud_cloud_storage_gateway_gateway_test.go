@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCsgGateway_basic0(t *testing.T) {
+func TestAccAlicloudCloudStorageGatewayGateway_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_storage_gateway_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudStorageGatewayGatewayMap0)
@@ -151,7 +151,7 @@ func TestAccAlicloudCsgGateway_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCsgGateway_basic1(t *testing.T) {
+func TestAccAlicloudCloudStorageGatewayGateway_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_storage_gateway_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudStorageGatewayGatewayMap1)
