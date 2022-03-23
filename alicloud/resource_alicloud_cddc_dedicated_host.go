@@ -195,6 +195,10 @@ func resourceAlicloudCddcDedicatedHostRead(d *schema.ResourceData, meta interfac
 func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cddcService := CddcService{client}
+	conn, err := client.NewCddcClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -220,10 +224,6 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 			request["AllocationStatus"] = convertCddcAllocationStatusRequest(v.(string))
 		}
 		action := "ModifyDedicatedHostAttribute"
-		conn, err := client.NewCddcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -254,10 +254,6 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 		request["TargetClassCode"] = d.Get("host_class")
 		request["RegionId"] = client.RegionId
 		action := "ModifyDedicatedHostClass"
-		conn, err := client.NewCddcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
