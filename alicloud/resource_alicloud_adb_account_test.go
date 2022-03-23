@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudAdbAccount_update_forSuper(t *testing.T) {
+func TestAccAlicloudADBAccount_update_forSuper(t *testing.T) {
 	var v *adb.DBAccount
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testAccadbaccount-%d", rand)
