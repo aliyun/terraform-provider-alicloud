@@ -602,6 +602,26 @@ func (s *AlbService) AlbLoadBalancerStateRefreshFunc(id string, failStates []str
 	}
 }
 
+func (s *AlbService) AlbLoadBalancerEditionRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAlbLoadBalancer(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["LoadBalancerEdition"]) == failState {
+				return object, fmt.Sprint(object["LoadBalancerEdition"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["LoadBalancerEdition"])))
+			}
+		}
+		return object, fmt.Sprint(object["LoadBalancerEdition"]), nil
+	}
+}
+
 func (s *AlbService) AlbAclStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlbAcl(id)

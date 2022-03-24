@@ -385,7 +385,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("load_balancer_edition"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbLoadBalancerEditionRefreshFunc(d, []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
