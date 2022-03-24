@@ -63,12 +63,25 @@ The following arguments are supported:
 * `db_name` - (Required, ForceNew) Name of the database requiring a uniqueness check. It may consist of lower case letters, numbers, and underlines, and must start with a letterand have no more than 64 characters.
 * `character_set_name` - (Optional,ForceNew) Character set. The value range is limited to the following: [ utf8, gbk, latin1, utf8mb4, Chinese_PRC_CI_AS, Chinese_PRC_CS_AS, SQL_Latin1_General_CP1_CI_AS, SQL_Latin1_General_CP1_CS_AS, Chinese_PRC_BIN ], default is "utf8" \(`utf8mb4` only supports versions 5.5 and 5.6\).
 * `db_description` - (Optional) Database description. It must start with a Chinese character or English letter, cannot start with "http://" or "https://". It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length must be 2-256 characters.
+* `account_name` - (Optional, ForceNew, Available in v1.165.0+) The name of the account that is authorized to access the database. **NOTE:** This parameter is required when the cluster is a PolarDB O engine or a PolarDB PostgreSQL engine;
+* `collate` - (Optional, Available in v1.165.0+) The locale setting that specifies the collation of the new database. **NOTE:** This parameter is required when the cluster is a PolarDB O engine or a PolarDB PostgreSQL engine;
+* `ctype` - (Optional, Available in v1.165.0+) The locale setting is used to specify the character classification of the database. **NOTE:** This parameter is required when the cluster is a PolarDB O engine or a PolarDB PostgreSQL engine;
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The current database resource ID. Composed of cluster ID and database name with format `<cluster_id>:<name>`.
+* `status` - The status of the polarDB database.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.165.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when creating the polarDB database (until it reaches the initial `Running` status).
+* `delete` - (Defaults to 1 mins) Used when deleting the polarDB database.
 
 ## Import
 

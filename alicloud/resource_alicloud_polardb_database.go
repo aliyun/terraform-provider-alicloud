@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
@@ -19,7 +20,10 @@ func resourceAlicloudPolarDBDatabase() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"db_cluster_id": {
 				Type:     schema.TypeString,
@@ -44,6 +48,23 @@ func resourceAlicloudPolarDBDatabase() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"account_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"collate": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ctype": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -51,6 +72,7 @@ func resourceAlicloudPolarDBDatabase() *schema.Resource {
 func resourceAlicloudPolarDBDatabaseCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
+	polarDBService := PolarDBService{client}
 	request := polardb.CreateCreateDatabaseRequest()
 	request.RegionId = client.RegionId
 	request.DBClusterId = d.Get("db_cluster_id").(string)
@@ -60,7 +82,15 @@ func resourceAlicloudPolarDBDatabaseCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("db_description"); ok && v.(string) != "" {
 		request.DBDescription = v.(string)
 	}
-
+	if v, ok := d.GetOk("account_name"); ok {
+		request.AccountName = v.(string)
+	}
+	if v, ok := d.GetOk("collate"); ok {
+		request.Collate = v.(string)
+	}
+	if v, ok := d.GetOk("ctype"); ok {
+		request.Ctype = v.(string)
+	}
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.CreateDatabase(request)
@@ -80,6 +110,11 @@ func resourceAlicloudPolarDBDatabaseCreate(d *schema.ResourceData, meta interfac
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", request.DBClusterId, COLON_SEPARATED, request.DBName))
+
+	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, polarDBService.PolarDBDatabaseStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return resourceAlicloudPolarDBDatabaseRead(d, meta)
 }
@@ -102,8 +137,10 @@ func resourceAlicloudPolarDBDatabaseRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("db_cluster_id", parts[0])
 	d.Set("db_name", object.DBName)
-	d.Set("character_set_name", object.CharacterSetName)
+	d.Set("character_set_name", strings.ToLower(object.CharacterSetName))
 	d.Set("db_description", object.DBDescription)
+	d.Set("status", object.DBStatus)
+	d.Set("account_name", object.Accounts.Account[0].AccountName)
 
 	return nil
 }
@@ -143,10 +180,6 @@ func resourceAlicloudPolarDBDatabaseDelete(d *schema.ResourceData, meta interfac
 	request.RegionId = client.RegionId
 	request.DBClusterId = parts[0]
 	request.DBName = parts[1]
-	// wait instance status is running before deleting database
-	if err := polarDBService.WaitForPolarDBInstance(parts[0], Running, 1800); err != nil {
-		return WrapError(err)
-	}
 	raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 		return polarDBClient.DeleteDatabase(request)
 	})
@@ -158,5 +191,10 @@ func resourceAlicloudPolarDBDatabaseDelete(d *schema.ResourceData, meta interfac
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	return WrapError(polarDBService.WaitForPolarDBDatabase(d.Id(), Deleted, DefaultTimeoutMedium))
+	stateConf := BuildStateConf([]string{"Deleting"}, []string{}, d.Timeout(schema.TimeoutCreate), 5*time.Second, polarDBService.PolarDBDatabaseStateRefreshFunc(d.Id(), []string{""}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return nil
 }
