@@ -1250,6 +1250,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_pbr_route_entry":                                  resourceAlicloudVpnPbrRouteEntry(),
 			"alicloud_slb_acl_entry_attachment":                             resourceAlicloudSlbAclEntryAttachment(),
 			"alicloud_mse_znode":                                            resourceAlicloudMseZnode(),
+			"alicloud_alikafka_instance_allowed_ip_attachment":              resourceAlicloudAliKafkaInstanceAllowedIpAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
