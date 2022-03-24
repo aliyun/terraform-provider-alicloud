@@ -680,6 +680,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_pbr_route_entries":                       dataSourceAlicloudVpnPbrRouteEntries(),
 			"alicloud_mse_znodes":                                  dataSourceAlicloudMseZnodes(),
 			"alicloud_cen_transit_router_available_resources":      dataSourceAlicloudCenTransitRouterAvailableResources(),
+			"alicloud_ecs_image_pipelines":                         dataSourceAlicloudEcsImagePipelines(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1251,6 +1252,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_slb_acl_entry_attachment":                             resourceAlicloudSlbAclEntryAttachment(),
 			"alicloud_mse_znode":                                            resourceAlicloudMseZnode(),
 			"alicloud_alikafka_instance_allowed_ip_attachment":              resourceAlicloudAliKafkaInstanceAllowedIpAttachment(),
+			"alicloud_ecs_image_pipeline":                                   resourceAlicloudEcsImagePipeline(),
 		},
 
 		ConfigureFunc: providerConfigure,
