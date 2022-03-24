@@ -17,8 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-
 	"strconv"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -1287,19 +1285,27 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	// set nat gateway
-	natRequest := vpc.CreateDescribeNatGatewaysRequest()
-	natRequest.VpcId = object.VpcId
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeNatGateways(natRequest)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), natRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+	rosClient, err := client.NewRoaCsClient()
+	resources, _ := rosClient.DescribeClusterResources(tea.String(d.Id()))
+	for _, resource := range resources.Body {
+		if tea.StringValue(resource.ResourceType) == "ALIYUN::ECS::NatGateway" && len(tea.StringValue(resource.InstanceId)) > 0 {
+			d.Set("nat_gateway_id", tea.StringValue(resource.InstanceId))
+		}
 	}
-	addDebug(natRequest.GetActionName(), raw, natRequest.RpcRequest, natRequest)
-	nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
-	if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
-		d.Set("nat_gateway_id", nat.NatGateways.NatGateway[0].NatGatewayId)
-	}
+
+	//natRequest := vpc.CreateDescribeNatGatewaysRequest()
+	//natRequest.VpcId = object.VpcId
+	//raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+	//	return vpcClient.DescribeNatGateways(natRequest)
+	//})
+	//if err != nil {
+	//	return WrapErrorf(err, DefaultErrorMsg, d.Id(), natRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+	//}
+	//addDebug(natRequest.GetActionName(), raw, natRequest.RpcRequest, natRequest)
+	//nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
+	//if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
+	//	d.Set("nat_gateway_id", nat.NatGateways.NatGateway[0].NatGatewayId)
+	//}
 
 	// get cluster conn certs
 	// If the cluster is failed, there is no need to get cluster certs
