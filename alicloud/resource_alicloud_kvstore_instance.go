@@ -135,7 +135,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"2.8", "4.0", "5.0", "6.0"}, false),
-				Default:      "5.0",
+				Computed:     true,
 			},
 			"force_upgrade": {
 				Type:     schema.TypeBool,

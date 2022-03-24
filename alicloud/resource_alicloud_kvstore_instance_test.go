@@ -393,6 +393,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"tags.For":                      "acceptance test",
 						"zone_id":                       CHECKSET,
 						"vswitch_id":                    CHECKSET,
+						"secondary_zone_id":             REMOVEKEY,
 						"maintain_start_time":           "04:00Z",
 						"maintain_end_time":             "06:00Z",
 						"backup_period.#":               "1",
@@ -488,14 +489,14 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 					}),
 				),
 			},
-			// Currently, the memcache only support version 2.8
+			// Currently, the memcache only support version 4.0
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
-			//		"engine_version": "4.0",
+			//		"engine_version": "2.8",
 			//	}),
 			//	Check: resource.ComposeTestCheckFunc(
 			//		testAccCheck(map[string]string{
-			//			"engine_version": "4.0",
+			//			"engine_version": "2.8",
 			//		}),
 			//	),
 			//},
@@ -631,6 +632,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 						"tags.For":                    "acceptance test",
 						"zone_id":                     CHECKSET,
 						"vswitch_id":                  CHECKSET,
+						"secondary_zone_id":           REMOVEKEY,
 						"maintain_start_time":         "04:00Z",
 						"maintain_end_time":           "06:00Z",
 						"backup_period.#":             "1",
@@ -958,14 +960,14 @@ func TestAccAlicloudKVStoreMemcacheInstance_classictest(t *testing.T) {
 					}),
 				),
 			},
-			// Currently, the memcache does not support upgrade version to 4.0 from 2.8
+			// Currently, the memcache only support 4.0
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
-			//		"engine_version": "4.0",
+			//		"engine_version": "2.8",
 			//	}),
 			//	Check: resource.ComposeTestCheckFunc(
 			//		testAccCheck(map[string]string{
-			//			"engine_version": "4.0",
+			//			"engine_version": "2.8",
 			//		}),
 			//	),
 			//},

@@ -110,7 +110,8 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `auto_renew_period` - (Optional, Available in 1.36.0+) Auto-renewal period of an KVStore DBInstance, in the unit of the month. It is valid when payment_type is `PrePaid`. Valid value: [1~12], Default to `1`.
 * `instance_type` - (Optional, ForceNew) The engine type of the KVStore DBInstance. Valid values: `Redis` or `Memcache`. Defaults to `Redis`.
 * `vswitch_id` - (Optional) The ID of VSwitch.
-* `engine_version`- (Optional) The engine version of the KVStore DBInstance. Valid values: `2.8`, `4.0` and `5.0`. Default to `5.0`.
+* `engine_version`- (Optional) The engine version of the KVStore DBInstance. Valid values: ["2.8", "4.0", "5.0", "6.0"]. Default to "5.0".
+  **NOTE:** When `instance_type = Memcache`, the `engine_version` only supports "4.0". 
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 * `security_ips`- (Optional) The IP addresses in the whitelist group. The maximum number of IP addresses in the whitelist group is 1000. 
 * `security_ip_group_attribute`- (Optional, Available in 1.101.0+) The value of this parameter is empty by default. The attribute of the whitelist group. The console does not display the whitelist group whose value of this parameter is hidden.
