@@ -54,6 +54,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `system_disk_category` - (Optional, Available in 1.120.0+) Filter the results by system disk category. Valid values: `cloud`, `ephemeral_ssd`, `cloud_essd`, `cloud_efficiency`, `cloud_ssd`. 
   **NOTE**: Its default value `cloud_efficiency` has been removed from the version v1.150.0.
+* `image_id` - (Optional, Available in 1.163.0+) The ID of the image.
 
 ## Attributes Reference
 
