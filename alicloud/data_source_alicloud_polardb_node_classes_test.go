@@ -35,24 +35,26 @@ func TestAccAlicloudPolarDBNodeClasses(t *testing.T) {
 		}),
 	}
 
-	EngineVersionConfpgsql := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"pay_type":   "PostPaid",
-			"db_type":    "PostgreSQL",
-			"db_version": "11",
-		}),
-	}
+	//TODO: There is an account question. It should reopen after the resource has been expanded.
+	//EngineVersionConfpgsql := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		//"pay_type":   "PostPaid",
+	//		//"db_type":    "PostgreSQL",
+	//		//"db_version": "11",
+	//	}),
+	//}
 
-	DBNodeClassConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"pay_type":      "PostPaid",
-			"db_node_class": "polar.pg.x4.large",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"pay_type":      "PostPaid",
-			"db_node_class": "fake",
-		}),
-	}
+	//TODO: There is an account question. It should reopen after the resource has been expanded.
+	//DBNodeClassConf := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"pay_type":      "PostPaid",
+	//		"db_node_class": "polar.pg.x4.large",
+	//	}),
+	//	fakeConfig: testAccConfig(map[string]interface{}{
+	//		"pay_type":      "PostPaid",
+	//		"db_node_class": "fake",
+	//	}),
+	//}
 
 	RegionIdConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -91,8 +93,7 @@ func TestAccAlicloudPolarDBNodeClasses(t *testing.T) {
 	}
 
 	PolardbInstanceCheckInfo.dataSourceTestCheck(t, rand, PayTypeConfPrepaid,
-		PayTypeConfPostpaid, EngineVersionConfMysql, EngineVersionConfpgsql,
-		DBNodeClassConf, RegionIdConf)
+		PayTypeConfPostpaid, EngineVersionConfMysql, RegionIdConf)
 }
 
 func polardbConfigHeader(name string) string {
