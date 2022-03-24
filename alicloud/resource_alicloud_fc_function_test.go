@@ -62,7 +62,7 @@ func testSweepFcFunction(region string) error {
 			return fcClient.ListFunctions(fc.NewListFunctionsInput(*serviceName))
 		})
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Println(err.Error())
 		} else {
 			functions := raw.(*fc.ListFunctionsOutput)
 			for _, v := range functions.Functions {
@@ -333,7 +333,7 @@ func TestAccAlicloudFCFunction_custom_container(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFCFunctionConfigDependence)
 
 	// REQUIREMENT: the image must be in the repo already.
-	imgUrl := fmt.Sprintf("registry.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest)
+	imgUrl := fmt.Sprintf("registry.%s.aliyuncs.com/eci_open/nginx:alpine", os.Getenv("ALICLOUD_REGION"))
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		Providers:    testAccProviders,
