@@ -243,6 +243,11 @@ func resourceAlicloudCloudFirewallInstanceRead(d *schema.ResourceData, meta inte
 	bssOpenApiService := BssOpenApiService{client}
 	getQueryInstanceObject, err := bssOpenApiService.QueryAvailableInstance(d.Id())
 	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cloud_firewall_instance bssOpenApiService.QueryAvailableInstance Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
 		return WrapError(err)
 	}
 	d.Set("create_time", getQueryInstanceObject["CreateTime"])
@@ -391,11 +396,6 @@ func resourceAlicloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 			modifyInstanceRequest["ModifyType"] = v
 		}
 		action := "ModifyInstance"
-		modifyInstanceRequest["ClientToken"] = buildClientToken(action)
-		conn, err := client.NewBssopenapiClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		modifyInstanceRequest["ClientToken"] = buildClientToken(action)
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
