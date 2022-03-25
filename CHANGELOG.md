@@ -1,4 +1,50 @@
 ## 1.162.0 (Unreleased)
+
+- **New Resource:** `alicloud_vpn_pbr_route_entry` [GH-4759]
+- **New Resource:** `alicloud_slb_acl_entry_attachment` [GH-4771]
+- **New Resource:** `alicloud_mse_znode` [GH-4757]
+- **New Resource:** `alicloud_log_resource` [GH-4786]
+- **New Data Source:** `alicloud_log_resource_record` [GH-4786]	
+- **New Data Source:** `alicloud_mse_znodes` [GH-4757]	
+- **New Data Source:** `alicloud_vpn_pbr_route_entries` [GH-4759]
+
+ENHANCEMENTS:
+
+- resource/alicloud_kvstore_connection: Enlarges the creating default timeout [GH-4783]
+- resource/alicloud_mse_cluster: Add support for output parameters cluster_id. [GH-4757]
+- resource/alicloud_log_etl: removed sls etl test update fromTime toTime and updated doc [GH-4775]
+- resource/alicloud_kvstore_instance: Removes the default value and adds computed [GH-4778]
+- resource/alicloud_kvstore_connection: Enlarges the deleting default timeout [GH-4778]	
+- resource/alicloud_sae_application: update the issue that creating the resource with two deployment [GH-4777]
+- resource/alicloud_dts_job_monitor_rule: Removes the attribute phone Computed setting [GH-4766]
+- resource/alicloud_fnf_execution: update the target status after creating. resource/alicloud_cms_alarm: update the eneum value abourt the field escalations_warn escalations_info [GH-4764]
+- resource/alicloud_actiontrail_history_delivery_job: Adds 1 minute sleep after deleting it to ensure ensure it has been destroy completely [GH-4762]
+- resource/alicloud_dbfs_instance: Enlarges the delete default timeout [GH-4761]
+- resource/alicloud_cen_instance: Enlarges the deleting default timeout to 10min [GH-4774]
+- datasource/alicloud_cen_private_zones: Improves the ids element value and use resource id instead [GH-4774]
+- datasource/alicloud_alb_rules: Adds output variable rule_actions.traffic_limit_config, rule_actions.traffic_mirror_config and rule_conditions.source_ip_config. resource/alicloud_alb_rule: Support for new parameters rule_actions.traffic_limit_config, rule_actions.traffic_mirror_config and rule_conditions.source_ip_config. [GH-4773]	
+- testcase: Adds new unit test case for resource alicloud_alidns_access_strategy alicloud_alidns_instance alicloud_alidns_monitor_config [GH-4760]
+- testcase: Adds new unit test case for resource testcase: alicloud_config_aggregator alicloud_resource_manager_policy_attachment alicloud_resource_manager_policy [GH-4645]
+- testcase: Adds new unit test case for resource alicloud_brain_industrial_pid_loop alicloud_alidns_gtm_instance alicloud_alikafka_sasl_use [GH-4765]	
+- testcase: Improves the cen and cloud_storage_gateway_express_sync_share_attachment testcases [GH-4789]	
+- testcase: Improve the resource alicloud_cloud_storage_gateway_gateway_file_share unit testcase [GH-4787]	
+- testcase: Adds new unit test case for resource alicloud_click_house_backup_policy alicloud_cddc_dedicated_host alicloud_cddc_dedicated_host_account [GH-4775]
+- docs: Adds a note for resource/alicloud_cddc_dedicated_host_group to mark sqlServer does not support setting disk_allocation_ratio [GH-4763]
+- docs: Add region support for alicloud_log_resource and alicloud_log_resource_record [GH-4790]	
+- ci: Changes the all testcases running time [GH-4754]
+
+BUG FIXES:
+
+- resource/alicloud_cs_serverless_kubernetes: Support for creating professional serverless cluster [GH-4768]
+- resource/alicloud_alb_load_balancer: Fixes the updating load_balancer_edition not effect bug [GH-4780]
+- resource/alicloud_cms_monitor_group_instances: Fix the problem of page turning of query interface data [GH-4770]
+- resource/alicloud_yundun_bastionhost: Fixes the InvalidApi error while invoking DescribeInstanceAttribute [GH-4767]
+- resource/alicloud_cen_instance_attachment: Fixes the InstanceStatus.NotSupport error while invoking DetachCenChildInstance [GH-4758]
+- resource/alicloud_gpdb_instance: Fixes the InternalError while deleting this resource [GH-4753]
+- datasource/alicloud_vpcs: Fixes the vpc is not found because of it does not return system route table [GH-4756]
+- datasource/alicloud_cdn_service: fix the service enable error [GH-4772]
+- testcase:Fix alicloud_dts_synchronization_instance test case [GH-4731]
+
 ## 1.161.0 (March 20, 2022)
 
 - **New Resource:** `alicloud_oss_bucket_replication` ([#4684](https://github.com/aliyun/terraform-provider-alicloud/issues/4684))
