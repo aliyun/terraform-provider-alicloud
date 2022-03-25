@@ -13,11 +13,7 @@ Log resource is a meta store service provided by log service, resource can be us
 
 For information about SLS Resource and how to use it, see [Resource management](https://www.alibabacloud.com/help/en/doc-detail/207732.html)
 
-<<<<<<< HEAD
 -> **NOTE:** Available in 1.162.0+, log resource region should be set a main region: cn-heyuan
-=======
--> **NOTE:** Available in 1.162.0+
->>>>>>> origin/master
 
 ## Example Usage
 

@@ -30,10 +30,7 @@ func TestAccAlicloudLogResource_basic(t *testing.T) {
 
 		PreCheck: func() {
 			testAccPreCheck(t)
-<<<<<<< HEAD
 			testAccPreCheckWithRegions(t, true, connectivity.LogResourceSupportRegions)
-=======
->>>>>>> origin/master
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
