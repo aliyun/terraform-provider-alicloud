@@ -963,7 +963,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayFileShare_unit(t *testing.T) {
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-		gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if *action == "CreateGatewayFileShare" {
 				switch errorCode {
 				case "NonRetryableError":
@@ -980,6 +980,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayFileShare_unit(t *testing.T) {
 			return ReadMockResponse, nil
 		})
 		err := resourceAlicloudCloudStorageGatewayGatewayFileShareCreate(dInit, rawClient)
+		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
@@ -1074,7 +1075,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayFileShare_unit(t *testing.T) {
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
-		gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if *action == "UpdateGatewayFileShare" {
 				switch errorCode {
 				case "NonRetryableError":
@@ -1090,6 +1091,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayFileShare_unit(t *testing.T) {
 			return ReadMockResponse, nil
 		})
 		err := resourceAlicloudCloudStorageGatewayGatewayFileShareUpdate(dExisted, rawClient)
+		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
@@ -1110,7 +1112,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayFileShare_unit(t *testing.T) {
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
-		gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if *action == "DescribeGatewayFileShares" {
 				switch errorCode {
 				case "{}":
@@ -1128,6 +1130,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayFileShare_unit(t *testing.T) {
 			return ReadMockResponse, nil
 		})
 		err := resourceAlicloudCloudStorageGatewayGatewayFileShareRead(dExisted, rawClient)
+		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
@@ -1156,7 +1159,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayFileShare_unit(t *testing.T) {
 	errorCodes = []string{"NonRetryableError", "Throttling", "GatewayDeletionError", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
-		gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if *action == "DeleteGatewayFileShares" {
 				switch errorCode {
 				case "NonRetryableError":
@@ -1184,6 +1187,7 @@ func TestAccAlicloudCloudStorageGatewayGatewayFileShare_unit(t *testing.T) {
 			return ReadMockResponse, nil
 		})
 		err := resourceAlicloudCloudStorageGatewayGatewayFileShareDelete(dExisted, rawClient)
+		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
