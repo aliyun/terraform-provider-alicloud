@@ -168,9 +168,9 @@ func resourceAlicloudCmsMetricRuleTemplate() *schema.Resource {
 				Optional: true,
 			},
 			"rest_version": {
+				Optional: true,
 				Type:     schema.TypeString,
 				Computed: true,
-				ForceNew: true,
 			},
 			"silence_time": {
 				Type:         schema.TypeInt,
@@ -353,6 +353,10 @@ func resourceAlicloudCmsMetricRuleTemplateRead(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudCmsMetricRuleTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewCmsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -386,10 +390,6 @@ func resourceAlicloudCmsMetricRuleTemplateUpdate(d *schema.ResourceData, meta in
 			request["Webhook"] = v
 		}
 		action := "ApplyMetricRuleTemplate"
-		conn, err := client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -487,10 +487,6 @@ func resourceAlicloudCmsMetricRuleTemplateUpdate(d *schema.ResourceData, meta in
 	}
 	if update {
 		action := "ModifyMetricRuleTemplate"
-		conn, err := client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, modifyMetricRuleTemplateReq, &util.RuntimeOptions{})

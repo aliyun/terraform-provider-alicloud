@@ -136,7 +136,7 @@ func resourceAlicloudMongodbShardingNetworkPrivateAddressCreate(d *schema.Resour
 
 	d.SetId(fmt.Sprint(request["DBInstanceId"], ":", request["NodeId"]))
 	ddsService := MongoDBService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(fmt.Sprint(request["DBInstanceId"]), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ddsService.RdsMongodbDBInstanceStateRefreshFunc(fmt.Sprint(request["DBInstanceId"]), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
@@ -218,7 +218,7 @@ func resourceAlicloudMongodbShardingNetworkPrivateAddressDelete(d *schema.Resour
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	ddsService := MongoDBService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(fmt.Sprint(parts[0]), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ddsService.RdsMongodbDBInstanceStateRefreshFunc(fmt.Sprint(parts[0]), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
