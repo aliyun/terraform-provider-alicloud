@@ -822,7 +822,7 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		update = true
 	}
 	if v, ok := d.GetOkExists("enable_grey_tag_route"); ok {
-		request["EnableGreyTagRoute"] = StringPointer(v.(string))
+		request["EnableGreyTagRoute"] = StringPointer(strconv.FormatBool(v.(bool)))
 	}
 
 	if d.HasChange("update_strategy") {
