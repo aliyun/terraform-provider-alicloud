@@ -103,7 +103,7 @@ func testSweepCmsMetricRuleTemplate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCloudMonitorServiceMetricRuleTemplate_basic0(t *testing.T) {
+func TestAccAlicloudCmsMetricRuleTemplate_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_metric_rule_template.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudMonitorServiceMetricRuleTemplateMap0)
