@@ -1,49 +1,52 @@
-## 1.162.0 (Unreleased)
+## 1.163.0 (Unreleased)
+## 1.162.0 (March 27, 2022)
 
-- **New Resource:** `alicloud_vpn_pbr_route_entry` [GH-4759]
-- **New Resource:** `alicloud_slb_acl_entry_attachment` [GH-4771]
-- **New Resource:** `alicloud_mse_znode` [GH-4757]
-- **New Resource:** `alicloud_log_resource` [GH-4786]
-- **New Data Source:** `alicloud_log_resource_record` [GH-4786]	
-- **New Data Source:** `alicloud_mse_znodes` [GH-4757]	
-- **New Data Source:** `alicloud_vpn_pbr_route_entries` [GH-4759]
+- **New Resource:** `alicloud_vpn_pbr_route_entry` ([#4759](https://github.com/aliyun/terraform-provider-alicloud/issues/4759))
+- **New Resource:** `alicloud_slb_acl_entry_attachment` ([#4771](https://github.com/aliyun/terraform-provider-alicloud/issues/4771))
+- **New Resource:** `alicloud_mse_znode` ([#4757](https://github.com/aliyun/terraform-provider-alicloud/issues/4757))
+- **New Resource:** `alicloud_log_resource` ([#4786](https://github.com/aliyun/terraform-provider-alicloud/issues/4786))
+- **New Data Source:** `alicloud_log_resource_record` ([#4786](https://github.com/aliyun/terraform-provider-alicloud/issues/4786))	
+- **New Data Source:** `alicloud_mse_znodes` ([#4757](https://github.com/aliyun/terraform-provider-alicloud/issues/4757))	
+- **New Data Source:** `alicloud_vpn_pbr_route_entries` ([#4759](https://github.com/aliyun/terraform-provider-alicloud/issues/4759))
 
 ENHANCEMENTS:
 
-- resource/alicloud_kvstore_connection: Enlarges the creating default timeout [GH-4783]
-- resource/alicloud_mse_cluster: Add support for output parameters cluster_id. [GH-4757]
-- resource/alicloud_log_etl: removed sls etl test update fromTime toTime and updated doc [GH-4775]
-- resource/alicloud_kvstore_instance: Removes the default value and adds computed [GH-4778]
-- resource/alicloud_kvstore_connection: Enlarges the deleting default timeout [GH-4778]	
-- resource/alicloud_sae_application: update the issue that creating the resource with two deployment [GH-4777]
-- resource/alicloud_dts_job_monitor_rule: Removes the attribute phone Computed setting [GH-4766]
-- resource/alicloud_fnf_execution: update the target status after creating. resource/alicloud_cms_alarm: update the eneum value abourt the field escalations_warn escalations_info [GH-4764]
-- resource/alicloud_actiontrail_history_delivery_job: Adds 1 minute sleep after deleting it to ensure ensure it has been destroy completely [GH-4762]
-- resource/alicloud_dbfs_instance: Enlarges the delete default timeout [GH-4761]
-- resource/alicloud_cen_instance: Enlarges the deleting default timeout to 10min [GH-4774]
-- datasource/alicloud_cen_private_zones: Improves the ids element value and use resource id instead [GH-4774]
-- datasource/alicloud_alb_rules: Adds output variable rule_actions.traffic_limit_config, rule_actions.traffic_mirror_config and rule_conditions.source_ip_config. resource/alicloud_alb_rule: Support for new parameters rule_actions.traffic_limit_config, rule_actions.traffic_mirror_config and rule_conditions.source_ip_config. [GH-4773]	
-- testcase: Adds new unit test case for resource alicloud_alidns_access_strategy alicloud_alidns_instance alicloud_alidns_monitor_config [GH-4760]
-- testcase: Adds new unit test case for resource testcase: alicloud_config_aggregator alicloud_resource_manager_policy_attachment alicloud_resource_manager_policy [GH-4645]
-- testcase: Adds new unit test case for resource alicloud_brain_industrial_pid_loop alicloud_alidns_gtm_instance alicloud_alikafka_sasl_use [GH-4765]	
-- testcase: Improves the cen and cloud_storage_gateway_express_sync_share_attachment testcases [GH-4789]	
-- testcase: Improve the resource alicloud_cloud_storage_gateway_gateway_file_share unit testcase [GH-4787]	
-- testcase: Adds new unit test case for resource alicloud_click_house_backup_policy alicloud_cddc_dedicated_host alicloud_cddc_dedicated_host_account [GH-4775]
-- docs: Adds a note for resource/alicloud_cddc_dedicated_host_group to mark sqlServer does not support setting disk_allocation_ratio [GH-4763]
-- docs: Add region support for alicloud_log_resource and alicloud_log_resource_record [GH-4790]	
-- ci: Changes the all testcases running time [GH-4754]
+- resource/alicloud_sae_application: fix the convert error with the field enable_grey_tag_route ([#4794](https://github.com/aliyun/terraform-provider-alicloud/issues/4794))
+- resource/alicloud_kvstore_connection: Enlarges the creating default timeout ([#4783](https://github.com/aliyun/terraform-provider-alicloud/issues/4783))
+- resource/alicloud_mse_cluster: Add support for output parameters cluster_id. ([#4757](https://github.com/aliyun/terraform-provider-alicloud/issues/4757))
+- resource/alicloud_log_etl: removed sls etl test update fromTime toTime and updated doc ([#4775](https://github.com/aliyun/terraform-provider-alicloud/issues/4775))
+- resource/alicloud_kvstore_instance: Removes the default value and adds computed ([#4778](https://github.com/aliyun/terraform-provider-alicloud/issues/4778))
+- resource/alicloud_kvstore_connection: Enlarges the deleting default timeout ([#4778](https://github.com/aliyun/terraform-provider-alicloud/issues/4778))	
+- resource/alicloud_sae_application: update the issue that creating the resource with two deployment ([#4777](https://github.com/aliyun/terraform-provider-alicloud/issues/4777))
+- resource/alicloud_dts_job_monitor_rule: Removes the attribute phone Computed setting ([#4766](https://github.com/aliyun/terraform-provider-alicloud/issues/4766))
+- resource/alicloud_fnf_execution: update the target status after creating. resource/alicloud_cms_alarm: update the eneum value abourt the field escalations_warn escalations_info ([#4764](https://github.com/aliyun/terraform-provider-alicloud/issues/4764))
+- resource/alicloud_actiontrail_history_delivery_job: Adds 1 minute sleep after deleting it to ensure ensure it has been destroy completely ([#4762](https://github.com/aliyun/terraform-provider-alicloud/issues/4762))
+- resource/alicloud_dbfs_instance: Enlarges the delete default timeout ([#4761](https://github.com/aliyun/terraform-provider-alicloud/issues/4761))
+- resource/alicloud_cen_instance: Enlarges the deleting default timeout to 10min ([#4774](https://github.com/aliyun/terraform-provider-alicloud/issues/4774))
+- datasource/alicloud_cen_private_zones: Improves the ids element value and use resource id instead ([#4774](https://github.com/aliyun/terraform-provider-alicloud/issues/4774))
+- datasource/alicloud_alb_rules: Adds output variable rule_actions.traffic_limit_config, rule_actions.traffic_mirror_config and rule_conditions.source_ip_config. resource/alicloud_alb_rule: Support for new parameters rule_actions.traffic_limit_config, rule_actions.traffic_mirror_config and rule_conditions.source_ip_config. ([#4773](https://github.com/aliyun/terraform-provider-alicloud/issues/4773))	
+- testcase: Improves the yundun dbaudit sweeper testcase ([#4795](https://github.com/aliyun/terraform-provider-alicloud/issues/4795))
+- testcase: Adds new unit test case for resource alicloud_alidns_access_strategy alicloud_alidns_instance alicloud_alidns_monitor_config ([#4760](https://github.com/aliyun/terraform-provider-alicloud/issues/4760))
+- testcase: Adds new unit test case for resource testcase: alicloud_config_aggregator alicloud_resource_manager_policy_attachment alicloud_resource_manager_policy ([#4645](https://github.com/aliyun/terraform-provider-alicloud/issues/4645))
+- testcase: Adds new unit test case for resource alicloud_brain_industrial_pid_loop alicloud_alidns_gtm_instance alicloud_alikafka_sasl_use ([#4765](https://github.com/aliyun/terraform-provider-alicloud/issues/4765))	
+- testcase: Improves the cen and cloud_storage_gateway_express_sync_share_attachment testcases ([#4789](https://github.com/aliyun/terraform-provider-alicloud/issues/4789))	
+- testcase: Improve the resource alicloud_cloud_storage_gateway_gateway_file_share unit testcase ([#4787](https://github.com/aliyun/terraform-provider-alicloud/issues/4787))	
+- testcase: Adds new unit test case for resource alicloud_click_house_backup_policy alicloud_cddc_dedicated_host alicloud_cddc_dedicated_host_account ([#4775](https://github.com/aliyun/terraform-provider-alicloud/issues/4775))
+- docs: Adds a note for resource/alicloud_cddc_dedicated_host_group to mark sqlServer does not support setting disk_allocation_ratio ([#4763](https://github.com/aliyun/terraform-provider-alicloud/issues/4763))
+- docs: Add region support for alicloud_log_resource and alicloud_log_resource_record ([#4790](https://github.com/aliyun/terraform-provider-alicloud/issues/4790))	
+- ci: Changes the all testcases running time ([#4754](https://github.com/aliyun/terraform-provider-alicloud/issues/4754))
 
 BUG FIXES:
 
-- resource/alicloud_cs_serverless_kubernetes: Support for creating professional serverless cluster [GH-4768]
-- resource/alicloud_alb_load_balancer: Fixes the updating load_balancer_edition not effect bug [GH-4780]
-- resource/alicloud_cms_monitor_group_instances: Fix the problem of page turning of query interface data [GH-4770]
-- resource/alicloud_yundun_bastionhost: Fixes the InvalidApi error while invoking DescribeInstanceAttribute [GH-4767]
-- resource/alicloud_cen_instance_attachment: Fixes the InstanceStatus.NotSupport error while invoking DetachCenChildInstance [GH-4758]
-- resource/alicloud_gpdb_instance: Fixes the InternalError while deleting this resource [GH-4753]
-- datasource/alicloud_vpcs: Fixes the vpc is not found because of it does not return system route table [GH-4756]
-- datasource/alicloud_cdn_service: fix the service enable error [GH-4772]
-- testcase:Fix alicloud_dts_synchronization_instance test case [GH-4731]
+- resource/alicloud_cs_serverless_kubernetes: Support for creating professional serverless cluster ([#4768](https://github.com/aliyun/terraform-provider-alicloud/issues/4768))
+- resource/alicloud_alb_load_balancer: Fixes the updating load_balancer_edition not effect bug ([#4780](https://github.com/aliyun/terraform-provider-alicloud/issues/4780))
+- resource/alicloud_cms_monitor_group_instances: Fix the problem of page turning of query interface data ([#4770](https://github.com/aliyun/terraform-provider-alicloud/issues/4770))
+- resource/alicloud_yundun_bastionhost: Fixes the InvalidApi error while invoking DescribeInstanceAttribute ([#4767](https://github.com/aliyun/terraform-provider-alicloud/issues/4767))
+- resource/alicloud_cen_instance_attachment: Fixes the InstanceStatus.NotSupport error while invoking DetachCenChildInstance ([#4758](https://github.com/aliyun/terraform-provider-alicloud/issues/4758))
+- resource/alicloud_gpdb_instance: Fixes the InternalError while deleting this resource ([#4753](https://github.com/aliyun/terraform-provider-alicloud/issues/4753))
+- datasource/alicloud_vpcs: Fixes the vpc is not found because of it does not return system route table ([#4756](https://github.com/aliyun/terraform-provider-alicloud/issues/4756))
+- datasource/alicloud_cdn_service: fix the service enable error ([#4772](https://github.com/aliyun/terraform-provider-alicloud/issues/4772))
+- testcase:Fix alicloud_dts_synchronization_instance test case ([#4731](https://github.com/aliyun/terraform-provider-alicloud/issues/4731))
 
 ## 1.161.0 (March 20, 2022)
 
@@ -53,7 +56,7 @@ BUG FIXES:
 - **New Resource:** `alb_listener_additional_certificate_attachment` ([#4694](https://github.com/aliyun/terraform-provider-alicloud/issues/4694))
 - **New Resource:** `alicloud_vpn_ipsec_server` ([#4705](https://github.com/aliyun/terraform-provider-alicloud/issues/4705))
 - **New Data Source:** `alicloud_log_alert_resource` ([#4658](https://github.com/aliyun/terraform-provider-alicloud/issues/4658))
-- **New Data Source:** `alicloud_vpn_ipsec_servers` [[#4705](https://github.com/aliyun/terraform-provider-alicloud/issues/4705))	
+- **New Data Source:** `alicloud_vpn_ipsec_servers` ([#4705](https://github.com/aliyun/terraform-provider-alicloud/issues/4705))	
 - **New Data Source:** `alicloud_dms_user_tenants` ([#4709](https://github.com/aliyun/terraform-provider-alicloud/issues/4709))
 - **New Data Source:** `alicloud_cr_chains` ([#4696](https://github.com/aliyun/terraform-provider-alicloud/issues/4696))
 - **New Data Source:** `alicloud_service_mesh_versions` ([#4745](https://github.com/aliyun/terraform-provider-alicloud/issues/4745))
@@ -73,7 +76,7 @@ ENHANCEMENTS:
 - resource/alicloud_polardb_endpoint: Add support for output parameters db_endpoint_id. ([#4726](https://github.com/aliyun/terraform-provider-alicloud/issues/4726))
 - resource/alicloud_msc_sub_subscription: Update contact_ids type to a set to avoid potential diff error ([#4727](https://github.com/aliyun/terraform-provider-alicloud/issues/4727))
 - resource/alicloud_cddc_dedicated_host_account: Adds wait after creating the resource to avoid notfounderror; Improves the testcases ([#4724](https://github.com/aliyun/terraform-provider-alicloud/issues/4724))
-- resource/alb_listener: Optimize XForward field [[#4694](https://github.com/aliyun/terraform-provider-alicloud/issues/4694))	
+- resource/alb_listener: Optimize XForward field ([#4694](https://github.com/aliyun/terraform-provider-alicloud/issues/4694))	
 - resource/alicloud_vpn_route_entry: change sdk to common api;Support for new parameters route_entry_type, status ([#4703](https://github.com/aliyun/terraform-provider-alicloud/issues/4703))
 - resource/alicloud_ddoscoo_domain_resource: Update the attribute instance_ids type to a set to avoid protential diff error ([#4704](https://github.com/aliyun/terraform-provider-alicloud/issues/4704))
 - resource/alicloud_alikafka_instance: Supports to update attribute deploy_type ([#4691](https://github.com/aliyun/terraform-provider-alicloud/issues/4691))
@@ -84,14 +87,14 @@ ENHANCEMENTS:
 - datasource/alicloud_simple_application_server_images: Supports new parameter platform ([#4715](https://github.com/aliyun/terraform-provider-alicloud/issues/4715))
 - datasource/alicloud_simple_application_server_plans: Supports new parameter platform ([#4715](https://github.com/aliyun/terraform-provider-alicloud/issues/4715))
 - datasource/alicloud_cr_ee_namespace: Adds two outputs namespace_name and namespace_id; Improves the ids values ([#4730](https://github.com/aliyun/terraform-provider-alicloud/issues/4730))
-- data_source/alicloud_vpn_gateways: Adds new parameter enable_ipsec. [[#4705](https://github.com/aliyun/terraform-provider-alicloud/issues/4705))	
+- data_source/alicloud_vpn_gateways: Adds new parameter enable_ipsec. ([#4705](https://github.com/aliyun/terraform-provider-alicloud/issues/4705))	
 - datasource/alicloud_cen_route_maps: Improves the ids values ([#4736](https://github.com/aliyun/terraform-provider-alicloud/issues/4736))
-- testcase: Resolve ram role and ram policy resources conflict against [[#4742](https://github.com/aliyun/terraform-provider-alicloud/issues/4742))	
+- testcase: Resolve ram role and ram policy resources conflict against ([#4742](https://github.com/aliyun/terraform-provider-alicloud/issues/4742))	
 - testcase: Adds new unit test case for resource alicloud_alikafka_consumer_group alicloud_cloud_storage_gateway_gateway_smb_user alicloud_cloud_storage_gateway_storage_bundle ([#4740](https://github.com/aliyun/terraform-provider-alicloud/issues/4740))
-- testcase: Adds new unit test case for resource alicloud_cloud_storage_gateway_gateway_cache_disk alicloud_cloud_storage_gateway_gateway_file_share alicloud_cloud_storage_gateway_gateway_logging [[#4728](https://github.com/aliyun/terraform-provider-alicloud/issues/4728))	
+- testcase: Adds new unit test case for resource alicloud_cloud_storage_gateway_gateway_cache_disk alicloud_cloud_storage_gateway_gateway_file_share alicloud_cloud_storage_gateway_gateway_logging ([#4728](https://github.com/aliyun/terraform-provider-alicloud/issues/4728))	
 - testcase: Adds new unit test case for resource alicloud_cloud_sso_access_assignment alicloud_bastionhost_user alicloud_bastionhost_host_group ([#4699](https://github.com/aliyun/terraform-provider-alicloud/issues/4699))
 - testcase: Adds new unit test case for resource alicloud_bastionhost_user_attachment alicloud_cms_group_metric_rule alicloud_bastionhost_user_group ([#4708](https://github.com/aliyun/terraform-provider-alicloud/issues/4708))
-- testcase: Adds new unit test case for resource alicloud_cloud_storage_gateway_gateway_block_volume alicloud_cloud_storage_gateway_express_sync_share_attachment alicloud_cloud_storage_gateway_express_sync [[#4719](https://github.com/aliyun/terraform-provider-alicloud/issues/4719))	
+- testcase: Adds new unit test case for resource alicloud_cloud_storage_gateway_gateway_block_volume alicloud_cloud_storage_gateway_express_sync_share_attachment alicloud_cloud_storage_gateway_express_sync ([#4719](https://github.com/aliyun/terraform-provider-alicloud/issues/4719))	
 - testcase: Improves the eci resource testcases ([#4692](https://github.com/aliyun/terraform-provider-alicloud/issues/4692))
 - testcase: Improves the mse gateway testcases ([#4693](https://github.com/aliyun/terraform-provider-alicloud/issues/4693))
 - testcase: Improves the cen resource testcases ([#4698](https://github.com/aliyun/terraform-provider-alicloud/issues/4698))
@@ -100,7 +103,7 @@ ENHANCEMENTS:
 - testcase: Improves the dms testcases; Improves the eais testcase ([#4709](https://github.com/aliyun/terraform-provider-alicloud/issues/4709))
 - testcase: Improve the yundun dbaudit testcases ([#4713](https://github.com/aliyun/terraform-provider-alicloud/issues/4713))
 - testcase: Improves the several testcases ([#4714](https://github.com/aliyun/terraform-provider-alicloud/issues/4714))
-- testcases: Improves the cen resource testcases [[#4738](https://github.com/aliyun/terraform-provider-alicloud/issues/4738))	
+- testcases: Improves the cen resource testcases ([#4738](https://github.com/aliyun/terraform-provider-alicloud/issues/4738))	
 - docs/alicloud_hbr_vaults: document optimization ([#4697](https://github.com/aliyun/terraform-provider-alicloud/issues/4697))
 - docs/alikafka_instance.html.markdown: format demo	([#4667](https://github.com/aliyun/terraform-provider-alicloud/issues/4667))
 - credential: oss resources supports more ways to enter credentials for authentication for oss. ([#4723](https://github.com/aliyun/terraform-provider-alicloud/issues/4723))
