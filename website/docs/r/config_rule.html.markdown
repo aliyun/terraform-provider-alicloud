@@ -41,8 +41,8 @@ resource "alicloud_config_rule" "example" {
 The following arguments are supported:
 
 * `maximum_execution_frequency` - (Optional, Available in v1.124.1+) The frequency of the compliance evaluations, it is required if the ConfigRuleTriggerTypes value is ScheduledNotification. Valid values: `One_Hour`, `Three_Hours`, `Six_Hours`, `Twelve_Hours`, `TwentyFour_Hours`.
-* `resource_types_scope` - (Required, Available in v1.124.1+) Resource types to be evaluated. [Alibaba Cloud services that support Cloud Config.](https://www.alibabacloud.com/help/en/doc-detail/127411.htm)
-* `config_rule_trigger_types` - (Required, Available in v1.124.1+) The trigger type of the rule. Valid values: `ConfigurationItemChangeNotification`: The rule is triggered upon configuration changes. `ScheduledNotification`: The rule is triggered as scheduled.
+* `resource_types_scope` - (Optional, Available in v1.124.1+) Resource types to be evaluated. [Alibaba Cloud services that support Cloud Config.](https://www.alibabacloud.com/help/en/doc-detail/127411.htm)
+* `config_rule_trigger_types` - (Optional, Available in v1.124.1+) The trigger type of the rule. Valid values: `ConfigurationItemChangeNotification`: The rule is triggered upon configuration changes. `ScheduledNotification`: The rule is triggered as scheduled.
 * `exclude_resource_ids_scope` - (Optional, Available in v1.124.1+) The rule monitors excluded resource IDs, multiple of which are separated by commas, only applies to rules created based on managed rules, custom rule this field is empty.
 * `region_ids_scope` - (Optional, Available in v1.124.1+) The rule monitors region IDs, separated by commas, only applies to rules created based on managed rules.
 * `resource_group_ids_scope` - (Optional, Available in v1.124.1+) The rule monitors resource group IDs, separated by commas, only applies to rules created based on managed rules.
@@ -56,9 +56,9 @@ The following arguments are supported:
 * `input_parameters` - (Optional) Threshold value for managed rule triggering. 
 * `source_detail_message_type` - (Optional, Deprecated) Field `source_detail_message_type` has been deprecated from provider version 1.124.1. New field `config_rule_trigger_types` instead.
 * `source_maximum_execution_frequency` - (Optional, Deprecated) Field `source_maximum_execution_frequency` has been deprecated from provider version 1.124.1. New field `maximum_execution_frequency` instead.
-* `scope_compliance_resource_types` - (Required, Deprecated) Field `scope_compliance_resource_types` has been deprecated from provider version 1.124.1. New field `resource_types_scope` instead.
-* `multi_account` - (Optional, ForceNew, Removed) Field `multi_account` has been removed from provider version 1.124.1. 
-* `member_id` - (Optional, ForceNew, Removed) Field `member_id` has been removed from provider version 1.124.1. 
+* `scope_compliance_resource_types` - (Optional, Deprecated) Field `scope_compliance_resource_types` has been deprecated from provider version 1.124.1. New field `resource_types_scope` instead.
+* `multi_account` - (Optional, Removed) Field `multi_account` has been removed from provider version 1.124.1. 
+* `member_id` - (Optional, Removed) Field `member_id` has been removed from provider version 1.124.1. 
 * `scope_compliance_resource_id` - (Optional, Removed) Field `scope_compliance_resource_id` has been removed from provider version 1.124.1. 
 * `status` - (Optional, Available in v1.145.0+) The rule status. The valid values: `ACTIVE`, `INACTIVE`.
 
