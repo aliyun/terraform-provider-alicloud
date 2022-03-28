@@ -62,11 +62,11 @@ func resourceAlicloudAlbListenerAdditionalCertificateAttachmentCreate(d *schema.
 	request["ClientToken"] = buildClientToken("AssociateAdditionalCertificatesWithListener")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ResourceInConfiguring.Listener", "IncorrectStatus.Listener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -131,11 +131,11 @@ func resourceAlicloudAlbListenerAdditionalCertificateAttachmentDelete(d *schema.
 	request["ClientToken"] = buildClientToken("DissociateAdditionalCertificatesFromListener")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ResourceInConfiguring.Listener", "IncorrectStatus.Listener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
