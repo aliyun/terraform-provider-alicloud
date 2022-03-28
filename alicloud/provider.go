@@ -679,6 +679,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_chains":                                   dataSourceAlicloudCrChains(),
 			"alicloud_vpn_pbr_route_entries":                       dataSourceAlicloudVpnPbrRouteEntries(),
 			"alicloud_mse_znodes":                                  dataSourceAlicloudMseZnodes(),
+			"alicloud_cen_transit_router_available_resources":      dataSourceAlicloudCenTransitRouterAvailableResources(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
