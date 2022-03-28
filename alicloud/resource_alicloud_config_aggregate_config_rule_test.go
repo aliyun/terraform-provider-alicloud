@@ -3,13 +3,21 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 
+	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -665,4 +673,420 @@ data "alicloud_resource_manager_resource_groups" "default" {
 data "alicloud_config_aggregators" "default" {}
 
 `, name)
+}
+
+func TestAccAlicloudConfigAggregateConfigRule_unit(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"aggregate_config_rule_name":  "CreateAggregateConfigRuleValue",
+		"aggregator_id":               "CreateAggregateConfigRuleValue",
+		"config_rule_trigger_types":   "CreateAggregateConfigRuleValue",
+		"description":                 "CreateAggregateConfigRuleValue",
+		"exclude_resource_ids_scope":  "CreateAggregateConfigRuleValue",
+		"maximum_execution_frequency": "CreateAggregateConfigRuleValue",
+		"region_ids_scope":            "CreateAggregateConfigRuleValue",
+		"resource_group_ids_scope":    "CreateAggregateConfigRuleValue",
+		"source_owner":                "CreateAggregateConfigRuleValue",
+		"source_identifier":           "CreateAggregateConfigRuleValue",
+		"risk_level":                  1,
+		"resource_types_scope":        []string{"CreateAggregateConfigRuleValue"},
+		"input_parameters": map[string]string{
+			"cpuCount": "4",
+		},
+		"tag_key_scope":   "CreateAggregateConfigRuleValue",
+		"tag_value_scope": "CreateAggregateConfigRuleValue",
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		// GetAggregateConfigRule
+		"ConfigRule": map[string]interface{}{
+			"AggregatorId":              "CreateAggregateConfigRuleValue",
+			"ConfigRuleId":              "CreateAggregateConfigRuleValue",
+			"ConfigRuleName":            "CreateAggregateConfigRuleValue",
+			"ConfigRuleTriggerTypes":    "CreateAggregateConfigRuleValue",
+			"Description":               "CreateAggregateConfigRuleValue",
+			"ExcludeResourceIdsScope":   "CreateAggregateConfigRuleValue",
+			"InputParameters":           "CreateAggregateConfigRuleValue",
+			"MaximumExecutionFrequency": "CreateAggregateConfigRuleValue",
+			"RegionIdsScope":            "CreateAggregateConfigRuleValue",
+			"ResourceGroupIdsScope":     "CreateAggregateConfigRuleValue",
+			"Scope": map[string]interface{}{
+				"ComplianceResourceTypes": "CreateAggregateConfigRuleValue",
+			},
+			"RiskLevel": 1,
+			"Source": map[string]interface{}{
+				"Identifier": "CreateAggregateConfigRuleValue",
+				"Owner":      "CreateAggregateConfigRuleValue",
+			},
+			"ConfigRuleState": "INACTIVE",
+			"TagKeyScope":     "CreateAggregateConfigRuleValue",
+			"TagValueScope":   "CreateAggregateConfigRuleValue",
+		},
+		"ConfigRuleId": "CreateAggregateConfigRuleValue",
+	}
+	CreateMockResponse := map[string]interface{}{
+		//CreateAggregateConfigRule
+		"ConfigRuleId": "CreateAggregateConfigRuleValue",
+	}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       String(errorCode),
+			Data:       String(errorCode),
+			Message:    String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_config_aggregate_config_rule", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			mapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudConfigAggregateConfigRuleCreate(dInit, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	ReadMockResponseDiff := map[string]interface{}{
+		// GetConfigRule Response
+		"ConfigRuleId": "CreateAggregateConfigRuleValue",
+	}
+	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "CreateAggregateConfigRule" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						successResponseMock(ReadMockResponseDiff)
+						return CreateMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudConfigAggregateConfigRuleCreate(dInit, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(dInit.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Update
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudConfigAggregateConfigRuleUpdate(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	//UpdateAggregateConfigRule
+	attributesDiff := map[string]interface{}{
+		"config_rule_trigger_types":  "UpdateAggregateConfigRuleValue",
+		"resource_types_scope":       []string{"UpdateAggregateConfigRuleValue"},
+		"risk_level":                 2,
+		"description":                "UpdateAggregateConfigRuleValue",
+		"exclude_resource_ids_scope": "UpdateAggregateConfigRuleValue",
+		"input_parameters": map[string]string{
+			"cpuCount": "8",
+		},
+		"maximum_execution_frequency": "UpdateAggregateConfigRuleValue",
+		"region_ids_scope":            "UpdateAggregateConfigRuleValue",
+		"resource_group_ids_scope":    "UpdateAggregateConfigRuleValue",
+		"tag_key_scope":               "UpdateAggregateConfigRuleValue",
+		"tag_value_scope":             "UpdateAggregateConfigRuleValue",
+	}
+	diff, err := newInstanceDiff("alicloud_config_aggregate_config_rule", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(dInit.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// GetAggregateConfigRule Response
+		"ConfigRule": map[string]interface{}{
+			"ConfigRuleTriggerTypes": "UpdateAggregateConfigRuleValue",
+			"Scope": map[string]interface{}{
+				"ComplianceResourceTypes": "UpdateAggregateConfigRuleValue",
+			},
+			"RiskLevel":                 2,
+			"Description":               "UpdateAggregateConfigRuleValue",
+			"ExcludeResourceIdsScope":   "UpdateAggregateConfigRuleValue",
+			"InputParameters":           "UpdateAggregateConfigRuleValue",
+			"MaximumExecutionFrequency": "UpdateAggregateConfigRuleValue",
+			"RegionIdsScope":            "UpdateAggregateConfigRuleValue",
+			"ResourceGroupIdsScope":     "UpdateAggregateConfigRuleValue",
+			"TagKeyScope":               "UpdateAggregateConfigRuleValue",
+			"TagValueScope":             "UpdateAggregateConfigRuleValue",
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "UpdateAggregateConfigRule" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudConfigAggregateConfigRuleUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	//ActiveAggregateConfigRules
+	attributesDiff = map[string]interface{}{
+		"status": "ACTIVE",
+	}
+	diff, err = newInstanceDiff("alicloud_config_aggregate_config_rule", attributes, attributesDiff, dExisted.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(dExisted.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// GetAggregateConfigRule Response
+		"ConfigRule": map[string]interface{}{
+			"ConfigRuleState": "ACTIVE",
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "ActiveAggregateConfigRules" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudConfigAggregateConfigRuleUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	//DeactiveAggregateConfigRules
+	attributesDiff = map[string]interface{}{
+		"status": "INACTIVE",
+	}
+	diff, err = newInstanceDiff("alicloud_config_aggregate_config_rule", attributes, attributesDiff, dExisted.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(dExisted.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// GetAggregateConfigRule Response
+		"ConfigRule": map[string]interface{}{
+			"ConfigRuleState": "INACTIVE",
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DeactiveAggregateConfigRules" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudConfigAggregateConfigRuleUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	//Read
+	attributesDiff = map[string]interface{}{}
+	diff, err = newInstanceDiff("alicloud_config_aggregate_config_rule", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(dInit.State(), diff)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "GetAggregateConfigRule" {
+				switch errorCode {
+				case "{}":
+					return notFoundResponseMock(errorCode)
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudConfigAggregateConfigRuleRead(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "{}":
+			assert.Nil(t, err)
+		}
+	}
+
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudConfigAggregateConfigRuleDelete(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	attributesDiff = map[string]interface{}{}
+	diff, err = newInstanceDiff("alicloud_config_aggregate_config_rule", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(dInit.State(), diff)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DeleteAggregateConfigRules" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						ReadMockResponse = map[string]interface{}{
+							"Success": true,
+						}
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudConfigAggregateConfigRuleDelete(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "nil":
+			assert.Nil(t, err)
+		}
+	}
 }
