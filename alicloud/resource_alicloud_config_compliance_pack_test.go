@@ -3,13 +3,21 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 
+	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -506,4 +514,302 @@ resource "alicloud_config_rule" "default" {
   }
 }
 `, name)
+}
+
+func TestAccAlicloudConfigCompliancePack_unit(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_config_compliance_pack"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_config_compliance_pack"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"compliance_pack_name":        "CreateCompliancePackValue",
+		"compliance_pack_template_id": "CreateCompliancePackValue",
+		"config_rules": []interface{}{
+			map[string]interface{}{
+				"managed_rule_identifier": "CreateCompliancePackValue",
+				"config_rule_parameters": []interface{}{
+					map[string]interface{}{
+						"parameter_name":  "CreateCompliancePackValue",
+						"parameter_value": "CreateCompliancePackValue",
+					},
+				},
+			},
+		},
+		"description": "CreateCompliancePackValue",
+		"risk_level":  1,
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		// GetCompliancePack
+		"CompliancePack": map[string]interface{}{
+			"ConfigRules": []interface{}{
+				map[string]interface{}{
+					"ManagedRuleIdentifier": "CreateCompliancePackValue",
+					"ConfigRuleParameters": []interface{}{
+						map[string]interface{}{
+							"ParameterName":  "CreateCompliancePackValue",
+							"ParameterValue": "CreateCompliancePackValue",
+						},
+					},
+				},
+			},
+			"CompliancePackName":       "CreateCompliancePackValue",
+			"CompliancePackTemplateId": "CreateCompliancePackValue",
+			"Description":              "CreateCompliancePackValue",
+			"RiskLevel":                1,
+			"Status":                   "ACTIVE",
+		},
+	}
+	CreateMockResponse := map[string]interface{}{
+		// CreateCompliancePack
+		"CompliancePackId": "CreateCompliancePackValue",
+	}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       String(errorCode),
+			Data:       String(errorCode),
+			Message:    String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_config_compliance_pack", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			mapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+
+	// Create
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudConfigCompliancePackCreate(dInit, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	ReadMockResponseDiff := map[string]interface{}{
+		// GetCompliancePack Response
+		"CompliancePack": map[string]interface{}{
+			"CompliancePackId": "CreateCompliancePackValue",
+		},
+	}
+	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "CreateCompliancePack" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						successResponseMock(ReadMockResponseDiff)
+						return CreateMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudConfigCompliancePackCreate(dInit, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_config_compliance_pack"].Schema).Data(dInit.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Update
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudConfigCompliancePackUpdate(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	// UpdateCompliancePack
+	attributesDiff := map[string]interface{}{
+		"compliance_pack_name": "UpdateCompliancePackValue",
+		"description":          "UpdateCompliancePackValue",
+		"risk_level":           2,
+		"config_rules": []interface{}{
+			map[string]interface{}{
+				"managed_rule_identifier": "UpdateCompliancePackValue",
+				"config_rule_parameters": []interface{}{
+					map[string]interface{}{
+						"parameter_name":  "UpdateCompliancePackValue",
+						"parameter_value": "UpdateCompliancePackValue",
+					},
+				},
+			},
+		},
+	}
+	diff, err := newInstanceDiff("alicloud_config_compliance_pack", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_config_compliance_pack"].Schema).Data(dInit.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// GetCompliancePack Response
+		"CompliancePack": map[string]interface{}{
+			"CompliancePackName": "UpdateCompliancePackValue",
+			"Description":        "UpdateCompliancePackValue",
+			"RiskLevel":          2,
+			"ConfigRules": []interface{}{
+				map[string]interface{}{
+					"ManagedRuleIdentifier": "UpdateCompliancePackValue",
+					"ConfigRuleParameters": []interface{}{
+						map[string]interface{}{
+							"ParameterName":  "UpdateCompliancePackValue",
+							"ParameterValue": "UpdateCompliancePackValue",
+						},
+					},
+				},
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "CompliancePackAlreadyPending", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "UpdateCompliancePack" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudConfigCompliancePackUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_config_compliance_pack"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Read
+
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "Invalid.CompliancePackId.Value", "{}"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "GetCompliancePack" {
+				switch errorCode {
+				case "{}", "Invalid.CompliancePackId.Value":
+					return notFoundResponseMock(errorCode)
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudConfigCompliancePackRead(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "{}", "Invalid.CompliancePackId.Value":
+			assert.Nil(t, err)
+		}
+	}
+
+	// Delete
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudConfigCompliancePackDelete(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DeleteCompliancePacks" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						ReadMockResponse = map[string]interface{}{}
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudConfigCompliancePackDelete(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		}
+	}
+
 }

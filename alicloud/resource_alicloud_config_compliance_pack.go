@@ -238,6 +238,10 @@ func resourceAlicloudConfigCompliancePackRead(d *schema.ResourceData, meta inter
 func resourceAlicloudConfigCompliancePackUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	configService := ConfigService{client}
+	conn, err := client.NewConfigClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -291,10 +295,6 @@ func resourceAlicloudConfigCompliancePackUpdate(d *schema.ResourceData, meta int
 	request["CompliancePackName"] = d.Get("compliance_pack_name")
 	if update {
 		action := "UpdateCompliancePack"
-		conn, err := client.NewConfigClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("UpdateCompliancePack")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -343,10 +343,6 @@ func resourceAlicloudConfigCompliancePackUpdate(d *schema.ResourceData, meta int
 			removeRulesReq["ConfigRuleIds"] = convertListToCommaSeparate(ruleMaps)
 
 			action := "DetachConfigRuleToCompliancePack"
-			conn, err := client.NewConfigClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			removeRulesReq["ClientToken"] = buildClientToken("DetachConfigRuleToCompliancePack")
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
@@ -381,10 +377,6 @@ func resourceAlicloudConfigCompliancePackUpdate(d *schema.ResourceData, meta int
 			addRulesReq["ConfigRuleIds"] = convertListToCommaSeparate(ruleMaps)
 
 			action := "AttachConfigRuleToCompliancePack"
-			conn, err := client.NewConfigClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			addRulesReq["ClientToken"] = buildClientToken("AttachConfigRuleToCompliancePack")
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
