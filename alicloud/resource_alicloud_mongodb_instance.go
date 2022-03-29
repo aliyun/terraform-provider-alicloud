@@ -599,18 +599,24 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if d.HasChange("resource_group_id") {
-		action := "ModifyResourceGroup"
-		request := map[string]interface{}{
-			"DBInstanceId":    d.Id(),
-			"ResourceGroupId": d.Get("resource_group_id"),
-			"RegionId":        client.RegionId,
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapError(err)
+			}
+			action := "ModifyResourceGroup"
+			request := map[string]interface{}{
+				"DBInstanceId":    d.Id(),
+				"ResourceGroupId": v,
+				"RegionId":        client.RegionId,
+			}
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(action, response, request)
+			d.SetPartial("resource_group_id")
 		}
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		addDebug(action, response, request)
-		d.SetPartial("resource_group_id")
 	}
 
 	if d.HasChange("name") {
