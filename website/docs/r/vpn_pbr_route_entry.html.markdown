@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud VPN Pbr Route Entry resource.
 ---
 
-# alicloud\_vpn\_pbr\_\route\_entry
+# alicloud\_vpn\_pbr\_route\_entry
 
 Provides a VPN Pbr Route Entry resource.
 

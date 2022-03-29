@@ -15,6 +15,8 @@ For information about Lindorm Instance and how to use it, see [What is Instance]
 
 -> **NOTE:** Available in v1.132.0+.
 
+-> **NOTE:**  The Lindorm Instance does not support updating the specifications of multiple different engines or the number of nodes at the same time.
+
 ## Example Usage
 
 Basic Usage
@@ -78,7 +80,7 @@ The following arguments are supported:
 * `table_engine_specification` - (Optional, Computed) The specification of  table engine. Valid values: `lindorm.c.2xlarge`, `lindorm.c.4xlarge`, `lindorm.c.8xlarge`, `lindorm.c.xlarge`, `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`, `lindorm.g.xlarge`.
 * `time_series_engine_node_count` - (Optional, Computed) The count of time series engine.
 * `time_serires_engine_specification` - (Optional, Computed) The specification of time series engine. Valid values: `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`, `lindorm.g.xlarge`.
-* `upgrade_type` - (Optional) The upgrade type. Valid values:  `open-lindorm-engine`, `open-phoenix-engine`, `open-search-engine`, `open-tsdb-engine`,  `upgrade-cold-storage`, `upgrade-disk-size`,  `upgrade-lindorm-core-num`, `upgrade-lindorm-engine`,  `upgrade-search-core-num`, `upgrade-search-engine`, `upgrade-tsdb-core-num`, `upgrade-tsdb-engine`.
+* `upgrade_type` - (Optional) The upgrade type. **NOTE:** Field 'upgrade_type' has been deprecated from provider version 1.163.0 and it will be removed in the future version. Valid values:  `open-lindorm-engine`, `open-phoenix-engine`, `open-search-engine`, `open-tsdb-engine`,  `upgrade-cold-storage`, `upgrade-disk-size`,  `upgrade-lindorm-core-num`, `upgrade-lindorm-engine`,  `upgrade-search-core-num`, `upgrade-search-engine`, `upgrade-tsdb-core-num`, `upgrade-tsdb-engine`.
 * `vswitch_id` - (Required, ForceNew) The vswitch id.
 * `zone_id` - (Optional, Computed, ForceNew) The zone ID of the instance.
 
@@ -88,13 +90,18 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Instance.
 * `status` - The status of Instance, enumerative: Valid values: `ACTIVATION`, `DELETED`, `CREATING`, `CLASS_CHANGING`, `LOCKED`, `INSTANCE_LEVEL_MODIFY`, `NET_MODIFYING`, `RESIZING`, `RESTARTING`, `MINOR_VERSION_TRANSING`.
+* `enabled_file_engine` - (Available in v1.163.0+) Whether to enable file engine.
+* `enabled_time_serires_engine` - (Available in v1.163.0+) Whether to enable time serires engine.
+* `enabled_table_engine` - (Available in v1.163.0+) Whether to enable table engine.
+* `enabled_search_engine` - (Available in v1.163.0+) Whether to enable search engine.
+* `enabled_lts_engine` - (Available in v1.163.0+) Whether to enable lts engine.
 
 ### Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 90 mins) Used when create the Instance.
-* `update` - (Defaults to 30 mins) Used when update the Instance.
+* `update` - (Defaults to 60 mins) Used when update the Instance.
 * `delete` - (Defaults to 30 mins) Used when delete the Instance.
 
 ## Import
