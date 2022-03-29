@@ -26,17 +26,27 @@ variable "name" {
 variable "pwd" {
   default = "Tf-testpwd"
 }
+data "alicloud_click_house_regions" "default" {
+  current = true
+}
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
+}
 resource "alicloud_click_house_db_cluster" "default" {
   db_cluster_version      = "20.3.10.75"
   category                = "Basic"
   db_cluster_class        = "S8"
   db_cluster_network_type = "vpc"
   db_cluster_description  = var.name
-  db_node_group_count     = "1"
+  db_node_group_count     = 1
   payment_type            = "PayAsYouGo"
   db_node_storage         = "500"
   storage_type            = "cloud_essd"
-  vswitch_id              = "your_vswitch_id"
+  vswitch_id              = data.alicloud_vswitches.default.vswitches.0.id
 }
 resource "alicloud_click_house_account" "default" {
   db_cluster_id       = alicloud_click_house_db_cluster.default.id
@@ -44,7 +54,6 @@ resource "alicloud_click_house_account" "default" {
   account_name        = var.name
   account_password    = var.pwd
 }
-
 ```
 
 ## Argument Reference
@@ -62,6 +71,17 @@ The following attributes are exported:
 
 * `id` - The resource ID of Account. The value formats as `<db_cluster_id>:<account_name>`.
 * `status` - The status of the resource. Valid Status: `Creating`,`Available`,`Deleting`.
+* `type` - The type of the database account. Valid values: `Normal` or `Super`.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.163.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins) Used when create the Click House Account.
+* `update` - (Defaults to 1 mins) Used when update the Click House Account.
+* `delete` - (Defaults to 1 mins) Used when delete the Click House Account.
 
 ## Import
 
