@@ -215,6 +215,9 @@ func resourceAlicloudMongodbShardingNetworkPrivateAddressDelete(d *schema.Resour
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidStatus.NotFound"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	ddsService := MongoDBService{client}
