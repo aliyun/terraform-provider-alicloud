@@ -38,6 +38,16 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Group. Its value is same as `group_id`.
 
+### Timeouts
+
+-> **NOTE:** Available in 1.163.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins) Used when create the Security Center Group.
+* `update` - (Defaults to 1 mins) Used when update the Security Center Group.
+* `delete` - (Defaults to 1 mins) Used when delete the Security Center Group.
+
 ## Import
 
 Security Center Group can be imported using the id, e.g.

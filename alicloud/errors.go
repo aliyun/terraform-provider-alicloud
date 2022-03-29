@@ -222,6 +222,9 @@ func NeedRetry(err error) bool {
 		if strings.Contains(*e.Message, "code: 500, 您已开通过") {
 			return false
 		}
+		if strings.Contains(*e.Message, "Client.Timeout") {
+			return true
+		}
 		if *e.Code == ServiceUnavailable || *e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(*e.Code) || codeRegex.MatchString(*e.Message) {
 			return true
 		}
