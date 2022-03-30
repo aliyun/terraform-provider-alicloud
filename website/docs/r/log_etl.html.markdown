@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_log\_etl
 
-The data processing function of the log service is a hosted, highly available, and scalable data processing service, 
+The data transformation of the log service is a hosted, highly available, and scalable data processing service, 
 which is widely applicable to scenarios such as data regularization, enrichment, distribution, aggregation, and index reconstruction.
 [Refer to details](https://www.alibabacloud.com/help/zh/doc-detail/125384.htm).
 

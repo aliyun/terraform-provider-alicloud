@@ -146,7 +146,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 			//tcp & udp
 			"persistence_timeout": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntBetween(1, 3600),
+				ValidateFunc:     validation.IntBetween(0, 3600),
 				Optional:         true,
 				Default:          0,
 				DiffSuppressFunc: tcpUdpDiffSuppressFunc,
@@ -194,7 +194,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 			"health_check_connect_port": {
 				Type: schema.TypeInt,
 				ValidateFunc: validation.Any(
-					validation.IntBetween(1, 65535),
+					validation.IntBetween(0, 65535),
 					validation.IntInSlice([]int{-520})),
 				Optional:         true,
 				Computed:         true,

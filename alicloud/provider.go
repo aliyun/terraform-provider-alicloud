@@ -1253,6 +1253,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mse_znode":                                            resourceAlicloudMseZnode(),
 			"alicloud_alikafka_instance_allowed_ip_attachment":              resourceAlicloudAliKafkaInstanceAllowedIpAttachment(),
 			"alicloud_ecs_image_pipeline":                                   resourceAlicloudEcsImagePipeline(),
+			"alicloud_slb_server_group_server_attachment":                   resourceAlicloudSlbServerGroupServerAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
