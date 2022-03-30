@@ -77,8 +77,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when create the Audit Policy.
-* `update` - (Defaults to 1 mins) Used when update the Audit Policy.
+* `create` - (Defaults to 5 mins) Used when create the Audit Policy.
+* `update` - (Defaults to 5 mins) Used when update the Audit Policy.
 
 ## Import
 
