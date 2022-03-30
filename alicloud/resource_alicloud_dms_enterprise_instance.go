@@ -133,10 +133,6 @@ func resourceAlicloudDmsEnterpriseInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"skip_test": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -210,10 +206,6 @@ func resourceAlicloudDmsEnterpriseInstanceCreate(d *schema.ResourceData, meta in
 	request["SafeRule"] = d.Get("safe_rule")
 	if v, ok := d.GetOk("sid"); ok {
 		request["Sid"] = v
-	}
-
-	if v, ok := d.GetOkExists("skip_test"); ok {
-		request["SkipTest"] = v
 	}
 
 	if v, ok := d.GetOk("tid"); ok {
@@ -293,6 +285,10 @@ func resourceAlicloudDmsEnterpriseInstanceRead(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudDmsEnterpriseInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewDmsenterpriseClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	conn, err := client.NewDmsenterpriseClient()
 	if err != nil {
@@ -387,9 +383,6 @@ func resourceAlicloudDmsEnterpriseInstanceUpdate(d *schema.ResourceData, meta in
 		request["VpcId"] = d.Get("vpc_id")
 	}
 	if update {
-		if _, ok := d.GetOkExists("skip_test"); ok {
-			request["SkipTest"] = d.Get("skip_test")
-		}
 		if _, ok := d.GetOk("tid"); ok {
 			request["Tid"] = d.Get("tid")
 		}
