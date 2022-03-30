@@ -22,6 +22,9 @@ and to meet the personalized requirements of domain name and URL forwarding.
 
 -> **NOTE:** One VPC load balancer, its virtual server group can only add the same VPC ECS instances.
 
+For information about server group and how to use it, see [Configure a server group](https://www.alibabacloud.com/help/en/doc-detail/35215.html).
+
+
 ## Example Usage
 
 ```
@@ -104,7 +107,7 @@ The following arguments are supported:
 
 * `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new virtual server group.
 * `name` - (Optional) Name of the virtual server group. Our plugin provides a default name: "tf-server-group".
-* `servers` - A list of ECS instances to be added. At most 20 ECS instances can be supported in one resource. It contains three sub-fields as `Block server` follows.
+* `servers` - A list of ECS instances to be added. **NOTE:** Field 'servers' has been deprecated from provider version 1.163.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_server_group_server_attachment'. At most 20 ECS instances can be supported in one resource. It contains three sub-fields as `Block server` follows.
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
 
 ## Block servers
