@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -74,6 +76,7 @@ func TestAccAlicloudGPDBAccountsDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.GpdbElasticInstanceSupportRegions)
 	}
 	alicloudGpdbAccountsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, allConf)
 }

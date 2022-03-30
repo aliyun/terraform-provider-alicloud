@@ -92,7 +92,7 @@ groups:
       - Market
       - PolarDB
       - HBase
-      - Cassandra
+      - GraphDatabase
       - ADB
       - Maxcompute
       - Dms
@@ -195,7 +195,7 @@ groups:
       - GPDB
       - PolarDB
       - HBase
-      - Cassandra
+      - GraphDatabase
       - ADB
       - Dms
       - Tsdb
@@ -1318,18 +1318,18 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Dcdn"
 
-  - name: Cassandra
+  - name: GraphDatabase
     plan:
       - <<: *clone-provider
       - get: trigger
-        trigger: false
+        trigger: true
         resource: 0930Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Cassandra"
+          TEST_CASE_CODE: "GraphDatabase"
 
   - name: Config
     plan:
