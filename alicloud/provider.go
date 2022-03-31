@@ -1254,6 +1254,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alikafka_instance_allowed_ip_attachment":              resourceAlicloudAliKafkaInstanceAllowedIpAttachment(),
 			"alicloud_ecs_image_pipeline":                                   resourceAlicloudEcsImagePipeline(),
 			"alicloud_slb_server_group_server_attachment":                   resourceAlicloudSlbServerGroupServerAttachment(),
+			"alicloud_alb_listener_acl_attachment":                          resourceAlicloudAlbListenerAclAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
