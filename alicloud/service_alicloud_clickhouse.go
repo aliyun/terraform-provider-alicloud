@@ -89,6 +89,7 @@ func (s *ClickhouseService) DescribeClickHouseAccount(id string) (object map[str
 		"AccountName": parts[1],
 		"DBClusterId": parts[0],
 	}
+	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -117,11 +118,16 @@ func (s *ClickhouseService) DescribeClickHouseAccount(id string) (object map[str
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("ClickHouse", id)), NotFoundWithResponse, response)
 	} else {
-		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["AccountName"]) != parts[1] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ClickHouse", id)), NotFoundWithResponse, response)
+		for _, v := range v.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["AccountName"]) == parts[1] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
 		}
 	}
-	object = v.([]interface{})[0].(map[string]interface{})
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ClickHouse", id)), NotFoundWithResponse, response)
+	}
 	return object, nil
 }
 
