@@ -69,9 +69,11 @@ func resourceAlicloudAlbListener() *schema.Resource {
 				},
 			},
 			"acl_config": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				MaxItems: 1,
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Computed:   true,
+				MaxItems:   1,
+				Deprecated: "Field 'acl_config' has been deprecated from provider version 1.163.0 and it will be removed in the future version. Please use the new resource 'alicloud_alb_listener_acl_attachment'.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"acl_relations": {
@@ -82,6 +84,7 @@ func resourceAlicloudAlbListener() *schema.Resource {
 									"acl_id": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"status": {
 										Type:     schema.TypeString,
@@ -93,6 +96,7 @@ func resourceAlicloudAlbListener() *schema.Resource {
 						"acl_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{"White", "Black"}, false),
 						},
 					},

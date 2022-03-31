@@ -899,3 +899,72 @@ func (s *AlbService) AlbListenerAdditionalCertificateAttachmentStateRefreshFunc(
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
+func (s *AlbService) DescribeAlbListenerAclAttachment(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewAlbClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return object, WrapError(err)
+	}
+	action := "GetListenerAttribute"
+	request := map[string]interface{}{
+		"ListenerId": parts[0],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.Listener"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	listenerObject := v.(map[string]interface{})
+
+	aclConfig, ok := listenerObject["AclConfig"]
+	if !ok {
+		return object, WrapErrorf(Error(GetNotFoundMessage("alb_listener_acl_attachment", id)), NotFoundWithResponse, response)
+
+	}
+	idExist := false
+	aclConfigObject := aclConfig.(map[string]interface{})
+	object = make(map[string]interface{})
+	object["AclType"] = aclConfigObject["AclType"]
+	if aclRelationsLis, ok := aclConfigObject["AclRelations"]; ok {
+		for _, v := range aclRelationsLis.([]interface{}) {
+			aclRelations := v.(map[string]interface{})
+			if fmt.Sprint(aclRelations["AclId"]) == parts[1] {
+				object["AclId"] = aclRelations["AclId"]
+				object["Status"] = aclRelations["Status"]
+				idExist = true
+				break
+			}
+		}
+	}
+
+	if !idExist {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("alb_listener_acl_attachment", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
