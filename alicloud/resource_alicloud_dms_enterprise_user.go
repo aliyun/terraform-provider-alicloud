@@ -146,6 +146,10 @@ func resourceAlicloudDmsEnterpriseUserRead(d *schema.ResourceData, meta interfac
 func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dms_enterpriseService := Dms_enterpriseService{client}
+	conn, err := client.NewDmsenterpriseClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -180,10 +184,6 @@ func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interf
 			request["Tid"] = d.Get("tid")
 		}
 		action := "UpdateUser"
-		conn, err := client.NewDmsenterpriseClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -220,10 +220,6 @@ func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interf
 					request["Tid"] = v
 				}
 				action := "DisableUser"
-				conn, err := client.NewDmsenterpriseClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -249,10 +245,6 @@ func resourceAlicloudDmsEnterpriseUserUpdate(d *schema.ResourceData, meta interf
 					request["Tid"] = v
 				}
 				action := "EnableUser"
-				conn, err := client.NewDmsenterpriseClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
