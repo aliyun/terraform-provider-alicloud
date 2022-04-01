@@ -2,15 +2,16 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/agiledragon/gomonkey/v2"
-	"github.com/alibabacloud-go/tea/tea"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -238,28 +239,17 @@ func DmsEnterpriseUserBasicdependence(name string) string {
 	}`, name)
 }
 
-func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
+func TestAccAlicloudDmsEnterpriseUser_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_config_rule"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_config_rule"].Schema).Data(nil, nil)
+	dInit, _ := schema.InternalMap(p["alicloud_dms_enterprise_user"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_dms_enterprise_user"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
-		"config_rule_trigger_types":  "CreateConfigRuleValue",
-		"description":                "CreateConfigRuleValue",
-		"exclude_resource_ids_scope": "CreateConfigRuleValue",
-		"input_parameters": map[string]interface{}{
-			"vpcIds": "CreateConfigRuleValue",
-		},
-		"maximum_execution_frequency": "CreateConfigRuleValue",
-		"region_ids_scope":            "CreateConfigRuleValue",
-		"resource_group_ids_scope":    "CreateConfigRuleValue",
-		"resource_types_scope":        []interface{}{"CreateConfigRuleValue0", "CreateConfigRuleValue1"},
-		"risk_level":                  10,
-		"rule_name":                   "CreateConfigRuleValue",
-		"source_identifier":           "CreateConfigRuleValue",
-		"source_owner":                "CreateConfigRuleValue",
-		"tag_key_scope":               "CreateConfigRuleValue",
-		"tag_value_scope":             "CreateConfigRuleValue",
+		"mobile":     "RegisterUserValue",
+		"role_names": []string{"RegisterUserValue"},
+		"tid":        1,
+		"uid":        "RegisterUserValue",
+		"user_name":  "RegisterUserValue",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -278,40 +268,19 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 	}
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
-		// GetConfigRule
-		"ConfigRule": map[string]interface{}{
-			"ConfigRuleId":            "CreateConfigRuleValue",
-			"Description":             "CreateConfigRuleValue",
-			"ExcludeResourceIdsScope": "CreateConfigRuleValue",
-			"InputParameters": map[string]interface{}{
-				"vpcIds": "CreateConfigRuleValue",
+		// GetUser
+		"User": map[string]interface{}{
+			"Uid":    "RegisterUserValue",
+			"Mobile": "RegisterUserValue",
+			"RoleNameList": map[string]interface{}{
+				"RoleNames": []string{"RegisterUserValue"},
 			},
-			"MaximumExecutionFrequency": "CreateConfigRuleValue",
-			"RegionIdsScope":            "CreateConfigRuleValue",
-			"ResourceGroupIdsScope":     "CreateConfigRuleValue",
-			"Scope": map[string]interface{}{
-				"ComplianceResourceTypes": "CreateConfigRuleValue",
-			},
-			"Source": map[string]interface{}{
-				"Owner":      "CreateConfigRuleValue",
-				"Identifier": "CreateConfigRuleValue",
-				"SourceDetails": []interface{}{
-					map[string]interface{}{
-						"MessageType": "CreateConfigRuleValue",
-					},
-				},
-			},
-			"RiskLevel":       10,
-			"ConfigRuleName":  "CreateConfigRuleValue",
-			"ConfigRuleState": "ACTIVE",
-			"TagKeyScope":     "CreateConfigRuleValue",
-			"TagValueScope":   "CreateConfigRuleValue",
+			"State":    "RegisterUserValue",
+			"NickName": "RegisterUserValue",
 		},
 	}
-	CreateMockResponse := map[string]interface{}{
-		// CreateConfigRule
-		"ConfigRuleId": "CreateConfigRuleValue",
-	}
+	CreateMockResponse := map[string]interface{}{}
+	ReadMockResponseDiff := map[string]interface{}{}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
 			Code:       String(errorCode),
@@ -321,7 +290,7 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_config_rule", errorCode))
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_dms_enterprise_user", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
@@ -331,7 +300,7 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 	}
 
 	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDmsenterpriseClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
@@ -339,20 +308,14 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigRuleCreate(dInit, rawClient)
+	err = resourceAlicloudDmsEnterpriseUserCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
-	ReadMockResponseDiff := map[string]interface{}{
-		// GetConfigRule Response
-		"ConfigRule": map[string]interface{}{
-			"ConfigRuleId": "CreateConfigRuleValue",
-		},
-	}
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "CreateConfigRule" {
+			if *action == "RegisterUser" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -367,16 +330,16 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigRuleCreate(dInit, rawClient)
+		err := resourceAlicloudDmsEnterpriseUserCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_config_rule"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(p["alicloud_dms_enterprise_user"].Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
-				dCompare.Set(key, value)
+				_ = dCompare.Set(key, value)
 			}
 			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
 		}
@@ -386,7 +349,7 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 	}
 
 	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDmsenterpriseClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
@@ -394,59 +357,39 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigRuleUpdate(dExisted, rawClient)
+	err = resourceAlicloudDmsEnterpriseUserUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
-	// UpdateConfigRule
+	// UpdateUser
 	attributesDiff := map[string]interface{}{
-		"config_rule_trigger_types":  "UpdateConfigRuleValue",
-		"description":                "UpdateConfigRuleValue",
-		"resource_types_scope":       []interface{}{"UpdateConfigRuleValue"},
-		"risk_level":                 15,
-		"exclude_resource_ids_scope": "UpdateConfigRuleValue",
-		"input_parameters": map[string]interface{}{
-			"vpcIds": "UpdateConfigRuleValue",
-		},
-		"maximum_execution_frequency": "UpdateConfigRuleValue",
-		"region_ids_scope":            "UpdateConfigRuleValue",
-		"resource_group_ids_scope":    "UpdateConfigRuleValue",
-		"tag_key_scope":               "UpdateConfigRuleValue",
-		"tag_value_scope":             "UpdateConfigRuleValue",
+		"mobile":            "UpdateUserValue",
+		"role_names":        []string{"UpdateUserValue"},
+		"user_name":         "UpdateUserValue",
+		"nick_name":         "UpdateUserValue",
+		"max_execute_count": 1,
+		"max_result_count":  1,
+		"tid":               1,
 	}
-	diff, err := newInstanceDiff("alicloud_config_rule", attributes, attributesDiff, dInit.State())
+	diff, err := newInstanceDiff("alicloud_dms_enterprise_user", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_config_rule"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(p["alicloud_dms_enterprise_user"].Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
-		// GetConfigRule Response
-		"ConfigRule": map[string]interface{}{
-			"Source": map[string]interface{}{
-				"SourceDetails": []interface{}{
-					map[string]interface{}{
-						"MessageType": "UpdateConfigRuleValue",
-					},
-				},
+		// GetUser Response
+		"User": map[string]interface{}{
+			"Mobile": "UpdateUserValue",
+			"RoleNameList": map[string]interface{}{
+				"RoleNames": []string{"UpdateUserValue"},
 			},
-			"Description":             "UpdateConfigRuleValue",
-			"ResourceTypesScope":      []interface{}{"UpdateConfigRuleValue"},
-			"RiskLevel":               15,
-			"ExcludeResourceIdsScope": "UpdateConfigRuleValue",
-			"InputParameters": map[string]interface{}{
-				"vpcIds": "UpdateConfigRuleValue",
-			},
-			"MaximumExecutionFrequency": "UpdateConfigRuleValue",
-			"RegionIdsScope":            "UpdateConfigRuleValue",
-			"ResourceGroupIdsScope":     "UpdateConfigRuleValue",
-			"TagKeyScope":               "UpdateConfigRuleValue",
-			"TagValueScope":             "UpdateConfigRuleValue",
+			"NickName": "UpdateUserValue",
 		},
 	}
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "UpdateConfigRule" {
+			if *action == "UpdateUser" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -460,16 +403,16 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigRuleUpdate(dExisted, rawClient)
+		err := resourceAlicloudDmsEnterpriseUserUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_config_rule"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(p["alicloud_dms_enterprise_user"].Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
-				dCompare.Set(key, value)
+				_ = dCompare.Set(key, value)
 			}
 			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
 		}
@@ -478,26 +421,27 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 		}
 	}
 
-	// StopConfigRules
+	// DisableUser
 	attributesDiff = map[string]interface{}{
-		"status": "INACTIVE",
+		"status": "DISABLE",
+		"tid":    2,
 	}
-	diff, err = newInstanceDiff("alicloud_config_rule", attributes, attributesDiff, dExisted.State())
+	diff, err = newInstanceDiff("alicloud_dms_enterprise_user", attributes, attributesDiff, dExisted.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_config_rule"].Schema).Data(dExisted.State(), diff)
+	dExisted, _ = schema.InternalMap(p["alicloud_dms_enterprise_user"].Schema).Data(dExisted.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
-		// GetConfigRule Response
-		"ConfigRule": map[string]interface{}{
-			"ConfigRuleState": "INACTIVE",
+		// GetUser Response
+		"User": map[string]interface{}{
+			"State": "DISABLE",
 		},
 	}
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "StopConfigRules" {
+			if *action == "DisableUser" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -511,17 +455,16 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigRuleUpdate(dExisted, rawClient)
+		err := resourceAlicloudDmsEnterpriseUserUpdate(dExisted, rawClient)
 		patches.Reset()
-
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_config_rule"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(p["alicloud_dms_enterprise_user"].Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
-				dCompare.Set(key, value)
+				_ = dCompare.Set(key, value)
 			}
 			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
 		}
@@ -530,26 +473,27 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 		}
 	}
 
-	// ActiveConfigRule
+	// EnableUser
 	attributesDiff = map[string]interface{}{
-		"status": "ACTIVE",
+		"status": "NORMAL",
+		"tid":    2,
 	}
-	diff, err = newInstanceDiff("alicloud_config_rule", attributes, attributesDiff, dExisted.State())
+	diff, err = newInstanceDiff("alicloud_dms_enterprise_user", attributes, attributesDiff, dExisted.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_config_rule"].Schema).Data(dExisted.State(), diff)
+	dExisted, _ = schema.InternalMap(p["alicloud_dms_enterprise_user"].Schema).Data(dExisted.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
-		// GetConfigRule Response
-		"ConfigRule": map[string]interface{}{
-			"ConfigRuleState": "ACTIVE",
+		// GetUser Response
+		"User": map[string]interface{}{
+			"State": "NORMAL",
 		},
 	}
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "ActiveConfigRules" {
+			if *action == "EnableUser" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -563,16 +507,16 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigRuleUpdate(dExisted, rawClient)
+		err := resourceAlicloudDmsEnterpriseUserUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_config_rule"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(p["alicloud_dms_enterprise_user"].Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
-				dCompare.Set(key, value)
+				_ = dCompare.Set(key, value)
 			}
 			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
 		}
@@ -582,13 +526,13 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 	}
 
 	// Read
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "ConfigRuleNotExists", "Invalid.ConfigRuleId.Value", "{}"}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "GetConfigRule" {
+			if *action == "GetUser" {
 				switch errorCode {
-				case "{}", "ConfigRuleNotExists", "Invalid.ConfigRuleId.Value":
+				case "{}":
 					return notFoundResponseMock(errorCode)
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -602,18 +546,18 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigRuleRead(dExisted, rawClient)
+		err := resourceAlicloudDmsEnterpriseUserRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
-		case "{}", "ConfigRuleNotExists", "Invalid.ConfigRuleId.Value":
+		case "{}":
 			assert.Nil(t, err)
 		}
 	}
 
 	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDmsenterpriseClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
@@ -621,16 +565,16 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigRuleDelete(dExisted, rawClient)
+	err = resourceAlicloudDmsEnterpriseUserDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "ConfigRuleNotExists"}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "DeleteConfigRules" {
+			if *action == "DeleteUser" {
 				switch errorCode {
-				case "NonRetryableError", "ConfigRuleNotExists":
+				case "NonRetryableError":
 					return failedResponseMock(errorCode)
 				default:
 					retryIndex++
@@ -643,12 +587,12 @@ func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigRuleDelete(dExisted, rawClient)
+		err := resourceAlicloudDmsEnterpriseUserDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
-		case "ConfigRuleNotExists":
+		case "nil":
 			assert.Nil(t, err)
 		}
 	}
