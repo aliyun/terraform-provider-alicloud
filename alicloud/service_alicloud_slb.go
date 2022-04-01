@@ -68,23 +68,40 @@ func (s *SlbService) DescribeSlb(id string) (*slb.DescribeLoadBalancerAttributeR
 	return response, err
 }
 
-func (s *SlbService) DescribeSlbRule(id string) (*slb.DescribeRuleAttributeResponse, error) {
-	response := &slb.DescribeRuleAttributeResponse{}
-	request := slb.CreateDescribeRuleAttributeRequest()
-	request.RegionId = s.client.RegionId
-	request.RuleId = id
-	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeRuleAttribute(request)
+func (s *SlbService) DescribeSlbRule(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewSlbClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeRuleAttribute"
+	request := map[string]interface{}{
+		"RuleId":   id,
+		"RegionId": s.client.RegionId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2014-05-15"), StringPointer("AK"), request, nil, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidRuleId.NotFound"}) {
 			return response, WrapErrorf(Error(GetNotFoundMessage("SlbRule", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ = raw.(*slb.DescribeRuleAttributeResponse)
-	if response.RuleId != id {
+
+	if fmt.Sprint(response["RuleId"]) != id {
 		return response, WrapErrorf(Error(GetNotFoundMessage("SlbRule", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
 	return response, nil
@@ -310,7 +327,7 @@ func (s *SlbService) WaitForSlbRule(id string, status Status, timeout int) error
 				return WrapError(err)
 			}
 		}
-		if object.RuleId == id && status != Deleted {
+		if object["RuleId"] == id && status != Deleted {
 			break
 		}
 
