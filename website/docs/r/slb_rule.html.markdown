@@ -160,6 +160,16 @@ and characters '-' '/' '?' '%' '#' and '&' are allowed. URLs must be started wit
 The following attributes are exported:
 
 * `id` - The ID of the forwarding rule.
+
+### Timeouts
+
+-> **NOTE:** Available in v1.163.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins) Used when create the forwarding rule.
+* `update` - (Defaults to 1 mins) Used when update the forwarding rule.
+* `delete` - (Defaults to 1 mins) Used when delete the forwarding rule.
                                                                                              
 ## Import
 
