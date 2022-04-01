@@ -86,6 +86,117 @@ func TestAccAlicloudClickHouseAccount_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudClickHouseAccount_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_click_house_account.default"
+	ra := resourceAttrInit(resourceId, AlicloudClickHouseAccountMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeClickHouseAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(100, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	pwd := fmt.Sprintf("Tf-test%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudClickHouseAccountBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id":    "${alicloud_click_house_db_cluster.default.id}",
+					"account_name":     name,
+					"account_password": pwd,
+
+					"ddl_authority":      "true",
+					"dml_authority":      "all",
+					"allow_databases":    "db1",
+					"allow_dictionaries": "dt1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_id":      CHECKSET,
+						"account_name":       name,
+						"account_password":   pwd,
+						"allow_databases":    "db1",
+						"dml_authority":      "all",
+						"allow_dictionaries": "dt1",
+						"ddl_authority":      "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allow_databases": "db1,db2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_databases": "db1,db2",
+					}),
+				),
+			},
+			// todo : There is a problem with the OpenApi set the parameter with "readonly,modify", return with parameter "all"
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"dml_authority": "readonly,modify",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"dml_authority": "readonly,modify",
+			//		}),
+			//	),
+			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ddl_authority": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ddl_authority": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allow_dictionaries": "dt1,dt2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_dictionaries": "dt1,dt2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allow_databases":    "db1",
+					"dml_authority":      "all",
+					"allow_dictionaries": "dt1",
+					"ddl_authority":      "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_databases":    "db1",
+						"dml_authority":      "all",
+						"allow_dictionaries": "dt1",
+						"ddl_authority":      "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password"},
+			},
+		},
+	})
+}
+
 var AlicloudClickHouseAccountMap0 = map[string]string{
 	"account_name":  CHECKSET,
 	"db_cluster_id": CHECKSET,

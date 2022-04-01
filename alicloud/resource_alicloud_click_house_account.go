@@ -57,6 +57,37 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"dml_authority": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"all", "readonly,modify"}, false),
+			},
+			"ddl_authority": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"allow_databases": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"total_databases": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"allow_dictionaries": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"total_dictionaries": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -95,7 +126,7 @@ func resourceAlicloudClickHouseAccountCreate(d *schema.ResourceData, meta interf
 
 	d.SetId(fmt.Sprint(request["DBClusterId"], ":", request["AccountName"]))
 
-	return resourceAlicloudClickHouseAccountRead(d, meta)
+	return resourceAlicloudClickHouseAccountUpdate(d, meta)
 }
 func resourceAlicloudClickHouseAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -118,6 +149,16 @@ func resourceAlicloudClickHouseAccountRead(d *schema.ResourceData, meta interfac
 	d.Set("account_description", object["AccountDescription"])
 	d.Set("status", object["AccountStatus"])
 	d.Set("type", object["AccountType"])
+
+	authority, err := clickhouseService.DescribeClickHouseAccountAuthority(d.Id())
+	d.Set("dml_authority", authority["DmlAuthority"])
+	d.Set("ddl_authority", authority["DdlAuthority"])
+
+	d.Set("allow_databases", convertArrayToString(authority["AllowDatabases"], ","))
+	d.Set("allow_dictionaries", convertArrayToString(authority["AllowDictionaries"], ","))
+	d.Set("total_databases", convertArrayToString(authority["TotalDatabases"], ","))
+	d.Set("total_dictionaries", convertArrayToString(authority["TotalDictionaries"], ","))
+
 	return nil
 }
 func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -127,24 +168,25 @@ func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapError(err)
 	}
+	conn, err := client.NewClickhouseClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	update := false
 	d.Partial(true)
 	request := map[string]interface{}{
 		"AccountName": parts[1],
 		"DBClusterId": parts[0],
 	}
-	if d.HasChange("account_description") {
+	if !d.IsNewResource() && d.HasChange("account_description") {
 		update = true
-		if v, ok := d.GetOk("account_description"); ok {
-			request["AccountDescription"] = v
-		}
+	}
+	if v, ok := d.GetOk("account_description"); ok {
+		request["AccountDescription"] = v
 	}
 	if update {
 		action := "ModifyAccountDescription"
-		conn, err := client.NewClickhouseClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -164,20 +206,85 @@ func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interf
 		d.SetPartial("account_description")
 	}
 	update = false
-	if d.HasChange("account_password") {
-		update = true
-		request = map[string]interface{}{
-			"AccountName": parts[1],
-			"DBClusterId": parts[0],
-		}
-		request["AccountPassword"] = d.Get("account_password")
+	request = map[string]interface{}{
+		"AccountName": parts[1],
+		"DBClusterId": parts[0],
 	}
+	if !d.IsNewResource() && d.HasChange("account_password") {
+		update = true
+	}
+	request["AccountPassword"] = d.Get("account_password")
 	if update {
 		action := "ResetAccountPassword"
-		conn, err := client.NewClickhouseClient()
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
 		if err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		d.SetPartial("account_password")
+	}
+
+	update = false
+	request = map[string]interface{}{
+		"AccountName": parts[1],
+		"DBClusterId": parts[0],
+	}
+	request["RegionId"] = client.RegionId
+	if d.HasChange("dml_authority") {
+		update = true
+	}
+	if v, ok := d.GetOk("dml_authority"); ok {
+		request["DmlAuthority"] = v
+	}
+
+	if d.HasChange("ddl_authority") {
+		update = true
+	}
+	if v, ok := d.GetOk("ddl_authority"); ok {
+		request["DdlAuthority"] = v
+	}
+
+	if d.HasChange("allow_databases") {
+		update = true
+	}
+	if v, ok := d.GetOk("allow_databases"); ok {
+		request["AllowDatabases"] = v
+	}
+
+	if d.HasChange("total_databases") {
+		update = true
+	}
+	if v, ok := d.GetOk("total_databases"); ok {
+		request["TotalDatabases"] = v
+	}
+
+	if d.HasChange("allow_dictionaries") {
+		update = true
+	}
+	if v, ok := d.GetOk("allow_dictionaries"); ok {
+		request["AllowDictionaries"] = v
+	}
+
+	if d.HasChange("total_dictionaries") {
+		update = true
+	}
+	if v, ok := d.GetOk("total_dictionaries"); ok {
+		request["TotalDictionaries"] = v
+	}
+
+	if update {
+		action := "ModifyAccountAuthority"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -197,6 +304,7 @@ func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interf
 		d.SetPartial("account_password")
 	}
 	d.Partial(false)
+
 	return resourceAlicloudClickHouseAccountRead(d, meta)
 }
 func resourceAlicloudClickHouseAccountDelete(d *schema.ResourceData, meta interface{}) error {
