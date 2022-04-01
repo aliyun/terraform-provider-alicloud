@@ -27,7 +27,7 @@ func TestAccAlicloudDdoscooDomainResource_basic(t *testing.T) {
 	ra := resourceAttrInit(resourceId, AlicloudDdoscooDomainResourceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDomainResource")
+	}, "DescribeDdoscooDomainResource")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandInt()
