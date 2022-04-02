@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -12,7 +11,7 @@ import (
 
 func TestAccAlicloudDdoscooSchedulerRule_basic(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
-	var v ddoscoo.SchedulerRule
+	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_scheduler_rule.default"
 	ra := resourceAttrInit(resourceId, DdosCooSchedulerRuleMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

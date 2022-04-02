@@ -1,13 +1,12 @@
 package alicloud
 
 import (
-	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -178,48 +177,57 @@ func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, 
 	return nil
 }
 
-func (s *DdoscooService) convertRulesToString(v []interface{}) (string, error) {
-	arrayMaps := make([]ddoscoo.Rule, len(v))
-	for i, vv := range v {
-		item := vv.(map[string]interface{})
-		arrayMaps[i] = ddoscoo.Rule{
-			Priority:  item["priority"].(int),
-			RegionId:  item["region_id"].(string),
-			Status:    item["status"].(int),
-			Type:      item["type"].(string),
-			Value:     item["value"].(string),
-			ValueType: item["value_type"].(int),
-		}
-	}
-	maps, err := json.Marshal(arrayMaps)
+func (s *DdoscooService) DescribeDdoscooSchedulerRule(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewDdoscooClient()
 	if err != nil {
-		return "", WrapError(err)
+		return nil, WrapError(err)
 	}
-	return string(maps), nil
-}
-
-func (s *DdoscooService) DescribeDdoscooSchedulerRule(id string) (object ddoscoo.SchedulerRule, err error) {
-	request := ddoscoo.CreateDescribeSchedulerRulesRequest()
-	request.RegionId = s.client.RegionId
-
-	request.RuleName = id
-	request.PageSize = requests.NewInteger(10)
-
-	raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-		return ddoscooClient.DescribeSchedulerRules(request)
+	action := "DescribeSchedulerRules"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"Domain":     id,
+		"PageNumber": 1,
+		"PageSize":   10,
+	}
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ddoscoo.DescribeSchedulerRulesResponse)
+	v, err := jsonpath.Get("$.SchedulerRules", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SchedulerRules", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo", id)), NotFoundWithResponse, response)
+	}
 
-	if len(response.SchedulerRules) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("DdoscooSchedulerRule", id)), NotFoundMsg, ProviderERROR)
-		return
+	for _, v := range v.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["RuleName"]) == id {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
 	}
-	return response.SchedulerRules[0], nil
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("DdosCoo", id)), NotFoundWithResponse, response)
+	}
+	return object, nil
 }
 
 func (s *DdoscooService) DescribeDdoscooDomainResource(id string) (object map[string]interface{}, err error) {
