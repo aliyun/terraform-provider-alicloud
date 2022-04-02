@@ -42,6 +42,14 @@ func TestAccAlicloudEssAlbServerGroupAttachment_basic(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force"},
 			},
+			{
+				Config: testAccEssScalingGroupAlbServerGroupNotForceAttach(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"id": NOSET,
+					}),
+				),
+			},
 		},
 	})
 }
@@ -67,6 +75,55 @@ func testAccCheckEssAlbServerGroupsDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+func testAccEssScalingGroupAlbServerGroupNotForceAttach(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupAlbServerGroup-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+	  min_size = "0"
+	  max_size = "2"
+      default_cooldown = 200
+	  scaling_group_name = "${var.name}"
+	  removal_policies = ["OldestInstance"]
+	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+
+	resource "alicloud_ess_scaling_configuration" "default" {
+		scaling_group_id = alicloud_ess_scaling_group.default.id
+		image_id = data.alicloud_images.default.images[0].id
+		instance_type = "ecs.f1-c8f1.2xlarge"
+		security_group_id = alicloud_security_group.default.id
+		force_delete = true
+		active = true
+		enable = true
+	}
+
+	resource "alicloud_ess_alb_server_group_attachment" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		alb_server_group_id = "${alicloud_alb_server_group.default.id}"
+		port             = 22
+		weight           = "11"
+		force_attach = false
+		depends_on = ["alicloud_ess_scaling_configuration.default"]
+	}
+
+	resource "alicloud_alb_server_group" "default" {
+		server_group_name = "${var.name}"
+		vpc_id = "${alicloud_vpc.default.id}"
+		health_check_config {
+		  health_check_enabled = "false"
+		}
+		sticky_session_config {
+		  sticky_session_enabled = true
+		  cookie                 = "tf-testAcc"
+		  sticky_session_type    = "Server"
+	  }
+	}
+	`, common, rand)
 }
 
 func testAccEssScalingGroupAlbServerGroup(common string, rand int) string {
