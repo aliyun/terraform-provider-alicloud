@@ -99,7 +99,7 @@ func testSweepCMSAlarms(region string) error {
 // At present, the provider does not support creating contact group resource, so you should create manually a contact group
 // by web console and set it by environment variable ALICLOUD_CMS_CONTACT_GROUP before running the following test case.
 func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
-	var alarm cms.AlarmInDescribeMetricRuleList
+	var alarm map[string]interface{}
 	resourceName := "alicloud_cms_alarm.basic"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAcc%sCmsAlarmContactGroup%d", defaultRegionToTest, rand)
@@ -116,7 +116,7 @@ func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
 			{
 				Config: testAccCmsAlarm_basic(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCmsAlarmExists("alicloud_cms_alarm.basic", &alarm),
+					testAccCheckCmsAlarmExists("alicloud_cms_alarm.basic", alarm),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "name", "tf-testAccCmsAlarm_basic"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "dimensions.%", "2"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "dimensions.device", "/dev/vda1,/dev/vdb1"),
@@ -136,7 +136,7 @@ func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
 }
 
 func TestAccAlicloudCmsAlarm_update(t *testing.T) {
-	var alarm cms.AlarmInDescribeMetricRuleList
+	var alarm map[string]interface{}
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAcc%sCmsAlarmContactGroup%d", defaultRegionToTest, rand)
 	resource.Test(t, resource.TestCase{
@@ -152,7 +152,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 			{
 				Config: testAccCmsAlarm_update(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCmsAlarmExists("alicloud_cms_alarm.update", &alarm),
+					testAccCheckCmsAlarmExists("alicloud_cms_alarm.update", alarm),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "name", "tf-testAccCmsAlarm_update"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_critical.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_warn.#", "1"),
@@ -166,7 +166,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 			{
 				Config: testAccCmsAlarm_updateAfter(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCmsAlarmExists("alicloud_cms_alarm.update", &alarm),
+					testAccCheckCmsAlarmExists("alicloud_cms_alarm.update", alarm),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_critical.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_warn.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_info.#", "1"),
@@ -180,7 +180,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 }
 
 func TestAccAlicloudCmsAlarm_disable(t *testing.T) {
-	var alarm cms.AlarmInDescribeMetricRuleList
+	var alarm map[string]interface{}
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAcc%sCmsAlarmContactGroup%d", defaultRegionToTest, rand)
 	resource.Test(t, resource.TestCase{
@@ -196,7 +196,7 @@ func TestAccAlicloudCmsAlarm_disable(t *testing.T) {
 			{
 				Config: testAccCmsAlarm_disable(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCmsAlarmExists("alicloud_cms_alarm.disable", &alarm),
+					testAccCheckCmsAlarmExists("alicloud_cms_alarm.disable", alarm),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.disable", "name", "tf-testAccCmsAlarm_disable"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.disable", "enabled", "false"),
 				),
@@ -205,7 +205,7 @@ func TestAccAlicloudCmsAlarm_disable(t *testing.T) {
 	})
 }
 
-func testAccCheckCmsAlarmExists(n string, d *cms.AlarmInDescribeMetricRuleList) resource.TestCheckFunc {
+func testAccCheckCmsAlarmExists(n string, d map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		alarm, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -225,11 +225,11 @@ func testAccCheckCmsAlarmExists(n string, d *cms.AlarmInDescribeMetricRuleList) 
 			return err
 		}
 
-		if attr.RuleId == "" {
+		if attr["RuleId"] == "" {
 			return fmt.Errorf("Alarm rule not found")
 		}
 
-		*d = attr
+		d = attr
 		return nil
 	}
 }
@@ -252,7 +252,7 @@ func testAccCheckCmsAlarmDestroy(s *terraform.State) error {
 			return err
 		}
 
-		if alarm.RuleId != "" {
+		if alarm["RuleId"] != "" {
 			return fmt.Errorf("Error alarm rule %s still exists.", rs.Primary.ID)
 		}
 	}

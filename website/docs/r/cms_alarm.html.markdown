@@ -99,6 +99,16 @@ The following attributes are exported:
 * `id` - The ID of the alarm rule.
 * `status` - The current alarm rule status.
 
+### Timeouts
+
+**NOTE:** Available in v1.163.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins) Used when create the alarm rule.
+* `update` - (Defaults to 1 mins) Used when update the alarm rule.
+* `delete` - (Defaults to 1 mins) Used when delete the alarm rule.
+
 ## Import
 
 Alarm rule can be imported using the id, e.g.
