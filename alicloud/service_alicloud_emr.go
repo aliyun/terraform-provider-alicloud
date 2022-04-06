@@ -427,3 +427,40 @@ func (s *EmrService) DescribeClusterV2(id string) (object map[string]interface{}
 	object = v.(map[string]interface{})
 	return object, nil
 }
+
+func (s *EmrService) DescribeEmrMainVersionClusterTypes(id string) (object []interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEmrClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeEmrMainVersion"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"EmrVersion": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.EmrMainVersion.ClusterTypeInfoList.ClusterTypeInfo", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.EmrMainVersion.ClusterTypeInfoList.ClusterTypeInfo", response)
+	}
+	object = v.([]interface{})
+	return object, nil
+}
