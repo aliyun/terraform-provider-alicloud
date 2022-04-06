@@ -901,7 +901,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 						"instance_charge_type": "Postpaid",
 						"connection_string":    CHECKSET,
 						"port":                 CHECKSET,
-						"security_group_id":    "",
+						"security_group_id":    CHECKSET,
 						"security_group_ids.#": "0",
 					}),
 				),
@@ -971,6 +971,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
+	manualHATime := time.Now().AddDate(0, 0, 1).Format("2006-01-02T15:04:05Z")
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
@@ -1015,6 +1016,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 						"db_instance_storage_type": "cloud_essd",
 						"private_ip_address":       CHECKSET,
 						"db_time_zone":             "America/New_York",
+						"deletion_protection":      "false",
 					}),
 				),
 			},
@@ -1026,30 +1028,21 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name": "tf-testAccDBInstance_instance_name",
+					"deletion_protection": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name": "tf-testAccDBInstance_instance_name",
+						"deletion_protection": "true",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"pg_hba_conf": []interface{}{
-						map[string]interface{}{
-							"type":        "host",
-							"user":        "all",
-							"address":     "0.0.0.0/0",
-							"database":    "all",
-							"method":      "md5",
-							"priority_id": "0",
-						},
-					},
+					"instance_name": "tf-testAccDBInstance_instance_name",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"pg_hba_conf.#": "1",
+						"instance_name": "tf-testAccDBInstance_instance_name",
 					}),
 				),
 			},
@@ -1091,17 +1084,6 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 					}),
 				),
 			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"private_ip_address": "172.19.96.98",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"private_ip_address": "172.19.96.98",
-					}),
-				),
-			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"port":                     "3333",
@@ -1117,12 +1099,12 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"ha_config":      "Manual",
-					"manual_ha_time": "2021-07-27T15:00:00Z",
+					"manual_ha_time": manualHATime,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"ha_config":      "Manual",
-						"manual_ha_time": "2021-07-27T15:00:00Z",
+						"manual_ha_time": manualHATime,
 					}),
 				),
 			},
@@ -1158,8 +1140,10 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ssl_action": "Close",
-						"ca_type":    "",
+						"ssl_action":  "Close",
+						"ca_type":     "",
+						"server_cert": "",
+						"server_key":  "",
 					}),
 				),
 			},
@@ -1171,7 +1155,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 					"instance_storage":            "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
 					"instance_charge_type":        "Postpaid",
 					"instance_name":               "${var.name}",
-					"vswitch_id":                  "vsw-bp1choevojf5gasmazq3c",
+					"vswitch_id":                  "${local.vswitch_id}",
 					"security_group_ids":          []string{},
 					"monitoring_period":           "60",
 					"encryption_key":              "${alicloud_kms_key.default.id}",
@@ -1183,6 +1167,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 					"client_cert_revocation_list": client_cert_revocation_list,
 					"acl":                         "cert",
 					"replication_acl":             "cert",
+					"deletion_protection":         "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1196,7 +1181,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 						"instance_charge_type":        "Postpaid",
 						"connection_string":           CHECKSET,
 						"port":                        CHECKSET,
-						"security_group_id":           "",
+						"security_group_id":           CHECKSET,
 						"security_group_ids.#":        "0",
 						"ssl_action":                  "Open",
 						"ca_type":                     "aliyun",
@@ -1208,6 +1193,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 						"replication_acl":             "cert",
 						"server_cert":                 CHECKSET,
 						"server_key":                  CHECKSET,
+						"deletion_protection":         "false",
 					}),
 				),
 			},
@@ -1229,7 +1215,7 @@ data "alicloud_db_zones" "default"{
   	engine               = "PostgreSQL"
   	engine_version       = "12.0"
 	instance_charge_type = "PostPaid"
-	category = "Basic"
+	category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
 }
 
@@ -1237,7 +1223,7 @@ data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.0.id
   	engine               = "PostgreSQL"
   	engine_version       = "12.0"
-    category = "Basic"
+    category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
 }
