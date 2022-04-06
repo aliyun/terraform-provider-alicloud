@@ -52,6 +52,8 @@ The following arguments are supported:
 * `resource_group_id` - (Optional) The ID of the resource group.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `auto_pay`  - (Optional, Available in v1.140.0+) Whether to pay automatically. Valid values: `true` and `false`. Default value: `true`. When `auto_pay` is `true`, The order will be automatically paid. When `auto_pay` is `false`, The order needs to go to the order center to complete the payment. **NOTE:** When `payment_type` is `Subscription`, this parameter is valid.
+* `instance_charge_type` - (Optional, ForceNew, Deprecated in v1.126.0+) Field `instance_charge_type` has been deprecated from provider version 1.126.0, and it will be removed in the future version. Please use the new attribute `payment_type` instead.
+* `name` - (Optional, Computed, Deprecated in v1.126.0+) Field `name` has been deprecated from provider version 1.126.0, and it will be removed in the future version. Please use the new attribute `address_name` instead.
 
 ## Attributes Reference
 
