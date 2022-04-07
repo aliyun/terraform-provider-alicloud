@@ -31,7 +31,7 @@ The following arguments are supported:
 
 * `vault_name` - (Required) The name of Vault.
 * `description` - (Optional) The description of Vault. Defaults to an empty string.
-* `vault_type` - (Optional, Computed, ForceNew) The type of Vault. Valid values: `STANDARD`. 
+* `vault_type` - (Optional, Computed, ForceNew) The type of Vault. Valid values: `STANDARD`,`OTS_BACKUP`. 
 * `vault_storage_class` - (Optional, Computed, ForceNew) The storage class of Vault. Valid values: `STANDARD`.
 * `redundancy_type`- (Optional, Computed,Available in v1.161.0+) The redundancy type of the vault. Valid values: `LRS`, and `ZRS`. Defaults to `LRS`.
   `LRS` -  means locally redundant storage, data will be stored on different storage devices in the same zone.
