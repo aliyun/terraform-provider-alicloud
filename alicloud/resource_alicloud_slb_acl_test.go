@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -261,7 +260,7 @@ func TestAccAlicloudSlbAcl_basic1(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test123",
 					},
-					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -289,5 +288,9 @@ func AlicloudSLBAclBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
 `, name)
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudArmsPrometheusAlertRulesDataSource(t *testing.T) {
+func TestAccAlicloudARMSPrometheusAlertRulesDataSource(t *testing.T) {
 
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_arms_prometheus_alert_rules.default"

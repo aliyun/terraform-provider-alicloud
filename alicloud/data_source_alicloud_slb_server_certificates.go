@@ -113,16 +113,15 @@ func dataSourceAlicloudSlbServerCertificates() *schema.Resource {
 	}
 }
 
-func severCertificateTagsMappings(d *schema.ResourceData, id string, meta interface{}) map[string]string {
+func severCertificateTagsMappings(id string, meta interface{}) map[string]interface{} {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
-	tags, err := slbService.DescribeTags(id, nil, TagResourceCertificate)
-
+	tags, err := slbService.ListTagResources(id, "certificate")
 	if err != nil {
 		return nil
 	}
 
-	return slbTagsToMap(tags)
+	return tagsToMap(tags)
 }
 
 func dataSourceAlicloudSlbServerCertificatesRead(d *schema.ResourceData, meta interface{}) error {
@@ -214,7 +213,7 @@ func slbServerCertificatesDescriptionAttributes(d *schema.ResourceData, certific
 			"alicloud_certificate_name": certificate.AliCloudCertificateName,
 			"is_alicloud_certificate":   certificate.IsAliCloudCertificate == 1,
 			"resource_group_id":         certificate.ResourceGroupId,
-			"tags":                      severCertificateTagsMappings(d, certificate.ServerCertificateId, meta),
+			"tags":                      severCertificateTagsMappings(certificate.ServerCertificateId, meta),
 		}
 		ids = append(ids, certificate.ServerCertificateId)
 		names = append(names, certificate.ServerCertificateName)

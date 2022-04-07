@@ -24,7 +24,7 @@ groups:
       - EIP
       - Elasticsearch
       - Cddc
-      - Arms
+      - ARMS
       - Scdn
       - Lindorm
       - ECD
@@ -212,7 +212,7 @@ groups:
       - Vpc
       - EIP
       - Cddc
-      - Arms
+      - ARMS
       - Scdn
       - Lindorm
       - CommonBandwidth
@@ -819,7 +819,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Regions"
 
-  - name: Arms
+  - name: ARMS
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -830,7 +830,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Arms"
+          TEST_CASE_CODE: "ARMS"
           SWEEPER_CODE: "alicloud_arms"
 
   - name: Cddc
@@ -1677,7 +1677,7 @@ jobs:
         trigger: true
         passed: [
             HBR, Ess, CS, FC, Ecs,
-            Vpc, EIP, Cddc, Arms, Scdn, Amqp, CommonBandwidth,
+            Vpc, EIP, Cddc, ARMS, Scdn, Amqp, CommonBandwidth,
             Slb, ALB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, SAE, EventBridge
         ]
       - aggregate:
