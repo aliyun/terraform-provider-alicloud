@@ -409,6 +409,16 @@ func TestAccAlicloudLogAlert_basic_new(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"auto_annotation": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_annotation": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"alert_displayname": "update_alert_name_new",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -421,13 +431,14 @@ func TestAccAlicloudLogAlert_basic_new(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"query_list": []map[string]interface{}{
 						{
-							"region":      "cn-heyuan",
-							"store_type":  "log",
-							"store":       "${alicloud_log_store.default.name}",
-							"chart_title": "chart_title",
-							"start":       "-80s",
-							"end":         "60s",
-							"query":       "* AND aliyun_update",
+							"region":         "cn-heyuan",
+							"store_type":     "log",
+							"store":          "${alicloud_log_store.default.name}",
+							"chart_title":    "chart_title",
+							"start":          "-80s",
+							"end":            "60s",
+							"query":          "* AND aliyun_update",
+							"power_sql_mode": "enable",
 						},
 						{
 							"store":       "${alicloud_log_store.default.name}",
@@ -442,17 +453,18 @@ func TestAccAlicloudLogAlert_basic_new(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"query_list.#":             "2",
-						"query_list.0.store":       CHECKSET,
-						"query_list.0.chart_title": "chart_title",
-						"query_list.0.start":       "-80s",
-						"query_list.0.end":         "60s",
-						"query_list.0.query":       "* AND aliyun_update",
-						"query_list.1.store":       CHECKSET,
-						"query_list.1.chart_title": "chart_title_2_update",
-						"query_list.1.start":       "-60s",
-						"query_list.1.end":         "20s",
-						"query_list.1.query":       "error and update | select count(1) as error_cnt",
+						"query_list.#":                "2",
+						"query_list.0.store":          CHECKSET,
+						"query_list.0.chart_title":    "chart_title",
+						"query_list.0.start":          "-80s",
+						"query_list.0.end":            "60s",
+						"query_list.0.query":          "* AND aliyun_update",
+						"query_list.0.power_sql_mode": "enable",
+						"query_list.1.store":          CHECKSET,
+						"query_list.1.chart_title":    "chart_title_2_update",
+						"query_list.1.start":          "-60s",
+						"query_list.1.end":            "20s",
+						"query_list.1.query":          "error and update | select count(1) as error_cnt",
 					}),
 				),
 			},
