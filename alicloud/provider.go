@@ -681,6 +681,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mse_znodes":                                  dataSourceAlicloudMseZnodes(),
 			"alicloud_cen_transit_router_available_resources":      dataSourceAlicloudCenTransitRouterAvailableResources(),
 			"alicloud_ecs_image_pipelines":                         dataSourceAlicloudEcsImagePipelines(),
+			"alicloud_hbr_ots_backup_plans":                        dataSourceAlicloudHbrOtsBackupPlans(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1255,6 +1256,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_image_pipeline":                                   resourceAlicloudEcsImagePipeline(),
 			"alicloud_slb_server_group_server_attachment":                   resourceAlicloudSlbServerGroupServerAttachment(),
 			"alicloud_alb_listener_acl_attachment":                          resourceAlicloudAlbListenerAclAttachment(),
+			"alicloud_hbr_ots_backup_plan":                                  resourceAlicloudHbrOtsBackupPlan(),
 		},
 
 		ConfigureFunc: providerConfigure,
