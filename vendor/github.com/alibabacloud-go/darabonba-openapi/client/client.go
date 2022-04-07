@@ -5,11 +5,13 @@
 package client
 
 import (
+	"io"
+
+	spi "github.com/alibabacloud-go/alibabacloud-gateway-spi/client"
 	openapiutil "github.com/alibabacloud-go/openapi-util/service"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	credential "github.com/aliyun/credentials-go/credentials"
-	"io"
 )
 
 /**
@@ -24,6 +26,8 @@ type Config struct {
 	SecurityToken *string `json:"securityToken,omitempty" xml:"securityToken,omitempty"`
 	// http protocol
 	Protocol *string `json:"protocol,omitempty" xml:"protocol,omitempty"`
+	// http method
+	Method *string `json:"method,omitempty" xml:"method,omitempty"`
 	// region id
 	RegionId *string `json:"regionId,omitempty" xml:"regionId,omitempty"`
 	// read timeout
@@ -59,6 +63,8 @@ type Config struct {
 	// Deprecated
 	// credential type
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
+	// Signature Version
+	SignatureVersion *string `json:"signatureVersion,omitempty" xml:"signatureVersion,omitempty"`
 	// Signature Algorithm
 	SignatureAlgorithm *string `json:"signatureAlgorithm,omitempty" xml:"signatureAlgorithm,omitempty"`
 }
@@ -88,6 +94,11 @@ func (s *Config) SetSecurityToken(v string) *Config {
 
 func (s *Config) SetProtocol(v string) *Config {
 	s.Protocol = &v
+	return s
+}
+
+func (s *Config) SetMethod(v string) *Config {
+	s.Method = &v
 	return s
 }
 
@@ -176,6 +187,11 @@ func (s *Config) SetType(v string) *Config {
 	return s
 }
 
+func (s *Config) SetSignatureVersion(v string) *Config {
+	s.SignatureVersion = &v
+	return s
+}
+
 func (s *Config) SetSignatureAlgorithm(v string) *Config {
 	s.SignatureAlgorithm = &v
 	return s
@@ -186,6 +202,7 @@ type OpenApiRequest struct {
 	Query   map[string]*string `json:"query,omitempty" xml:"query,omitempty"`
 	Body    interface{}        `json:"body,omitempty" xml:"body,omitempty"`
 	Stream  io.Reader          `json:"stream,omitempty" xml:"stream,omitempty"`
+	HostMap map[string]*string `json:"hostMap,omitempty" xml:"hostMap,omitempty"`
 }
 
 func (s OpenApiRequest) String() string {
@@ -213,6 +230,11 @@ func (s *OpenApiRequest) SetBody(v interface{}) *OpenApiRequest {
 
 func (s *OpenApiRequest) SetStream(v io.Reader) *OpenApiRequest {
 	s.Stream = v
+	return s
+}
+
+func (s *OpenApiRequest) SetHostMap(v map[string]*string) *OpenApiRequest {
+	s.HostMap = v
 	return s
 }
 
@@ -285,6 +307,7 @@ type Client struct {
 	Endpoint             *string
 	RegionId             *string
 	Protocol             *string
+	Method               *string
 	UserAgent            *string
 	EndpointRule         *string
 	EndpointMap          map[string]*string
@@ -302,8 +325,10 @@ type Client struct {
 	EndpointType         *string
 	OpenPlatformEndpoint *string
 	Credential           credential.Credential
+	SignatureVersion     *string
 	SignatureAlgorithm   *string
 	Headers              map[string]*string
+	Spi                  spi.ClientInterface
 }
 
 /**
@@ -349,7 +374,10 @@ func (client *Client) Init(config *Config) (_err error) {
 
 	client.Endpoint = config.Endpoint
 	client.EndpointType = config.EndpointType
+	client.Network = config.Network
+	client.Suffix = config.Suffix
 	client.Protocol = config.Protocol
+	client.Method = config.Method
 	client.RegionId = config.RegionId
 	client.UserAgent = config.UserAgent
 	client.ReadTimeout = config.ReadTimeout
@@ -360,6 +388,7 @@ func (client *Client) Init(config *Config) (_err error) {
 	client.Socks5Proxy = config.Socks5Proxy
 	client.Socks5NetWork = config.Socks5NetWork
 	client.MaxIdleConns = config.MaxIdleConns
+	client.SignatureVersion = config.SignatureVersion
 	client.SignatureAlgorithm = config.SignatureAlgorithm
 	return nil
 }
@@ -392,6 +421,8 @@ func (client *Client) DoRPCRequest(action *string, version *string, protocol *st
 		"httpProxy":      tea.StringValue(util.DefaultString(runtime.HttpProxy, client.HttpProxy)),
 		"httpsProxy":     tea.StringValue(util.DefaultString(runtime.HttpsProxy, client.HttpsProxy)),
 		"noProxy":        tea.StringValue(util.DefaultString(runtime.NoProxy, client.NoProxy)),
+		"socks5Proxy":    tea.StringValue(util.DefaultString(runtime.Socks5Proxy, client.Socks5Proxy)),
+		"socks5NetWork":  tea.StringValue(util.DefaultString(runtime.Socks5NetWork, client.Socks5NetWork)),
 		"maxIdleConns":   tea.IntValue(util.DefaultNumber(runtime.MaxIdleConns, client.MaxIdleConns)),
 		"retry": map[string]interface{}{
 			"retryable":   tea.BoolValue(runtime.Autoretry),
@@ -609,6 +640,8 @@ func (client *Client) DoROARequest(action *string, version *string, protocol *st
 		"httpProxy":      tea.StringValue(util.DefaultString(runtime.HttpProxy, client.HttpProxy)),
 		"httpsProxy":     tea.StringValue(util.DefaultString(runtime.HttpsProxy, client.HttpsProxy)),
 		"noProxy":        tea.StringValue(util.DefaultString(runtime.NoProxy, client.NoProxy)),
+		"socks5Proxy":    tea.StringValue(util.DefaultString(runtime.Socks5Proxy, client.Socks5Proxy)),
+		"socks5NetWork":  tea.StringValue(util.DefaultString(runtime.Socks5NetWork, client.Socks5NetWork)),
 		"maxIdleConns":   tea.IntValue(util.DefaultNumber(runtime.MaxIdleConns, client.MaxIdleConns)),
 		"retry": map[string]interface{}{
 			"retryable":   tea.BoolValue(runtime.Autoretry),
@@ -811,6 +844,8 @@ func (client *Client) DoROARequestWithForm(action *string, version *string, prot
 		"httpProxy":      tea.StringValue(util.DefaultString(runtime.HttpProxy, client.HttpProxy)),
 		"httpsProxy":     tea.StringValue(util.DefaultString(runtime.HttpsProxy, client.HttpsProxy)),
 		"noProxy":        tea.StringValue(util.DefaultString(runtime.NoProxy, client.NoProxy)),
+		"socks5Proxy":    tea.StringValue(util.DefaultString(runtime.Socks5Proxy, client.Socks5Proxy)),
+		"socks5NetWork":  tea.StringValue(util.DefaultString(runtime.Socks5NetWork, client.Socks5NetWork)),
 		"maxIdleConns":   tea.IntValue(util.DefaultNumber(runtime.MaxIdleConns, client.MaxIdleConns)),
 		"retry": map[string]interface{}{
 			"retryable":   tea.BoolValue(runtime.Autoretry),
@@ -1015,6 +1050,8 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 		"httpProxy":      tea.StringValue(util.DefaultString(runtime.HttpProxy, client.HttpProxy)),
 		"httpsProxy":     tea.StringValue(util.DefaultString(runtime.HttpsProxy, client.HttpsProxy)),
 		"noProxy":        tea.StringValue(util.DefaultString(runtime.NoProxy, client.NoProxy)),
+		"socks5Proxy":    tea.StringValue(util.DefaultString(runtime.Socks5Proxy, client.Socks5Proxy)),
+		"socks5NetWork":  tea.StringValue(util.DefaultString(runtime.Socks5NetWork, client.Socks5NetWork)),
 		"maxIdleConns":   tea.IntValue(util.DefaultNumber(runtime.MaxIdleConns, client.MaxIdleConns)),
 		"retry": map[string]interface{}{
 			"retryable":   tea.BoolValue(runtime.Autoretry),
@@ -1040,7 +1077,7 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 			request_ := tea.NewRequest()
 			request_.Protocol = util.DefaultString(client.Protocol, params.Protocol)
 			request_.Method = params.Method
-			request_.Pathname = openapiutil.GetEncodePath(params.Pathname)
+			request_.Pathname = params.Pathname
 			request_.Query = request.Query
 			// endpoint is setted in product client
 			request_.Headers = tea.Merge(map[string]*string{
@@ -1052,23 +1089,21 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 				"x-acs-signature-nonce": util.GetNonce(),
 				"accept":                tea.String("application/json"),
 			}, request.Headers)
-			signatureAlgorithm := util.DefaultString(client.SignatureAlgorithm, tea.String("ACS3-HMAC-SHA256"))
-			hashedRequestPayload := openapiutil.HexEncode(openapiutil.Hash(util.ToBytes(tea.String("")), signatureAlgorithm))
-			if !tea.BoolValue(util.IsUnset(request.Body)) {
-				if tea.BoolValue(util.EqualString(params.ReqBodyType, tea.String("json"))) {
-					jsonObj := util.ToJSONString(request.Body)
-					hashedRequestPayload = openapiutil.HexEncode(openapiutil.Hash(util.ToBytes(jsonObj), signatureAlgorithm))
-					request_.Body = tea.ToReader(jsonObj)
-				} else {
-					m := util.AssertAsMap(request.Body)
-					formObj := openapiutil.ToForm(m)
-					hashedRequestPayload = openapiutil.HexEncode(openapiutil.Hash(util.ToBytes(formObj), signatureAlgorithm))
-					request_.Body = tea.ToReader(formObj)
-					request_.Headers["content-type"] = tea.String("application/x-www-form-urlencoded")
+			if tea.BoolValue(util.EqualString(params.Style, tea.String("RPC"))) {
+				headers, _err := client.GetRpcHeaders()
+				if _err != nil {
+					return _result, _err
+				}
+
+				if !tea.BoolValue(util.IsUnset(headers)) {
+					request_.Headers = tea.Merge(request_.Headers,
+						headers)
 				}
 
 			}
 
+			signatureAlgorithm := util.DefaultString(client.SignatureAlgorithm, tea.String("ACS3-HMAC-SHA256"))
+			hashedRequestPayload := openapiutil.HexEncode(openapiutil.Hash(util.ToBytes(tea.String("")), signatureAlgorithm))
 			if !tea.BoolValue(util.IsUnset(request.Stream)) {
 				tmp, _err := util.ReadAsBytes(request.Stream)
 				if _err != nil {
@@ -1077,6 +1112,24 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 
 				hashedRequestPayload = openapiutil.HexEncode(openapiutil.Hash(tmp, signatureAlgorithm))
 				request_.Body = tea.ToReader(tmp)
+				request_.Headers["content-type"] = tea.String("application/octet-stream")
+			} else {
+				if !tea.BoolValue(util.IsUnset(request.Body)) {
+					if tea.BoolValue(util.EqualString(params.ReqBodyType, tea.String("json"))) {
+						jsonObj := util.ToJSONString(request.Body)
+						hashedRequestPayload = openapiutil.HexEncode(openapiutil.Hash(util.ToBytes(jsonObj), signatureAlgorithm))
+						request_.Body = tea.ToReader(jsonObj)
+						request_.Headers["content-type"] = tea.String("application/json; charset=utf-8")
+					} else {
+						m := util.AssertAsMap(request.Body)
+						formObj := openapiutil.ToForm(m)
+						hashedRequestPayload = openapiutil.HexEncode(openapiutil.Hash(util.ToBytes(formObj), signatureAlgorithm))
+						request_.Body = tea.ToReader(formObj)
+						request_.Headers["content-type"] = tea.String("application/x-www-form-urlencoded")
+					}
+
+				}
+
 			}
 
 			request_.Headers["x-acs-content-sha256"] = hashedRequestPayload
@@ -1097,6 +1150,7 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 				}
 
 				if !tea.BoolValue(util.Empty(securityToken)) {
+					request_.Headers["x-acs-accesskey-id"] = accessKeyId
 					request_.Headers["x-acs-security-token"] = securityToken
 				}
 
@@ -1186,6 +1240,151 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 				return _result, _err
 			}
 
+		}()
+		if !tea.BoolValue(tea.Retryable(_err)) {
+			break
+		}
+	}
+
+	return _resp, _err
+}
+
+/**
+ * Encapsulate the request and invoke the network
+ * @param action api name
+ * @param version product version
+ * @param protocol http or https
+ * @param method e.g. GET
+ * @param authType authorization type e.g. AK
+ * @param bodyType response body type e.g. String
+ * @param request object of OpenApiRequest
+ * @param runtime which controls some details of call api, such as retry times
+ * @return the response
+ */
+func (client *Client) Execute(params *Params, request *OpenApiRequest, runtime *util.RuntimeOptions) (_result map[string]interface{}, _err error) {
+	_err = tea.Validate(params)
+	if _err != nil {
+		return _result, _err
+	}
+	_err = tea.Validate(request)
+	if _err != nil {
+		return _result, _err
+	}
+	_err = tea.Validate(runtime)
+	if _err != nil {
+		return _result, _err
+	}
+	_runtime := map[string]interface{}{
+		"timeouted":      "retry",
+		"readTimeout":    tea.IntValue(util.DefaultNumber(runtime.ReadTimeout, client.ReadTimeout)),
+		"connectTimeout": tea.IntValue(util.DefaultNumber(runtime.ConnectTimeout, client.ConnectTimeout)),
+		"httpProxy":      tea.StringValue(util.DefaultString(runtime.HttpProxy, client.HttpProxy)),
+		"httpsProxy":     tea.StringValue(util.DefaultString(runtime.HttpsProxy, client.HttpsProxy)),
+		"noProxy":        tea.StringValue(util.DefaultString(runtime.NoProxy, client.NoProxy)),
+		"socks5Proxy":    tea.StringValue(util.DefaultString(runtime.Socks5Proxy, client.Socks5Proxy)),
+		"socks5NetWork":  tea.StringValue(util.DefaultString(runtime.Socks5NetWork, client.Socks5NetWork)),
+		"maxIdleConns":   tea.IntValue(util.DefaultNumber(runtime.MaxIdleConns, client.MaxIdleConns)),
+		"retry": map[string]interface{}{
+			"retryable":   tea.BoolValue(runtime.Autoretry),
+			"maxAttempts": tea.IntValue(util.DefaultNumber(runtime.MaxAttempts, tea.Int(3))),
+		},
+		"backoff": map[string]interface{}{
+			"policy": tea.StringValue(util.DefaultString(runtime.BackoffPolicy, tea.String("no"))),
+			"period": tea.IntValue(util.DefaultNumber(runtime.BackoffPeriod, tea.Int(1))),
+		},
+		"ignoreSSL": tea.BoolValue(runtime.IgnoreSSL),
+	}
+
+	_resp := make(map[string]interface{})
+	for _retryTimes := 0; tea.BoolValue(tea.AllowRetry(_runtime["retry"], tea.Int(_retryTimes))); _retryTimes++ {
+		if _retryTimes > 0 {
+			_backoffTime := tea.GetBackoffTime(_runtime["backoff"], tea.Int(_retryTimes))
+			if tea.IntValue(_backoffTime) > 0 {
+				tea.Sleep(_backoffTime)
+			}
+		}
+
+		_resp, _err = func() (map[string]interface{}, error) {
+			request_ := tea.NewRequest()
+			// spi = new Gateway();//Gateway implements SPI，这一步在产品 SDK 中实例化
+			headers, _err := client.GetRpcHeaders()
+			if _err != nil {
+				return _result, _err
+			}
+
+			requestContext := &spi.InterceptorContextRequest{
+				Headers: tea.Merge(request.Headers,
+					headers),
+				Query:              request.Query,
+				Body:               request.Body,
+				Stream:             request.Stream,
+				HostMap:            request.HostMap,
+				Pathname:           params.Pathname,
+				ProductId:          client.ProductId,
+				Action:             params.Action,
+				Version:            params.Version,
+				Protocol:           util.DefaultString(client.Protocol, params.Protocol),
+				Method:             util.DefaultString(client.Method, params.Method),
+				AuthType:           params.AuthType,
+				BodyType:           params.BodyType,
+				ReqBodyType:        params.ReqBodyType,
+				Style:              params.Style,
+				Credential:         client.Credential,
+				SignatureVersion:   client.SignatureVersion,
+				SignatureAlgorithm: client.SignatureAlgorithm,
+				UserAgent:          client.GetUserAgent(),
+			}
+			configurationContext := &spi.InterceptorContextConfiguration{
+				RegionId:     client.RegionId,
+				Endpoint:     client.Endpoint,
+				EndpointRule: client.EndpointRule,
+				EndpointMap:  client.EndpointMap,
+				EndpointType: client.EndpointType,
+				Network:      client.Network,
+				Suffix:       client.Suffix,
+			}
+			interceptorContext := &spi.InterceptorContext{
+				Request:       requestContext,
+				Configuration: configurationContext,
+			}
+			attributeMap := &spi.AttributeMap{}
+			// 1. spi.modifyConfiguration(context: SPI.InterceptorContext, attributeMap: SPI.AttributeMap);
+			_err = client.Spi.ModifyConfiguration(interceptorContext, attributeMap)
+			if _err != nil {
+				return _result, _err
+			}
+			// 2. spi.modifyRequest(context: SPI.InterceptorContext, attributeMap: SPI.AttributeMap);
+			_err = client.Spi.ModifyRequest(interceptorContext, attributeMap)
+			if _err != nil {
+				return _result, _err
+			}
+			request_.Protocol = interceptorContext.Request.Protocol
+			request_.Method = interceptorContext.Request.Method
+			request_.Pathname = interceptorContext.Request.Pathname
+			request_.Query = interceptorContext.Request.Query
+			request_.Body = interceptorContext.Request.Stream
+			request_.Headers = interceptorContext.Request.Headers
+			response_, _err := tea.DoRequest(request_, _runtime)
+			if _err != nil {
+				return _result, _err
+			}
+			responseContext := &spi.InterceptorContextResponse{
+				StatusCode: response_.StatusCode,
+				Headers:    response_.Headers,
+				Body:       response_.Body,
+			}
+			interceptorContext.Response = responseContext
+			// 3. spi.modifyResponse(context: SPI.InterceptorContext, attributeMap: SPI.AttributeMap);
+			_err = client.Spi.ModifyResponse(interceptorContext, attributeMap)
+			if _err != nil {
+				return _result, _err
+			}
+			_result = make(map[string]interface{})
+			_err = tea.Convert(map[string]interface{}{
+				"headers": interceptorContext.Response.Headers,
+				"body":    interceptorContext.Response.DeserializedBody,
+			}, &_result)
+			return _result, _err
 		}()
 		if !tea.BoolValue(tea.Retryable(_err)) {
 			break

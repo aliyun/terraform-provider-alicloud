@@ -217,7 +217,7 @@ resource "alicloud_cs_kubernetes_permissions" "default" {
 The following arguments are supported.
 
 * `uid` - (Required, ForceNew) The ID of the Ram user, and it can also be the id of the Ram Role. If you use Ram Role id, you need to set `is_ram_role` to `true` during authorization.
-* `permissions` - (Required) A list of user permission.
+* `permissions` - (Optional) A list of user permission.
   * `cluster` - (Required) The ID of the cluster that you want to manage.
   * `role_name` - (Required) Specifies the predefined role that you want to assign. Valid values `admin`, `ops`, `dev`, `restricted` and the custom cluster roles.
   * `role_type` - (Required) The authorization type. Valid values `cluster`, `namespace`.

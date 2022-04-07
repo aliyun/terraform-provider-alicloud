@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	cs "github.com/alibabacloud-go/cs-20151215/v2/client"
+	cs "github.com/alibabacloud-go/cs-20151215/v3/client"
 )
 
 func TestAccAlicloudCSAutoscalingConfig_basic(t *testing.T) {
@@ -46,6 +46,8 @@ func TestAccAlicloudCSAutoscalingConfig_basic(t *testing.T) {
 					"utilization_threshold":     "0.5",
 					"gpu_utilization_threshold": "0.5",
 					"scan_interval":             "30s",
+					"scale_down_enabled":        "true",
+					"expander":                  "least-waste",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -55,6 +57,8 @@ func TestAccAlicloudCSAutoscalingConfig_basic(t *testing.T) {
 						"utilization_threshold":     CHECKSET,
 						"gpu_utilization_threshold": CHECKSET,
 						"scan_interval":             CHECKSET,
+						"scale_down_enabled":        CHECKSET,
+						"expander":                  CHECKSET,
 					}),
 				),
 			},
