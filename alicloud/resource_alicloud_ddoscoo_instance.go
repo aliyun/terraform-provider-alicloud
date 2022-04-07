@@ -1,10 +1,8 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -13,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -162,7 +159,7 @@ func resourceAlicloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	specInfo, err := ddoscooService.DescribeDdoscooInstanceSpec(d)
+	specInfo, err := ddoscooService.DescribeDdoscooInstanceSpec(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -171,12 +168,12 @@ func resourceAlicloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	d.Set("name", insInfo.Remark)
-	d.Set("bandwidth", strconv.Itoa(specInfo.ElasticBandwidth))
-	d.Set("base_bandwidth", strconv.Itoa(specInfo.BaseBandwidth))
-	d.Set("domain_count", strconv.Itoa(specInfo.DomainLimit))
-	d.Set("port_count", strconv.Itoa(specInfo.PortLimit))
-	d.Set("service_bandwidth", strconv.Itoa(specInfo.BandwidthMbps))
+	d.Set("name", insInfo["Remark"])
+	d.Set("bandwidth", specInfo["ElasticBandwidth"])
+	d.Set("base_bandwidth", specInfo["BaseBandwidth"])
+	d.Set("domain_count", specInfo["DomainLimit"])
+	d.Set("port_count", specInfo["PortLimit"])
+	d.Set("service_bandwidth", specInfo["BandwidthMbps"])
 
 	return nil
 }
@@ -247,36 +244,41 @@ func resourceAlicloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 	return resourceAlicloudDdoscooInstanceRead(d, meta)
 }
 
-type JsonObject struct {
-	Code    string `json:"Code"`
-	Message string `json:"Message"`
-}
-
 func resourceAlicloudDdoscooInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := ddoscoo.CreateReleaseInstanceRequest()
-	request.RegionId = "cn-hangzhou"
-	request.InstanceId = d.Id()
-
-	raw, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-		return ddoscooClient.ReleaseInstance(request)
-	})
-
-	var DeleteResult JsonObject
+	action := "ReleaseInstance"
+	var response map[string]interface{}
+	conn, err := client.NewDdoscooClient()
 	if err != nil {
-		_ = json.Unmarshal([]byte(raw.(*ddoscoo.ReleaseInstanceResponse).GetHttpContentString()), &DeleteResult)
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"InstanceId": d.Id(),
+		"RegionId":   "cn-hangzhou",
+	}
 
-		if DeleteResult.Code == "InstanceNotExpire" {
-			log.Printf("[INFO]  instance cannot be deleted and must wait it to be expired and release it automatically")
-			return nil
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
 			return nil
 		}
-
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		if IsExpectedErrors(err, []string{"InstanceNotExpire"}) {
+			log.Printf("[INFO]  instance cannot be deleted and must wait it to be expired and release it automatically")
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }

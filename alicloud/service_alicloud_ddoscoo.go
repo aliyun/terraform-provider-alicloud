@@ -18,19 +18,24 @@ type DdoscooService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance, err error) {
-	request := ddoscoo.CreateDescribeInstancesRequest()
-	request.RegionId = "cn-hangzhou"
-	request.InstanceIds = &[]string{id}
-	request.PageNumber = "1"
-	request.PageSize = "10"
+func (s *DdoscooService) DescribeDdoscooInstance(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewDdoscooClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeInstances"
+	request := make(map[string]interface{})
+	request["RegionId"] = "cn-hangzhou"
+	request["PageSize"] = PageSizeSmall
+	request["PageNumber"] = 1
+	request["InstanceIds"] = []string{id}
 
-	var response *ddoscoo.DescribeInstancesResponse
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-			return ddoscooClient.DescribeInstances(request)
-		})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -38,28 +43,31 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance,
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ = raw.(*ddoscoo.DescribeInstancesResponse)
 		return nil
 	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
 
+	v, err := jsonpath.Get("$.Instances", response)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
-			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-
-		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances", response)
 	}
-
-	if len(response.Instances) == 0 || response.Instances[0].InstanceId != id {
-		return v, WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Ddoscoo", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["InstanceId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ddoscoo", id)), NotFoundWithResponse, response)
+		}
 	}
-
-	v = response.Instances[0]
-	return
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
-// 创建实例后轮询查询直到创建成功
 func (s *DdoscooService) DdosStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDdoscooInstance(id)
@@ -71,7 +79,7 @@ func (s *DdoscooService) DdosStateRefreshFunc(id string, failStates []string) re
 			return nil, "", WrapError(err)
 		}
 		status := ""
-		if object.Status == 1 {
+		if formatInt(object["Status"]) == 1 {
 			status = string(Available)
 		} else {
 			status = string(Unavailable)
@@ -80,18 +88,22 @@ func (s *DdoscooService) DdosStateRefreshFunc(id string, failStates []string) re
 	}
 }
 
-func (s *DdoscooService) DescribeDdoscooInstanceSpec(d *schema.ResourceData) (v ddoscoo.InstanceSpec, err error) {
-	request := ddoscoo.CreateDescribeInstanceSpecsRequest()
-	request.RegionId = "cn-hangzhou"
-	id := d.Id()
-	request.InstanceIds = &[]string{id}
+func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewDdoscooClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeInstanceSpecs"
+	request := make(map[string]interface{})
+	request["RegionId"] = "cn-hangzhou"
+	request["InstanceIds"] = []string{id}
 
-	var response *ddoscoo.DescribeInstanceSpecsResponse
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-			return ddoscooClient.DescribeInstanceSpecs(request)
-		})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -99,23 +111,29 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(d *schema.ResourceData) (v 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ = raw.(*ddoscoo.DescribeInstanceSpecsResponse)
 		return nil
 	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
 
+	v, err := jsonpath.Get("$.InstanceSpecs", response)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceNotFound", "ddos_coop3301"}) || NotFoundError(err) {
-			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceSpecs", response)
 	}
-	if len(response.InstanceSpecs) == 0 || response.InstanceSpecs[0].InstanceId != id {
-		return v, WrapErrorf(Error(GetNotFoundMessage("DdoscooInstanceSpec", id)), NotFoundMsg, ProviderERROR)
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("DdoscooInstanceSpec", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["InstanceId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("DdoscooInstanceSpec", id)), NotFoundWithResponse, response)
+		}
 	}
-
-	v = response.InstanceSpecs[0]
-	return v, WrapError(err)
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
 func (s *DdoscooService) UpdateDdoscooInstanceName(instanceId string, name string) error {
