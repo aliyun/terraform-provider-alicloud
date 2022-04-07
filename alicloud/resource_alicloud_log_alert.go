@@ -92,6 +92,10 @@ func resourceAlicloudLogAlert() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"auto_annotation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"query_list": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -146,6 +150,11 @@ func resourceAlicloudLogAlert() *schema.Resource {
 						"dashboard_id": {
 							Type:     schema.TypeString,
 							Optional: true,
+						},
+						"power_sql_mode": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"auto", "enable", "disable"}, false),
 						},
 					},
 				},
@@ -248,7 +257,7 @@ func resourceAlicloudLogAlert() *schema.Resource {
 						"type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"cross_join", "inner_join", "left_join", "right_join", "full_join", "left_exclude", "right_exclude", "concat", "no_join"}, true),
+							ValidateFunc: validation.StringInSlice([]string{"cross_join", "inner_join", "left_join", "right_join", "full_join", "left_exclude", "right_exclude", "concat", "no_join"}, false),
 						},
 						"condition": {
 							Type:     schema.TypeString,
@@ -444,6 +453,7 @@ func resourceAlicloudLogAlertRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("no_data_fire", object.Configuration.NoDataFire)
 	d.Set("no_data_severity", object.Configuration.NoDataSeverity)
 	d.Set("send_resolved", object.Configuration.SendResolved)
+	d.Set("auto_annotation", object.Configuration.AutoAnnotation)
 	var joinConfigurations []map[string]string
 	for _, v := range object.Configuration.JoinConfigurations {
 		joinConf := map[string]string{
@@ -484,6 +494,7 @@ func resourceAlicloudLogAlertRead(d *schema.ResourceData, meta interface{}) erro
 			"time_span_type": v.TimeSpanType,
 			"role_arn":       v.RoleArn,
 			"dashboard_id":   v.DashboardId,
+			"power_sql_mode": string(v.PowerSqlMode),
 		}
 		queryList = append(queryList, mapping)
 	}
@@ -780,6 +791,7 @@ func createAlert2Config(d *schema.ResourceData) *sls.AlertConfiguration {
 				Start:        query_map["start"].(string),
 				End:          query_map["end"].(string),
 				TimeSpanType: query_map["time_span_type"].(string),
+				PowerSqlMode: sls.PowerSqlMode(query_map["power_sql_mode"].(string)),
 			}
 			queryList = append(queryList, query)
 		}
@@ -792,6 +804,10 @@ func createAlert2Config(d *schema.ResourceData) *sls.AlertConfiguration {
 	configType, ok := d.GetOk("type")
 	if !ok {
 		configType = "default"
+	}
+	autoAnnotation := false
+	if v, ok := d.GetOk("auto_annotation"); ok {
+		autoAnnotation = v.(bool)
 	}
 
 	config := &sls.AlertConfiguration{
@@ -810,6 +826,7 @@ func createAlert2Config(d *schema.ResourceData) *sls.AlertConfiguration {
 		NoDataSeverity:         sls.Severity(d.Get("no_data_severity").(int)),
 		SendResolved:           d.Get("send_resolved").(bool),
 		MuteUntil:              int64(d.Get("mute_until").(int)),
+		AutoAnnotation:         autoAnnotation,
 	}
 	return config
 }

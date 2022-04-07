@@ -97,6 +97,7 @@ resource "alicloud_log_alert" "example-2" {
   send_resolved     = true
   schedule_interval = "5m"
   schedule_type     = "FixedRate"
+  auto_annotation   = true
   query_list {
     store       = "tf-test-logstore"
     store_type  = "log"
@@ -106,6 +107,7 @@ resource "alicloud_log_alert" "example-2" {
     start       = "-60s"
     end         = "20s"
     query       = "* AND aliyun | select count(1) as cnt"
+    power_sql_mode = "auto"
   }
   query_list {
     store       = "tf-test-logstore"
@@ -116,6 +118,7 @@ resource "alicloud_log_alert" "example-2" {
     start       = "-60s"
     end         = "20s"
     query       = "error | select count(1) as error_cnt"
+    power_sql_mode = "enable"
   }
   labels {
     key = "env"
@@ -174,7 +177,7 @@ resource "alicloud_log_alert" "example-2" {
 The following arguments are supported:
 
 * `version` - (Optional, Available in 1.161.0+) The version of alert, new alert is 2.0.
-* `type` - (Optional, Available in 1.161.0) The type of new alert, new alert is default.
+* `type` - (Optional, Available in 1.161.0+) The type of new alert, new alert is default.
 * `project_name` - (Required, ForceNew) The project name.
 * `alert_name` - (Required, ForceNew) Name of logstore for configuring alarm service.
 * `alert_displayname` - (Required) Alert displayname.
@@ -188,6 +191,7 @@ The following arguments are supported:
 * `no_data_fire` - (Optional, Available in 1.161.0+) Switch for whether new alert fires when no data happens, default is false.
 * `no_data_severity` - (Optional, Available in 1.161.0+) when no data happens, the severity of new alert.
 * `send_resolved` - (Optional, Available in 1.161.0+) when new alert is resolved, whether to notify, default is false.
+* `auto_annotation` - (Optional, Available in 1.164.0+) whether to add automatic annotation, default is false.
 * `query_list` - (Required) Multiple conditions for configured alarm query.
     * `project` - (Optional, Available in 1.161.0+) Query project.
     * `region` - (Optional, Available in 1.161.0+) Query project region.
@@ -201,6 +205,7 @@ The following arguments are supported:
     * `start` - (Required) Begin time. example: -60s.
     * `end` - (Required) End time. example: 20s.
     * `time_span_type` - (Optional) default Custom. No need to configure this parameter.
+    * `power_sql_mode` - (Optional, Available in 1.164.0+) default disable, whether to use power sql. support auto, enable, disable.
 * `notification_list` - (Optional, Deprecated) Alarm information notification list, Deprecated from 1.161.0+.
     * `type` - (Required) Notification type. support Email, SMS, DingTalk, MessageCenter.
     * `content` - (Required) Notice content of alarm.
