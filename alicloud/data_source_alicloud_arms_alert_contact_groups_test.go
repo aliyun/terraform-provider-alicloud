@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudArmsAlertContactGroupsDataSource(t *testing.T) {
+func TestAccAlicloudARMSAlertContactGroupsDataSource(t *testing.T) {
 
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_arms_alert_contact_groups.default"

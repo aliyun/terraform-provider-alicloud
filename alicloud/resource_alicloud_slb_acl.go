@@ -114,11 +114,11 @@ func resourceAlicloudSlbAclRead(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
-	tags, err := slbService.DescribeTags(d.Id(), nil, TagResourceAcl)
+	tags, err := slbService.ListTagResources(d.Id(), "acl")
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("tags", slbService.tagsToMap(tags))
+	d.Set("tags", tagsToMap(tags))
 
 	object, err := slbService.DescribeSlbAcl(d.Id())
 	if err != nil {

@@ -115,7 +115,7 @@ func testSweepArmsDispatchRule(region string) error {
 	return nil
 }
 
-func TestAccAlicloudArmsDispatchRule_basic(t *testing.T) {
+func TestAccAlicloudARMSDispatchRule_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_arms_dispatch_rule.default"
 	ra := resourceAttrInit(resourceId, ArmsDispatchRuleMap)
@@ -359,7 +359,7 @@ resource "alicloud_arms_alert_contact_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudArmsDispatchRule_unit(t *testing.T) {
+func TestAccAlicloudARMSDispatchRule_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_arms_dispatch_rule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_arms_dispatch_rule"].Schema).Data(nil, nil)

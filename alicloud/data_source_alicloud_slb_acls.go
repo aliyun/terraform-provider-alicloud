@@ -178,18 +178,6 @@ func dataSourceAlicloudSlbAclsRead(d *schema.ResourceData, meta interface{}) err
 	return slbAclsDescriptionAttributes(d, filteredAclsTemp, client, meta)
 }
 
-func aclTagsMappings(d *schema.ResourceData, aclId string, meta interface{}) map[string]string {
-	client := meta.(*connectivity.AliyunClient)
-	slbService := SlbService{client}
-	tags, err := slbService.DescribeTags(aclId, nil, TagResourceAcl)
-
-	if err != nil {
-		return nil
-	}
-
-	return slbTagsToMap(tags)
-}
-
 func slbAclsDescriptionAttributes(d *schema.ResourceData, acls []slb.Acl, client *connectivity.AliyunClient, meta interface{}) error {
 
 	var ids []string
@@ -214,9 +202,13 @@ func slbAclsDescriptionAttributes(d *schema.ResourceData, acls []slb.Acl, client
 			"ip_version":        response.AddressIPVersion,
 			"entry_list":        slbService.FlattenSlbAclEntryMappings(response.AclEntrys.AclEntry),
 			"related_listeners": slbService.flattenSlbRelatedListenerMappings(response.RelatedListeners.RelatedListener),
-			"tags":              aclTagsMappings(d, response.AclId, meta),
 			"resource_group_id": response.ResourceGroupId,
 		}
+		tags, err := slbService.ListTagResources(response.AclId, "acl")
+		if err != nil {
+			return nil
+		}
+		mapping["tags"] = tagsToMap(tags)
 
 		ids = append(ids, response.AclId)
 		names = append(names, response.AclName)

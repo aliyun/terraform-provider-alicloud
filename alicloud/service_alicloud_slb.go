@@ -815,45 +815,6 @@ func (s *SlbService) tagsFromMap(m map[string]interface{}) []slb.TagResourcesTag
 	return result
 }
 
-func (s *SlbService) DescribeTags(resourceId string, resourceTags map[string]interface{}, resourceType TagResourceType) (tags []slb.TagResource, err error) {
-	request := slb.CreateListTagResourcesRequest()
-	request.RegionId = s.client.RegionId
-	request.ResourceType = string(resourceType)
-	request.ResourceId = &[]string{resourceId}
-	if resourceTags != nil && len(resourceTags) > 0 {
-		var reqTags []slb.ListTagResourcesTag
-		for key, value := range resourceTags {
-			reqTags = append(reqTags, slb.ListTagResourcesTag{
-				Key:   key,
-				Value: value.(string),
-			})
-		}
-		request.Tag = &reqTags
-	}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithSlbClient(func(Client *slb.Client) (interface{}, error) {
-			return Client.ListTagResources(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{Throttling, "Throttling.User"}) {
-				time.Sleep(2 * time.Second)
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*slb.ListTagResourcesResponse)
-		tags = response.TagResources.TagResource
-		return nil
-	})
-	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
-	}
-
-	return
-}
-
 func (s *SlbService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
 	conn, err := s.client.NewSlbClient()
 	if err != nil {
@@ -873,7 +834,7 @@ func (s *SlbService) ListTagResources(id string, resourceType string) (object in
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{Throttling}) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
