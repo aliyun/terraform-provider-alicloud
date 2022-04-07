@@ -560,6 +560,8 @@ The following arguments are supported:
 * `host_group` - (Optional) Groups of Host, You can specify MASTER as a group, CORE as a group (just like the above example).
 * `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
 * `period` - (Optional, Available in v1.101.0+) If charge type is PrePaid, this should be specified, unit is month. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36.
+* `is_open_public_ip` (Optional, ForceNew) Whether the MASTER node has a public IP address enabled. Default value is false.
+* `bootstrap_action` (Optional) Boot action parameters.
 
 #### Block host_group
 
