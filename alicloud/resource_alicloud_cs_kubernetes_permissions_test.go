@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	cs "github.com/alibabacloud-go/cs-20151215/v2/client"
+	cs "github.com/alibabacloud-go/cs-20151215/v3/client"
 )
 
 func TestAccAlicloudCSKubernetesPermissions_basic(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
-	cs "github.com/alibabacloud-go/cs-20151215/v2/client"
+	cs "github.com/alibabacloud-go/cs-20151215/v3/client"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -60,6 +60,16 @@ func resourceAlicloudCSAutoscalingConfig() *schema.Resource {
 				Optional: true,
 				Default:  "30s",
 			},
+			"scale_down_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
+			"expander": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "least-waste",
+			},
 		},
 	}
 }
@@ -101,6 +111,11 @@ func resourceAlicloudCSAutoscalingConfigUpdate(d *schema.ResourceData, meta inte
 	}
 	if v, ok := d.GetOk("scan_interval"); ok {
 		updateAutoscalingConfigRequest.ScanInterval = tea.String(v.(string))
+	}
+	enableScaleDown := d.Get("scale_down_enabled").(bool)
+	updateAutoscalingConfigRequest.ScaleDownEnabled = tea.Bool(enableScaleDown)
+	if v, ok := d.GetOk("expander"); ok {
+		updateAutoscalingConfigRequest.Expander = tea.String(v.(string))
 	}
 
 	_, err = client.CreateAutoscalingConfig(tea.String(clusterId), updateAutoscalingConfigRequest)
