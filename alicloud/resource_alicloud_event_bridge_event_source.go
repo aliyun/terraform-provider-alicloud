@@ -126,6 +126,10 @@ func resourceAlicloudEventBridgeEventSourceRead(d *schema.ResourceData, meta int
 }
 func resourceAlicloudEventBridgeEventSourceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewEventbridgeClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -154,10 +158,6 @@ func resourceAlicloudEventBridgeEventSourceUpdate(d *schema.ResourceData, meta i
 
 	if update {
 		action := "UpdateEventSource"
-		conn, err := client.NewEventbridgeClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		if v, ok := d.GetOk("event_bus_name"); ok {
 			request["EventBusName"] = v
 		}
