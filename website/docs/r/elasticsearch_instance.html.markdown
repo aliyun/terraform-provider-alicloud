@@ -69,6 +69,7 @@ The following arguments are supported:
 * `master_node_spec` - (Optional) The dedicated master node spec. If specified, dedicated master node will be created.
 * `client_node_amount` - (Optional, Available in v1.101.0+) The Elasticsearch cluster's client node quantity, between 2 and 25.
 * `client_node_spec` - (Optional, Available in v1.101.0+) The client node spec. If specified, client node will be created.
+* `kibana_node_spec` - (Optional, Available in v1.163.0 +) The kibana node specifications of the Elasticsearch instance. Default is `elasticsearch.n4.small`.
 * `protocol` - (Optional, Available in v1.101.0+) Elasticsearch protocol. Supported values: `HTTP`, `HTTPS`.default is `HTTP`.
 * `zone_count` - (Optional, ForceNew, Available in 1.44.0+) The Multi-AZ supported for Elasticsearch, between 1 and 3. The `data_node_amount` value must be an integral multiple of the `zone_count` value.
 * `tags` - (Optional, Available in v1.73.0+) A mapping of tags to assign to the resource. 

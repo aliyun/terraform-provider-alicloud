@@ -694,6 +694,59 @@ func updateClientNode(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
+func updateKibanaNode(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
+	conn, err := client.NewElasticsearchClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	action := "UpdateInstance"
+
+	var response map[string]interface{}
+	content := make(map[string]interface{})
+	content["haveKibana"] = true
+
+	spec := make(map[string]interface{})
+	spec["spec"] = d.Get("kibana_node_spec")
+	spec["amount"] = "1"
+	spec["disk"] = "0"
+	content["kibanaConfiguration"] = spec
+	requestQuery := map[string]*string{
+		"clientToken": StringPointer(buildClientToken(action)),
+	}
+
+	// retry
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("PUT"), StringPointer("AK"),
+			String(fmt.Sprintf("/openapi/instances/%s", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, content)
+		return nil
+	})
+
+	addDebug(action, response, content)
+	if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return nil
+}
+
 func openHttps(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
