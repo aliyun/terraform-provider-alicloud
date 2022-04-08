@@ -36,6 +36,9 @@ const ClientNodeAmount = "2"
 const ClientNodeSpecForUpdate = "elasticsearch.sn2ne.xlarge"
 const ClientNodeAmountForUpdate = "3"
 
+const KibanaSpec = "elasticsearch.sn1ne.large"
+const KibanaSpecForUpdate = "elasticsearch.sn2ne.large"
+
 func init() {
 	resource.AddTestSweepers("alicloud_elasticsearch_instance", &resource.Sweeper{
 		Name: "alicloud_elasticsearch_instance",
@@ -635,6 +638,74 @@ func TestAccAlicloudElasticsearchInstance_client_node(t *testing.T) {
 						"client_node_amount": ClientNodeAmountForUpdate,
 					}),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudElasticsearchInstance_kibana_node(t *testing.T) {
+	var instance *elasticsearch.DescribeInstanceResponse
+
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := resourceAttrInit(resourceId, elasticsearchMap)
+
+	serviceFunc := func() interface{} {
+		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	if len(name) > 30 {
+		name = name[:30]
+	}
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":          name,
+					"vswitch_id":           "${local.vswitch_id}",
+					"version":              "6.3_with_X-Pack",
+					"password":             "Yourpassword1234",
+					"data_node_spec":       DataNodeSpec,
+					"data_node_amount":     DataNodeAmount,
+					"data_node_disk_size":  DataNodeDisk,
+					"data_node_disk_type":  DataNodeDiskType,
+					"instance_charge_type": string(PostPaid),
+					"kibana_node_spec":     KibanaSpec,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kibana_node_spec": KibanaSpec,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kibana_node_spec": KibanaSpecForUpdate,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kibana_node_spec": KibanaSpecForUpdate,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
