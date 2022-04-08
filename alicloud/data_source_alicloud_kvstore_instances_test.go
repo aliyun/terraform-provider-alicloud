@@ -155,9 +155,9 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 			"instances.0.auto_renew":                  CHECKSET,
 			"instances.0.auto_renew_period":           CHECKSET,
 			"instances.0.security_group_id":           "",
-			"instances.0.security_ip_group_attribute": "",
+			"instances.0.security_ip_group_attribute": CHECKSET,
 			"instances.0.security_ip_group_name":      CHECKSET,
-			"instances.0.security_ips.#":              "1",
+			"instances.0.security_ips.#":              CHECKSET,
 			"instances.0.secondary_zone_id":           "",
 		}
 	}
