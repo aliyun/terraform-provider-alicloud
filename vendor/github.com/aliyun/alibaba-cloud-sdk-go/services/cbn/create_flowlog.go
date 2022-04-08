@@ -71,16 +71,18 @@ func (client *Client) CreateFlowlogWithCallback(request *CreateFlowlogRequest, c
 // CreateFlowlogRequest is the request struct for api CreateFlowlog
 type CreateFlowlogRequest struct {
 	*requests.RpcRequest
-	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	ClientToken          string           `position:"Query" name:"ClientToken"`
-	CenId                string           `position:"Query" name:"CenId"`
-	Description          string           `position:"Query" name:"Description"`
-	ProjectName          string           `position:"Query" name:"ProjectName"`
-	LogStoreName         string           `position:"Query" name:"LogStoreName"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
-	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	FlowLogName          string           `position:"Query" name:"FlowLogName"`
+	ResourceOwnerId           requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ClientToken               string           `position:"Query" name:"ClientToken"`
+	CenId                     string           `position:"Query" name:"CenId"`
+	Description               string           `position:"Query" name:"Description"`
+	ProjectName               string           `position:"Query" name:"ProjectName"`
+	LogStoreName              string           `position:"Query" name:"LogStoreName"`
+	ResourceOwnerAccount      string           `position:"Query" name:"ResourceOwnerAccount"`
+	OwnerAccount              string           `position:"Query" name:"OwnerAccount"`
+	OwnerId                   requests.Integer `position:"Query" name:"OwnerId"`
+	TransitRouterAttachmentId string           `position:"Query" name:"TransitRouterAttachmentId"`
+	Interval                  requests.Integer `position:"Query" name:"Interval"`
+	FlowLogName               string           `position:"Query" name:"FlowLogName"`
 }
 
 // CreateFlowlogResponse is the response struct for api CreateFlowlog
@@ -96,7 +98,7 @@ func CreateCreateFlowlogRequest() (request *CreateFlowlogRequest) {
 	request = &CreateFlowlogRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cbn", "2017-09-12", "CreateFlowlog", "cbn", "openAPI")
+	request.InitWithApiInfo("Cbn", "2017-09-12", "CreateFlowlog", "", "")
 	request.Method = requests.POST
 	return
 }

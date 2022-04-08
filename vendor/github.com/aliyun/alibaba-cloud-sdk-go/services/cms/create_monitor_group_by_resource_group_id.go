@@ -83,8 +83,9 @@ type CreateMonitorGroupByResourceGroupIdResponse struct {
 	*responses.BaseResponse
 	Code      string `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
-	Success   bool   `json:"Success" xml:"Success"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
+	Id        int64  `json:"Id" xml:"Id"`
 }
 
 // CreateCreateMonitorGroupByResourceGroupIdRequest creates a request to invoke CreateMonitorGroupByResourceGroupId API
@@ -92,7 +93,7 @@ func CreateCreateMonitorGroupByResourceGroupIdRequest() (request *CreateMonitorG
 	request = &CreateMonitorGroupByResourceGroupIdRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "CreateMonitorGroupByResourceGroupId", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "CreateMonitorGroupByResourceGroupId", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

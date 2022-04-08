@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 	"time"
 
@@ -31,43 +30,64 @@ func testSweepDdoscooInstances(region string) error {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-
+	var response map[string]interface{}
+	conn, err := client.NewDdoscooClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
 	}
 
-	var insts []ddoscoo.Instance
-	req := ddoscoo.CreateDescribeInstancesRequest()
-	req.RegionId = client.RegionId
-	req.PageSize = strconv.Itoa(PageSizeLarge)
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var insts []map[string]interface{}
 
-	var page = 1
-	req.PageNumber = strconv.Itoa(page)
 	for {
-		raw, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-			return ddoscooClient.DescribeInstances(req)
+
+		action := "DescribeInstances"
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+
 		if err != nil {
-			log.Printf("[ERROR] %s get an error %#v", req.GetActionName(), err)
+			log.Printf("[ERROR] %s get an error %#v", action, err)
 		}
-		resp, _ := raw.(*ddoscoo.DescribeInstancesResponse)
-		if resp == nil || len(resp.Instances) < 1 {
-			break
-		}
-		insts = append(insts, resp.Instances...)
-
-		if len(resp.Instances) < PageSizeLarge {
+		resp, err := jsonpath.Get("$.Instances", response)
+		if resp == nil || len(resp.([]interface{})) < 1 || err != nil {
 			break
 		}
 
-		page++
-		req.PageNumber = strconv.Itoa(page)
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
+			insts = append(insts, item)
+		}
+
+		if len(resp.([]interface{})) < PageSizeLarge {
+			break
+		}
+
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
 	for _, v := range insts {
-		name := v.Remark
-		instanceId := v.InstanceId
+
+		name := fmt.Sprint(v["Remark"])
+		instanceId := fmt.Sprint(v["InstanceId"])
 		skip := true
 		for _, prefix := range prefixes {
 			if name != "" && strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
@@ -83,11 +103,6 @@ func testSweepDdoscooInstances(region string) error {
 			"PageNumber":  1,
 		}
 
-		var response map[string]interface{}
-		conn, err := client.NewDdoscooClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -198,16 +213,15 @@ func testSweepDdoscooInstances(region string) error {
 			continue
 		}
 
-		log.Printf("[INFO] Deleting Ddoscoo Instance %s .", v.InstanceId)
-
-		releaseReq := ddoscoo.CreateReleaseInstanceRequest()
-		releaseReq.InstanceId = v.InstanceId
-
-		_, err = client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-			return ddoscooClient.ReleaseInstance(releaseReq)
-		})
+		log.Printf("[INFO] Deleting Ddoscoo Instance %s .", fmt.Sprint(v["InstanceId"]))
+		action = "ReleaseInstance"
+		request = map[string]interface{}{
+			"InstanceId": fmt.Sprint(v["InstanceId"]),
+			"RegionId":   "cn-hangzhou",
+		}
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			log.Printf("[ERROR] Deleting Instance %s got an error: %#v.", v.InstanceId, err)
+			log.Printf("[ERROR] Deleting Instance %s got an error: %#v.", fmt.Sprint(v["InstanceId"]), err)
 		}
 	}
 	return nil

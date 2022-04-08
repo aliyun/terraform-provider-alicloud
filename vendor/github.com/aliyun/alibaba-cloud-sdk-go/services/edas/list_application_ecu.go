@@ -71,7 +71,8 @@ func (client *Client) ListApplicationEcuWithCallback(request *ListApplicationEcu
 // ListApplicationEcuRequest is the request struct for api ListApplicationEcu
 type ListApplicationEcuRequest struct {
 	*requests.RoaRequest
-	AppId string `position:"Query" name:"AppId"`
+	LogicalRegionId string `position:"Query" name:"LogicalRegionId"`
+	AppId           string `position:"Query" name:"AppId"`
 }
 
 // ListApplicationEcuResponse is the response struct for api ListApplicationEcu

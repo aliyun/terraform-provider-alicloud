@@ -17,11 +17,11 @@ package edas
 
 // Result is a nested struct in edas response
 type Result struct {
-	DefaultGroupId  string `json:"DefaultGroupId" xml:"DefaultGroupId"`
-	AppId           string `json:"AppId" xml:"AppId"`
-	Appname         string `json:"Appname" xml:"Appname"`
-	RegionId        string `json:"RegionId" xml:"RegionId"`
-	DevelopType     string `json:"DevelopType" xml:"DevelopType"`
-	ApplicationType string `json:"ApplicationType" xml:"ApplicationType"`
-	PackageVersion  string `json:"PackageVersion" xml:"PackageVersion"`
+	Name        string `json:"Name" xml:"Name"`
+	GmtCreate   int64  `json:"GmtCreate" xml:"GmtCreate"`
+	Format      string `json:"Format" xml:"Format"`
+	Content     string `json:"Content" xml:"Content"`
+	GmtModified int64  `json:"GmtModified" xml:"GmtModified"`
+	Id          string `json:"Id" xml:"Id"`
+	Description string `json:"Description" xml:"Description"`
 }

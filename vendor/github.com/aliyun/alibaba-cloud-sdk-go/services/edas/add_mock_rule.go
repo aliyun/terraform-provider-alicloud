@@ -76,11 +76,12 @@ type AddMockRuleRequest struct {
 	ExtraJson         string           `position:"Query" name:"ExtraJson"`
 	ProviderAppId     string           `position:"Query" name:"ProviderAppId"`
 	Source            string           `position:"Query" name:"Source"`
-	ProviderAppName   string           `position:"Query" name:"ProviderAppName"`
 	Enable            requests.Boolean `position:"Query" name:"Enable"`
+	ProviderAppName   string           `position:"Query" name:"ProviderAppName"`
 	Name              string           `position:"Query" name:"Name"`
 	Namespace         string           `position:"Query" name:"Namespace"`
 	ConsumerAppsJson  string           `position:"Query" name:"ConsumerAppsJson"`
+	MockType          requests.Integer `position:"Query" name:"MockType"`
 	Region            string           `position:"Query" name:"Region"`
 }
 

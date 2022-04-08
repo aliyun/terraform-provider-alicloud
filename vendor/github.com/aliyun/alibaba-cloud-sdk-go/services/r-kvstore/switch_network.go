@@ -87,8 +87,8 @@ type SwitchNetworkRequest struct {
 // SwitchNetworkResponse is the response struct for api SwitchNetwork
 type SwitchNetworkResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	TaskId    string `json:"TaskId" xml:"TaskId"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateSwitchNetworkRequest creates a request to invoke SwitchNetwork API

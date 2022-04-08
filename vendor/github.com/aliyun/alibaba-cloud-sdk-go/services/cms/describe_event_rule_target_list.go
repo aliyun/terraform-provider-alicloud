@@ -85,6 +85,7 @@ type DescribeEventRuleTargetListResponse struct {
 	MnsParameters     MnsParameters     `json:"MnsParameters" xml:"MnsParameters"`
 	WebhookParameters WebhookParameters `json:"WebhookParameters" xml:"WebhookParameters"`
 	SlsParameters     SlsParameters     `json:"SlsParameters" xml:"SlsParameters"`
+	OpenApiParameters OpenApiParameters `json:"OpenApiParameters" xml:"OpenApiParameters"`
 }
 
 // CreateDescribeEventRuleTargetListRequest creates a request to invoke DescribeEventRuleTargetList API
@@ -92,7 +93,7 @@ func CreateDescribeEventRuleTargetListRequest() (request *DescribeEventRuleTarge
 	request = &DescribeEventRuleTargetListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeEventRuleTargetList", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeEventRuleTargetList", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

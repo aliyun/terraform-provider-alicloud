@@ -74,8 +74,10 @@ type CreateScalingGroupRequest struct {
 	VSwitchIds                          *[]string                                   `position:"Query" name:"VSwitchIds"  type:"Repeated"`
 	SpotInstanceRemedy                  requests.Boolean                            `position:"Query" name:"SpotInstanceRemedy"`
 	ScaleOutAmountCheck                 requests.Boolean                            `position:"Query" name:"ScaleOutAmountCheck"`
+	GroupType                           string                                      `position:"Query" name:"GroupType"`
 	Tag                                 *[]CreateScalingGroupTag                    `position:"Query" name:"Tag"  type:"Repeated"`
 	DefaultCooldown                     requests.Integer                            `position:"Query" name:"DefaultCooldown"`
+	ContainerGroupId                    string                                      `position:"Query" name:"ContainerGroupId"`
 	MultiAZPolicy                       string                                      `position:"Query" name:"MultiAZPolicy"`
 	DBInstanceIds                       string                                      `position:"Query" name:"DBInstanceIds"`
 	LaunchTemplateId                    string                                      `position:"Query" name:"LaunchTemplateId"`
@@ -137,12 +139,12 @@ type CreateScalingGroupLifecycleHook struct {
 
 // CreateScalingGroupVServerGroup is a repeated param struct in CreateScalingGroupRequest
 type CreateScalingGroupVServerGroup struct {
-	LoadBalancerId        string                                     `name:"LoadBalancerId"`
-	VServerGroupAttribute *[]CreateScalingGroupVServerGroupAttribute `name:"VServerGroupAttribute" type:"Repeated"`
+	LoadBalancerId        string                                                 `name:"LoadBalancerId"`
+	VServerGroupAttribute *[]CreateScalingGroupVServerGroupVServerGroupAttribute `name:"VServerGroupAttribute" type:"Repeated"`
 }
 
-// CreateScalingGroupVServerGroupAttribute is a repeated param struct in CreateScalingGroupRequest
-type CreateScalingGroupVServerGroupAttribute struct {
+// CreateScalingGroupVServerGroupVServerGroupAttribute is a repeated param struct in CreateScalingGroupRequest
+type CreateScalingGroupVServerGroupVServerGroupAttribute struct {
 	VServerGroupId string `name:"VServerGroupId"`
 	Port           string `name:"Port"`
 	Weight         string `name:"Weight"`
@@ -151,8 +153,8 @@ type CreateScalingGroupVServerGroupAttribute struct {
 // CreateScalingGroupResponse is the response struct for api CreateScalingGroup
 type CreateScalingGroupResponse struct {
 	*responses.BaseResponse
-	ScalingGroupId string `json:"ScalingGroupId" xml:"ScalingGroupId"`
 	RequestId      string `json:"RequestId" xml:"RequestId"`
+	ScalingGroupId string `json:"ScalingGroupId" xml:"ScalingGroupId"`
 }
 
 // CreateCreateScalingGroupRequest creates a request to invoke CreateScalingGroup API

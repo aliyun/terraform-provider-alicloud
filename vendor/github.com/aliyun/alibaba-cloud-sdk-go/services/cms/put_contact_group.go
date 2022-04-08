@@ -80,10 +80,10 @@ type PutContactGroupRequest struct {
 // PutContactGroupResponse is the response struct for api PutContactGroup
 type PutContactGroupResponse struct {
 	*responses.BaseResponse
-	Success   bool   `json:"Success" xml:"Success"`
 	Code      string `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreatePutContactGroupRequest creates a request to invoke PutContactGroup API
@@ -91,7 +91,7 @@ func CreatePutContactGroupRequest() (request *PutContactGroupRequest) {
 	request = &PutContactGroupRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "PutContactGroup", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "PutContactGroup", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

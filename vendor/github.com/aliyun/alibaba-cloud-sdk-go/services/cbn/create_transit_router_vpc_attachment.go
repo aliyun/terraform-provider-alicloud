@@ -72,6 +72,7 @@ func (client *Client) CreateTransitRouterVpcAttachmentWithCallback(request *Crea
 type CreateTransitRouterVpcAttachmentRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId                    requests.Integer                                `position:"Query" name:"ResourceOwnerId"`
+	ServiceMode                        string                                          `position:"Query" name:"ServiceMode"`
 	VpcOwnerId                         requests.Integer                                `position:"Query" name:"VpcOwnerId"`
 	ClientToken                        string                                          `position:"Query" name:"ClientToken"`
 	CenId                              string                                          `position:"Query" name:"CenId"`
@@ -100,8 +101,8 @@ type CreateTransitRouterVpcAttachmentZoneMappings struct {
 // CreateTransitRouterVpcAttachmentResponse is the response struct for api CreateTransitRouterVpcAttachment
 type CreateTransitRouterVpcAttachmentResponse struct {
 	*responses.BaseResponse
-	RequestId                 string `json:"RequestId" xml:"RequestId"`
 	TransitRouterAttachmentId string `json:"TransitRouterAttachmentId" xml:"TransitRouterAttachmentId"`
+	RequestId                 string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateCreateTransitRouterVpcAttachmentRequest creates a request to invoke CreateTransitRouterVpcAttachment API
@@ -109,7 +110,7 @@ func CreateCreateTransitRouterVpcAttachmentRequest() (request *CreateTransitRout
 	request = &CreateTransitRouterVpcAttachmentRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cbn", "2017-09-12", "CreateTransitRouterVpcAttachment", "cbn", "openAPI")
+	request.InitWithApiInfo("Cbn", "2017-09-12", "CreateTransitRouterVpcAttachment", "", "")
 	request.Method = requests.POST
 	return
 }

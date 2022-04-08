@@ -81,10 +81,10 @@ type DescribeDBClusterParametersRequest struct {
 // DescribeDBClusterParametersResponse is the response struct for api DescribeDBClusterParameters
 type DescribeDBClusterParametersResponse struct {
 	*responses.BaseResponse
-	RequestId         string            `json:"RequestId" xml:"RequestId"`
-	Engine            string            `json:"Engine" xml:"Engine"`
-	DBType            string            `json:"DBType" xml:"DBType"`
 	DBVersion         string            `json:"DBVersion" xml:"DBVersion"`
+	RequestId         string            `json:"RequestId" xml:"RequestId"`
+	DBType            string            `json:"DBType" xml:"DBType"`
+	Engine            string            `json:"Engine" xml:"Engine"`
 	RunningParameters RunningParameters `json:"RunningParameters" xml:"RunningParameters"`
 }
 
