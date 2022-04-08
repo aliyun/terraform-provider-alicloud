@@ -17,7 +17,7 @@ package edas
 
 // RulesItem is a nested struct in edas response
 type RulesItem struct {
-	Host       string      `json:"Host" xml:"Host"`
 	SecretName string      `json:"SecretName" xml:"SecretName"`
+	Host       string      `json:"Host" xml:"Host"`
 	Paths      []PathsItem `json:"Paths" xml:"Paths"`
 }

@@ -86,18 +86,18 @@ type DescribeAlertLogListRequest struct {
 	EndTime      requests.Integer `position:"Query" name:"EndTime"`
 	GroupBy      string           `position:"Query" name:"GroupBy"`
 	Namespace    string           `position:"Query" name:"Namespace"`
+	RuleId       string           `position:"Query" name:"RuleId"`
 }
 
 // DescribeAlertLogListResponse is the response struct for api DescribeAlertLogList
 type DescribeAlertLogListResponse struct {
 	*responses.BaseResponse
+	RequestId    string                        `json:"RequestId" xml:"RequestId"`
+	Success      bool                          `json:"Success" xml:"Success"`
 	Code         string                        `json:"Code" xml:"Code"`
 	Message      string                        `json:"Message" xml:"Message"`
-	Success      bool                          `json:"Success" xml:"Success"`
-	RequestId    string                        `json:"RequestId" xml:"RequestId"`
-	Total        int                           `json:"Total" xml:"Total"`
-	PageSize     int                           `json:"PageSize" xml:"PageSize"`
 	PageNumber   int                           `json:"PageNumber" xml:"PageNumber"`
+	PageSize     int                           `json:"PageSize" xml:"PageSize"`
 	AlertLogList []AlarmInDescribeAlertLogList `json:"AlertLogList" xml:"AlertLogList"`
 }
 
@@ -106,7 +106,7 @@ func CreateDescribeAlertLogListRequest() (request *DescribeAlertLogListRequest) 
 	request = &DescribeAlertLogListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeAlertLogList", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeAlertLogList", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

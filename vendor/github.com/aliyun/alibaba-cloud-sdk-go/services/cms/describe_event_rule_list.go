@@ -71,20 +71,20 @@ func (client *Client) DescribeEventRuleListWithCallback(request *DescribeEventRu
 // DescribeEventRuleListRequest is the request struct for api DescribeEventRuleList
 type DescribeEventRuleListRequest struct {
 	*requests.RpcRequest
-	GroupId    string `position:"Query" name:"GroupId"`
 	PageNumber string `position:"Query" name:"PageNumber"`
 	PageSize   string `position:"Query" name:"PageSize"`
 	NamePrefix string `position:"Query" name:"NamePrefix"`
+	GroupId    string `position:"Query" name:"GroupId"`
 }
 
 // DescribeEventRuleListResponse is the response struct for api DescribeEventRuleList
 type DescribeEventRuleListResponse struct {
 	*responses.BaseResponse
-	Success    bool       `json:"Success" xml:"Success"`
 	Code       string     `json:"Code" xml:"Code"`
 	Message    string     `json:"Message" xml:"Message"`
 	RequestId  string     `json:"RequestId" xml:"RequestId"`
 	Total      int        `json:"Total" xml:"Total"`
+	Success    bool       `json:"Success" xml:"Success"`
 	EventRules EventRules `json:"EventRules" xml:"EventRules"`
 }
 
@@ -93,7 +93,7 @@ func CreateDescribeEventRuleListRequest() (request *DescribeEventRuleListRequest
 	request = &DescribeEventRuleListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeEventRuleList", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeEventRuleList", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

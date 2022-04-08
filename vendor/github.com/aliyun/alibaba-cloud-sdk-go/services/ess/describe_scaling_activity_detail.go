@@ -80,6 +80,7 @@ type DescribeScalingActivityDetailRequest struct {
 // DescribeScalingActivityDetailResponse is the response struct for api DescribeScalingActivityDetail
 type DescribeScalingActivityDetailResponse struct {
 	*responses.BaseResponse
+	RequestId         string `json:"RequestId" xml:"RequestId"`
 	ScalingActivityId string `json:"ScalingActivityId" xml:"ScalingActivityId"`
 	Detail            string `json:"Detail" xml:"Detail"`
 }

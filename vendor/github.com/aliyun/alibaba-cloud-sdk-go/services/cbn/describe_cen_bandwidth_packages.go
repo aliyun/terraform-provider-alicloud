@@ -99,10 +99,10 @@ type DescribeCenBandwidthPackagesFilter struct {
 // DescribeCenBandwidthPackagesResponse is the response struct for api DescribeCenBandwidthPackages
 type DescribeCenBandwidthPackagesResponse struct {
 	*responses.BaseResponse
-	RequestId            string               `json:"RequestId" xml:"RequestId"`
-	TotalCount           int                  `json:"TotalCount" xml:"TotalCount"`
-	PageNumber           int                  `json:"PageNumber" xml:"PageNumber"`
 	PageSize             int                  `json:"PageSize" xml:"PageSize"`
+	RequestId            string               `json:"RequestId" xml:"RequestId"`
+	PageNumber           int                  `json:"PageNumber" xml:"PageNumber"`
+	TotalCount           int                  `json:"TotalCount" xml:"TotalCount"`
 	CenBandwidthPackages CenBandwidthPackages `json:"CenBandwidthPackages" xml:"CenBandwidthPackages"`
 }
 
@@ -111,7 +111,7 @@ func CreateDescribeCenBandwidthPackagesRequest() (request *DescribeCenBandwidthP
 	request = &DescribeCenBandwidthPackagesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cbn", "2017-09-12", "DescribeCenBandwidthPackages", "cbn", "openAPI")
+	request.InitWithApiInfo("Cbn", "2017-09-12", "DescribeCenBandwidthPackages", "", "")
 	request.Method = requests.POST
 	return
 }

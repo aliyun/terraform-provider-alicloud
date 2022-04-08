@@ -17,6 +17,6 @@ package cdn
 
 // CertificateListModel is a nested struct in cdn response
 type CertificateListModel struct {
-	Count    int      `json:"Count" xml:"Count"`
-	CertList CertList `json:"CertList" xml:"CertList"`
+	Count    int                                    `json:"Count" xml:"Count"`
+	CertList CertListInDescribeCdnSMCertificateList `json:"CertList" xml:"CertList"`
 }

@@ -76,6 +76,7 @@ type DescribeMetricRuleListRequest struct {
 	PageSize    requests.Integer `position:"Query" name:"PageSize"`
 	MetricName  string           `position:"Query" name:"MetricName"`
 	GroupId     string           `position:"Query" name:"GroupId"`
+	GroupBy     string           `position:"Query" name:"GroupBy"`
 	RuleIds     string           `position:"Query" name:"RuleIds"`
 	Namespace   string           `position:"Query" name:"Namespace"`
 	AlertState  string           `position:"Query" name:"AlertState"`
@@ -86,11 +87,11 @@ type DescribeMetricRuleListRequest struct {
 // DescribeMetricRuleListResponse is the response struct for api DescribeMetricRuleList
 type DescribeMetricRuleListResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 	Total     string `json:"Total" xml:"Total"`
+	Success   bool   `json:"Success" xml:"Success"`
 	Alarms    Alarms `json:"Alarms" xml:"Alarms"`
 }
 
@@ -99,7 +100,7 @@ func CreateDescribeMetricRuleListRequest() (request *DescribeMetricRuleListReque
 	request = &DescribeMetricRuleListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeMetricRuleList", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeMetricRuleList", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

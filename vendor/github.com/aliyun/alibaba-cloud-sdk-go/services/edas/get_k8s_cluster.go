@@ -80,9 +80,9 @@ type GetK8sClusterRequest struct {
 // GetK8sClusterResponse is the response struct for api GetK8sCluster
 type GetK8sClusterResponse struct {
 	*responses.BaseResponse
-	RequestId   string      `json:"RequestId" xml:"RequestId"`
 	Code        int         `json:"Code" xml:"Code"`
 	Message     string      `json:"Message" xml:"Message"`
+	RequestId   string      `json:"RequestId" xml:"RequestId"`
 	ClusterPage ClusterPage `json:"ClusterPage" xml:"ClusterPage"`
 }
 

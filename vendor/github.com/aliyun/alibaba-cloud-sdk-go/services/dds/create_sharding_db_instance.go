@@ -77,6 +77,7 @@ type CreateShardingDBInstanceRequest struct {
 	NetworkType           string                                  `position:"Query" name:"NetworkType"`
 	ReplicaSet            *[]CreateShardingDBInstanceReplicaSet   `position:"Query" name:"ReplicaSet"  type:"Repeated"`
 	StorageEngine         string                                  `position:"Query" name:"StorageEngine"`
+	ResourceGroupId       string                                  `position:"Query" name:"ResourceGroupId"`
 	SecurityToken         string                                  `position:"Query" name:"SecurityToken"`
 	Engine                string                                  `position:"Query" name:"Engine"`
 	DBInstanceDescription string                                  `position:"Query" name:"DBInstanceDescription"`
@@ -129,7 +130,7 @@ func CreateCreateShardingDBInstanceRequest() (request *CreateShardingDBInstanceR
 	request = &CreateShardingDBInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Dds", "2015-12-01", "CreateShardingDBInstance", "Dds", "openAPI")
+	request.InitWithApiInfo("Dds", "2015-12-01", "CreateShardingDBInstance", "dds", "openAPI")
 	request.Method = requests.POST
 	return
 }
