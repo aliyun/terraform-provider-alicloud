@@ -1,53 +1,57 @@
-## 1.163.0 (Unreleased)
+## 1.164.0 (Unreleased)
+## 1.163.0 (April 10, 2022)
 
-- **New Resource:** `alicloud_alb_listener_acl_attachment` [GH-4816]
-- **New Resource:** `alicloud_alikafka_instance_allowed_ip_attachment` [GH-4781]
-- **New Resource:** `alicloud_ecs_image_pipeline` [GH-4798]
-- **New Resource:** `alicloud_slb_server_group_server_attachment` [GH-4814]
-- **New Resource:** `alicloud_hbr_ots_backup_plan` [GH-4831]
-- **New Data Source:** `alicloud_hbr_ots_backup_plans` [GH-4831]	
-- **New Data Source:** `alicloud_ecs_image_pipelines` [GH-4798]
-- **New Data Source:** `alicloud_cen_transit_router_available_resources` [GH-4800]
-- **New Data Source:** `alicloud_ecs_image_support_instance_types` [GH-4798]
+- **New Resource:** `alicloud_alb_listener_acl_attachment` ([#4816](https://github.com/aliyun/terraform-provider-alicloud/issues/4816))
+- **New Resource:** `alicloud_alikafka_instance_allowed_ip_attachment` ([#4781](https://github.com/aliyun/terraform-provider-alicloud/issues/4781))
+- **New Resource:** `alicloud_ecs_image_pipeline` ([#4798](https://github.com/aliyun/terraform-provider-alicloud/issues/4798))
+- **New Resource:** `alicloud_slb_server_group_server_attachment` ([#4814](https://github.com/aliyun/terraform-provider-alicloud/issues/4814))
+- **New Resource:** `alicloud_hbr_ots_backup_plan` ([#4831](https://github.com/aliyun/terraform-provider-alicloud/issues/4831))
+- **New Data Source:** `alicloud_hbr_ots_backup_plans` ([#4831](https://github.com/aliyun/terraform-provider-alicloud/issues/4831))	
+- **New Data Source:** `alicloud_ecs_image_pipelines` ([#4798](https://github.com/aliyun/terraform-provider-alicloud/issues/4798))
+- **New Data Source:** `alicloud_cen_transit_router_available_resources` ([#4800](https://github.com/aliyun/terraform-provider-alicloud/issues/4800))
+- **New Data Source:** `alicloud_ecs_image_support_instance_types` ([#4798](https://github.com/aliyun/terraform-provider-alicloud/issues/4798))
 
 ENHANCEMENTS:
 
-- resource/alicloud_emr_cluster: Updates its dependence SDK. [GH-4836]
-- resource/alicloud_config_aggregator: reset the correct http method [GH-4838]
-- resource/alicloud_elasticsearch_instance:support for updating kibana node specifications with kibana_node_spec [GH-4591]
-- resource/alicloud_ess_scalinggroup_vserver_groups : Updates its dependence SDK [GH-4833]
-- resource/alicloud_ddoscoo_instance: Updates its dependence SDK. [GH-4834]
-- resource/alicloud_click_house_account: Support updating the account authority configuration [GH-4809]
-- resource/alicloud_ddoscoo_instances: Updates its dependence SDK. Optimize documentation. [GH-4823]
-- resource/alicloud_cms_alarm: supports timeouts setting. Updates its dependence SDK. [GH-4826]
-- resource/alicloud_ga_listener: Optimize the update logic for certificates attributes [GH-4813]
-- resource/alicloud_slb_rule: Updates its dependence SDK. supports delete timeouts setting [GH-4820]
-- resource/click_house_db_cluster: Update optional values for db_cluster_version attributes. [GH-4806]
-- resource/mongodb_instance: Wait for the running status before updating the resource_group_id attribute [GH-4804]
-- resource/security_center_group: Add timeout retry condition; supports timeouts setting [GH-4802]
-- resource/security_center_service_linked_role: Add timeout retry condition; supports delete timeouts setting [GH-4802]
-- resource/alicloud_lindorm_instance: Optimize instance update logic [GH-4801]
-- resource/alicloud_mongodb_audit_policy: Enlarges the creating and updating default timeout [GH-4810]
-- resource/alicloud_alb_listener_additional_certificate_attachment: Added error retry codes ResourceInConfiguring.Listener, IncorrectStatus.Listener [GH-4796]
-- resource/mongodb_sharding_instance: Wait for the running status before updating the resource_group_id attribute [GH-4804]
-- resource/alicloud_slb_backend_server: add the retry code during the delete [GH-4817]	
-- datasource/alicloud_ddoscoo_instances: Updates its dependence SDK. [GH-4828]
-- datasource/alicloud_kvstore_instances: Updates its dependence SDK. [GH-4837]	
-- datasource/emr_main_versions: Updates its dependence SDK. [GH-4827]
-- datasource/alicloud_ecs_network_interfaces: support the field associated_public_ip [GH-4817]	
-- testcase: Adds new unit test case for resource alicloud_cloud_firewall_control_policy_order alicloud_cloud_firewall_instance alicloud_cms_metric_rule_template [GH-4792]
-- testcase: Adds new unit test case for resource alicloud_config_aggregate_config_rule alicloud_ddoscoo_domain_resource alicloud_ddoscoo_port [GH-4799]
-- testcase: Adds new unit test case for resource alicloud_config_rule alicloud_config_delivery_channel alicloud_config_compliance_pack [GH-4672]
-- testcase: Adds new unit test case for resource alicloud_direct_mail_mail_address alicloud_dfs_mount_point alicloud_direct_mail_domain [GH-4812]
-- testcase: Adds new unit test case for resource alicloud_dfs_file_system alicloud_dfs_access_group alicloud_dfs_access_rule [GH-4805]
-- testcase: Improves the gpdb and clickhoust testcases [GH-4811]
-- testcases: Improves the alicloud_ddoscoo_domain_resource testcases [GH-4819]
-- sdk/alibaba-cloud-go-sdk: Upgrades the sdk to v1.61.1538 [GH-4840]
+- Updates the go dependence packages ([#4843](https://github.com/aliyun/terraform-provider-alicloud/issues/4843))
+- datasource/alicloud_kvstore_instances: Fix auto_renew return value is incorrect ([#4842](https://github.com/aliyun/terraform-provider-alicloud/issues/4842))
+- sdk/alibaba-cloud-go-sdk: Upgrades the sdk to v1.61.1538 ([#4840](https://github.com/aliyun/terraform-provider-alicloud/issues/4840))
+- resource/alicloud_emr_cluster: Updates its dependence SDK. ([#4836](https://github.com/aliyun/terraform-provider-alicloud/issues/4836))
+- resource/alicloud_config_aggregator: reset the correct http method ([#4838](https://github.com/aliyun/terraform-provider-alicloud/issues/4838))
+- resource/alicloud_elasticsearch_instance:support for updating kibana node specifications with kibana_node_spec ([#4591](https://github.com/aliyun/terraform-provider-alicloud/issues/4591))
+- resource/alicloud_ess_scalinggroup_vserver_groups : Updates its dependence SDK ([#4833](https://github.com/aliyun/terraform-provider-alicloud/issues/4833))
+- resource/alicloud_ddoscoo_instance: Updates its dependence SDK. ([#4834](https://github.com/aliyun/terraform-provider-alicloud/issues/4834))
+- resource/alicloud_click_house_account: Support updating the account authority configuration ([#4809](https://github.com/aliyun/terraform-provider-alicloud/issues/4809))
+- resource/alicloud_ddoscoo_instances: Updates its dependence SDK. Optimize documentation. ([#4823](https://github.com/aliyun/terraform-provider-alicloud/issues/4823))
+- resource/alicloud_cms_alarm: supports timeouts setting. Updates its dependence SDK. ([#4826](https://github.com/aliyun/terraform-provider-alicloud/issues/4826))
+- resource/alicloud_ga_listener: Optimize the update logic for certificates attributes ([#4813](https://github.com/aliyun/terraform-provider-alicloud/issues/4813))
+- resource/alicloud_slb_rule: Updates its dependence SDK. supports delete timeouts setting ([#4820](https://github.com/aliyun/terraform-provider-alicloud/issues/4820))
+- resource/click_house_db_cluster: Update optional values for db_cluster_version attributes. ([#4806](https://github.com/aliyun/terraform-provider-alicloud/issues/4806))
+- resource/mongodb_instance: Wait for the running status before updating the resource_group_id attribute ([#4804](https://github.com/aliyun/terraform-provider-alicloud/issues/4804))
+- resource/security_center_group: Add timeout retry condition; supports timeouts setting ([#4802](https://github.com/aliyun/terraform-provider-alicloud/issues/4802))
+- resource/security_center_service_linked_role: Add timeout retry condition; supports delete timeouts setting ([#4802](https://github.com/aliyun/terraform-provider-alicloud/issues/4802))
+- resource/alicloud_lindorm_instance: Optimize instance update logic ([#4801](https://github.com/aliyun/terraform-provider-alicloud/issues/4801))
+- resource/alicloud_mongodb_audit_policy: Enlarges the creating and updating default timeout ([#4810](https://github.com/aliyun/terraform-provider-alicloud/issues/4810))
+- resource/alicloud_alb_listener_additional_certificate_attachment: Added error retry codes ResourceInConfiguring.Listener, IncorrectStatus.Listener ([#4796](https://github.com/aliyun/terraform-provider-alicloud/issues/4796))
+- resource/mongodb_sharding_instance: Wait for the running status before updating the resource_group_id attribute ([#4804](https://github.com/aliyun/terraform-provider-alicloud/issues/4804))
+- resource/alicloud_slb_backend_server: add the retry code during the delete ([#4817](https://github.com/aliyun/terraform-provider-alicloud/issues/4817))	
+- datasource/alicloud_ddoscoo_instances: Updates its dependence SDK. ([#4828](https://github.com/aliyun/terraform-provider-alicloud/issues/4828))
+- datasource/alicloud_kvstore_instances: Updates its dependence SDK. ([#4837](https://github.com/aliyun/terraform-provider-alicloud/issues/4837))	
+- datasource/emr_main_versions: Updates its dependence SDK. ([#4827](https://github.com/aliyun/terraform-provider-alicloud/issues/4827))
+- datasource/alicloud_ecs_network_interfaces: support the field associated_public_ip ([#4817](https://github.com/aliyun/terraform-provider-alicloud/issues/4817))	
+- testcase: Adds new unit test case for resource alicloud_cloud_firewall_control_policy_order alicloud_cloud_firewall_instance alicloud_cms_metric_rule_template ([#4792](https://github.com/aliyun/terraform-provider-alicloud/issues/4792))
+- testcase: Adds new unit test case for resource alicloud_config_aggregate_config_rule alicloud_ddoscoo_domain_resource alicloud_ddoscoo_port ([#4799](https://github.com/aliyun/terraform-provider-alicloud/issues/4799))
+- testcase: Adds new unit test case for resource alicloud_config_rule alicloud_config_delivery_channel alicloud_config_compliance_pack ([#4672](https://github.com/aliyun/terraform-provider-alicloud/issues/4672))
+- testcase: Adds new unit test case for resource alicloud_direct_mail_mail_address alicloud_dfs_mount_point alicloud_direct_mail_domain ([#4812](https://github.com/aliyun/terraform-provider-alicloud/issues/4812))
+- testcase: Adds new unit test case for resource alicloud_dfs_file_system alicloud_dfs_access_group alicloud_dfs_access_rule ([#4805](https://github.com/aliyun/terraform-provider-alicloud/issues/4805))
+- testcase: Improves the gpdb and clickhoust testcases ([#4811](https://github.com/aliyun/terraform-provider-alicloud/issues/4811))
+- testcases: Improves the alicloud_ddoscoo_domain_resource testcases ([#4819](https://github.com/aliyun/terraform-provider-alicloud/issues/4819))
+- sdk/alibaba-cloud-go-sdk: Upgrades the sdk to v1.61.1538 ([#4840](https://github.com/aliyun/terraform-provider-alicloud/issues/4840))
 
 BUG FIXES:
 
-- resource/click_house_account: Fix test cases; supports timeouts setting [GH-4806]
-- resource/alicloud_slb_acl: Fixes the Throlling.User error by adding retry [GH-4832]
+- resource/click_house_account: Fix test cases; supports timeouts setting ([#4806](https://github.com/aliyun/terraform-provider-alicloud/issues/4806))
+- resource/alicloud_slb_acl: Fixes the Throlling.User error by adding retry ([#4832](https://github.com/aliyun/terraform-provider-alicloud/issues/4832))
 
 ## 1.162.0 (March 27, 2022)
 
