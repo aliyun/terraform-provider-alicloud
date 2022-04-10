@@ -570,8 +570,13 @@ func dataSourceAlicloudKvstoreInstancesRead(d *schema.ResourceData, meta interfa
 			return WrapError(err)
 		}
 
-		mapping["auto_renew"] = resp2["AutoRenew"]
-		mapping["auto_renew_period"] = resp2["Duration"]
+		if v, ok := resp2["AutoRenew"]; ok {
+			mapping["auto_renew"] = convertStringToBool(fmt.Sprint(v))
+		}
+
+		if v, ok := resp2["Duration"]; ok {
+			mapping["auto_renew_period"] = formatInt(v)
+		}
 
 		resp3, err := rKvstoreService.DescribeInstanceSSL(fmt.Sprint(object["InstanceId"]))
 		if err != nil && !NotFoundError(err) {
