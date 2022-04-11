@@ -434,6 +434,11 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"operator_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"upgrade", "downgrade"}, false),
+			},
 		},
 	}
 }
@@ -1709,6 +1714,9 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 			request := ecs.CreateModifyPrepayInstanceSpecRequest()
 			request.InstanceId = d.Id()
 			request.InstanceType = d.Get("instance_type").(string)
+			if v, ok := d.GetOk("operator_type"); ok {
+				request.OperatorType = v.(string)
+			}
 
 			err := resource.Retry(6*time.Minute, func() *resource.RetryError {
 				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {

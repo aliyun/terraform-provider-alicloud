@@ -2342,3 +2342,125 @@ var testAccInstanceCheckMap = map[string]string{
 	"include_data_disks": NOSET,
 	"dry_run":            "false",
 }
+
+func TestAccAlicloudECSInstance_OperatorType(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceHpcCluster%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcOperatorTypeIDDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.1.id}",
+					"availability_zone":             "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+					"system_disk_category":          "cloud_essd",
+					"instance_name":                 "${var.name}",
+					"spot_strategy":                 "NoSpot",
+					"spot_price_limit":              "0",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
+					"period":                        "1",
+					"instance_charge_type":          "PrePaid",
+					"force_delete":                  "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":        name,
+						"system_disk_category": "cloud_essd",
+						"instance_charge_type": "PrePaid",
+						"period":               "1",
+						"period_unit":          "Month",
+						"renewal_status":       "Normal",
+						"auto_renew_period":    "0",
+						"force_delete":         "true",
+						"include_data_disks":   "true",
+						"dry_run":              "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"operator_type": "downgrade",
+					"instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
+				},
+				),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"operator_type": "upgrade",
+					"instance_type": "${data.alicloud_instance_types.default.instance_types.1.id}",
+				},
+				),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run", "operator_type", "force_delete", "include_data_disks", "period"},
+			},
+		},
+	})
+}
+
+func resourceInstanceVpcOperatorTypeIDDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_images" "default" {
+  name_regex  = "^aliyun_3_x64_20G_scc*"
+  owners      = "system"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone    = data.alicloud_vswitches.default.vswitches.0.zone_id
+  instance_type_family = "ecs.g6e"
+  network_type         = "Vpc"
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+`, name)
+}
