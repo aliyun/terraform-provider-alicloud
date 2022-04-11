@@ -1061,7 +1061,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				return r_kvstoreClient.ModifyInstanceSpec(&args)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"MissingRedisUsedmemoryUnsupportPerfItem"}) {
+				if IsExpectedErrors(err, []string{"MissingRedisUsedmemoryUnsupportPerfItem", "Task.Conflict"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
