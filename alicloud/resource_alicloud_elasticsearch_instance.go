@@ -806,7 +806,7 @@ func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{
 	content["networkConfig"] = network
 
 	if v, ok := d.GetOk("zone_count"); ok {
-		content["zoneCount"] = v.(string)
+		content["zoneCount"] = v
 	}
 
 	return content, nil

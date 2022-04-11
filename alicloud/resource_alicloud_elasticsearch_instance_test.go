@@ -685,10 +685,12 @@ func TestAccAlicloudElasticsearchInstance_kibana_node(t *testing.T) {
 					"data_node_disk_type":  DataNodeDiskType,
 					"instance_charge_type": string(PostPaid),
 					"kibana_node_spec":     KibanaSpec,
+					"zone_count":           "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"kibana_node_spec": KibanaSpec,
+						"zone_count":       "1",
 					}),
 				),
 			},
@@ -703,9 +705,10 @@ func TestAccAlicloudElasticsearchInstance_kibana_node(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
 			},
 		},
 	})
