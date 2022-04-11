@@ -415,28 +415,22 @@ func TestAccAlicloudCSKubernetesNodePool_PrePaid(t *testing.T) {
 					"instance_charge_type":  "PrePaid",
 					"period":                "1",
 					"period_unit":           "Month",
-					"auto_renew":            "true",
 					"auto_renew_period":     "1",
-					"scaling_config":        []map[string]string{{"min_size": "1", "max_size": "10"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                      name,
-						"cluster_id":                CHECKSET,
-						"password":                  CHECKSET,
-						"vswitch_ids.#":             "1",
-						"instance_types.#":          "1",
-						"system_disk_category":      "cloud_efficiency",
-						"system_disk_size":          "120",
-						"instance_charge_type":      "PrePaid",
-						"install_cloud_monitor":     "false",
-						"period":                    "1",
-						"period_unit":               "Month",
-						"auto_renew":                "true",
-						"auto_renew_period":         "1",
-						"scaling_config.#":          "1",
-						"scaling_config.0.min_size": "1",
-						"scaling_config.0.max_size": "10",
+						"name":                  name,
+						"cluster_id":            CHECKSET,
+						"password":              CHECKSET,
+						"vswitch_ids.#":         "1",
+						"instance_types.#":      "1",
+						"system_disk_category":  "cloud_efficiency",
+						"system_disk_size":      "120",
+						"instance_charge_type":  "PrePaid",
+						"install_cloud_monitor": "false",
+						"period":                "1",
+						"period_unit":           "Month",
+						"auto_renew_period":     "1",
 					}),
 				),
 			},
@@ -451,16 +445,12 @@ func TestAccAlicloudCSKubernetesNodePool_PrePaid(t *testing.T) {
 					"instance_charge_type":  "PrePaid",
 					"auto_renew_period":     "2",
 					"install_cloud_monitor": "true",
-					"scaling_config":        []map[string]string{{"min_size": "2", "max_size": "10"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_charge_type":      "PrePaid",
-						"auto_renew_period":         "2",
-						"install_cloud_monitor":     "true",
-						"scaling_config.#":          "1",
-						"scaling_config.0.min_size": "2",
-						"scaling_config.0.max_size": "10",
+						"instance_charge_type":  "PrePaid",
+						"auto_renew_period":     "2",
+						"install_cloud_monitor": "true",
 					}),
 				),
 			},
@@ -593,6 +583,45 @@ data "alicloud_instance_types" "default" {
 	cpu_core_count             = 2
 	memory_size                = 4
 	kubernetes_node_role       = "Worker"
+}
+
+variable "roles" {
+  type = list(object({
+    name = string
+    policy_document = string
+    description = string
+    policy_name = string
+  }))
+  default = [
+    {
+      name = "AliyunOOSLifecycleHook4CSRole"
+      policy_document="{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"oos.aliyuncs.com\"]}}],\"Version\":\"1\"}"
+      description = "OOS使用此角色来访问您在其他云产品中的资源。"
+      policy_name = "AliyunOOSLifecycleHook4CSRolePolicy"
+    },
+    {
+      name = "AliyunCSManagedAutoScalerRole"
+      policy_document="{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"cs.aliyuncs.com\"]}}],\"Version\":\"1\"}"
+      description = "CS使用此角色来访问您在其他云产品中的资源。"
+      policy_name = "AliyunCSManagedAutoScalerRolePolicy"
+    }
+  ]
+}
+
+resource "alicloud_ram_role" "role" {
+    for_each    = {for r in var.roles:r.name => r}
+    name        = each.value.name
+    document    = each.value.policy_document
+    description = each.value.description
+    force       = true
+}
+
+resource "alicloud_ram_role_policy_attachment" "attach" {
+  for_each    = {for r in var.roles:r.name => r}
+  policy_name = each.value.policy_name
+  policy_type = "System"
+  role_name   = each.value.name
+  depends_on  = [alicloud_ram_role.role]
 }
 
 resource "alicloud_security_group" "group" {

@@ -135,6 +135,7 @@ resource "alicloud_log_project" "log" {
 
 resource "alicloud_cs_managed_kubernetes" "default" {
   name_prefix = "${var.name}"
+  cluster_spec = "ack.pro.small"
   worker_vswitch_ids = ["${local.vswitch_id}"]
   new_nat_gateway = true
   worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
