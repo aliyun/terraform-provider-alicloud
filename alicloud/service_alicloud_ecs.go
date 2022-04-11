@@ -894,11 +894,11 @@ func (s *EcsService) WaitForEcsInstance(instanceId string, status Status, timeou
 }
 
 // WaitForInstance waits for instance to given status
-func (s *EcsService) InstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EcsService) InstanceStateRefreshFunc(id string, stage string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if NotFoundError(err) && stage == "Delete" {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
