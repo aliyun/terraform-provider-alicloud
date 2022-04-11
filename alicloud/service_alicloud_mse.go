@@ -37,6 +37,9 @@ func (s *MseService) DescribeMseCluster(id string) (object map[string]interface{
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return object, err
 	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
 	addDebug(action, response, request)
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
