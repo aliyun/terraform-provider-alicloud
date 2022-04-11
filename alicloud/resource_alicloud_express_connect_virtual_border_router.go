@@ -223,6 +223,10 @@ func resourceAlicloudExpressConnectVirtualBorderRouterRead(d *schema.ResourceDat
 func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -333,10 +337,6 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 			request["Bandwidth"] = v
 		}
 		action := "ModifyVirtualBorderRouterAttribute"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("ModifyVirtualBorderRouterAttribute")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -384,10 +384,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 				}
 				request["RegionId"] = client.RegionId
 				action := "RecoverVirtualBorderRouter"
-				conn, err := client.NewVpcClient()
-				if err != nil {
-					return WrapError(err)
-				}
+
 				request["ClientToken"] = buildClientToken("RecoverVirtualBorderRouter")
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
@@ -418,10 +415,6 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 				}
 				request["RegionId"] = client.RegionId
 				action := "TerminateVirtualBorderRouter"
-				conn, err := client.NewVpcClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request["ClientToken"] = buildClientToken("TerminateVirtualBorderRouter")
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)

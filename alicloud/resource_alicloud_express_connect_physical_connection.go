@@ -171,6 +171,10 @@ func resourceAlicloudExpressConnectPhysicalConnectionRead(d *schema.ResourceData
 func resourceAlicloudExpressConnectPhysicalConnectionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -225,10 +229,6 @@ func resourceAlicloudExpressConnectPhysicalConnectionUpdate(d *schema.ResourceDa
 	}
 	if update {
 		action := "ModifyPhysicalConnectionAttribute"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("ModifyPhysicalConnectionAttribute")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -270,10 +270,6 @@ func resourceAlicloudExpressConnectPhysicalConnectionUpdate(d *schema.ResourceDa
 				}
 				request["RegionId"] = client.RegionId
 				action := "CancelPhysicalConnection"
-				conn, err := client.NewVpcClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request["ClientToken"] = buildClientToken("CancelPhysicalConnection")
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
@@ -300,10 +296,6 @@ func resourceAlicloudExpressConnectPhysicalConnectionUpdate(d *schema.ResourceDa
 				}
 				request["RegionId"] = client.RegionId
 				action := "EnablePhysicalConnection"
-				conn, err := client.NewVpcClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request["ClientToken"] = buildClientToken("EnablePhysicalConnection")
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
@@ -330,10 +322,6 @@ func resourceAlicloudExpressConnectPhysicalConnectionUpdate(d *schema.ResourceDa
 				}
 				request["RegionId"] = client.RegionId
 				action := "TerminatePhysicalConnection"
-				conn, err := client.NewVpcClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request["ClientToken"] = buildClientToken("TerminatePhysicalConnection")
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
