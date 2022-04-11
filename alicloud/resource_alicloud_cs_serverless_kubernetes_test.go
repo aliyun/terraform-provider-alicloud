@@ -88,8 +88,6 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 						"endpoint_public_access_enabled": "true",
 						"resource_group_id":              CHECKSET,
 						"vswitch_ids.#":                  "1",
-						"tags.#":                         "1",
-						"tags.0.Platform":                "TF",
 						"cluster_spec":                   "ack.pro.small",
 					}),
 				),
