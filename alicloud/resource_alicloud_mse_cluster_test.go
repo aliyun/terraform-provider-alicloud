@@ -112,24 +112,24 @@ func TestAccAlicloudMSECluster_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_specification": "MSE_SC_1_2_200_c",
-					"cluster_type":          "Eureka",
-					"cluster_version":       "EUREKA_1_9_3",
+					"cluster_type":          "Nacos-Ans",
+					"cluster_version":       "NACOS_ANS_1_2_1",
 					"instance_count":        "1",
 					"net_type":              "privatenet",
 					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
 					"pub_network_flow":      "1",
-					"cluster_alias_name":    "tf-mse",
+					"cluster_alias_name":    name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_specification": "MSE_SC_1_2_200_c",
-						"cluster_type":          "Eureka",
-						"cluster_version":       "EUREKA_1_9_3",
+						"cluster_type":          "Nacos-Ans",
+						"cluster_version":       "NACOS_ANS_1_2_1",
 						"instance_count":        "1",
 						"net_type":              "privatenet",
 						"vswitch_id":            CHECKSET,
 						"pub_network_flow":      "1",
-						"cluster_alias_name":    "tf-mse",
+						"cluster_alias_name":    name,
 					}),
 				),
 			},
@@ -151,22 +151,108 @@ func TestAccAlicloudMSECluster_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"cluster_alias_name": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_alias_name": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"cluster_alias_name": name,
+					"acl_entry_list":     []string{"127.0.0.1/10"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_alias_name": name,
+						"acl_entry_list.#":   "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudMSECluster_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mse_cluster.default"
+	ra := resourceAttrInit(resourceId, MseClusterMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMseCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_specification": "MSE_SC_1_2_200_c",
+					"cluster_type":          "ZooKeeper",
+					"cluster_version":       "ZooKeeper_3_4_14",
+					"instance_count":        "1",
+					"net_type":              "privatenet",
+					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
+					"pub_network_flow":      "1",
+					"cluster_alias_name":    name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_specification": "MSE_SC_1_2_200_c",
+						"cluster_type":          "ZooKeeper",
+						"cluster_version":       "ZooKeeper_3_4_14",
+						"instance_count":        "1",
+						"net_type":              "privatenet",
+						"vswitch_id":            CHECKSET,
+						"pub_network_flow":      "1",
+						"cluster_alias_name":    name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cluster_specification", "cluster_version", "net_type", "vswitch_id", "cluster_alias_name"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_entry_list": []string{"127.0.0.1/32"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_entry_list.#": "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_alias_name": name + "update",
-					"acl_entry_list":     []string{"127.0.0.1/10"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_alias_name": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_alias_name": name,
+					"acl_entry_list":     []string{"127.0.0.1/10"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_alias_name": name,
 						"acl_entry_list.#":   "1",
 					}),
 				),
