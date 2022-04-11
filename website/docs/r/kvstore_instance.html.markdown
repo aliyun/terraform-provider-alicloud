@@ -136,12 +136,11 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `ssl_enable`- (Optional, Available in 1.101.0+) Modifies the SSL status. Valid values: `Disable`, `Enable` and `Update`. 
   Note: This functionality is supported by Cluster mode (Redis 2.8, 4.0, 5.0) and Standard mode( Redis 2.8 only)
 * `force_upgrade`- (Optional, Available in 1.101.0+) Specifies whether to forcibly change the type. Default to: `true`.
-* `effective_time`- (Optional, Available in 1.101.0+) Specifies when this operation is changed. Valid values: `0`, `1`. Default to: `0`. `0` means immediately changes the type. `1` means changes the type within the maintenance window.
 * `dedicated_host_group_id`- (Optional, Available in 1.101.0+) The ID of the dedicated cluster. This parameter is required when you create an ApsaraDB for Redis instance in a dedicated cluster.
 * `coupon_no`- (Optional, Available in 1.101.0+) The coupon code. Default to: `youhuiquan_promotion_option_id_for_blank`.
 * `business_info`- (Optional, Available in 1.101.0+) The ID of the event or the business information.
 * `auto_use_coupon`- (Optional, ForceNew, Available in 1.101.0+) Specifies whether to use a coupon. Default to: `false`.
-* `instance_release_protection`- (Optional, ForceNew, Available in 1.101.0+) Whether to open the release protection.
+* `instance_release_protection`- (Optional, Computed, Available in 1.101.0+) Whether to open the release protection.
 * `global_instance_id`- (Optional, Available in 1.101.0+) The ID of distributed cache.
 * `global_instance`- (Optional, ForceNew, Available in 1.101.0+) Whether to create a distributed cache. Default to: `false`.
 * `backup_period`- (Optional, Available in 1.104.0+) Backup period. 
