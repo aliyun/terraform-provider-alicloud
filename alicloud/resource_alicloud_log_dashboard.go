@@ -1,11 +1,10 @@
 package alicloud
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
-	"reflect"
-	"sort"
 	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudLogDashboard() *schema.Resource {
@@ -42,8 +42,9 @@ func resourceAlicloudLogDashboard() *schema.Resource {
 			},
 			"char_list": {
 				Type:             schema.TypeString,
-				DiffSuppressFunc: jsonPolicyDiffSuppress,
 				Required:         true,
+				ValidateFunc:     validation.ValidateJsonString,
+				DiffSuppressFunc: chartListDiffSuppress,
 			},
 		},
 	}
@@ -53,19 +54,25 @@ func resourceAlicloudLogDashboardCreate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	var requestInfo *sls.Client
 
-	dashBoard := sls.Dashboard{
-		DashboardName: d.Get("dashboard_name").(string),
-		DisplayName:   d.Get("display_name").(string),
+	dashboard := map[string]interface{}{
+		"dashboardName": d.Get("dashboard_name").(string),
+		"displayName":   d.Get("display_name").(string),
 	}
-	jsonErr := json.Unmarshal([]byte(d.Get("char_list").(string)), &dashBoard.ChartList)
+	chartList := []interface{}{}
+	jsonErr := json.Unmarshal([]byte(d.Get("char_list").(string)), &chartList)
 	if jsonErr != nil {
 		return WrapError(jsonErr)
 	}
+	dashboard["charts"] = chartList
+	dashboardBytes, err := json.Marshal(dashboard)
+	if err != nil {
+		return WrapError(err)
+	}
+	dashboardStr := string(dashboardBytes)
 
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			requestInfo = slsClient
-			return nil, slsClient.CreateDashboard(d.Get("project_name").(string), dashBoard)
+			return nil, slsClient.CreateDashboardString(d.Get("project_name").(string), dashboardStr)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
@@ -74,8 +81,8 @@ func resourceAlicloudLogDashboardCreate(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("CreateDashboard", dashBoard, requestInfo, map[string]interface{}{
-			"dashBoard": dashBoard,
+		addDebug("CreateDashboard", dashboard, requestInfo, map[string]interface{}{
+			"dashBoard": dashboard,
 		})
 		d.SetId(fmt.Sprintf("%s%s%s", d.Get("project_name").(string), COLON_SEPARATED, d.Get("dashboard_name").(string)))
 		return nil
@@ -89,6 +96,9 @@ func resourceAlicloudLogDashboardRead(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
 	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 	object, err := logService.DescribeLogDashboard(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -97,11 +107,23 @@ func resourceAlicloudLogDashboardRead(d *schema.ResourceData, meta interface{}) 
 		}
 		return WrapError(err)
 	}
+	dashboard := map[string]interface{}{}
+	err = json.Unmarshal([]byte(object), &dashboard)
+	if err != nil {
+		return WrapError(err)
+	}
 
 	d.Set("project_name", parts[0])
-	d.Set("dashboard_name", object.DashboardName)
-	d.Set("display_name", object.DisplayName)
-	charlist, err := json.Marshal(object.ChartList)
+	d.Set("dashboard_name", dashboard["dashboardName"])
+	d.Set("display_name", dashboard["displayName"])
+	for k, v := range dashboard["charts"].([]interface{}) {
+		if action, actionOK := v.(map[string]interface{})["action"]; actionOK {
+			if action == nil {
+				delete((dashboard["charts"].([]interface{})[k]).(map[string]interface{}), "action")
+			}
+		}
+	}
+	charlist, err := json.Marshal(dashboard["charts"])
 	if err != nil {
 		return WrapError(err)
 	}
@@ -110,16 +132,12 @@ func resourceAlicloudLogDashboardRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAlicloudLogDashboardUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	update := false
-	dashboard := sls.Dashboard{}
-	dashboard.DisplayName = d.Get("display_name").(string)
-	data := d.Get("char_list").(string)
-	err := json.Unmarshal([]byte(data), &dashboard.ChartList)
+	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
 
+	update := false
 	if d.HasChange("display_name") {
 		update = true
 	}
@@ -128,13 +146,25 @@ func resourceAlicloudLogDashboardUpdate(d *schema.ResourceData, meta interface{}
 	}
 
 	if update {
-		parts, err := ParseResourceId(d.Id(), 2)
+		client := meta.(*connectivity.AliyunClient)
+		dashboard := map[string]interface{}{
+			"dashboardName": parts[1],
+			"displayName":   d.Get("display_name").(string),
+		}
+		chartList := []interface{}{}
+		jsonErr := json.Unmarshal([]byte(d.Get("char_list").(string)), &chartList)
+		if jsonErr != nil {
+			return WrapError(jsonErr)
+		}
+		dashboard["charts"] = chartList
+		dashboardBytes, err := json.Marshal(dashboard)
 		if err != nil {
 			return WrapError(err)
 		}
-		dashboard.DashboardName = parts[1]
+		dashboardStr := string(dashboardBytes)
+
 		_, err = client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return nil, slsClient.UpdateDashboard(parts[0], dashboard)
+			return nil, slsClient.UpdateDashboardString(parts[0], parts[1], dashboardStr)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateDashboard", AliyunLogGoSdkERROR)
@@ -177,52 +207,29 @@ func resourceAlicloudLogDashboardDelete(d *schema.ResourceData, meta interface{}
 	return WrapError(logService.WaitForLogDashboard(d.Id(), Deleted, DefaultTimeout))
 }
 
-func jsonPolicyDiffSuppress(k, old, new string, d *schema.ResourceData) bool {
+func chartListDiffSuppress(k, old, new string, d *schema.ResourceData) bool {
 	if old == "" && new == "" {
 		return true
 	}
 
-	var oldChartList, newChartList []sls.Chart
-	if old != "" && new != "" {
-		if err := json.Unmarshal([]byte(old), &oldChartList); err != nil {
-			log.Printf("[ERROR] Could not unmarshal old chart list %s: %v", old, err)
-			return false
-		}
-		if err := json.Unmarshal([]byte(new), &newChartList); err != nil {
-			log.Printf("[ERROR] Could not unmarshal new chart list %s: %v", new, err)
-			return false
-		}
-
-		return compareChartList(newChartList, oldChartList)
-	}
-
-	return false
-}
-
-type chartSort []sls.Chart
-
-func (a chartSort) Len() int {
-	return len(a)
-}
-
-func (a chartSort) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-
-func (a chartSort) Less(i, j int) bool {
-	return a[i].Title < a[j].Title
-}
-
-func compareChartList(a, b []sls.Chart) bool {
-	if len(a) != len(b) {
+	obj1 := []map[string]interface{}{}
+	err := json.Unmarshal([]byte(old), &obj1)
+	if err != nil {
 		return false
 	}
-	sort.Sort(chartSort(a))
-	sort.Sort(chartSort(b))
-	for i, chart := range a {
-		if !reflect.DeepEqual(chart, b[i]) {
-			return false
-		}
+	canonicalJson1, _ := json.Marshal(obj1)
+
+	obj2 := []map[string]interface{}{}
+	err = json.Unmarshal([]byte(new), &obj2)
+	if err != nil {
+		return false
 	}
-	return true
+	canonicalJson2, _ := json.Marshal(obj2)
+
+	equal := bytes.Equal(canonicalJson1, canonicalJson2)
+	if !equal {
+		log.Printf("[DEBUG] Canonical template are not equal.\nFirst: %s\nSecond: %s\n",
+			canonicalJson1, canonicalJson2)
+	}
+	return equal
 }
