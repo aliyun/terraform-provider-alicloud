@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"math"
 	"time"
 
@@ -127,6 +128,12 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Optional: true,
 			},
 			"tags": tagsSchema(),
+			"group_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ECS", "ECI"}, false),
+			},
 		},
 	}
 }
@@ -139,11 +146,19 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 	}
 
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewEssClient()
 	essService := EssService{client}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.CreateScalingGroup(request)
+			var response map[string]interface{}
+			response, err = conn.DoRequest(StringPointer("CreateScalingGroup"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scaling_group", "CreateScalingGroup", AlibabaCloudSdkGoERROR)
+			}
+			return response, nil
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{Throttling, "IncorrectLoadBalancerHealthCheck", "IncorrectLoadBalancerStatus"}) {
@@ -151,19 +166,17 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*ess.CreateScalingGroupResponse)
-		d.SetId(response.ScalingGroupId)
+		d.SetId(raw.(map[string]interface{})["ScalingGroupId"].(string))
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scaling_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scaling_group", "CreateScalingGroup", AlibabaCloudSdkGoERROR)
 	}
 	if err := essService.WaitForEssScalingGroup(d.Id(), Inactive, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
 
 	// enable group if use launchTemplate
-	if request.LaunchTemplateId != "" {
+	if request["LaunchTemplateId"] != "" && request["LaunchTemplateId"] != nil {
 		enableGroupRequest := ess.CreateEnableScalingGroupRequest()
 		enableGroupRequest.ScalingGroupId = d.Id()
 		_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -182,7 +195,7 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
 
-	object, err := essService.DescribeEssScalingGroup(d.Id())
+	object, err := essService.DescribeEssScalingGroupById(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -191,49 +204,50 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	d.Set("min_size", object.MinSize)
-	d.Set("max_size", object.MaxSize)
-	d.Set("desired_capacity", object.DesiredCapacity)
-	d.Set("scaling_group_name", object.ScalingGroupName)
-	d.Set("default_cooldown", object.DefaultCooldown)
-	d.Set("multi_az_policy", object.MultiAZPolicy)
-	d.Set("on_demand_base_capacity", object.OnDemandBaseCapacity)
-	d.Set("on_demand_percentage_above_base_capacity", object.OnDemandPercentageAboveBaseCapacity)
-	d.Set("spot_instance_pools", object.SpotInstancePools)
-	d.Set("spot_instance_remedy", object.SpotInstanceRemedy)
-	d.Set("group_deletion_protection", object.GroupDeletionProtection)
+	d.Set("min_size", object["MinSize"])
+	d.Set("max_size", object["MaxSize"])
+	d.Set("desired_capacity", object["DesiredCapacity"])
+	d.Set("scaling_group_name", object["ScalingGroupName"])
+	d.Set("default_cooldown", object["DefaultCooldown"])
+	d.Set("multi_az_policy", object["MultiAZPolicy"])
+	d.Set("on_demand_base_capacity", object["OnDemandBaseCapacity"])
+	d.Set("on_demand_percentage_above_base_capacity", object["OnDemandPercentageAboveBaseCapacity"])
+	d.Set("spot_instance_pools", object["SpotInstancePools"])
+	d.Set("spot_instance_remedy", object["SpotInstanceRemedy"])
+	d.Set("group_deletion_protection", object["GroupDeletionProtection"])
 	var polices []string
-	if len(object.RemovalPolicies.RemovalPolicy) > 0 {
-		for _, v := range object.RemovalPolicies.RemovalPolicy {
-			polices = append(polices, v)
+	if len(object["RemovalPolicies"].(map[string]interface{})["RemovalPolicy"].([]interface{})) > 0 {
+		for _, v := range object["RemovalPolicies"].(map[string]interface{})["RemovalPolicy"].([]interface{}) {
+			polices = append(polices, v.(string))
 		}
 	}
 	d.Set("removal_policies", polices)
 	var dbIds []string
-	if len(object.DBInstanceIds.DBInstanceId) > 0 {
-		for _, v := range object.DBInstanceIds.DBInstanceId {
-			dbIds = append(dbIds, v)
+	if len(object["DBInstanceIds"].(map[string]interface{})["DBInstanceId"].([]interface{})) > 0 {
+		for _, v := range object["DBInstanceIds"].(map[string]interface{})["DBInstanceId"].([]interface{}) {
+			dbIds = append(dbIds, v.(string))
 		}
 	}
 	d.Set("db_instance_ids", dbIds)
 
 	var slbIds []string
-	if len(object.LoadBalancerIds.LoadBalancerId) > 0 {
-		for _, v := range object.LoadBalancerIds.LoadBalancerId {
-			slbIds = append(slbIds, v)
+	if len(object["LoadBalancerIds"].(map[string]interface{})["LoadBalancerId"].([]interface{})) > 0 {
+		for _, v := range object["LoadBalancerIds"].(map[string]interface{})["LoadBalancerId"].([]interface{}) {
+			slbIds = append(slbIds, v.(string))
 		}
 	}
 	d.Set("loadbalancer_ids", slbIds)
 
 	var vswitchIds []string
-	if len(object.VSwitchIds.VSwitchId) > 0 {
-		for _, v := range object.VSwitchIds.VSwitchId {
-			vswitchIds = append(vswitchIds, v)
+	if object["VSwitchIds"] != nil && len(object["VSwitchIds"].(map[string]interface{})["VSwitchId"].([]interface{})) > 0 {
+		for _, v := range object["VSwitchIds"].(map[string]interface{})["VSwitchId"].([]interface{}) {
+			vswitchIds = append(vswitchIds, v.(string))
 		}
 	}
 	d.Set("vswitch_ids", vswitchIds)
-	d.Set("launch_template_id", object.LaunchTemplateId)
-	d.Set("launch_template_version", object.LaunchTemplateVersion)
+	d.Set("launch_template_id", object["LaunchTemplateId"])
+	d.Set("launch_template_version", object["LaunchTemplateVersion"])
+	d.Set("group_type", object["GroupType"])
 
 	listTagResourcesObject, err := essService.ListTagResources(d.Id(), client)
 	if err != nil {
@@ -241,7 +255,6 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	}
 
 	d.Set("tags", tagsToMap(listTagResourcesObject))
-
 	return nil
 }
 
@@ -383,30 +396,33 @@ func resourceAliyunEssScalingGroupDelete(d *schema.ResourceData, meta interface{
 	return WrapError(essService.WaitForEssScalingGroup(d.Id(), Deleted, DefaultTimeout))
 }
 
-func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) (*ess.CreateScalingGroupRequest, error) {
+func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) (map[string]interface{}, error) {
 	client := meta.(*connectivity.AliyunClient)
-	slbService := SlbService{client}
-	request := ess.CreateCreateScalingGroupRequest()
-	request.RegionId = client.RegionId
-	request.MinSize = requests.NewInteger(d.Get("min_size").(int))
-	request.MaxSize = requests.NewInteger(d.Get("max_size").(int))
-	request.DefaultCooldown = requests.NewInteger(d.Get("default_cooldown").(int))
-
-	if v, ok := d.GetOk("scaling_group_name"); ok && v.(string) != "" {
-		request.ScalingGroupName = v.(string)
+	request := map[string]interface{}{
+		"RegionId":        client.RegionId,
+		"MinSize":         d.Get("min_size"),
+		"MaxSize":         d.Get("max_size"),
+		"DefaultCooldown": d.Get("default_cooldown"),
+		"MultiAZPolicy":   d.Get("multi_az_policy"),
+		"GroupType":       d.Get("group_type"),
 	}
 
-	if v, ok := d.GetOk("desired_capacity"); ok {
-		request.DesiredCapacity = requests.NewInteger(v.(int))
+	slbService := SlbService{client}
+
+	if v, ok := d.GetOk("scaling_group_name"); ok && v.(string) != "" {
+		request["ScalingGroupName"] = v
 	}
 
 	if v, ok := d.GetOk("vswitch_ids"); ok {
-		ids := expandStringList(v.(*schema.Set).List())
-		request.VSwitchIds = &ids
+		count := 1
+		for _, value := range v.(*schema.Set).List() {
+			request[fmt.Sprintf("VSwitchIds.%d", count)] = value
+			count++
+		}
 	}
 
 	if dbs, ok := d.GetOk("db_instance_ids"); ok {
-		request.DBInstanceIds = convertListToJsonString(dbs.(*schema.Set).List())
+		request["DBInstanceIds"] = convertListToJsonString(dbs.(*schema.Set).List())
 	}
 
 	if lbs, ok := d.GetOk("loadbalancer_ids"); ok {
@@ -415,39 +431,39 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 				return nil, WrapError(err)
 			}
 		}
-		request.LoadBalancerIds = convertListToJsonString(lbs.(*schema.Set).List())
+		request["LoadBalancerIds"] = convertListToJsonString(lbs.(*schema.Set).List())
 	}
 
-	if v, ok := d.GetOk("multi_az_policy"); ok && v.(string) != "" {
-		request.MultiAZPolicy = v.(string)
+	if v, ok := d.GetOk("desired_capacity"); ok {
+		request["DesiredCapacity"] = v
 	}
 
 	if v, ok := d.GetOk("on_demand_base_capacity"); ok {
-		request.OnDemandBaseCapacity = requests.NewInteger(v.(int))
+		request["OnDemandBaseCapacity"] = v
 	}
 
 	if v, ok := d.GetOk("on_demand_percentage_above_base_capacity"); ok {
-		request.OnDemandPercentageAboveBaseCapacity = requests.NewInteger(v.(int))
+		request["OnDemandPercentageAboveBaseCapacity"] = v
 	}
 
 	if v, ok := d.GetOk("spot_instance_pools"); ok {
-		request.SpotInstancePools = requests.NewInteger(v.(int))
+		request["SpotInstancePools"] = v
 	}
 
 	if v, ok := d.GetOk("spot_instance_remedy"); ok {
-		request.SpotInstanceRemedy = requests.NewBoolean(v.(bool))
+		request["SpotInstanceRemedy"] = v
 	}
 
 	if v, ok := d.GetOk("group_deletion_protection"); ok {
-		request.GroupDeletionProtection = requests.NewBoolean(v.(bool))
+		request["GroupDeletionProtection"] = v
 	}
 
 	if v, ok := d.GetOk("launch_template_id"); ok {
-		request.LaunchTemplateId = v.(string)
+		request["LaunchTemplateId"] = v
 	}
 
 	if v, ok := d.GetOk("launch_template_version"); ok {
-		request.LaunchTemplateVersion = v.(string)
+		request["LaunchTemplateVersion"] = v
 	}
 
 	return request, nil

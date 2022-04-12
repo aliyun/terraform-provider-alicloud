@@ -720,6 +720,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_db_readonly_instance":               resourceAlicloudDBReadonlyInstance(),
 			"alicloud_auto_provisioning_group":            resourceAlicloudAutoProvisioningGroup(),
 			"alicloud_ess_scaling_group":                  resourceAlicloudEssScalingGroup(),
+			"alicloud_ess_eci_scaling_configuration":      resourceAlicloudEssEciScalingConfiguration(),
 			"alicloud_ess_scaling_configuration":          resourceAlicloudEssScalingConfiguration(),
 			"alicloud_ess_scaling_rule":                   resourceAlicloudEssScalingRule(),
 			"alicloud_ess_schedule":                       resourceAlicloudEssScheduledTask(),
