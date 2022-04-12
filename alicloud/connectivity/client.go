@@ -899,7 +899,17 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 	if client.cmsconn == nil {
 		endpoint := client.config.CmsEndpoint
 		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CMSCode)
+			productCode := "cms"
+			if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+				if err := client.loadEndpoint(productCode); err != nil {
+					endpoint = fmt.Sprintf("metrics.%s.aliyuncs.com", client.RegionId)
+					client.config.Endpoints[productCode] = endpoint
+					log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
+				}
+			}
+			if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+				endpoint = v.(string)
+			}
 		}
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(CMSCode), endpoint)

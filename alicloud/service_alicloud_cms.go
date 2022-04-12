@@ -193,9 +193,22 @@ func (s *CmsService) DescribeCmsAlarmContact(id string) (object cms.Contact, err
 	request.RegionId = s.client.RegionId
 
 	request.ContactName = id
-
-	raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.DescribeContactList(request)
+	var response *cms.DescribeContactListResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.DescribeContactList(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*cms.DescribeContactListResponse)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ContactNotExists", "ResourceNotFound"}) {
@@ -205,8 +218,7 @@ func (s *CmsService) DescribeCmsAlarmContact(id string) (object cms.Contact, err
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*cms.DescribeContactListResponse)
+
 	if response.Code != "200" {
 		err = Error("DescribeContactList failed for " + response.Message)
 		return
