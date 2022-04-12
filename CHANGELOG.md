@@ -1,4 +1,8 @@
 ## 1.164.0 (Unreleased)
+
+- **New Resource:** `alicloud_ess_eci_scaling_configuration`
+- resource/alicloud_ess_scaling_group: Add support for new parameter `group_type`
+
 ## 1.163.0 (April 10, 2022)
 
 - **New Resource:** `alicloud_alb_listener_acl_attachment` ([#4816](https://github.com/aliyun/terraform-provider-alicloud/issues/4816))
