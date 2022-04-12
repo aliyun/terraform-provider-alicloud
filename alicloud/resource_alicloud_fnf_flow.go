@@ -123,6 +123,10 @@ func resourceAlicloudFnfFlowRead(d *schema.ResourceData, meta interface{}) error
 }
 func resourceAlicloudFnfFlowUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewFnfClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -146,10 +150,6 @@ func resourceAlicloudFnfFlowUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 	if update {
 		action := "UpdateFlow"
-		conn, err := client.NewFnfClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 1*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
