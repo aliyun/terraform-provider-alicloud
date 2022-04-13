@@ -141,6 +141,10 @@ func resourceAlicloudHbrOssBackupPlanRead(d *schema.ResourceData, meta interface
 func resourceAlicloudHbrOssBackupPlanUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	hbrService := HbrService{client}
+	conn, err := client.NewHbrClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -175,10 +179,6 @@ func resourceAlicloudHbrOssBackupPlanUpdate(d *schema.ResourceData, meta interfa
 	request["SourceType"] = "OSS"
 	if update {
 		action := "UpdateBackupPlan"
-		conn, err := client.NewHbrClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
