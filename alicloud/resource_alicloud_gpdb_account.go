@@ -123,6 +123,10 @@ func resourceAlicloudGpdbAccountRead(d *schema.ResourceData, meta interface{}) e
 }
 func resourceAlicloudGpdbAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewGpdbClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -144,10 +148,6 @@ func resourceAlicloudGpdbAccountUpdate(d *schema.ResourceData, meta interface{})
 
 	if update {
 		action := "ResetAccountPassword"
-		conn, err := client.NewGpdbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 
