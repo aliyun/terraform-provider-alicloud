@@ -197,7 +197,8 @@ func testAccCommonBandwidthPackageAttachmentConfigBasic(rand int) string {
     }
 
 	resource "alicloud_common_bandwidth_package" "default" {
-		bandwidth = "2"
+		bandwidth = 2
+		internet_charge_type = "PayByBandwidth"
 		name = "${var.name}"
 		description = "${var.name}_description"
 	}
@@ -227,7 +228,8 @@ func testAccCommonBandwidthPackageAttachmentConfigMulti(rand int) string {
 
 	resource "alicloud_common_bandwidth_package" "default" {
 		count = "${var.number}"
-		bandwidth = "2"
+		bandwidth = 2
+		internet_charge_type = "PayByBandwidth"
 		name = "${var.name}"
 		description = "${var.name}_description"
 	}
