@@ -363,7 +363,7 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		for _, val := range v.([]interface{}) {
 			val := val.(map[string]interface{})
 			request["Escalations.Critical.Statistics"] = val["statistics"].(string)
-			request["Escalations.Critical.ComparisonOperator"] = convertOperator(val["comparison_operator"].(string))
+			request["Escalations.Critical.ComparisonOperator"] = convertOperator(fmt.Sprint(val["comparison_operator"]))
 			request["Escalations.Critical.Threshold"] = val["threshold"].(string)
 			request["Escalations.Critical.Times"] = requests.NewInteger(val["times"].(int))
 		}
@@ -373,7 +373,7 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		for _, val := range v.([]interface{}) {
 			val := val.(map[string]interface{})
 			request["Escalations.Warn.Statistics"] = val["statistics"].(string)
-			request["Escalations.Warn.ComparisonOperator"] = convertOperator(val["comparison_operator"].(string))
+			request["Escalations.Warn.ComparisonOperator"] = convertOperator(fmt.Sprint(val["comparison_operator"]))
 			request["Escalations.Warn.Threshold"] = val["threshold"].(string)
 			request["Escalations.Warn.Times"] = requests.NewInteger(val["times"].(int))
 		}
@@ -383,7 +383,7 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		for _, val := range v.([]interface{}) {
 			val := val.(map[string]interface{})
 			request["Escalations.Info.Statistics"] = val["statistics"].(string)
-			request["Escalations.Info.ComparisonOperator"] = convertOperator(val["comparison_operator"].(string))
+			request["Escalations.Info.ComparisonOperator"] = convertOperator(fmt.Sprint(val["comparison_operator"]))
 			request["Escalations.Info.Threshold"] = val["threshold"].(string)
 			request["Escalations.Info.Times"] = requests.NewInteger(val["times"].(int))
 
