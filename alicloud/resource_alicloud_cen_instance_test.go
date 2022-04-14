@@ -133,7 +133,7 @@ func testSweepCenInstances(region string) error {
 		action := "ListTransitRouterVbrAttachments"
 		request := make(map[string]interface{})
 		request["CenId"] = cenId
-		//request["RegionId"] = "cn-hangzhou"
+		request["RegionId"] = client.RegionId
 		request["PageSize"] = PageSizeLarge
 		request["PageNumber"] = 1
 		var response map[string]interface{}
@@ -170,19 +170,8 @@ func testSweepCenInstances(region string) error {
 				item := v.(map[string]interface{})
 				name := fmt.Sprint(item["TransitRouterAttachmentName"])
 				id := fmt.Sprint(item["TransitRouterAttachmentId"])
-				skip := true
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(name, prefix) {
-						skip = false
-						break
-					}
-				}
-				if skip {
-					log.Printf("[DEBUG] Skipping the tr %s", name)
-					continue
-				}
 				action := "DeleteTransitRouterVbrAttachment"
-				log.Printf("[DEBUG] %s %s", action, name)
+				log.Printf("[DEBUG] %s %s:%s", action, id, name)
 
 				request := map[string]interface{}{
 					"TransitRouterAttachmentId": id,
@@ -245,19 +234,8 @@ func testSweepCenInstances(region string) error {
 				item := v.(map[string]interface{})
 				name := fmt.Sprint(item["TransitRouterAttachmentName"])
 				id := fmt.Sprint(item["TransitRouterAttachmentId"])
-				skip := true
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(name, prefix) {
-						skip = false
-						break
-					}
-				}
-				if skip {
-					log.Printf("[DEBUG] Skipping the tr %s", name)
-					continue
-				}
 				action := "DeleteTransitRouterVpcAttachment"
-				log.Printf("[DEBUG] %s %s", action, name)
+				log.Printf("[DEBUG] %s %s:%s", action, id, name)
 
 				request := map[string]interface{}{
 					"TransitRouterAttachmentId": id,
@@ -320,20 +298,8 @@ func testSweepCenInstances(region string) error {
 				item := v.(map[string]interface{})
 				name := fmt.Sprint(item["TransitRouterAttachmentName"])
 				id := fmt.Sprint(item["TransitRouterAttachmentId"])
-				skip := true
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(name, prefix) {
-						skip = false
-						break
-					}
-				}
-				if skip {
-					log.Printf("[DEBUG] Skipping the tr %s", name)
-					continue
-				}
-
 				action := "DeleteTransitRouterPeerAttachment"
-				log.Printf("[DEBUG] %s %s", action, name)
+				log.Printf("[DEBUG] %s %s:%s", action, id, name)
 
 				request := map[string]interface{}{
 					"TransitRouterAttachmentId": id,
@@ -450,7 +416,7 @@ func testSweepCenInstances(region string) error {
 				}
 
 				action = "DeleteTransitRouter"
-				log.Printf("[DEBUG] %s %s", action, name)
+				log.Printf("[DEBUG] %s %s", action, id)
 
 				request = map[string]interface{}{
 					"TransitRouterId": id,
@@ -459,7 +425,7 @@ func testSweepCenInstances(region string) error {
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 					if err != nil {
-						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
