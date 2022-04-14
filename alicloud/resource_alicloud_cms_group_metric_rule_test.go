@@ -157,6 +157,17 @@ func TestAccAlicloudCmsGroupMetricRule_basic(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"category", "interval"},
 			},
+			// TODO There is an API bug that the Describe API does not return Dimensions
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"dimensions": "[{'domain':'api10.sige-test7.com'}]",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"dimensions": "[{'domain':'api10.sige-test7.com'}]",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"effective_interval": "00:00-22:59",
