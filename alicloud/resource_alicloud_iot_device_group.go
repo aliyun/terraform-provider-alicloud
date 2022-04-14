@@ -112,6 +112,10 @@ func resourceAlicloudIotDeviceGroupRead(d *schema.ResourceData, meta interface{}
 }
 func resourceAlicloudIotDeviceGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewIotClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -131,10 +135,6 @@ func resourceAlicloudIotDeviceGroupUpdate(d *schema.ResourceData, meta interface
 	}
 	if update {
 		action := "UpdateDeviceGroup"
-		conn, err := client.NewIotClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

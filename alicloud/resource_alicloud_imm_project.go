@@ -6,12 +6,11 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudImmProject() *schema.Resource {
@@ -41,8 +40,6 @@ func resourceAlicloudImmProject() *schema.Resource {
 
 func resourceAlicloudImmProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "PutProject"
 	request := make(map[string]interface{})
 	conn, err := client.NewImmClient()
 	if err != nil {
@@ -52,9 +49,10 @@ func resourceAlicloudImmProjectCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("service_role"); ok {
 		request["ServiceRole"] = v
 	}
+	action := "PutProject"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -62,9 +60,10 @@ func resourceAlicloudImmProjectCreate(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
+
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_imm_project", action, AlibabaCloudSdkGoERROR)
 	}
@@ -91,11 +90,16 @@ func resourceAlicloudImmProjectRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("compute_unit", formatInt(v))
 	}
 	d.Set("service_role", object["ServiceRole"])
+
 	return nil
 }
 func resourceAlicloudImmProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+	conn, err := client.NewImmClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	update := false
 	request := map[string]interface{}{
 		"Project": d.Id(),
@@ -108,13 +112,9 @@ func resourceAlicloudImmProjectUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if update {
 		action := "UpdateProject"
-		conn, err := client.NewImmClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -122,9 +122,9 @@ func resourceAlicloudImmProjectUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, resp, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -133,8 +133,6 @@ func resourceAlicloudImmProjectUpdate(d *schema.ResourceData, meta interface{}) 
 }
 func resourceAlicloudImmProjectDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteProject"
-	var response map[string]interface{}
 	conn, err := client.NewImmClient()
 	if err != nil {
 		return WrapError(err)
@@ -143,9 +141,10 @@ func resourceAlicloudImmProjectDelete(d *schema.ResourceData, meta interface{}) 
 		"Project": d.Id(),
 	}
 
+	action := "DeleteProject"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -153,10 +152,13 @@ func resourceAlicloudImmProjectDelete(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil

@@ -76,8 +76,6 @@ func resourceAlicloudImpAppTemplate() *schema.Resource {
 
 func resourceAlicloudImpAppTemplateCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "CreateAppTemplate"
 	request := make(map[string]interface{})
 	conn, err := client.NewImpClient()
 	if err != nil {
@@ -91,9 +89,12 @@ func resourceAlicloudImpAppTemplateCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("scene"); ok {
 		request["Scene"] = v
 	}
+
+	var response map[string]interface{}
+	action := "CreateAppTemplate"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -101,9 +102,10 @@ func resourceAlicloudImpAppTemplateCreate(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_imp_app_template", action, AlibabaCloudSdkGoERROR)
 	}
@@ -140,7 +142,6 @@ func resourceAlicloudImpAppTemplateRead(d *schema.ResourceData, meta interface{}
 		}
 		d.Set("config_list", configListMaps)
 	}
-
 	d.Set("integration_mode", object["IntegrationMode"])
 	d.Set("scene", object["Scene"])
 	d.Set("status", object["Status"])
@@ -148,8 +149,11 @@ func resourceAlicloudImpAppTemplateRead(d *schema.ResourceData, meta interface{}
 }
 func resourceAlicloudImpAppTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
 	d.Partial(true)
+	conn, err := client.NewImpClient()
+	if err != nil {
+		return WrapError(err)
+	}
 
 	update := false
 	request := map[string]interface{}{
@@ -161,13 +165,9 @@ func resourceAlicloudImpAppTemplateUpdate(d *schema.ResourceData, meta interface
 	}
 	if update {
 		action := "UpdateAppTemplate"
-		conn, err := client.NewImpClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -175,9 +175,9 @@ func resourceAlicloudImpAppTemplateUpdate(d *schema.ResourceData, meta interface
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, resp, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -208,13 +208,9 @@ func resourceAlicloudImpAppTemplateUpdate(d *schema.ResourceData, meta interface
 	}
 	if update {
 		action := "UpdateAppTemplateConfig"
-		conn, err := client.NewImpClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-30"), StringPointer("AK"), nil, updateAppTemplateConfigReq, &util.RuntimeOptions{})
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-30"), StringPointer("AK"), nil, updateAppTemplateConfigReq, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -222,9 +218,9 @@ func resourceAlicloudImpAppTemplateUpdate(d *schema.ResourceData, meta interface
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, resp, updateAppTemplateConfigReq)
 			return nil
 		})
-		addDebug(action, response, updateAppTemplateConfigReq)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -236,8 +232,6 @@ func resourceAlicloudImpAppTemplateUpdate(d *schema.ResourceData, meta interface
 }
 func resourceAlicloudImpAppTemplateDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteAppTemplate"
-	var response map[string]interface{}
 	conn, err := client.NewImpClient()
 	if err != nil {
 		return WrapError(err)
@@ -246,9 +240,10 @@ func resourceAlicloudImpAppTemplateDelete(d *schema.ResourceData, meta interface
 		"AppTemplateId": d.Id(),
 	}
 
+	action := "DeleteAppTemplate"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-06-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -256,11 +251,11 @@ func resourceAlicloudImpAppTemplateDelete(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidAppTemplateId.App.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidAppTemplateId.App.NotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
