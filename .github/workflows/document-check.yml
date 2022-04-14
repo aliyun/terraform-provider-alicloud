@@ -4,10 +4,15 @@ on:
     branches:
       - main
   pull_request:
-    paths:
-      - .github/workflows/document-check.yml
-      - .go-version
-      - website/docs/**
+    pull_request_target:
+      types:
+        - opened
+      paths:
+        - .github/workflows/document-check.yml
+        - .go-version
+        - website/docs/**
+
+
 
 jobs:
   markdown-link-check:
@@ -34,7 +39,7 @@ jobs:
       - name: Check out code.
         uses: actions/checkout@v1
       - name: misspell
-        uses: reviewdog/action-misspell@v1
+        uses: reviewdog/action-misspell@v1.11.1
         with:
           github_token: ${{secrets.github_token}}
           fail_on_error: true
