@@ -239,6 +239,7 @@ resource "alicloud_ram_role" "default" {
 
 func TestAccAlicloudFnfFlow_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
+	checkoutSupportedRegions(t, true, connectivity.FnFSupportRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_fnf_flow"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_fnf_flow"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
