@@ -64,6 +64,13 @@ func (s *R_kvstoreService) DescribeSecurityIps(id string) (object r_kvstore.Secu
 	if len(response.SecurityIpGroups.SecurityIpGroup) < 1 {
 		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return object, err
+	} else {
+		for _, v := range response.SecurityIpGroups.SecurityIpGroup {
+			if v.SecurityIpGroupName == "ali_dms_group" || v.SecurityIpGroupName == "hdm_security_ips" {
+				continue
+			}
+			return v, nil
+		}
 	}
 	return response.SecurityIpGroups.SecurityIpGroup[0], nil
 }
