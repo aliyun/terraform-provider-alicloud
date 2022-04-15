@@ -258,6 +258,7 @@ type= "FDL"
 
 func TestAccAlicloudFnfSchedule_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
+	checkoutSupportedRegions(t, true, connectivity.FnFSupportRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_fnf_schedule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_fnf_schedule"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

@@ -87,7 +87,7 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_gpdb_zones.default.zones.2.id
+  zone_id = data.alicloud_gpdb_zones.default.zones.0.id
 }
 
 
