@@ -1257,6 +1257,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_slb_server_group_server_attachment":                   resourceAlicloudSlbServerGroupServerAttachment(),
 			"alicloud_alb_listener_acl_attachment":                          resourceAlicloudAlbListenerAclAttachment(),
 			"alicloud_hbr_ots_backup_plan":                                  resourceAlicloudHbrOtsBackupPlan(),
+			"alicloud_sae_load_balancer_internet":                           resourceAlicloudSaeLoadBalancerInternet(),
 		},
 
 		ConfigureFunc: providerConfigure,

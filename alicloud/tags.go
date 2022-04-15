@@ -109,7 +109,7 @@ func tagsToMap(tags interface{}) map[string]interface{} {
 }
 
 func tagIgnored(tagKey string, tagValue interface{}) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://", "^sae.do.not.delete"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, tagKey)
 		ok, _ := regexp.MatchString(v, tagKey)
