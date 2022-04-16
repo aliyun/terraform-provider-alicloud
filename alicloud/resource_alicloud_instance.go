@@ -327,7 +327,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Running", "Stopped"}, false),
-				Default:      "Running",
+				Computed:     true,
 			},
 
 			"user_data": {
@@ -804,9 +804,9 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapError(err)
 	}
-	target := d.Get("status").(string)
+	target, targetExist := d.GetOk("status")
 	statusUpdate := d.HasChange("status")
-	if d.IsNewResource() && target == string(Running) {
+	if d.IsNewResource() && targetExist && target.(string) == string(Running) {
 		statusUpdate = false
 	}
 	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate || statusUpdate {
@@ -815,7 +815,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		if errDesc != nil {
 			return WrapError(errDesc)
 		}
-		if (statusUpdate && target == string(Stopped)) || instance.Status == string(Running) {
+		if (statusUpdate && targetExist && target == string(Stopped)) || instance.Status == string(Running) {
 			stopRequest := ecs.CreateStopInstanceRequest()
 			stopRequest.RegionId = client.RegionId
 			stopRequest.InstanceId = d.Id()
@@ -855,7 +855,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			return WrapError(err)
 		}
 
-		if target == string(Running) {
+		if targetExist && target == string(Running) {
 			startRequest := ecs.CreateStartInstanceRequest()
 			startRequest.InstanceId = d.Id()
 
