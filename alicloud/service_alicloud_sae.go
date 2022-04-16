@@ -349,13 +349,9 @@ func (s *SaeService) DescribeApplicationSlb(id string) (object map[string]interf
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	parts, err := ParseResourceId(id, 2)
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "/pop/v1/sam/app/slb"
 	request := map[string]*string{
-		"AppId": StringPointer(parts[0]),
+		"AppId": StringPointer(id),
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
