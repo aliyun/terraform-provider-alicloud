@@ -29,12 +29,11 @@ func resourceAlicloudSaeLoadBalancerInternet() *schema.Resource {
 			},
 			"internet_slb_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 			"internet": {
 				Type:     schema.TypeSet,
 				Required: true,
-				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"https_cert_id": {
@@ -76,24 +75,24 @@ func resourceAlicloudSaeSaeLoadBalancerInternetCreate(d *schema.ResourceData, me
 		return WrapError(err)
 	}
 	request["AppId"] = StringPointer(d.Get("app_id").(string))
-	request["InternetSlbId"] = StringPointer(d.Get("internet_slb_id").(string))
+	if v, ok := d.GetOk("internet_slb_id"); ok {
+		request["InternetSlbId"] = StringPointer(v.(string))
+	}
+	internetReq := make([]interface{}, 0)
 	for _, internet := range d.Get("internet").(*schema.Set).List() {
 		internetMap := internet.(map[string]interface{})
-		internetReq := []interface{}{
-			map[string]interface{}{
-				"httpsCertId": internetMap["https_cert_id"],
-				"protocol":    internetMap["protocol"],
-				"targetPort":  internetMap["target_port"],
-				"port":        internetMap["port"],
-			},
-		}
-		obj, err := json.Marshal(internetReq)
-		if err != nil {
-			return WrapError(err)
-		}
-		request["Internet"] = StringPointer(string(obj))
+		internetReq = append(internetReq, map[string]interface{}{
+			"httpsCertId": internetMap["https_cert_id"],
+			"protocol":    internetMap["protocol"],
+			"targetPort":  internetMap["target_port"],
+			"port":        internetMap["port"],
+		})
 	}
-
+	obj, err := json.Marshal(internetReq)
+	if err != nil {
+		return WrapError(err)
+	}
+	request["Internet"] = StringPointer(string(obj))
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
@@ -118,7 +117,7 @@ func resourceAlicloudSaeSaeLoadBalancerInternetCreate(d *schema.ResourceData, me
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 	}
-	d.SetId(fmt.Sprint(d.Get("app_id"), ":", d.Get("internet_slb_id")))
+	d.SetId(fmt.Sprint(d.Get("app_id")))
 
 	stateConf := BuildStateConf([]string{}, []string{"SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, saeService.SaeApplicationStateRefreshFunc(d.Get("app_id").(string), []string{"FAIL", "AUTO_BATCH_WAIT", "APPROVED", "WAIT_APPROVAL", "WAIT_BATCH_CONFIRM", "ABORT", "SYSTEM_FAIL"}))
 	if _, err := stateConf.WaitForState(); err != nil {
@@ -129,10 +128,6 @@ func resourceAlicloudSaeSaeLoadBalancerInternetCreate(d *schema.ResourceData, me
 func resourceAlicloudSaeSaeLoadBalancerInternetRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	saeService := SaeService{client}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
 
 	describeApplicationSlbObject, err := saeService.DescribeApplicationSlb(d.Id())
 	if err != nil {
@@ -141,7 +136,7 @@ func resourceAlicloudSaeSaeLoadBalancerInternetRead(d *schema.ResourceData, meta
 
 	d.Set("internet_ip", describeApplicationSlbObject["InternetIp"])
 	d.Set("internet_slb_id", describeApplicationSlbObject["InternetSlbId"])
-	d.Set("app_id", parts[0])
+	d.Set("app_id", d.Id())
 	internetArray := make([]interface{}, 0)
 	if v, ok := describeApplicationSlbObject["Internet"]; ok {
 		for _, internet := range v.([]interface{}) {
@@ -159,10 +154,6 @@ func resourceAlicloudSaeSaeLoadBalancerInternetRead(d *schema.ResourceData, meta
 	return nil
 }
 func resourceAlicloudSaeSaeLoadBalancerInternetUpdate(d *schema.ResourceData, meta interface{}) error {
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
 	client := meta.(*connectivity.AliyunClient)
 	saeService := SaeService{client}
 	conn, err := client.NewServerlessClient()
@@ -172,32 +163,33 @@ func resourceAlicloudSaeSaeLoadBalancerInternetUpdate(d *schema.ResourceData, me
 	var response map[string]interface{}
 	update := false
 	request := map[string]*string{
-		"AppId": StringPointer(parts[0]),
+		"AppId": StringPointer(d.Id()),
 	}
 	if d.HasChange("internet_slb_id") {
 		update = true
 	}
-	request["InternetSlbId"] = StringPointer(d.Get("internet_slb_id").(string))
+	if v, ok := d.GetOk("internet_slb_id"); ok {
+		request["InternetSlbId"] = StringPointer(v.(string))
+	}
 
 	if d.HasChange("internet") {
 		update = true
 	}
+	internetReq := make([]interface{}, 0)
 	for _, internet := range d.Get("internet").(*schema.Set).List() {
 		internetMap := internet.(map[string]interface{})
-		internetReq := []interface{}{
-			map[string]interface{}{
-				"httpsCertId": internetMap["https_cert_id"],
-				"protocol":    internetMap["protocol"],
-				"targetPort":  internetMap["target_port"],
-				"port":        internetMap["port"],
-			},
-		}
-		obj, err := json.Marshal(internetReq)
-		if err != nil {
-			return WrapError(err)
-		}
-		request["Internet"] = StringPointer(string(obj))
+		internetReq = append(internetReq, map[string]interface{}{
+			"httpsCertId": internetMap["https_cert_id"],
+			"protocol":    internetMap["protocol"],
+			"targetPort":  internetMap["target_port"],
+			"port":        internetMap["port"],
+		})
 	}
+	obj, err := json.Marshal(internetReq)
+	if err != nil {
+		return WrapError(err)
+	}
+	request["Internet"] = StringPointer(string(obj))
 
 	if update {
 		action := "/pop/v1/sam/app/slb"
@@ -234,12 +226,8 @@ func resourceAlicloudSaeSaeLoadBalancerInternetUpdate(d *schema.ResourceData, me
 	return resourceAlicloudSaeSaeLoadBalancerInternetRead(d, meta)
 }
 func resourceAlicloudSaeSaeLoadBalancerInternetDelete(d *schema.ResourceData, meta interface{}) error {
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]*string{
-		"AppId":    StringPointer(parts[0]),
+		"AppId":    StringPointer(d.Id()),
 		"Internet": StringPointer(strconv.FormatBool(true)),
 	}
 	client := meta.(*connectivity.AliyunClient)

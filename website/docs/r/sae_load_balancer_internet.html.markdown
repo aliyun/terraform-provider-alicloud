@@ -37,7 +37,7 @@ resource "alicloud_sae_load_balancer_internet" "example" {
 The following arguments are supported:
 
 * `app_id` - (Required) The target application ID that needs to be bound to the SLB.
-* `internet_slb_id` - (Required) The internet SLB ID.
+* `internet_slb_id` - (Optional) The internet SLB ID.
 * `internet` - (Required) The bound private network SLB. See the following `Block ots_detail`.
 
 ### Block ots_detail
@@ -54,7 +54,7 @@ The internet supports the following:
 
 The following attributes are exported:
 
-* `id` - The resource ID. The value formats as `<app_id>:<internet_slb_id>`.
+* `id` - The resource ID. The value is the same as the application ID.
 * `internet_ip` - Use designated public network SLBs that have been purchased to support non-shared instances.
 
 ## Import
@@ -62,5 +62,5 @@ The following attributes are exported:
 The resource can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_sae_load_balancer_internet.example <app_id>:<internet_slb_id>
+$ terraform import alicloud_sae_load_balancer_internet.example <id>
 ```

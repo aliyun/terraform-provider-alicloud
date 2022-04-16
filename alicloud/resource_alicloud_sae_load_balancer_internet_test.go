@@ -41,13 +41,18 @@ func TestAccAlicloudSAESlbInternet_basic0(t *testing.T) {
 							"port":        "80",
 							"target_port": "8080",
 						},
+						{
+							"protocol":    "TCP",
+							"port":        "89",
+							"target_port": "8989",
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"app_id":          CHECKSET,
 						"internet_slb_id": CHECKSET,
-						"internet.#":      "1",
+						"internet.#":      "2",
 					}),
 				),
 			},
@@ -61,13 +66,18 @@ func TestAccAlicloudSAESlbInternet_basic0(t *testing.T) {
 							"port":        "90",
 							"target_port": "9090",
 						},
+						{
+							"protocol":    "TCP",
+							"port":        "99",
+							"target_port": "9999",
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"app_id":          CHECKSET,
 						"internet_slb_id": CHECKSET,
-						"internet.#":      "1",
+						"internet.#":      "2",
 					}),
 				),
 			},
