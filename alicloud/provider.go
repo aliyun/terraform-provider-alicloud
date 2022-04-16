@@ -682,6 +682,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_available_resources":      dataSourceAlicloudCenTransitRouterAvailableResources(),
 			"alicloud_ecs_image_pipelines":                         dataSourceAlicloudEcsImagePipelines(),
 			"alicloud_hbr_ots_backup_plans":                        dataSourceAlicloudHbrOtsBackupPlans(),
+			"alicloud_hbr_ots_snapshots":                           dataSourceAlicloudHbrOtsSnapshots(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),

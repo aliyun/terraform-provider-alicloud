@@ -215,6 +215,93 @@ func TestAccAlicloudHBROtsBackupPlan_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudHBROtsBackupPlan_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_hbr_ots_backup_plan.default"
+	ra := resourceAttrInit(resourceId, AlicloudHBROtsBackupPlanMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HbrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHbrOtsBackupPlan")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 9999)
+	name := fmt.Sprintf("testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHBROtsBackupPlanBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vault_id":             "${alicloud_hbr_vault.default.id}",
+					"ots_backup_plan_name": name,
+					"backup_type":          "COMPLETE",
+					"retention":            "1",
+					"instance_name":        "${alicloud_ots_instance.foo.name}",
+					"ots_detail": []map[string]interface{}{
+						{
+							"table_names": []string{
+								"${alicloud_ots_table.basic.table_name}",
+							},
+						},
+					},
+					"rules": []map[string]interface{}{
+						{
+							"schedule":    fmt.Sprintf("I|%v|P1D", time.Now().Unix()),
+							"retention":   "1",
+							"disabled":    "false",
+							"rule_name":   name,
+							"backup_type": "COMPLETE",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_type":          "COMPLETE",
+						"rules.#":              "1",
+						"ots_backup_plan_name": name,
+						"retention":            "1",
+						"ots_detail.#":         "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rules": []map[string]interface{}{
+						{
+							"schedule":    fmt.Sprintf("I|%v|P1D", time.Now().Unix()),
+							"retention":   "1",
+							"disabled":    "false",
+							"rule_name":   name,
+							"backup_type": "COMPLETE",
+						},
+						{
+							"schedule":    fmt.Sprintf("I|%v|P1D", time.Now().Unix()),
+							"retention":   "1",
+							"disabled":    "false",
+							"rule_name":   name + "update",
+							"backup_type": "COMPLETE",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_type":          "COMPLETE",
+						"rules.#":              "2",
+						"ots_backup_plan_name": name,
+						"retention":            "1",
+						"ots_detail.#":         "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AlicloudHBROtsBackupPlanMap0 = map[string]string{}
 
 func AlicloudHBROtsBackupPlanBasicDependence0(name string) string {

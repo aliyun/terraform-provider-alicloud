@@ -71,13 +71,13 @@ The following arguments are supported:
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
 * `ots_backup_plan_name` - (Required) The name of the backup plan. 1~64 characters, the backup plan name of each data source type in a single warehouse required to be unique.
 * `retention` - (Required) Backup retention days, the minimum is 1.
-* `schedule` - (Required) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
+* `schedule` - (Optional, Deprecated) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
   - `startTime` Backup start time, UNIX time seconds.
   - `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
 * `vault_id` - (Required) The ID of backup vault.
-* `instance_name` - (Optional) The name of the Tablestore instance.
-* `ots_detail` - (Optional) The details about the Tablestore instance. See the following `Block ots_detail`.
-
+* `instance_name` - (Optional) The name of the Table store instance.
+* `ots_detail` - (Optional) The details about the Table store instance. See the following `Block ots_detail`.
+* `rules` - (Optional,Available in v1.164.0+) The backup plan rule. See the following `Block rules`.
 
 
 ### Block ots_detail
@@ -86,7 +86,17 @@ The ots_detail supports the following:
 
 * `table_names` - (Optional) The names of the destination tables in the Tablestore instance.
 
+### Block rules
 
+The rules supports the following:
+
+* `schedule` - (Optional) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
+* `retention` - (Optional) Backup retention days, the minimum is 1.
+  - `startTime` Backup start time, UNIX time seconds.
+  - `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
+* `disabled` - (Optional) Whether to disable the backup task. Valid values: true, false.
+* `rule_name` - (Optional)  The name of the backup rule.
+* `backup_type` - (Optional) The name of the tableStore instance.
 
 ## Attributes Reference
 
