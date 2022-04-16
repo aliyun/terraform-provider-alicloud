@@ -40,15 +40,43 @@ func TestAccAlicloudEssAlbServerGroupAttachment_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force"},
+				ImportStateVerifyIgnore: []string{"force_attach"},
 			},
+		},
+	})
+}
+
+func TestAccAlicloudEssAlbServerGroupAttachment_nonForceAttach(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_alb_server_group_attachment.default"
+	basicMap := map[string]string{
+		"scaling_group_id": CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	testAccCheck := ra.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssAlbServerGroupsDestroy,
+		Steps: []resource.TestStep{
 			{
 				Config: testAccEssScalingGroupAlbServerGroupNotForceAttach(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"id": NOSET,
+						"id": CHECKSET,
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_attach"},
 			},
 		},
 	})
