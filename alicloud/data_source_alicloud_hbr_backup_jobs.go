@@ -34,7 +34,7 @@ func dataSourceAlicloudHbrBackupJobs() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ECS_FILE", "NAS", "OSS", "UDM_ECS", "UDM_ECS_DISK"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"ECS_FILE", "NAS", "OSS", "OTS", "UDM_ECS", "UDM_ECS", "UDM_ECS_DISK"}, false),
 			},
 			"filter": {
 				Type:     schema.TypeList,
@@ -192,6 +192,21 @@ func dataSourceAlicloudHbrBackupJobs() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"ots_detail": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"table_names": {
+										Type: schema.TypeList,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -325,6 +340,13 @@ func dataSourceAlicloudHbrBackupJobsRead(d *schema.ResourceData, meta interface{
 		if object["Path"] != nil {
 			mapping["path"] = object["Paths"].(map[string]interface{})["Path"]
 		}
+		otsDetails := make([]map[string]interface{}, 0)
+		if v, ok := object["OtsDetail"].(map[string]interface{}); ok {
+			otsDetail := make(map[string]interface{}, 0)
+			otsDetail["table_names"] = v["TableNames"].(map[string]interface{})["TableName"]
+			otsDetails = append(otsDetails, otsDetail)
+		}
+		mapping["ots_detail"] = otsDetails
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
 	}

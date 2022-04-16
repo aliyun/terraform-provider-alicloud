@@ -289,6 +289,29 @@ func TestAccAlicloudHBRBackupJobsDataSource(t *testing.T) {
 	HbrBackupJobCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, planIdBackupConf, jobIdBackupConf, ecsBackupConf, ossBackupConf, nasBackupConf, statusBackupConf, completeTimeBackupConf, betweenTimeBackupConf)
 }
 
+func TestAccAlicloudHBRBackupJobsDataSource_ots(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_hbr_backup_jobs.default"
+	name := fmt.Sprintf("tf-testAccHbrBackupJobTest%d", rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceHbrBackupJobSourceConfig)
+	otsBackupConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"source_type": "OTS",
+			"filter": []map[string]interface{}{
+				{
+					"key":      "Status",
+					"operator": "EQUAL",
+					"values":   []string{"COMPLETE"},
+				},
+			},
+		}),
+	}
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.HbrSupportRegions)
+	}
+	HbrBackupJobCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, otsBackupConf)
+}
+
 func dataSourceHbrBackupJobSourceConfig(name string) string {
 	return fmt.Sprintf(`
 variable "name" {

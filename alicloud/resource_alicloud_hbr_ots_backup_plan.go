@@ -43,8 +43,9 @@ func resourceAlicloudHbrOtsBackupPlan() *schema.Resource {
 				Required: true,
 			},
 			"schedule": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'schedule' has been deprecated from version 1.163.0. Use 'rules' instead.",
 			},
 			"vault_id": {
 				Type:     schema.TypeString,
@@ -64,6 +65,34 @@ func resourceAlicloudHbrOtsBackupPlan() *schema.Resource {
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
+							Optional: true,
+						},
+					},
+				},
+			},
+			"rules": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"schedule": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"retention": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"disabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"rule_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"backup_type": {
+							Type:     schema.TypeString,
 							Optional: true,
 						},
 					},
@@ -105,6 +134,27 @@ func resourceAlicloudHbrOtsBackupPlanCreate(d *schema.ResourceData, meta interfa
 		}
 		ots, _ := json.Marshal(otsDetails)
 		request["OtsDetail"] = string(ots)
+	}
+
+	if v, ok := d.GetOk("rules"); ok {
+		for index, raw := range v.(*schema.Set).List() {
+			ruleObj := raw.(map[string]interface{})
+			if v, ok := ruleObj["schedule"]; ok && len(v.(string)) != 0 {
+				request[fmt.Sprintf("Rule.%d.Schedule", index+1)] = ruleObj["schedule"]
+			}
+			if v, ok := ruleObj["retention"]; ok && len(v.(string)) != 0 {
+				request[fmt.Sprintf("Rule.%d.Retention", index+1)] = ruleObj["retention"]
+			}
+			if _, ok := ruleObj["disabled"]; ok {
+				request[fmt.Sprintf("Rule.%d.Disabled", index+1)] = ruleObj["disabled"]
+			}
+			if v, ok := ruleObj["rule_name"]; ok && len(v.(string)) != 0 {
+				request[fmt.Sprintf("Rule.%d.RuleName", index+1)] = ruleObj["rule_name"]
+			}
+			if v, ok := ruleObj["backup_type"]; ok && len(v.(string)) != 0 {
+				request[fmt.Sprintf("Rule.%d.BackupType", index+1)] = ruleObj["backup_type"]
+			}
+		}
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -160,6 +210,22 @@ func resourceAlicloudHbrOtsBackupPlanRead(d *schema.ResourceData, meta interface
 	}
 	d.Set("ots_detail", otsDetails)
 
+	rules := make([]map[string]interface{}, 0)
+	if v, ok := object["Rules"].(map[string]interface{}); ok {
+		for _, val := range v["Rule"].([]interface{}) {
+			raw := val.(map[string]interface{})
+			obj := map[string]interface{}{
+				"schedule":    raw["Schedule"],
+				"retention":   raw["Retention"],
+				"disabled":    raw["Disabled"],
+				"rule_name":   raw["RuleName"],
+				"backup_type": raw["BackupType"],
+			}
+			rules = append(rules, obj)
+		}
+	}
+	d.Set("rules", rules)
+
 	return nil
 }
 func resourceAlicloudHbrOtsBackupPlanUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -211,6 +277,30 @@ func resourceAlicloudHbrOtsBackupPlanUpdate(d *schema.ResourceData, meta interfa
 		}
 		ots, _ := json.Marshal(otsDetails)
 		request["OtsDetail"] = string(ots)
+	}
+
+	if !d.IsNewResource() && d.HasChange("rules") {
+		update = true
+	}
+	if v, ok := d.GetOk("rules"); ok {
+		for index, raw := range v.(*schema.Set).List() {
+			ruleObj := raw.(map[string]interface{})
+			if v, ok := ruleObj["schedule"]; ok && len(v.(string)) != 0 {
+				request[fmt.Sprintf("Rule.%d.Schedule", index+1)] = ruleObj["schedule"]
+			}
+			if v, ok := ruleObj["retention"]; ok && len(v.(string)) != 0 {
+				request[fmt.Sprintf("Rule.%d.Retention", index+1)] = ruleObj["retention"]
+			}
+			if _, ok := ruleObj["disabled"]; ok {
+				request[fmt.Sprintf("Rule.%d.Disabled", index+1)] = ruleObj["disabled"]
+			}
+			if v, ok := ruleObj["rule_name"]; ok && len(v.(string)) != 0 {
+				request[fmt.Sprintf("Rule.%d.RuleName", index+1)] = ruleObj["rule_name"]
+			}
+			if v, ok := ruleObj["backup_type"]; ok && len(v.(string)) != 0 {
+				request[fmt.Sprintf("Rule.%d.BackupType", index+1)] = ruleObj["backup_type"]
+			}
+		}
 	}
 
 	if update {

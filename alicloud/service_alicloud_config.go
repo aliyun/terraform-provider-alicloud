@@ -174,7 +174,7 @@ func (s *ConfigService) DescribeConfigAggregator(id string) (object map[string]i
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), request, nil, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
