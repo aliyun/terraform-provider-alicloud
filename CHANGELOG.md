@@ -17,7 +17,7 @@ ENHANCEMENTS:
 - resource/alicloud_kvstore_instance: Added error retry code Task.Conflict ([#4848](https://github.com/aliyun/terraform-provider-alicloud/issues/4848))
 - resource/alicloud_mse_cluster: Improves the throwing error message implementation while invoking the OpenAPI ([#4846](https://github.com/aliyun/terraform-provider-alicloud/issues/4846))
 - datasource/alicloud_bastionhost_instances: Updates its dependence SDK ([#4853](https://github.com/aliyun/terraform-provider-alicloud/issues/4853))
-- datasource/alicloud_sae_applications: Support new field oss_mount_details [[#4858](https://github.com/aliyun/terraform-provider-alicloud/issues/4858)]	
+- datasource/alicloud_sae_applications: Support new field oss_mount_details ([#4858](https://github.com/aliyun/terraform-provider-alicloud/issues/4858))	
 - datasource/hbr_backup_jobs: add the field ots_detail && alicoud/hbr_backup_plan: add the field rule	
 - testcase: Adds new unit test case for resource alicloud_dms_enterprise_user alicloud_dts_consumer_channel alicloud_dts_job_monitor_rule ([#4821](https://github.com/aliyun/terraform-provider-alicloud/issues/4821))
 - testcase: Adds new unit test case for resource alicloud_eci_virtual_node alicloud_dts_synchronization_instance alicloud_eais_instance ([#4822](https://github.com/aliyun/terraform-provider-alicloud/issues/4822))
