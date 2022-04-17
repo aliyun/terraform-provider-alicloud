@@ -39,6 +39,8 @@ type Component struct {
 	Required      bool   `json:"required"`
 	Status        string `json:"status"`
 	ErrMessage    string `json:"err_message"`
+	Config        string `json:"config"`
+	ConfigSchema  string `json:"config_schema"`
 }
 
 const (
@@ -268,12 +270,14 @@ func (s *CsClient) DescribeClusterAddonsMetadata(clusterId string) (map[string]*
 		nextVersion := fields["next_version"].(string)
 		canUpgrade := fields["can_upgrade"].(bool)
 		required := fields["required"].(bool)
+		config := fields["config"].(string)
 		c := &Component{
 			ComponentName: name,
 			Version:       version,
 			NextVersion:   nextVersion,
 			CanUpgrade:    canUpgrade,
 			Required:      required,
+			Config:        config,
 		}
 		result[name] = c
 	}
@@ -337,6 +341,10 @@ func (s *CsClient) installAddon(d *schema.ResourceData) error {
 		Name:    tea.String(d.Get("name").(string)),
 		Version: tea.String(d.Get("version").(string)),
 	}
+
+	if config, exist := d.GetOk("config"); exist {
+		b.Config = tea.String(config.(string))
+	}
 	body = append(body, b)
 
 	creationArgs := &client.InstallClusterAddonsRequest{
@@ -359,6 +367,11 @@ func (s *CsClient) upgradeAddon(d *schema.ResourceData) error {
 		ComponentName: tea.String(d.Get("name").(string)),
 		NextVersion:   tea.String(d.Get("version").(string)),
 	}
+
+	if config, exist := d.GetOk("config"); exist {
+		b.Config = tea.String(config.(string))
+	}
+
 	body = append(body, b)
 
 	upgradeArgs := &client.UpgradeClusterAddonsRequest{
@@ -398,6 +411,22 @@ func (s *CsClient) uninstallAddon(d *schema.ResourceData) error {
 	return nil
 }
 
+func (s *CsClient) updateAddonConfig(d *schema.ResourceData) error {
+	clusterId := d.Get("cluster_id").(string)
+	ComponentName := d.Get("name").(string)
+
+	upgradeArgs := &client.ModifyClusterAddonRequest{
+		Config: tea.String(d.Get("config").(string)),
+	}
+
+	_, err := s.client.ModifyClusterAddon(&clusterId, &ComponentName, upgradeArgs)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddonConfig", err)
+	}
+
+	return nil
+}
+
 // This function returns the status of all available addons of the cluster
 func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map[string]*Component, error) {
 	availableAddons, err := s.DescribeClusterAddonsMetadata(clusterId)
@@ -426,6 +455,21 @@ func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map
 	}
 
 	return availableAddons, nil
+}
+
+// This function returns the status of all available addons of the cluster
+func (s *CsClient) DescribeCsKubernetesAddonMetadata(clusterId string, name string, version string) (*Component, error) {
+	resp, err := s.client.DescribeClusterAddonMetadata(&clusterId, &name, &version)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesExistedAddons", err)
+	}
+	result := &Component{
+		ComponentName: *resp.Body.Name,
+		Version:       *resp.Body.Version,
+		ConfigSchema:  *resp.Body.ConfigSchema,
+	}
+
+	return result, nil
 }
 
 func (s *CsService) DescribeCsKubernetesNodePool(id string) (nodePool *cs.NodePoolDetail, err error) {

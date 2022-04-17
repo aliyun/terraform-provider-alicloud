@@ -12,6 +12,7 @@ description: |-
 This resource will help you to manage addon in Kubernetes Cluster. 
 
 -> **NOTE:** Available in 1.150.0+.
+-> **NOTE:** From version 1.166.0, support specifying addon customizable configuration.
 
 ## Example Usage
 
@@ -68,7 +69,28 @@ resource "alicloud_cs_kubernetes_addon" "ack-node-problem-detector" {
   name       = "ack-node-problem-detector"
   version    = "1.2.7"
 }
+
+resource "alicloud_cs_kubernetes_addon" "nginx_ingress_controller" {
+  cluster_id = var.cluster_id
+  name       = "nginx-ingress-controller"
+  version    = "v1.1.2-aliyun.2"
+  // Specify custom configuration for addon. You can checkout the customizable configuration of the addon through data source alicloud_cs_kubernetes_addon_metadata.
+  config = jsonencode(
+    {
+      CpuLimit              = ""
+      CpuRequest            = "100m"
+      EnableWebhook         = true
+      HostNetwork           = false
+      IngressSlbNetworkType = "internet"
+      IngressSlbSpec        = "slb.s2.small"
+      MemoryLimit           = ""
+      MemoryRequest         = "200Mi"
+      NodeSelector          = []
+    }
+  )
+}
 ```
+
 **Upgrading of addon**
 First, check the `next_version` field of the addon that can be upgraded to through the `.tfstate file`, then overwrite the `version` field with the value of `next_version` and apply.
 ```terraform
@@ -86,6 +108,7 @@ The following arguments are supported:
 * `cluster_id` - (Required, ForceNew) The id of kubernetes cluster.
 * `name` - (Required, ForceNew) The name of addon.
 * `version` - (Required) The current version of addon.
+* `config` - (Optional, Available in 1.166.0+) The custom configuration of addon. You can checkout the customizable configuration of the addon through datasource `alicloud_cs_kubernetes_addon_metadata`, the returned format is the standard json schema. If return empty, it means that the addon does not support custom configuration yet. You can also checkout the current custom configuration through the data source `alicloud_cs_kubernetes_addons`.
 
 ## Attributes Reference
 
