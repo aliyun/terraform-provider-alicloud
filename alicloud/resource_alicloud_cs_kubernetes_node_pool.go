@@ -118,6 +118,19 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 				DiffSuppressFunc: csNodepoolDiskPerformanceLevelDiffSuppressFunc,
 			},
+			"system_disk_encrypted": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"system_disk_kms_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"system_disk_encrypt_algorithm": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"aes-256", "sm4-128"}, false),
+			},
 			"platform": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -603,6 +616,18 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.ScalingGroup.InstanceTypes = expandStringList(d.Get("instance_types").([]interface{}))
 	}
 
+	args.ScalingGroup.SystemDiskEncrypted = d.Get("system_disk_encrypted").(bool)
+
+	if args.ScalingGroup.SystemDiskEncrypted && d.HasChanges("system_disk_encrypt_algorithm") {
+		update = true
+		args.ScalingGroup.SystemDiskEncryptAlgorithm = d.Get("system_disk_encrypt_algorithm").(string)
+	}
+
+	if args.ScalingGroup.SystemDiskEncrypted && d.HasChanges("system_disk_kms_key") {
+		update = true
+		args.ScalingGroup.SystemDiskKMSKeyId = d.Get("system_disk_kms_key").(string)
+	}
+
 	// password is required by update method
 	args.ScalingGroup.LoginPassword = d.Get("password").(string)
 	if d.HasChange("password") {
@@ -851,6 +876,10 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("auto_renew_period", object.AutoRenewPeriod)
 	}
 
+	d.Set("system_disk_encrypted", object.SystemDiskEncrypted)
+	d.Set("system_disk_kms_key", object.SystemDiskKMSKeyId)
+	d.Set("system_disk_encrypt_algorithm", object.SystemDiskEncryptAlgorithm)
+
 	if passwd, ok := d.GetOk("password"); ok && passwd.(string) != "" {
 		d.Set("password", passwd)
 	}
@@ -1019,6 +1048,14 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 			creationArgs.PeriodUnit = d.Get("period_unit").(string)
 			creationArgs.AutoRenew = d.Get("auto_renew").(bool)
 			creationArgs.AutoRenewPeriod = d.Get("auto_renew_period").(int)
+		}
+	}
+
+	if v, ok := d.GetOkExists("system_disk_encrypted"); ok {
+		creationArgs.SystemDiskEncrypted = v.(bool)
+		if creationArgs.SystemDiskEncrypted {
+			creationArgs.SystemDiskKMSKeyId = d.Get("system_disk_kms_key").(string)
+			creationArgs.SystemDiskEncryptAlgorithm = d.Get("system_disk_encrypt_algorithm").(string)
 		}
 	}
 
@@ -1329,6 +1366,7 @@ func flattenNodeDataDisksConfig(config []cs.NodePoolDataDisk) (m []map[string]in
 			"category":          disks.Category,
 			"encrypted":         disks.Encrypted,
 			"performance_level": disks.PerformanceLevel,
+			"kms_key_id":        disks.KMSKeyId,
 		})
 	}
 

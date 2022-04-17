@@ -191,3 +191,4 @@ var MSESupportRegions = []Region{Zhangjiakou, USWest1, Shenzhen, ChengDu, Qingda
 var LogResourceSupportRegions = []Region{HeYuan}
 var AliKafkaSupportRegions = []Region{Beijing, CnNorth2Gov1, Qingdao, APSouthEast3, Huhehaote, APSouth1, EUWest1, ShenZhenFinance, ChengDu, USEast1, USWest1, Hangzhou, Zhangjiakou, Shenzhen, Shanghai, Hongkong, HeYuan, APSouthEast5, APNorthEast1, ShanghaiFinance, APSouthEast1, EUCentral1}
 var BastionhostSupportRegions = []Region{CnNorth2Gov1, Qingdao, ShanghaiFinance, EUCentral1, EUWest1, ChengDu, Shanghai, HeYuan, APNorthEast1, MEEast1, APSouth1, Hongkong, Zhangjiakou, USWest1, APSouthEast1, APSouthEast2, Huhehaote, APSouthEast5, Beijing, Hangzhou, ShenZhenFinance, APSouthEast3, USEast1, Shenzhen}
+var ACKSystemDiskEncryptionSupportRegions = []Region{Hongkong}
