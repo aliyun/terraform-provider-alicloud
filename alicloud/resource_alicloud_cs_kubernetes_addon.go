@@ -53,6 +53,10 @@ func resourceAlicloudCSKubernetesAddon() *schema.Resource {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
+			"config": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -80,6 +84,7 @@ func resourceAlicloudCSKubernetesAddonRead(d *schema.ResourceData, meta interfac
 	d.Set("next_version", addon.NextVersion)
 	d.Set("can_upgrade", addon.CanUpgrade)
 	d.Set("required", addon.Required)
+	d.Set("config", addon.Config)
 
 	return nil
 }
@@ -136,19 +141,23 @@ func resourceAlicloudCSKubernetesAddonUpdate(d *schema.ResourceData, meta interf
 	}
 	csClient := CsClient{client}
 
-	if d.HasChange("version") {
-		clusterId := d.Get("cluster_id").(string)
-		name := d.Get("name").(string)
+	clusterId := d.Get("cluster_id").(string)
+	name := d.Get("name").(string)
 
+	if d.HasChange("version") {
 		err := csClient.upgradeAddon(d)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddon", err)
 		}
-
-		stateConf := BuildStateConf([]string{"running", "Upgrading", "Pause"}, []string{"Success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterUpdate", d.Id())
+	} else if d.HasChange("config") {
+		err := csClient.updateAddonConfig(d)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddonConfig", err)
 		}
+	}
+	stateConf := BuildStateConf([]string{"running", "Upgrading", "Pause"}, []string{"Success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterUpdate", d.Id())
 	}
 
 	return resourceAlicloudCSKubernetesAddonRead(d, meta)
