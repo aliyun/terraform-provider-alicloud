@@ -278,13 +278,21 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.2.db_node_class}",
 					"modify_type":   "Upgrade",
 					"security_ips":  []string{"10.168.1.13", "100.69.7.113"},
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name": "default",
+						"security_ips":             []string{"10.168.1.13", "100.69.7.113"},
+					}, {
+						"db_cluster_ip_array_name": "test_ips1",
+						"security_ips":             []string{"10.168.1.14"},
+					}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":    "tf-testaccPolarDBClusterUpdate1",
-						"maintain_time":  "02:00Z-03:00Z",
-						"db_node_class":  CHECKSET,
-						"security_ips.#": "2",
+						"description":           "tf-testaccPolarDBClusterUpdate1",
+						"maintain_time":         "02:00Z-03:00Z",
+						"db_node_class":         CHECKSET,
+						"security_ips.#":        "2",
+						"db_cluster_ip_array.#": "2",
 					}),
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.13,100.69.7.113"),
 				),
