@@ -187,6 +187,7 @@ func testSweepFCCustomDomain(region string) error {
 }
 
 func TestAccAlicloudFCCustomDomainUpdate(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.FCCustomDomainSupportRegions)
 	var v *fc.GetCustomDomainOutput
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testacc-%s-alicloudfccustomdomain-%d-cd", defaultRegionToTest, rand)
@@ -212,7 +213,7 @@ func TestAccAlicloudFCCustomDomainUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name": "terraform.functioncompute.com",
+					"domain_name": "alicloud-provider.shop",
 					"protocol":    "HTTP",
 				}),
 				Check: resource.ComposeTestCheckFunc(
