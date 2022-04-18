@@ -10,7 +10,7 @@ import (
 	"fmt"
 )
 
-func TestAccAlicloudWafDomainsDataSource(t *testing.T) {
+func TestAccAlicloudWAFDomainsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccAlicloudWafDomainDataSourceConfig(rand, map[string]string{

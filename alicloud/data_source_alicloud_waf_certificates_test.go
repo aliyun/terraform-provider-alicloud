@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudWafCertificateDataSource(t *testing.T) {
+func TestAccAlicloudWAFCertificateDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
