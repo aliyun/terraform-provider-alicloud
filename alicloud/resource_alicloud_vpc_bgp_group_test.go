@@ -125,7 +125,6 @@ func TestAccAlicloudVpcBgpGroup_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_group.default"
-	checkoutSupportedRegions(t, true, connectivity.VPCBgpGroupSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudVPCBgpGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -237,7 +236,6 @@ func TestAccAlicloudVpcBgpGroup_basic1(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_group.default"
-	checkoutSupportedRegions(t, true, connectivity.VPCBgpGroupSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudVPCBgpGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}

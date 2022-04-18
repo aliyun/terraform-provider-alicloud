@@ -74,7 +74,7 @@ func TestAccAlicloudVpcBgpPeersDataSource(t *testing.T) {
 			"peers.0.id":              CHECKSET,
 			"peers.0.bgp_peer_id":     CHECKSET,
 			"peers.0.bgp_peer_name":   "",
-			"peers.0.bgp_status":      "",
+			"peers.0.bgp_status":      "Connect",
 			"peers.0.description":     "",
 			"peers.0.enable_bfd":      "true",
 			"peers.0.hold":            CHECKSET,

@@ -22,7 +22,6 @@ func TestAccAlicloudVpcBgpNetwork_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_network.default"
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudVPCBgpNetworkMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
