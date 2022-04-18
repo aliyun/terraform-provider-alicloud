@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVpcFlowLog_basic(t *testing.T) {
+func TestAccAlicloudVpcFlowLog_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_flow_log.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap0)
@@ -66,16 +66,17 @@ func TestAccAlicloudVpcFlowLog_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "tf-testaccflowlogchange",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "tf-testaccflowlogchange",
-					}),
-				),
-			},
+			// TODO: There is an openapi bug that ModifyFlowLogAttribute updating description is not work.
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"description": "tf-testaccflowlogchange",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"description": "tf-testaccflowlogchange",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"flow_log_name": name + "1",
@@ -108,12 +109,13 @@ func TestAccAlicloudVpcFlowLog_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":   "tf-testaccflowlog",
+					// TODO: There is an openapi bug that ModifyFlowLogAttribute updating description is not work.
+					//"description":   "tf-testaccflowlog",
 					"flow_log_name": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":   "tf-testaccflowlog",
+						//"description":   "tf-testaccflowlog",
 						"flow_log_name": name,
 					}),
 				),
