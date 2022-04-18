@@ -217,7 +217,7 @@ func dataSourceAlicloudBastionhostInstancesRead(d *schema.ResourceData, meta int
 		}
 		mapping["tags"] = tagsToMap(getResp2)
 
-		ids = append(ids, fmt.Sprint(mapping["InstanceId"]))
+		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["Description"])
 		s = append(s, mapping)
 	}
