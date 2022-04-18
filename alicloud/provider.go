@@ -683,6 +683,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_image_pipelines":                         dataSourceAlicloudEcsImagePipelines(),
 			"alicloud_hbr_ots_backup_plans":                        dataSourceAlicloudHbrOtsBackupPlans(),
 			"alicloud_hbr_ots_snapshots":                           dataSourceAlicloudHbrOtsSnapshots(),
+			"alicloud_bastionhost_host_share_keys":                 dataSourceAlicloudBastionhostHostShareKeys(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1260,6 +1261,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_listener_acl_attachment":                          resourceAlicloudAlbListenerAclAttachment(),
 			"alicloud_hbr_ots_backup_plan":                                  resourceAlicloudHbrOtsBackupPlan(),
 			"alicloud_sae_load_balancer_internet":                           resourceAlicloudSaeLoadBalancerInternet(),
+			"alicloud_bastionhost_host_share_key":                           resourceAlicloudBastionhostHostShareKey(),
 		},
 
 		ConfigureFunc: providerConfigure,

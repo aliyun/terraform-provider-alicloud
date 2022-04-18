@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"math"
 	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
