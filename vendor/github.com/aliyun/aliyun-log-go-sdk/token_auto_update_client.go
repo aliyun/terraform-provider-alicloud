@@ -1493,3 +1493,49 @@ func (c *TokenAutoUpdateClient) DeleteIngestion(project string, name string) (er
 	}
 	return
 }
+
+func (c *TokenAutoUpdateClient) CreateExport(project string, export *Export) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateExport(project, export)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) UpdateExport(project string, export *Export) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateExport(project, export)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) GetExport(project, name string) (export *Export, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		export, err = c.logClient.GetExport(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) ListExport(project, logstore, name, displayName string, offset, size int) (exports []*Export, total, count int, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		exports, total, count, err = c.logClient.ListExport(project, logstore, name, displayName, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) DeleteExport(project string, name string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.DeleteExport(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}

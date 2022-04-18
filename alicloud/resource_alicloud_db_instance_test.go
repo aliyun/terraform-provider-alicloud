@@ -1006,6 +1006,8 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
 					"db_time_zone":             "America/New_York",
+					"connection_string_prefix": "rm-dddddd",
+					"port":                     "5999",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1017,6 +1019,8 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 						"private_ip_address":       CHECKSET,
 						"db_time_zone":             "America/New_York",
 						"deletion_protection":      "false",
+						"port":                     "5999",
+						"connection_string_prefix": "rm-dddddd",
 					}),
 				),
 			},

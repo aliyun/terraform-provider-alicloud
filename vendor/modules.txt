@@ -98,7 +98,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit
 github.com/aliyun/aliyun-datahub-sdk-go/datahub
 github.com/aliyun/aliyun-datahub-sdk-go/datahub/pbmodel
 github.com/aliyun/aliyun-datahub-sdk-go/datahub/util
-# github.com/aliyun/aliyun-log-go-sdk v0.1.28-0.20220211074227-7b7d575ad8d3
+# github.com/aliyun/aliyun-log-go-sdk v0.1.30-0.20220407081210-a0934880522a
 github.com/aliyun/aliyun-log-go-sdk
 # github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 github.com/aliyun/aliyun-mns-go-sdk

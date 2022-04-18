@@ -44,6 +44,15 @@ const (
 	Critical Severity = 10
 )
 
+// power sql
+type PowerSqlMode string
+
+const (
+	PowerSqlModeAuto    PowerSqlMode = "auto"
+	PowerSqlModeEnable  PowerSqlMode = "enable"
+	PowerSqlModeDisable PowerSqlMode = "disable"
+)
+
 const (
 	JoinTypeCross        = "cross_join"
 	JoinTypeInner        = "inner_join"
@@ -163,12 +172,13 @@ type AlertQuery struct {
 	Start        string `json:"start"`
 	End          string `json:"end"`
 
-	StoreType   string `json:"storeType"`
-	Project     string `json:"project"`
-	Store       string `json:"store"`
-	Region      string `json:"region"`
-	RoleArn     string `json:"roleArn"`
-	DashboardId string `json:"dashboardId"`
+	StoreType    string       `json:"storeType"`
+	Project      string       `json:"project"`
+	Store        string       `json:"store"`
+	Region       string       `json:"region"`
+	RoleArn      string       `json:"roleArn"`
+	DashboardId  string       `json:"dashboardId"`
+	PowerSqlMode PowerSqlMode `json:"powerSqlMode"`
 }
 
 type Notification struct {
@@ -189,7 +199,7 @@ type Schedule struct {
 	DayOfWeek      int32  `json:"dayOfWeek"`
 	Hour           int32  `json:"hour"`
 	RunImmediately bool   `json:"runImmediately"`
-	TimeZone       string `json:"timeZone"`
+	TimeZone       string `json:"timeZone,omitempty"`
 }
 
 type AlertConfiguration struct {
@@ -217,6 +227,7 @@ type AlertConfiguration struct {
 	GroupConfiguration GroupConfiguration   `json:"groupConfiguration"`
 
 	PolicyConfiguration PolicyConfiguration `json:"policyConfiguration"`
+	AutoAnnotation      bool                `json:"autoAnnotation"`
 }
 
 func (c *Client) CreateSavedSearch(project string, savedSearch *SavedSearch) error {
