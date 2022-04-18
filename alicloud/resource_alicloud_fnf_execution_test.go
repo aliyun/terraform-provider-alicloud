@@ -20,8 +20,6 @@ import (
 )
 
 func TestAccAlicloudFnFExecution_basic0(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
 	var v map[string]interface{}
 	resourceId := "alicloud_fnf_execution.default"
 	checkoutSupportedRegions(t, true, connectivity.FnFSupportRegions)

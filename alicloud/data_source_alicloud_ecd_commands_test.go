@@ -58,7 +58,7 @@ func TestAccAlicloudECDCommandsDataSource(t *testing.T) {
 		existConfig: testAccCheckAlicloudEcdCommandsDataSourceName(rand, map[string]string{
 			"ids":              `["${alicloud_ecd_command.default.id}"]`,
 			"status":           `"Success"`,
-			"command_type":     `"RunBatScript"`,
+			"command_type":     `"RunPowerShellScript"`,
 			"content_encoding": `"PlainText"`,
 			"desktop_id":       `"${alicloud_ecd_desktop.default.id}"`,
 		}),

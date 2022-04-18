@@ -259,7 +259,7 @@ func (s *OnsService) OnsTopicStatus(id string) (object map[string]interface{}, e
 	err = resource.Retry(11*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Throttling.User"}) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

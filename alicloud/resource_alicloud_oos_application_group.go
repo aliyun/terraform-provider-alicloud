@@ -89,12 +89,9 @@ func resourceAlicloudOosApplicationGroupCreate(d *schema.ResourceData, meta inte
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-
-			if NeedRetry(err) {
-
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"AssumeRoleNotExist"}) {
 				wait()
 				return resource.RetryableError(err)
 			}

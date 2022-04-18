@@ -333,7 +333,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 
 	if d.HasChange("db_cluster_ip_array") {
 
-		if err := polarDBService.ModifyDBAccessWhitelistSecurityIps(d); err != nil {
+		if err := polarDBService.ModifyDBClusterAccessWhitelist(d); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("db_cluster_ip_array")

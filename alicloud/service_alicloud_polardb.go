@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -1327,9 +1328,46 @@ func (s *PolarDBService) DescribeDBSecurityGroups(clusterId string) ([]string, e
 	return groups, nil
 }
 
-func (s *PolarDBService) ModifyDBAccessWhitelistSecurityIps(d *schema.ResourceData) error {
-	if l, ok := d.GetOk("db_cluster_ip_array"); ok {
-		for _, e := range l.(*schema.Set).List() {
+func (s *PolarDBService) ModifyDBClusterAccessWhitelist(d *schema.ResourceData) error {
+	if _, ok := d.GetOk("db_cluster_ip_array"); ok {
+		removed, added := d.GetChange("db_cluster_ip_array")
+		for _, e := range removed.(*schema.Set).List() {
+			pack := e.(map[string]interface{})
+			if fmt.Sprint(pack["db_cluster_ip_array_name"]) == "default" {
+				continue
+			}
+			//ips expand string list
+			ipList := expandStringList(pack["security_ips"].(*schema.Set).List())
+			ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
+			request := polardb.CreateModifyDBClusterAccessWhitelistRequest()
+			request.RegionId = s.client.RegionId
+			request.DBClusterId = d.Id()
+			request.SecurityIps = ipstr
+			request.DBClusterIPArrayName = pack["db_cluster_ip_array_name"].(string)
+			request.ModifyMode = "Delete"
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+				raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+					return polarDBClient.ModifyDBClusterAccessWhitelist(request)
+				})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			if err := s.WaitForCluster(d.Id(), Running, DefaultTimeoutMedium); err != nil {
+				return WrapError(err)
+			}
+		}
+		for _, e := range added.(*schema.Set).List() {
 			pack := e.(map[string]interface{})
 			//ips expand string list
 			ipList := expandStringList(pack["security_ips"].(*schema.Set).List())
@@ -1366,8 +1404,8 @@ func (s *PolarDBService) ModifyDBAccessWhitelistSecurityIps(d *schema.ResourceDa
 				return WrapError(err)
 			}
 		}
+		d.SetPartial("db_cluster_ip_array")
 	}
-	d.SetPartial("db_cluster_ip_array")
 	return nil
 }
 
