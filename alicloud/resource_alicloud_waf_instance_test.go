@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudWafInstance_basic(t *testing.T) {
+func TestAccAlicloudWAFInstance_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_waf_instance.default"
 	ra := resourceAttrInit(resourceId, WafInstanceMap)
@@ -184,7 +184,7 @@ data "alicloud_resource_manager_resource_groups" "this" {
 `, name)
 }
 
-func TestAccAlicloudWafInstance_unit(t *testing.T) {
+func TestAccAlicloudWAFInstance_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_waf_instance"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_waf_instance"].Schema).Data(nil, nil)
