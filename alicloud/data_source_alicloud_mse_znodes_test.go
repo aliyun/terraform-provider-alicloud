@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudMseZnodesDataSource(t *testing.T) {
+func TestAccAlicloudMSEZnodesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.MSESupportRegions)
 	idsConf := dataSourceTestAccConfig{
