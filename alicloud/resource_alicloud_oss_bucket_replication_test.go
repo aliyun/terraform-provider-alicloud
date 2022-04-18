@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -99,7 +100,7 @@ func TestAccAlicloudOssBucketReplicationBasic(t *testing.T) {
 						"action":                        "PUT,DELETE",
 						"destination.#":                 "1",
 						"destination.0.bucket":          name + "-t-2",
-						"destination.0.location":        "oss-cn-hangzhou",
+						"destination.0.location":        "oss-" + os.Getenv("ALICLOUD_REGION"),
 						"destination.0.transfer_type":   "",
 						"historical_object_replication": "enabled",
 						"rule_id":                       CHECKSET,

@@ -163,7 +163,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"value": &schema.Schema{
+						"value": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
@@ -563,24 +563,29 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
-	dbClusterIPArrayName := "default"
-	if v, ok := d.GetOk("db_cluster_ip_array_name"); ok {
-		dbClusterIPArrayName = v.(string)
-	}
-
-	if err = polarDBService.DBClusterIPArrays(d, "db_cluster_ip_array", dbClusterIPArrayName); err != nil {
-		return WrapError(err)
-	}
-
-	ips, err := polarDBService.DescribeDBSecurityIps(d.Id(), dbClusterIPArrayName)
+	whiteList, err := polarDBService.DescribeDBClusterAccessWhitelist(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
-
-	d.Set("security_ips", ips)
+	defaultSecurityIps := make([]string, 0)
+	dbClusterIPArrays := make([]map[string]interface{}, 0)
+	for _, white := range whiteList.Items.DBClusterIPArray {
+		if white.DBClusterIPArrayAttribute == "hidden" {
+			continue
+		}
+		dbClusterIPArrays = append(dbClusterIPArrays, map[string]interface{}{
+			"db_cluster_ip_array_name": white.DBClusterIPArrayName,
+			"security_ips":             convertPolarDBIpsSetToString(white.SecurityIps),
+		})
+		if white.DBClusterIPArrayName == "default" {
+			defaultSecurityIps = convertPolarDBIpsSetToString(white.SecurityIps)
+		}
+	}
+	d.Set("db_cluster_ip_array", dbClusterIPArrays)
+	d.Set("security_ips", defaultSecurityIps)
 
 	//describe endpoints
-	if len(ips) == 1 && strings.HasPrefix(ips[0], LOCAL_HOST_IP) {
+	if len(defaultSecurityIps) == 1 && strings.HasPrefix(defaultSecurityIps[0], LOCAL_HOST_IP) {
 		d.Set("connection_string", "")
 	} else {
 		endpoints, err := polarDBService.DescribePolarDBInstanceNetInfo(d.Id())

@@ -194,7 +194,7 @@ data "alicloud_instance_types" "default" {
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 data "alicloud_images" "default" {
-	name_regex = "^ubuntu_18\\w{1,5}[64]{1}.*"
+	name_regex = "^ubuntu"
 	most_recent = true
 	owners = "system"
 }

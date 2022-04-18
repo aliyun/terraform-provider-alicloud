@@ -228,16 +228,19 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name": "default",
+						"security_ips":             []string{"10.168.1.12", "100.69.7.112"},
+					}, {
 						"db_cluster_ip_array_name": "test_ips1",
-						"security_ips":             []string{"10.168.1.12"},
+						"security_ips":             []string{"10.168.1.13"},
 					}, {
 						"db_cluster_ip_array_name": "test_ips2",
-						"security_ips":             []string{"100.69.7.112"},
+						"security_ips":             []string{"100.69.7.113"},
 					}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_ip_array.#": "2",
+						"db_cluster_ip_array.#": "3",
 					}),
 				),
 			},

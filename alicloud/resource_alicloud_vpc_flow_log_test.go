@@ -66,17 +66,16 @@ func TestAccAlicloudVpcFlowLog_basic0(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			// TODO: There is an openapi bug that ModifyFlowLogAttribute updating description is not work.
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"description": "tf-testaccflowlogchange",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"description": "tf-testaccflowlogchange",
-			//		}),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "tf-testaccflowlogchange",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "tf-testaccflowlogchange",
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"flow_log_name": name + "1",
@@ -109,13 +108,12 @@ func TestAccAlicloudVpcFlowLog_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					// TODO: There is an openapi bug that ModifyFlowLogAttribute updating description is not work.
-					//"description":   "tf-testaccflowlog",
+					"description":   "tf-testaccflowlog",
 					"flow_log_name": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						//"description":   "tf-testaccflowlog",
+						"description":   "tf-testaccflowlog",
 						"flow_log_name": name,
 					}),
 				),
