@@ -230,7 +230,7 @@ resource "alicloud_vpn_gateway" "default" {
 	name = "${var.name}"
 	vpc_id = data.alicloud_vpcs.default.ids.0
 	bandwidth = "10"
-	enable_ssl = false
+	enable_ssl = true
 	instance_charge_type = "PrePaid"
 	vswitch_id = local.vswitch_id
 }

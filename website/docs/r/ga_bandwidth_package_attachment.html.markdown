@@ -59,8 +59,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when create the Bandwidth Package Attachment.
-* `delete` - (Defaults to 1 mins) Used when delete the Bandwidth Package Attachment.
+* `create` - (Defaults to 5 mins) Used when create the Bandwidth Package Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Bandwidth Package Attachment.
 
 ## Import
 

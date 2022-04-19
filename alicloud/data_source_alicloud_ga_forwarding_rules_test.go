@@ -156,6 +156,7 @@ resource "alicloud_ga_endpoint_group" "default" {
   }
   traffic_percentage=20
   listener_id=alicloud_ga_listener.default.id
+  endpoint_group_type = "virtual"
 }
 
 resource "alicloud_ga_forwarding_rule" "default" {

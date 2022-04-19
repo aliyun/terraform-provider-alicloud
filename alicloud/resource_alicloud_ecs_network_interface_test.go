@@ -408,7 +408,7 @@ func TestAccAlicloudECSNetworkInterface_basic1(t *testing.T) {
 	}, "DescribeEcsNetworkInterface")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 9999)
+	rand := acctest.RandIntRange(2, 253)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
 	resource.Test(t, resource.TestCase{
@@ -469,7 +469,7 @@ func TestAccAlicloudECSNetworkInterface_basic2(t *testing.T) {
 	}, "DescribeEcsNetworkInterface")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 9999)
+	rand := acctest.RandIntRange(2, 253)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
 	resource.Test(t, resource.TestCase{
@@ -530,7 +530,7 @@ func TestAccAlicloudECSNetworkInterface_basic3(t *testing.T) {
 	}, "DescribeEcsNetworkInterface")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 9999)
+	rand := acctest.RandIntRange(2, 253)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
 	resource.Test(t, resource.TestCase{
@@ -587,7 +587,7 @@ func TestAccAlicloudECSNetworkInterface_basic4(t *testing.T) {
 	}, "DescribeEcsNetworkInterface")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 9999)
+	rand := acctest.RandIntRange(2, 253)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
 	resource.Test(t, resource.TestCase{
