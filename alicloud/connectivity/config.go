@@ -161,6 +161,7 @@ type Config struct {
 	EdsuserEndpoint             string
 	GpdbEndpoint                string
 	GaplusEndpoint              string
+	EhsEndpoint                 string
 }
 
 func (c *Config) loadAndValidate() error {
