@@ -66,6 +66,15 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3"}, false),
 			},
+			"commodity_code": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"bards", "rds", "rords", "rds_rordspre_public_cn", "bards_intl", "rds_intl", "rords_intl", "rds_rordspre_public_intl"}, false),
+			},
+			"db_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"multi_zone": {
 				Type:     schema.TypeBool,
 				Default:  false,
@@ -177,6 +186,12 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 			"DBInstanceStorageType": dbInstanceStorageType,
 			"Category":              category,
 		}
+		if v, ok := d.GetOk("commodity_code"); ok {
+			request["CommodityCode"] = v.(string)
+			if v, ok := d.GetOk("db_instance_id"); ok {
+				request["DBInstanceId"] = v.(string)
+			}
+		}
 		var response map[string]interface{}
 		conn, err := client.NewRdsClient()
 		if err != nil {
@@ -250,6 +265,12 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 			request["CommodityCode"] = "bards"
 		} else {
 			request["CommodityCode"] = "rds"
+		}
+		if v, ok := d.GetOk("commodity_code"); ok {
+			request["CommodityCode"] = v.(string)
+			if v, ok := d.GetOk("db_instance_id"); ok {
+				request["DBInstanceName"] = v.(string)
+			}
 		}
 		multiZone := false
 		if v, ok := d.GetOk("multi_zone"); ok {
@@ -358,6 +379,12 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 						for _, r := range supportedCategoryItem["SupportedStorageTypes"].([]interface{}) {
 							storageTypeItem := r.(map[string]interface{})
 							request["DBInstanceStorageType"] = fmt.Sprint(storageTypeItem["StorageType"])
+							if v, ok := d.GetOk("commodity_code"); ok {
+								request["CommodityCode"] = v.(string)
+								if v, ok := d.GetOk("db_instance_id"); ok {
+									request["DBInstanceId"] = v.(string)
+								}
+							}
 							var response map[string]interface{}
 							wait := incrementalWait(3*time.Second, 3*time.Second)
 							err = resource.Retry(5*time.Minute, func() *resource.RetryError {
