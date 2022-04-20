@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDmsEnterprisesDataSource(t *testing.T) {
+func TestAccAlicloudDMSEnterprisesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_dms_enterprise_instances.default"
 	name := fmt.Sprintf("tf_testAccDmsEnterpriseInstancesDataSource_%d", rand)

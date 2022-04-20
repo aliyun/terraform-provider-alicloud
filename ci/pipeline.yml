@@ -52,8 +52,8 @@ groups:
       - Datahub
       # CDN
       - CDN
-      # Dcdn
-      - Dcdn
+      # DCDN
+      - DCDN
       # Api Gateway
       - Apigateway
       # Mns
@@ -95,7 +95,7 @@ groups:
       - GraphDatabase
       - ADB
       - Maxcompute
-      - Dms
+      - DMS
       - Waf
       - Edas
       - ResourceManager
@@ -115,6 +115,7 @@ groups:
       - DirectMail
       - SAS
       - DFS
+      - DBFS
       - Ehpc
       - IMP
       - Ga
@@ -126,6 +127,7 @@ groups:
       - ExpressConnect
       - ServiceMesh
       - ClickHouse
+      - CloudSSO
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -172,8 +174,8 @@ groups:
       - Oss
       # CDN
       - CDN
-      # Dcdn
-      - Dcdn
+      # DCDN
+      - DCDN
       # Ots
       - Ots
       - Sweeper-1
@@ -197,7 +199,7 @@ groups:
       - HBase
       - GraphDatabase
       - ADB
-      - Dms
+      - DMS
       - Tsdb
       - Sweeper-1
       - Sweeper-2
@@ -1240,7 +1242,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Maxcompute"
 
-  - name: Dms
+  - name: DMS
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1251,7 +1253,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Dms"
+          TEST_CASE_CODE: "DMS"
 
   - name: Waf
     plan:
@@ -1305,7 +1307,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Ecs"
 
-  - name: Dcdn
+  - name: DCDN
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1316,7 +1318,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Dcdn"
+          TEST_CASE_CODE: "DCDN"
 
   - name: GraphDatabase
     plan:
@@ -1669,6 +1671,32 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "ClickHouse"
+
+  - name: DBFS
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 18Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "DBFS"
+
+  - name: CloudSSO
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0030Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "DBFS"
 
   - name: SweeperAfter
     plan:

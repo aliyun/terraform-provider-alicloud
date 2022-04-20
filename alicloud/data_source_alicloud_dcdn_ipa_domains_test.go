@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDcdnIpaDomainsDataSource(t *testing.T) {
+func TestAccAlicloudDCDNIpaDomainsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)
 	idsConf := dataSourceTestAccConfig{

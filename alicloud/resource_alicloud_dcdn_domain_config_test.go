@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDcdnDomainConfig_ip_allow_list(t *testing.T) {
+func TestAccAlicloudDCDNDomainConfig_ip_allow_list(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, dcdnDomainConfigBasicMap)
@@ -63,7 +63,7 @@ func TestAccAlicloudDcdnDomainConfig_ip_allow_list(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDcdnDomainConfig_referer_white_list(t *testing.T) {
+func TestAccAlicloudDCDNDomainConfig_referer_white_list(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, dcdnDomainConfigBasicMap)
@@ -116,7 +116,7 @@ func TestAccAlicloudDcdnDomainConfig_referer_white_list(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDcdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
+func TestAccAlicloudDCDNDomainConfig_filetype_based_ttl_set(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, dcdnDomainConfigBasicMap)

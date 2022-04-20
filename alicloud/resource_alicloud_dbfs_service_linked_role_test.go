@@ -17,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDbfsServiceLinkedRole_basic0(t *testing.T) {
+func TestAccAlicloudDBFSServiceLinkedRole_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dbfs_service_linked_role.default"
 	checkoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
@@ -62,7 +62,7 @@ func testAccCheckAlicloudDbfsServiceLinkedRoleDependence(name string) string {
 	return ""
 }
 
-func TestAccAlicloudDbfsServiceLinkedRole_unit(t *testing.T) {
+func TestAccAlicloudDBFSServiceLinkedRole_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_dbfs_service_linked_role"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_dbfs_service_linked_role"].Schema).Data(nil, nil)

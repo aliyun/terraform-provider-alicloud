@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCloudSsoScimServerDataSource(t *testing.T) {
+func TestAccAlicloudCloudSSOScimServerDataSource(t *testing.T) {
 
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_cloud_sso_scim_server_credentials.default"
