@@ -59,6 +59,7 @@ The following arguments are supported:
 * `most_recent` - (Optional, type: bool) If more than one result are returned, select the most recent one.
 * `owners` - (Optional) Filter results by a specific image owner. Valid items are `system`, `self`, `others`, `marketplace`.
 * `tags` - (Optional, Available in 1.95.0+) A mapping of tags to assign to the resource.
+* `image_owner_id` - (Optional, Available in 1.165.0+) The ID of the Alibaba Cloud account to which the image belongs. This parameter takes effect only when you query shared images or community images.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 -> **NOTE:** At least one of the `name_regex`, `most_recent` and `owners` must be set.

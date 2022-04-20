@@ -4,6 +4,7 @@ import (
 	"log"
 	"regexp"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -38,6 +39,11 @@ func dataSourceAlicloudImages() *schema.Resource {
 				ForceNew: true,
 				// must contain a valid Image owner, expected ImageOwnerSystem, ImageOwnerSelf, ImageOwnerOthers, ImageOwnerMarketplace, ImageOwnerDefault
 				ValidateFunc: validation.StringInSlice([]string{"system", "self", "others", "marketplace", ""}, false),
+			},
+			"image_owner_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -243,9 +249,10 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 	nameRegex, nameRegexOk := d.GetOk("name_regex")
 	owners, ownersOk := d.GetOk("owners")
 	mostRecent, mostRecentOk := d.GetOk("most_recent")
+	_, imageOwnerIdOk := d.GetOk("image_owner_id")
 
-	if nameRegexOk == false && ownersOk == false && mostRecentOk == false {
-		return WrapError(Error("One of name_regex, owners or most_recent must be assigned"))
+	if !nameRegexOk && !ownersOk && !mostRecentOk && !imageOwnerIdOk {
+		return WrapError(Error("One of name_regex, owners, most_recent or image_owner_id must be assigned"))
 	}
 
 	request := ecs.CreateDescribeImagesRequest()
@@ -310,6 +317,10 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 
 	if v, ok := d.GetOk("dry_run"); ok {
 		request.DryRun = requests.NewBoolean(v.(bool))
+	}
+	if v, ok := d.GetOk("image_owner_id"); ok {
+		imageId, _ := strconv.Atoi(v.(string))
+		request.ImageOwnerId = requests.NewInteger(imageId)
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
