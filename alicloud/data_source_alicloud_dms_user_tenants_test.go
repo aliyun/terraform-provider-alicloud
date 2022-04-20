@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestAccAlicloudDmsUserTenantsDataSource(t *testing.T) {
+func TestAccAlicloudDMSUserTenantsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_dms_user_tenants.default"
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceDmsUserTenantsConfigDependence)
 

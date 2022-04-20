@@ -114,7 +114,7 @@ locals{
 `, name)
 }
 
-func TestAccAlicloudCloudSsoGroup_unit(t *testing.T) {
+func TestAccAlicloudCloudSSOGroup_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_sso_group"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cloud_sso_group"].Schema).Data(nil, nil)

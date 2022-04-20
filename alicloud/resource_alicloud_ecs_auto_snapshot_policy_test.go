@@ -245,7 +245,7 @@ func TestAccAlicloudECSAutoSnapshotPolicyBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSnapshotPolicyMulti(t *testing.T) {
+func TestAccAlicloudECSSnapshotPolicyMulti(t *testing.T) {
 
 	resourceId := "alicloud_snapshot_policy.default.4"
 	randInt := acctest.RandIntRange(10000, 99999)

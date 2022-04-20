@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCloudSsoAccessConfigurationsDataSource(t *testing.T) {
+func TestAccAlicloudCloudSSOAccessConfigurationsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	checkoutSupportedRegions(t, true, connectivity.CloudSsoSupportRegions)
 	idsConf := dataSourceTestAccConfig{

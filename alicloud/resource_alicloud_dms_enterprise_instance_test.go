@@ -100,7 +100,7 @@ func testSweepDMSEnterpriseInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDmsEnterprise(t *testing.T) {
+func TestAccAlicloudDMSEnterprise(t *testing.T) {
 	resourceId := "alicloud_dms_enterprise_instance.default"
 	var v map[string]interface{}
 	ra := resourceAttrInit(resourceId, testAccCheckKeyValueInMapsForDMS)

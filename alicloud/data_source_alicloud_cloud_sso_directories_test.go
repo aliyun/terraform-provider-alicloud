@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCloudSsoDirectoriesDataSource(t *testing.T) {
+func TestAccAlicloudCloudSSODirectoriesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCloudSsoDirectoryDataSourceName(rand, map[string]string{
