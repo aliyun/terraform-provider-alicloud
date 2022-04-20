@@ -1263,6 +1263,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_load_balancer_internet":                           resourceAlicloudSaeLoadBalancerInternet(),
 			"alicloud_bastionhost_host_share_key":                           resourceAlicloudBastionhostHostShareKey(),
 			"alicloud_cdn_fc_trigger":                                       resourceAlicloudCdnFcTrigger(),
+			"alicloud_sae_load_balancer_intranet":                           resourceAlicloudSaeLoadBalancerIntranet(),
 		},
 
 		ConfigureFunc: providerConfigure,
