@@ -684,6 +684,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_ots_backup_plans":                        dataSourceAlicloudHbrOtsBackupPlans(),
 			"alicloud_hbr_ots_snapshots":                           dataSourceAlicloudHbrOtsSnapshots(),
 			"alicloud_bastionhost_host_share_keys":                 dataSourceAlicloudBastionhostHostShareKeys(),
+			"alicloud_ehpc_gws_clusters":                           dataSourceAlicloudEhpcGwsClusters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1262,6 +1263,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_ots_backup_plan":                                  resourceAlicloudHbrOtsBackupPlan(),
 			"alicloud_sae_load_balancer_internet":                           resourceAlicloudSaeLoadBalancerInternet(),
 			"alicloud_bastionhost_host_share_key":                           resourceAlicloudBastionhostHostShareKey(),
+			"alicloud_ehpc_gws_cluster":                                     resourceAlicloudEhpcGwsCluster(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1477,6 +1479,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.AcrEndpoint = strings.TrimSpace(endpoints["acr"].(string))
 		config.EdsuserEndpoint = strings.TrimSpace(endpoints["edsuser"].(string))
 		config.GaplusEndpoint = strings.TrimSpace(endpoints["gaplus"].(string))
+		config.EhsEndpoint = strings.TrimSpace(endpoints["ehs"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1787,6 +1790,8 @@ func init() {
 		"edsuser_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom edsuser endpoints.",
 
 		"gaplus_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom gaplus endpoints.",
+
+		"ehs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ehs endpoints.",
 	}
 }
 
@@ -1831,6 +1836,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"ehs": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ehs_endpoint"],
+				},
+
 				"gaplus": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2646,6 +2658,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["acr"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["edsuser"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["gaplus"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ehs"].(string)))
 	return hashcode.String(buf.String())
 }
 
