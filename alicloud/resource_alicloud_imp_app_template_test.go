@@ -77,12 +77,24 @@ func TestAccAlicloudIMPAppTemplate_basic0(t *testing.T) {
 							"value": "http://aliyun.com/tf-testAcc-jdD4qhGOujVlYcCUqTDUumAV",
 						},
 						{
+							"key":   "config.callbackClass.live",
+							"value": "config.callbackEvent.liveStatus",
+						},
+						{
+							"key":   "config.callbackClass.user",
+							"value": "config.callbackEvent.userEnterRoom",
+						},
+						{
 							"key":   "config.livePullDomain",
 							"value": "tf-testAcc-jdD4qhGOujVlYcCUqTDUumAV.com",
 						},
 						{
 							"key":   "config.livePushDomain",
 							"value": "tf-testAcc-jdD4qhGOujVlYcCUqTD.com",
+						},
+						{
+							"key":   "config.multipleClientsLogin",
+							"value": "false",
 						},
 						{
 							"key":   "config.regionId",
@@ -96,7 +108,7 @@ func TestAccAlicloudIMPAppTemplate_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"config_list.#": "6",
+						"config_list.#": "9",
 					}),
 				),
 			},
@@ -113,12 +125,24 @@ func TestAccAlicloudIMPAppTemplate_basic0(t *testing.T) {
 							"value": "http://aliyun.com/tf-testAcc-jdD4qhGOxxxxxxxx",
 						},
 						{
+							"key":   "config.callbackClass.live",
+							"value": "config.callbackEvent.liveStatusUpdate",
+						},
+						{
+							"key":   "config.callbackClass.user",
+							"value": "config.callbackEvent.userEnterRoomUpdate",
+						},
+						{
 							"key":   "config.livePullDomain",
 							"value": "tf-testAcc-jdD4qhGOxxxxxxxx.com",
 						},
 						{
 							"key":   "config.livePushDomain",
 							"value": "tf-testAcc-jdD4qhGOxxxxxxxx.com",
+						},
+						{
+							"key":   "config.multipleClientsLogin",
+							"value": "true",
 						},
 						{
 							"key":   "config.regionId",
@@ -133,7 +157,7 @@ func TestAccAlicloudIMPAppTemplate_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"app_template_name": "tf_testAcc_tqPHQU5xU",
-						"config_list.#":     "6",
+						"config_list.#":     "9",
 					}),
 				),
 			},

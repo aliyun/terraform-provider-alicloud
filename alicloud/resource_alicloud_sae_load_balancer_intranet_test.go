@@ -135,7 +135,7 @@ resource "alicloud_sae_application" "default" {
 variable "name" {
   default = "%s"
 }
-`, defaultRegionToTest, name, name, defaultRegionToTest)
+`, defaultRegionToTest, name, defaultRegionToTest, name)
 }
 
 var AlicloudSAESLBIntranetApplicationMap0 = map[string]string{}

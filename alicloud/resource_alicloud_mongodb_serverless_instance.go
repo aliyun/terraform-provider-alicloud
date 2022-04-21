@@ -264,6 +264,10 @@ func resourceAlicloudMongodbServerlessInstanceRead(d *schema.ResourceData, meta 
 }
 func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewDdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	MongoDBService := MongoDBService{client}
 	var response map[string]interface{}
 	d.Partial(true)
@@ -280,10 +284,6 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 			request["DBInstanceDescription"] = v
 		}
 		action := "ModifyDBInstanceDescription"
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -309,10 +309,6 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 		request["MaintainStartTime"] = d.Get("maintain_start_time")
 		request["MaintainEndTime"] = d.Get("maintain_end_time")
 		action := "ModifyDBInstanceMaintainTime"
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -348,10 +344,6 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 				removeSecurityIpsReq["SecurityIps"] = whiteListArg["security_ip_list"]
 
 				action := "ModifySecurityIps"
-				conn, err := client.NewDdsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -384,10 +376,6 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 				createSecurityIpsReq["SecurityIps"] = whiteListArg["security_ip_list"]
 
 				action := "ModifySecurityIps"
-				conn, err := client.NewDdsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -421,10 +409,6 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 			request["DBInstanceStorage"] = v
 		}
 		action := "ModifyDBInstanceSpec"
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
