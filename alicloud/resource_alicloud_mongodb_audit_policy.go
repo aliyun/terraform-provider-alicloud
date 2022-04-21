@@ -105,6 +105,10 @@ func resourceAlicloudMongodbAuditPolicyRead(d *schema.ResourceData, meta interfa
 }
 func resourceAlicloudMongodbAuditPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewDdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -120,10 +124,6 @@ func resourceAlicloudMongodbAuditPolicyUpdate(d *schema.ResourceData, meta inter
 	}
 	if update {
 		action := "ModifyAuditPolicy"
-		conn, err := client.NewDdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
