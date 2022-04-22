@@ -83,8 +83,11 @@ func (s *MscOpenSubscriptionService) DescribeMscSubContact(id string) (object ma
 		return nil
 	})
 	addDebug(action, response, request)
-	if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MscSub:Contact", id)), NotFoundMsg, ProviderERROR)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("MscSub:Contact", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
