@@ -2,15 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"regexp"
-	"time"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"log"
+	"regexp"
+	"time"
 )
 
 func resourceAlicloudMscSubContact() *schema.Resource {
@@ -50,8 +49,6 @@ func resourceAlicloudMscSubContact() *schema.Resource {
 
 func resourceAlicloudMscSubContactCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "CreateContact"
 	request := make(map[string]interface{})
 	conn, err := client.NewMscopensubscriptionClient()
 	if err != nil {
@@ -63,11 +60,13 @@ func resourceAlicloudMscSubContactCreate(d *schema.ResourceData, meta interface{
 	request["Position"] = d.Get("position")
 	request["ClientToken"] = buildClientToken("CreateContact")
 	request["Locale"] = "en"
+	var response map[string]interface{}
+	action := "CreateContact"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -75,9 +74,10 @@ func resourceAlicloudMscSubContactCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_msc_sub_contact", action, AlibabaCloudSdkGoERROR)
 	}
@@ -110,6 +110,11 @@ func resourceAlicloudMscSubContactRead(d *schema.ResourceData, meta interface{})
 func resourceAlicloudMscSubContactUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	conn, err := client.NewMscopensubscriptionClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	update := false
 	request := map[string]interface{}{
 		"ContactId": d.Id(),
@@ -128,16 +133,12 @@ func resourceAlicloudMscSubContactUpdate(d *schema.ResourceData, meta interface{
 	request["Mobile"] = d.Get("mobile")
 	if update {
 		action := "UpdateContact"
-		conn, err := client.NewMscopensubscriptionClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("UpdateContact")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &runtime)
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -145,9 +146,10 @@ func resourceAlicloudMscSubContactUpdate(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
+			response = resp
+			addDebug(action, resp, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -159,7 +161,6 @@ func resourceAlicloudMscSubContactUpdate(d *schema.ResourceData, meta interface{
 }
 func resourceAlicloudMscSubContactDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteContact"
 	var response map[string]interface{}
 	conn, err := client.NewMscopensubscriptionClient()
 	if err != nil {
@@ -169,9 +170,10 @@ func resourceAlicloudMscSubContactDelete(d *schema.ResourceData, meta interface{
 		"ContactId": d.Id(),
 	}
 
+	action := "DeleteContact"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -179,14 +181,15 @@ func resourceAlicloudMscSubContactDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
-	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound"}) || NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
-		return nil
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
