@@ -1,4 +1,32 @@
 ## 1.165.0 (Unreleased)
+
+- **New Resource:** `alicloud_bastionhost_host_share_key` [GH-4879]
+- **New Resource:** `alicloud_cdn_fc_trigger` [GH-4882]	
+- **New Resource:** `alicloud_sae_load_balancer_intranet` [GH-4894]
+- **New Resource:** `alicloud_bastionhost_host_account_share_key_attachment` [GH-4895]	
+- **New Data Source:** `alicloud_bastionhost_host_share_keys` [GH-4879] 
+
+ENHANCEMENTS:
+
+- resource/alicloud_vpc_flow_log: Adds retry stragety for error code OperationConflict [GH-4891]
+- resource/alicloud_db_instance: connection_prefix code location adjust. [GH-4886]
+- resource/alicloud_ga_bandwidth_package_attachment: Enlarges the default timeout for creating and deleting [GH-4884]
+- resource/alicloud_instance: remove the status's default value [GH-4873]
+- resource/alicloud_polardb_cluster: Improves setting the attribute db_cluster_ip_array [GH-4880]
+- resource/alicloud_db_instance: add attribute deletion_protection to support switch delete protect. [GH-4829]
+- resource/alicloud_route_table_attachment.: Adds retry stragety for error code OperationConflict [GH-4877]
+- resource/alicloud_express_connect_virtual_border_router: Adds retry stragety for error code TaskConflict [GH-4878]
+- resource/alicloud_cen_transit_vbr_atachment: Enlarges the default timeout for creating, updateing and deleting [GH-4878]
+- resource/alicloud_config_aggregate_compliance_pack，alicloud_config_compliance_pack： Added error code Invalid.ConfigRuleId.Value while detach rule in config compliance pack [GH-4725]	
+- datasource/alicloud_images: add the query field image_owner_id [GH-4892]	
+- testcase: Improves the fc resources testcases [GH-4881]
+- testcase: Improves the ecs launchTemplate testcases [GH-4893]
+
+BUG FIXES:
+
+- resource/alicloud_cms_alarm : Fixes the empty pointer error [GH-4885]
+- resource/alicloud_polardb_cluster: Fixes updating the attribute db_cluster_ip_array is not working bug [GH-4883]
+
 ## 1.164.0 (April 17, 2022)
 
 - **New Resource:** `alicloud_sae_load_balancer_internet` ([#4868](https://github.com/aliyun/terraform-provider-alicloud/issues/4868))
