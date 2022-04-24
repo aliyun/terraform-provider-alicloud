@@ -146,14 +146,14 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 
 }
 
-func TestAccAlicloudRdsDBReadonlyInstanceSSL_update(t *testing.T) {
+func TestAccAlicloudRdsDBReadonlyInstancePostgreSQL_update(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_db_readonly_instance.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccDBInstance_vpc_%d", rand)
 	var DBReadonlyMap = map[string]string{
 		"instance_storage":      "20",
-		"engine_version":        "11.0",
+		"engine_version":        "13.0",
 		"engine":                "PostgreSQL",
 		"port":                  CHECKSET,
 		"instance_name":         name,
@@ -172,7 +172,7 @@ func TestAccAlicloudRdsDBReadonlyInstanceSSL_update(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBReadonlyInstanceConfigSSLDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBReadonlyInstanceConfigPostgreSQLDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -189,7 +189,7 @@ func TestAccAlicloudRdsDBReadonlyInstanceSSL_update(t *testing.T) {
 					"master_db_instance_id": "${alicloud_db_instance.default.id}",
 					"zone_id":               "${alicloud_db_instance.default.zone_id}",
 					"engine_version":        "${alicloud_db_instance.default.engine_version}",
-					"instance_type":         "${alicloud_db_instance.default.instance_type}",
+					"instance_type":         "${data.alicloud_db_instance_classes.ro.instance_classes.0.instance_class}",
 					"instance_storage":      "${alicloud_db_instance.default.instance_storage}",
 					"instance_name":         "${var.name}",
 					"vswitch_id":            "${local.vswitch_id}",
@@ -205,6 +205,17 @@ func TestAccAlicloudRdsDBReadonlyInstanceSSL_update(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force_restart"},
 			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "true",
+					}),
+				),
+			},
 			//upgrade storage
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -217,7 +228,7 @@ func TestAccAlicloudRdsDBReadonlyInstanceSSL_update(t *testing.T) {
 			//upgrade instanceType
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+					"instance_type": "${data.alicloud_db_instance_classes.ro.instance_classes.1.instance_class}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{"instance_type": CHECKSET}),
@@ -317,7 +328,7 @@ func TestAccAlicloudRdsDBReadonlyInstanceSSL_update(t *testing.T) {
 					"master_db_instance_id":       "${alicloud_db_instance.default.id}",
 					"zone_id":                     "${alicloud_db_instance.default.zone_id}",
 					"engine_version":              "${alicloud_db_instance.default.engine_version}",
-					"instance_type":               "${alicloud_db_instance.default.instance_type}",
+					"instance_type":               "${data.alicloud_db_instance_classes.ro.instance_classes.0.instance_class}",
 					"instance_storage":            "${alicloud_db_instance.default.instance_storage + 2*data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
 					"instance_name":               "${var.name}",
 					"vswitch_id":                  "${local.vswitch_id}",
@@ -329,6 +340,7 @@ func TestAccAlicloudRdsDBReadonlyInstanceSSL_update(t *testing.T) {
 					"client_cert_revocation_list": client_cert_revocation_list,
 					"acl":                         "cert",
 					"replication_acl":             "cert",
+					"deletion_protection":         "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -344,6 +356,7 @@ func TestAccAlicloudRdsDBReadonlyInstanceSSL_update(t *testing.T) {
 						"replication_acl":             "cert",
 						"server_cert":                 CHECKSET,
 						"server_key":                  CHECKSET,
+						"deletion_protection":         "false",
 					}),
 				),
 			},
@@ -410,14 +423,14 @@ resource "alicloud_db_instance" "default" {
 `, name)
 }
 
-func resourceDBReadonlyInstanceConfigSSLDependence(name string) string {
+func resourceDBReadonlyInstanceConfigPostgreSQLDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
 }
 data "alicloud_db_zones" "default"{
-	engine = "MySQL"
-	engine_version = "8.0"
+	engine = "PostgreSQL"
+	engine_version = "13.0"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
@@ -425,8 +438,8 @@ data "alicloud_db_zones" "default"{
 
 data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "8.0"
+	engine = "PostgreSQL"
+	engine_version = "13.0"
     category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
@@ -457,14 +470,25 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_db_instance" "default" {
-    engine = "MySQL"
-	engine_version = "8.0"
+    engine = "PostgreSQL"
+	engine_version = "13.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	security_ips = ["10.168.1.12", "100.69.7.112"]
+}
+
+data "alicloud_db_instance_classes" "ro" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "PostgreSQL"
+	engine_version = "13.0"
+    category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_charge_type = "PostPaid"
+    commodity_code = "rords"
+	db_instance_id = alicloud_db_instance.default.id
 }
 `, name)
 }

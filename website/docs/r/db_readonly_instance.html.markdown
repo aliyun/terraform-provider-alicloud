@@ -74,6 +74,9 @@ The following arguments are supported:
 * `force_restart` - (Optional, Available in 1.121.0+) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance.
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
+* `deletion_protection` - (Optional, Available in 1.167.0+) The switch of delete protection. Valid values:
+  - true: delete protect.
+  - false: no delete protect.
 * `tags` - (Optional, Available in 1.68.0+) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.

@@ -134,3 +134,6 @@ The following attributes are exported in addition to the arguments listed above:
       * `force_restart` - Indicates whether the modified parameter takes effect only after a database restart. Valid values: true | false
       * `checking_code` - The value range of the parameter.
       * `parameter_description` - The description of the parameter.
+  * `deletion_protection` - (Available in 1.167.0+) Indicates whether the release protection feature is enabled for the instance. Valid values:
+      * **true**: The release protection feature is enabled.
+      * **false**: The release protection feature is disabled.

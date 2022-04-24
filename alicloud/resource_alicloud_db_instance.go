@@ -452,7 +452,9 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"deletion_protection": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("instance_charge_type") != Postpaid
+				},
 			},
 		},
 	}
@@ -511,7 +513,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if d.HasChange("deletion_protection") {
+	if d.HasChange("deletion_protection") && d.Get("instance_charge_type") == Postpaid {
 		err := rdsService.ModifyDBInstanceDeletionProtection(d, "deletion_protection")
 		if err != nil {
 			return WrapError(err)

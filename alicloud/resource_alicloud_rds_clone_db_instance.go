@@ -368,6 +368,13 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("payment_type") != "PayAsYouGo"
+				},
+			},
 		},
 	}
 }
@@ -494,6 +501,7 @@ func resourceAlicloudRdsCloneDbInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("payment_type", convertRdsInstancePaymentTypeResponse(object["PayType"]))
 	d.Set("port", object["Port"])
 	d.Set("connection_string", object["ConnectionString"])
+	d.Set("deletion_protection", object["DeletionProtection"])
 
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
 		return WrapError(err)
@@ -556,6 +564,12 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 	}
 	if d.HasChange("pg_hba_conf") {
 		err := rdsService.ModifyPgHbaConfig(d, "pg_hba_conf")
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+	if d.HasChange("deletion_protection") && d.Get("payment_type") == "PayAsYouGo" {
+		err := rdsService.ModifyDBInstanceDeletionProtection(d, "deletion_protection")
 		if err != nil {
 			return WrapError(err)
 		}
