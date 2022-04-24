@@ -179,7 +179,7 @@ The following arguments are supported:
 
 * `status` - (Optional, Computed, Available in v1.133.0+) The state of the listener. Valid Values: `Running` Or `Stopped`. Valid values: `Running`: The listener is running. `Stopped`: The listener is stopped.
 * `xforwarded_for_config` - (Optional, Deprecated from 1.161.0+) xforwardfor Related Attribute Configuration. See the following `Block xforwarded_for_config`. **NOTE:** 'xforwarded_for_config' has been deprecated from provider version 1.161.0+. Use 'x_forwarded_for_config' instead.",
-* `x_forwarded_for_config` - (Optiona, Available from 1.161.0+) The `x_forward_for` Related Attribute Configuration. See the following `Block x_forwarded_for_config`. **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
+* `x_forwarded_for_config` - (Optional, Available from 1.161.0+) The `x_forward_for` Related Attribute Configuration. See the following `Block x_forwarded_for_config`. **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
 * `acl_config` - (Optional, Available 1.136.0+)The configurations of the access control lists (ACLs). See the following `Block acl_config`. **NOTE:** Field `acl_config` has been deprecated from provider version 1.163.0, and it will be removed in the future version. Please use the new resource `alicloud_alb_listener_acl_attachment`.,
 
 
