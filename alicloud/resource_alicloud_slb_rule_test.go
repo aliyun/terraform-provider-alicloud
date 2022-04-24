@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
+func TestAccAlicloudSLBRuleUpdate(t *testing.T) {
 	var v *slb.DescribeRuleAttributeResponse
 	resourceId := "alicloud_slb_rule.default"
 	ra := resourceAttrInit(resourceId, ruleMap)

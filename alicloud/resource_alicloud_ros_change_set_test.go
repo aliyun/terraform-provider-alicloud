@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRosChangeSet_basic(t *testing.T) {
+func TestAccAlicloudROSChangeSet_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_change_set.default"
 	ra := resourceAttrInit(resourceId, AlicloudRosChangeSetMap)

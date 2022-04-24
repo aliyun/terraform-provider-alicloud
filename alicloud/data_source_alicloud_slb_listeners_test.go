@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSlbListenersDataSource_http(t *testing.T) {
+func TestAccAlicloudSLBListenersDataSource_http(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfig(rand, map[string]string{
@@ -88,7 +88,7 @@ func TestAccAlicloudSlbListenersDataSource_http(t *testing.T) {
 	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
-func TestAccAlicloudSlbListenersDataSource_https(t *testing.T) {
+func TestAccAlicloudSLBListenersDataSource_https(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigHttps(rand, map[string]string{
@@ -166,7 +166,7 @@ func TestAccAlicloudSlbListenersDataSource_https(t *testing.T) {
 	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
-func TestAccAlicloudSlbListenersDataSource_tcp(t *testing.T) {
+func TestAccAlicloudSLBListenersDataSource_tcp(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigTcp(rand, map[string]string{
@@ -236,7 +236,7 @@ func TestAccAlicloudSlbListenersDataSource_tcp(t *testing.T) {
 	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
-func TestAccAlicloudSlbListenersDataSource_udp(t *testing.T) {
+func TestAccAlicloudSLBListenersDataSource_udp(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigUdp(rand, map[string]string{

@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSlbBackendServers_vpc(t *testing.T) {
+func TestAccAlicloudSLBBackendServers_vpc(t *testing.T) {
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb_backend_server.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -127,7 +127,7 @@ func TestAccAlicloudSlbBackendServers_vpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbBackendServers_multi_vpc(t *testing.T) {
+func TestAccAlicloudSLBBackendServers_multi_vpc(t *testing.T) {
 
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb_backend_server.default.1"
@@ -178,7 +178,7 @@ func TestAccAlicloudSlbBackendServers_multi_vpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbBackendServers_classic(t *testing.T) {
+func TestAccAlicloudSLBBackendServers_classic(t *testing.T) {
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb_backend_server.default"
 	ra := resourceAttrInit(resourceId, nil)

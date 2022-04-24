@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudVpcIpv6GatewaysDataSource(t *testing.T) {
+func TestAccAlicloudVPCIpv6GatewaysDataSource(t *testing.T) {
 	resourceId := "data.alicloud_vpc_ipv6_gateways.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	checkoutSupportedRegions(t, true, connectivity.VpcIpv6GatewaySupportRegions)

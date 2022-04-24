@@ -270,7 +270,7 @@ resource "alicloud_vpn_gateway" "default" {
 	name = "${var.name}_change"
 	vpc_id = data.alicloud_vpcs.default.ids.0
 	bandwidth = "10"
-	enable_ssl = false
+	enable_ssl = true
 	instance_charge_type = "PrePaid"
 	vswitch_id = local.vswitch_id
 }
@@ -309,7 +309,7 @@ resource "alicloud_vpn_gateway" "default" {
 	name = "${var.name}_change"
 	vpc_id = data.alicloud_vpcs.default.ids.0
 	bandwidth = "10"
-	enable_ssl = false
+	enable_ssl = true
 	instance_charge_type = "PrePaid"
 	description = "${var.name}_description"
 	vswitch_id = local.vswitch_id
@@ -350,7 +350,7 @@ resource "alicloud_vpn_gateway" "default" {
 	name = "${var.name}"
 	vpc_id = data.alicloud_vpcs.default.ids.0
 	bandwidth = "10"
-	enable_ssl = false
+	enable_ssl = true
 	instance_charge_type = "PrePaid"
 	description = "${var.name}"
 	vswitch_id = local.vswitch_id
@@ -361,7 +361,7 @@ resource "alicloud_vpn_gateway" "default" {
 var testAccVpnGatewayCheckMap = map[string]string{
 	"vpc_id":       CHECKSET,
 	"bandwidth":    "10",
-	"enable_ssl":   "false",
+	"enable_ssl":   "true",
 	"enable_ipsec": "true",
 	"description":  "",
 	"vswitch_id":   CHECKSET,
@@ -394,7 +394,7 @@ func TestAccAlicloudVPNGateway_basic2(t *testing.T) {
 					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"description":          name,
 					"bandwidth":            "10",
-					"enable_ssl":           "false",
+					"enable_ssl":           "true",
 					"period":               "1",
 					"instance_charge_type": "PrePaid",
 					"tags": map[string]string{
@@ -409,7 +409,7 @@ func TestAccAlicloudVPNGateway_basic2(t *testing.T) {
 						"vswitch_id":           CHECKSET,
 						"description":          name,
 						"bandwidth":            "10",
-						"enable_ssl":           "false",
+						"enable_ssl":           "true",
 						"period":               "1",
 						"instance_charge_type": "PrePaid",
 						"tags.%":               "2",

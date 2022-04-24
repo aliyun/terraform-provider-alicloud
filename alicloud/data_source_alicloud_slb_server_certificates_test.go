@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSlbServerCertificatesDataSource_basic(t *testing.T) {
+func TestAccAlicloudSLBServerCertificatesDataSource_basic(t *testing.T) {
 	rand := acctest.RandInt()
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbServerCertificatesDataSourceConfig(rand, map[string]string{

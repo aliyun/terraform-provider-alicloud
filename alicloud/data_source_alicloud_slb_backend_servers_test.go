@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSlbBackendServersDataSource_basic(t *testing.T) {
+func TestAccAlicloudSLBBackendServersDataSource_basic(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbBackendServersDataSourceConfig(map[string]string{

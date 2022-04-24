@@ -102,7 +102,7 @@ func testSweepKmsSecret(region string) error {
 	return nil
 }
 
-func TestAccAlicloudKmsSecret_Basic(t *testing.T) {
+func TestAccAlicloudKMSSecret_Basic(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_kms_secret.default"
@@ -232,7 +232,7 @@ func TestAccAlicloudKmsSecret_Basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKmsSecret_WithKey(t *testing.T) {
+func TestAccAlicloudKMSSecret_WithKey(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_kms_secret.default"

@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudKmsKeyVersion_basic(t *testing.T) {
+func TestAccAlicloudKMSKeyVersion_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_key_version.default"
 	ra := resourceAttrInit(resourceId, KmsKeyVersionMap)

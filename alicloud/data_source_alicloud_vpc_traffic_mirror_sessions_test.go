@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudVpcTrafficMirrorSessionsDataSource(t *testing.T) {
+func TestAccAlicloudVPCTrafficMirrorSessionsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_vpc_traffic_mirror_sessions.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	checkoutSupportedRegions(t, true, connectivity.VpcTrafficMirrorSupportRegions)

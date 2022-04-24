@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestAccAlicloudSlbServerGroupsDataSource_basic(t *testing.T) {
+func TestAccAlicloudSLBServerGroupsDataSource_basic(t *testing.T) {
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbServerGroupsDataSourceConfig(map[string]string{
 			"load_balancer_id": `"${alicloud_slb_rule.default.load_balancer_id}"`,

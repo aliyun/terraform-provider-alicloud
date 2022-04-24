@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVpcFlowLog_basic0(t *testing.T) {
+func TestAccAlicloudVPCFlowLog_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_flow_log.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap0)
@@ -122,7 +122,7 @@ func TestAccAlicloudVpcFlowLog_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcFlowLog_basic1(t *testing.T) {
+func TestAccAlicloudVPCFlowLog_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_flow_log.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap0)
@@ -208,7 +208,7 @@ resource "alicloud_log_store" "default" {
 `, name)
 }
 
-func TestAccAlicloudVpcFlowLog_unit(t *testing.T) {
+func TestAccAlicloudVPCFlowLog_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_flow_log"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_flow_log"].Schema).Data(nil, nil)

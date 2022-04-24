@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudVpcNatIpsDataSource(t *testing.T) {
+func TestAccAlicloudVPCNatIpsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1, 1000)
 
 	idsConf := dataSourceTestAccConfig{

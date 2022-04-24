@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
+func TestAccAlicloudSLBAttachment_basic(t *testing.T) {
 
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb_attachment.default"
@@ -101,7 +101,7 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbAttachment_multi(t *testing.T) {
+func TestAccAlicloudSLBAttachment_multi(t *testing.T) {
 
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb_attachment.default.9"
@@ -138,7 +138,7 @@ func TestAccAlicloudSlbAttachment_multi(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
+func TestAccAlicloudSLBAttachment_classic_basic(t *testing.T) {
 
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb_attachment.default"

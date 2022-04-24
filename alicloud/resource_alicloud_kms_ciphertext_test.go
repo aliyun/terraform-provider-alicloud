@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudKmsCiphertext_basic(t *testing.T) {
+func TestAccAlicloudKMSCiphertext_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -26,7 +26,7 @@ func TestAccAlicloudKmsCiphertext_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKmsCiphertext_validate(t *testing.T) {
+func TestAccAlicloudKMSCiphertext_validate(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -44,7 +44,7 @@ func TestAccAlicloudKmsCiphertext_validate(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKmsCiphertext_validate_withContext(t *testing.T) {
+func TestAccAlicloudKMSCiphertext_validate_withContext(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
