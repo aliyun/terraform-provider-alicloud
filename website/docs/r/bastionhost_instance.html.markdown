@@ -34,6 +34,52 @@ resource "alicloud_bastionhost_instance" "default" {
 }
 ```
 
+```terraform
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+resource "alicloud_bastionhost_instance" "default" {
+  description        = "Terraform-test"
+  license_code       = "bhah_ent_50_asset"
+  period             = 1
+  security_group_ids = [alicloud_security_group.default.0.id, alicloud_security_group.default.1.id]
+  vswitch_id         = "v-testVswitch"
+  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.ids.0
+  ad_auth_server {
+    server         = "192.168.1.1"
+    standby_server = "192.168.1.3"
+    port           = "80"
+    domain         = "domain"
+    account        = "cn=Manager,dc=test,dc=com"
+    password       = "YouPassword123"
+    filter         = "objectClass=person"
+    name_mapping   = "nameAttr"
+    email_mapping  = "emailAttr"
+    mobile_mapping = "mobileAttr"
+    is_ssl         = false
+    base_dn        = "dc=test,dc=com"
+  }
+  ldap_auth_server {
+    server             = "192.168.1.1"
+    standby_server     = "192.168.1.3"
+    port               = "80"
+    login_name_mapping = "uid"
+    account            = "cn=Manager,dc=test,dc=com"
+    password           = "YouPassword123"
+    filter             = "objectClass=person"
+    name_mapping       = "nameAttr"
+    email_mapping      = "emailAttr"
+    mobile_mapping     = "mobileAttr"
+    is_ssl             = false
+    base_dn            = "dc=test,dc=com"
+  }
+
+  lifecycle {
+    ignore_changes = [ldap_auth_server.0.password, ad_auth_server.0.password]
+  }
+}
+```
+
 ### Deleting `alicloud_bastionhost_instance` or removing it from your configuration
 
 The `alicloud_bastionhost_instance` resource allows you to manage bastionhost instance, but Terraform cannot destroy it.
@@ -57,6 +103,52 @@ The following arguments are supported:
 * `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional, Available in v1.87.0+) The Id of resource group which the Bastionhost Instance belongs. If not set, the resource is created in the default resource group.
 * `enable_public_access` - (Optional, Available in v1.143.0+)  Whether to Enable the public internet access to a specified Bastionhost instance. The valid values: `true`, `false`.
+* `ad_auth_server` - (Optional, Available from 1.169.0+) The AD auth server of the Instance. See the following `Block ad_auth_server`.
+* `ldap_auth_server` - (Optional, Available from 1.169.0+) The LDAP auth server of the Instance. See the following `Block ldap_auth_server`.
+  
+-> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html) with `ad_auth_server` or `ldap_auth_server` to configure auth server, then ignore any changes to that `password` caused externally (e.g. Application Autoscaling).
+```
+  # ... ignore the change about ad_auth_server.0.password and ldap_auth_server.0.password in alicloud_bastionhost_instance
+  lifecycle {
+    ignore_changes = [ad_auth_server.0.password,ldap_auth_server.0.password]
+  }
+```
+
+#### Block ad_auth_server
+
+The ad_auth_server supports the following:
+
+* `account` - (Required) The username of the account that is used for the AD server.
+* `base_dn` - (Required) The Base distinguished name (DN).
+* `domain` - (Required) The domain on the AD server.
+* `email_mapping` - (Optional) The field that is used to indicate the email address of a user on the AD server.
+* `filter` - (Optional) The condition that is used to filter users.
+* `instance_id` - (Required, ForceNew) The ID of the Bastion machine instance.
+* `is_ssl` - (Required) Specifies whether to support SSL.
+* `mobile_mapping` - (Optional) The field that is used to indicate the mobile phone number of a user on the AD server.
+* `name_mapping` - (Optional) The field that is used to indicate the name of a user on the AD server.
+* `password` - (Required, Sensitive) The password of the account that is used for the AD server.
+* `port` - (Required) The port that is used to access the AD server.
+* `server` - (Required) The address of the AD server.
+* `standby_server` - (Optional) The address of the secondary AD server.
+
+#### Block ldap_auth_server
+
+The ldap_auth_server supports the following:
+
+* `account` - (Required) The username of the account that is used for the LDAP server.
+* `base_dn` - (Required) The Base distinguished name (DN).
+* `email_mapping` - (Optional) The field that is used to indicate the email address of a user on the LDAP server.
+* `filter` - (Optional) The condition that is used to filter users.
+* `instance_id` - (Required, ForceNew) The ID of the Bastion machine instance.
+* `is_ssl` - (Optional) Specifies whether to support SSL.
+* `login_name_mapping` - (Optional) The field that is used to indicate the logon name of a user on the LDAP server.
+* `mobile_mapping` - (Optional) The field that is used to indicate the mobile phone number of a user on the LDAP server.
+* `name_mapping` - (Optional) The field that is used to indicate the name of a user on the LDAP server.
+* `password` - (Required, Sensitive) The password of the account that is used for the LDAP server.
+* `port` - (Required) The port that is used to access the LDAP server.
+* `server` - (Required) The address of the LDAP server.
+* `standby_server` - (Optional) The address of the secondary LDAP server.
 
 ## Attributes Reference
 
@@ -68,7 +160,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 30 min) Used when create the Instance.
+* `create` - (Defaults to 40 min) Used when create the Instance.
 * `update` - (Defaults to 20 min) Used when create the Instance.
 
 ## Import

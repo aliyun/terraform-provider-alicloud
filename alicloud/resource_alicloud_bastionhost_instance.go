@@ -23,7 +23,7 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 		Delete: resourceAlicloudBastionhostInstanceDelete,
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
+			Create: schema.DefaultTimeout(40 * time.Minute),
 			Update: schema.DefaultTimeout(20 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
@@ -67,6 +67,138 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
+			},
+			"ad_auth_server": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MinItems: 1,
+				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					d1, d2 := d.GetChange("ad_auth_server")
+					if len(d1.(*schema.Set).List()) == 0 || len(d2.(*schema.Set).List()) == 0 {
+						return false
+					}
+					return compareMapWithIgnoreEquivalent(d1.(*schema.Set).List()[0].(map[string]interface{}), d2.(*schema.Set).List()[0].(map[string]interface{}), []string{"password"})
+				},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"account": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"base_dn": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"domain": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"email_mapping": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"filter": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"is_ssl": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+						"mobile_mapping": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"name_mapping": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"password": {
+							Type:      schema.TypeString,
+							Required:  true,
+							Sensitive: true,
+						},
+						"port": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"server": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"standby_server": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"ldap_auth_server": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MinItems: 1,
+				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					d1, d2 := d.GetChange("ldap_auth_server")
+					if len(d1.(*schema.Set).List()) == 0 || len(d2.(*schema.Set).List()) == 0 {
+						return false
+					}
+					return compareMapWithIgnoreEquivalent(d1.(*schema.Set).List()[0].(map[string]interface{}), d2.(*schema.Set).List()[0].(map[string]interface{}), []string{"password"})
+				},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"account": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"base_dn": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"email_mapping": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"filter": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"is_ssl": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"login_name_mapping": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"mobile_mapping": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"name_mapping": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"password": {
+							Type:      schema.TypeString,
+							Required:  true,
+							Sensitive: true,
+						},
+						"port": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"server": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"standby_server": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -182,11 +314,54 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	d.Set("tags", BastionhostService.tagsToMap(tags))
+
+	adAuthServer, err := BastionhostService.DescribeBastionhostAdAuthServer(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	adAuthServerMap := map[string]interface{}{
+		"account":        adAuthServer["Account"],
+		"base_dn":        adAuthServer["BaseDN"],
+		"domain":         adAuthServer["Domain"],
+		"email_mapping":  adAuthServer["EmailMapping"],
+		"filter":         adAuthServer["Filter"],
+		"is_ssl":         adAuthServer["IsSSL"],
+		"mobile_mapping": adAuthServer["MobileMapping"],
+		"name_mapping":   adAuthServer["NameMapping"],
+		"port":           formatInt(adAuthServer["Port"]),
+		"server":         adAuthServer["Server"],
+		"standby_server": adAuthServer["StandbyServer"],
+	}
+	d.Set("ad_auth_server", []map[string]interface{}{adAuthServerMap})
+
+	ldapAuthServer, err := BastionhostService.DescribeBastionhostLdapAuthServer(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	ldapAuthServerMap := map[string]interface{}{
+		"account":            ldapAuthServer["Account"],
+		"base_dn":            ldapAuthServer["BaseDN"],
+		"email_mapping":      ldapAuthServer["EmailMapping"],
+		"filter":             ldapAuthServer["Filter"],
+		"is_ssl":             ldapAuthServer["IsSSL"],
+		"login_name_mapping": ldapAuthServer["LoginNameMapping"],
+		"mobile_mapping":     ldapAuthServer["MobileMapping"],
+		"name_mapping":       ldapAuthServer["NameMapping"],
+		"port":               formatInt(ldapAuthServer["Port"]),
+		"server":             ldapAuthServer["Server"],
+		"standby_server":     ldapAuthServer["StandbyServer"],
+	}
+	d.Set("ldap_auth_server", []map[string]interface{}{ldapAuthServerMap})
+
 	return nil
 }
 
 func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewBastionhostClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	bastionhostService := YundunBastionhostService{client}
 
 	d.Partial(true)
@@ -263,6 +438,91 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			}
 		}
 		d.SetPartial("enable_public_access")
+	}
+
+	if d.HasChange("ad_auth_server") {
+		if v, ok := d.GetOk("ad_auth_server"); ok && len(v.(*schema.Set).List()) > 0 {
+			var response map[string]interface{}
+			modifyAdRequest := map[string]interface{}{
+				"InstanceId": d.Id(),
+				"RegionId":   client.RegionId,
+			}
+			adAuthServer := v.(*schema.Set).List()[0].(map[string]interface{})
+			modifyAdRequest["Account"] = adAuthServer["account"]
+			modifyAdRequest["BaseDN"] = adAuthServer["base_dn"]
+			modifyAdRequest["Domain"] = adAuthServer["domain"]
+			modifyAdRequest["IsSSL"] = adAuthServer["is_ssl"]
+			modifyAdRequest["Port"] = adAuthServer["port"]
+			modifyAdRequest["Server"] = adAuthServer["server"]
+			modifyAdRequest["EmailMapping"] = adAuthServer["email_mapping"]
+			modifyAdRequest["Filter"] = adAuthServer["filter"]
+			modifyAdRequest["MobileMapping"] = adAuthServer["mobile_mapping"]
+			modifyAdRequest["NameMapping"] = adAuthServer["name_mapping"]
+			modifyAdRequest["Password"] = adAuthServer["password"]
+			modifyAdRequest["StandbyServer"] = adAuthServer["standby_server"]
+
+			action := "ModifyInstanceADAuthServer"
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, modifyAdRequest, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, modifyAdRequest)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			d.SetPartial("ad_auth_server")
+		}
+	}
+
+	if d.HasChange("ldap_auth_server") {
+		if v, ok := d.GetOk("ldap_auth_server"); ok && len(v.(*schema.Set).List()) > 0 {
+			var response map[string]interface{}
+			modifyLdapRequest := map[string]interface{}{
+				"InstanceId": d.Id(),
+				"RegionId":   client.RegionId,
+			}
+
+			adAuthServer := v.(*schema.Set).List()[0].(map[string]interface{})
+			modifyLdapRequest["Account"] = adAuthServer["account"]
+			modifyLdapRequest["BaseDN"] = adAuthServer["base_dn"]
+			modifyLdapRequest["Port"] = adAuthServer["port"]
+			modifyLdapRequest["Server"] = adAuthServer["server"]
+			modifyLdapRequest["Password"] = adAuthServer["password"]
+			modifyLdapRequest["IsSSL"] = adAuthServer["is_ssl"]
+			modifyLdapRequest["LoginNameMapping"] = adAuthServer["login_name_mapping"]
+			modifyLdapRequest["EmailMapping"] = adAuthServer["email_mapping"]
+			modifyLdapRequest["Filter"] = adAuthServer["filter"]
+			modifyLdapRequest["MobileMapping"] = adAuthServer["mobile_mapping"]
+			modifyLdapRequest["NameMapping"] = adAuthServer["name_mapping"]
+			modifyLdapRequest["StandbyServer"] = adAuthServer["standby_server"]
+
+			action := "ModifyInstanceLDAPAuthServer"
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, modifyLdapRequest, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, modifyLdapRequest)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			d.SetPartial("ldap_auth_server")
+		}
 	}
 
 	d.Partial(false)

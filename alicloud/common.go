@@ -1205,3 +1205,26 @@ func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]
 	}
 	return diff, nil
 }
+
+func compareMapWithIgnoreEquivalent(tem1, tem2 map[string]interface{}, ignore []string) bool {
+
+	if len(tem1) != len(tem2) {
+		return false
+	}
+
+OuterLoop:
+	for key1, val1 := range tem1 {
+		for _, item := range ignore {
+			if key1 == item {
+				continue OuterLoop
+			}
+		}
+
+		val2 := tem2[key1]
+		if val2 != val1 {
+			return false
+		}
+	}
+
+	return true
+}
