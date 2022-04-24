@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudVpnPbrRouteEntriesDataSource(t *testing.T) {
+func TestAccAlicloudVPNPbrRouteEntriesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpnPbrRouteEntriesDataSourceName(rand, map[string]string{
