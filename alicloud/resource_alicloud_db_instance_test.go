@@ -829,6 +829,25 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"pg_hba_conf": []interface{}{
+						map[string]interface{}{
+							"type":        "host",
+							"user":        "all",
+							"address":     "0.0.0.0/0",
+							"database":    "all",
+							"method":      "md5",
+							"priority_id": "0",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pg_hba_conf.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_name": "tf-testAccDBInstance_instance_name",
 				}),
 				Check: resource.ComposeTestCheckFunc(

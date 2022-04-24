@@ -344,6 +344,10 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"deletion_protection": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -522,6 +526,7 @@ func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, objects [
 			"db_instance_storage_type": instance["DBInstanceStorageType"],
 			"instance_storage":         instance["DBInstanceStorage"],
 			"master_zone":              instance["MasterZone"],
+			"deletion_protection":      instance["DeletionProtection"],
 		}
 		sslResponse, sslErr := rdsService.DescribeDBInstanceSSL(fmt.Sprint(item["DBInstanceId"]))
 		if sslErr == nil {

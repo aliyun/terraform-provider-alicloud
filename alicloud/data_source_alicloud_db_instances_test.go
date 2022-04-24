@@ -139,6 +139,7 @@ func TestAccAlicloudRdsDBInstancesDataSource(t *testing.T) {
 			"instances.0.port":                     CHECKSET,
 			"instances.0.db_instance_storage_type": CHECKSET,
 			"instances.0.instance_storage":         CHECKSET,
+			"instances.0.deletion_protection":      CHECKSET,
 		}
 	}
 
@@ -307,6 +308,7 @@ func TestAccAlicloudRdsDBInstancesDataSourcePostgreSQLSSL(t *testing.T) {
 			"instances.0.server_ca_url":               "",
 			"instances.0.server_cert":                 "",
 			"instances.0.server_key":                  "",
+			"instances.0.deletion_protection":         CHECKSET,
 		}
 	}
 

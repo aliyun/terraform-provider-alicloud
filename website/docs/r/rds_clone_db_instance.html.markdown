@@ -102,6 +102,11 @@ The following arguments are supported:
 * `period` - (Optional) The period. Valid values: `Month`, `Year`.
 
 -> **NOTE:** If you set the payment_type parameter to Subscription, you must specify the period parameter.
+* `deletion_protection` - (Optional, Available in 1.167.0+) The switch of delete protection. Valid values:
+  - true: delete protect.
+  - false: no delete protect.
+
+-> **NOTE:** `deletion_protection` is valid only when attribute `payment_type` is set to `PayAsYouGo`, supported engine type: **MySQL**, **PostgresSQL**, **MariaDB**, **MSSQL**.
 * `acl` - (Optional, Computed) This parameter is only supported by the RDS PostgreSQL cloud disk version. This parameter indicates the authentication method. It is allowed only when the public key of the client certificate authority is enabled. Valid values: `cert` and `perfer` and `verify-ca` and `verify-full (supported by RDS PostgreSQL above 12)`.
 * `auto_upgrade_minor_version` - (Optional, Computed) How to upgrade the minor version of the instance. Valid values:
   * **Auto**: automatically upgrade the minor version.

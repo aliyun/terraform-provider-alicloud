@@ -197,6 +197,10 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
 				Computed:         true,
 			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -359,6 +363,13 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		// wait instance status is running after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	if d.HasChange("deletion_protection") {
+		err := rdsService.ModifyDBInstanceDeletionProtection(d, "deletion_protection")
+		if err != nil {
+			return WrapError(err)
 		}
 	}
 
@@ -534,6 +545,7 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("instance_name", instance["DBInstanceDescription"])
 	d.Set("resource_group_id", instance["ResourceGroupId"])
 	d.Set("target_minor_version", instance["CurrentKernelVersion"])
+	d.Set("deletion_protection", instance["DeletionProtection"])
 
 	sslAction, err := rdsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {

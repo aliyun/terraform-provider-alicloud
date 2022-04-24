@@ -91,6 +91,11 @@ The following arguments are supported:
 
 -> **NOTE:** Make sure that the vSwitch belongs to the specified VPC and region.
 * `private_ip_address` - (Optional, Computed) The intranet IP address of the new instance must be within the specified vSwitch IP address range. By default, the system automatically allocates by using **VPCId** and **VSwitchId**.
+* `deletion_protection` - (Optional, Available in 1.167.0+) The switch of delete protection. Valid values:
+  - true: delete protect.
+  - false: no delete protect.
+
+-> **NOTE:** `deletion_protection` is valid only when attribute `payment_type` is set to `PayAsYouGo`, supported engine type: **MySQL**, **PostgresSQL**, **MariaDB**, **MSSQL**.
 * `acl` - (Optional, Computed) This parameter is only supported by the RDS PostgreSQL cloud disk version. This parameter indicates the authentication method. It is allowed only when the public key of the client certificate authority is enabled. Valid values: `cert` and `perfer` and `verify-ca` and `verify-full (supported by RDS PostgreSQL above 12)`.
 * `auto_upgrade_minor_version` - (Optional, Computed) How to upgrade the minor version of the instance. Valid values:
   * **Auto**: automatically upgrade the minor version.
