@@ -30,17 +30,21 @@ func resourceAlicloudAlbAcl() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"acl_entries": {
-				Type:     schema.TypeSet,
-				Optional: true,
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'acl_entries' has been deprecated from provider version 1.166.0 and it will be removed in the future version. Please use the new resource 'alicloud_alb_acl_entry_attachment'.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"description": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: validation.StringLenBetween(1, 256),
 						},
 						"entry": {
 							Type:     schema.TypeString,
+							Computed: true,
 							Optional: true,
 						},
 						"status": {
