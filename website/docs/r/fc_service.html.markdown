@@ -24,7 +24,7 @@ For more details supported regions, see [Service endpoints](https://www.alibabac
 
 Basic Usage
 
-```terrraform
+```terraform
 variable "name" {
   default = "tf-testaccalicloudfcservice"
 }
@@ -39,8 +39,8 @@ resource "alicloud_log_store" "foo" {
 }
 
 resource "alicloud_ram_role" "role" {
-  name     = var.name
-  document = <<EOF
+  name        = var.name
+  document    = <<EOF
   {
       "Statement": [
         {

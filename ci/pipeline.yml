@@ -30,7 +30,7 @@ groups:
       - ECD
       - CommonBandwidth
       - Cen
-      - Vpn
+      - VPN
       - SslVpn
       # SLB
       - SLB
@@ -219,7 +219,7 @@ groups:
       - Lindorm
       - CommonBandwidth
       - Cen
-      - Vpn
+      - VPN
       - SslVpn
       # SLB
       - SLB
@@ -917,7 +917,7 @@ jobs:
           TEST_CASE_CODE: "VPC"
           SWEEPER_CODE: "alicloud_vpc"
 
-  - name: Vpn
+  - name: VPN
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -928,7 +928,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Vpn"
+          TEST_CASE_CODE: "VPN"
 
   - name: Mns
     plan:
@@ -1706,7 +1706,7 @@ jobs:
         passed: [
             HBR, Ess, CS, FC, Ecs,
             VPC, EIP, Cddc, ARMS, Scdn, Amqp, CommonBandwidth,
-            SLB, ALB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, SAE, EventBridge
+            SLB, ALB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, VPN, SslVpn, MongoDB, SAE, EventBridge
         ]
       - aggregate:
           - *get-aliyun-cli

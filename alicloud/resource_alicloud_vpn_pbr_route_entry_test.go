@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVpnPbrRouteEntry_basic0(t *testing.T) {
+func TestAccAlicloudVPNPbrRouteEntry_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_pbr_route_entry.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnPbrRouteEntryMap0)
@@ -131,7 +131,7 @@ resource "alicloud_vpn_connection" "default" {
 `, name)
 }
 
-func TestAccAlicloudVpnPbrRouteEntry_unit(t *testing.T) {
+func TestAccAlicloudVPNPbrRouteEntry_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpn_pbr_route_entry"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpn_pbr_route_entry"].Schema).Data(nil, nil)
