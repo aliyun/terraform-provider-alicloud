@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
+func TestAccAlicloudSLBServerGroup_vpc(t *testing.T) {
 	var v *slb.DescribeVServerGroupAttributeResponse
 	resourceId := "alicloud_slb_server_group.default"
 	ra := resourceAttrInit(resourceId, serverGroupMap)
@@ -127,7 +127,7 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbServerGroup_multi_vpc(t *testing.T) {
+func TestAccAlicloudSLBServerGroup_multi_vpc(t *testing.T) {
 	var v *slb.DescribeVServerGroupAttributeResponse
 	resourceId := "alicloud_slb_server_group.default.9"
 	ra := resourceAttrInit(resourceId, serverGroupMultiVpcMap)
@@ -173,7 +173,7 @@ func TestAccAlicloudSlbServerGroup_multi_vpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
+func TestAccAlicloudSLBServerGroup_classic(t *testing.T) {
 	var v *slb.DescribeVServerGroupAttributeResponse
 	resourceId := "alicloud_slb_server_group.default"
 	ra := resourceAttrInit(resourceId, serverGroupMultiClassicMap)

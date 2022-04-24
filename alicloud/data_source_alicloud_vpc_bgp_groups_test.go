@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudVpcBgpGroupsDataSource(t *testing.T) {
+func TestAccAlicloudVPCBgpGroupsDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	rand := acctest.RandIntRange(1, 2999)
 	idsConf := dataSourceTestAccConfig{

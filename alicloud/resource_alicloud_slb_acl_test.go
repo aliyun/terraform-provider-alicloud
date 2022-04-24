@@ -106,7 +106,7 @@ func testSweepSlbAcl(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSlbAcl_basic0(t *testing.T) {
+func TestAccAlicloudSLBAcl_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_acl.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -222,7 +222,7 @@ func TestAccAlicloudSlbAcl_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbAcl_basic1(t *testing.T) {
+func TestAccAlicloudSLBAcl_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_acl.default"
 	ra := resourceAttrInit(resourceId, nil)

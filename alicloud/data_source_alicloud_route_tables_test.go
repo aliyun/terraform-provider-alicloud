@@ -11,7 +11,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudVpcRouteTablesDataSourceBasic(t *testing.T) {
+func TestAccAlicloudVPCRouteTablesDataSourceBasic(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheck(t)
 		testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)

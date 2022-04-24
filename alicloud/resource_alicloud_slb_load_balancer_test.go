@@ -133,7 +133,7 @@ func testSweepSLBs(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSlbLoadBalancer_basic(t *testing.T) {
+func TestAccAlicloudSLBLoadBalancer_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_load_balancer.default"
 	ra := resourceAttrInit(resourceId, AlicloudSlbLoadBalancerMap0)
@@ -333,7 +333,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudSlbLoadBalancer_basic1(t *testing.T) {
+func TestAccAlicloudSLBLoadBalancer_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_load_balancer.default"
 	ra := resourceAttrInit(resourceId, AlicloudSlbLoadBalancerMap1)
@@ -517,7 +517,7 @@ data "alicloud_vswitches" "default" {
 `, name)
 }
 
-func TestAccAlicloudSlbLoadBalancer_basic2(t *testing.T) {
+func TestAccAlicloudSLBLoadBalancer_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_load_balancer.default"
 	ra := resourceAttrInit(resourceId, AlicloudSlbLoadBalancerMap2)

@@ -124,7 +124,7 @@ func testSweepHaVip(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVpcHavip_basic(t *testing.T) {
+func TestAccAlicloudVPCHavip_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_havip.default"
 	ra := resourceAttrInit(resourceId, AlicloudHavipMap0)
@@ -196,7 +196,7 @@ func TestAccAlicloudVpcHavip_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcHavip_basic1(t *testing.T) {
+func TestAccAlicloudVPCHavip_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_havip.default"
 	ra := resourceAttrInit(resourceId, AlicloudHavipMap0)

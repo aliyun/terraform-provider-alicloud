@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudRosRegionsDataSource(t *testing.T) {
+func TestAccAlicloudROSRegionsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100, 999)
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRosRegionsDataSourceName(rand, map[string]string{}),

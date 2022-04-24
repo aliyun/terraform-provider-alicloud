@@ -426,14 +426,15 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 		request.SystemDiskCategory = strings.TrimSpace(v.(string))
 	}
 
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	var response *ecs.DescribeAvailableResourceResponse
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DescribeAvailableResource(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{Throttling}) {
-				time.Sleep(10 * time.Second)
+			if NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

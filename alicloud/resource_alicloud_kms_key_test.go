@@ -113,7 +113,7 @@ func testSweepKmsKey(region string) error {
 	return nil
 }
 
-func TestAccAlicloudKmsKey_basic(t *testing.T) {
+func TestAccAlicloudKMSKey_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_key.default"
 	ra := resourceAttrInit(resourceId, KmsKeyMap)
@@ -235,7 +235,7 @@ func KmsKeyBasicdependence(name string) string {
 	return ""
 }
 
-func TestAccAlicloudKmsKey_unit(t *testing.T) {
+func TestAccAlicloudKMSKey_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_kms_key"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_kms_key"].Schema).Data(nil, nil)

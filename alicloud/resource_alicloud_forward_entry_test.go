@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVpcForwardEntry_basic(t *testing.T) {
+func TestAccAlicloudVPCForwardEntry_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_forward_entry.default"
 	ra := resourceAttrInit(resourceId, AlicloudForwardEntryMap0)
@@ -151,7 +151,7 @@ func TestAccAlicloudVpcForwardEntry_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcForwardEntry_basic1(t *testing.T) {
+func TestAccAlicloudVPCForwardEntry_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_forward_entry.default"
 	ra := resourceAttrInit(resourceId, AlicloudForwardEntryMap0)
@@ -206,7 +206,7 @@ func TestAccAlicloudVpcForwardEntry_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcForwardEntry_basic2(t *testing.T) {
+func TestAccAlicloudVPCForwardEntry_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_forward_entry.default"
 	ra := resourceAttrInit(resourceId, AlicloudForwardEntryMap0)
@@ -321,7 +321,7 @@ resource "alicloud_eip_association" "default" {
 `, name)
 }
 
-func TestAccAlicloudVpcForwardEntry_unit(t *testing.T) {
+func TestAccAlicloudVPCForwardEntry_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_forward_entry"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_forward_entry"].Schema).Data(nil, nil)

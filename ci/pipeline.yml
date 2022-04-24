@@ -20,7 +20,7 @@ groups:
       # OSS
       - Oss
       # VPC
-      - Vpc
+      - VPC
       - EIP
       - Elasticsearch
       - Cddc
@@ -33,7 +33,7 @@ groups:
       - Vpn
       - SslVpn
       # SLB
-      - Slb
+      - SLB
       # Database
       # Rds
       - ALB
@@ -66,8 +66,8 @@ groups:
       - NAS
       # Ots
       - Ots
-      # Kms
-      - Kms
+      # KMS
+      - KMS
       # Sls
       - Log
       # Actiontrail
@@ -104,7 +104,7 @@ groups:
       - Alidns
       - MSE
       - Fnf
-      - Ros
+      - ROS
       - Privatelink
       - Tsdb
       - Eci
@@ -156,7 +156,7 @@ groups:
       # Function Compute
       - FC
       - Fnf
-      - Ros
+      - ROS
       - Eci
       - OOS
       - Sweeper-1
@@ -211,7 +211,7 @@ groups:
   - name: Networking
     jobs:
       # VPC
-      - Vpc
+      - VPC
       - EIP
       - Cddc
       - ARMS
@@ -222,7 +222,7 @@ groups:
       - Vpn
       - SslVpn
       # SLB
-      - Slb
+      - SLB
       # Pvtz
       - Pvtz
       # Cloud Connect network
@@ -267,8 +267,8 @@ groups:
     jobs:
       # RAM
       - RAM
-      # Kms
-      - Kms
+      # KMS
+      - KMS
       # Actiontrail
       - Actiontrail
       # Cms
@@ -672,7 +672,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "DataWorks"
 
-  - name: Kms
+  - name: KMS
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -683,7 +683,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Kms"
+          TEST_CASE_CODE: "KMS"
 
   - name: Log
     plan:
@@ -876,7 +876,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Lindorm"
 
-  - name: Slb
+  - name: SLB
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -887,7 +887,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Slb"
+          TEST_CASE_CODE: "SLB"
           SWEEPER_CODE: "alicloud_slb_load_balancer"
 
   - name: SslVpn
@@ -903,7 +903,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "SslVpn"
 
-  - name: Vpc
+  - name: VPC
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -914,7 +914,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Vpc"
+          TEST_CASE_CODE: "VPC"
           SWEEPER_CODE: "alicloud_vpc"
 
   - name: Vpn
@@ -1385,7 +1385,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Fnf"
 
-  - name: Ros
+  - name: ROS
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -1396,7 +1396,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Ros"
+          TEST_CASE_CODE: "ROS"
 
   - name: Privatelink
     plan:
@@ -1705,8 +1705,8 @@ jobs:
         trigger: true
         passed: [
             HBR, Ess, CS, FC, Ecs,
-            Vpc, EIP, Cddc, ARMS, Scdn, Amqp, CommonBandwidth,
-            Slb, ALB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, SAE, EventBridge
+            VPC, EIP, Cddc, ARMS, Scdn, Amqp, CommonBandwidth,
+            SLB, ALB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, SAE, EventBridge
         ]
       - aggregate:
           - *get-aliyun-cli

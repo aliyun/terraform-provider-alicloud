@@ -140,7 +140,7 @@ func testSweepVSwitches(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVpcVSwitch_basic(t *testing.T) {
+func TestAccAlicloudVPCVSwitch_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
 	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
@@ -238,7 +238,7 @@ func TestAccAlicloudVpcVSwitch_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcVSwitch_basic1(t *testing.T) {
+func TestAccAlicloudVPCVSwitch_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
 	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
@@ -286,7 +286,7 @@ func TestAccAlicloudVpcVSwitch_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcVSwitch_basic2(t *testing.T) {
+func TestAccAlicloudVPCVSwitch_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
 	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
@@ -362,7 +362,7 @@ data "alicloud_zones" "default" {
 `, name)
 }
 
-func TestAccAlicloudVpcVSwitch_unit(t *testing.T) {
+func TestAccAlicloudVPCVSwitch_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vswitch"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vswitch"].Schema).Data(nil, nil)

@@ -8,7 +8,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudVpcTrafficMirrorServiceDataSource(t *testing.T) {
+func TestAccAlicloudVPCTrafficMirrorServiceDataSource(t *testing.T) {
 	resourceId := "data.alicloud_vpc_traffic_mirror_service.default"
 	checkoutSupportedRegions(t, true, connectivity.VpcTrafficMirrorSupportRegions)
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()

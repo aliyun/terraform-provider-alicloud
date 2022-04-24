@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVpcSnatEntry_basic(t *testing.T) {
+func TestAccAlicloudVPCSnatEntry_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_snat_entry.default"
 	ra := resourceAttrInit(resourceId, AlicloudSnatEntryMap0)
@@ -76,7 +76,7 @@ func TestAccAlicloudVpcSnatEntry_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcSnatEntry_multi(t *testing.T) {
+func TestAccAlicloudVPCSnatEntry_multi(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_snat_entry.default.1"
 	ra := resourceAttrInit(resourceId, AlicloudSnatEntryMap0)
@@ -110,7 +110,7 @@ func TestAccAlicloudVpcSnatEntry_multi(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcSnatEntry_basic1(t *testing.T) {
+func TestAccAlicloudVPCSnatEntry_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_snat_entry.default"
 	ra := resourceAttrInit(resourceId, AlicloudSnatEntryMap0)

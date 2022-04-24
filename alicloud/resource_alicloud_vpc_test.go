@@ -137,7 +137,7 @@ func testSweepVpcs(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVpc_basic(t *testing.T) {
+func TestAccAlicloudVPC_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcMap)
@@ -292,7 +292,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 `)
 }
 
-func TestAccAlicloudVpc_enableIpv6(t *testing.T) {
+func TestAccAlicloudVPC_enableIpv6(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcMap1)
@@ -420,7 +420,7 @@ func TestAccAlicloudVpc_enableIpv6(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpc_basic1(t *testing.T) {
+func TestAccAlicloudVPC_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcMap1)
@@ -472,7 +472,7 @@ func TestAccAlicloudVpc_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpc_basic2(t *testing.T) {
+func TestAccAlicloudVPC_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcMap1)
@@ -541,7 +541,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 `)
 }
 
-func TestAccAlicloudVpc_unit(t *testing.T) {
+func TestAccAlicloudVPC_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, nil)

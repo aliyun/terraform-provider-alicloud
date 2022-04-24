@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSlbServerGroupServerAttachment_basic0(t *testing.T) {
+func TestAccAlicloudSLBServerGroupServerAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_server_group_server_attachment.default"
 	ra := resourceAttrInit(resourceId, nil)
