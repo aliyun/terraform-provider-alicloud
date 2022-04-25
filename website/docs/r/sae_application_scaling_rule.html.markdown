@@ -103,7 +103,7 @@ The following arguments are supported:
 * `min_ready_instances` - (Optional) The min ready instances.
 * `scaling_rule_enable` - (Optional, Computed) True whether the auto scaling policy is enabled. The value description is as follows: true: enabled state. false: disabled status. Valid values: `false`, `true`.
 * `scaling_rule_name` - (Required, ForceNew) The name of a custom elastic scaling policy. In the application, the policy name cannot be repeated. It must start with a lowercase letter, and can only contain lowercase letters, numbers, and dashes (-), and no more than 32 characters. After the scaling policy is successfully created, the policy name cannot be modified.
-* `scaling_rule_type` - (Required, ForceNew) Flexible strategy type. The value description is as follows:  timing: timing flexibility. Valid values: `timing`.
+* `scaling_rule_type` - (Required, ForceNew) Flexible strategy type. The value descriptions are as follows:  timing: timing flexibility; metric: monitoring metrics; mix: mixed by timing and metric. Valid values: `timing`, `metric` and `mix`.
 * `scaling_rule_timer` - (Optional) Configuration of Timing Resilient Policies. See the following `Block scaling_rule_timer`.
 * `scaling_rule_metric` - (Optional) Monitor the configuration of the indicator elasticity strategy. See the following `Block scaling_rule_metric`.
 
