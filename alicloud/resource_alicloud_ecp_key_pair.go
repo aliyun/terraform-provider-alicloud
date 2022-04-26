@@ -73,7 +73,7 @@ func resourceAlicloudEcpKeyPairRead(d *schema.ResourceData, meta interface{}) er
 	_, err := iaCServiceService.GetKeyPairResource(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_ecp_keypair iaCServiceService.GetKeyPairResource Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_ecp_key_pair iaCServiceService.GetKeyPairResource Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
