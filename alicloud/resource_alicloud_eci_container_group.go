@@ -498,6 +498,10 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 					},
 				},
 			},
+			"auto_match_image_cache": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -746,6 +750,11 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		}
 		request["ImageRegistryCredential"] = imageRegisryCredentialMaps
 	}
+
+	if v, ok := d.GetOk("auto_match_image_cache"); ok {
+		request["AutoMatchImageCache"] = v
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("CreateContainerGroup")
