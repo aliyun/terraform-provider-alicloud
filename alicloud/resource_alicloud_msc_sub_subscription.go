@@ -159,6 +159,10 @@ func resourceAlicloudMscSubSubscriptionRead(d *schema.ResourceData, meta interfa
 func resourceAlicloudMscSubSubscriptionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	conn, err := client.NewMscopensubscriptionClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	update := false
 	request := map[string]interface{}{
 		"ItemId": d.Id(),
@@ -210,10 +214,6 @@ func resourceAlicloudMscSubSubscriptionUpdate(d *schema.ResourceData, meta inter
 
 	if update {
 		action := "UpdateSubscriptionItem"
-		conn, err := client.NewMscopensubscriptionClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("UpdateSubscriptionItem")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)

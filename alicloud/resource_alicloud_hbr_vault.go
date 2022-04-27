@@ -138,6 +138,10 @@ func resourceAlicloudHbrVaultRead(d *schema.ResourceData, meta interface{}) erro
 func resourceAlicloudHbrVaultUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	conn, err := client.NewHbrClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	update := false
 	request := map[string]interface{}{
 		"VaultId": d.Id(),
@@ -154,10 +158,6 @@ func resourceAlicloudHbrVaultUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 	if update {
 		action := "UpdateVault"
-		conn, err := client.NewHbrClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
