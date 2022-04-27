@@ -686,6 +686,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_ots_snapshots":                           dataSourceAlicloudHbrOtsSnapshots(),
 			"alicloud_bastionhost_host_share_keys":                 dataSourceAlicloudBastionhostHostShareKeys(),
 			"alicloud_ecs_network_interface_permissions":           dataSourceAlicloudEcsNetworkInterfacePermissions(),
+			"alicloud_mse_engine_namespaces":                       dataSourceAlicloudMseEngineNamespaces(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1270,6 +1271,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_bastionhost_host_account_share_key_attachment":        resourceAlicloudBastionhostHostAccountShareKeyAttachment(),
 			"alicloud_alb_acl_entry_attachment":                             resourceAlicloudAlbAclEntryAttachment(),
 			"alicloud_ecs_network_interface_permission":                     resourceAlicloudEcsNetworkInterfacePermission(),
+			"alicloud_mse_engine_namespace":                                 resourceAlicloudMseEngineNamespace(),
 		},
 
 		ConfigureFunc: providerConfigure,
