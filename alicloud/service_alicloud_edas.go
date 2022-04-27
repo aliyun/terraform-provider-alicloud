@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"reflect"
 	"strconv"
 	"strings"
@@ -57,6 +58,39 @@ type Prober struct {
 	Hook                `json:",inline"`
 }
 
+const (
+	ChangeOrderStatusReady            = "0"
+	ChangeOrderStatusRunning          = "1"
+	ChangeOrderStatusSuccess          = "2"
+	ChangeOrderStatusFailed           = "3"
+	ChangeOrderStatusAbort            = "6"
+	ChangeOrderStatusWaitBatchConfirm = "8"
+	ChangeOrderStatusAutoBatchWait    = "9"
+	ChangeOrderStatusSystemFail       = "10"
+)
+
+const (
+	ChangeOrderStatusReadyStr            = "Ready"
+	ChangeOrderStatusRunningStr          = "Running"
+	ChangeOrderStatusSuccessStr          = "Success"
+	ChangeOrderStatusFailedStr           = "Failed"
+	ChangeOrderStatusAbortStr            = "Abort"
+	ChangeOrderStatusWaitBatchConfirmStr = "WaitBatchConfirm"
+	ChangeOrderStatusAutoBatchWaitStr    = "AutoBatchWait"
+	ChangeOrderStatusSystemFailStr       = "SystemFail"
+)
+
+var ChangeOrderStatusMap = map[int]string{
+	0:  ChangeOrderStatusReadyStr,
+	1:  ChangeOrderStatusRunningStr,
+	2:  ChangeOrderStatusSuccessStr,
+	3:  ChangeOrderStatusFailedStr,
+	6:  ChangeOrderStatusAbortStr,
+	8:  ChangeOrderStatusWaitBatchConfirmStr,
+	9:  ChangeOrderStatusAutoBatchWaitStr,
+	10: ChangeOrderStatusSystemFailStr,
+}
+
 func (e *EdasService) GetChangeOrderStatus(id string) (info *edas.ChangeOrderInfo, err error) {
 	request := edas.CreateGetChangeOrderInfoRequest()
 	request.RegionId = e.client.RegionId
@@ -77,6 +111,23 @@ func (e *EdasService) GetChangeOrderStatus(id string) (info *edas.ChangeOrderInf
 	rsp := raw.(*edas.GetChangeOrderInfoResponse)
 	return &rsp.ChangeOrderInfo, nil
 
+}
+func (e *EdasService) GetChangeOrderStatusV2(id string) (int, error) {
+	if response, err := e.doPopRequest(map[string]string{
+		"action":     "/pop/v5/changeorder/change_order_info",
+		"httpMethod": "POST",
+		"id":         id,
+	}, map[string]string{
+		"ChangeOrderId": id,
+	}); err != nil {
+		return -1, err
+	} else {
+		if v, err := jsonpath.Get("$.changeOrderInfo.Status", response); err != nil {
+			return -1, err
+		} else {
+			return parseInt(v)
+		}
+	}
 }
 
 func (e *EdasService) GetDeployGroup(appId, groupId string) (groupInfo *edas.DeployGroup, err error) {
@@ -124,6 +175,123 @@ func (e *EdasService) EdasChangeOrderStatusRefreshFunc(id string, failStates []s
 
 		return object, strconv.Itoa(object.Status), nil
 	}
+}
+
+func (e *EdasService) EdasChangeOrderStatusRefreshFuncV2(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		status, err := e.GetChangeOrderStatusV2(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		statusStr := "not found"
+		if v, ok := ChangeOrderStatusMap[status]; ok {
+			statusStr = v
+		}
+		for _, failState := range failStates {
+			if statusStr == failState {
+				return nil, statusStr, WrapError(Error(FailedToReachTargetStatus, statusStr))
+			}
+		}
+		return status, statusStr, nil
+	}
+}
+
+func (e *EdasService) WaitForChangeOrderFinished(resourceId string, changeOrderId string, timeout time.Duration) error {
+	if len(changeOrderId) > 0 {
+		stateConf := BuildStateConf(
+			[]string{ChangeOrderStatusReadyStr, ChangeOrderStatusRunningStr},
+			[]string{ChangeOrderStatusSuccessStr},
+			timeout,
+			5*time.Second,
+			e.EdasChangeOrderStatusRefreshFuncV2(changeOrderId,
+				[]string{
+					ChangeOrderStatusFailedStr,
+					ChangeOrderStatusAbortStr,
+					ChangeOrderStatusSystemFailStr}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, resourceId)
+		}
+	}
+	return nil
+}
+
+func (e *EdasService) WaitForChangeOrderFinishedNonRetryable(resourceId string, changeOrderId string, timeout time.Duration) *resource.RetryError {
+	if len(changeOrderId) > 0 {
+		stateConf := BuildStateConf(
+			[]string{ChangeOrderStatusReadyStr, ChangeOrderStatusRunningStr},
+			[]string{ChangeOrderStatusSuccessStr},
+			timeout,
+			5*time.Second,
+			e.EdasChangeOrderStatusRefreshFuncV2(changeOrderId,
+				[]string{
+					ChangeOrderStatusFailedStr,
+					ChangeOrderStatusAbortStr,
+					ChangeOrderStatusSystemFailStr}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return resource.NonRetryableError(WrapErrorf(err, "change order failed, app id %s", resourceId))
+		}
+	}
+	return nil
+}
+
+func parseInt(obj interface{}) (int, error) {
+	if obj == nil {
+		return -1, fmt.Errorf("try to parse int, but got nil")
+	}
+	switch obj.(type) {
+	case string:
+		return strconv.Atoi(obj.(string))
+	case int:
+		return obj.(int), nil
+	case int32:
+		return int(obj.(int32)), nil
+	case int64:
+		return int(obj.(int64)), nil
+	case json.Number:
+		return strconv.Atoi(obj.(json.Number).String())
+	default:
+		return -1, fmt.Errorf("unknown type of object: %v", reflect.TypeOf(obj))
+	}
+}
+
+// HasOngoingTasks check if there is an ongoing task, ignore all api error, just return false
+func (e *EdasService) HasOngoingTasks(appId string) bool {
+	if response, err := e.doPopRequest(map[string]string{
+		"action":     "/pop/v5/changeorder/change_order_list",
+		"httpMethod": "POST",
+		"id":         appId,
+	}, map[string]string{
+		"AppId": appId,
+	}); err != nil {
+		return false
+	} else if v, err := jsonpath.Get("$.ChangeOrderList.ChangeOrder", response); err != nil {
+		return false
+	} else {
+		if len(v.([]interface{})) < 1 {
+			return false
+		}
+		for _, co := range v.([]interface{}) {
+			changeOrder := co.(map[string]interface{})
+			status := changeOrder["Status"]
+			if v, err := parseInt(status); err != nil {
+				return false
+			} else if statusStr, exist := ChangeOrderStatusMap[v]; exist {
+				if statusStr == ChangeOrderStatusReadyStr ||
+					statusStr == ChangeOrderStatusRunningStr ||
+					statusStr == ChangeOrderStatusAutoBatchWaitStr ||
+					statusStr == ChangeOrderStatusWaitBatchConfirmStr {
+					return true
+				}
+			} else {
+				return false
+			}
+		}
+	}
+	return false
 }
 
 func (e *EdasService) SyncResource(resourceType string) error {
@@ -249,6 +417,66 @@ func (e *EdasService) DescribeEdasApplication(appId string) (*edas.Applcation, e
 	v := response.Applcation
 
 	return &v, nil
+}
+
+func (e *EdasService) DescribeEdasApplicationV2(appId string) (object map[string]interface{}, err error) {
+	if response, err := e.doPopRequest(map[string]string{
+		"action":     "/pop/v5/app/app_info",
+		"httpMethod": "POST",
+	}, map[string]string{
+		"id":    appId,
+		"AppId": appId,
+	}); err != nil {
+		return nil, err
+	} else if application, exist := response["Application"].(map[string]interface{}); exist {
+		return application, nil
+	} else {
+		return nil, fmt.Errorf("%s: Edas K8s Applicatio, AppId: %s", ResourceNotfound, appId)
+	}
+}
+
+func (e *EdasService) doPopRequest(requestConfig map[string]string, params map[string]string) (map[string]interface{}, error) {
+	var response map[string]interface{}
+	conn, err := e.client.NewEdasClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	request := map[string]*string{}
+	for k := range params {
+		v := params[k]
+		request[k] = &v
+	}
+	action := requestConfig["action"]
+	httpMethod := requestConfig["httpMethod"]
+	id := requestConfig["id"]
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer("2017-08-01"), nil, StringPointer(strings.ToUpper(httpMethod)), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if respBody, isExist := response["body"]; isExist {
+		response = respBody.(map[string]interface{})
+	} else {
+		return nil, WrapError(fmt.Errorf("%s failed, response: %v", strings.ToUpper(httpMethod)+" "+action, response))
+	}
+	if fmt.Sprint(response["Code"]) != "200" {
+		return nil, WrapError(fmt.Errorf("%s failed, response: %v", strings.ToUpper(httpMethod)+" "+action, response))
+	}
+	return response, nil
 }
 
 func (e *EdasService) DescribeEdasCluster(clusterId string) (*edas.Cluster, error) {
@@ -541,6 +769,52 @@ func (e *EdasService) ReadinessEqual(old, new interface{}) bool {
 	}
 	return reflect.DeepEqual(oldProber, newProber)
 }
+func (e *EdasService) IsJsonEqual(v1, v2 interface{}) bool {
+	s1 := v1.(string)
+	s2 := v2.(string)
+	var i1 interface{}
+	err := json.Unmarshal([]byte(s1), &i1)
+	if err != nil {
+		return false
+	}
+	var i2 interface{}
+	err = json.Unmarshal([]byte(s2), &i2)
+	if err != nil {
+		return false
+	}
+	return reflect.DeepEqual(&i1, &i2)
+}
+
+func (e *EdasService) IsJsonArrayEqual(v1, v2 interface{}) bool {
+	s1 := v1.(string)
+	s2 := v2.(string)
+	var i1 []interface{}
+	err := json.Unmarshal([]byte(s1), &i1)
+	if err != nil {
+		return false
+	}
+	var i2 []interface{}
+	err = json.Unmarshal([]byte(s2), &i2)
+	if err != nil {
+		return false
+	}
+	if len(i1) != len(i2) {
+		return false
+	}
+	for _, obj := range i1 {
+		found := false
+		for _, obj2 := range i2 {
+			if reflect.DeepEqual(obj, obj2) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
 func (s *EdasService) DescribeEdasNamespace(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewEdasClient()
@@ -593,4 +867,200 @@ func (s *EdasService) DescribeEdasNamespace(id string) (object map[string]interf
 		return object, WrapErrorf(Error(GetNotFoundMessage("EDAS", id)), NotFoundWithResponse, response)
 	}
 	return object, nil
+}
+func (e *EdasService) BindK8sSlb(appId string, slbConfig *map[string]interface{}, timeout time.Duration) *resource.RetryError {
+	if e.HasOngoingTasks(appId) {
+		return resource.RetryableError(Error("there is an ongoing task"))
+	}
+	portMappings := (*slbConfig)["port_mappings"].(*schema.Set).List()
+	var requestServicePortInfos []map[string]interface{}
+	if len(portMappings) > 0 {
+		for _, pmInterface := range portMappings {
+			pm := pmInterface.(map[string]interface{})
+			if v, ok := pm["service_port"]; ok {
+				spSlice := v.(*schema.Set).List()
+				sp := spSlice[0].(map[string]interface{})
+				info := map[string]interface{}{
+					"certId":               pm["cert_id"],
+					"loadBalancerProtocol": pm["loadbalancer_protocol"],
+					"targetPort":           sp["target_port"],
+					"port":                 sp["port"],
+				}
+				requestServicePortInfos = append(requestServicePortInfos, info)
+			}
+		}
+	}
+	portInfoBytes, err := json.Marshal(requestServicePortInfos)
+	if err != nil {
+		return resource.NonRetryableError(WrapErrorf(err, "marshal port mappings failed, value %v", requestServicePortInfos))
+	}
+	params := map[string]string{
+		"AppId":            appId,
+		"Type":             (*slbConfig)["type"].(string),
+		"SlbId":            (*slbConfig)["slb_id"].(string),
+		"Scheduler":        (*slbConfig)["scheduler"].(string),
+		"Specification":    (*slbConfig)["specification"].(string),
+		"ServicePortInfos": string(portInfoBytes),
+	}
+	if response, err := e.doPopRequest(map[string]string{
+		"action":     "/pop/v5/k8s/acs/k8s_slb_binding",
+		"httpMethod": "POST",
+		"id":         appId,
+	}, params); err != nil {
+		return resource.NonRetryableError(err)
+	} else {
+		return e.WaitForChangeOrderFinishedNonRetryable(appId, response["ChangeOrderId"].(string), timeout)
+	}
+}
+
+func (e *EdasService) UpdateK8sAppSlbInfos(appId string, oldInfos, newInfos *[]interface{}, timeout time.Duration) *resource.RetryError {
+	buildMap := func(infos *[]interface{}) *map[string]interface{} {
+		m := map[string]interface{}{}
+		if len(*infos) > 0 {
+			for _, v := range *infos {
+				info := v.(map[string]interface{})
+				m[info["name"].(string)] = info
+			}
+		}
+		return &m
+	}
+	// build a map with key: slbName, value: slbInfo
+	oldInfosMap := buildMap(oldInfos)
+	newInfosMap := buildMap(newInfos)
+
+	// find removed slb configs and unbind them
+	for _, v := range *oldInfos {
+		oInfo := v.(map[string]interface{})
+		slbName := oInfo["name"].(string)
+		slbType := oInfo["type"].(string)
+		if _, ok := (*newInfosMap)[slbName]; !ok {
+			if err := e.UnbindK8sSlb(appId, slbType, slbName, timeout); err != nil {
+				return err
+			}
+		}
+	}
+	// find new or modified slb configs
+	for _, v := range *newInfos {
+		nInfo := v.(map[string]interface{})
+		slbName := nInfo["name"].(string)
+		if ov, ok := (*oldInfosMap)[slbName]; ok {
+			oInfo := ov.(map[string]interface{})
+			if pm, ok := nInfo["port_mappings"].([]interface{}); !ok || len(pm) == 0 {
+				// in this case, the port_mappings were cleared, so unbind this slb
+
+				// type is required to unbind slb, but it is cleared in nInfo
+				slbType := oInfo["type"].(string)
+				if err := e.UnbindK8sSlb(appId, slbType, slbName, timeout); err != nil {
+					return err
+				}
+				continue
+			}
+			if !reflect.DeepEqual(oInfo, nInfo) {
+				// modified
+				if err := e.updateK8sSlb(appId, &nInfo, timeout); err != nil {
+					return err
+				}
+			}
+		} else {
+			// new one
+			if err := e.BindK8sSlb(appId, &nInfo, timeout); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (e *EdasService) updateK8sSlb(appId string, slbConfig *map[string]interface{}, timeout time.Duration) *resource.RetryError {
+	if e.HasOngoingTasks(appId) {
+		return resource.RetryableError(Error("there is an ongoing task"))
+	}
+	portMappings := (*slbConfig)["port_mappings"].(*schema.Set).List()
+	var requestServicePortInfos []map[string]interface{}
+	if len(portMappings) > 0 {
+		for _, pmInterface := range portMappings {
+			pm := pmInterface.(map[string]interface{})
+			if v, ok := pm["service_port"]; ok {
+				spSlice := v.(*schema.Set).List()
+				sp := spSlice[0].(map[string]interface{})
+				info := map[string]interface{}{
+					"certId":               pm["cert_id"],
+					"loadBalancerProtocol": pm["loadbalancer_protocol"],
+					"targetPort":           sp["target_port"],
+					"port":                 sp["port"],
+				}
+				requestServicePortInfos = append(requestServicePortInfos, info)
+			}
+		}
+	}
+	portInfoBytes, err := json.Marshal(requestServicePortInfos)
+	if err != nil {
+		return resource.NonRetryableError(WrapErrorf(err, "marshal port mappings failed, value %v", requestServicePortInfos))
+	}
+	params := map[string]string{
+		"AppId":            appId,
+		"SlbName":          (*slbConfig)["name"].(string),
+		"Type":             (*slbConfig)["type"].(string),
+		"Scheduler":        (*slbConfig)["scheduler"].(string),
+		"Specification":    (*slbConfig)["specification"].(string),
+		"ClusterId":        "ClusterId",
+		"ServicePortInfos": string(portInfoBytes),
+	}
+	if response, err := e.doPopRequest(map[string]string{
+		"action":     "/pop/v5/k8s/acs/k8s_slb_binding",
+		"httpMethod": "PUT",
+		"id":         appId,
+	}, params); err != nil {
+		return resource.NonRetryableError(err)
+	} else {
+		return e.WaitForChangeOrderFinishedNonRetryable(appId, response["ChangeOrderId"].(string), timeout)
+	}
+}
+
+func (e *EdasService) UnbindK8sSlb(appId, slbType, slbName string, timeout time.Duration) *resource.RetryError {
+	if e.HasOngoingTasks(appId) {
+		return resource.RetryableError(Error("there is an ongoing task"))
+	}
+	if response, err := e.doPopRequest(map[string]string{
+		"action":     "/pop/v5/k8s/acs/k8s_slb_binding",
+		"httpMethod": "DELETE",
+		"id":         appId,
+	}, map[string]string{
+		"AppId":   appId,
+		"Type":    slbType,
+		"SlbName": slbName,
+	}); err != nil {
+		return resource.NonRetryableError(err)
+	} else {
+		return e.WaitForChangeOrderFinishedNonRetryable(appId, response["ChangeOrderId"].(string), timeout)
+	}
+}
+
+func (e *EdasService) DescribeEdasK8sSlbAttachment(appId string) ([]map[string]interface{}, error) {
+	application, err := e.DescribeEdasApplicationV2(appId)
+	if err != nil {
+		return nil, err
+	}
+	slbInfo := ""
+	if v, ok := application["SlbInfo"]; ok {
+		slbInfo = v.(string)
+	}
+	var slbConfigs []map[string]interface{}
+	if !jsonEmpty(slbInfo) {
+		filteredSlbInfo, err := filterSlbInfo(slbInfo)
+		if err != nil {
+			return nil, err
+		}
+		if len(*filteredSlbInfo) > 0 {
+			for _, slbInfo := range *filteredSlbInfo {
+				slbConfig, err := parseSlbConfig(&slbInfo)
+				if err != nil {
+					return nil, err
+				}
+				slbConfigs = append(slbConfigs, *slbConfig)
+			}
+		}
+	}
+
+	return slbConfigs, nil
 }

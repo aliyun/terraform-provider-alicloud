@@ -1061,6 +1061,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_domain":                                        resourceAlicloudAlidnsDomain(),
 			"alicloud_alidns_instance":                                      resourceAlicloudAlidnsInstance(),
 			"alicloud_edas_k8s_application":                                 resourceAlicloudEdasK8sApplication(),
+			"alicloud_edas_k8s_slb_attachment":                              resourceAlicloudEdasK8sSlbAttachment(),
 			"alicloud_config_rule":                                          resourceAlicloudConfigRule(),
 			"alicloud_config_configuration_recorder":                        resourceAlicloudConfigConfigurationRecorder(),
 			"alicloud_config_delivery_channel":                              resourceAlicloudConfigDeliveryChannel(),
