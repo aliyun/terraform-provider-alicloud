@@ -61,6 +61,8 @@ The following arguments are supported:
 * `version` - (Optional, ForceNew) The version of the resource. Valid values: `v1.8.6.52-g60741c97-aliyun` and `v1.9.7.31-g24cdcb43-aliyun`.
 * `edition` - (Optional, ForceNew) The type  of the resource. Valid values: `Default` and `Pro`. `Default`:the standard. `Pro`:the Pro version.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
+* `cluster_spec` - (Optional,Available in v1.166.0+.) The service mesh instance specification. Valid values: `standard`,`enterprise`,`ultimate`.
+* `cluster_ids` - (Optional,Available in v1.166.0+.) The array of the cluster ids.
 
 #### Block network
 
@@ -75,7 +77,7 @@ The mesh_config supports the following:
 
 * `access_log` - (Optional) The configuration of the access logging.
 * `audit` - (Optional) The configuration of the audit. See the following `Block audit`.
-* `customized_zipkin` - (Optional) Whether or not to enable the use of a custom zipkin.
+* `customized_zipkin` - (Optional) Whether to enable the use of a custom zipkin.
 * `enable_locality_lb` - (Optional) The enable locality lb.
 * `kiali` - (Optional) The configuration of the Kiali. See the following `Block kiali`.
 * `opa` - (Optional) The open-door policy of agent (OPA) plug-in information. See the following `Block opa`.
