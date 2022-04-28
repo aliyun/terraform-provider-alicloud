@@ -74,7 +74,7 @@ The following arguments are supported:
 * `schedule` - (Optional, Deprecated) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
   - `startTime` Backup start time, UNIX time seconds.
   - `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
-* `vault_id` - (Required) The ID of backup vault.
+* `vault_id` - (Required, ForceNew) The ID of backup vault.
 * `instance_name` - (Optional) The name of the Table store instance. **Note:** Required while source_type equals `OTS_TABLE`.
 * `ots_detail` - (Optional) The details about the Table store instance. See the following `Block ots_detail`. **Note:** Required while source_type equals `OTS_TABLE`.
 * `rules` - (Optional,Available in v1.164.0+) The backup plan rule. See the following `Block rules`. **Note:** Required while source_type equals `OTS_TABLE`.
