@@ -688,6 +688,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_network_interface_permissions":           dataSourceAlicloudEcsNetworkInterfacePermissions(),
 			"alicloud_mse_engine_namespaces":                       dataSourceAlicloudMseEngineNamespaces(),
 			"alicloud_ga_accelerator_spare_ip_attachments":         dataSourceAlicloudGaAcceleratorSpareIpAttachments(),
+			"alicloud_adb_resource_pools":                          dataSourceAlicloudAdbResourcePools(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1274,6 +1275,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_network_interface_permission":                     resourceAlicloudEcsNetworkInterfacePermission(),
 			"alicloud_mse_engine_namespace":                                 resourceAlicloudMseEngineNamespace(),
 			"alicloud_ga_accelerator_spare_ip_attachment":                   resourceAlicloudGaAcceleratorSpareIpAttachment(),
+			"alicloud_adb_resource_pool":                                    resourceAlicloudAdbResourcePool(),
 		},
 
 		ConfigureFunc: providerConfigure,
