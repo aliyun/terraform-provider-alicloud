@@ -235,6 +235,42 @@ func (s *EssService) DescribeEssScalingGroup(id string) (group ess.ScalingGroup,
 	return
 }
 
+func (s *EssService) DescribeEssScalingGroupSuspendProcess(id string) (object map[string]interface{}, err error) {
+	strs, err := ParseResourceId(id, 2)
+	if err != nil {
+		return object, WrapError(err)
+	}
+	idExist := false
+	scalingGroupId, processTemp := strs[0], strs[1]
+	request := ess.CreateDescribeScalingGroupsRequest()
+	request.ScalingGroupId = &[]string{scalingGroupId}
+	request.RegionId = s.client.RegionId
+	raw, e := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.DescribeScalingGroups(request)
+	})
+	if e != nil {
+		err = WrapErrorf(e, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*ess.DescribeScalingGroupsResponse)
+	for _, v := range response.ScalingGroups.ScalingGroup {
+		if v.ScalingGroupId == scalingGroupId {
+			process := v.SuspendedProcesses.SuspendedProcess
+			for i := 0; i < len(process); i++ {
+				if strings.EqualFold(processTemp, process[i]) {
+					idExist = true
+					return object, nil
+				}
+			}
+		}
+	}
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("EssScalingGroup", id)), NotFoundWithResponse, response)
+	}
+	return
+}
+
 func (s *EssService) DescribeEssScalingConfiguration(id string) (config ess.ScalingConfiguration, err error) {
 	request := ess.CreateDescribeScalingConfigurationsRequest()
 	request.ScalingConfigurationId = &[]string{id}
