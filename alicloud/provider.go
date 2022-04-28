@@ -729,6 +729,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ess_schedule":                       resourceAlicloudEssScheduledTask(),
 			"alicloud_ess_scheduled_task":                 resourceAlicloudEssScheduledTask(),
 			"alicloud_ess_attachment":                     resourceAlicloudEssAttachment(),
+			"alicloud_ess_suspend_process":                resourceAlicloudEssSuspendProcess(),
 			"alicloud_ess_lifecycle_hook":                 resourceAlicloudEssLifecycleHook(),
 			"alicloud_ess_notification":                   resourceAlicloudEssNotification(),
 			"alicloud_ess_alarm":                          resourceAlicloudEssAlarm(),
