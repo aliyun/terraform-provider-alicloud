@@ -17,7 +17,7 @@ params:
   ALICLOUD_REGION:       ""
   ALICLOUD_ACCOUNT_ID:   ""
   DING_TALK_TOKEN:       ""
-  BUCKET_NAME:           "terraform-ci"
+  BUCKET_NAME:           "terraform-provider-ci"
   BUCKET_REGION:         "cn-beijing"
   ALICLOUD_RESOURCE_GROUP_ID : ""
   ALICLOUD_WAF_INSTANCE_ID: ""
