@@ -84,7 +84,7 @@ func resourceAlicloudSlbAclCreate(d *schema.ResourceData, meta interface{}) erro
 		request["ResourceGroupId"] = v
 	}
 	request["AclName"] = strings.TrimSpace(d.Get("name").(string))
-	if v, ok := d.GetOk("address_ip_version"); ok {
+	if v, ok := d.GetOk("ip_version"); ok {
 		request["AddressIPVersion"] = v
 	}
 
