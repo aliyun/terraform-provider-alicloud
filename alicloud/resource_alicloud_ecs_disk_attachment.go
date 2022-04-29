@@ -67,6 +67,17 @@ func resourceAlicloudEcsDiskAttachment() *schema.Resource {
 }
 
 func resourceAlicloudEcsDiskAttachmentCreate(d *schema.ResourceData, meta interface{}) (errCreate error) {
+	diskLock := flock.New("/run/lock/terraform-alicloud-disk-" + d.Get("disk_id").(string) + ".lock")
+	if err := diskLock.Lock(); err != nil {
+		return WrapError(err)
+	}
+	defer func() {
+		err := diskLock.Unlock()
+		if errCreate == nil {
+			errCreate = WrapError(err)
+		}
+	}()
+
 	ecsLock := flock.New("/run/lock/terraform-alicloud-ecs-" + d.Get("instance_id").(string) + ".lock")
 	if err := ecsLock.Lock(); err != nil {
 		return WrapError(err)
@@ -193,6 +204,17 @@ func resourceAlicloudEcsDiskAttachmentUpdate(d *schema.ResourceData, meta interf
 	return resourceAlicloudEcsDiskAttachmentRead(d, meta)
 }
 func resourceAlicloudEcsDiskAttachmentDelete(d *schema.ResourceData, meta interface{}) (errDelete error) {
+	diskLock := flock.New("/run/lock/terraform-alicloud-disk-" + d.Get("disk_id").(string) + ".lock")
+	if err := diskLock.Lock(); err != nil {
+		return WrapError(err)
+	}
+	defer func() {
+		err := diskLock.Unlock()
+		if errDelete == nil {
+			errDelete = WrapError(err)
+		}
+	}()
+
 	ecsLock := flock.New("/run/lock/terraform-alicloud-ecs-" + d.Get("instance_id").(string) + ".lock")
 	if err := ecsLock.Lock(); err != nil {
 		return WrapError(err)

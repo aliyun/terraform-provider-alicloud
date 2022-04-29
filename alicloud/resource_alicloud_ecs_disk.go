@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/gofrs/flock"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -335,7 +337,18 @@ func resourceAlicloudEcsDiskRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("availability_zone", object["ZoneId"])
 	return nil
 }
-func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) (errUpdate error) {
+	diskLock := flock.New("/run/lock/terraform-alicloud-disk-" + d.Id() + ".lock")
+	if err := diskLock.Lock(); err != nil {
+		return WrapError(err)
+	}
+	defer func() {
+		err := diskLock.Unlock()
+		if errUpdate == nil {
+			errUpdate = WrapError(err)
+		}
+	}()
+
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	conn, err := client.NewEcsClient()
