@@ -1058,9 +1058,15 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 	if fmt.Sprint(response["Success"]) == "false" {
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	v, err := jsonpath.Get("$.AllowedList.VpcList", response)
+	var pathStr string
+	if parts[1] == "vpc" {
+		pathStr = "$.AllowedList.VpcList"
+	} else if parts[1] == "internet" {
+		pathStr = "$.AllowedList.InternetList"
+	}
+	v, err := jsonpath.Get(pathStr, response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AllowedList.VpcList", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, pathStr, response)
 	}
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)

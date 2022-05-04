@@ -57,6 +57,22 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_ip":   "172.168.4.0/24",
+					"port_range":   "9093/9093",
+					"instance_id":  "${alicloud_alikafka_instance.default.id}",
+					"allowed_type": "internet",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_ip":   "172.168.4.0/24",
+						"port_range":   "9093/9093",
+						"instance_id":  CHECKSET,
+						"allowed_type": "internet",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
