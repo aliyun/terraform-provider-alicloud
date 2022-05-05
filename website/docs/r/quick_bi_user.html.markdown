@@ -35,7 +35,7 @@ resource "alicloud_quick_bi_user" "example" {
 The following arguments are supported:
 
 * `account_id` - (Optional, ForceNew) Alibaba Cloud account ID.
-* `account_name` - (Required, ForceNew) An Alibaba Cloud account, Alibaba Cloud name.
+* `account_name` - (Required) An Alibaba Cloud account, Alibaba Cloud name.
 * `admin_user` - (Required) Whether it is the administrator. Valid values: `true` and `false`.
 * `auth_admin_user` - (Required) Whether this is a permissions administrator. Valid values: `false`, `true`.
 * `nick_name` - (Required, ForceNew) The nickname of the user.
