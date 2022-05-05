@@ -164,6 +164,10 @@ func resourceAlicloudQuotasQuotaAlarmRead(d *schema.ResourceData, meta interface
 }
 func resourceAlicloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewQuotasClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -188,10 +192,6 @@ func resourceAlicloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interfa
 	}
 	if update {
 		action := "UpdateQuotaAlarm"
-		conn, err := client.NewQuotasClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
