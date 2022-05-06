@@ -510,6 +510,14 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"internet_ip": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"intranet_ip": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -801,6 +809,8 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 	d.Set("container_group_name", object["ContainerGroupName"])
+	d.Set("internet_ip", object["InternetIp"])
+	d.Set("intranet_ip", object["IntranetIp"])
 
 	containers := make([]map[string]interface{}, 0)
 	if containersList, ok := object["Containers"].([]interface{}); ok {
