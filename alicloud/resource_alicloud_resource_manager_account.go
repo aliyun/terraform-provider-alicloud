@@ -140,6 +140,10 @@ func resourceAlicloudResourceManagerAccountRead(d *schema.ResourceData, meta int
 }
 func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -149,10 +153,6 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 		}
 		request["DestinationFolderId"] = d.Get("folder_id")
 		action := "MoveAccount"
-		conn, err := client.NewResourcemanagerClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -181,10 +181,6 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 	request["NewDisplayName"] = d.Get("display_name")
 	if update {
 		action := "UpdateAccount"
-		conn, err := client.NewResourcemanagerClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
