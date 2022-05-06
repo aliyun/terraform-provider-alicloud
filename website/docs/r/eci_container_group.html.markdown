@@ -252,6 +252,8 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Container Group. Value as `container_group_id`.
 * `status` - The status of container group.
+* `public_ip` - (Available in v1.166.0+) The Public IP of the container group.
+* `private_ip` - (Available in v1.166.0+) The Private IP of the container group.
 
 ### Timeouts
 
