@@ -46,6 +46,7 @@ func resourceAlicloudSaeApplicationScalingRule() *schema.Resource {
 				Type:         schema.TypeSet,
 				Optional:     true,
 				AtLeastOneOf: []string{"scaling_rule_metric", "scaling_rule_timer"},
+				MaxItems:     1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"max_replicas": {
@@ -131,8 +132,9 @@ func resourceAlicloudSaeApplicationScalingRule() *schema.Resource {
 				Computed: true,
 			},
 			"scaling_rule_timer": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"begin_date": {
@@ -144,7 +146,7 @@ func resourceAlicloudSaeApplicationScalingRule() *schema.Resource {
 							Optional: true,
 						},
 						"schedules": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Optional: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -156,14 +158,23 @@ func resourceAlicloudSaeApplicationScalingRule() *schema.Resource {
 										Type:         schema.TypeInt,
 										Optional:     true,
 										ValidateFunc: validation.IntBetween(1, 50),
+										DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+											return fmt.Sprint(d.Get("scaling_rule_type")) != "timing"
+										},
 									},
 									"max_replicas": {
 										Type:     schema.TypeInt,
 										Optional: true,
+										DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+											return fmt.Sprint(d.Get("scaling_rule_type")) != "mix"
+										},
 									},
 									"min_replicas": {
 										Type:     schema.TypeInt,
 										Optional: true,
+										DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+											return fmt.Sprint(d.Get("scaling_rule_type")) != "mix"
+										},
 									},
 								},
 							},
@@ -190,27 +201,32 @@ func resourceAlicloudSaeApplicationScalingRuleCreate(d *schema.ResourceData, met
 	}
 	request["AppId"] = StringPointer(d.Get("app_id").(string))
 	request["ScalingRuleName"] = StringPointer(d.Get("scaling_rule_name").(string))
-	if v, ok := d.GetOk("scaling_rule_type"); ok {
-		request["ScalingRuleType"] = StringPointer(v.(string))
-	}
+	request["ScalingRuleType"] = StringPointer(d.Get("scaling_rule_type").(string))
 
 	scalingRuleTimerMap := map[string]interface{}{}
-	for _, scalingRuleTimer := range d.Get("scaling_rule_timer").(*schema.Set).List() {
-		scalingRuleTimerArg := scalingRuleTimer.(map[string]interface{})
+	if scalingRuleTimer := d.Get("scaling_rule_timer").([]interface{}); len(scalingRuleTimer) > 0 {
+		scalingRuleTimerArg := scalingRuleTimer[0].(map[string]interface{})
 		scalingRuleTimerMap["beginDate"] = scalingRuleTimerArg["begin_date"]
 		scalingRuleTimerMap["endDate"] = scalingRuleTimerArg["end_date"]
 		scalingRuleTimerMap["period"] = scalingRuleTimerArg["period"]
 
 		schedulesMaps := make([]map[string]interface{}, 0)
-		for _, schedules := range scalingRuleTimerArg["schedules"].(*schema.Set).List() {
+		for _, schedules := range scalingRuleTimerArg["schedules"].([]interface{}) {
 			schedulesMap := map[string]interface{}{}
 			schedulesArg := schedules.(map[string]interface{})
-			schedulesMap["maxReplicas"] = schedulesArg["max_replicas"]
-			schedulesMap["minReplicas"] = schedulesArg["min_replicas"]
+			if v, ok := schedulesArg["max_replicas"]; ok && v.(int) > 0 {
+				schedulesMap["maxReplicas"] = v
+			}
+			if v, ok := schedulesArg["min_replicas"]; ok && v.(int) > 0 {
+				schedulesMap["minReplicas"] = v
+			}
 			schedulesMap["atTime"] = schedulesArg["at_time"]
-			schedulesMap["targetReplicas"] = schedulesArg["target_replicas"]
+			if v, ok := schedulesArg["target_replicas"]; ok && v.(int) > 0 {
+				schedulesMap["targetReplicas"] = v
+			}
 			schedulesMaps = append(schedulesMaps, schedulesMap)
 		}
+
 		scalingRuleTimerMap["schedules"] = schedulesMaps
 		if v, err := convertArrayObjectToJsonString(scalingRuleTimerMap); err != nil {
 			return WrapError(err)
@@ -220,8 +236,8 @@ func resourceAlicloudSaeApplicationScalingRuleCreate(d *schema.ResourceData, met
 	}
 
 	scalingRuleMetricMap := map[string]interface{}{}
-	for _, scalingRuleMetric := range d.Get("scaling_rule_metric").(*schema.Set).List() {
-		scalingRuleMetricArg := scalingRuleMetric.(map[string]interface{})
+	if scalingRuleMetric := d.Get("scaling_rule_metric").(*schema.Set).List(); len(scalingRuleMetric) > 0 {
+		scalingRuleMetricArg := scalingRuleMetric[0].(map[string]interface{})
 		scalingRuleMetricMap["maxReplicas"] = scalingRuleMetricArg["max_replicas"]
 		scalingRuleMetricMap["minReplicas"] = scalingRuleMetricArg["min_replicas"]
 
@@ -422,20 +438,27 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 		update = true
 	}
 	scalingRuleTimerMap := map[string]interface{}{}
-	for _, scalingRuleTimer := range d.Get("scaling_rule_timer").(*schema.Set).List() {
-		scalingRuleTimerArg := scalingRuleTimer.(map[string]interface{})
+
+	if scalingRuleTimer := d.Get("scaling_rule_timer").([]interface{}); len(scalingRuleTimer) > 0 {
+		scalingRuleTimerArg := scalingRuleTimer[0].(map[string]interface{})
 		scalingRuleTimerMap["beginDate"] = scalingRuleTimerArg["begin_date"]
 		scalingRuleTimerMap["endDate"] = scalingRuleTimerArg["end_date"]
 		scalingRuleTimerMap["period"] = scalingRuleTimerArg["period"]
 
 		schedulesMaps := make([]map[string]interface{}, 0)
-		for _, schedules := range scalingRuleTimerArg["schedules"].(*schema.Set).List() {
+		for _, schedules := range scalingRuleTimerArg["schedules"].([]interface{}) {
 			schedulesMap := map[string]interface{}{}
 			schedulesArg := schedules.(map[string]interface{})
-			schedulesMap["maxReplicas"] = schedulesArg["max_replicas"]
-			schedulesMap["minReplicas"] = schedulesArg["min_replicas"]
+			if v, ok := schedulesArg["max_replicas"]; ok && v.(int) > 0 {
+				schedulesMap["maxReplicas"] = v
+			}
+			if v, ok := schedulesArg["min_replicas"]; ok && v.(int) > 0 {
+				schedulesMap["minReplicas"] = v
+			}
 			schedulesMap["atTime"] = schedulesArg["at_time"]
-			schedulesMap["targetReplicas"] = schedulesArg["target_replicas"]
+			if v, ok := schedulesArg["target_replicas"]; ok && v.(int) > 0 {
+				schedulesMap["targetReplicas"] = v
+			}
 			schedulesMaps = append(schedulesMaps, schedulesMap)
 		}
 		scalingRuleTimerMap["schedules"] = schedulesMaps
@@ -450,8 +473,9 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 		update = true
 	}
 	scalingRuleMetricMap := map[string]interface{}{}
-	for _, scalingRuleMetric := range d.Get("scaling_rule_metric").(*schema.Set).List() {
-		scalingRuleMetricArg := scalingRuleMetric.(map[string]interface{})
+
+	if scalingRuleMetric := d.Get("scaling_rule_metric").(*schema.Set).List(); len(scalingRuleMetric) > 0 {
+		scalingRuleMetricArg := scalingRuleMetric[0].(map[string]interface{})
 		scalingRuleMetricMap["maxReplicas"] = scalingRuleMetricArg["max_replicas"]
 		scalingRuleMetricMap["minReplicas"] = scalingRuleMetricArg["min_replicas"]
 		scaleUpRulesMap := map[string]interface{}{}
