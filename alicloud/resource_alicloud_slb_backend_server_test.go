@@ -427,3 +427,133 @@ resource "alicloud_slb_load_balancer" "default" {
 var slb_vpc = map[string]string{
 	"backend_servers.#": "2",
 }
+
+func TestAccAlicloudSLBBackendServers_eci(t *testing.T) {
+	var v *slb.DescribeLoadBalancerAttributeResponse
+	resourceId := "alicloud_slb_backend_server.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testaccslbbackendserverseci%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceBackendServerEciConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
+					"backend_servers": []map[string]interface{}{
+						{
+							"server_id": "${alicloud_eci_container_group.default.id}",
+							"weight":    "80",
+							"type":      "eci",
+							"server_ip": "${alicloud_eci_container_group.default.intranet_ip}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_id":  CHECKSET,
+						"backend_servers.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+		},
+	})
+}
+
+func resourceBackendServerEciConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_vpcs" "default"{
+	name_regex = "default-NODELETING"
+}
+
+data "alicloud_slb_zones" "default" {
+	available_slb_address_type = "vpc"
+}
+
+data "alicloud_vswitches" "default" {
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_slb_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  	name = var.name
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_slb_load_balancer" "default" {
+  	load_balancer_name = var.name
+  	vswitch_id = data.alicloud_vswitches.default.ids[0]
+    load_balancer_spec = "slb.s1.small"
+}
+
+resource "alicloud_eci_container_group" "default" {
+  container_group_name = var.name
+  restart_policy       = "OnFailure"
+  security_group_id    = alicloud_security_group.default.id
+  vswitch_id           = data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0
+  tags = {
+    "created" = "tf"
+    "for" = "acceptance-test"
+  }
+
+  containers {
+    image             = "registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine"
+    name              = "nginx"
+    working_dir       = "/tmp/nginx"
+    image_pull_policy = "IfNotPresent"
+    commands          = ["/bin/sh", "-c", "sleep 9999"]
+    volume_mounts {
+      mount_path = "/tmp/test"
+      read_only  = false
+      name       = "empty1"
+    }
+    ports {
+      port     = 80
+      protocol = "TCP"
+    }
+    environment_vars {
+      key   = "test"
+      value = "nginx"
+    }
+  }
+  host_aliases {
+    ip        = "1.1.1.1"
+    hostnames = ["hehe.com"]
+  }
+
+  init_containers {
+    name              = "init-busybox"
+    image             = "registry-vpc.%s.aliyuncs.com/eci_open/busybox:1.30"
+    image_pull_policy = "IfNotPresent"
+    commands          = ["echo"]
+    args              = ["hello initcontainer"]
+  }
+
+  volumes {
+    name = "empty1"
+    type = "EmptyDirVolume"
+  }
+}
+`, name, defaultRegionToTest, defaultRegionToTest)
+}
