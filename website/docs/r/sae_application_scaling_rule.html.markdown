@@ -103,7 +103,7 @@ The following arguments are supported:
 * `min_ready_instances` - (Optional) The min ready instances.
 * `scaling_rule_enable` - (Optional, Computed) True whether the auto scaling policy is enabled. The value description is as follows: true: enabled state. false: disabled status. Valid values: `false`, `true`.
 * `scaling_rule_name` - (Required, ForceNew) The name of a custom elastic scaling policy. In the application, the policy name cannot be repeated. It must start with a lowercase letter, and can only contain lowercase letters, numbers, and dashes (-), and no more than 32 characters. After the scaling policy is successfully created, the policy name cannot be modified.
-* `scaling_rule_type` - (Required, ForceNew) Flexible strategy type. The value description is as follows:  timing: timing flexibility. Valid values: `timing`.
+* `scaling_rule_type` - (Required, ForceNew) Flexible strategy type. Valid values: `mix`, `timing` and `metric`.
 * `scaling_rule_timer` - (Optional) Configuration of Timing Resilient Policies. See the following `Block scaling_rule_timer`.
 * `scaling_rule_metric` - (Optional) Monitor the configuration of the indicator elasticity strategy. See the following `Block scaling_rule_metric`.
 
@@ -121,7 +121,9 @@ The scaling_rule_timer supports the following:
 The schedules supports the following:
 
 * `at_time` - (Optional) Trigger point in time. When supporting format: minutes, for example: `08:00`.
-* `target_replicas` - (Optional) This parameter can specify the number of instances to be applied or the minimum number of surviving instances per deployment. value range [1,50].
+* `target_replicas` - (Optional) This parameter can specify the number of instances to be applied or the minimum number of surviving instances per deployment. value range [1,50]. -> **NOTE:** The attribute is valid when the attribute `scaling_rule_type` is `timing`.
+* `max_replicas` - (Optional) Maximum number of instances applied. -> **NOTE:** The attribute is valid when the attribute `scaling_rule_type` is `mix`.
+* `min_replicas` - (Optional) Minimum number of instances applied. -> **NOTE:** The attribute is valid when the attribute `scaling_rule_type` is `mix`.
 
 #### Block scaling_rule_metric
 
