@@ -119,6 +119,10 @@ func resourceAlicloudResourceManagerPolicyVersionRead(d *schema.ResourceData, me
 func resourceAlicloudResourceManagerPolicyVersionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourcemanagerService := ResourcemanagerService{client}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -137,10 +141,6 @@ func resourceAlicloudResourceManagerPolicyVersionUpdate(d *schema.ResourceData, 
 					"VersionId":  parts[1],
 				}
 				action := "SetDefaultPolicyVersion"
-				conn, err := client.NewResourcemanagerClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
