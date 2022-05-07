@@ -95,7 +95,7 @@ func testSweepGpdbInstances(region string) error {
 			return gpdbClient.DeleteDBInstance(request)
 		})
 		if err != nil {
-			log.Printf("[error] Failed to delete GPDB instance, ID:%v(%v)\n", id, request.GetActionName())
+			log.Printf("[error] Failed to delete GPDB instance, ID:%v(%v)\n", id, err)
 		} else {
 			sweeper = true
 		}
