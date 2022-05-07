@@ -1,32 +1,33 @@
-## 1.166.0 (Unreleased)
+## 1.167.0 (Unreleased)
+## 1.166.0 (May 07, 2022)
 
-- **New Resource:** `alb_acl_entry_attachment` [GH-4913]
-- **New Resource:** `alicloud_ecs_network_interface_permission` [GH-4912]
-- **New Resource:** `alicloud_mse_engine_namespace` [GH-4920]
-- **New Data Source:** `alicloud_mse_engine_namespaces` [GH-4920]	
-- **New Data Source:** `alicloud_ecs_network_interface_permissions` [GH-4912]
+- **New Resource:** `alb_acl_entry_attachment` ([#4913](https://github.com/aliyun/terraform-provider-alicloud/issues/4913))
+- **New Resource:** `alicloud_ecs_network_interface_permission` ([#4912](https://github.com/aliyun/terraform-provider-alicloud/issues/4912))
+- **New Resource:** `alicloud_mse_engine_namespace` ([#4920](https://github.com/aliyun/terraform-provider-alicloud/issues/4920))
+- **New Data Source:** `alicloud_mse_engine_namespaces` ([#4920](https://github.com/aliyun/terraform-provider-alicloud/issues/4920))	
+- **New Data Source:** `alicloud_ecs_network_interface_permissions` ([#4912](https://github.com/aliyun/terraform-provider-alicloud/issues/4912))
 
 ENHANCEMENTS:
 
-- resource/alicloud_eci_container: Support field auto_match_image_cache [GH-4918]
-- resource/alicloud_adb_db_cluster: support converting the and 'pay_type' [GH-4916]
-- resource/alicloud_service_mesh_service_mesh: add the field 'cluster_spec' and 'cluster_ids' [GH-4921]
-- resource/alicloud_cs_kubernetes_node_pool: ACK nodepool support system disk BYOK [GH-4898]
-- resource/alicloud_cs_kubernetes_addon: Support to modify the custom configuration of the kubernetes cluster addon [GH-4875]
-- resource/alicloud_express_connect_virtual_border_router: add support for new filed route_table_id [GH-4908]
-- data source/alicloud_db_instance_classes: add commodity_code attribute to support filtered by commodity_code [GH-4887]
-- testcase: Adds new unit test case for resource alicloud_msc_sub_contact alicloud_mongodb_sharding_network_public_address alicloud_msc_sub_webhook [GH-4900]
-- testcase: Adds new unit test case for resource alicloud_mse_cluster alicloud_ons_group alicloud_ons_instance [GH-4915]
-- testcase: Adds new unit test case for resource alicloud_hbr_replication_vault alicloud_hbr_vault alicloud_msc_sub_subscription [GH-4919]
-- testcase: Adds new unit test case for resource alicloud_mongodb_serverless_instance alicloud_mongodb_audit_policy alicloud_mongodb_account [GH-4897]
-- testcase: Adds new unit test case for resource alicloud_ons_topic alicloud_privatelink_vpc_endpoint_connection alicloud_privatelink_vpc_endpoint_service_resource [GH-4922]
-- testcases: Improves the alicloud_imp_app_template testcases [GH-4897]	
-- ci: checkout the oss bucket name [GH-4668]
+- resource/alicloud_eci_container: Support field auto_match_image_cache ([#4918](https://github.com/aliyun/terraform-provider-alicloud/issues/4918))
+- resource/alicloud_adb_db_cluster: support converting the and 'pay_type' ([#4916](https://github.com/aliyun/terraform-provider-alicloud/issues/4916))
+- resource/alicloud_service_mesh_service_mesh: add the field 'cluster_spec' and 'cluster_ids' ([#4921](https://github.com/aliyun/terraform-provider-alicloud/issues/4921))
+- resource/alicloud_cs_kubernetes_node_pool: ACK nodepool support system disk BYOK ([#4898](https://github.com/aliyun/terraform-provider-alicloud/issues/4898))
+- resource/alicloud_cs_kubernetes_addon: Support to modify the custom configuration of the kubernetes cluster addon ([#4875](https://github.com/aliyun/terraform-provider-alicloud/issues/4875))
+- resource/alicloud_express_connect_virtual_border_router: add support for new filed route_table_id ([#4908](https://github.com/aliyun/terraform-provider-alicloud/issues/4908))
+- data source/alicloud_db_instance_classes: add commodity_code attribute to support filtered by commodity_code ([#4887](https://github.com/aliyun/terraform-provider-alicloud/issues/4887))
+- testcase: Adds new unit test case for resource alicloud_msc_sub_contact alicloud_mongodb_sharding_network_public_address alicloud_msc_sub_webhook ([#4900](https://github.com/aliyun/terraform-provider-alicloud/issues/4900))
+- testcase: Adds new unit test case for resource alicloud_mse_cluster alicloud_ons_group alicloud_ons_instance ([#4915](https://github.com/aliyun/terraform-provider-alicloud/issues/4915))
+- testcase: Adds new unit test case for resource alicloud_hbr_replication_vault alicloud_hbr_vault alicloud_msc_sub_subscription ([#4919](https://github.com/aliyun/terraform-provider-alicloud/issues/4919))
+- testcase: Adds new unit test case for resource alicloud_mongodb_serverless_instance alicloud_mongodb_audit_policy alicloud_mongodb_account ([#4897](https://github.com/aliyun/terraform-provider-alicloud/issues/4897))
+- testcase: Adds new unit test case for resource alicloud_ons_topic alicloud_privatelink_vpc_endpoint_connection alicloud_privatelink_vpc_endpoint_service_resource ([#4922](https://github.com/aliyun/terraform-provider-alicloud/issues/4922))
+- testcases: Improves the alicloud_imp_app_template testcases ([#4897](https://github.com/aliyun/terraform-provider-alicloud/issues/4897))	
+- ci: checkout the oss bucket name ([#4668](https://github.com/aliyun/terraform-provider-alicloud/issues/4668))
 
 BUG FIXES:
 
-- resource/alicloud_slb_acl: Fix bugs that cannot create ipv6. [GH-4925]
-- datasource/alicloud_ram_roles: Fixed user flow control [GH-4917]
+- resource/alicloud_slb_acl: Fix bugs that cannot create ipv6. ([#4925](https://github.com/aliyun/terraform-provider-alicloud/issues/4925))
+- datasource/alicloud_ram_roles: Fixed user flow control ([#4917](https://github.com/aliyun/terraform-provider-alicloud/issues/4917))
 
 ## 1.165.0 (April 24, 2022)
 
