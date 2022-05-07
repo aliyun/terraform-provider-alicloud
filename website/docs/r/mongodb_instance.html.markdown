@@ -63,7 +63,7 @@ The following arguments are supported:
 * `engine_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/61763.htm) `EngineVersion`.
 * `db_instance_class` - (Required) Instance specification. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
 * `db_instance_storage` - (Required) User-defined DB instance storage space.Unit: GB. Value range:
-  - Custom storage space; value range: [10,2000]
+  - Custom storage space.
   - 10-GB increments. 
 * `replication_factor` - (Optional) Number of replica set nodes. Valid values: [1, 3, 5, 7]
 * `storage_engine` (Optional, ForceNew) Storage engine: WiredTiger or RocksDB. System Default value: WiredTiger.
