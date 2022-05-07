@@ -199,7 +199,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
   peering_subnet_mask        = "255.255.255.252"
   physical_connection_id     = data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = 16
+  vlan_id                    = %d
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
@@ -212,7 +212,7 @@ resource "alicloud_cen_transit_router_vbr_attachment" "default" {
   transit_router_attachment_name = var.name
   transit_router_attachment_description = var.name
 }
-`, name)
+`, name, acctest.RandIntRange(1, 2999))
 }
 
 func TestAccAlicloudCenTransitRouterRouteEntry_unit(t *testing.T) {
