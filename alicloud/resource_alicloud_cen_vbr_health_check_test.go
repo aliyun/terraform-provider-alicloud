@@ -195,7 +195,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
   peering_subnet_mask        = "255.255.255.252"
   physical_connection_id     = data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = 100
+  vlan_id                    = %d
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
@@ -209,7 +209,7 @@ resource "alicloud_cen_instance_attachment" "default" {
   child_instance_type = "VBR"
   child_instance_region_id = "%s"
 }
-`, name, defaultRegionToTest)
+`, name, acctest.RandIntRange(1, 2999), defaultRegionToTest)
 }
 
 func CenVbrHealthCheckBasicdependence1(name string) string {
@@ -227,7 +227,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
   peering_subnet_mask        = "255.255.255.252"
   physical_connection_id     = data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = 100
+  vlan_id                    = %d
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
@@ -242,5 +242,5 @@ resource "alicloud_cen_instance_attachment" "default" {
   child_instance_region_id = "%s"
 }
 data "alicloud_account" "default" {}
-`, name, os.Getenv("ALICLOUD_REGION"))
+`, name, acctest.RandIntRange(1, 2999), os.Getenv("ALICLOUD_REGION"))
 }
