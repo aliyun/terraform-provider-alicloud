@@ -59,6 +59,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"cluster_spec":                "ack.pro.small",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"deletion_protection":         "true",
+					"enable_rrsa":                 "false",
 					"timezone":                    "Asia/Shanghai",
 					"os_type":                     "Linux",
 					"platform":                    "CentOS",
@@ -86,6 +87,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 						"cluster_spec":                          "ack.pro.small",
 						"resource_group_id":                     CHECKSET,
 						"deletion_protection":                   "true",
+						"enable_rrsa":                           "false",
 						"timezone":                              "Asia/Shanghai",
 						"os_type":                               "Linux",
 						"platform":                              "CentOS",
@@ -145,6 +147,16 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_rrsa": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_rrsa": "true",
 					}),
 				),
 			},
@@ -222,6 +234,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 					"version":             "1.18.8-aliyun.1",
 					"service_cidr":        "172.21.0.0/20",
 					"deletion_protection": "true",
+					"enable_rrsa":         "false",
 					"cluster_spec":        "ack.standard",
 					// worker args
 					"worker_number":                  "2",
@@ -255,6 +268,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 						"pod_cidr":            "172.20.0.0/16",
 						"service_cidr":        "172.21.0.0/20",
 						"deletion_protection": "true",
+						"enable_rrsa":         "false",
 						"cluster_spec":        "ack.standard",
 						// worker args
 						"worker_number":                  "2",
@@ -374,6 +388,7 @@ func TestAccAlicloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 					"cluster_spec":                 "ack.pro.small",
 					"is_enterprise_security_group": "true",
 					"deletion_protection":          "false",
+					"enable_rrsa":                  "false",
 					"node_cidr_mask":               "26",
 					"pod_cidr":                     "172.20.0.0/16",
 					"service_cidr":                 "172.21.0.0/20",
@@ -393,6 +408,7 @@ func TestAccAlicloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 						"name":                 name,
 						"cluster_spec":         "ack.pro.small",
 						"deletion_protection":  "false",
+						"enable_rrsa":          "false",
 						"pod_cidr":             "172.20.0.0/16",
 						"service_cidr":         "172.21.0.0/20",
 						"os_type":              "Linux",

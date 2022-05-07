@@ -1205,3 +1205,71 @@ func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]
 	}
 	return diff, nil
 }
+
+//versionCompare check version,
+//if cueVersion is newer than neededVersion return 1
+//if curVersion is equal neededVersion return 0
+//if curVersion is older than neededVersion return -1
+//example: neededVersion = 1.22, curVersion = 1.22.3, it will return 1
+//d.Get("version") return "1.22.3-aliyun.1", it need to trim "-aliyun.1" suffix.
+func versionCompare(neededVersion, curVersion string) (int, error) {
+	if neededVersion == "" || curVersion == "" {
+		if neededVersion == "" && curVersion == "" {
+			return 0, nil
+		} else {
+			if neededVersion == "" {
+				return 1, nil
+			} else {
+				return -1, nil
+			}
+		}
+	}
+
+	currentVersions := strings.Split(neededVersion, ".")
+	newVersions := strings.Split(curVersion, ".")
+
+	currentVersions, newVersions = fillVersions(currentVersions, newVersions)
+	compare := 0
+
+	for index, val := range currentVersions {
+		newVal := newVersions[index]
+		v1, err1 := strconv.Atoi(val)
+		v2, err2 := strconv.Atoi(newVal)
+
+		if err1 != nil || err2 != nil {
+			return -2, fmt.Errorf("NotSupport, only support digit version")
+		}
+
+		if v1 > v2 {
+			compare = -1
+		} else if v1 == v2 {
+			compare = 0
+		} else {
+			compare = 1
+		}
+
+		if compare != 0 {
+			break
+		}
+	}
+
+	return compare, nil
+}
+
+func fillVersions(currentVersions, newVersions []string) ([]string, []string) {
+	ver1, ver2 := currentVersions, newVersions
+
+	d := len(ver1) - len(ver2)
+
+	if d > 0 {
+		for index := 0; index < d; index++ {
+			ver2 = append(ver2, "0")
+		}
+	} else {
+		for index := 0; index < int(math.Abs(float64(d))); index++ {
+			ver1 = append(ver1, "0")
+		}
+	}
+
+	return ver1, ver2
+}

@@ -34,7 +34,8 @@ const (
 	KubernetesClusterNetworkTypeFlannel = "flannel"
 	KubernetesClusterNetworkTypeTerway  = "terway"
 
-	KubernetesClusterLoggingTypeSLS = "SLS"
+	KubernetesClusterLoggingTypeSLS       = "SLS"
+	KubernetesClusterRRSASupportedVersion = "1.22"
 )
 
 var (
@@ -419,6 +420,11 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Default:  true,
 			},
 			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"enable_rrsa": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -1068,6 +1074,13 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		}
 	}
 
+	// modify cluster rrsa policy
+	if d.HasChange("enable_rrsa") {
+		if err := updateKubernetesClusterRRSA(d, meta, &invoker); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterRRSA", DenverdinoAliyungo)
+		}
+	}
+
 	// migrate cluster to pro form standard
 	if d.HasChange("cluster_spec") {
 		oldValue, newValue := d.GetChange("cluster_spec")
@@ -1116,6 +1129,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("resource_group_id", object.ResourceGroupId)
 	d.Set("cluster_spec", object.ClusterSpec)
 	d.Set("deletion_protection", object.DeletionProtection)
+	d.Set("enable_rrsa", object.EnableRRSA)
 
 	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
 		return WrapError(err)
@@ -1458,6 +1472,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			DisableRollback:    true,
 			Name:               clusterName,
 			DeletionProtection: d.Get("deletion_protection").(bool),
+			EnableRRSA:         d.Get("enable_rrsa").(bool),
 			VpcId:              vpcId,
 			// the params below is ok to be empty
 			KubernetesVersion:         d.Get("version").(string),

@@ -87,6 +87,11 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"enable_rrsa": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"private_zone": {
 				Type:          schema.TypeBool,
 				Optional:      true,
@@ -296,6 +301,7 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		Addons:               addons,
 		KubernetesVersion:    d.Get("version").(string),
 		DeletionProtection:   d.Get("deletion_protection").(bool),
+		EnableRRSA:           d.Get("enable_rrsa").(bool),
 		ResourceGroupId:      d.Get("resource_group_id").(string),
 	}
 
@@ -420,6 +426,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	d.Set("vswitch_ids", vswitchIds)
 	d.Set("security_group_id", object.SecurityGroupId)
 	d.Set("deletion_protection", object.DeletionProtection)
+	d.Set("enable_rrsa", object.EnableRRSA)
 	d.Set("version", object.CurrentVersion)
 	d.Set("resource_group_id", object.ResourceGroupId)
 	d.Set("cluster_spec", object.ClusterSpec)
@@ -557,9 +564,10 @@ func modifyKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
 	csService := CsService{client}
 
 	var modifyClusterRequest cs.ModifyClusterArgs
-	if d.HasChange("deletion_protection") {
+	if d.HasChange("deletion_protection") || d.HasChange("enable_rrsa") {
 		update = true
 		modifyClusterRequest.DeletionProtection = d.Get("deletion_protection").(bool)
+		modifyClusterRequest.EnableRRSA = d.Get("enable_rrsa").(bool)
 	}
 
 	if update {
@@ -590,6 +598,7 @@ func modifyKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	d.SetPartial("deletion_protection")
+	d.SetPartial("enable_rrsa")
 
 	return nil
 }

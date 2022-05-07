@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -311,6 +312,11 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Default:      "slb.s1.small",
 			},
 			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"enable_rrsa": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -817,5 +823,40 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 		return err
 	}
 
+	return nil
+}
+
+func updateKubernetesClusterRRSA(d *schema.ResourceData, meta interface{}, invoker *Invoker) error {
+	// check version
+	versionInfo := d.Get("version").(string)
+	arr := strings.Split(versionInfo, "-")
+	if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, arr[0]); res < 0 || err != nil {
+		return fmt.Errorf("RRSA is not supported in current version %s", versionInfo)
+	}
+
+	action := "ModifyClusterRRSA"
+	client := meta.(*connectivity.AliyunClient)
+
+	var requestInfo cs.ModifyClusterArgs
+	if v, ok := d.GetOk("enable_rrsa"); ok {
+		requestInfo.EnableRRSA = v.(bool)
+	}
+
+	var response interface{}
+	if err := invoker.Run(func() error {
+		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.ModifyCluster(d.Id(), &requestInfo)
+		})
+		return err
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = d.Id()
+		requestMap["enable_rrsa"] = requestInfo.EnableRRSA
+		addDebug(action, response, requestInfo, requestMap)
+	}
+	d.SetPartial("enable_rrsa")
 	return nil
 }

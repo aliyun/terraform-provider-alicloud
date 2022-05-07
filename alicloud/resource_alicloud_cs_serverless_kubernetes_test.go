@@ -68,6 +68,7 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 					"vswitch_ids":                    []string{"${local.vswitch_id}"},
 					"new_nat_gateway":                "true",
 					"deletion_protection":            "false",
+					"enable_rrsa":                    "false",
 					"endpoint_public_access_enabled": "true",
 					"load_balancer_spec":             "slb.s2.small",
 					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
@@ -84,6 +85,7 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":                           name,
 						"deletion_protection":            "false",
+						"enable_rrsa":                    "false",
 						"new_nat_gateway":                "true",
 						"endpoint_public_access_enabled": "true",
 						"resource_group_id":              CHECKSET,
