@@ -340,9 +340,13 @@ func resourceAlicloudNetworkAclUpdate(d *schema.ResourceData, meta interface{}) 
 		for i, EgressAclEntriesValue := range d.Get("egress_acl_entries").([]interface{}) {
 			EgressAclEntriesMap := EgressAclEntriesValue.(map[string]interface{})
 			EgressAclEntries[i] = make(map[string]interface{})
-			EgressAclEntries[i]["Description"] = EgressAclEntriesMap["description"]
+			if EgressAclEntriesMap["description"] != "" {
+				EgressAclEntries[i]["Description"] = EgressAclEntriesMap["description"]
+			}
 			EgressAclEntries[i]["DestinationCidrIp"] = EgressAclEntriesMap["destination_cidr_ip"]
-			EgressAclEntries[i]["NetworkAclEntryName"] = EgressAclEntriesMap["network_acl_entry_name"]
+			if EgressAclEntriesMap["network_acl_entry_name"] != "" {
+				EgressAclEntries[i]["NetworkAclEntryName"] = EgressAclEntriesMap["network_acl_entry_name"]
+			}
 			EgressAclEntries[i]["Policy"] = EgressAclEntriesMap["policy"]
 			EgressAclEntries[i]["Port"] = EgressAclEntriesMap["port"]
 			EgressAclEntries[i]["Protocol"] = EgressAclEntriesMap["protocol"]
@@ -357,8 +361,12 @@ func resourceAlicloudNetworkAclUpdate(d *schema.ResourceData, meta interface{}) 
 		for i, IngressAclEntriesValue := range d.Get("ingress_acl_entries").([]interface{}) {
 			IngressAclEntriesMap := IngressAclEntriesValue.(map[string]interface{})
 			IngressAclEntries[i] = make(map[string]interface{})
-			IngressAclEntries[i]["Description"] = IngressAclEntriesMap["description"]
-			IngressAclEntries[i]["NetworkAclEntryName"] = IngressAclEntriesMap["network_acl_entry_name"]
+			if IngressAclEntriesMap["description"] != "" {
+				IngressAclEntries[i]["Description"] = IngressAclEntriesMap["description"]
+			}
+			if IngressAclEntriesMap["network_acl_entry_name"] != "" {
+				IngressAclEntries[i]["NetworkAclEntryName"] = IngressAclEntriesMap["network_acl_entry_name"]
+			}
 			IngressAclEntries[i]["Policy"] = IngressAclEntriesMap["policy"]
 			IngressAclEntries[i]["Port"] = IngressAclEntriesMap["port"]
 			IngressAclEntries[i]["Protocol"] = IngressAclEntriesMap["protocol"]
