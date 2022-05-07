@@ -42,9 +42,8 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Required: true,
 			},
 			"db_instance_storage": {
-				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntBetween(10, 2000),
-				Required:     true,
+				Type:     schema.TypeInt,
+				Required: true,
 			},
 			"replication_factor": {
 				Type:         schema.TypeInt,

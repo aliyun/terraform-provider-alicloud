@@ -143,13 +143,13 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ads", "CEN", "DATAHUB", "DG", "ECS", "EXPRESS", "GREENPLUM", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"ads", "ADS", "CEN", "DATAHUB", "DG", "ECS", "EXPRESS", "GREENPLUM", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS"}, false),
 			},
 			"destination_endpoint_engine_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ADB20", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"ADB20", "ADS", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL"}, false),
 			},
 			"destination_endpoint_instance_id": {
 				Type:     schema.TypeString,
@@ -386,7 +386,7 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 	d.Set("dts_instance_id", object["DtsInstanceID"])
 	d.Set("dts_job_name", object["DtsJobName"])
 	d.Set("source_endpoint_database_name", sourceEndpointObj["DatabaseName"])
-	d.Set("source_endpoint_engine_name", sourceEndpointObj["EngineName"])
+	d.Set("source_endpoint_engine_name", convertSourceEndpointEngineNameUppercaseResponse(sourceEndpointObj["EngineName"]))
 	d.Set("source_endpoint_ip", sourceEndpointObj["Ip"])
 	d.Set("source_endpoint_instance_id", sourceEndpointObj["InstanceID"])
 	d.Set("source_endpoint_instance_type", sourceEndpointObj["InstanceType"])
@@ -707,4 +707,28 @@ func resourceAlicloudDtsSynchronizationJobStatusFlow(d *schema.ResourceData, met
 	}
 
 	return nil
+}
+
+func convertSourceEndpointEngineNameUppercaseResponse(source interface{}) interface{} {
+	switch source {
+	case "PostgreSQL":
+		return "POSTGRESQL"
+	case "MongoDB":
+		return "MONGODB"
+	case "as400":
+		return "AS400"
+	case "Redis":
+		return "REDIS"
+	case "TeraData":
+		return "TERADATA"
+	case "polardb_o":
+		return "POLARDB_O"
+	case "polardbx20":
+		return "POLARDBX20"
+	case "Oracle":
+		return "ORACLE"
+	case "DMSPolarDB":
+		return "DMSPOLARDB"
+	}
+	return source
 }

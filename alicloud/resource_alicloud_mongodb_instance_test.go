@@ -292,6 +292,59 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudMongoDBInstance_classic1(t *testing.T) {
+	var v dds.DBInstance
+	resourceId := "alicloud_mongodb_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceClassicConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceClassicConfig)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		//CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":             "${local.zone_id}",
+					"engine_version":      "5.0",
+					"db_instance_storage": "6000",
+					"db_instance_class":   "mdb.shard.2x.xlarge.d",
+					"name":                name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":       "5.0",
+						"db_instance_storage":  "6000",
+						"db_instance_class":    "mdb.shard.2x.xlarge.d",
+						"name":                 name,
+						"storage_engine":       "WiredTiger",
+						"instance_charge_type": "PostPaid",
+						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
+						"ssl_status":           CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
+			},
+		},
+	})
+}
+
 func resourceMongodbInstanceClassicConfig(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
