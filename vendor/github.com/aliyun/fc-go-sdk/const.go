@@ -29,6 +29,9 @@ const (
 	// HTTPHeaderInvocationType stores the invocation type.
 	HTTPHeaderInvocationType = "X-Fc-Invocation-Type"
 
+	// HTTPHeaderStatefulAsyncInvocationID get invocation ID
+	HTTPHeaderStatefulAsyncInvocationID = "X-Fc-Stateful-Async-Invocation-Id"
+
 	// HTTPHeaderAccountID stores the account ID
 	HTTPHeaderAccountID = "X-Fc-Account-Id"
 
@@ -61,9 +64,21 @@ const (
 
 	//HTTPHeaderDate :Key in request headers
 	HTTPHeaderDate = "Date"
+
+	// CustomContainerConfigAccelerationTypeDefault : default acceleration type for custom-container runtime
+	CustomContainerConfigAccelerationTypeDefault = "Default"
+
+	// CustomContainerConfigAccelerationTypeNone : disable custom-container runtime acceleration
+	CustomContainerConfigAccelerationTypeNone = "None"
 )
 
 // Supported api versions
 const (
 	APIVersionV1 = "2016-08-15"
 )
+
+// Supported tracing types
+const (
+	TracingTypeJaeger = "Jaeger"
+)
+

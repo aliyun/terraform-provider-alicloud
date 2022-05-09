@@ -1,5 +1,4 @@
-Aliyun FunctionCompute Go SDK
-=================================
+# Aliyun FunctionCompute Go SDK
 
 API Reference :
 
@@ -7,21 +6,24 @@ API Reference :
 
 [![GitHub Version](https://badge.fury.io/gh/aliyun%2Ffc-go-sdk.svg)](https://badge.fury.io/gh/aliyun%2Ffc-go-sdk)
 [![Build Status](https://travis-ci.org/aliyun/fc-go-sdk.svg?branch=master)](https://travis-ci.org/aliyun/fc-go-sdk)
+
 <!-- [![Coverage Status](https://coveralls.io/repos/github/aliyun/fc-go-sdk/badge.svg?branch=master&foo=bar)](https://coveralls.io/github/aliyun/fc-go-sdk?branch=master&foo=bar) -->
 
-VERSION
---------
+## VERSION
+
 go >= 1.8
 
-Overview
---------
+## Overview
+
 Aliyun FunctionCompute Go SDK, sample
+
 ```go
 package main
 
 import (
 	"fmt"
 	"os"
+	"github.com/aliyun/fc-go-sdk"
 )
 
 func main() {
@@ -324,15 +326,14 @@ func main() {
 
 ```
 
+## More resources
 
-More resources
---------------
 - [Aliyun FunctionCompute docs](https://help.aliyun.com/product/50980.html)
 
-Contacting us
--------------
+## Contacting us
+
 - [Links](https://help.aliyun.com/document_detail/53087.html)
 
-License
--------
+## License
+
 - [MIT](https://github.com/aliyun/fc-python-sdk/blob/master/LICENSE)

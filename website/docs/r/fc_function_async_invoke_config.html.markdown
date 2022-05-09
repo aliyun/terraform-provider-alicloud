@@ -48,6 +48,16 @@ resource "alicloud_fc_function_async_invoke_config" "example" {
 }
 ```
 
+### Async Job Configuration
+
+```terraform
+resource "alicloud_fc_function_async_invoke_config" "example" {
+  service_name        = alicloud_fc_service.example.name
+  function_name       = alicloud_fc_function.example.name
+  stateful_invocation = true
+}
+```
+
 ### Configuration for Function Latest Unpublished Version
 
 ```terraform
@@ -65,8 +75,9 @@ resource "alicloud_fc_function_async_invoke_config" "example" {
 * `service_name` - (Required, ForceNew) Name of the Function Compute Function, omitting any version or alias qualifier.
 * `function_name` - (Required, ForceNew) Name of the Function Compute Function.
 * `destination_config` - (Optional) Configuration block with destination configuration. See below for details.
-* `maximum_event_age_in_seconds` - (Optional) Maximum age of a request that Function Compute sends to a function for processing in seconds. Valid values between 60 and 21600.
-* `maximum_retry_attempts` - (Optional) Maximum number of times to retry when the function returns an error. Valid values between 0 and 2. Defaults to 2.
+* `maximum_event_age_in_seconds` - (Optional) Maximum age of a request that Function Compute sends to a function for processing in seconds. Valid values between 1 and 2592000 (between 60 and 21600 before v1.167.0).
+* `maximum_retry_attempts` - (Optional) Maximum number of times to retry when the function returns an error. Valid values between 0 and 8 (between 0 and 2 before v1.167.0). Defaults to 2.
+* `stateful_invocation` - (Optional) Function Compute async job configuration. valid values true or false, default `false`
 * `qualifier` - (Optional, ForceNew) Function Compute Function published version, `LATEST`, or Function Compute Alias name. The default value is `LATEST`.
 
 ### destination_config Configuration Block

@@ -732,7 +732,6 @@ func (c *Client) ListFunctionAsyncInvokeConfigs(input *ListFunctionAsyncInvokeCo
 	return output, nil
 }
 
-
 // PutFunctionAsyncInvokeConfig creates or updates an async config
 func (c *Client) PutFunctionAsyncInvokeConfig(input *PutFunctionAsyncInvokeConfigInput) (*PutFunctionAsyncInvokeConfigOutput, error) {
 	if input == nil {
@@ -760,5 +759,185 @@ func (c *Client) DeleteFunctionAsyncInvokeConfig(input *DeleteFunctionAsyncInvok
 		return nil, err
 	}
 	output.Header = httpResponse.Header()
+	return output, nil
+}
+
+// ListLayers returns list of layers from fc
+func (c *Client) ListLayers(input *ListLayersInput) (*ListLayersOutput, error) {
+	if input == nil {
+		input = new(ListLayersInput)
+	}
+
+	var output = new(ListLayersOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// ListLayerVersions returns list of layer versions of a specific layer from fc
+func (c *Client) ListLayerVersions(input *ListLayerVersionsInput) (*ListLayerVersionsOutput, error) {
+	if input == nil {
+		input = new(ListLayerVersionsInput)
+	}
+
+	var output = new(ListLayerVersionsOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// GetLayerVersion returns layer version information from fc
+func (c *Client) GetLayerVersion(input *GetLayerVersionInput) (*GetLayerVersionOutput, error) {
+	if input == nil {
+		input = new(GetLayerVersionInput)
+	}
+
+	var output = new(GetLayerVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// GetLayerVersionByArn returns layer version information from fc
+func (c *Client) GetLayerVersionByArn(input *GetLayerVersionByArnInput) (*GetLayerVersionOutput, error) {
+	if input == nil {
+		input = new(GetLayerVersionByArnInput)
+	}
+
+	var output = new(GetLayerVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// PublishLayerVersion creates a new layer version
+func (c *Client) PublishLayerVersion(input *PublishLayerVersionInput) (*PublishLayerVersionOutput, error) {
+	if input == nil {
+		input = new(PublishLayerVersionInput)
+	}
+
+	var output = new(PublishLayerVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPost)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// PublishPublicLayerVersion publish a new exiting layer version as public
+func (c *Client) PublishPublicLayerVersion(input *GetLayerVersionInput) (*PublishPublicLayerVersionOutput, error) {
+	if input == nil {
+		input = new(GetLayerVersionInput)
+	}
+
+	var output = new(PublishPublicLayerVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPost)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	return output, nil
+}
+
+// PermanentDeleteVersion delete a soft deleted layer version permanently
+func (c *Client) PermanentDeleteLayerVersion(input *PermanentDeleteLayerVersionInput) (*PublishPublicLayerVersionOutput, error) {
+	if input == nil {
+		return nil, nil
+	}
+
+	var output = new(PublishPublicLayerVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPost)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	return output, nil
+}
+
+// DeleteLayerVersion deletes a layer version
+func (c *Client) DeleteLayerVersion(input *DeleteLayerVersionInput) (*DeleteLayerVersionOutput, error) {
+	if input == nil {
+		input = new(DeleteLayerVersionInput)
+	}
+
+	var output = new(DeleteLayerVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodDelete)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	return output, nil
+}
+
+// GetStatefulAsyncInvocation returns stateful async invocation record
+func (c *Client) GetStatefulAsyncInvocation(input *GetStatefulAsyncInvocationInput) (*GetStatefulAsyncInvocationOutput, error) {
+	if input == nil {
+		input = new(GetStatefulAsyncInvocationInput)
+	}
+
+	var output = new(GetStatefulAsyncInvocationOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// ListStatefulAsyncInvocations returns list of stateful async invocation records
+func (c *Client) ListStatefulAsyncInvocations(input *ListStatefulAsyncInvocationsInput) (*ListStatefulAsyncInvocationsOutput, error) {
+	if input == nil {
+		input = new(ListStatefulAsyncInvocationsInput)
+	}
+
+	var output = new(ListStatefulAsyncInvocationsOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// StopStatefulAsyncInvocation ...
+func (c *Client) StopStatefulAsyncInvocation(input *StopStatefulAsyncInvocationInput) (*StopStatefulAsyncInvocationOutput, error) {
+	if input == nil {
+		input = new(StopStatefulAsyncInvocationInput)
+	}
+
+	var output = new(StopStatefulAsyncInvocationOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPut)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
 	return output, nil
 }
