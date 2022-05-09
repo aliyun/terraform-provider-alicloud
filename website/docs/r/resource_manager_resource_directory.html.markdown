@@ -46,6 +46,8 @@ The following arguments are supported:
 
 -> **NOTE:** Available in 1.120.0+.
 
+### Timeouts
+
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `update` - (Defaults to 6 mins) Used when update the control policy status.
