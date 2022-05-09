@@ -103,7 +103,7 @@ The servers mapping supports the following:
 * `server_id` - (Required) A list backend server ID (ECS instance ID).
 * `weight` - (Optional) Weight of the backend server. Valid value range: [0-100]. 
 * `type` - (Optional) Type of the backend server. Valid value `ecs`, `eni`. Default to `ecs`.
-* `server_ip` - (Optional, Available in 1.93.0+) ServerIp of the backend server. This parameter can be specified when the type is `eni`. `ecs` type currently does not support adding `server_ip` parameter.
+* `server_ip` - (Optional, Computed, Available in 1.93.0+) ServerIp of the backend server. This parameter can be specified when the type is `eni`. `ecs` type currently does not support adding `server_ip` parameter.
 
 ## Attributes Reference
 
