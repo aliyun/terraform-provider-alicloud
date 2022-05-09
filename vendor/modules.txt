@@ -113,7 +113,7 @@ github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/request
 github.com/aliyun/credentials-go/credentials/response
 github.com/aliyun/credentials-go/credentials/utils
-# github.com/aliyun/fc-go-sdk v0.0.0-20200925033337-c013428cbe21
+# github.com/aliyun/fc-go-sdk v0.0.0-20210528065454-8211fa9cbd72
 github.com/aliyun/fc-go-sdk
 # github.com/andybalholm/brotli v1.0.1
 github.com/andybalholm/brotli
