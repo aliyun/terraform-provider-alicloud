@@ -336,7 +336,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"platform": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "CentOS",
+				Default:  "AliyunLinux",
 				ForceNew: true,
 			},
 			"node_port_range": {
@@ -683,6 +683,12 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+			},
+			"security_reinforcement": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "",
+				ValidateFunc: validation.StringInSlice([]string{KubernetesClusterCisEnabled, KubernetesClusterSocEnabled}, false),
 			},
 		},
 	}

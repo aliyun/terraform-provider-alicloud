@@ -36,6 +36,8 @@ const (
 
 	KubernetesClusterLoggingTypeSLS       = "SLS"
 	KubernetesClusterRRSASupportedVersion = "1.22"
+	KubernetesClusterCisEnabled           = "cis_enabled"
+	KubernetesClusterSocEnabled           = "soc_enabled"
 )
 
 var (
@@ -424,11 +426,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
-			"enable_rrsa": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
 			"timezone": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -444,7 +441,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"platform": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "CentOS",
+				Default:  "AliyunLinux",
 				ForceNew: true,
 			},
 			"node_port_range": {
@@ -767,6 +764,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+			},
+			"security_reinforcement": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "",
+				ValidateFunc: validation.StringInSlice([]string{KubernetesClusterCisEnabled, KubernetesClusterSocEnabled}, false),
 			},
 		},
 	}
@@ -1472,7 +1475,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			DisableRollback:    true,
 			Name:               clusterName,
 			DeletionProtection: d.Get("deletion_protection").(bool),
-			EnableRRSA:         d.Get("enable_rrsa").(bool),
 			VpcId:              vpcId,
 			// the params below is ok to be empty
 			KubernetesVersion:         d.Get("version").(string),
@@ -1487,6 +1489,19 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			Addons:                    addons,
 			ApiAudiences:              apiAudiences,
 		},
+	}
+
+	if v, ok := d.GetOk("security_reinforce"); ok {
+		securityReinforce := v.(string)
+		if securityReinforce == KubernetesClusterCisEnabled {
+			creationArgs.CisEnabled = true
+		} else {
+			creationArgs.SocEnabled = true
+		}
+	}
+
+	if enableRRSA, ok := d.GetOk("enable_rrsa"); ok {
+		creationArgs.EnableRRSA = enableRRSA.(bool)
 	}
 
 	if lbSpec, ok := d.GetOk("load_balancer_spec"); ok {

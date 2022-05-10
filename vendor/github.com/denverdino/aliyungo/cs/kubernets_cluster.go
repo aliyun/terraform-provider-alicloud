@@ -204,8 +204,8 @@ type ClusterArgs struct {
 	ControlplaneComponents []string `json:"controlplane_log_components"`
 
 	// Operating system hardening
-	SocEnabled *bool `json:"soc_enabled"`
-	CisEnabled *bool `json:"cis_enabled"`
+	SocEnabled bool `json:"soc_enabled"`
+	CisEnabled bool `json:"cis_enabled"`
 }
 
 //addon
