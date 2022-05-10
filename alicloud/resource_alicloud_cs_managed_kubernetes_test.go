@@ -66,6 +66,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"node_port_range":             "30000-32767",
 					"cluster_domain":              "cluster.local",
 					"custom_san":                  "www.terraform.io",
+					"security_reinforcement":      "cis_enabled",
 					"encryption_provider_key":     "${data.alicloud_kms_keys.default.keys.0.id}",
 					"runtime":                     map[string]interface{}{"Name": "docker", "Version": "19.03.5"},
 					"rds_instances":               []string{"${alicloud_db_instance.default.id}"},
@@ -228,14 +229,15 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					// cluster args
-					"name":                name,
-					"password":            "Test12345",
-					"pod_cidr":            "172.20.0.0/16",
-					"version":             "1.18.8-aliyun.1",
-					"service_cidr":        "172.21.0.0/20",
-					"deletion_protection": "true",
-					"enable_rrsa":         "false",
-					"cluster_spec":        "ack.standard",
+					"name":                   name,
+					"password":               "Test12345",
+					"pod_cidr":               "172.20.0.0/16",
+					"version":                "1.18.8-aliyun.1",
+					"service_cidr":           "172.21.0.0/20",
+					"deletion_protection":    "true",
+					"enable_rrsa":            "false",
+					"security_reinforcement": "soc_enabled",
+					"cluster_spec":           "ack.standard",
 					// worker args
 					"worker_number":                  "2",
 					"worker_vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},

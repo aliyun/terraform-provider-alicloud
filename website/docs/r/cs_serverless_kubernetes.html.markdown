@@ -104,9 +104,10 @@ The following arguments are supported:
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. SNAT must be configured when a new VPC is automatically created. Default is `true`.
 * `endpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
 * `service_discovery_types` - (ForceNew, Available in 1.123.1+) Service discovery type. If the value is empty, it means that service discovery is not enabled. Valid values are `CoreDNS` and `PrivateZone`. 
-* `deletion_protection` - (Optional, ForceNew) Whether enable the deletion protection or not.
+* `deletion_protection` - (Optional) Whether enable the deletion protection or not.
     - true: Enable deletion protection.
     - false: Disable deletion protection.
+* `enable_rrsa` - (Optional) Whether to enable cluster to support rrsa. Default to `false`. See [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
 * `force_update` - (Optional) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
 * `tags` - (Optional) Default nil, A map of tags assigned to the kubernetes cluster and work nodes.
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
