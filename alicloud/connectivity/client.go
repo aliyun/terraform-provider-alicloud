@@ -739,16 +739,22 @@ func (client *AliyunClient) NewRoaCsClient() (*roaCS.Client, error) {
 	if endpoint == "" {
 		endpoint = OpenAckService
 	}
+	header := map[string]*string{
+		"x-acs-source-ip":        tea.String(client.SourceIp),
+		"x-acs-secure-transport": tea.String(client.SecureTransport),
+	}
+	param := &openapi.GlobalParameters{Headers: header}
 	// Initialize the CS client if necessary
 	roaCSConn, err := roaCS.NewClient(&openapi.Config{
-		AccessKeyId:     tea.String(client.config.AccessKey),
-		AccessKeySecret: tea.String(client.config.SecretKey),
-		SecurityToken:   tea.String(client.config.SecurityToken),
-		RegionId:        tea.String(client.config.RegionId),
-		UserAgent:       tea.String(client.getUserAgent()),
-		Endpoint:        tea.String(endpoint),
-		ReadTimeout:     tea.Int(client.config.ClientReadTimeout),
-		ConnectTimeout:  tea.Int(client.config.ClientConnectTimeout),
+		AccessKeyId:      tea.String(client.config.AccessKey),
+		AccessKeySecret:  tea.String(client.config.SecretKey),
+		SecurityToken:    tea.String(client.config.SecurityToken),
+		RegionId:         tea.String(client.config.RegionId),
+		UserAgent:        tea.String(client.getUserAgent()),
+		Endpoint:         tea.String(endpoint),
+		ReadTimeout:      tea.Int(client.config.ClientReadTimeout),
+		ConnectTimeout:   tea.Int(client.config.ClientConnectTimeout),
+		GlobalParameters: param,
 	})
 	if err != nil {
 		return nil, err
