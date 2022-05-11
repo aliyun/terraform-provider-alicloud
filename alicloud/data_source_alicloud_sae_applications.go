@@ -311,6 +311,10 @@ func dataSourceAlicloudSaeApplications() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -425,6 +429,18 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 			"application_id":  fmt.Sprint(object["AppId"]),
 			"namespace_id":    object["NamespaceId"],
 		}
+		tags := make(map[string]interface{})
+		t, _ := jsonpath.Get("$.Tags", object)
+		if t != nil {
+			for _, t := range t.([]interface{}) {
+				key := t.(map[string]interface{})["Key"].(string)
+				value := t.(map[string]interface{})["Value"].(string)
+				if !ignoredTags(key, value) {
+					tags[key] = value
+				}
+			}
+		}
+		mapping["tags"] = tags
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			s = append(s, mapping)

@@ -134,6 +134,9 @@ func TestAccAlicloudSAEApplicationDataSource(t *testing.T) {
 			"applications.0.replicas":                         "5",
 			"applications.0.cpu":                              "500",
 			"applications.0.memory":                           "2048",
+			"applications.0.tags.%":                           "2",
+			"applications.0.tags.Created":                     "tfTestAcc7",
+			"applications.0.tags.For":                         "Tftestacc7",
 		}
 	}
 	var fakeAlicloudSaeApplicationDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -185,6 +188,10 @@ resource "alicloud_sae_application" "default" {
   replicas=        "5"
   cpu=             "500"
   memory =          "2048"
+  tags  = {
+	Created = "tfTestAcc7"
+	For =  "Tftestacc7"
+  }
 }
 data "alicloud_sae_applications" "default" {
 	%s

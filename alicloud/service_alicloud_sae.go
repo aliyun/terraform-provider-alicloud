@@ -683,3 +683,152 @@ func (s *SaeService) DescribeSaeGreyTagRoute(id string) (object map[string]inter
 	object = v.(map[string]interface{})
 	return object, nil
 }
+
+func (s *SaeService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
+	conn, err := s.client.NewServerlessClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	ids, err := json.Marshal([]string{id})
+	if err != nil {
+		return object, err
+	}
+	action := "/tags"
+	request := map[string]*string{
+		"RegionId":     StringPointer(s.client.RegionId),
+		"ResourceType": StringPointer(resourceType),
+		"ResourceIds":  StringPointer(string(ids)),
+	}
+	tags := make([]interface{}, 0)
+	var response map[string]interface{}
+
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{Throttling}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return
+		}
+		if respBody, isExist := response["body"]; isExist {
+			response = respBody.(map[string]interface{})
+		} else {
+			return object, WrapError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+		v, err := jsonpath.Get("$.Data.TagResources", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.TagResources", response)
+		}
+		if v != nil {
+			tags = append(tags, v.([]interface{})...)
+		}
+		if response["NextToken"] == nil {
+			break
+		}
+		request["NextToken"] = StringPointer(response["NextToken"].(string))
+	}
+
+	return tags, nil
+}
+
+func (s *SaeService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+
+	if d.HasChange("tags") {
+		added, removed := parsingTags(d)
+		conn, err := s.client.NewServerlessClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		ids, err := json.Marshal([]string{d.Id()})
+		if err != nil {
+			return err
+		}
+
+		removedTagKeys := make([]interface{}, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+		if len(removedTagKeys) > 0 {
+			action := "/tags"
+			request := map[string]*string{
+				"RegionId":     StringPointer(s.client.RegionId),
+				"ResourceType": StringPointer(resourceType),
+				"ResourceIds":  StringPointer(string(ids)),
+				"TagKeys":      StringPointer(convertListToJsonString(removedTagKeys)),
+			}
+
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		if len(added) > 0 {
+			action := "/tags"
+			request := map[string]*string{
+				"RegionId":     StringPointer(s.client.RegionId),
+				"ResourceType": StringPointer(resourceType),
+				"ResourceIds":  StringPointer(string(ids)),
+			}
+			tags := make([]map[string]interface{}, len(added))
+			for key, value := range added {
+				tags = append(tags, map[string]interface{}{
+					"key":   key,
+					"value": value,
+				})
+			}
+			jsonString, err := convertListMapToJsonString(tags)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["Tags"] = StringPointer(jsonString)
+
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		d.SetPartial("tags")
+	}
+	return nil
+}
