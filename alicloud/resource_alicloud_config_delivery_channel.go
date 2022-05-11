@@ -139,6 +139,10 @@ func resourceAlicloudConfigDeliveryChannelRead(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudConfigDeliveryChannelUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewConfigClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -171,17 +175,13 @@ func resourceAlicloudConfigDeliveryChannelUpdate(d *schema.ResourceData, meta in
 	}
 	if update {
 		action := "PutDeliveryChannel"
-		conn, err := client.NewConfigClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"DeliveryChannelSlsUnreachableError"}) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"DeliveryChannelSlsUnreachableError"}) {
 					wait()
 					return resource.RetryableError(err)
 				}

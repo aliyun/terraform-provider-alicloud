@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudRamGroupMembership_basic(t *testing.T) {
+func TestAccAlicloudRAMGroupMembership_basic(t *testing.T) {
 	var v *ram.ListUsersForGroupResponse
 	resourceId := "alicloud_ram_group_membership.default"
 	ra := resourceAttrInit(resourceId, groupMenbershipMap)

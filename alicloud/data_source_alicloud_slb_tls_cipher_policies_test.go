@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestAccAlicloudSlbTlsCipherPoliciesDataSource_basic(t *testing.T) {
+func TestAccAlicloudSLBTlsCipherPoliciesDataSource_basic(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbTlsCipherPoliciesDataSourceConfig(map[string]string{

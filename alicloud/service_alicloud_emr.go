@@ -17,25 +17,44 @@ type EmrService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *EmrService) DescribeEmrCluster(id string) (*emr.DescribeClusterV2Response, error) {
-	response := &emr.DescribeClusterV2Response{}
-	request := emr.CreateDescribeClusterV2Request()
-	request.Id = id
-
-	raw, err := s.client.WithEmrClient(func(emrClient *emr.Client) (interface{}, error) {
-		return emrClient.DescribeClusterV2(request)
-	})
-
+func (s *EmrService) DescribeEmrCluster(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEmrClient()
 	if err != nil {
-		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapError(err)
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest)
-	response, _ = raw.(*emr.DescribeClusterV2Response)
-	if response.ClusterInfo.Status == "RELEASED" {
-		return response, WrapErrorf(Error(GetNotFoundMessage("EmrCluster", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+	action := "DescribeClusterV2"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"Id":       id,
 	}
-	return response, nil
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.ClusterInfo", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ClusterInfo", response)
+	}
+	if v.(map[string]interface{})["Status"] == "RELEASED" {
+		return object, WrapErrorf(Error(GetNotFoundMessage("EmrCluster", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }
 
 func (s *EmrService) DataSourceDescribeEmrCluster(id string) (object map[string]interface{}, err error) {
@@ -89,13 +108,13 @@ func (s *EmrService) WaitForEmrCluster(id string, status Status, timeout int) er
 			}
 		}
 
-		if object.ClusterInfo.Id == id && status != Deleted {
+		if object["Id"].(string) == id && status != Deleted {
 			break
 		}
 
 		time.Sleep(DefaultIntervalShort * time.Second)
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ClusterInfo.Id, id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object["Id"].(string), id, ProviderERROR)
 		}
 	}
 	return nil
@@ -113,12 +132,12 @@ func (s *EmrService) EmrClusterStateRefreshFunc(id string, failStates []string) 
 		}
 
 		for _, failState := range failStates {
-			if object.ClusterInfo.Status == failState {
-				return object, object.ClusterInfo.Status, WrapError(Error(FailedToReachTargetStatus, object.ClusterInfo.Status))
+			if object["Status"].(string) == failState {
+				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
 			}
 		}
 
-		return object, object.ClusterInfo.Status, nil
+		return object, object["Status"].(string), nil
 	}
 }
 
@@ -425,5 +444,42 @@ func (s *EmrService) DescribeClusterV2(id string) (object map[string]interface{}
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ClusterInfo", response)
 	}
 	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *EmrService) DescribeEmrMainVersionClusterTypes(id string) (object []interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEmrClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeEmrMainVersion"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"EmrVersion": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.EmrMainVersion.ClusterTypeInfoList.ClusterTypeInfo", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.EmrMainVersion.ClusterTypeInfoList.ClusterTypeInfo", response)
+	}
+	object = v.([]interface{})
 	return object, nil
 }

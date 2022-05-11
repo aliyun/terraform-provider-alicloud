@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcsAutoSnapshotPoliciesDataSource(t *testing.T) {
+func TestAccAlicloudECSAutoSnapshotPoliciesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_ecs_auto_snapshot_policies.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccEcsAutoSnapshotPoliciesTest%d", rand)

@@ -51,9 +51,9 @@ The following arguments are supported:
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `vswitch_id` - (Required, ForceNew) VSwitch ID configured to Bastionhost.
 * `security_group_ids` - (Required) security group IDs configured to Bastionhost. 
-  **NOTE:** There is a potential diff error because of the order of its values, so, from version 1.160.0, 
-  its type has been updated to a `set` from `list`, and you can use [tolist](https://www.terraform.io/language/functions/tolist)
-  to convert it to a list.
+  **NOTE:** There is a potential diff error because of the order of `security_group_ids` values indefinite.
+  So, from version 1.160.0, `security_group_ids` type has been updated as `set` from `list`,
+  and you can use [tolist](https://www.terraform.io/language/functions/tolist) to convert it to a list.
 * `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional, Available in v1.87.0+) The Id of resource group which the Bastionhost Instance belongs. If not set, the resource is created in the default resource group.
 * `enable_public_access` - (Optional, Available in v1.143.0+)  Whether to Enable the public internet access to a specified Bastionhost instance. The valid values: `true`, `false`.

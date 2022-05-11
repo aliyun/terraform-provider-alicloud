@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
+func TestAccAlicloudRAMRoleAttachment_basic(t *testing.T) {
 	var instanceA ecs.Instance
 	var instanceB ecs.Instance
 	var v *ecs.DescribeInstanceRamRoleResponse

@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVpcRouteEntryInstance(t *testing.T) {
+func TestAccAlicloudVPCRouteEntryInstance(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default"
@@ -52,7 +52,7 @@ func TestAccAlicloudVpcRouteEntryInstance(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcRouteEntryInterface(t *testing.T) {
+func TestAccAlicloudVPCRouteEntryInterface(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default"
@@ -87,7 +87,7 @@ func TestAccAlicloudVpcRouteEntryInterface(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcRouteEntryNatGateway(t *testing.T) {
+func TestAccAlicloudVPCRouteEntryNatGateway(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default"
@@ -122,7 +122,7 @@ func TestAccAlicloudVpcRouteEntryNatGateway(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcRouteEntryMulti(t *testing.T) {
+func TestAccAlicloudVPCRouteEntryMulti(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default.4"
@@ -194,7 +194,7 @@ data "alicloud_instance_types" "default" {
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 data "alicloud_images" "default" {
-	name_regex = "^ubuntu_18\\w{1,5}[64]{1}.*"
+	name_regex = "^ubuntu"
 	most_recent = true
 	owners = "system"
 }

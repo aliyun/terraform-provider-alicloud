@@ -33,6 +33,9 @@ resource "alicloud_msc_sub_subscription" "example" {
 The following arguments are supported:
 
 * `contact_ids` - (Optional) The ids of subscribed contacts.
+  **NOTE:** There is a potential diff error because of the order of `contact_ids` values indefinite.
+  So, from version 1.161.0, `contact_ids` type has been updated as `set` from `list`,
+  and you can use [tolist](https://www.terraform.io/language/functions/tolist) to convert it to a list.
 * `email_status` - (Optional) The status of email subscription. Valid values: `-1`, `-2`, `0`, `1`. `-1` means required, `-2` means banned; `1` means subscribed; `0` means not subscribed.
 * `item_name` - (Required, ForceNew) The name of the Subscription. **NOTE:**  You should use the `alicloud_msc_sub_subscriptions` to query the available subscription item name.
 * `pmsg_status` - (Optional) The status of pmsg subscription. Valid values: `-1`, `-2`, `0`, `1`. `-1` means required, `-2` means banned; `1` means subscribed; `0` means not subscribed.

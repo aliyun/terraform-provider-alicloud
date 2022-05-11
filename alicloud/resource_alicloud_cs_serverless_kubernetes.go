@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"time"
 
-	roacs "github.com/alibabacloud-go/cs-20151215/v2/client"
+	roacs "github.com/alibabacloud-go/cs-20151215/v3/client"
 	"github.com/alibabacloud-go/tea/tea"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -57,7 +57,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 			"vswitch_id": {
 				Type:       schema.TypeString,
 				Optional:   true,
-				ForceNew:   true,
+				Computed:   true,
 				Deprecated: "Field 'vswitch_id' has been deprecated from provider version 1.91.0. New field 'vswitch_ids' replace it.",
 			},
 			"vswitch_ids": {
@@ -186,9 +186,8 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 			"load_balancer_spec": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
-				Default:      "slb.s1.small",
 			},
 			"logging_type": {
 				Type:     schema.TypeString,
@@ -214,6 +213,18 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+			},
+			"cluster_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ack.standard", "ack.pro.small"}, false),
+			},
+			"create_v2_cluster": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -264,9 +275,19 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		}
 	}
 
+	var clusterType, profile string
+	if d.Get("create_v2_cluster").(bool) {
+		clusterType = cs.ClusterTypeServerlessKubernetes
+		profile = "ask.v2"
+	} else {
+		clusterType = cs.ClusterTypeManagedKubernetes
+		profile = cs.ProfileServerlessKubernetes
+	}
+
 	args := &cs.ServerlessCreationArgs{
 		Name:                 clusterName,
-		ClusterType:          cs.ClusterTypeServerlessKubernetes,
+		ClusterType:          cs.KubernetesClusterType(clusterType),
+		Profile:              cs.KubernetesClusterProfile(profile),
 		RegionId:             client.RegionId,
 		VpcId:                d.Get("vpc_id").(string),
 		EndpointPublicAccess: d.Get("endpoint_public_access_enabled").(bool),
@@ -276,6 +297,13 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		KubernetesVersion:    d.Get("version").(string),
 		DeletionProtection:   d.Get("deletion_protection").(bool),
 		ResourceGroupId:      d.Get("resource_group_id").(string),
+	}
+
+	newGatway := d.Get("new_nat_gateway").(bool)
+	if d.Get("create_v2_cluster").(bool) {
+		args.NatGateway = newGatway
+	} else {
+		args.SnatEntry = newGatway
 	}
 
 	if v, ok := d.GetOk("time_zone"); ok {
@@ -319,6 +347,10 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 
 	if lbSpec, ok := d.GetOk("load_balancer_spec"); ok {
 		args.LoadBalancerSpec = lbSpec.(string)
+	}
+
+	if spec, ok := d.GetOk("cluster_spec"); ok {
+		args.ClusterSpec = spec.(string)
 	}
 
 	//set tags
@@ -396,7 +428,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 	if d.Get("load_balancer_spec") == "" {
-		d.Set("load_balancer_spec", "slb.s1.small")
+		d.Set("load_balancer_spec", "slb.s2.small")
 	}
 	if d.Get("logging_type") == "" {
 		d.Set("logging_type", "SLS")

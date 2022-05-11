@@ -553,8 +553,8 @@ func GetCharTitile(project, dashboard, char string, client *sls.Client) string {
 	return char
 }
 
-func (s *LogService) DescribeLogDashboard(id string) (*sls.Dashboard, error) {
-	dashboard := &sls.Dashboard{}
+func (s *LogService) DescribeLogDashboard(id string) (string, error) {
+	dashboard := ""
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return dashboard, WrapError(err)
@@ -564,7 +564,7 @@ func (s *LogService) DescribeLogDashboard(id string) (*sls.Dashboard, error) {
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
-			return slsClient.GetDashboard(projectName, dashboardName)
+			return slsClient.GetDashboardString(projectName, dashboardName)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
@@ -578,7 +578,7 @@ func (s *LogService) DescribeLogDashboard(id string) (*sls.Dashboard, error) {
 				"dashboard_name": dashboardName,
 			})
 		}
-		dashboard, _ = raw.(*sls.Dashboard)
+		dashboard, _ = raw.(string)
 		return nil
 	})
 
@@ -589,7 +589,7 @@ func (s *LogService) DescribeLogDashboard(id string) (*sls.Dashboard, error) {
 		return dashboard, WrapErrorf(err, DefaultErrorMsg, id, "GetLogstoreDashboard", AliyunLogGoSdkERROR)
 	}
 
-	if dashboard == nil || dashboard.DashboardName == "" {
+	if dashboard == "" {
 		return dashboard, WrapErrorf(Error(GetNotFoundMessage("LogstoreDashboard", id)), NotFoundMsg, ProviderERROR)
 	}
 	return dashboard, nil
@@ -603,7 +603,7 @@ func (s *LogService) WaitForLogDashboard(id string, status Status, timeout int) 
 	}
 	name := parts[1]
 	for {
-		object, err := s.DescribeLogDashboard(id)
+		objectString, err := s.DescribeLogDashboard(id)
 		if err != nil {
 			if NotFoundError(err) {
 				if status == Deleted {
@@ -613,11 +613,11 @@ func (s *LogService) WaitForLogDashboard(id string, status Status, timeout int) 
 				return WrapError(err)
 			}
 		}
-		if object.DashboardName == name && status != Deleted {
+		if objectString != "" && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.DashboardName, name, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, objectString, name, ProviderERROR)
 		}
 	}
 }
@@ -831,5 +831,199 @@ func (s *LogService) LogProjectStateRefreshFunc(id string, failStates []string) 
 			}
 		}
 		return object, object.Status, nil
+	}
+}
+
+func (s *LogService) DescribeLogIngestion(id string) (*sls.Ingestion, error) {
+	var ingestion *sls.Ingestion
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return ingestion, WrapError(err)
+	}
+	projectName, logstoreName, ingestionName := parts[0], parts[1], parts[2]
+	var requestInfo *sls.Client
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			return slsClient.GetIngestion(projectName, ingestionName)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetIngestion", raw, requestInfo, map[string]string{
+				"project":        projectName,
+				"logstore":       logstoreName,
+				"ingestion_name": ingestionName,
+			})
+		}
+		ingestion, _ = raw.(*sls.Ingestion)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "JobNotExist"}) {
+			return ingestion, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return ingestion, WrapErrorf(err, DefaultErrorMsg, id, "GetIngestion", AliyunLogGoSdkERROR)
+	}
+	return ingestion, nil
+}
+
+func (s *LogService) WaitForLogIngestion(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		object, err := s.DescribeLogIngestion(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Name == parts[2] && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Name, id, ProviderERROR)
+		}
+	}
+}
+
+func (s *LogService) DescribeLogResource(id string) (*sls.Resource, error) {
+	res := &sls.Resource{}
+	resourceName := id
+	var requestInfo *sls.Client
+	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			return slsClient.GetResource(resourceName)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetResource", raw, requestInfo, map[string]string{
+				"resource_name": resourceName,
+			})
+		}
+		res, _ = raw.(*sls.Resource)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotExist"}) {
+			return res, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return res, WrapErrorf(err, DefaultErrorMsg, id, "GetLogResource", AliyunLogGoSdkERROR)
+	}
+
+	if res == nil {
+		return res, WrapErrorf(Error(GetNotFoundMessage("LogResource", id)), NotFoundMsg, ProviderERROR)
+	}
+	return res, nil
+}
+
+func (s *LogService) WaitForLogResource(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	resourceName := id
+	for {
+		object, err := s.DescribeLogResource(resourceName)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Name == resourceName && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Name, resourceName, ProviderERROR)
+		}
+	}
+}
+
+func (s *LogService) DescribeLogResourceRecord(id string) (*sls.ResourceRecord, error) {
+	res := &sls.ResourceRecord{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return res, WrapError(err)
+	}
+	resourceName, recordId := parts[0], parts[1]
+	var requestInfo *sls.Client
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			return slsClient.GetResourceRecord(resourceName, recordId)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetResourceRecord", raw, requestInfo, map[string]string{
+				"resource_name": resourceName,
+				"record_id":     recordId,
+			})
+		}
+		res, _ = raw.(*sls.ResourceRecord)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotExist", "ResourceRecordNotExist"}) {
+			return res, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return res, WrapErrorf(err, DefaultErrorMsg, id, "GetLogResourceRecord", AliyunLogGoSdkERROR)
+	}
+
+	if res == nil {
+		return res, WrapErrorf(Error(GetNotFoundMessage("LogResourceRecord", id)), NotFoundMsg, ProviderERROR)
+	}
+	return res, nil
+}
+
+func (s *LogService) WaitForLogResourceRecord(id string, status Status, timeout int) error {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	recordId := parts[1]
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeLogResourceRecord(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Id == recordId && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Id, recordId, ProviderERROR)
+		}
 	}
 }

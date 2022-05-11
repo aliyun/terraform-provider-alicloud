@@ -21,7 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEcsKeyPair_basic(t *testing.T) {
+func TestAccAlicloudECSKeyPair_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsKeyPairMap)
@@ -78,7 +78,7 @@ func TestAccAlicloudEcsKeyPair_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsKeyPair_multi(t *testing.T) {
+func TestAccAlicloudECSKeyPair_multi(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair.default.9"
 	ra := resourceAttrInit(resourceId, AlicloudEcsKeyPairMap)
@@ -109,7 +109,7 @@ func TestAccAlicloudEcsKeyPair_multi(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsKeyPair_name_prefix(t *testing.T) {
+func TestAccAlicloudECSKeyPair_name_prefix(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsKeyPairMap)
@@ -144,7 +144,7 @@ func TestAccAlicloudEcsKeyPair_name_prefix(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsKeyPair_public_key(t *testing.T) {
+func TestAccAlicloudECSKeyPair_public_key(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsKeyPairMap)
@@ -180,7 +180,7 @@ func TestAccAlicloudEcsKeyPair_public_key(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsKeyPair_basic1(t *testing.T) {
+func TestAccAlicloudECSKeyPair_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsKeyPairMap)
@@ -239,7 +239,7 @@ func AlicloudEcsKeyPairBasicDependence(name string) string {
 `)
 }
 
-func TestAccAlicloudEcsKeyPair_unit(t *testing.T) {
+func TestAccAlicloudECSKeyPair_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_key_pair"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_key_pair"].Schema).Data(nil, nil)

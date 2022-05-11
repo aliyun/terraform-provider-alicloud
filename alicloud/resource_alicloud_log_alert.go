@@ -22,6 +22,14 @@ func resourceAlicloudLogAlert() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
+			"version": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"project_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -41,12 +49,14 @@ func resourceAlicloudLogAlert() *schema.Resource {
 				Optional: true,
 			},
 			"condition": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Deprecated from 1.161.0+, use eval_condition in severity_configurations",
 			},
 			"dashboard": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Deprecated from 1.161.0+, use dashboardId in query_list",
 			},
 			"mute_until": {
 				Type:         schema.TypeInt,
@@ -55,15 +65,37 @@ func resourceAlicloudLogAlert() *schema.Resource {
 				Default:      time.Now().Unix(),
 			},
 			"throttling": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Deprecated from 1.161.0+, use repeat_interval in policy_configuration",
 			},
 			"notify_threshold": {
+				Type:       schema.TypeInt,
+				Optional:   true,
+				Deprecated: "Deprecated from 1.161.0+, use threshold",
+			},
+			"threshold": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  1,
+				Computed: true,
 			},
-
+			"no_data_fire": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"no_data_severity": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntInSlice([]int{2, 4, 6, 8, 10}),
+			},
+			"send_resolved": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"auto_annotation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"query_list": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -71,15 +103,28 @@ func resourceAlicloudLogAlert() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"chart_title": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
-						"logstore": {
+						"project": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+						},
+						"store": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"store_type": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"query": {
 							Type:     schema.TypeString,
 							Required: true,
+						},
+						"logstore": {
+							Type:       schema.TypeString,
+							Optional:   true,
+							Deprecated: "Deprecated from 1.161.0+, use store",
 						},
 						"start": {
 							Type:     schema.TypeString,
@@ -94,13 +139,31 @@ func resourceAlicloudLogAlert() *schema.Resource {
 							Optional: true,
 							Default:  "Custom",
 						},
+						"region": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"role_arn": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"dashboard_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"power_sql_mode": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"auto", "enable", "disable"}, false),
+						},
 					},
 				},
 			},
 
 			"notification_list": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:       schema.TypeList,
+				Optional:   true,
+				Deprecated: "Deprecated from 1.161.0+, use policy_configuration for notification",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"type": {
@@ -134,7 +197,114 @@ func resourceAlicloudLogAlert() *schema.Resource {
 					},
 				},
 			},
-
+			"labels": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"annotations": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"severity_configurations": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"severity": {
+							Type:         schema.TypeInt,
+							Required:     true,
+							ValidateFunc: validation.IntInSlice([]int{2, 4, 6, 8, 10}),
+						},
+						"eval_condition": {
+							Type:     schema.TypeMap,
+							Required: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+					},
+				},
+			},
+			"join_configurations": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringInSlice([]string{"cross_join", "inner_join", "left_join", "right_join", "full_join", "left_exclude", "right_exclude", "concat", "no_join"}, false),
+						},
+						"condition": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"policy_configuration": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"alert_policy_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"action_policy_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"repeat_interval": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"group_configuration": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"fields": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
 			"schedule_interval": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -167,12 +337,16 @@ func resourceAlicloudLogAlertCreate(d *schema.ResourceData, meta interface{}) er
 	}
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			dashboard := d.Get("dashboard").(string)
-			err := CreateDashboard(project_name, dashboard, slsClient)
-			if err != nil {
-				return nil, err
+			if _, ok := d.GetOk("version"); ok {
+				alert.Configuration = createAlert2Config(d)
+			} else {
+				dashboard := d.Get("dashboard").(string)
+				err := CreateDashboard(project_name, dashboard, slsClient)
+				if err != nil {
+					return nil, err
+				}
+				alert.Configuration = createAlertConfig(d, project_name, dashboard, slsClient)
 			}
-			alert.Configuration = createAlertConfig(d, project_name, dashboard, slsClient)
 			return nil, slsClient.CreateAlert(project_name, alert)
 		})
 		if err != nil {
@@ -210,14 +384,13 @@ func resourceAlicloudLogAlertRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("alert_name", parts[1])
 	d.Set("alert_displayname", object.DisplayName)
 	d.Set("alert_description", object.Description)
-	d.Set("condition", object.Configuration.Condition)
-	d.Set("dashboard", object.Configuration.Dashboard)
 	d.Set("mute_until", object.Configuration.MuteUntil)
-	d.Set("throttling", object.Configuration.Throttling)
-	d.Set("notify_threshold", object.Configuration.NotifyThreshold)
 	d.Set("schedule_interval", object.Schedule.Interval)
 	d.Set("schedule_type", object.Schedule.Type)
-
+	d.Set("throttling", object.Configuration.Throttling)
+	d.Set("notify_threshold", object.Configuration.NotifyThreshold)
+	d.Set("condition", object.Configuration.Condition)
+	d.Set("dashboard", object.Configuration.Dashboard)
 	var notiList []map[string]interface{}
 
 	for _, v := range object.Configuration.NotificationList {
@@ -226,23 +399,107 @@ func resourceAlicloudLogAlertRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	var queryList []map[string]interface{}
+	d.Set("notification_list", notiList)
+	isV1 := object.Configuration.Version == ""
+	if isV1 {
+		for _, v := range object.Configuration.QueryList {
+			mapping := map[string]interface{}{
+				"chart_title":    v.ChartTitle,
+				"logstore":       v.LogStore,
+				"query":          v.Query,
+				"start":          v.Start,
+				"end":            v.End,
+				"time_span_type": v.TimeSpanType,
+			}
+			queryList = append(queryList, mapping)
+		}
+		d.Set("query_list", queryList)
+		return nil
+	}
+	d.Set("version", object.Configuration.Version)
+	d.Set("type", object.Configuration.Type)
+	d.Set("threshold", object.Configuration.Threshold)
+
+	var labels []map[string]string
+	for _, v := range object.Configuration.Labels {
+		labels = append(labels, map[string]string{
+			"key":   v.Key,
+			"value": v.Value,
+		})
+	}
+	d.Set("labels", labels)
+
+	var annotations []map[string]string
+	for _, v := range object.Configuration.Annotations {
+		annotations = append(annotations, map[string]string{
+			"key":   v.Key,
+			"value": v.Value,
+		})
+	}
+	d.Set("annotations", annotations)
+
+	var severityConfigurations []map[string]interface{}
+	for _, v := range object.Configuration.SeverityConfigurations {
+		severityConf := map[string]interface{}{
+			"severity": v.Severity,
+			"eval_condition": map[string]interface{}{
+				"condition":       v.EvalCondition.Condition,
+				"count_condition": v.EvalCondition.CountCondition,
+			},
+		}
+		severityConfigurations = append(severityConfigurations, severityConf)
+	}
+	d.Set("severity_configurations", severityConfigurations)
+	d.Set("no_data_fire", object.Configuration.NoDataFire)
+	d.Set("no_data_severity", object.Configuration.NoDataSeverity)
+	d.Set("send_resolved", object.Configuration.SendResolved)
+	d.Set("auto_annotation", object.Configuration.AutoAnnotation)
+	var joinConfigurations []map[string]string
+	for _, v := range object.Configuration.JoinConfigurations {
+		joinConf := map[string]string{
+			"type":      v.Type,
+			"condition": v.Condition,
+		}
+		joinConfigurations = append(joinConfigurations, joinConf)
+	}
+	d.Set("join_configurations", joinConfigurations)
+
+	var groupConfigurations []map[string]interface{}
+	groupConf := map[string]interface{}{
+		"type":   object.Configuration.GroupConfiguration.Type,
+		"fields": object.Configuration.GroupConfiguration.Fields,
+	}
+	groupConfigurations = append(groupConfigurations, groupConf)
+	d.Set("group_configuration", groupConfigurations)
+
+	var policyConfigurations []map[string]interface{}
+	policyConf := map[string]interface{}{
+		"alert_policy_id":  object.Configuration.PolicyConfiguration.AlertPolicyId,
+		"action_policy_id": object.Configuration.PolicyConfiguration.ActionPolicyId,
+		"repeat_interval":  object.Configuration.PolicyConfiguration.RepeatInterval,
+	}
+	policyConfigurations = append(policyConfigurations, policyConf)
+	d.Set("policy_configuration", policyConfigurations)
+
 	for _, v := range object.Configuration.QueryList {
 		mapping := map[string]interface{}{
 			"chart_title":    v.ChartTitle,
-			"logstore":       v.LogStore,
+			"region":         v.Region,
+			"project":        v.Project,
+			"store":          v.Store,
+			"store_type":     v.StoreType,
 			"query":          v.Query,
 			"start":          v.Start,
 			"end":            v.End,
 			"time_span_type": v.TimeSpanType,
+			"role_arn":       v.RoleArn,
+			"dashboard_id":   v.DashboardId,
+			"power_sql_mode": string(v.PowerSqlMode),
 		}
 		queryList = append(queryList, mapping)
 	}
-
-	d.Set("notification_list", notiList)
 	d.Set("query_list", queryList)
-
 	return nil
-
 }
 
 func resourceAlicloudLogAlertUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -266,13 +523,17 @@ func resourceAlicloudLogAlertUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			project_name := d.Get("project_name").(string)
-			dashboard := d.Get("dashboard").(string)
-			err := CreateDashboard(project_name, dashboard, slsClient)
-			if err != nil {
-				return nil, err
+			if _, ok := d.GetOk("version"); ok {
+				params.Configuration = createAlert2Config(d)
+			} else {
+				project_name := d.Get("project_name").(string)
+				dashboard := d.Get("dashboard").(string)
+				err := CreateDashboard(project_name, dashboard, slsClient)
+				if err != nil {
+					return nil, err
+				}
+				params.Configuration = createAlertConfig(d, project_name, dashboard, slsClient)
 			}
-			params.Configuration = createAlertConfig(d, project_name, dashboard, slsClient)
 			return nil, slsClient.UpdateAlert(parts[0], params)
 		})
 		if err != nil {
@@ -436,4 +697,136 @@ func getNotiMap(v *sls.Notification) map[string]interface{} {
 	}
 	return mapping
 
+}
+
+func createAlert2Config(d *schema.ResourceData) *sls.AlertConfiguration {
+	labels := []*sls.Tag{}
+	if v, ok := d.GetOk("labels"); ok {
+		for _, e := range v.([]interface{}) {
+			labelMap := e.(map[string]interface{})
+			label := new(sls.Tag)
+			label.Key, _ = labelMap["key"].(string)
+			label.Value, _ = labelMap["value"].(string)
+			labels = append(labels, label)
+		}
+	}
+
+	annotations := []*sls.Tag{}
+	if v, ok := d.GetOk("annotations"); ok {
+		for _, e := range v.([]interface{}) {
+			annotationMap := e.(map[string]interface{})
+			annotation := new(sls.Tag)
+			annotation.Key, _ = annotationMap["key"].(string)
+			annotation.Value, _ = annotationMap["value"].(string)
+			annotations = append(annotations, annotation)
+		}
+	}
+
+	severityConfigurations := []*sls.SeverityConfiguration{}
+	if v, ok := d.GetOk("severity_configurations"); ok {
+		for _, e := range v.([]interface{}) {
+			severityConfiguration := new(sls.SeverityConfiguration)
+			severityConfigurationMap := e.(map[string]interface{})
+			severityConfiguration.Severity = sls.Severity(severityConfigurationMap["severity"].(int))
+			evalConditionMap := severityConfigurationMap["eval_condition"].(map[string]interface{})
+			condition, _ := evalConditionMap["condition"].(string)
+			countCondition, _ := evalConditionMap["count_condition"].(string)
+			severityConfiguration.EvalCondition = sls.ConditionConfiguration{
+				Condition:      condition,
+				CountCondition: countCondition,
+			}
+			severityConfigurations = append(severityConfigurations, severityConfiguration)
+		}
+	}
+
+	joinConfigurations := []*sls.JoinConfiguration{}
+	if v, ok := d.GetOk("join_configurations"); ok {
+		for _, e := range v.([]interface{}) {
+			joinConfigurationMap := e.(map[string]interface{})
+			joinConfiguration := new(sls.JoinConfiguration)
+			joinConfiguration.Type, _ = joinConfigurationMap["type"].(string)
+			joinConfiguration.Condition, _ = joinConfigurationMap["condition"].(string)
+			joinConfigurations = append(joinConfigurations, joinConfiguration)
+		}
+	}
+
+	groupConfiguration := sls.GroupConfiguration{}
+	if v, ok := d.GetOk("group_configuration"); ok {
+		for _, e := range v.(*schema.Set).List() {
+			groupConfigurationMap := e.(map[string]interface{})
+			groupConfiguration.Type, _ = groupConfigurationMap["type"].(string)
+
+			fields := []string{}
+			for _, v := range groupConfigurationMap["fields"].(*schema.Set).List() {
+				fields = append(fields, v.(string))
+			}
+			groupConfiguration.Fields = fields
+		}
+	}
+
+	policyConfiguration := sls.PolicyConfiguration{}
+	if v, ok := d.GetOk("policy_configuration"); ok {
+		for _, e := range v.(*schema.Set).List() {
+			policyConfigurationMap := e.(map[string]interface{})
+			policyConfiguration.AlertPolicyId, _ = policyConfigurationMap["alert_policy_id"].(string)
+			policyConfiguration.ActionPolicyId, _ = policyConfigurationMap["action_policy_id"].(string)
+			policyConfiguration.RepeatInterval, _ = policyConfigurationMap["repeat_interval"].(string)
+		}
+	}
+
+	queryList := []*sls.AlertQuery{}
+
+	if v, ok := d.GetOk("query_list"); ok {
+		for _, e := range v.([]interface{}) {
+			query_map := e.(map[string]interface{})
+			query := &sls.AlertQuery{
+				DashboardId:  query_map["dashboard_id"].(string),
+				ChartTitle:   query_map["chart_title"].(string),
+				RoleArn:      query_map["role_arn"].(string),
+				Region:       query_map["region"].(string),
+				Project:      query_map["project"].(string),
+				StoreType:    query_map["store_type"].(string),
+				Store:        query_map["store"].(string),
+				Query:        query_map["query"].(string),
+				Start:        query_map["start"].(string),
+				End:          query_map["end"].(string),
+				TimeSpanType: query_map["time_span_type"].(string),
+				PowerSqlMode: sls.PowerSqlMode(query_map["power_sql_mode"].(string)),
+			}
+			queryList = append(queryList, query)
+		}
+	}
+
+	version, ok := d.GetOk("version")
+	if !ok {
+		version = "2.0"
+	}
+	configType, ok := d.GetOk("type")
+	if !ok {
+		configType = "default"
+	}
+	autoAnnotation := false
+	if v, ok := d.GetOk("auto_annotation"); ok {
+		autoAnnotation = v.(bool)
+	}
+
+	config := &sls.AlertConfiguration{
+		Version:                version.(string),
+		Type:                   configType.(string),
+		Labels:                 labels,
+		Annotations:            annotations,
+		SeverityConfigurations: severityConfigurations,
+		JoinConfigurations:     joinConfigurations,
+		GroupConfiguration:     groupConfiguration,
+		PolicyConfiguration:    policyConfiguration,
+		QueryList:              queryList,
+		Threshold:              d.Get("threshold").(int),
+		Dashboard:              d.Get("dashboard").(string),
+		NoDataFire:             d.Get("no_data_fire").(bool),
+		NoDataSeverity:         sls.Severity(d.Get("no_data_severity").(int)),
+		SendResolved:           d.Get("send_resolved").(bool),
+		MuteUntil:              int64(d.Get("mute_until").(int)),
+		AutoAnnotation:         autoAnnotation,
+	}
+	return config
 }

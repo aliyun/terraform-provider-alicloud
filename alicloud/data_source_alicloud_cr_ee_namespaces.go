@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
 
@@ -55,6 +56,14 @@ func dataSourceAlicloudCrEENamespaces() *schema.Resource {
 							Computed: true,
 						},
 						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"namespace_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"namespace_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -115,8 +124,10 @@ func dataSourceAlicloudCrEENamespacesRead(d *schema.ResourceData, meta interface
 			continue
 		}
 
-		if idsMap != nil && idsMap[namespace.NamespaceId] == "" {
-			continue
+		if idsMap != nil {
+			if _, ok := idsMap[fmt.Sprintf("%s:%s", instanceId, namespace.NamespaceName)]; !ok {
+				continue
+			}
 		}
 
 		targetNamespaces = append(targetNamespaces, namespace)
@@ -135,14 +146,17 @@ func dataSourceAlicloudCrEENamespacesRead(d *schema.ResourceData, meta interface
 	)
 
 	for _, namespace := range namespaces {
+		id := fmt.Sprintf("%s:%s", namespace.InstanceId, namespace.NamespaceName)
 		mapping := make(map[string]interface{})
 		mapping["instance_id"] = namespace.InstanceId
-		mapping["id"] = namespace.NamespaceId
+		mapping["id"] = id
 		mapping["name"] = namespace.NamespaceName
+		mapping["namespace_name"] = namespace.NamespaceName
+		mapping["namespace_id"] = namespace.NamespaceId
 		mapping["auto_create"] = namespace.AutoCreateRepo
 		mapping["default_visibility"] = namespace.DefaultRepoType
 
-		ids = append(ids, namespace.NamespaceId)
+		ids = append(ids, id)
 		names = append(names, namespace.NamespaceName)
 		namespaceMaps = append(namespaceMaps, mapping)
 	}

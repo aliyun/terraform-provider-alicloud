@@ -71,22 +71,22 @@ func (client *Client) CreateMonitorGroupWithCallback(request *CreateMonitorGroup
 // CreateMonitorGroupRequest is the request struct for api CreateMonitorGroup
 type CreateMonitorGroupRequest struct {
 	*requests.RpcRequest
-	ContactGroups string           `position:"Query" name:"ContactGroups"`
 	Type          string           `position:"Query" name:"Type"`
-	GroupName     string           `position:"Query" name:"GroupName"`
 	Options       string           `position:"Query" name:"Options"`
-	ServiceId     requests.Integer `position:"Query" name:"ServiceId"`
 	BindUrl       string           `position:"Query" name:"BindUrl"`
+	ContactGroups string           `position:"Query" name:"ContactGroups"`
+	GroupName     string           `position:"Query" name:"GroupName"`
+	ServiceId     requests.Integer `position:"Query" name:"ServiceId"`
 }
 
 // CreateMonitorGroupResponse is the response struct for api CreateMonitorGroup
 type CreateMonitorGroupResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 	GroupId   int64  `json:"GroupId" xml:"GroupId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateCreateMonitorGroupRequest creates a request to invoke CreateMonitorGroup API
@@ -94,7 +94,7 @@ func CreateCreateMonitorGroupRequest() (request *CreateMonitorGroupRequest) {
 	request = &CreateMonitorGroupRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "CreateMonitorGroup", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "CreateMonitorGroup", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

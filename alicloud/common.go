@@ -382,6 +382,11 @@ func convertBoolToString(configured bool) string {
 	return strconv.FormatBool(configured)
 }
 
+func convertStringToBool(configured string) bool {
+	v, _ := strconv.ParseBool(configured)
+	return v
+}
+
 func convertIntergerToString(configured int) string {
 	return strconv.Itoa(configured)
 }
@@ -494,21 +499,11 @@ const (
 	TagResourceInstance      = TagResourceType("instance")
 	TagResourceAcl           = TagResourceType("acl")
 	TagResourceCertificate   = TagResourceType("certificate")
-	TagResourceSnapshot      = TagResourceType("snapshot")
-	TagResourceKeypair       = TagResourceType("keypair")
 	TagResourceDisk          = TagResourceType("disk")
 	TagResourceSecurityGroup = TagResourceType("securitygroup")
-	TagResourceEni           = TagResourceType("eni")
 	TagResourceCdn           = TagResourceType("DOMAIN")
-	TagResourceVpc           = TagResourceType("VPC")
-	TagResourceVSwitch       = TagResourceType("VSWITCH")
-	TagResourceRouteTable    = TagResourceType("ROUTETABLE")
-	TagResourceEip           = TagResourceType("EIP")
-	TagResourcePlugin        = TagResourceType("plugin")
-	TagResourceApiGroup      = TagResourceType("apiGroup")
 	TagResourceApp           = TagResourceType("app")
 	TagResourceTopic         = TagResourceType("topic")
-	TagResourceConsumerGroup = TagResourceType("consumergroup")
 	TagResourceCluster       = TagResourceType("cluster")
 )
 

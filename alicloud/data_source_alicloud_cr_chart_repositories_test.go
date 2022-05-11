@@ -8,26 +8,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCRRepoDataSource(t *testing.T) {
+func TestAccAlicloudCRChartRepositoriesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCRRepoDataSourceName(rand, map[string]string{
-			"instance_id": `"${local.instance_id}"`,
+			"instance_id": `"${alicloud_cr_chart_namespace.default.instance_id}"`,
 			"ids":         `["${alicloud_cr_chart_repository.default.id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudCRRepoDataSourceName(rand, map[string]string{
-			"instance_id": `"${local.instance_id}"`,
+			"instance_id": `"${alicloud_cr_chart_namespace.default.instance_id}"`,
 			"ids":         `["${alicloud_cr_chart_repository.default.id}_fake"]`,
 		}),
 	}
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCRRepoDataSourceName(rand, map[string]string{
-			"instance_id": `"${local.instance_id}"`,
+			"instance_id": `"${alicloud_cr_chart_namespace.default.instance_id}"`,
 			"name_regex":  `"${alicloud_cr_chart_repository.default.repo_name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCRRepoDataSourceName(rand, map[string]string{
-			"instance_id": `"${local.instance_id}"`,
+			"instance_id": `"${alicloud_cr_chart_namespace.default.instance_id}"`,
 			"name_regex":  `"${alicloud_cr_chart_repository.default.repo_name}_fake"`,
 		}),
 	}
@@ -69,28 +69,15 @@ variable "name" {
 	default = "tf_testacc_cr_repo%d"
 }
 
-resource "alicloud_cr_ee_instance" "default" {
-  count = length(data.alicloud_cr_ee_instances.default.ids) > 0 ? 0 : 1
-  payment_type  = "Subscription"
-  period        = 1
-  instance_type = "Advanced"
-  instance_name = var.name
-}
-
-data "alicloud_cr_ee_instances" "default" {
-}
-
-locals{
-  instance_id =  length(data.alicloud_cr_ee_instances.default.ids) > 0 ? data.alicloud_cr_ee_instances.default.ids[0] : concat(alicloud_cr_ee_instance.default.*.id, [""])[0]
-}
+data "alicloud_cr_ee_instances" "default" {}
 
 resource "alicloud_cr_chart_namespace" "default" {
-	instance_id        = local.instance_id
+	instance_id        = data.alicloud_cr_ee_instances.default.ids.0
 	namespace_name       = var.name
 }
 
 resource "alicloud_cr_chart_repository" "default" {
-	instance_id        		  = local.instance_id
+	instance_id        		  = alicloud_cr_chart_namespace.default.instance_id
 	repo_namespace_name       = alicloud_cr_chart_namespace.default.namespace_name
 	repo_name				  = var.name
 	repo_type				  = "PUBLIC"

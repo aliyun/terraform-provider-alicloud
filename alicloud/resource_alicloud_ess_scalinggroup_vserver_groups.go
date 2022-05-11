@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 
@@ -229,72 +233,112 @@ func buildEssVserverGroupListMap(vserverGroupMap map[string]string) map[string][
 func attachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClient, attachMap map[string]string, force bool) error {
 	if len(attachMap) > 0 {
 		vserverGroupListMap := buildEssVserverGroupListMap(attachMap)
-		attachScalingGroupVserverGroups := make([]ess.AttachVServerGroupsVServerGroup, 0)
+		request := map[string]interface{}{}
+		var response map[string]interface{}
+		attachScalingGroupVserverGroups := make([]map[string]interface{}, 0)
 		for k, v := range vserverGroupListMap {
-			vserverAttributes := make([]ess.AttachVServerGroupsVServerGroupAttribute, 0)
+			vserverAttributes := make([]map[string]interface{}, 0)
 			for _, e := range v {
 				attrs := strings.Split(e, "_")
-				vserverAttribute := ess.AttachVServerGroupsVServerGroupAttribute{
-					VServerGroupId: attrs[1],
-					Port:           attrs[2],
-					Weight:         attrs[3],
+				vserverAttribute := map[string]interface{}{
+					"VServerGroupId": attrs[1],
+					"Port":           attrs[2],
+					"Weight":         attrs[3],
 				}
 				vserverAttributes = append(vserverAttributes, vserverAttribute)
 			}
-			vserverGroup := ess.AttachVServerGroupsVServerGroup{
-				LoadBalancerId:        k,
-				VServerGroupAttribute: &vserverAttributes,
+			vserverGroup := map[string]interface{}{
+				"LoadBalancerId":        k,
+				"VServerGroupAttribute": vserverAttributes,
 			}
 			attachScalingGroupVserverGroups = append(attachScalingGroupVserverGroups, vserverGroup)
 		}
-		request := ess.CreateAttachVServerGroupsRequest()
-		request.RegionId = client.RegionId
-		request.ScalingGroupId = d.Id()
-		request.ForceAttach = requests.NewBoolean(force)
-		request.VServerGroup = &attachScalingGroupVserverGroups
-		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.AttachVServerGroups(request)
-		})
+		request["RegionId"] = client.RegionId
+		request["ScalingGroupId"] = d.Id()
+		request["ForceAttach"] = requests.NewBoolean(force)
+		request["VServerGroup"] = attachScalingGroupVserverGroups
+
+		action := "AttachVServerGroups"
+		conn, err := client.NewEssClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		request["ClientToken"] = buildClientToken(action)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
 	}
 	return nil
 }
 
 func detachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClient, detachMap map[string]string, force bool) error {
 	if len(detachMap) > 0 {
+		request := map[string]interface{}{}
+		var response map[string]interface{}
+
 		vserverGroupListMap := buildEssVserverGroupListMap(detachMap)
-		detachScalingGroupVserverGroups := make([]ess.DetachVServerGroupsVServerGroup, 0)
+		detachScalingGroupVserverGroups := make([]map[string]interface{}, 0)
 		for k, v := range vserverGroupListMap {
-			vserverAttributes := make([]ess.DetachVServerGroupsVServerGroupAttribute, 0)
+			vserverAttributes := make([]map[string]interface{}, 0)
 			for _, e := range v {
 				attrs := strings.Split(e, "_")
-				vserverAttribute := ess.DetachVServerGroupsVServerGroupAttribute{
-					VServerGroupId: attrs[1],
-					Port:           attrs[2],
+				vserverAttribute := map[string]interface{}{
+					"VServerGroupId": attrs[1],
+					"Port":           attrs[2],
 				}
 				vserverAttributes = append(vserverAttributes, vserverAttribute)
 			}
-			vserverGroup := ess.DetachVServerGroupsVServerGroup{
-				LoadBalancerId:        k,
-				VServerGroupAttribute: &vserverAttributes,
+			vserverGroup := map[string]interface{}{
+				"LoadBalancerId":        k,
+				"VServerGroupAttribute": vserverAttributes,
 			}
 			detachScalingGroupVserverGroups = append(detachScalingGroupVserverGroups, vserverGroup)
 		}
-		request := ess.CreateDetachVServerGroupsRequest()
-		request.RegionId = client.RegionId
-		request.ScalingGroupId = d.Id()
-		request.ForceDetach = requests.NewBoolean(force)
-		request.VServerGroup = &detachScalingGroupVserverGroups
-		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DetachVServerGroups(request)
-		})
+
+		request["RegionId"] = client.RegionId
+		request["ScalingGroupId"] = d.Id()
+		request["ForceAttach"] = requests.NewBoolean(force)
+		request["VServerGroup"] = detachScalingGroupVserverGroups
+
+		action := "DetachVServerGroups"
+		conn, err := client.NewEssClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		request["ClientToken"] = buildClientToken(action)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
 	}
 	return nil
 }

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	roacs "github.com/alibabacloud-go/cs-20151215/v2/client"
+	roacs "github.com/alibabacloud-go/cs-20151215/v3/client"
 	"github.com/alibabacloud-go/tea/tea"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"

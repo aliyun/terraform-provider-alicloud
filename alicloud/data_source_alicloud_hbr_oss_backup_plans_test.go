@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudHbrOssBackupPlansDataSource(t *testing.T) {
+func TestAccAlicloudHBROssBackupPlansDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	ossBackupIdsconf := dataSourceTestAccConfig{

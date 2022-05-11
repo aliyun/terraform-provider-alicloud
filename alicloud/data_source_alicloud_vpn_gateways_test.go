@@ -8,12 +8,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudVpnGatewaysDataSourceBasic(t *testing.T) {
+func TestAccAlicloudVPNGatewaysDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	preCheck := func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithTime(t, []int{1})
-		testAccPreCheckWithAccountSiteType(t, IntlSite)
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
@@ -67,6 +65,17 @@ func TestAccAlicloudVpnGatewaysDataSourceBasic(t *testing.T) {
 		}),
 	}
 
+	enableIpsecConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
+			"name_regex":   `"${alicloud_vpn_gateway.default.name}"`,
+			"enable_ipsec": `true`,
+		}),
+		fakeConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
+			"name_regex":   `"${alicloud_vpn_gateway.default.name}"`,
+			"enable_ipsec": `false`,
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
 			"ids":             `[ "${alicloud_vpn_gateway.default.id}" ]`,
@@ -74,6 +83,7 @@ func TestAccAlicloudVpnGatewaysDataSourceBasic(t *testing.T) {
 			"vpc_id":          `"${alicloud_vpn_gateway.default.vpc_id}"`,
 			"status":          `"Active"`,
 			"business_status": `"Normal"`,
+			"enable_ipsec":    `true`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
 			"ids":             `[ "${alicloud_vpn_gateway.default.id}" ]`,
@@ -81,10 +91,11 @@ func TestAccAlicloudVpnGatewaysDataSourceBasic(t *testing.T) {
 			"vpc_id":          `"${alicloud_vpn_gateway.default.vpc_id}"`,
 			"status":          `"Active"`,
 			"business_status": `"FinancialLocked"`,
+			"enable_ipsec":    `false`,
 		}),
 	}
 
-	vpnGatewaysCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, vpcIdConf, statusConf, businessStatusConf, allConf)
+	vpnGatewaysCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, vpcIdConf, statusConf, businessStatusConf, enableIpsecConf, allConf)
 }
 
 func testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -110,25 +121,15 @@ data "alicloud_vswitches" "default" {
 	zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
-}
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
-
 resource "alicloud_vpn_gateway" "default" {
 	name = "${var.name}"
 	vpc_id = data.alicloud_vpcs.default.ids.0
 	bandwidth = "10"
 	enable_ssl = true
+	enable_ipsec = true
 	instance_charge_type = "PrePaid"
 	description = "${var.name}"
-	vswitch_id = local.vswitch_id
+	vswitch_id = data.alicloud_vswitches.default.ids.0
 }
 
 data "alicloud_vpn_gateways" "default" {

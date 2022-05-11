@@ -19,15 +19,28 @@ type GpdbService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *GpdbService) DescribeGpdbInstance(id string) (instanceAttribute gpdb.DBInstanceAttribute, err error) {
-	request := gpdb.CreateDescribeDBInstanceAttributeRequest()
+func (s *GpdbService) DescribeGpdbInstance(id string) (instanceAttribute gpdb.DBInstance, err error) {
+	request := gpdb.CreateDescribeDBInstancesRequest()
 	request.RegionId = s.client.RegionId
-	request.DBInstanceId = id
-	raw, err := s.client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
-		return client.DescribeDBInstanceAttribute(request)
+	request.DBInstanceIds = id
+	var response *gpdb.DescribeDBInstancesResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
+			return client.DescribeDBInstances(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), response, request.RpcRequest, request)
+		response, _ = raw.(*gpdb.DescribeDBInstancesResponse)
+		return nil
 	})
 
-	response, _ := raw.(*gpdb.DescribeDBInstanceAttributeResponse)
 	if err != nil {
 		// convert error code
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
@@ -38,7 +51,45 @@ func (s *GpdbService) DescribeGpdbInstance(id string) (instanceAttribute gpdb.DB
 		return
 	}
 
-	addDebug(request.GetActionName(), response, request.RpcRequest, request)
+	if len(response.Items.DBInstance) == 0 {
+		return instanceAttribute, WrapErrorf(Error(GetNotFoundMessage("Gpdb Instance", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	return response.Items.DBInstance[0], nil
+}
+
+func (s *GpdbService) DescribeDBInstanceAttribute(id string) (instanceAttribute gpdb.DBInstanceAttribute, err error) {
+	request := gpdb.CreateDescribeDBInstanceAttributeRequest()
+	request.RegionId = s.client.RegionId
+	request.DBInstanceId = id
+	var response *gpdb.DescribeDBInstanceAttributeResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
+			return client.DescribeDBInstanceAttribute(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), response, request.RpcRequest, request)
+		response, _ = raw.(*gpdb.DescribeDBInstanceAttributeResponse)
+		return nil
+	})
+
+	if err != nil {
+		// convert error code
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		} else {
+			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		return
+	}
+
 	if len(response.Items.DBInstanceAttribute) == 0 {
 		return instanceAttribute, WrapErrorf(Error(GetNotFoundMessage("Gpdb Instance", id)), NotFoundMsg, ProviderERROR)
 	}
@@ -61,7 +112,6 @@ func (s *GpdbService) DescribeGpdbElasticInstance(id string) (map[string]interfa
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {

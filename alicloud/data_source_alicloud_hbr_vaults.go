@@ -21,7 +21,7 @@ func dataSourceAlicloudHbrVaults() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"CREATED", "ERROR", "INITIALIZING", "UNKNOWN"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"CREATED", "ERROR", "UNKNOWN"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,

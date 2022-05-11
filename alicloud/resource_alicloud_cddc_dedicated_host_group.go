@@ -100,9 +100,9 @@ func resourceAlicloudCddcDedicatedHostGroupCreate(d *schema.ResourceData, meta i
 	}
 	request["Engine"] = d.Get("engine")
 	if v, ok := d.GetOk("disk_allocation_ratio"); ok {
-		if d.Get("engine").(string) == "SQLServer" && v.(int) > 100 {
-			return WrapError(fmt.Errorf("disk_allocation_ratio needs to be less than 100 under the SQLServer"))
-		}
+		//if d.Get("engine").(string) == "SQLServer" && v.(int) > 100 {
+		//	return WrapError(fmt.Errorf("disk_allocation_ratio needs to be less than 100 under the SQLServer"))
+		//}
 		request["DiskAllocationRatio"] = v
 	}
 	if v, ok := d.GetOk("host_replace_policy"); ok {
@@ -158,7 +158,7 @@ func resourceAlicloudCddcDedicatedHostGroupRead(d *schema.ResourceData, meta int
 		d.Set("disk_allocation_ratio", formatInt(v))
 	}
 
-	d.Set("engine", switchEngine(object["Engine"].(string)))
+	d.Set("engine", convertCddcDedicatedHostGroupEngineResponse(object["Engine"]))
 	d.Set("host_replace_policy", object["HostReplacePolicy"])
 	if v, ok := object["MemAllocationRatio"]; ok && fmt.Sprint(v) != "0" {
 		d.Set("mem_allocation_ratio", formatInt(v))
@@ -268,7 +268,7 @@ func resourceAlicloudCddcDedicatedHostGroupDelete(d *schema.ResourceData, meta i
 	return nil
 }
 
-func switchEngine(engine string) string {
+func convertCddcDedicatedHostGroupEngineResponse(engine interface{}) string {
 	switch engine {
 	case "mysql":
 		engine = "MySQL"
@@ -281,7 +281,7 @@ func switchEngine(engine string) string {
 	case "mongodb":
 		engine = "MongoDB"
 	}
-	return engine
+	return fmt.Sprint(engine)
 }
 
 func convertCddcDedicatedHostGroupOpenPermissionRequest(source interface{}) interface{} {

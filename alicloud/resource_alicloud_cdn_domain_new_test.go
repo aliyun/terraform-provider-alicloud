@@ -88,7 +88,7 @@ func testSweepCdnDomains_new(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
+func TestAccAlicloudCDNDomainNew_basic(t *testing.T) {
 	var v *cdn.GetDomainDetailModel
 
 	resourceId := "alicloud_cdn_domain_new.domain"
@@ -394,7 +394,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCdnDomainNew_scope(t *testing.T) {
+func TestAccAlicloudCDNDomainNew_scope(t *testing.T) {
 	var v *cdn.GetDomainDetailModel
 
 	resourceId := "alicloud_cdn_domain_new.domain"

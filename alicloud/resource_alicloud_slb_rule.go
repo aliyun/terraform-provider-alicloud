@@ -5,12 +5,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	"strconv"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -24,6 +24,11 @@ func resourceAliyunSlbRule() *schema.Resource {
 		Delete: resourceAliyunSlbRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Update: schema.DefaultTimeout(1 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -60,9 +65,10 @@ func resourceAliyunSlbRule() *schema.Resource {
 				DiffSuppressFunc: slbRuleListenerSyncDiffSuppressFunc,
 			},
 			"domain": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				AtLeastOneOf: []string{"domain", "url"},
 			},
 			"url": {
 				Type:     schema.TypeString,
@@ -177,57 +183,69 @@ func resourceAliyunSlbRule() *schema.Resource {
 }
 
 func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
-	slb_id := d.Get("load_balancer_id").(string)
-	port := d.Get("frontend_port").(int)
-	name := strings.Trim(d.Get("name").(string), " ")
-	group_id := strings.Trim(d.Get("server_group_id").(string), " ")
+	var response map[string]interface{}
+	action := "CreateRules"
+	request := make(map[string]interface{})
+	conn, err := client.NewSlbClient()
+	if err != nil {
+		return WrapError(err)
+	}
 
-	var domain, url, rule string
+	rule := make(map[string]interface{}, 0)
 	if v, ok := d.GetOk("domain"); ok {
-		domain = v.(string)
+		rule["Domain"] = v.(string)
 	}
 	if v, ok := d.GetOk("url"); ok {
-		url = v.(string)
+		rule["Url"] = v.(string)
 	}
 
-	if domain == "" && url == "" {
-		return WrapError(Error("At least one 'domain' or 'url' must be set."))
-	} else if domain == "" {
-		rule = fmt.Sprintf("[{'RuleName':'%s','Url':'%s','VServerGroupId':'%s'}]", name, url, group_id)
-	} else if url == "" {
-		rule = fmt.Sprintf("[{'RuleName':'%s','Domain':'%s','VServerGroupId':'%s'}]", name, domain, group_id)
-	} else {
-		rule = fmt.Sprintf("[{'RuleName':'%s','Domain':'%s','Url':'%s','VServerGroupId':'%s'}]", name, domain, url, group_id)
+	rule["VServerGroupId"] = strings.Trim(d.Get("server_group_id").(string), " ")
+	rule["RuleName"] = strings.Trim(d.Get("name").(string), " ")
+
+	ruleMaps := append([]map[string]interface{}{}, rule)
+	ruleMapsStr, err := convertListMapToJsonString(ruleMaps)
+	if err != nil {
+		return WrapError(err)
 	}
 
-	request := slb.CreateCreateRulesRequest()
-	request.RegionId = client.RegionId
-	request.LoadBalancerId = slb_id
-	request.ListenerPort = requests.NewInteger(port)
-	request.RuleList = rule
-	var raw interface{}
-	var err error
-	if err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		raw, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.CreateRules(request)
-		})
+	request["RegionId"] = client.RegionId
+	request["LoadBalancerId"] = d.Get("load_balancer_id")
+	request["ListenerPort"] = d.Get("frontend_port")
+	request["RuleList"] = ruleMapsStr
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"BackendServer.configuring", "OperationFailed.ListenerStatusNotSupport"}) {
+			if IsExpectedErrors(err, []string{"BackendServer.configuring", "OperationFailed.ListenerStatusNotSupport"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_rule", action, AlibabaCloudSdkGoERROR)
 	}
 
-	response, _ := raw.(*slb.CreateRulesResponse)
-	d.SetId(response.Rules.Rule[0].RuleId)
+	var id string
+	v, err := jsonpath.Get("$.Rules.Rule", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, "alicloud_slb_rule", "$.Rules.Rule", response)
+	}
+	if ruleMaps, ok := v.([]interface{}); ok && len(ruleMaps) == 1 {
+		if ruleId, ok := ruleMaps[0].(map[string]interface{})["RuleId"]; ok {
+			id = ruleId.(string)
+		}
+	}
+	if id == "" {
+		return WrapErrorf(err, FailedGetAttributeMsg, "alicloud_slb_rule", "RuleId", response)
+	}
 
+	d.SetId(id)
 	return resourceAliyunSlbRuleUpdate(d, meta)
 }
 
@@ -244,41 +262,46 @@ func resourceAliyunSlbRuleRead(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 
-	d.Set("name", object.RuleName)
-	d.Set("load_balancer_id", object.LoadBalancerId)
-	if port, err := strconv.Atoi(object.ListenerPort); err != nil {
-		return WrapError(err)
-	} else {
-		d.Set("frontend_port", port)
-	}
-	d.Set("domain", object.Domain)
-	d.Set("url", object.Url)
-	d.Set("server_group_id", object.VServerGroupId)
-	d.Set("sticky_session", object.StickySession)
-	d.Set("sticky_session_type", object.StickySessionType)
-	d.Set("unhealthy_threshold", object.UnhealthyThreshold)
-	d.Set("healthy_threshold", object.HealthyThreshold)
-	d.Set("health_check_timeout", object.HealthCheckTimeout)
-	d.Set("health_check_connect_port", object.HealthCheckConnectPort)
-	d.Set("health_check_uri", object.HealthCheckURI)
-	d.Set("health_check", object.HealthCheck)
-	d.Set("health_check_http_code", object.HealthCheckHttpCode)
-	d.Set("health_check_interval", object.HealthCheckInterval)
-	d.Set("scheduler", object.Scheduler)
-	d.Set("listener_sync", object.ListenerSync)
-	d.Set("cookie_timeout", object.CookieTimeout)
-	d.Set("cookie", object.Cookie)
-	d.Set("health_check_domain", object.HealthCheckDomain)
+	d.Set("name", object["RuleName"])
+	d.Set("load_balancer_id", object["LoadBalancerId"])
+
+	d.Set("frontend_port", formatInt(object["ListenerPort"]))
+	d.Set("domain", object["Domain"])
+	d.Set("url", object["Url"])
+	d.Set("server_group_id", object["VServerGroupId"])
+	d.Set("sticky_session", object["StickySession"])
+	d.Set("sticky_session_type", object["StickySessionType"])
+	d.Set("unhealthy_threshold", object["UnhealthyThreshold"])
+	d.Set("healthy_threshold", object["HealthyThreshold"])
+	d.Set("health_check_timeout", object["HealthCheckTimeout"])
+	d.Set("health_check_connect_port", object["HealthCheckConnectPort"])
+	d.Set("health_check_uri", object["HealthCheckURI"])
+	d.Set("health_check", object["HealthCheck"])
+	d.Set("health_check_http_code", object["HealthCheckHttpCode"])
+	d.Set("health_check_interval", object["HealthCheckInterval"])
+	d.Set("scheduler", object["Scheduler"])
+	d.Set("listener_sync", object["ListenerSync"])
+	d.Set("cookie_timeout", object["CookieTimeout"])
+	d.Set("cookie", object["Cookie"])
+	d.Set("health_check_domain", object["HealthCheckDomain"])
 	return nil
 }
 
 func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "SetRule"
+	request := make(map[string]interface{})
+	conn, err := client.NewSlbClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	update := false
 	fullUpdate := false
-	request := slb.CreateSetRuleRequest()
-	request.RuleId = d.Id()
-	if listenerSync, ok := d.GetOk("listener_sync"); ok && listenerSync == string(OffFlag) {
-		if stickySession := d.Get("sticky_session"); stickySession == string(OnFlag) {
+	request["RuleId"] = d.Id()
+	if listenerSync, ok := d.GetOk("listener_sync"); ok && fmt.Sprint(listenerSync) == string(OffFlag) {
+		if stickySession := d.Get("sticky_session"); fmt.Sprint(stickySession) == string(OnFlag) {
 			if _, ok := d.GetOk("sticky_session_type"); !ok {
 				return WrapError(Error(`'sticky_session_type': required field is not set when the sticky_session is 'on'.`))
 			}
@@ -295,12 +318,12 @@ func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error
 		}
 	}
 	if d.HasChange("server_group_id") {
-		request.VServerGroupId = d.Get("server_group_id").(string)
+		request["VServerGroupId"] = d.Get("server_group_id").(string)
 		update = true
 	}
 
 	if d.HasChange("name") {
-		request.RuleName = d.Get("name").(string)
+		request["RuleName"] = d.Get("name")
 		update = true
 	}
 
@@ -309,47 +332,56 @@ func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error
 		d.HasChange("healthy_threshold") || d.HasChange("unhealthy_threshold") || d.HasChange("sticky_session") || d.HasChange("sticky_session_type")
 
 	if fullUpdate {
-		request.ListenerSync = d.Get("listener_sync").(string)
-		if listenerSync, ok := d.GetOk("listener_sync"); ok && listenerSync == string(OffFlag) {
-			request.Scheduler = d.Get("scheduler").(string)
-			request.HealthCheck = d.Get("health_check").(string)
-			request.StickySession = d.Get("sticky_session").(string)
-			if request.HealthCheck == string(OnFlag) {
-				request.HealthCheckTimeout = requests.NewInteger(d.Get("health_check_timeout").(int))
-				request.HealthCheckURI = d.Get("health_check_uri").(string)
-				request.HealthyThreshold = requests.NewInteger(d.Get("healthy_threshold").(int))
-				request.UnhealthyThreshold = requests.NewInteger(d.Get("unhealthy_threshold").(int))
-				request.HealthCheckInterval = requests.NewInteger(d.Get("health_check_interval").(int))
-				request.HealthCheckHttpCode = d.Get("health_check_http_code").(string)
-				if healthCheckDomain, ok := d.GetOk("health_check_domain"); ok {
-					request.HealthCheckDomain = healthCheckDomain.(string)
+		request["ListenerSync"] = d.Get("listener_sync")
+		if listenerSync, ok := d.GetOk("listener_sync"); ok && fmt.Sprint(listenerSync) == string(OffFlag) {
+			request["Scheduler"] = d.Get("scheduler")
+			request["HealthCheck"] = d.Get("health_check")
+			request["StickySession"] = d.Get("sticky_session")
+			if fmt.Sprint(request["HealthCheck"]) == string(OnFlag) {
+				request["HealthCheckTimeout"] = d.Get("health_check_timeout")
+				request["HealthCheckURI"] = d.Get("health_check_uri")
+				request["HealthyThreshold"] = d.Get("healthy_threshold")
+				request["UnhealthyThreshold"] = d.Get("unhealthy_threshold")
+				request["HealthCheckInterval"] = d.Get("health_check_interval")
+				request["HealthCheckHttpCode"] = d.Get("health_check_http_code")
+				if v, ok := d.GetOk("health_check_domain"); ok {
+					request["HealthCheckDomain"] = v
 				}
-				if healthCheckConnectPort, ok := d.GetOk("health_check_connect_port"); ok {
-					request.HealthCheckConnectPort = requests.NewInteger(healthCheckConnectPort.(int))
+				if v, ok := d.GetOk("health_check_connect_port"); ok {
+					request["HealthCheckConnectPort"] = v
 				}
 			}
-			if request.StickySession == string(OnFlag) {
-				request.StickySessionType = d.Get("sticky_session_type").(string)
-				if request.StickySessionType == string(InsertStickySessionType) {
-					request.CookieTimeout = requests.NewInteger(d.Get("cookie_timeout").(int))
+			if request["StickySession"] == string(OnFlag) {
+				request["StickySessionType"] = d.Get("sticky_session_type")
+				if fmt.Sprint(request["StickySessionType"]) == string(InsertStickySessionType) {
+					request["CookieTimeout"] = d.Get("cookie_timeout")
 				}
-				if request.StickySessionType == string(ServerStickySessionType) {
-					request.Cookie = d.Get("cookie").(string)
+				if fmt.Sprint(request["StickySessionType"]) == string(ServerStickySessionType) {
+					request["Cookie"] = d.Get("cookie")
 				}
 			}
 		}
-
 	}
 	if update || fullUpdate {
 		client := meta.(*connectivity.AliyunClient)
-		request.RegionId = client.RegionId
-		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.SetRule(request)
+		request["RegionId"] = client.RegionId
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"BackendServer.configuring", "OperationFailed.ListenerStatusNotSupport"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_rule", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return resourceAliyunSlbRuleRead(d, meta)
@@ -361,41 +393,47 @@ func resourceAliyunSlbRuleDelete(d *schema.ResourceData, meta interface{}) error
 
 	if d.Get("delete_protection_validation").(bool) {
 		lbId := d.Get("load_balancer_id").(string)
-		lbInstance, err := slbService.DescribeSlb(lbId)
+		lbInstance, err := slbService.DescribeSlbLoadBalancer(lbId)
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
 			return WrapError(err)
 		}
-		if lbInstance.DeleteProtection == "on" {
-			return WrapError(fmt.Errorf("Current rule's SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the rule.", lbId))
+		if lbInstance["DeleteProtection"] == "on" {
+			return WrapError(fmt.Errorf("current rule's SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the rule", lbId))
 		}
 	}
 
-	request := slb.CreateDeleteRulesRequest()
-	request.RegionId = client.RegionId
-	request.RuleIds = fmt.Sprintf("['%s']", d.Id())
+	var response map[string]interface{}
+	action := "DeleteRules"
+	request := make(map[string]interface{})
+	conn, err := client.NewSlbClient()
+	if err != nil {
+		return WrapError(err)
+	}
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DeleteRules(request)
-		})
+	request["RegionId"] = client.RegionId
+	request["RuleIds"] = fmt.Sprintf("['%s']", d.Id())
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationFailed.ListenerStatusNotSupport"}) {
+			if IsExpectedErrors(err, []string{"OperationFailed.ListenerStatusNotSupport"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidRuleId.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_rule", action, AlibabaCloudSdkGoERROR)
 	}
 	return WrapError(slbService.WaitForSlbRule(d.Id(), Deleted, DefaultTimeoutMedium))
 

@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudNasMountTarget_basic(t *testing.T) {
+func TestAccAlicloudNASMountTarget_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_mount_target.default"
 	ra := resourceAttrInit(resourceId, AlicloudNasMountTarget0)
@@ -156,7 +156,7 @@ resource "alicloud_nas_mount_target" "example" {
 `, name, name)
 }
 
-func TestAccAlicloudNasMountTarget_unit(t *testing.T) {
+func TestAccAlicloudNASMountTarget_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_mount_target"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_nas_mount_target"].Schema).Data(nil, nil)

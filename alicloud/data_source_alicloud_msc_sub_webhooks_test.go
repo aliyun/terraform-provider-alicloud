@@ -43,7 +43,7 @@ func TestAccAlicloudMscSubWebhooksDataSource(t *testing.T) {
 			"ids.#":                   "1",
 			"webhooks.#":              "1",
 			"webhooks.0.webhook_name": "testtfac",
-			"webhooks.0.server_url":   "https://oapi.dingtalk.com/robot/send?access_token=" + os.Getenv("ALICLOUD_WAF_MSC_SUB_TOKEN"),
+			"webhooks.0.server_url":   "https://oapi.dingtalk.com/robot/send?access_token=" + os.Getenv("ALICLOUD_MSC_SUB_WEBHOOK_TOKEN"),
 		}
 	}
 
@@ -61,7 +61,7 @@ func TestAccAlicloudMscSubWebhooksDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithEnvVariable(t, "ALICLOUD_WAF_MSC_SUB_TOKEN")
+		testAccPreCheckWithEnvVariable(t, "ALICLOUD_MSC_SUB_WEBHOOK_TOKEN")
 	}
 
 	alicloudMscSubWebhookCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
@@ -84,6 +84,6 @@ resource "alicloud_msc_sub_webhook" "default" {
 data "alicloud_msc_sub_webhooks" "default" {
   %s
 }
-`, os.Getenv("ALICLOUD_WAF_MSC_SUB_TOKEN"), strings.Join(pairs, "\n  "))
+`, os.Getenv("ALICLOUD_MSC_SUB_WEBHOOK_TOKEN"), strings.Join(pairs, "\n  "))
 	return config
 }

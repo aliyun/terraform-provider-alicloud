@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudVpcIpv6AddressesDataSource(t *testing.T) {
+func TestAccAlicloudVPCIpv6AddressesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_vpc_ipv6_addresses.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc-vpcipv6address-%d", rand)

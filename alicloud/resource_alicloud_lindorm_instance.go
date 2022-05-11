@@ -23,7 +23,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(90 * time.Minute),
-			Update: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(60 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -168,6 +168,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 			"upgrade_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Deprecated:   "Field 'upgrade_type' has been deprecated from provider version 1.163.0 and it will be removed in the future version.",
 				ValidateFunc: validation.StringInSlice([]string{"open-bds-transfer", "open-bds-transfer-only", "open-lindorm-engine", "open-phoenix-engine", "open-search-engine", "open-tsdb-engine", "upgrade-bds-core-num", "upgrade-bds-transfer", "upgrade-cold-storage", "upgrade-disk-size", "upgrade-file-core-num", "upgrade-file-engine", "upgrade-lindorm-core-num", "upgrade-lindorm-engine", "upgrade-phoenix-core-num", "upgrade-phoenix-engine", "upgrade-search-core-num", "upgrade-search-engine", "upgrade-tsdb-core-num", "upgrade-tsdb-engine"}, false),
 			},
 			"vswitch_id": {
@@ -180,6 +181,26 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+			},
+			"enabled_file_engine": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"enabled_time_serires_engine": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"enabled_table_engine": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"enabled_search_engine": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"enabled_lts_engine": {
+				Type:     schema.TypeBool,
+				Computed: true,
 			},
 		},
 	}
@@ -304,6 +325,13 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("status", object["InstanceStatus"])
 	d.Set("vswitch_id", object["VswitchId"])
 	d.Set("zone_id", object["ZoneId"])
+
+	engineType := formatInt(object["EngineType"])
+	d.Set("enabled_file_engine", engineType&0x08 == 8)
+	d.Set("enabled_time_serires_engine", engineType&0x02 == 2)
+	d.Set("enabled_table_engine", engineType&0x04 == 4)
+	d.Set("enabled_search_engine", engineType&0x01 == 1)
+	d.Set("enabled_lts_engine", object["EnableBDS"])
 	ipWhite, err := hitsdbService.GetInstanceIpWhiteList(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -423,55 +451,241 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("instance_name")
 		d.SetPartial("deletion_proection")
 	}
+
 	update = false
-	upgradeLindormInstanceReq := map[string]interface{}{
-		"InstanceId": d.Id(),
+	upgradeLindormInstanceColdStorageReq := map[string]interface{}{
+		"UpgradeType": "upgrade-cold-storage",
 	}
 	if d.HasChange("cold_storage") {
 		update = true
+		if v, ok := d.GetOk("cold_storage"); ok {
+			upgradeLindormInstanceColdStorageReq["ColdStorage"] = v
+		}
+		d.SetPartial("cold_storage")
 	}
-	if v, ok := d.GetOk("cold_storage"); ok {
-		upgradeLindormInstanceReq["ColdStorage"] = v
-	}
-	if d.HasChange("instance_storage") {
-		update = true
-	}
-	if v, ok := d.GetOk("instance_storage"); ok {
-		upgradeLindormInstanceReq["ClusterStorage"] = v
-	}
-	upgradeLindormInstanceReq["RegionId"] = client.RegionId
-	if d.HasChange("table_engine_node_count") {
-		update = true
-	}
-	if v, ok := d.GetOk("table_engine_node_count"); ok {
-		upgradeLindormInstanceReq["LindormNum"] = v
+	if update {
+		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceColdStorageReq)
+		if err != nil {
+			return err
+		}
 	}
 
-	upgradeLindormInstanceReq["ZoneId"] = d.Get("zone_id")
+	update = false
+	upgradeLindormInstanceFilestoreNumReq := map[string]interface{}{
+		"UpgradeType": "upgrade-file-core-num",
+	}
 	if d.HasChange("file_engine_node_count") {
 		update = true
 		if v, ok := d.GetOk("file_engine_node_count"); ok {
-			upgradeLindormInstanceReq["FilestoreSpec"] = v
+			upgradeLindormInstanceFilestoreNumReq["FilestoreNum"] = v
 		}
+	}
+	if update {
+		if v, ok := d.GetOk("instance_storage"); ok {
+			upgradeLindormInstanceFilestoreNumReq["ClusterStorage"] = v
+		}
+		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceFilestoreNumReq)
+		if err != nil {
+			return err
+		}
+		d.SetPartial("file_engine_node_count")
+	}
+
+	update = false
+	upgradeLindormInstanceFilestoreSpecReq := map[string]interface{}{
+		"UpgradeType": "upgrade-file-engine",
 	}
 	if d.HasChange("file_engine_specification") {
 		update = true
 		if v, ok := d.GetOk("file_engine_specification"); ok {
-			upgradeLindormInstanceReq["FilestoreNum"] = v
+			upgradeLindormInstanceFilestoreSpecReq["FilestoreSpec"] = v
 		}
 	}
-	if d.HasChange("lts_node_count") {
-		update = true
-		if v, ok := d.GetOk("lts_node_count"); ok {
-			upgradeLindormInstanceReq["LtsCoreNum"] = v
+	if update {
+		if v, ok := d.GetOk("instance_storage"); ok {
+			upgradeLindormInstanceFilestoreNumReq["ClusterStorage"] = v
 		}
-	}
-	if d.HasChange("lts_node_specification") {
-		update = true
-		if v, ok := d.GetOk("lts_node_specification"); ok {
-			upgradeLindormInstanceReq["LtsCoreSpec"] = v
+		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceFilestoreSpecReq)
+		if err != nil {
+			return err
 		}
+		d.SetPartial("file_engine_specification")
 	}
+
+	if d.HasChange("search_engine_node_count") || d.HasChange("search_engine_specification") {
+		newSolrSpec := d.Get("search_engine_specification")
+		newSolrNum := d.Get("search_engine_node_count")
+		enabled := d.Get("enabled_search_engine").(bool)
+		currentInstanceStorage := formatInt(d.Get("instance_storage"))
+		if !enabled {
+			upgradeLindormInstanceSearchReq := map[string]interface{}{}
+			upgradeLindormInstanceSearchReq["UpgradeType"] = "open-search-engine"
+			upgradeLindormInstanceSearchReq["SolrSpec"] = newSolrSpec
+			upgradeLindormInstanceSearchReq["SolrNum"] = newSolrNum
+			upgradeLindormInstanceSearchReq["ClusterStorage"] = currentInstanceStorage
+			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceSearchReq)
+			if err != nil {
+				return err
+			}
+		}
+
+		if enabled && d.HasChange("search_engine_specification") {
+			upgradeLindormInstanceSearchReq := map[string]interface{}{}
+			upgradeLindormInstanceSearchReq["UpgradeType"] = "upgrade-search-engine"
+			upgradeLindormInstanceSearchReq["SolrSpec"] = newSolrSpec
+			upgradeLindormInstanceSearchReq["ClusterStorage"] = currentInstanceStorage
+			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceSearchReq)
+			if err != nil {
+				return err
+			}
+		}
+
+		if enabled && d.HasChange("search_engine_node_count") {
+			upgradeLindormInstanceSearchNumReq := map[string]interface{}{}
+			upgradeLindormInstanceSearchNumReq["UpgradeType"] = "upgrade-search-core-num"
+			upgradeLindormInstanceSearchNumReq["SolrNum"] = newSolrNum
+			upgradeLindormInstanceSearchNumReq["ClusterStorage"] = currentInstanceStorage
+			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceSearchNumReq)
+			if err != nil {
+				return err
+			}
+		}
+
+		d.SetPartial("search_engine_specification")
+		d.SetPartial("search_engine_node_count")
+	}
+
+	if d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification") {
+		newLindormSpec := d.Get("table_engine_specification")
+		newLindormNum := d.Get("table_engine_node_count")
+		enabled := d.Get("enabled_table_engine").(bool)
+		currentInstanceStorage := formatInt(d.Get("instance_storage"))
+		if !enabled {
+			upgradeLindormInstanceTableReq := map[string]interface{}{}
+			upgradeLindormInstanceTableReq["UpgradeType"] = "open-lindorm-engine"
+			upgradeLindormInstanceTableReq["LindormSpec"] = newLindormSpec
+			upgradeLindormInstanceTableReq["LindormNum"] = newLindormNum
+			upgradeLindormInstanceTableReq["ClusterStorage"] = currentInstanceStorage
+			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceTableReq)
+			if err != nil {
+				return err
+			}
+		}
+
+		if enabled && d.HasChange("table_engine_specification") {
+			upgradeLindormInstanceTableReq := map[string]interface{}{}
+			upgradeLindormInstanceTableReq["UpgradeType"] = "upgrade-lindorm-engine"
+			upgradeLindormInstanceTableReq["LindormSpec"] = newLindormSpec
+			upgradeLindormInstanceTableReq["ClusterStorage"] = currentInstanceStorage
+			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceTableReq)
+			if err != nil {
+				return err
+			}
+		}
+
+		if enabled && d.HasChange("table_engine_node_count") {
+			upgradeLindormInstanceTableNumReq := map[string]interface{}{}
+			upgradeLindormInstanceTableNumReq["UpgradeType"] = "upgrade-lindorm-core-num"
+			upgradeLindormInstanceTableNumReq["LindormNum"] = newLindormNum
+			upgradeLindormInstanceTableNumReq["ClusterStorage"] = currentInstanceStorage
+			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceTableNumReq)
+			if err != nil {
+				return err
+			}
+		}
+
+		d.SetPartial("table_engine_specification")
+		d.SetPartial("table_engine_node_count")
+	}
+
+	if d.HasChange("time_series_engine_node_count") || d.HasChange("time_serires_engine_specification") {
+		newTsdbSpec := d.Get("time_serires_engine_specification")
+		newTsdbNum := d.Get("time_series_engine_node_count")
+		enabled := d.Get("enabled_time_serires_engine").(bool)
+		currentInstanceStorage := formatInt(d.Get("instance_storage"))
+		if !enabled {
+			upgradeLindormInstanceSearchReq := map[string]interface{}{}
+			upgradeLindormInstanceSearchReq["UpgradeType"] = "open-tsdb-engine"
+			upgradeLindormInstanceSearchReq["TsdbSpec"] = newTsdbSpec
+			upgradeLindormInstanceSearchReq["TsdbNum"] = newTsdbNum
+			upgradeLindormInstanceSearchReq["ClusterStorage"] = currentInstanceStorage
+			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceSearchReq)
+			if err != nil {
+				return err
+			}
+		}
+
+		if enabled && d.HasChange("time_serires_engine_specification") {
+			upgradeLindormInstanceSearchReq := map[string]interface{}{}
+			upgradeLindormInstanceSearchReq["UpgradeType"] = "upgrade-tsdb-engine"
+			upgradeLindormInstanceSearchReq["TsdbSpec"] = newTsdbSpec
+			upgradeLindormInstanceSearchReq["ClusterStorage"] = currentInstanceStorage
+			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceSearchReq)
+			if err != nil {
+				return err
+			}
+		}
+
+		if enabled && d.HasChange("time_series_engine_node_count") {
+			upgradeLindormInstanceSearchNumReq := map[string]interface{}{}
+			upgradeLindormInstanceSearchNumReq["UpgradeType"] = "upgrade-tsdb-core-num"
+			upgradeLindormInstanceSearchNumReq["TsdbNum"] = newTsdbNum
+			upgradeLindormInstanceSearchNumReq["ClusterStorage"] = currentInstanceStorage
+			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceSearchNumReq)
+			if err != nil {
+				return err
+			}
+		}
+
+		d.SetPartial("time_serires_engine_specification")
+		d.SetPartial("time_series_engine_node_count")
+	}
+
+	if d.HasChange("lts_node_count") || d.HasChange("lts_node_specification") {
+		newLtsCoreSpec := d.Get("lts_node_specification")
+		newLtsCoreNum := d.Get("lts_node_count")
+		enabled := d.Get("enabled_lts_engine").(bool)
+		currentInstanceStorage := formatInt(d.Get("instance_storage"))
+		if !enabled {
+			upgradeLindormInstanceLtsReq := map[string]interface{}{}
+			upgradeLindormInstanceLtsReq["UpgradeType"] = "open-bds-transfer-only"
+			upgradeLindormInstanceLtsReq["LtsCoreSpec"] = newLtsCoreSpec
+			upgradeLindormInstanceLtsReq["LtsCoreNum"] = newLtsCoreNum
+			upgradeLindormInstanceLtsReq["ClusterStorage"] = currentInstanceStorage
+			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceLtsReq)
+			if err != nil {
+				return err
+			}
+		}
+
+		if enabled && d.HasChange("lts_node_specification") {
+			upgradeLindormInstanceLtsReq := map[string]interface{}{}
+			upgradeLindormInstanceLtsReq["UpgradeType"] = "upgrade-bds-transfer"
+			upgradeLindormInstanceLtsReq["LtsCoreSpec"] = newLtsCoreSpec
+			upgradeLindormInstanceLtsReq["ClusterStorage"] = currentInstanceStorage
+			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceLtsReq)
+			if err != nil {
+				return err
+			}
+		}
+
+		if enabled && d.HasChange("lts_node_count") {
+			upgradeLindormInstanceLtsNumReq := map[string]interface{}{}
+			upgradeLindormInstanceLtsNumReq["UpgradeType"] = "upgrade-Lts-core-num"
+			upgradeLindormInstanceLtsNumReq["LtsCoreNum"] = newLtsCoreNum
+			upgradeLindormInstanceLtsNumReq["ClusterStorage"] = currentInstanceStorage
+			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceLtsNumReq)
+			if err != nil {
+				return err
+			}
+		}
+
+		d.SetPartial("lts_node_specification")
+		d.SetPartial("lts_node_count")
+	}
+
+	update = false
+	upgradeLindormInstanceReq := map[string]interface{}{}
 	if d.HasChange("phoenix_node_count") {
 		update = true
 		if v, ok := d.GetOk("phoenix_node_count"); ok {
@@ -484,87 +698,55 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceReq["PhoenixCoreSpec"] = v
 		}
 	}
-	if d.HasChange("search_engine_node_count") {
+	if d.HasChange("core_num") {
 		update = true
-		if v, ok := d.GetOk("search_engine_node_count"); ok {
-			upgradeLindormInstanceReq["SolrNum"] = v
-		}
-	}
-	if d.HasChange("search_engine_specification") {
-		update = true
-		if v, ok := d.GetOk("search_engine_specification"); ok {
-			upgradeLindormInstanceReq["SolrSpec"] = v
-		}
-	}
-	if d.HasChange("table_engine_specification") {
-		update = true
-		if v, ok := d.GetOk("table_engine_specification"); ok {
-			upgradeLindormInstanceReq["LindormSpec"] = v
-		}
-	}
-	if d.HasChange("time_series_engine_node_count") {
-		update = true
-		if v, ok := d.GetOk("time_series_engine_node_count"); ok {
-			upgradeLindormInstanceReq["TsdbNum"] = v
-		}
-	}
-	if d.HasChange("time_serires_engine_specification") {
-		update = true
-		if v, ok := d.GetOk("time_serires_engine_specification"); ok {
-			upgradeLindormInstanceReq["TsdbSpec"] = v
-		}
-	}
-	if update {
-		if v, ok := d.GetOk("upgrade_type"); ok {
-			upgradeLindormInstanceReq["UpgradeType"] = v
-		}
 		if v, ok := d.GetOk("core_num"); ok {
 			upgradeLindormInstanceReq["CoreNum"] = v
 		}
+	}
+	if d.HasChange("core_spec") {
+		update = true
 		if v, ok := d.GetOk("core_spec"); ok {
 			upgradeLindormInstanceReq["CoreSpec"] = v
 		}
-		action := "UpgradeLindormInstance"
-		conn, err := client.NewHitsdbClient()
+	}
+	if update {
+		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceReq)
+		if err != nil {
+			return err
+		}
+		d.SetPartial("phoenix_node_count")
+		d.SetPartial("phoenix_node_specification")
+		d.SetPartial("core_num")
+		d.SetPartial("core_spec")
+	}
+
+	update = false
+	upgradeLindormInstanceClusterStorageReq := map[string]interface{}{
+		"UpgradeType": "upgrade-disk-size",
+	}
+	if d.HasChange("instance_storage") {
+		object, err := hitsdbService.DescribeLindormInstance(d.Id())
 		if err != nil {
 			return WrapError(err)
 		}
-		wait := incrementalWait(3*time.Second, 30*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, upgradeLindormInstanceReq, &util.RuntimeOptions{})
-			if err != nil {
-				if IsExpectedErrors(err, []string{"Instance.NotActive", "Lindorm.Errorcode.ParameterInvaild"}) || NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, upgradeLindormInstanceReq)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+
+		currentInstanceStorage := formatInt(object["InstanceStorage"])
+		chanageInstanceStorage := formatInt(d.Get("instance_storage"))
+
+		if currentInstanceStorage != chanageInstanceStorage {
+			update = true
+			upgradeLindormInstanceClusterStorageReq["ClusterStorage"] = chanageInstanceStorage
 		}
-		stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, hitsdbService.LindormInstanceStateRefreshFunc(d.Id(), []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-		d.SetPartial("cold_storage")
-		d.SetPartial("instance_storage")
-		d.SetPartial("table_engine_node_count")
-		d.SetPartial("zone_id")
-		d.SetPartial("file_engine_node_count")
-		d.SetPartial("file_engine_specification")
-		d.SetPartial("lts_node_count")
-		d.SetPartial("lts_node_specification")
-		d.SetPartial("phoenix_node_count")
-		d.SetPartial("phoenix_node_specification")
-		d.SetPartial("search_engine_node_count")
-		d.SetPartial("search_engine_specification")
-		d.SetPartial("table_engine_specification")
-		d.SetPartial("time_series_engine_node_count")
-		d.SetPartial("time_serires_engine_specification")
 	}
+	if update {
+		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceClusterStorageReq)
+		if err != nil {
+			return err
+		}
+		d.SetPartial("instance_storage")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudLindormInstanceRead(d, meta)
 }
@@ -618,4 +800,40 @@ func convertLindormInstancePaymentTypeResponse(source interface{}) interface{} {
 		return "Subscription"
 	}
 	return source
+}
+func UpgradeLindormInstance(d *schema.ResourceData, meta interface{}, request map[string]interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["ZoneId"] = d.Get("zone_id")
+
+	action := "UpgradeLindormInstance"
+	conn, err := client.NewHitsdbClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	wait := incrementalWait(3*time.Second, 30*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"Instance.NotActive", "Lindorm.Errorcode.ParameterInvaild"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	hitsdbService := HitsdbService{client}
+	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, hitsdbService.LindormInstanceStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }

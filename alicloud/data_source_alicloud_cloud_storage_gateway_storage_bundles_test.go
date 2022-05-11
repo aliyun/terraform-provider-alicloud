@@ -33,9 +33,8 @@ func TestAccAlicloudCloudStorageGatewayStorageBundlesDataSource(t *testing.T) {
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCloudStorageGatewayStorageBundlesDataSourceName(rand, map[string]string{
-			"ids":         `["${alicloud_cloud_storage_gateway_storage_bundle.default.id}"]`,
-			"name_regex":  `"${alicloud_cloud_storage_gateway_storage_bundle.default.storage_bundle_name}"`,
-			"page_number": `1`,
+			"ids":        `["${alicloud_cloud_storage_gateway_storage_bundle.default.id}"]`,
+			"name_regex": `"${alicloud_cloud_storage_gateway_storage_bundle.default.storage_bundle_name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCloudStorageGatewayStorageBundlesDataSourceName(rand, map[string]string{
 			"ids":         `["${alicloud_cloud_storage_gateway_storage_bundle.default.id}_fake"]`,

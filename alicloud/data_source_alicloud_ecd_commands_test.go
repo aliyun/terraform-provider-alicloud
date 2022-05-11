@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcdCommandsDataSource(t *testing.T) {
+func TestAccAlicloudECDCommandsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcdCommandsDataSourceName(rand, map[string]string{
@@ -58,7 +58,7 @@ func TestAccAlicloudEcdCommandsDataSource(t *testing.T) {
 		existConfig: testAccCheckAlicloudEcdCommandsDataSourceName(rand, map[string]string{
 			"ids":              `["${alicloud_ecd_command.default.id}"]`,
 			"status":           `"Success"`,
-			"command_type":     `"RunBatScript"`,
+			"command_type":     `"RunPowerShellScript"`,
 			"content_encoding": `"PlainText"`,
 			"desktop_id":       `"${alicloud_ecd_desktop.default.id}"`,
 		}),

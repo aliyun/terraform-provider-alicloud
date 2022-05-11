@@ -10,9 +10,6 @@ import (
 )
 
 func TestAccAlicloudSimpleApplicationServerCustomImagesDataSource(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.SWASSupportRegions)
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
 	resourceId := "data.alicloud_simple_application_server_custom_images.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc-swascustomimage-%d", rand)
@@ -70,7 +67,11 @@ func TestAccAlicloudSimpleApplicationServerCustomImagesDataSource(t *testing.T) 
 		fakeMapFunc:  fakeSimpleApplicationServerCustomImageMapFunc,
 	}
 
-	SimpleApplicationServerCustomImageCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
+	}
+
+	SimpleApplicationServerCustomImageCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceSimpleApplicationServerCustomImagesDependence(name string) string {
@@ -79,24 +80,24 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_simple_application_server_instances" "default" {}
-
-data "alicloud_simple_application_server_images" "default" {}
-
-data "alicloud_simple_application_server_plans" "default" {}
-
-resource "alicloud_simple_application_server_instance" "default" {
-  count          = length(data.alicloud_simple_application_server_instances.default.ids) > 0 ? 0 : 1
-  payment_type   = "Subscription"
-  plan_id        = data.alicloud_simple_application_server_plans.default.plans.0.id
-  instance_name  = "tf-testaccswas-disks"
-  image_id       = data.alicloud_simple_application_server_images.default.images.0.id
-  period         = 1
+data "alicloud_simple_application_server_images" "default" {
+	platform = "Linux"
+}
+data "alicloud_simple_application_server_plans" "default" {
+	platform = "Linux"
 }
 
+resource "alicloud_simple_application_server_instance" "default" {
+  payment_type   = "Subscription"
+  plan_id        = data.alicloud_simple_application_server_plans.default.plans.0.id
+  instance_name  = var.name
+  image_id       = data.alicloud_simple_application_server_images.default.images.0.id
+  period         = 1
+  data_disk_size = 100
+}
 data "alicloud_simple_application_server_disks" "default" {
   disk_type = "System"
-  instance_id = length(data.alicloud_simple_application_server_instances.default.ids) > 0 ? data.alicloud_simple_application_server_instances.default.ids.0 : alicloud_simple_application_server_instance.default.0.id
+  instance_id = alicloud_simple_application_server_instance.default.id
 }
 
 resource "alicloud_simple_application_server_snapshot" "default" {

@@ -75,6 +75,7 @@ type PutEventRuleTargetsRequest struct {
 	ContactParameters *[]PutEventRuleTargetsContactParameters `position:"Query" name:"ContactParameters"  type:"Repeated"`
 	SlsParameters     *[]PutEventRuleTargetsSlsParameters     `position:"Query" name:"SlsParameters"  type:"Repeated"`
 	RuleName          string                                  `position:"Query" name:"RuleName"`
+	OpenApiParameters *[]PutEventRuleTargetsOpenApiParameters `position:"Query" name:"OpenApiParameters"  type:"Repeated"`
 	MnsParameters     *[]PutEventRuleTargetsMnsParameters     `position:"Query" name:"MnsParameters"  type:"Repeated"`
 	FcParameters      *[]PutEventRuleTargetsFcParameters      `position:"Query" name:"FcParameters"  type:"Repeated"`
 }
@@ -102,6 +103,18 @@ type PutEventRuleTargetsSlsParameters struct {
 	LogStore string `name:"LogStore"`
 }
 
+// PutEventRuleTargetsOpenApiParameters is a repeated param struct in PutEventRuleTargetsRequest
+type PutEventRuleTargetsOpenApiParameters struct {
+	Product    string `name:"Product"`
+	Role       string `name:"Role"`
+	Action     string `name:"Action"`
+	Id         string `name:"Id"`
+	Arn        string `name:"Arn"`
+	Region     string `name:"Region"`
+	Version    string `name:"Version"`
+	JsonParams string `name:"JsonParams"`
+}
+
 // PutEventRuleTargetsMnsParameters is a repeated param struct in PutEventRuleTargetsRequest
 type PutEventRuleTargetsMnsParameters struct {
 	Id     string `name:"Id"`
@@ -120,10 +133,10 @@ type PutEventRuleTargetsFcParameters struct {
 // PutEventRuleTargetsResponse is the response struct for api PutEventRuleTargets
 type PutEventRuleTargetsResponse struct {
 	*responses.BaseResponse
-	Success                 bool                    `json:"Success" xml:"Success"`
 	Code                    string                  `json:"Code" xml:"Code"`
 	Message                 string                  `json:"Message" xml:"Message"`
 	RequestId               string                  `json:"RequestId" xml:"RequestId"`
+	Success                 bool                    `json:"Success" xml:"Success"`
 	FailedParameterCount    string                  `json:"FailedParameterCount" xml:"FailedParameterCount"`
 	FailedContactParameters FailedContactParameters `json:"FailedContactParameters" xml:"FailedContactParameters"`
 	FailedMnsParameters     FailedMnsParameters     `json:"FailedMnsParameters" xml:"FailedMnsParameters"`
@@ -135,7 +148,7 @@ func CreatePutEventRuleTargetsRequest() (request *PutEventRuleTargetsRequest) {
 	request = &PutEventRuleTargetsRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "PutEventRuleTargets", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "PutEventRuleTargets", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

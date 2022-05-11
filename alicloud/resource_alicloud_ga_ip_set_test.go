@@ -21,6 +21,7 @@ import (
 
 func TestAccAlicloudGaIpSet_basic(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_ip_set.default"
 	ra := resourceAttrInit(resourceId, AlicloudGaIpSetMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -42,8 +43,7 @@ func TestAccAlicloudGaIpSet_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"accelerate_region_id": defaultRegionToTest,
 					"bandwidth":            "5",
-					"accelerator_id":       "${data.alicloud_ga_accelerators.default.ids.0}",
-					"depends_on":           []string{"alicloud_ga_bandwidth_package_attachment.default"},
+					"accelerator_id":       "${alicloud_ga_bandwidth_package_attachment.default.accelerator_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -84,14 +84,28 @@ func AlicloudGaIpSetBasicDependence(name string) string {
 variable "name" {
 	default = "%s"
 }
-data "alicloud_ga_accelerators" "default"{
+data "alicloud_ga_accelerators" "default" {
+  status = "active"
 }
-data "alicloud_ga_bandwidth_packages" "default"{
+
+resource "alicloud_ga_bandwidth_package" "default" {
+   	bandwidth              =  100
+  	type                   = "Basic"
+  	bandwidth_type         = "Basic"
+	payment_type           = "PayAsYouGo"
+  	billing_type           = "PayBy95"
+	ratio       = 30
+	bandwidth_package_name = var.name
+    auto_pay               = true
+    auto_use_coupon        = true
 }
+
 resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  accelerator_id       = "${data.alicloud_ga_accelerators.default.ids.0}"
-  bandwidth_package_id = "${data.alicloud_ga_bandwidth_packages.default.ids.0}"
-}`, name)
+	// Please run resource ga_accelerator test case to ensure this account has at least one accelerator before run this case.
+	accelerator_id = data.alicloud_ga_accelerators.default.ids.0
+	bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+}
+`, name)
 }
 
 func TestAccAlicloudGaIpSet_unit(t *testing.T) {
@@ -172,7 +186,7 @@ func TestAccAlicloudGaIpSet_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "StateError.Accelerator", "StateError.IpSet", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "CreateIpSets" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -189,6 +203,7 @@ func TestAccAlicloudGaIpSet_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudGaIpSetCreate(dInit, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -234,7 +249,7 @@ func TestAccAlicloudGaIpSet_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "StateError.Accelerator", "StateError.IpSet", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "UpdateIpSet" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -250,6 +265,7 @@ func TestAccAlicloudGaIpSet_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudGaIpSetUpdate(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -271,7 +287,7 @@ func TestAccAlicloudGaIpSet_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "UnknownError", "{}"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "DescribeIpSet" {
 					switch errorCode {
 					case "{}", "UnknownError":
@@ -289,6 +305,7 @@ func TestAccAlicloudGaIpSet_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudGaIpSetRead(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -313,7 +330,7 @@ func TestAccAlicloudGaIpSet_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "StateError.Accelerator", "StateError.IpSet", "nil", "NotExist.IpSets"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "DeleteIpSets" {
 					switch errorCode {
 					case "NonRetryableError", "NotExist.IpSets":
@@ -330,6 +347,7 @@ func TestAccAlicloudGaIpSet_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudGaIpSetDelete(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)

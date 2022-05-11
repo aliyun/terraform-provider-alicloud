@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudRosTemplateScratchesDataSource(t *testing.T) {
+func TestAccAlicloudROSTemplateScratchesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_ros_template_scratches.default"
 	rand := acctest.RandIntRange(100000, 999999)
 	checkoutSupportedRegions(t, true, connectivity.ROSSupportRegions)

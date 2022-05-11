@@ -2,6 +2,9 @@ package alicloud
 
 import (
 	"strings"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -107,14 +110,27 @@ func dataSourceAlicloudSlbZonesRead(d *schema.ResourceData, meta interface{}) er
 	if addressType, ok := d.GetOk("available_slb_address_type"); ok {
 		request.AddressType = strings.ToLower(addressType.(string))
 	}
-	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeAvailableResource(request)
+	var response *slb.DescribeAvailableResourceResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DescribeAvailableResource(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*slb.DescribeAvailableResourceResponse)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*slb.DescribeAvailableResourceResponse)
+
 	var ids []string
 	var s []map[string]interface{}
 	for _, r := range response.AvailableResources.AvailableResource {

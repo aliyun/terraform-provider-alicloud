@@ -57,6 +57,11 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Normal", "FinancialLocked"}, false),
 			},
+			"enable_ipsec": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 
 			"output_file": {
 				Type:     schema.TypeString,
@@ -149,6 +154,7 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 	if v, ok := d.GetOk("status"); ok && v.(string) != "" {
 		request.Status = strings.ToLower(v.(string))
 	}
+	enableIpsec, enableIpsecOk := d.GetOkExists("enable_ipsec")
 
 	if v, ok := d.GetOk("business_status"); ok && v.(string) != "" {
 		request.BusinessStatus = v.(string)
@@ -206,6 +212,11 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 				continue
 			}
 		}
+
+		if enableIpsecOk && (enableIpsec.(bool) != (vpn.IpsecVpn == "enable")) {
+			continue
+		}
+
 		if ids != nil && len(ids) != 0 {
 			for _, id := range ids {
 				if vpn.VpnGatewayId == id {

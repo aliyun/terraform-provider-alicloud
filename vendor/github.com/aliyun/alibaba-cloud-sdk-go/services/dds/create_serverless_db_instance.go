@@ -71,6 +71,7 @@ func (client *Client) CreateServerlessDBInstanceWithCallback(request *CreateServ
 // CreateServerlessDBInstanceRequest is the request struct for api CreateServerlessDBInstance
 type CreateServerlessDBInstanceRequest struct {
 	*requests.RpcRequest
+	CapacityUnit          string           `position:"Query" name:"CapacityUnit"`
 	ResourceOwnerId       requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	DBInstanceStorage     requests.Integer `position:"Query" name:"DBInstanceStorage"`
 	ClientToken           string           `position:"Query" name:"ClientToken"`
@@ -99,8 +100,8 @@ type CreateServerlessDBInstanceRequest struct {
 type CreateServerlessDBInstanceResponse struct {
 	*responses.BaseResponse
 	RequestId    string `json:"RequestId" xml:"RequestId"`
-	OrderId      string `json:"OrderId" xml:"OrderId"`
 	DBInstanceId string `json:"DBInstanceId" xml:"DBInstanceId"`
+	OrderId      string `json:"OrderId" xml:"OrderId"`
 }
 
 // CreateCreateServerlessDBInstanceRequest creates a request to invoke CreateServerlessDBInstance API
@@ -108,7 +109,7 @@ func CreateCreateServerlessDBInstanceRequest() (request *CreateServerlessDBInsta
 	request = &CreateServerlessDBInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Dds", "2015-12-01", "CreateServerlessDBInstance", "Dds", "openAPI")
+	request.InitWithApiInfo("Dds", "2015-12-01", "CreateServerlessDBInstance", "dds", "openAPI")
 	request.Method = requests.POST
 	return
 }

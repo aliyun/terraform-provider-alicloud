@@ -9,40 +9,41 @@ import (
 )
 
 func TestAccAlicloudPvtzRulesDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000, 9999)
+	rand := acctest.RandIntRange(1, 9999)
+	name := fmt.Sprintf("tf-testacc%d", rand)
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudPvtzRulesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudPvtzRulesDataSourceName(name, map[string]string{
 			"ids": `["${alicloud_pvtz_rule.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudPvtzRulesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudPvtzRulesDataSourceName(name, map[string]string{
 			"ids": `["${alicloud_pvtz_rule.default.id}_fake"]`,
 		}),
 	}
 	endpointIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudPvtzRulesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudPvtzRulesDataSourceName(name, map[string]string{
 			"ids":         `["${alicloud_pvtz_rule.default.id}"]`,
 			"endpoint_id": `"${alicloud_pvtz_rule.default.endpoint_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudPvtzRulesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudPvtzRulesDataSourceName(name, map[string]string{
 			"ids":         `["${alicloud_pvtz_rule.default.id}"]`,
 			"endpoint_id": `"${alicloud_pvtz_rule.default.endpoint_id}_fake"`,
 		}),
 	}
 	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudPvtzRulesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudPvtzRulesDataSourceName(name, map[string]string{
 			"name_regex": `"${alicloud_pvtz_rule.default.rule_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudPvtzRulesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudPvtzRulesDataSourceName(name, map[string]string{
 			"name_regex": `"${alicloud_pvtz_rule.default.rule_name}_fake"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudPvtzRulesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAlicloudPvtzRulesDataSourceName(name, map[string]string{
 			"endpoint_id": `"${alicloud_pvtz_rule.default.endpoint_id}"`,
 			"ids":         `["${alicloud_pvtz_rule.default.id}"]`,
 			"name_regex":  `"${alicloud_pvtz_rule.default.rule_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudPvtzRulesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudPvtzRulesDataSourceName(name, map[string]string{
 			"endpoint_id": `"${alicloud_pvtz_rule.default.endpoint_id}_fake"`,
 			"ids":         `["${alicloud_pvtz_rule.default.id}_fake"]`,
 			"name_regex":  `"${alicloud_pvtz_rule.default.rule_name}_fake"`,
@@ -58,9 +59,9 @@ func TestAccAlicloudPvtzRulesDataSource(t *testing.T) {
 			"rules.0.create_time":        CHECKSET,
 			"rules.0.id":                 CHECKSET,
 			"rules.0.rule_id":            CHECKSET,
-			"rules.0.rule_name":          fmt.Sprintf("tf-testacc%d", rand),
+			"rules.0.rule_name":          name,
 			"rules.0.type":               "OUTBOUND",
-			"rules.0.zone_name":          fmt.Sprintf("tf-testacc%d", rand),
+			"rules.0.zone_name":          name,
 			"rules.0.forward_ips.#":      "1",
 			"rules.0.forward_ips.0.ip":   "114.114.114.114",
 			"rules.0.forward_ips.0.port": "8080",
@@ -83,7 +84,7 @@ func TestAccAlicloudPvtzRulesDataSource(t *testing.T) {
 	}
 	alicloudPvtzRulesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, endpointIdConf, nameRegexConf, allConf)
 }
-func testAccCheckAlicloudPvtzRulesDataSourceName(rand int, attrMap map[string]string) string {
+func testAccCheckAlicloudPvtzRulesDataSourceName(name string, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
@@ -92,7 +93,7 @@ func testAccCheckAlicloudPvtzRulesDataSourceName(rand int, attrMap map[string]st
 	config := fmt.Sprintf(`
 
 variable "name" {
-  default = "tf-testacc%d"
+  default = "%s"
 }
 
 variable "region" {
@@ -152,6 +153,6 @@ resource "alicloud_pvtz_rule" "default" {
 data "alicloud_pvtz_rules" "default" {	
 	%s
 }
-`, rand, defaultRegionToTest, strings.Join(pairs, " \n "))
+`, name, defaultRegionToTest, strings.Join(pairs, " \n "))
 	return config
 }

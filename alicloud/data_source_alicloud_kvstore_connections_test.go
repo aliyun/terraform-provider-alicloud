@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudKvstoreConnectionsDataSource(t *testing.T) {
+func TestAccAlicloudKVStoreConnectionsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_kvstore_connections.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKvstoreConnection-%d", rand)
@@ -15,7 +15,7 @@ func TestAccAlicloudKvstoreConnectionsDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_kvstore_instance.default.id}"},
+			"ids": []string{"${alicloud_kvstore_connection.default.instance_id}"},
 		}),
 	}
 	var existKvstoreConnectionMapFunc = func(rand int) map[string]string {
@@ -23,7 +23,7 @@ func TestAccAlicloudKvstoreConnectionsDataSource(t *testing.T) {
 			"ids.#":                              "1",
 			"ids.0":                              CHECKSET,
 			"connections.#":                      "1",
-			"connections.0.connection_string":    "allocatetest.redis.rds.aliyuncs.com",
+			"connections.0.connection_string":    CHECKSET,
 			"connections.0.db_instance_net_type": "0",
 			"connections.0.expired_time":         "",
 			"connections.0.ip_address":           CHECKSET,

@@ -146,9 +146,6 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_same_region(t *testing.T) {
 }
 
 func TestAccAlicloudCenRouteMap_basic_child_instance_different_region(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_cen_route_map.default"
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
@@ -361,7 +358,8 @@ func TestAccAlicloudCenRouteMap_multi(t *testing.T) {
 }
 
 var cenRouteMapBasicMap = map[string]string{
-	"cen_id": CHECKSET,
+	"cen_id":       CHECKSET,
+	"route_map_id": CHECKSET,
 }
 
 func resourceCenRouteMapChildInstanceSameRegionConfigDependence(name string) string {

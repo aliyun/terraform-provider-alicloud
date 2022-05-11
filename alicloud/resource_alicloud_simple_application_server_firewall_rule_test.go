@@ -10,9 +10,6 @@ import (
 )
 
 func TestAccAlicloudSimpleApplicationServerFirewallRule_basic0(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_simple_application_server_firewall_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudSimpleApplicationServerFirewallRuleMap0)
@@ -22,11 +19,12 @@ func TestAccAlicloudSimpleApplicationServerFirewallRule_basic0(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc-simpleapplicationserverfirewallrule%d", rand)
+	name := fmt.Sprintf("tf-testaccswasfirewallrule%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSimpleApplicationServerFirewallRuleBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -34,7 +32,7 @@ func TestAccAlicloudSimpleApplicationServerFirewallRule_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":   "${local.instance_id}",
+					"instance_id":   "${alicloud_simple_application_server_instance.default.id}",
 					"rule_protocol": "TcpAndUdp",
 					"port":          "1024/1055",
 					"remark":        "${var.name}",
@@ -70,24 +68,20 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_simple_application_server_instances" "default" {}
-
-data "alicloud_simple_application_server_images" "default" {}
-
-data "alicloud_simple_application_server_plans" "default" {}
+data "alicloud_simple_application_server_images" "default" {
+	platform = "Linux"
+}
+data "alicloud_simple_application_server_plans" "default" {
+	platform = "Linux"
+}
 
 resource "alicloud_simple_application_server_instance" "default" {
-  count          = length(data.alicloud_simple_application_server_instances.default.ids) > 0 ? 0 : 1
   payment_type   = "Subscription"
   plan_id        = data.alicloud_simple_application_server_plans.default.plans.0.id
-  instance_name  = "tf-testaccswas-firewallrule"
+  instance_name  = var.name
   image_id       = data.alicloud_simple_application_server_images.default.images.0.id
   period         = 1
   data_disk_size = 100
-}
-
-locals {
-  instance_id = length(data.alicloud_simple_application_server_instances.default.ids) > 0 ? data.alicloud_simple_application_server_instances.default.ids.0 : alicloud_simple_application_server_instance.default.0.id
 }
 `, name)
 }

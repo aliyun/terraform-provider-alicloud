@@ -35,7 +35,7 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Vault name.
 * `vault_type` - (Optional, ForceNew) VaultType. Valid values: `STANDARD`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew, Computed) The status of Vault. Valid values: `INITIALIZING`, `CREATED`, `ERROR`, `UNKNOWN`.
+* `status` - (Optional, ForceNew, Computed) The status of Vault. Valid values: `CREATED`, `ERROR`, `UNKNOWN`.
 
 ## Argument Reference
 
@@ -56,7 +56,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `created_time` - The creation time of the Vault. UNIX time in seconds.
     * `updated_time` - The update time of the Vault. UNIX time in seconds.
     * `latest_replication_time` - The time of the last remote backup synchronization.
-    * `status` - The status of Vault. Valid values: `INITIALIZING`, `CREATED`, `ERROR`, `UNKNOWN`.
+    * `status` - The status of Vault. Valid values: `CREATED`, `ERROR`, `UNKNOWN`. 
     * `payment_type` - Billing model, possible values:
         * `FREE` is not billed
         * `V1` common vault billing model, including back-end storage capacity, client licenses and other billing items

@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudAlbRulesDataSource(t *testing.T) {
+func TestAccAlicloudALBRulesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 
 	idsConf := dataSourceTestAccConfig{
@@ -90,10 +90,20 @@ func TestAccAlicloudAlbRulesDataSource(t *testing.T) {
 
 	var existDataAlicloudAlbRulesSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":             "1",
-			"rules.#":           "1",
-			"rules.0.rule_name": fmt.Sprintf("tf-testAccAlbRule%d", rand),
-			"rules.0.status":    "Available",
+			"ids.#":                                        "1",
+			"rules.#":                                      "1",
+			"rules.0.rule_name":                            fmt.Sprintf("tf-testAccAlbRule%d", rand),
+			"rules.0.status":                               "Available",
+			"rules.0.listener_id":                          CHECKSET,
+			"rules.0.priority":                             "555",
+			"rules.0.rule_actions.#":                       "2",
+			"rules.0.rule_actions.0.order":                 CHECKSET,
+			"rules.0.rule_actions.0.type":                  CHECKSET,
+			"rules.0.rule_conditions.#":                    "1",
+			"rules.0.rule_conditions.0.type":               "SourceIp",
+			"rules.0.rule_conditions.0.source_ip_config.#": "1",
+			"rules.0.rule_conditions.0.source_ip_config.0.values.#": "1",
+			"rules.0.rule_conditions.0.source_ip_config.0.values.0": "192.168.0.0/24",
 		}
 	}
 	var fakeDataAlicloudAlbRulesSourceNameMapFunc = func(rand int) map[string]string {
@@ -173,6 +183,7 @@ resource "alicloud_alb_load_balancer" "default" {
 }
 
 resource "alicloud_alb_server_group" "default" {
+	count = 3
 	protocol = "HTTP"
 	vpc_id = data.alicloud_vpcs.default.vpcs.0.id
 	server_group_name = var.name
@@ -193,35 +204,48 @@ resource "alicloud_alb_listener" "default" {
 		type = "ForwardGroup"
 		forward_group_config{
 			server_group_tuples{
-				server_group_id = alicloud_alb_server_group.default.id
+				server_group_id = alicloud_alb_server_group.default.0.id
 			}
 		}
 	}
 }
 
 resource "alicloud_alb_rule" "default" {
-	rule_name = var.name
-	listener_id = alicloud_alb_listener.default.id
-	priority =   "555"
-	rule_conditions {
-		cookie_config {
-			values {
-				key = "created"
-				value= "tf"
-			}
-		}
-		type = "Cookie"
-   }
-	
-	rule_actions {
-		forward_group_config {
-			server_group_tuples{
-					server_group_id = alicloud_alb_server_group.default.id
-				}
-		}
-		order = "9"
-		type =  "ForwardGroup"
-	}
+  rule_name   = var.name
+  listener_id = alicloud_alb_listener.default.id
+  priority    = "555"
+  rule_conditions {
+    source_ip_config {
+      values = ["192.168.0.0/24"]
+    }
+    type = "SourceIp"
+  }
+  rule_actions {
+    traffic_mirror_config {
+      target_type = "ForwardGroupMirror"
+      mirror_group_config {
+        server_group_tuples {
+          server_group_id = alicloud_alb_server_group.default.2.id
+        }
+      }
+    }
+    order = 1
+    type  = "TrafficMirror"
+  }
+  rule_actions {
+    forward_group_config {
+      server_group_tuples {
+        server_group_id = alicloud_alb_server_group.default.0.id
+        weight          = 1
+      }
+      server_group_tuples {
+        server_group_id = alicloud_alb_server_group.default.1.id
+        weight          = 2
+      }
+    }
+    order = 2
+    type  = "ForwardGroup"
+  }
 }
 
 data "alicloud_alb_rules" "default" {	

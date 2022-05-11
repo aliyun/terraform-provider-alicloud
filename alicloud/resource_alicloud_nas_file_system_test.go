@@ -121,7 +121,7 @@ func testSweepNasFileSystem(region string) error {
 	return nil
 }
 
-func TestAccAlicloudNasFileSystem_basic(t *testing.T) {
+func TestAccAlicloudNASFileSystem_basic(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.NasClassicSupportedRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_file_system.default"
@@ -185,7 +185,7 @@ func TestAccAlicloudNasFileSystem_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudNasFileSystemEncrypt(t *testing.T) {
+func TestAccAlicloudNASFileSystemEncrypt(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_file_system.default"
 	ra := resourceAttrInit(resourceId, AlicloudNasFileSystem0)
@@ -250,7 +250,7 @@ func TestAccAlicloudNasFileSystemEncrypt(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudNasFileSystemExtreme_basic(t *testing.T) {
+func TestAccAlicloudNASFileSystemExtreme_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_file_system.default"
 	ra := resourceAttrInit(resourceId, AlicloudNasFileSystem0)
@@ -297,7 +297,7 @@ func TestAccAlicloudNasFileSystemExtreme_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudNasFileSystemExtremeEncrypt(t *testing.T) {
+func TestAccAlicloudNASFileSystemExtremeEncrypt(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_file_system.default"
 	ra := resourceAttrInit(resourceId, AlicloudNasFileSystem0)
@@ -347,7 +347,7 @@ func TestAccAlicloudNasFileSystemExtremeEncrypt(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudNasFileSystemCpfs_basic(t *testing.T) {
+func TestAccAlicloudNASFileSystemCpfs_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_file_system.default"
 	checkoutSupportedRegions(t, true, connectivity.NASCPFSSupportRegions)
@@ -400,7 +400,7 @@ func TestAccAlicloudNasFileSystemCpfs_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudNasFileSystemTags_basic(t *testing.T) {
+func TestAccAlicloudNASFileSystemTags_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_file_system.default"
 	ra := resourceAttrInit(resourceId, AlicloudNasFileSystem0)
@@ -588,7 +588,7 @@ locals {
 `, name)
 }
 
-func TestAccAlicloudNasFileSystem_unit(t *testing.T) {
+func TestAccAlicloudNASFileSystem_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_file_system"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_nas_file_system"].Schema).Data(nil, nil)

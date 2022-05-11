@@ -10,9 +10,7 @@ import (
 )
 
 func TestAccAlicloudVPCBgpPeer_basic0(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_peer.default"
 	checkoutSupportedRegions(t, true, connectivity.VPCBgpGroupSupportRegions)
@@ -76,9 +74,7 @@ func TestAccAlicloudVPCBgpPeer_basic0(t *testing.T) {
 	})
 }
 func TestAccAlicloudVPCBgpPeer_basic1(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_peer.default"
 	checkoutSupportedRegions(t, true, connectivity.VPCBgpGroupSupportRegions)
@@ -136,7 +132,9 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_express_connect_physical_connections" "default" {}
+data "alicloud_express_connect_physical_connections" "default" {
+	name_regex = "^preserved-NODELETING"
+}
 
 resource "alicloud_express_connect_virtual_border_router" "default" {
   local_gateway_ip           = "10.0.0.1"
@@ -144,7 +142,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
   peering_subnet_mask        = "255.255.255.252"
   physical_connection_id     = data.alicloud_express_connect_physical_connections.default.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = 121
+  vlan_id                    = %d
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
@@ -158,5 +156,5 @@ resource "alicloud_vpc_bgp_group" "default" {
   peer_asn       = 1111
   router_id      = alicloud_express_connect_virtual_border_router.default.id
 }
-`, name)
+`, name, acctest.RandIntRange(1, 2999))
 }

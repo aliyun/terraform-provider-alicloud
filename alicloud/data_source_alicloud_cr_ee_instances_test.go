@@ -1,26 +1,31 @@
 package alicloud
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCrEEInstancesDataSource(t *testing.T) {
+func TestAccAlicloudCREEInstancesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_cr_ee_instances.default"
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "",
-		dataSourceCrEEInstancesConfigDependence)
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-basic-%d", rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceCrEEInstancesConfigDependence)
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex":     "^tf-testacc",
+			"name_regex":     "${alicloud_cr_ee_instance.default.instance_name}",
 			"enable_details": "true",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "test-fake.*",
+			"name_regex": "${alicloud_cr_ee_instance.default.instance_name}-fake",
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
+			"ids":            []string{"${alicloud_cr_ee_instance.default.id}"},
 			"enable_details": "true",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
@@ -30,11 +35,12 @@ func TestAccAlicloudCrEEInstancesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex":     "^tf-testacc",
+			"name_regex":     name,
+			"ids":            []string{"${alicloud_cr_ee_instance.default.id}"},
 			"enable_details": "true",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":        []string{"test-id-fake"},
+			"ids":        []string{"${alicloud_cr_ee_instance.default.id}"},
 			"name_regex": "test-fake.*",
 		}),
 	}
@@ -77,5 +83,16 @@ func TestAccAlicloudCrEEInstancesDataSource(t *testing.T) {
 }
 
 func dataSourceCrEEInstancesConfigDependence(name string) string {
-	return ""
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+resource "alicloud_cr_ee_instance" "default" {
+  payment_type        = "Subscription"
+  period              = 1
+  renewal_status      = "ManualRenewal"
+  instance_type       = "Advanced"
+  instance_name       = var.name
+}
+`, name)
 }

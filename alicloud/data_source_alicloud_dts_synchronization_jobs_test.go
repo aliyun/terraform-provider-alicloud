@@ -2,18 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
-
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDtsSynchronizationJobsDataSource(t *testing.T) {
-	defer checkoutAccount(t, false)
-	checkoutAccount(t, true)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+func TestAccAlicloudDTSSynchronizationJobsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	synchronizationJobidconf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
@@ -69,47 +65,89 @@ func testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand int, attrMap map
 variable "name" {
   default = "tf-testAccDtsSynchronizationJobs%d"
 }
+variable "region_id" {
+	default = "%s"
+}
+
+data "alicloud_db_zones" "default"{
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_charge_type = "PostPaid"
+	category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+    category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_charge_type = "PostPaid"
+}
+
+data "alicloud_vpcs" "default" {
+ name_regex = "^default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
+resource "alicloud_db_instance" "source" {
+    engine = "MySQL"
+	engine_version = "8.0"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	vswitch_id = data.alicloud_vswitches.default.ids.0
+	instance_name = var.name
+	tags = {
+		"key1" = "value1"
+		"key2" = "value2"
+	}
+}
+resource "alicloud_db_instance" "dest" {
+    engine = "MySQL"
+	engine_version = "8.0"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	vswitch_id = data.alicloud_vswitches.default.ids.0
+	instance_name = var.name
+	tags = {
+		"key1" = "value1"
+		"key2" = "value2"
+	}
+}
 
 resource "alicloud_dts_synchronization_instance" "default" {
   payment_type                        = "PayAsYouGo"
   source_endpoint_engine_name         = "MySQL"
-  source_endpoint_region              = "cn-hangzhou"
+  source_endpoint_region              = var.region_id
   destination_endpoint_engine_name    = "MySQL"
-  destination_endpoint_region         = "cn-hangzhou"
+  destination_endpoint_region         = var.region_id
   instance_class                      = "small"
   sync_architecture                   = "oneway"
 }
 
-variable "creation" {
-  default = "Rds"
-}
-
-data "alicloud_db_instances" "db_instances_ds" {
-  name_regex = "dts_used_dest"
-  status     = "Running"
-}
-
-data "alicloud_db_instances" "db_instances_rs" {
-  name_regex = "dts_used_source"
-  status     = "Running"
-}
 
 resource "alicloud_db_database" "db" {
   count       = 2
-  instance_id = data.alicloud_db_instances.db_instances_ds.instances.0.id
+  instance_id = alicloud_db_instance.dest.id
   name        = "tfaccountpri_${count.index}"
   description = "from terraform"
 }
 
 resource "alicloud_db_account" "account" {
-  db_instance_id      = data.alicloud_db_instances.db_instances_ds.instances.0.id
+  db_instance_id      = alicloud_db_instance.dest.id
   account_name        = "tftestdts"
   account_password    = "Test12345"
   account_description = "from terraform"
 }
 
 resource "alicloud_db_account_privilege" "privilege" {
-  instance_id  = data.alicloud_db_instances.db_instances_ds.instances.0.id
+  instance_id  = alicloud_db_account.account.instance_id
   account_name = alicloud_db_account.account.name
   privilege    = "ReadWrite"
   db_names     = alicloud_db_database.db.*.name
@@ -117,20 +155,20 @@ resource "alicloud_db_account_privilege" "privilege" {
 
 resource "alicloud_db_database" "db_r" {
   count       = 2
-  instance_id = data.alicloud_db_instances.db_instances_rs.instances.0.id
+  instance_id = alicloud_db_instance.source.id
   name        = "tfaccountpri_${count.index}"
   description = "from terraform"
 }
 
 resource "alicloud_db_account" "account_r" {
-  db_instance_id      = data.alicloud_db_instances.db_instances_rs.instances.0.id
+  db_instance_id      = alicloud_db_instance.source.id
   account_name        = "tftestdts"
   account_password    = "Test12345"
   account_description = "from terraform"
 }
 
 resource "alicloud_db_account_privilege" "privilege_r" {
-  instance_id  = data.alicloud_db_instances.db_instances_rs.instances.0.id
+  instance_id  = alicloud_db_account.account_r.instance_id
   account_name = alicloud_db_account.account_r.name
   privilege    = "ReadWrite"
   db_names     = alicloud_db_database.db_r.*.name
@@ -140,16 +178,16 @@ resource "alicloud_dts_synchronization_job" "default" {
   dts_instance_id                     = alicloud_dts_synchronization_instance.default.id
   dts_job_name                        = "tf-testAccCase1"
   source_endpoint_instance_type       = "RDS"
-  source_endpoint_instance_id         = data.alicloud_db_instances.db_instances_rs.instances.0.id
+  source_endpoint_instance_id         = alicloud_db_instance.source.id
   source_endpoint_engine_name         = "MySQL"
-  source_endpoint_region              = "cn-hangzhou"
+  source_endpoint_region              = var.region_id
   source_endpoint_database_name       = "tfaccountpri_0"
   source_endpoint_user_name           = "tftestdts"
   source_endpoint_password            = "Test12345"
   destination_endpoint_instance_type  = "RDS"
-  destination_endpoint_instance_id    = data.alicloud_db_instances.db_instances_ds.instances.0.id
+  destination_endpoint_instance_id    = alicloud_db_instance.dest.id
   destination_endpoint_engine_name    = "MySQL"
-  destination_endpoint_region         = "cn-hangzhou"
+  destination_endpoint_region         = var.region_id
   destination_endpoint_database_name  = "tfaccountpri_0"
   destination_endpoint_user_name      = "tftestdts"
   destination_endpoint_password       = "Test12345"
@@ -162,7 +200,7 @@ resource "alicloud_dts_synchronization_job" "default" {
 data "alicloud_dts_synchronization_jobs" "default" {
 %s
 }
-`, rand, strings.Join(pairs, "\n   "))
+`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, "\n   "))
 	return config
 }
 

@@ -56,7 +56,7 @@ func resourceAlicloudCddcDedicatedHost() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA_Z][a-zA-Z0-9_-]{1,63}`), "The name must be `1` to `64` characters in length and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter."),
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]{1,63}`), "The name must be `1` to `64` characters in length and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter."),
 			},
 			"image_category": {
 				Type:         schema.TypeString,
@@ -195,6 +195,10 @@ func resourceAlicloudCddcDedicatedHostRead(d *schema.ResourceData, meta interfac
 func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cddcService := CddcService{client}
+	conn, err := client.NewCddcClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -220,10 +224,6 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 			request["AllocationStatus"] = convertCddcAllocationStatusRequest(v.(string))
 		}
 		action := "ModifyDedicatedHostAttribute"
-		conn, err := client.NewCddcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -254,10 +254,6 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 		request["TargetClassCode"] = d.Get("host_class")
 		request["RegionId"] = client.RegionId
 		action := "ModifyDedicatedHostClass"
-		conn, err := client.NewCddcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

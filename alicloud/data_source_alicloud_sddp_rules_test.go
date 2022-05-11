@@ -11,7 +11,7 @@ import (
 )
 
 func TestAccAlicloudSddpRuleDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1, 100)
+	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_sddp_rule.default.id}"]`,
@@ -94,7 +94,7 @@ func TestAccAlicloudSddpRuleDataSource(t *testing.T) {
 			"ids":      `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
-			"category": `"1"`,
+			"category": `"2"`,
 			"ids":      `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 	}
@@ -112,7 +112,7 @@ func TestAccAlicloudSddpRuleDataSource(t *testing.T) {
 
 	contentCategoryConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
-			"content_category": `"${alicloud_sddp_rule.default.content_categorysddp_rule}"`,
+			"content_category": `"${alicloud_sddp_rule.default.content_category}"`,
 			"ids":              `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
@@ -140,10 +140,10 @@ func TestAccAlicloudSddpRuleDataSource(t *testing.T) {
 			"name_regex":    `"${alicloud_sddp_rule.default.rule_name}_fake"`,
 			"risk_level_id": `"0"`,
 			"custom_type":   `"2"`,
-			"product_id":    `"3"`,
+			"product_id":    `"2"`,
 			"status":        `"0"`,
 			"rule_type":     `"3"`,
-			"category":      `"1"`,
+			"category":      `"2"`,
 			"warn_level":    `"1"`,
 		}),
 	}
@@ -156,6 +156,8 @@ func TestAccAlicloudSddpRuleDataSource(t *testing.T) {
 			"rules.0.status":        "1",
 			"rules.0.warn_level":    "3",
 			"rules.0.name":          fmt.Sprintf("tf-testAccSddpRule-%d", rand),
+			"rules.0.category":      "0",
+			"rules.0.product_id":    "5",
 		}
 	}
 	var fakeAlicloudSaeNamespaceDataSourceNameMapFunc = func(rand int) map[string]string {

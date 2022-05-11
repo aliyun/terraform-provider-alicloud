@@ -11,9 +11,6 @@ import (
 )
 
 func TestAccAlicloudSimpleApplicationServerInstanceDataSource(t *testing.T) {
-	defer checkoutAccount(t, false)
-	checkoutAccount(t, true)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandIntRange(10000, 99999)
 
 	idsConf := dataSourceTestAccConfig{
@@ -91,7 +88,7 @@ func TestAccAlicloudSimpleApplicationServerInstanceDataSource(t *testing.T) {
 		fakeMapFunc:  fakeDataAlicloudSimpleApplicationServerInstancesSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
 	}
 	alicloudSimpleApplicationServerInstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, paymentTypeConf, statusConf, allConf)
 }
@@ -107,8 +104,12 @@ variable "name" {
 	default = "tf-testaccswas%d"
 }
 
-data "alicloud_simple_application_server_images" "default" {}
-data "alicloud_simple_application_server_plans" "default" {}
+data "alicloud_simple_application_server_images" "default" {
+	platform = "Linux"
+}
+data "alicloud_simple_application_server_plans" "default" {
+	platform = "Linux"
+}
 
 resource "alicloud_simple_application_server_instance" "default" {
   payment_type   = "Subscription"

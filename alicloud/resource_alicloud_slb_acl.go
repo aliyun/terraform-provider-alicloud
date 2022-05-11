@@ -44,17 +44,21 @@ func resourceAlicloudSlbAcl() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"ipv4", "ipv6"}, false),
 			},
 			"entry_list": {
-				Type:     schema.TypeSet,
-				Optional: true,
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'entry_list' has been deprecated from provider version 1.162.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_acl_entry_attachment'.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"entry": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+							Computed: true,
 						},
 						"comment": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -80,7 +84,7 @@ func resourceAlicloudSlbAclCreate(d *schema.ResourceData, meta interface{}) erro
 		request["ResourceGroupId"] = v
 	}
 	request["AclName"] = strings.TrimSpace(d.Get("name").(string))
-	if v, ok := d.GetOk("address_ip_version"); ok {
+	if v, ok := d.GetOk("ip_version"); ok {
 		request["AddressIPVersion"] = v
 	}
 
@@ -110,11 +114,11 @@ func resourceAlicloudSlbAclRead(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
-	tags, err := slbService.DescribeTags(d.Id(), nil, TagResourceAcl)
+	tags, err := slbService.ListTagResources(d.Id(), "acl")
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("tags", slbService.tagsToMap(tags))
+	d.Set("tags", tagsToMap(tags))
 
 	object, err := slbService.DescribeSlbAcl(d.Id())
 	if err != nil {

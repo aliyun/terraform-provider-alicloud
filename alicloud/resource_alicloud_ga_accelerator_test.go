@@ -2,10 +2,15 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
@@ -20,8 +25,231 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+func init() {
+	resource.AddTestSweepers("alicloud_ga_accelerator", &resource.Sweeper{
+		Name: "alicloud_ga_accelerator",
+		F:    testSweepGaAccelerator,
+	})
+}
+
+func testSweepGaAccelerator(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "error getting Alicloud client.")
+	}
+
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+
+	conn, err := client.NewGaplusClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		action := "ListAccelerators"
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			log.Printf("[ERROR] %s got an error: %v", action, err)
+			break
+		}
+		addDebug(action, response, request)
+
+		resp, err := jsonpath.Get("$.Accelerators", response)
+		if err != nil {
+			log.Println(err)
+			break
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			accelerator := v.(map[string]interface{})
+			acceleratorName := fmt.Sprint(accelerator["Name"])
+			acceleratorId := fmt.Sprint(accelerator["AcceleratorId"])
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(acceleratorName, prefix) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Ga accelerator: %s(%s) ", acceleratorId, acceleratorName)
+				continue
+			}
+			log.Printf("[Info] Delete Ga accelerator: %s(%s)", acceleratorId, acceleratorName)
+			request := make(map[string]interface{})
+			request["AcceleratorId"] = acceleratorId
+			request["RegionId"] = client.RegionId
+			request["PageSize"] = PageSizeLarge
+			request["PageNumber"] = 1
+
+			conn, err := client.NewGaplusClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			for {
+				action := "ListIpSets"
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				var resp interface{}
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+					if err != nil {
+						if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					resp, _ = jsonpath.Get("$.IpSets", response)
+					return nil
+				})
+
+				for _, v := range resp.([]interface{}) {
+					request := map[string]interface{}{
+						"IpSetId":  v.(map[string]interface{})["IpSetId"],
+						"RegionId": client.RegionId,
+					}
+					runtime := util.RuntimeOptions{}
+					runtime.SetAutoretry(true)
+					action := "DeleteIpSets"
+					wait := incrementalWait(3*time.Second, 3*time.Second)
+					err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+						request["ClientToken"] = buildClientToken("DeleteIpSet")
+						resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+						if err != nil {
+							if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						addDebug(action, resp, request)
+						return nil
+					})
+					if err != nil {
+						log.Printf("[ERROR] Deleting ip set %s got an error: %s", request["IpSetId"], err)
+					}
+				}
+				break
+			}
+
+			for {
+				action := "ListEndpointGroups"
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				var resp interface{}
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+					if err != nil {
+						if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					resp, _ = jsonpath.Get("$.EndpointGroups", response)
+					return nil
+				})
+
+				for _, v := range resp.([]interface{}) {
+					request := map[string]interface{}{
+						"EndpointGroupId": v.(map[string]interface{})["EndpointGroupId"],
+						"AcceleratorId":   acceleratorId,
+					}
+					runtime := util.RuntimeOptions{}
+					runtime.SetAutoretry(true)
+					action := "DeleteEndpointGroup"
+					wait := incrementalWait(3*time.Second, 3*time.Second)
+					err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+						resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+						if err != nil {
+							if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup"}) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						addDebug(action, resp, request)
+						return nil
+					})
+					if err != nil {
+						log.Printf("[ERROR] Deleting endpoint group %s got an error: %s", request["EndpointGroupId"], err)
+					}
+				}
+				break
+			}
+
+			bandwidthPackageIds := make([]string, 0)
+			if v, ok := accelerator["BasicBandwidthPackage"].(map[string]interface{}); ok && len(v) > 0 {
+				bandwidthPackageIds = append(bandwidthPackageIds, fmt.Sprint(v["InstanceId"]))
+			}
+			if v, ok := accelerator["CrossDomainBandwidthPackage"].(map[string]interface{}); ok && len(v) > 0 {
+				bandwidthPackageIds = append(bandwidthPackageIds, fmt.Sprint(v["InstanceId"]))
+			}
+			for _, bandwidthPackageId := range bandwidthPackageIds {
+				action := "BandwidthPackageRemoveAccelerator"
+				request := map[string]interface{}{
+					"AcceleratorId":      acceleratorId,
+					"BandwidthPackageId": bandwidthPackageId,
+					"RegionId":           client.RegionId,
+				}
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "StateError.Accelerator"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(action, response, request)
+					return nil
+				})
+				if err != nil {
+					log.Printf("[ERROR] Removing bandwidth package %s got an error: %s", bandwidthPackageId, err)
+				}
+			}
+
+			for _, bandwidthPackageId := range bandwidthPackageIds {
+				action := "DeleteBandwidthPackage"
+				request := map[string]interface{}{
+					"BandwidthPackageId": bandwidthPackageId,
+					"RegionId":           client.RegionId,
+				}
+				request["ClientToken"] = buildClientToken("DeleteBandwidthPackage")
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				addDebug(action, response, request)
+				if err != nil {
+					log.Printf("[ERROR] Deleting bandwidth package %s got an error: %s", bandwidthPackageId, err)
+				}
+			}
+
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return nil
+}
+
 func TestAccAlicloudGaAccelerator_basic(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_accelerator.default"
 	ra := resourceAttrInit(resourceId, AlicloudGaAcceleratorMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

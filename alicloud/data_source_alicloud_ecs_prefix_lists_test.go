@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcsPrefixListsDataSource(t *testing.T) {
+func TestAccAlicloudECSPrefixListsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	name := fmt.Sprintf("tf-testacc")
 	idsConf := dataSourceTestAccConfig{

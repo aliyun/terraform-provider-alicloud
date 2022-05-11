@@ -61,7 +61,7 @@ func TestAccAlicloudHBRRestoreJob_basic0(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"target_container", "target_container_cluster_id", "include", "exclude", "udm_detail", "udm_region_id"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude", "udm_region_id"},
 			},
 		},
 	})
@@ -117,7 +117,7 @@ func TestAccAlicloudHBRRestoreJob_basic1(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"target_container", "target_container_cluster_id", "include", "exclude", "udm_detail", "udm_region_id"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude", "udm_region_id"},
 			},
 		},
 	})
@@ -171,7 +171,7 @@ func TestAccAlicloudHBRRestoreJob_basic2(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"target_container", "target_container_cluster_id", "include", "exclude", "udm_detail", "udm_region_id"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude", "udm_region_id"},
 			},
 		},
 	})
@@ -228,20 +228,18 @@ func TestAccAlicloudHBRRestoreJob_basic3(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"target_container", "target_container_cluster_id", "include", "exclude", "udm_detail", "udm_region_id"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude", "udm_region_id"},
 			},
 		},
 	})
 }
 
 var AlicloudHBRRestoreJobMap0 = map[string]string{
-	"target_container":            NOSET,
-	"target_container_cluster_id": NOSET,
-	"include":                     NOSET,
-	"status":                      CHECKSET,
-	"exclude":                     NOSET,
-	"udm_detail":                  NOSET,
-	"udm_region_id":               NOSET,
+	"include":       NOSET,
+	"status":        CHECKSET,
+	"exclude":       NOSET,
+	"udm_detail":    NOSET,
+	"udm_region_id": NOSET,
 }
 
 func AlicloudHBRRestoreJobBasicDependence0(name string) string {

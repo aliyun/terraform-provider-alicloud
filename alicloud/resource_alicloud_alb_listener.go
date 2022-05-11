@@ -36,6 +36,7 @@ func resourceAlicloudAlbListener() *schema.Resource {
 			"certificates": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"certificate_id": {
@@ -68,9 +69,11 @@ func resourceAlicloudAlbListener() *schema.Resource {
 				},
 			},
 			"acl_config": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				MaxItems: 1,
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Computed:   true,
+				MaxItems:   1,
+				Deprecated: "Field 'acl_config' has been deprecated from provider version 1.163.0 and it will be removed in the future version. Please use the new resource 'alicloud_alb_listener_acl_attachment'.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"acl_relations": {
@@ -81,6 +84,7 @@ func resourceAlicloudAlbListener() *schema.Resource {
 									"acl_id": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"status": {
 										Type:     schema.TypeString,
@@ -92,6 +96,7 @@ func resourceAlicloudAlbListener() *schema.Resource {
 						"acl_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{"White", "Black"}, false),
 						},
 					},
@@ -227,10 +232,12 @@ func resourceAlicloudAlbListener() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Running", "Stopped"}, false),
 			},
 			"xforwarded_for_config": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
-				MaxItems: 1,
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Computed:      true,
+				MaxItems:      1,
+				ConflictsWith: []string{"x_forwarded_for_config"},
+				Deprecated:    "Field 'xforwarded_for_config' has been deprecated from provider version 1.161.0. Use 'x_forwarded_for_config' instead.",
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("listener_protocol"); ok && v.(string) == "HTTPS" {
 						return false
@@ -296,6 +303,84 @@ func resourceAlicloudAlbListener() *schema.Resource {
 							Computed: true,
 						},
 						"xforwardedforslbportenabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"x_forwarded_for_config": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Computed:      true,
+				MaxItems:      1,
+				ConflictsWith: []string{"xforwarded_for_config"},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("listener_protocol"); ok && v.(string) == "HTTPS" {
+						return false
+					}
+					return true
+				},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"x_forwarded_for_client_cert_issuer_dn_alias": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"x_forwarded_for_client_cert_issuer_dn_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_client_cert_client_verify_alias": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"x_forwarded_for_client_cert_client_verify_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_client_cert_finger_print_alias": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"x_forwarded_for_client_cert_finger_print_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_client_cert_subject_dn_alias": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"x_forwarded_for_client_cert_subject_dn_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_client_src_port_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_proto_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_slb_id_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_slb_port_enabled": {
 							Type:     schema.TypeBool,
 							Optional: true,
 							Computed: true,
@@ -394,6 +479,29 @@ func resourceAlicloudAlbListenerCreate(d *schema.ResourceData, meta interface{})
 
 		request["XForwardedForConfig"] = xforwardedForConfigMap
 	}
+
+	if v, ok := d.GetOk("x_forwarded_for_config"); ok {
+		xforwardedForConfigMap := map[string]interface{}{}
+		for _, xforwardedForConfig := range v.(*schema.Set).List() {
+			xforwardedForConfigArg := xforwardedForConfig.(map[string]interface{})
+			xforwardedForConfigMap["XForwardedForClientCertIssuerDNAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_issuer_dn_alias"]
+			xforwardedForConfigMap["XForwardedForClientCertIssuerDNEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_issuer_dn_enabled"]
+			xforwardedForConfigMap["XForwardedForClientCertClientVerifyAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_client_verify_alias"]
+			xforwardedForConfigMap["XForwardedForClientCertClientVerifyEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_client_verify_enabled"]
+			xforwardedForConfigMap["XForwardedForClientCertFingerprintAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_finger_print_alias"]
+			xforwardedForConfigMap["XForwardedForClientCertFingerprintEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_finger_print_enabled"]
+			xforwardedForConfigMap["XForwardedForClientCertSubjectDNAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_subject_dn_alias"]
+			xforwardedForConfigMap["XForwardedForClientCertSubjectDNEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_subject_dn_enabled"]
+			xforwardedForConfigMap["XForwardedForClientSrcPortEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_src_port_enabled"]
+			xforwardedForConfigMap["XForwardedForEnabled"] = xforwardedForConfigArg["x_forwarded_for_enabled"]
+			xforwardedForConfigMap["XForwardedForProtoEnabled"] = xforwardedForConfigArg["x_forwarded_for_proto_enabled"]
+			xforwardedForConfigMap["XForwardedForSLBIdEnabled"] = xforwardedForConfigArg["x_forwarded_for_slb_id_enabled"]
+			xforwardedForConfigMap["XForwardedForSLBPortEnabled"] = xforwardedForConfigArg["x_forwarded_for_slb_port_enabled"]
+		}
+
+		request["XForwardedForConfig"] = xforwardedForConfigMap
+	}
+
 	request["ClientToken"] = buildClientToken("CreateListener")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -554,6 +662,26 @@ func resourceAlicloudAlbListenerRead(d *schema.ResourceData, meta interface{}) e
 		xforwardedForConfigSli = append(xforwardedForConfigSli, xforwardedForConfigMap)
 		d.Set("xforwarded_for_config", xforwardedForConfigSli)
 	}
+
+	if xforwardedForConfig, ok := object["XForwardedForConfig"]; ok && len(xforwardedForConfig.(map[string]interface{})) > 0 {
+		xforwardedForConfigSli := make([]map[string]interface{}, 0)
+		xforwardedForConfigMap := make(map[string]interface{})
+		xforwardedForConfigMap["x_forwarded_for_client_cert_issuer_dn_alias"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertIssuerDNAlias"]
+		xforwardedForConfigMap["x_forwarded_for_client_cert_issuer_dn_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertIssuerDNEnabled"]
+		xforwardedForConfigMap["x_forwarded_for_client_cert_client_verify_alias"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertClientVerifyAlias"]
+		xforwardedForConfigMap["x_forwarded_for_client_cert_client_verify_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertClientVerifyEnabled"]
+		xforwardedForConfigMap["x_forwarded_for_client_cert_finger_print_alias"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertFingerprintAlias"]
+		xforwardedForConfigMap["x_forwarded_for_client_cert_finger_print_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertFingerprintEnabled"]
+		xforwardedForConfigMap["x_forwarded_for_client_cert_subject_dn_alias"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertSubjectDNAlias"]
+		xforwardedForConfigMap["x_forwarded_for_client_cert_subject_dn_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertSubjectDNEnabled"]
+		xforwardedForConfigMap["x_forwarded_for_client_src_port_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientSrcPortEnabled"]
+		xforwardedForConfigMap["x_forwarded_for_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForEnabled"]
+		xforwardedForConfigMap["x_forwarded_for_proto_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForProtoEnabled"]
+		xforwardedForConfigMap["x_forwarded_for_slb_id_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForSLBIdEnabled"]
+		xforwardedForConfigMap["x_forwarded_for_slb_port_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForSLBPortEnabled"]
+		xforwardedForConfigSli = append(xforwardedForConfigSli, xforwardedForConfigMap)
+		d.Set("x_forwarded_for_config", xforwardedForConfigSli)
+	}
 	return nil
 }
 
@@ -664,14 +792,6 @@ func resourceAlicloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		}
 		updateListenerAttributeReq["DefaultActions"] = defaultActionsMaps
 	}
-	if !d.IsNewResource() && d.HasChange("server_group_id") {
-		update = true
-		updateListenerAttributeReq["DefaultActions.*.ForwardGroupConfig.ServerGroupTuples.*.ServerGroupId"] = d.Get("server_group_id")
-	}
-	if !d.IsNewResource() && d.HasChange("type") {
-		update = true
-		updateListenerAttributeReq["DefaultActions.*.Type"] = d.Get("type")
-	}
 	if !d.IsNewResource() && d.HasChange("gzip_enabled") {
 		update = true
 		if v, ok := d.GetOkExists("gzip_enabled"); ok {
@@ -748,6 +868,31 @@ func resourceAlicloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
+	if !d.IsNewResource() && d.HasChange("x_forwarded_for_config") {
+		update = true
+		if v, ok := d.GetOk("x_forwarded_for_config"); ok {
+			xforwardedForConfigMap := map[string]interface{}{}
+			for _, xforwardedForConfig := range v.(*schema.Set).List() {
+				xforwardedForConfigArg := xforwardedForConfig.(map[string]interface{})
+				xforwardedForConfigMap["XForwardedForClientCertIssuerDNAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_issuer_dn_alias"]
+				xforwardedForConfigMap["XForwardedForClientCertIssuerDNEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_issuer_dn_enabled"]
+				xforwardedForConfigMap["XForwardedForClientCertClientVerifyAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_client_verify_alias"]
+				xforwardedForConfigMap["XForwardedForClientCertClientVerifyEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_client_verify_enabled"]
+				xforwardedForConfigMap["XForwardedForClientCertFingerprintAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_finger_print_alias"]
+				xforwardedForConfigMap["XForwardedForClientCertFingerprintEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_finger_print_enabled"]
+				xforwardedForConfigMap["XForwardedForClientCertSubjectDNAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_subject_dn_alias"]
+				xforwardedForConfigMap["XForwardedForClientCertSubjectDNEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_subject_dn_enabled"]
+				xforwardedForConfigMap["XForwardedForClientSrcPortEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_src_port_enabled"]
+				xforwardedForConfigMap["XForwardedForEnabled"] = xforwardedForConfigArg["x_forwarded_for_enabled"]
+				xforwardedForConfigMap["XForwardedForProtoEnabled"] = xforwardedForConfigArg["x_forwarded_for_proto_enabled"]
+				xforwardedForConfigMap["XForwardedForSLBIdEnabled"] = xforwardedForConfigArg["x_forwarded_for_slb_id_enabled"]
+				xforwardedForConfigMap["XForwardedForSLBPortEnabled"] = xforwardedForConfigArg["x_forwarded_for_slb_port_enabled"]
+			}
+
+			updateListenerAttributeReq["XForwardedForConfig"] = xforwardedForConfigMap
+		}
+	}
+
 	if update {
 		if v, ok := d.GetOkExists("dry_run"); ok {
 			updateListenerAttributeReq["DryRun"] = v
@@ -792,6 +937,7 @@ func resourceAlicloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("request_timeout")
 		d.SetPartial("security_policy_id")
 		d.SetPartial("xforwarded_for_config")
+		d.SetPartial("x_forwarded_for_config")
 	}
 	if d.HasChange("status") {
 		object, err := albService.DescribeAlbListener(d.Id())

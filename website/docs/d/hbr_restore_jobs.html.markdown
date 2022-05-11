@@ -36,8 +36,8 @@ The following arguments are supported:
 * `restore_type` - (Required, ForceNew) The Recovery Destination Types. Valid values: `ECS_FILE`, `NAS`, `OSS`.
 * `restore_id` - (Optional, ForceNew) The list of restore job IDs.
 * `vault_id` - (Optional, ForceNew) The list of backup vault IDs.
-* `source_type` - (Optional, ForceNew) The list of data source types. Valid values: `ECS_FILE`, `NAS`, `OSS`.
-* `status` - (Optional, ForceNew) The status of restore job. Valid values: "CANCELED", `CANCELING`, `COMPLETE`, `CREATED`, `EXPIRED`, `FAILED`, `PARTIAL_COMPLETE`, `QUEUED`, `RUNNING`.
+* `source_type` - (Optional, ForceNew) The list of data source types. Valid values: `ECS_FILE`, `NAS`, `OSS`, `OTS_TABLE`,`UDM_ECS_ROLLBACK`.
+* `status` - (Optional, ForceNew) The status of restore job. Valid values: `CANCELED`, `CANCELING`, `COMPLETE`, `CREATED`, `EXPIRED`, `FAILED`, `PARTIAL_COMPLETE`, `QUEUED`, `RUNNING`.
 * `target_bucket` - (Optional, ForceNew) The name of target OSS bucket.
 * `target_file_system_id` - (Optional, ForceNew) Valid while source_type equals `NAS`. The list of destination File System IDs.
 * `target_instance_id` - (Optional, ForceNew) The ID of target ECS instance.

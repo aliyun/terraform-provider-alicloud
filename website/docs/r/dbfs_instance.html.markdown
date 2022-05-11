@@ -67,7 +67,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 5 mins) Used when create the Instance.
 * `update` - (Defaults to 15 mins) Used when update the Instance.
-* `delete` - (Defaults to 5 mins) Used when delete the Instance.
+* `delete` - (Defaults to 10 mins) Used when delete the Instance.
 
 ## Import
 

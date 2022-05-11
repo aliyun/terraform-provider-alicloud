@@ -11,10 +11,8 @@ import (
 )
 
 func TestAccAlicloudCenTransitRouterRouteEntriesDataSource(t *testing.T) {
-	defer checkoutAccount(t, false)
-	checkoutAccount(t, true)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
-	rand := acctest.RandIntRange(0, 2999)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	rand := acctest.RandIntRange(1, 2999)
 	transitRouterRouteEntryIdsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterRouteEntriesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_cen_transit_router_route_entry.default.transit_router_route_entry_id}"]`,
@@ -73,10 +71,7 @@ func TestAccAlicloudCenTransitRouterRouteEntriesDataSource(t *testing.T) {
 		existMapFunc: existAlicloudCenTransitRouterRouteEntriesDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudCenTransitRouterRouteEntriesDataSourceNameMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.VbrSupportRegions)
-	}
-	alicloudCenTransitRouterRouteEntriesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, transitRouterRouteEntryIdsConf, statusConf, allConf)
+	alicloudCenTransitRouterRouteEntriesCheckInfo.dataSourceTestCheck(t, rand, transitRouterRouteEntryIdsConf, statusConf, allConf)
 }
 func testAccCheckAlicloudCenTransitRouterRouteEntriesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

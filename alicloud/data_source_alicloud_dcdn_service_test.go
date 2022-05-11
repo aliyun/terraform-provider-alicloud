@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDcdnServiceDataSource(t *testing.T) {
+func TestAccAlicloudDCDNServiceDataSource(t *testing.T) {
 	resourceId := "data.alicloud_dcdn_service.current"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{

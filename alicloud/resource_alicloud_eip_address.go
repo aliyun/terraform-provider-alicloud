@@ -251,6 +251,10 @@ func resourceAlicloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -272,10 +276,6 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	request["Type"] = "EIP"
 	if update {
 		action := "DeletionProtection"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("DeletionProtection")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -309,10 +309,6 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	moveResourceGroupReq["ResourceType"] = "eip"
 	if update {
 		action := "MoveResourceGroup"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, moveResourceGroupReq, &util.RuntimeOptions{})
@@ -354,10 +350,6 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	modifyEipAddressAttributeReq["RegionId"] = client.RegionId
 	if update {
 		action := "ModifyEipAddressAttribute"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, modifyEipAddressAttributeReq, &util.RuntimeOptions{})

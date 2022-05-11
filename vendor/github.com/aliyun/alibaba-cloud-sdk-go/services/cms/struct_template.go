@@ -17,11 +17,11 @@ package cms
 
 // Template is a nested struct in cms response
 type Template struct {
-	Name           string         `json:"Name" xml:"Name"`
 	Description    string         `json:"Description" xml:"Description"`
-	RestVersion    int64          `json:"RestVersion" xml:"RestVersion"`
-	TemplateId     int64          `json:"TemplateId" xml:"TemplateId"`
 	GmtCreate      int64          `json:"GmtCreate" xml:"GmtCreate"`
+	Name           string         `json:"Name" xml:"Name"`
+	RestVersion    int64          `json:"RestVersion" xml:"RestVersion"`
 	GmtModified    int64          `json:"GmtModified" xml:"GmtModified"`
+	TemplateId     int64          `json:"TemplateId" xml:"TemplateId"`
 	ApplyHistories ApplyHistories `json:"ApplyHistories" xml:"ApplyHistories"`
 }

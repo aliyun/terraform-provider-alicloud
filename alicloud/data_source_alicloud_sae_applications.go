@@ -164,8 +164,20 @@ func dataSourceAlicloudSaeApplications() *schema.Resource {
 							Computed: true,
 						},
 						"mount_desc": {
-							Type:     schema.TypeString,
+							Type:     schema.TypeSet,
 							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"mount_path": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"nas_path": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
 						},
 						"mount_host": {
 							Type:     schema.TypeString,
@@ -190,6 +202,30 @@ func dataSourceAlicloudSaeApplications() *schema.Resource {
 						"oss_mount_descs": {
 							Type:     schema.TypeString,
 							Computed: true,
+						},
+						"oss_mount_details": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"bucket_name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"bucket_path": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"mount_path": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"read_only": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+								},
+							},
 						},
 						"package_type": {
 							Type:     schema.TypeString,
@@ -423,12 +459,25 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 		if v, ok := getResp["MinReadyInstances"]; ok && fmt.Sprint(v) != "0" {
 			mapping["min_ready_instances"] = formatInt(v)
 		}
-		mapping["mount_desc"] = getResp["MountDesc"]
 		mapping["mount_host"] = getResp["MountHost"]
 		mapping["nas_id"] = getResp["NasId"]
 		mapping["oss_ak_id"] = getResp["OssAkId"]
 		mapping["oss_ak_secret"] = getResp["OssAkSecret"]
-		mapping["oss_mount_descs"] = getResp["OssMountDescs"]
+		ossMountDescs := make([]map[string]interface{}, 0)
+		if raw, exist := getResp["OssMountDescs"]; exist {
+			for _, mountDescRaw := range raw.([]interface{}) {
+				obj := mountDescRaw.(map[string]interface{})
+				ossMountDescs = append(ossMountDescs, map[string]interface{}{
+					"bucket_name": obj["bucketName"],
+					"bucket_path": obj["bucketPath"],
+					"mount_path":  obj["mountPath"],
+					"read_only":   obj["Boolean"],
+				})
+			}
+		}
+		mapping["oss_mount_details"] = ossMountDescs
+		desc, _ := convertListMapToJsonString(ossMountDescs)
+		mapping["oss_mount_descs"] = desc
 		mapping["package_type"] = getResp["PackageType"]
 		mapping["package_url"] = getResp["PackageUrl"]
 		mapping["package_version"] = getResp["PackageVersion"]
@@ -463,6 +512,18 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 			mapping["repo_namespace"] = applicationImageResp["RepoNamespace"]
 			mapping["repo_origin_type"] = applicationImageResp["RepoOriginType"]
 		}
+
+		mountDesc := make([]map[string]interface{}, 0)
+		if raw, exist := getResp["MountDesc"]; exist {
+			for _, mountDescRaw := range raw.([]interface{}) {
+				obj := mountDescRaw.(map[string]interface{})
+				mountDesc = append(mountDesc, map[string]interface{}{
+					"mount_path": obj["MountPath"],
+					"nas_path":   obj["NasPath"],
+				})
+			}
+		}
+		mapping["mount_desc"] = mountDesc
 
 		getRespStatus, err := saeService.DescribeApplicationStatus(id)
 		if err != nil {

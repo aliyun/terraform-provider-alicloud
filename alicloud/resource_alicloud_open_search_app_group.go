@@ -114,6 +114,10 @@ func resourceAlicloudOpenSearchAppGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"instance_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -144,12 +148,12 @@ func resourceAlicloudOpenSearchAppGroupCreate(d *schema.ResourceData, meta inter
 
 	if _, ok := d.GetOk("order"); ok {
 		orderMaps := make(map[string]interface{}, 0)
-		for _, quotas := range d.Get("order").(*schema.Set).List() {
-			quota := quotas.(map[string]interface{})
+		for _, orders := range d.Get("order").(*schema.Set).List() {
+			order := orders.(map[string]interface{})
 			orderMaps = map[string]interface{}{
-				"duration":     quota["duration"],
-				"pricingCycle": quota["pricing_cycle"],
-				"autoRenew":    quota["auto_renew"],
+				"duration":     order["duration"],
+				"pricingCycle": order["pricing_cycle"],
+				"autoRenew":    order["auto_renew"],
 			}
 		}
 		body["order"] = orderMaps
@@ -210,6 +214,7 @@ func resourceAlicloudOpenSearchAppGroupRead(d *schema.ResourceData, meta interfa
 		})
 	}
 	d.Set("quota", quotaSli)
+	d.Set("instance_id", object["instanceId"])
 	return nil
 }
 

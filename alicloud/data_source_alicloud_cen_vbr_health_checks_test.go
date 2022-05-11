@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -12,36 +11,23 @@ import (
 )
 
 func TestAccAlicloudCenVbrHealthCheckDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(0, 2999)
-	defer checkoutAccount(t, false)
-	checkoutAccount(t, true)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	rand := acctest.RandIntRange(1, 2999)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	cenIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
 			"cen_id":          `"${alicloud_cen_instance.default.id}"`,
 			"vbr_instance_id": `"${alicloud_cen_instance_attachment.vbr.child_instance_id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
-			"cen_id":          `"${alicloud_cen_instance.default.id}"`,
-			"vbr_instance_id": `"fake"`,
 		}),
 	}
 	vbrInstanceIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
 			"vbr_instance_id": `"${alicloud_cen_instance_attachment.vbr.child_instance_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
-			"vbr_instance_id": `"fake"`,
-		}),
 	}
 
 	vbrInstanceOwnerIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
 			"vbr_instance_owner_id": `"${alicloud_cen_instance_attachment.vbr.child_instance_owner_id}"`,
-			"vbr_instance_id":       `"${alicloud_cen_instance_attachment.vbr.child_instance_id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
-			"vbr_instance_owner_id": `123456`,
 			"vbr_instance_id":       `"${alicloud_cen_instance_attachment.vbr.child_instance_id}"`,
 		}),
 	}
@@ -51,11 +37,6 @@ func TestAccAlicloudCenVbrHealthCheckDataSource(t *testing.T) {
 			"cen_id":                `"${alicloud_cen_instance.default.id}"`,
 			"vbr_instance_id":       `"${alicloud_cen_instance_attachment.vbr.child_instance_id}"`,
 			"vbr_instance_owner_id": `"${alicloud_cen_instance_attachment.vbr.child_instance_owner_id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudCenVbrHealthCheckSourceConfig(rand, map[string]string{
-			"cen_id":                `"${alicloud_cen_instance.default.id}"`,
-			"vbr_instance_id":       `"fake"`,
-			"vbr_instance_owner_id": `123456`,
 		}),
 	}
 
@@ -70,7 +51,7 @@ func TestAccAlicloudCenVbrHealthCheckDataSource(t *testing.T) {
 			"checks.0.health_check_target_ip": "10.0.0.2",
 			"checks.0.healthy_threshold":      "8",
 			"checks.0.vbr_instance_id":        CHECKSET,
-			"checks.0.vbr_instance_region_id": os.Getenv("ALICLOUD_REGION"),
+			"checks.0.vbr_instance_region_id": defaultRegionToTest,
 		}
 	}
 
@@ -87,11 +68,7 @@ func TestAccAlicloudCenVbrHealthCheckDataSource(t *testing.T) {
 		fakeMapFunc:  fakeCenVbrHealthCheckRecordsMapFunc,
 	}
 
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.VbrSupportRegions)
-	}
-
-	CenVbrHealthCheckRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, cenIdConf, vbrInstanceIdConf, vbrInstanceOwnerIdConf, allConf)
+	CenVbrHealthCheckRecordsCheckInfo.dataSourceTestCheck(t, rand, cenIdConf, vbrInstanceIdConf, vbrInstanceOwnerIdConf, allConf)
 
 }
 

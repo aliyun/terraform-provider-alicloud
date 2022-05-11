@@ -2,9 +2,18 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"reflect"
 	"testing"
 
+	"github.com/agiledragon/gomonkey/v2"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -574,4 +583,371 @@ resource "alicloud_alidns_address_pool" "ipv6" {
 }
 
 `, name, os.Getenv("ALICLOUD_ICP_DOMAIN_NAME"))
+}
+
+func TestAccAlicloudAlidnsAccessStrategy_unit(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_alidns_access_strategy"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_alidns_access_strategy"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"default_addr_pools": []interface{}{
+			map[string]interface{}{
+				"lba_weight":   1,
+				"addr_pool_id": "AddDnsGtmAccessStrategyValue",
+			},
+		},
+		"default_addr_pool_type":         "AddDnsGtmAccessStrategyValue",
+		"default_latency_optimization":   "AddDnsGtmAccessStrategyValue",
+		"default_lba_strategy":           "AddDnsGtmAccessStrategyValue",
+		"default_max_return_addr_num":    10,
+		"default_min_available_addr_num": 10,
+		"lines": []interface{}{
+			map[string]interface{}{
+				"line_code": "AddDnsGtmAccessStrategyValue",
+			},
+		},
+		"failover_addr_pools": []interface{}{
+			map[string]interface{}{
+				"lba_weight":   1,
+				"addr_pool_id": "AddDnsGtmAccessStrategyValue",
+			},
+		},
+		"failover_addr_pool_type":         "AddDnsGtmAccessStrategyValue",
+		"failover_latency_optimization":   "AddDnsGtmAccessStrategyValue",
+		"failover_lba_strategy":           "AddDnsGtmAccessStrategyValue",
+		"failover_max_return_addr_num":    10,
+		"failover_min_available_addr_num": 10,
+		"instance_id":                     "AddDnsGtmAccessStrategyValue",
+		"lang":                            "AddDnsGtmAccessStrategyValue",
+		"strategy_mode":                   "AddDnsGtmAccessStrategyValue",
+		"strategy_name":                   "AddDnsGtmAccessStrategyValue",
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		// DescribeDnsGtmAccessStrategy
+		"DefaultAddrPoolType": "AddDnsGtmAccessStrategyValue",
+		"DefaultAddrPools": map[string]interface{}{
+			"DefaultAddrPool": []interface{}{
+				map[string]interface{}{
+					"Id":        "AddDnsGtmAccessStrategyValue",
+					"LbaWeight": 1,
+				},
+			},
+		},
+		"DefaultLatencyOptimization": "AddDnsGtmAccessStrategyValue",
+		"DefaultLbaStrategy":         "AddDnsGtmAccessStrategyValue",
+		"DefaultMaxReturnAddrNum":    10,
+		"DefaultMinAvailableAddrNum": 10,
+		"FailoverAddrPoolType":       "AddDnsGtmAccessStrategyValue",
+		"FailoverAddrPools": map[string]interface{}{
+			"FailoverAddrPool": []interface{}{
+				map[string]interface{}{
+					"Id":        "AddDnsGtmAccessStrategyValue",
+					"LbaWeight": 1,
+				},
+			},
+		},
+		"Lines": map[string]interface{}{
+			"Line": []interface{}{
+				map[string]interface{}{
+					"LineCode": "AddDnsGtmAccessStrategyValue",
+				},
+			},
+		},
+		"FailoverLatencyOptimization": "AddDnsGtmAccessStrategyValue",
+		"FailoverLbaStrategy":         "AddDnsGtmAccessStrategyValue",
+		"FailoverMaxReturnAddrNum":    10,
+		"FailoverMinAvailableAddrNum": 10,
+		"InstanceId":                  "AddDnsGtmAccessStrategyValue",
+		"StrategyMode":                "AddDnsGtmAccessStrategyValue",
+		"StrategyName":                "AddDnsGtmAccessStrategyValue",
+		"AccessMode":                  "AddDnsGtmAccessStrategyValue",
+		"StrategyId":                  "AddDnsGtmAccessStrategyValue",
+	}
+	CreateMockResponse := map[string]interface{}{
+		// AddDnsGtmAccessStrategy
+		"StrategyId": "AddDnsGtmAccessStrategyValue",
+	}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       String(errorCode),
+			Data:       String(errorCode),
+			Message:    String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_alidns_access_strategy", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			mapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+
+	// Create
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudAlidnsAccessStrategyCreate(dInit, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	ReadMockResponseDiff := map[string]interface{}{
+		// DescribeDnsGtmAccessStrategy Response
+		"StrategyId": "AddDnsGtmAccessStrategyValue",
+	}
+	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "AddDnsGtmAccessStrategy" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						successResponseMock(ReadMockResponseDiff)
+						return CreateMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudAlidnsAccessStrategyCreate(dInit, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_alidns_access_strategy"].Schema).Data(dInit.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Update
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudAlidnsAccessStrategyUpdate(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+
+	// UpdateDnsGtmAccessStrategy
+	attributesDiff := map[string]interface{}{
+		"access_mode":            "UpdateDnsGtmAccessStrategyValue",
+		"default_addr_pool_type": "UpdateDnsGtmAccessStrategyValue",
+		"lines": []interface{}{
+			map[string]interface{}{
+				"line_code": "UpdateDnsGtmAccessStrategyValue",
+			},
+		},
+		"default_addr_pools": []interface{}{
+			map[string]interface{}{
+				"lba_weight":   2,
+				"addr_pool_id": "UpdateDnsGtmAccessStrategyValue",
+			},
+		},
+		"failover_addr_pools": []map[string]interface{}{
+			{
+				"lba_weight":   2,
+				"addr_pool_id": "UpdateDnsGtmAccessStrategyValue",
+			},
+		},
+		"default_min_available_addr_num":  15,
+		"strategy_name":                   "UpdateDnsGtmAccessStrategyValue",
+		"default_latency_optimization":    "UpdateDnsGtmAccessStrategyValue",
+		"default_lba_strategy":            "UpdateDnsGtmAccessStrategyValue",
+		"failover_max_return_addr_num":    15,
+		"failover_addr_pool_type":         "UpdateDnsGtmAccessStrategyValue",
+		"failover_latency_optimization":   "UpdateDnsGtmAccessStrategyValue",
+		"failover_lba_strategy":           "UpdateDnsGtmAccessStrategyValue",
+		"failover_min_available_addr_num": 15,
+		"default_max_return_addr_num":     15,
+		"lang":                            "UpdateDnsGtmAccessStrategyValue",
+	}
+	diff, err := newInstanceDiff("alicloud_alidns_access_strategy", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_alidns_access_strategy"].Schema).Data(dInit.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeDnsGtmAccessStrategy Response
+		"DefaultAddrPoolType": "UpdateDnsGtmAccessStrategyValue",
+		"DefaultAddrPools": map[string]interface{}{
+			"DefaultAddrPool": []interface{}{
+				map[string]interface{}{
+					"Id":        "UpdateDnsGtmAccessStrategyValue",
+					"LbaWeight": 2,
+				},
+			},
+		},
+		"DefaultLatencyOptimization": "UpdateDnsGtmAccessStrategyValue",
+		"DefaultLbaStrategy":         "UpdateDnsGtmAccessStrategyValue",
+		"DefaultMaxReturnAddrNum":    15,
+		"DefaultMinAvailableAddrNum": 15,
+		"FailoverAddrPoolType":       "UpdateDnsGtmAccessStrategyValue",
+		"FailoverAddrPools": map[string]interface{}{
+			"FailoverAddrPool": []interface{}{
+				map[string]interface{}{
+					"Id":        "UpdateDnsGtmAccessStrategyValue",
+					"LbaWeight": 2,
+				},
+			},
+		},
+		"Lines": map[string]interface{}{
+			"Line": []interface{}{
+				map[string]interface{}{
+					"LineCode": "UpdateDnsGtmAccessStrategyValue",
+				},
+			},
+		},
+		"FailoverLatencyOptimization": "UpdateDnsGtmAccessStrategyValue",
+		"FailoverLbaStrategy":         "UpdateDnsGtmAccessStrategyValue",
+		"FailoverMaxReturnAddrNum":    15,
+		"FailoverMinAvailableAddrNum": 15,
+		"StrategyName":                "UpdateDnsGtmAccessStrategyValue",
+		"AccessMode":                  "UpdateDnsGtmAccessStrategyValue",
+		"Lang":                        "UpdateDnsGtmAccessStrategyValue",
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "UpdateDnsGtmAccessStrategy" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudAlidnsAccessStrategyUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_alidns_access_strategy"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Read
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DescribeDnsGtmAccessStrategy" {
+				switch errorCode {
+				case "{}":
+					return notFoundResponseMock(errorCode)
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudAlidnsAccessStrategyRead(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "{}":
+			assert.Nil(t, err)
+		}
+	}
+
+	// Delete
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudAlidnsAccessStrategyDelete(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DeleteDnsGtmAccessStrategy" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						ReadMockResponse = map[string]interface{}{}
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudAlidnsAccessStrategyDelete(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		}
+	}
 }

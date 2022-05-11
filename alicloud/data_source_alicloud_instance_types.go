@@ -121,6 +121,11 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"image_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			// Computed values.
 			"instance_types": {
 				Type:     schema.TypeList,
@@ -262,12 +267,36 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 	var instanceTypes []instanceTypeWithOriginalPrice
 	resp, _ := raw.(*ecs.DescribeInstanceTypesResponse)
 	if resp != nil {
+		imageSupportInstanceTypesMap := make(map[string]struct{}, 0)
+		imageId := strings.TrimSpace(d.Get("image_id").(string))
+		if imageId != "" {
+			reqImageId := ecs.CreateDescribeImageSupportInstanceTypesRequest()
+			reqImageId.ImageId = imageId
+
+			raw1, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeImageSupportInstanceTypes(reqImageId)
+			})
+			if err != nil {
+				return err
+			}
+			imageSupportInstanceTypes, _ := raw1.(*ecs.DescribeImageSupportInstanceTypesResponse)
+
+			for _, types := range imageSupportInstanceTypes.InstanceTypes.InstanceType {
+				imageSupportInstanceTypesMap[types.InstanceTypeId] = struct{}{}
+			}
+		}
 
 		eniAmount := d.Get("eni_amount").(int)
 		k8sNode := strings.TrimSpace(d.Get("kubernetes_node_role").(string))
 		for _, types := range resp.InstanceTypes.InstanceType {
 			if _, ok := mapInstanceTypes[types.InstanceTypeId]; !ok {
 				continue
+			}
+
+			if len(imageSupportInstanceTypesMap) > 0 {
+				if _, ok := imageSupportInstanceTypesMap[types.InstanceTypeId]; !ok {
+					continue
+				}
 			}
 
 			if cpu > 0 && types.CpuCoreCount != cpu {

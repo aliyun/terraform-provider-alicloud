@@ -10,6 +10,7 @@ import (
 
 func TestAccAlicloudGaBandwidthPackageAttachment_basic(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_bandwidth_package_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudGaBandwidthPackageAttachmentMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -29,8 +30,8 @@ func TestAccAlicloudGaBandwidthPackageAttachment_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"accelerator_id":       "${data.alicloud_ga_accelerators.default.ids.0}",
-					"bandwidth_package_id": "${data.alicloud_ga_bandwidth_packages.default.ids.0}",
+					"accelerator_id":       "${alicloud_ga_accelerator.default.id}",
+					"bandwidth_package_id": "${alicloud_ga_bandwidth_package.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -55,8 +56,28 @@ var AlicloudGaBandwidthPackageAttachmentMap = map[string]string{
 
 func AlicloudGaBandwidthPackageAttachmentBasicDependence(name string) string {
 	return fmt.Sprintf(`
-data "alicloud_ga_accelerators" "default"{
+variable "name" {
+  default  = "%s"
 }
-data "alicloud_ga_bandwidth_packages" "default"{
-}`)
+
+resource "alicloud_ga_accelerator" "default" {
+  duration         = 1
+  spec             = "1"
+  accelerator_name = var.name
+  auto_use_coupon  = true
+  description      = var.name
+}
+resource "alicloud_ga_bandwidth_package" "default" {
+   	bandwidth              =  100
+  	type                   = "Basic"
+  	bandwidth_type         = "Basic"
+	payment_type           = "PayAsYouGo"
+  	billing_type           = "PayBy95"
+	ratio       = 30
+	bandwidth_package_name = var.name
+    auto_pay               = true
+    auto_use_coupon        = true
+}
+
+`, name)
 }

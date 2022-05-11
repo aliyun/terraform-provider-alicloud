@@ -20,9 +20,7 @@ import (
 )
 
 func TestAccAlicloudCenTransitRouterRouteTableAssociation_basic(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_route_table_association.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTableAssociationMap)
@@ -37,7 +35,6 @@ func TestAccAlicloudCenTransitRouterRouteTableAssociation_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VbrSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -67,9 +64,7 @@ func TestAccAlicloudCenTransitRouterRouteTableAssociation_basic(t *testing.T) {
 }
 
 func TestAccAlicloudCenTransitRouterRouteTableAssociation_basic1(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_route_table_association.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterRouteTableAssociationMap)
@@ -84,7 +79,6 @@ func TestAccAlicloudCenTransitRouterRouteTableAssociation_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VbrSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -146,7 +140,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
   peering_subnet_mask        = "255.255.255.252"
   physical_connection_id     = data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = 17
+  vlan_id                    = %d
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
@@ -163,7 +157,7 @@ resource "alicloud_cen_transit_router_route_table" "default" {
   transit_router_id = alicloud_cen_transit_router.default.transit_router_id
 }
 
-`, name)
+`, name, acctest.RandIntRange(1, 2999))
 }
 
 func TestAccAlicloudCenTransitRouterRouteTableAssociation_unit(t *testing.T) {

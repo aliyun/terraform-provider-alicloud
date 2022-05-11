@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudRosStacksDataSource(t *testing.T) {
+func TestAccAlicloudROSStacksDataSource(t *testing.T) {
 	resourceId := "data.alicloud_ros_stacks.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccRosStacks%d", rand)

@@ -273,6 +273,10 @@ func resourceAlicloudConfigRuleRead(d *schema.ResourceData, meta interface{}) er
 }
 func resourceAlicloudConfigRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewConfigClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	configService := ConfigService{client}
 	d.Partial(true)
 	var response map[string]interface{}
@@ -345,10 +349,6 @@ func resourceAlicloudConfigRuleUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if update {
 		action := "UpdateConfigRule"
-		conn, err := client.NewConfigClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("UpdateConfigRule")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudNasAutoSnapshotPoliciesDataSource(t *testing.T) {
+func TestAccAlicloudNASAutoSnapshotPoliciesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.NASSupportRegions)
 	idsConf := dataSourceTestAccConfig{

@@ -12,6 +12,7 @@ description: |-
 This data source provides a list of available addons that the cluster can install.
 
 -> **NOTE:** Available in 1.150.0+.
+-> **NOTE:** From version 1.166.0, support for returning custom configuration of kubernetes cluster addon.
 
 ## Example Usage
 
@@ -41,3 +42,4 @@ The following arguments are supported.
   * `current_version` - The current version of addon, if this field is an empty string, it means that the addon is not installed.
   * `next_version` - The next version of this addon can be upgraded to.
   * `required` - Whether the addon is a system addon.
+  * `current_config` - The current custom configuration of the addon. **Note:** Available in v1.166.0+

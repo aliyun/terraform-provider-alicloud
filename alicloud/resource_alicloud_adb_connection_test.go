@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudAdbConnectionConfig(t *testing.T) {
+func TestAccAlicloudADBConnectionConfig(t *testing.T) {
 	var v *adb.Address
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccAdbConnection%s", rand)

@@ -34,10 +34,11 @@ resource "alicloud_alb_acl" "example" {
 
 The following arguments are supported:
 
-* `acl_entries` - (Optional) The list of the ACL entries. You can add up to `20` entries in each call.
-* `acl_name` - (Optional, Computed) The name of the ACL. The name must be `2` to `128` characters in length, and can contain letters, digits, hyphens (-) and underscores (_). It must start with a letter.
+* `acl_entries` - (Optional) The list of the ACL entries. You can add up to `20` entries in each call.  **NOTE:** "Field 'acl_entries' has been deprecated from provider version 1.166.0 and it will be removed in the future version. Please use the new resource 'alicloud_alb_acl_entry_attachment'.",
+* `acl_name` - (Required) The name of the ACL. The name must be `2` to `128` characters in length, and can contain letters, digits, hyphens (-) and underscores (_). It must start with a letter.
 * `dry_run` - (Optional) Specifies whether to precheck the API request. 
 * `resource_group_id` - (Optional, Computed, ForceNew) The ID of the resource group.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 #### Block acl_entries
 

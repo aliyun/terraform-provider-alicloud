@@ -139,7 +139,6 @@ func resourceAlicloudCenRouteMap() *schema.Resource {
 			"route_map_id": {
 				Type:     schema.TypeString,
 				Computed: true,
-				ForceNew: true,
 			},
 			"route_types": {
 				Type:     schema.TypeSet,
@@ -290,7 +289,7 @@ func resourceAlicloudCenRouteMapCreate(d *schema.ResourceData, meta interface{})
 			return cbnClient.CreateCenRouteMap(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"Operation.Blocking", "InternalError"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -347,6 +346,7 @@ func resourceAlicloudCenRouteMapRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("prepend_as_path", object.PrependAsPath.AsPath)
 	d.Set("priority", object.Priority)
 	d.Set("route_types", object.RouteTypes.RouteType)
+	d.Set("route_map_id", object.RouteMapId)
 	d.Set("source_child_instance_types", object.SourceChildInstanceTypes.SourceChildInstanceType)
 	d.Set("source_instance_ids", object.SourceInstanceIds.SourceInstanceId)
 	d.Set("source_instance_ids_reverse_match", object.SourceInstanceIdsReverseMatch)
@@ -406,15 +406,13 @@ func resourceAlicloudCenRouteMapUpdate(d *schema.ResourceData, meta interface{})
 	}
 	if d.HasChange("destination_cidr_blocks") {
 		update = true
-		destinationCidrBlocks := expandStringList(d.Get("destination_cidr_blocks").(*schema.Set).List())
-		request.DestinationCidrBlocks = &destinationCidrBlocks
-
 	}
+	destinationCidrBlocks := expandStringList(d.Get("destination_cidr_blocks").(*schema.Set).List())
+	request.DestinationCidrBlocks = &destinationCidrBlocks
 	if d.HasChange("destination_instance_ids") {
 		update = true
 		destinationInstanceIds := expandStringList(d.Get("destination_instance_ids").(*schema.Set).List())
 		request.DestinationInstanceIds = &destinationInstanceIds
-
 	}
 	if d.HasChange("destination_instance_ids_reverse_match") {
 		update = true

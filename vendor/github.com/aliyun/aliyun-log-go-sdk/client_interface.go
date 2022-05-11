@@ -289,4 +289,18 @@ type ClientInterface interface {
 	UpdateResourceRecordString(resourceName, recordStr string) error
 	CreateResourceRecord(resourceName string, record *ResourceRecord) error
 	CreateResourceRecordString(resourceName, recordStr string) error
+
+	// #################### Ingestion #####################
+	CreateIngestion(project string, ingestion *Ingestion) error
+	UpdateIngestion(project string, ingestion *Ingestion) error
+	GetIngestion(project string, name string) (*Ingestion, error)
+	ListIngestion(project, logstore, name, displayName string, offset, size int) (ingestions []*Ingestion, total, count int, error error)
+	DeleteIngestion(project string, name string) error
+
+	// #################### Export #####################
+	CreateExport(project string, export *Export) error
+	UpdateExport(project string, export *Export) error
+	GetExport(project, name string) (*Export, error)
+	ListExport(project, logstore, name, displayName string, offset, size int) (exports []*Export, total, count int, error error)
+	DeleteExport(project string, name string) error
 }

@@ -22,9 +22,7 @@ import (
 )
 
 func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_vbr_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVbrAttachmentMap)
@@ -39,7 +37,6 @@ func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VbrSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -129,9 +126,7 @@ func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 }
 
 func TestAccAlicloudCenTransitRouterVbrAttachment_basic1(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_vbr_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVbrAttachmentMap)
@@ -146,7 +141,6 @@ func TestAccAlicloudCenTransitRouterVbrAttachment_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VbrSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -230,12 +224,12 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
   peering_subnet_mask        = "255.255.255.252"
   physical_connection_id     = data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = 19
+  vlan_id                    = %d
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
 }
-`, name)
+`, name, acctest.RandIntRange(1, 2999))
 }
 
 func AlicloudCenTransitRouterVbrAttachmentBasicDependence1(name string) string {
@@ -260,14 +254,14 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
   peering_subnet_mask        = "255.255.255.252"
   physical_connection_id     = data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = 19
+  vlan_id                    = %d
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
 }
 
 data "alicloud_account" "default" {}
-`, name)
+`, name, acctest.RandIntRange(1, 2999))
 }
 
 func TestAccAlicloudCenTransitRouterVbrAttachment_unit(t *testing.T) {

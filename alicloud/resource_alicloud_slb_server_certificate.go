@@ -136,11 +136,11 @@ func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta int
 func resourceAlicloudSlbServerCertificateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
-	tags, err := slbService.DescribeTags(d.Id(), nil, TagResourceCertificate)
+	tags, err := slbService.ListTagResources(d.Id(), "certificate")
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("tags", slbService.tagsToMap(tags))
+	d.Set("tags", tagsToMap(tags))
 
 	serverCertificate, err := slbService.DescribeSlbServerCertificate(d.Id())
 	if err != nil {

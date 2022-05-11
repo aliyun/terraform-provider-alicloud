@@ -81,13 +81,13 @@ type DescribeDynamicTagRuleListRequest struct {
 // DescribeDynamicTagRuleListResponse is the response struct for api DescribeDynamicTagRuleList
 type DescribeDynamicTagRuleListResponse struct {
 	*responses.BaseResponse
+	RequestId    string       `json:"RequestId" xml:"RequestId"`
 	Success      bool         `json:"Success" xml:"Success"`
 	Code         string       `json:"Code" xml:"Code"`
 	Message      string       `json:"Message" xml:"Message"`
-	RequestId    string       `json:"RequestId" xml:"RequestId"`
-	Total        int          `json:"Total" xml:"Total"`
-	PageNumber   string       `json:"PageNumber" xml:"PageNumber"`
 	PageSize     string       `json:"PageSize" xml:"PageSize"`
+	PageNumber   string       `json:"PageNumber" xml:"PageNumber"`
+	Total        int          `json:"Total" xml:"Total"`
 	TagGroupList TagGroupList `json:"TagGroupList" xml:"TagGroupList"`
 }
 
@@ -96,7 +96,7 @@ func CreateDescribeDynamicTagRuleListRequest() (request *DescribeDynamicTagRuleL
 	request = &DescribeDynamicTagRuleListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeDynamicTagRuleList", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeDynamicTagRuleList", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

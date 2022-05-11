@@ -114,7 +114,7 @@ func testSweepArmsAlertContact(region string) error {
 	return nil
 }
 
-func TestAccAlicloudArmsAlertContact_basic(t *testing.T) {
+func TestAccAlicloudARMSAlertContact_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_arms_alert_contact.default"
 	ra := resourceAttrInit(resourceId, ArmsAlertContactMap)
@@ -240,7 +240,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudArmsAlertContact_unit(t *testing.T) {
+func TestAccAlicloudARMSAlertContact_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_arms_alert_contact"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_arms_alert_contact"].Schema).Data(nil, nil)

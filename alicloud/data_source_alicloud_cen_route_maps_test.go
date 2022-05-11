@@ -14,7 +14,7 @@ func TestAccAlicloudCenRouteMapsDataSource(t *testing.T) {
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenRouteMapsSourceConfig(rand, map[string]string{
 			"cen_id": `"${alicloud_cen_instance.default.id}"`,
-			"ids":    `[split(":",alicloud_cen_route_map.default.id)[1]]`,
+			"ids":    `[alicloud_cen_route_map.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenRouteMapsSourceConfig(rand, map[string]string{
 			"cen_id": `"${alicloud_cen_instance.default.id}"`,
@@ -25,12 +25,12 @@ func TestAccAlicloudCenRouteMapsDataSource(t *testing.T) {
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenRouteMapsSourceConfig(rand, map[string]string{
 			"cen_id": `"${alicloud_cen_instance.default.id}"`,
-			"ids":    `[split(":",alicloud_cen_route_map.default.id)[1]]`,
+			"ids":    `[alicloud_cen_route_map.default.id]`,
 			"status": `"Active"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenRouteMapsSourceConfig(rand, map[string]string{
 			"cen_id": `"${alicloud_cen_instance.default.id}"`,
-			"ids":    `[split(":",alicloud_cen_route_map.default.id)[1]]`,
+			"ids":    `[alicloud_cen_route_map.default.id]`,
 			"status": `"Creating"`,
 		}),
 	}
@@ -49,12 +49,12 @@ func TestAccAlicloudCenRouteMapsDataSource(t *testing.T) {
 	cenRegionIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenRouteMapsSourceConfig(rand, map[string]string{
 			"cen_id":         `"${alicloud_cen_instance.default.id}"`,
-			"ids":            `[split(":",alicloud_cen_route_map.default.id)[1]]`,
+			"ids":            `[alicloud_cen_route_map.default.id]`,
 			"cen_region_id ": `"${var.child_region}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenRouteMapsSourceConfig(rand, map[string]string{
 			"cen_id":         `"${alicloud_cen_instance.default.id}"`,
-			"ids":            `[split(":",alicloud_cen_route_map.default.id)[1]]`,
+			"ids":            `[alicloud_cen_route_map.default.id]`,
 			"cen_region_id ": `"${var.child_region}_fake"`,
 		}),
 	}
@@ -62,12 +62,12 @@ func TestAccAlicloudCenRouteMapsDataSource(t *testing.T) {
 	transmitDirectionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenRouteMapsSourceConfig(rand, map[string]string{
 			"cen_id":             `"${alicloud_cen_instance.default.id}"`,
-			"ids":                `[split(":",alicloud_cen_route_map.default.id)[1]]`,
+			"ids":                `[alicloud_cen_route_map.default.id]`,
 			"transmit_direction": `"RegionIn"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenRouteMapsSourceConfig(rand, map[string]string{
 			"cen_id":             `"${alicloud_cen_instance.default.id}"`,
-			"ids":                `[split(":",alicloud_cen_route_map.default.id)[1]]`,
+			"ids":                `[alicloud_cen_route_map.default.id]`,
 			"transmit_direction": `"RegionOut"`,
 		}),
 	}
@@ -76,6 +76,7 @@ func TestAccAlicloudCenRouteMapsDataSource(t *testing.T) {
 		existConfig: testAccCheckAlicloudCenRouteMapsSourceConfig(rand, map[string]string{
 			"cen_id":             `"${alicloud_cen_instance.default.id}"`,
 			"cen_region_id ":     `"${var.child_region}"`,
+			"ids":                `[alicloud_cen_route_map.default.id]`,
 			"status":             `"Active"`,
 			"transmit_direction": `"RegionIn"`,
 			"description_regex":  `"datasource_test"`,
@@ -83,6 +84,7 @@ func TestAccAlicloudCenRouteMapsDataSource(t *testing.T) {
 		fakeConfig: testAccCheckAlicloudCenRouteMapsSourceConfig(rand, map[string]string{
 			"cen_id":             `"${alicloud_cen_instance.default.id}"`,
 			"cen_region_id ":     `"${var.child_region}"`,
+			"ids":                `[alicloud_cen_route_map.default.id]`,
 			"status":             `"Active"`,
 			"transmit_direction": `"RegionIn"`,
 			"description_regex":  `"datasource_test_fake"`,
@@ -102,6 +104,7 @@ func TestAccAlicloudCenRouteMapsDataSource(t *testing.T) {
 			"maps.0.source_instance_ids_reverse_match":      CHECKSET,
 			"maps.0.status":                                 "Active",
 			"maps.0.transmit_direction":                     "RegionIn",
+			"maps.0.route_map_id":                           CHECKSET,
 		}
 	}
 

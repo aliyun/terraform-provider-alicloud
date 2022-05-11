@@ -11,9 +11,6 @@ import (
 )
 
 func TestAccAlicloudCenTransitRouterVpcAttachmentsDataSource(t *testing.T) {
-	defer checkoutAccount(t, false)
-	checkoutAccount(t, true)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterVpcAttachmentsDataSourceName(rand, map[string]string{
@@ -53,9 +50,9 @@ func TestAccAlicloudCenTransitRouterVpcAttachmentsDataSource(t *testing.T) {
 			"attachments.0.resource_type":                         "VPC",
 			"attachments.0.vpc_owner_id":                          CHECKSET,
 			"attachments.0.zone_mappings.0.vswitch_id":            CHECKSET,
-			"attachments.0.zone_mappings.0.zone_id":               `cn-hangzhou-h`,
+			"attachments.0.zone_mappings.0.zone_id":               CHECKSET,
 			"attachments.0.zone_mappings.1.vswitch_id":            CHECKSET,
-			"attachments.0.zone_mappings.1.zone_id":               `cn-hangzhou-i`,
+			"attachments.0.zone_mappings.1.zone_id":               CHECKSET,
 		}
 	}
 	var fakeAlicloudCenTransitRouterVpcAttachmentsDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -87,42 +84,28 @@ variable "name" {
 	default = "tf-testAccDataTransitRouterVpcAttachment-%d"
 }
 
+data "alicloud_zones" "default" {
+    available_resource_creation = "VSwitch"
+}
 data "alicloud_vpcs" "default" {
 	name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id = "cn-hangzhou-h"
+	zone_id = data.alicloud_zones.default.ids.0
 }
 data "alicloud_vswitches" "default_master" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id = "cn-hangzhou-i"
+	zone_id = data.alicloud_zones.default.ids.1
 }
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = "cn-hangzhou-h"
-  vswitch_name      = var.name
-}
-resource "alicloud_vswitch" "vswitch_master" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = "cn-hangzhou-i"
-  vswitch_name      = var.name
-}
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-  vswitch_id_master = length(data.alicloud_vswitches.default_master.ids) > 0 ? data.alicloud_vswitches.default_master.ids[0] : concat(alicloud_vswitch.vswitch_master.*.id, [""])[0]
-}
+
 resource "alicloud_cen_instance" "default" {
   cen_instance_name = var.name
   protection_level = "REDUCED"
 }
 
 resource "alicloud_cen_transit_router" "default" {
-cen_id= alicloud_cen_instance.default.id
+	cen_id= alicloud_cen_instance.default.id
 }
 
 resource "alicloud_cen_transit_router_vpc_attachment" "default" {
@@ -130,12 +113,12 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
   transit_router_id = alicloud_cen_transit_router.default.transit_router_id
   vpc_id = data.alicloud_vpcs.default.ids.0
   zone_mappings {
-    zone_id = "cn-hangzhou-h"
-    vswitch_id = local.vswitch_id_master
+    zone_id = data.alicloud_vswitches.default_master.vswitches.0.zone_id
+    vswitch_id = data.alicloud_vswitches.default_master.vswitches.0.id
   }
   zone_mappings {
-    zone_id = "cn-hangzhou-i"
-    vswitch_id = local.vswitch_id
+    zone_id = data.alicloud_vswitches.default.vswitches.0.zone_id
+    vswitch_id = data.alicloud_vswitches.default.vswitches.0.id
   }
   transit_router_attachment_description = "descp"
   transit_router_attachment_name = var.name

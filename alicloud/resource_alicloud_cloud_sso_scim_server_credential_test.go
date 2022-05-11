@@ -181,7 +181,7 @@ func TestAccAlicloudCloudSSOSCIMServerCredential_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "CreateSCIMServerCredential" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -198,6 +198,7 @@ func TestAccAlicloudCloudSSOSCIMServerCredential_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoScimServerCredentialCreate(dInit, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -247,7 +248,7 @@ func TestAccAlicloudCloudSSOSCIMServerCredential_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "UpdateSCIMServerCredentialStatus" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -263,6 +264,7 @@ func TestAccAlicloudCloudSSOSCIMServerCredential_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoScimServerCredentialUpdate(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -285,7 +287,7 @@ func TestAccAlicloudCloudSSOSCIMServerCredential_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "{}"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "ListSCIMServerCredentials" {
 					switch errorCode {
 					case "{}":
@@ -303,6 +305,7 @@ func TestAccAlicloudCloudSSOSCIMServerCredential_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoScimServerCredentialRead(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -334,7 +337,7 @@ func TestAccAlicloudCloudSSOSCIMServerCredential_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "EntityNotExists.SCIMCredential"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "DeleteSCIMServerCredential" {
 					switch errorCode {
 					case "NonRetryableError", "EntityNotExists.SCIMCredential":
@@ -351,6 +354,7 @@ func TestAccAlicloudCloudSSOSCIMServerCredential_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoScimServerCredentialDelete(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)

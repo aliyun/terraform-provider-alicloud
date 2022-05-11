@@ -96,7 +96,7 @@ func testAlicloudEcsLaunchTemplate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEcsLaunchTemplateBasic(t *testing.T) {
+func TestAccAlicloudECSLaunchTemplateBasic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_launch_template.default"
 	ra := resourceAttrInit(resourceId, testAccLaunchTemplateCheckMap)
@@ -583,7 +583,7 @@ func TestAccAlicloudEcsLaunchTemplateBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLaunchTemplateMulti(t *testing.T) {
+func TestAccAlicloudECSLaunchTemplateMulti(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_ecs_launch_template.default.4"
@@ -686,7 +686,7 @@ func TestAccAlicloudLaunchTemplateMulti(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsLaunchTemplateBasic1(t *testing.T) {
+func TestAccAlicloudECSLaunchTemplateBasic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_launch_template.default"
 	ra := resourceAttrInit(resourceId, testAccLaunchTemplateCheckMap1)
@@ -828,7 +828,7 @@ data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
+  name_regex  = "^ubuntu"
   most_recent = true
   owners      = "system"
 }
@@ -907,7 +907,7 @@ data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
+  name_regex  = "^ubuntu"
   most_recent = true
   owners      = "system"
 }

@@ -77,10 +77,10 @@ type DescribeActiveMetricRuleListRequest struct {
 // DescribeActiveMetricRuleListResponse is the response struct for api DescribeActiveMetricRuleList
 type DescribeActiveMetricRuleListResponse struct {
 	*responses.BaseResponse
-	Success    bool                                     `json:"Success" xml:"Success"`
 	Code       string                                   `json:"Code" xml:"Code"`
 	Message    string                                   `json:"Message" xml:"Message"`
 	RequestId  string                                   `json:"RequestId" xml:"RequestId"`
+	Success    bool                                     `json:"Success" xml:"Success"`
 	Datapoints DatapointsInDescribeActiveMetricRuleList `json:"Datapoints" xml:"Datapoints"`
 	AlertList  AlertList                                `json:"AlertList" xml:"AlertList"`
 }
@@ -90,7 +90,7 @@ func CreateDescribeActiveMetricRuleListRequest() (request *DescribeActiveMetricR
 	request = &DescribeActiveMetricRuleListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeActiveMetricRuleList", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeActiveMetricRuleList", "Cms", "openAPI")
 	request.Method = requests.GET
 	return
 }

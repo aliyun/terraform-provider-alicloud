@@ -2,11 +2,20 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"reflect"
 	"testing"
 
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAlicloudBastionhostUserAttachment_basic0(t *testing.T) {
@@ -31,7 +40,7 @@ func TestAccAlicloudBastionhostUserAttachment_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":   "${alicloud_bastionhost_instance.default.id}",
+					"instance_id":   "${alicloud_bastionhost_user_group.default.instance_id}",
 					"user_group_id": "${alicloud_bastionhost_user_group.default.user_group_id}",
 					"user_id":       "${alicloud_bastionhost_user.default.user_id}",
 				}),
@@ -63,40 +72,10 @@ func AlicloudBastionhostUserAttachmentBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
-data "alicloud_zones" "default" {
- available_resource_creation = "VSwitch"
-}
-data "alicloud_vpcs" "default" {
- name_regex = "default-NODELETING"
-}
-data "alicloud_vswitches" "default" {
- zone_id = local.zone_id
- vpc_id  = data.alicloud_vpcs.default.ids.0
-}
-resource "alicloud_vswitch" "this" {
- count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
- vswitch_name = var.name
- vpc_id       = data.alicloud_vpcs.default.ids.0
- zone_id      = data.alicloud_zones.default.ids.0
- cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
-}
-resource "alicloud_security_group" "default" {
- vpc_id = data.alicloud_vpcs.default.ids.0
- name   = var.name
-}
-locals {
- vswitch_id  = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
- zone_id     = data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]
-}
-resource "alicloud_bastionhost_instance" "default" {
- description        = var.name
- license_code       = "bhah_ent_50_asset"
- period             = "1"
- vswitch_id         = local.vswitch_id
- security_group_ids = [alicloud_security_group.default.id]
-}
+data "alicloud_bastionhost_instances" "default" {}
+
 resource "alicloud_bastionhost_user" "default" {
-  instance_id     = alicloud_bastionhost_instance.default.id
+  instance_id     = data.alicloud_bastionhost_instances.default.ids.0
   mobile         = "13312345678"
   mobile_country_code = "CN"
   password       = "YourPassword-123"
@@ -104,9 +83,204 @@ resource "alicloud_bastionhost_user" "default" {
   user_name      = var.name
 }
 resource "alicloud_bastionhost_user_group" "default" {
-  instance_id     = alicloud_bastionhost_instance.default.id
+  instance_id     = data.alicloud_bastionhost_instances.default.ids.0
   user_group_name = var.name
 }
 
 `, name)
+}
+
+func TestAccAlicloudBastionhostUserAttachment_unit(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_bastionhost_user_attachment"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_bastionhost_user_attachment"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"instance_id":   "AddUsersToGroupValue",
+		"user_group_id": "AddUsersToGroupValue",
+		"user_id":       "AddUsersToGroupValue",
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		// ListUsers
+		"Users": []interface{}{
+			map[string]interface{}{
+				"InstanceId":  "AddUsersToGroupValue",
+				"UserId":      "AddUsersToGroupValue",
+				"UserGroupId": "AddUsersToGroupValue",
+			},
+		},
+	}
+	CreateMockResponse := map[string]interface{}{}
+	ReadMockResponseDiff := map[string]interface{}{}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       String(errorCode),
+			Data:       String(errorCode),
+			Message:    String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_bastionhost_user_attachment", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			mapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+
+	// Create
+	t.Run("Create", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBastionhostClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudBastionhostUserAttachmentCreate(dInit, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+		ReadMockResponseDiff = map[string]interface{}{}
+		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "AddUsersToGroup" {
+					switch errorCode {
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if retryIndex >= len(errorCodes)-1 {
+							successResponseMock(ReadMockResponseDiff)
+							return CreateMockResponse, nil
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudBastionhostUserAttachmentCreate(dInit, rawClient)
+			patches.Reset()
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			default:
+				assert.Nil(t, err)
+				dCompare, _ := schema.InternalMap(p["alicloud_bastionhost_user_attachment"].Schema).Data(dInit.State(), nil)
+				for key, value := range attributes {
+					_ = dCompare.Set(key, value)
+				}
+				assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+			}
+			if retryIndex >= len(errorCodes)-1 {
+				break
+			}
+		}
+	})
+
+	// Read
+	t.Run("Read", func(t *testing.T) {
+		attributesDiff := map[string]interface{}{}
+		diff, err := newInstanceDiff("alicloud_bastionhost_user_attachment", attributes, attributesDiff, dInit.State())
+		if err != nil {
+			t.Error(err)
+		}
+		dExisted, _ = schema.InternalMap(p["alicloud_bastionhost_user_attachment"].Schema).Data(dInit.State(), diff)
+		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "{}"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "ListUsers" {
+					switch errorCode {
+					case "{}":
+						return notFoundResponseMock(errorCode)
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if errorCodes[retryIndex] == "nil" {
+							return ReadMockResponse, nil
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudBastionhostUserAttachmentRead(dExisted, rawClient)
+			patches.Reset()
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			case "{}":
+				assert.Nil(t, err)
+			}
+		}
+	})
+
+	// Delete
+	t.Run("Delete", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBastionhostClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:    String("loadEndpoint error"),
+				Data:    String("loadEndpoint error"),
+				Message: String("loadEndpoint error"),
+			}
+		})
+		err := resourceAlicloudBastionhostUserAttachmentDelete(dExisted, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+		attributesDiff := map[string]interface{}{}
+		diff, err := newInstanceDiff("alicloud_bastionhost_user_attachment", attributes, attributesDiff, dInit.State())
+		if err != nil {
+			t.Error(err)
+		}
+		dExisted, _ = schema.InternalMap(p["alicloud_bastionhost_user_attachment"].Schema).Data(dInit.State(), diff)
+		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "OBJECT_NOT_FOUND", "Commodity.BizError.InvalidStatus"}
+		for index, errorCode := range errorCodes {
+			retryIndex := index - 1
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "RemoveUsersFromGroup" {
+					switch errorCode {
+					case "NonRetryableError":
+						return failedResponseMock(errorCode)
+					default:
+						retryIndex++
+						if errorCodes[retryIndex] == "nil" {
+							ReadMockResponse = map[string]interface{}{}
+							return ReadMockResponse, nil
+						}
+						return failedResponseMock(errorCodes[retryIndex])
+					}
+				}
+				return ReadMockResponse, nil
+			})
+			err := resourceAlicloudBastionhostUserAttachmentDelete(dExisted, rawClient)
+			patches.Reset()
+			switch errorCode {
+			case "NonRetryableError":
+				assert.NotNil(t, err)
+			case "OBJECT_NOT_FOUND", "Commodity.BizError.InvalidStatus":
+				assert.Nil(t, err)
+			}
+		}
+	})
 }

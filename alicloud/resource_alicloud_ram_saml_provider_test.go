@@ -21,7 +21,7 @@ import (
 )
 
 //  The test parameter encodedsaml_metadata_document should not be exposed
-func SkipTestAccAlicloudRamSamlProvider_basic(t *testing.T) {
+func SkipTestAccAlicloudRAMSamlProvider_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_saml_provider.default"
 	ra := resourceAttrInit(resourceId, AlicloudRamSamlProviderMap)
@@ -106,7 +106,7 @@ func AlicloudRamSamlProviderBasicDependence(name string) string {
 	return ""
 }
 
-func TestAccAlicloudRamSamlProvider_unit(t *testing.T) {
+func TestAccAlicloudRAMSamlProvider_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ram_saml_provider"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ram_saml_provider"].Schema).Data(nil, nil)

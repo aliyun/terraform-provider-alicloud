@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudKvstoreAuditLogConfig_basic(t *testing.T) {
+func TestAccAlicloudKVStoreAuditLogConfig_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_kvstore_audit_log_config.default"
 	ra := resourceAttrInit(resourceId, KvstoreAuditLogConfigMap)
@@ -133,7 +133,7 @@ func KvstoreAuditLogConfigBasicdependence(name string) string {
 	`, name)
 }
 
-func TestAccAlicloudKvstoreAuditLogConfig_unit(t *testing.T) {
+func TestAccAlicloudKVStoreAuditLogConfig_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_kvstore_audit_log_config"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_kvstore_audit_log_config"].Schema).Data(nil, nil)

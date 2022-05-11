@@ -83,6 +83,7 @@ The following arguments are supported:
   * If the Period parameter is set to `Week`, the value of the UsedTime parameter ranges from `1`, `2` and `3`.
 * `vswitch_id` - (Required, ForceNew) The ID of the vSwitch to which the host is connected.
 * `zone_id` - (Required, ForceNew) The ID of the zone.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 

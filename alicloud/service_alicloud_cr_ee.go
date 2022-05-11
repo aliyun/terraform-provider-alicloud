@@ -78,18 +78,34 @@ func (c *CrService) GetCrEEInstanceUsage(instanceId string) (*cr_ee.GetInstanceU
 	request.InstanceId = instanceId
 	action := request.GetActionName()
 
-	raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-		return creeClient.GetInstanceUsage(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+			return creeClient.GetInstanceUsage(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, raw, request.RpcRequest, request)
+		response, _ = raw.(*cr_ee.GetInstanceUsageResponse)
+		if !response.GetInstanceUsageIsSuccess && response.Code == "INSTANCE_STATUS_NOT_SUPPORT" {
+			wait()
+			return resource.RetryableError(WrapErrorf(fmt.Errorf("%v", response), NotFoundMsg, AlibabaCloudSdkGoERROR))
+		}
+		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, raw, request.RpcRequest, request)
 
-	response, _ = raw.(*cr_ee.GetInstanceUsageResponse)
 	if !response.GetInstanceUsageIsSuccess {
 		if response.Code == "INSTANCE_NOT_EXIST" {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -119,8 +135,11 @@ func (c *CrService) ListCrEEInstanceEndpoint(instanceId string) (*cr_ee.ListInst
 			return resource.NonRetryableError(err)
 		}
 		addDebug(action, raw, request.RpcRequest, request)
-
 		response, _ = raw.(*cr_ee.ListInstanceEndpointResponse)
+		if !response.ListInstanceEndpointIsSuccess && response.Code == "INSTANCE_STATUS_NOT_SUPPORT" {
+			wait()
+			return resource.RetryableError(WrapErrorf(fmt.Errorf("%v", response), NotFoundMsg, AlibabaCloudSdkGoERROR))
+		}
 		return nil
 	})
 	if err != nil {
@@ -131,7 +150,7 @@ func (c *CrService) ListCrEEInstanceEndpoint(instanceId string) (*cr_ee.ListInst
 	}
 	if !response.ListInstanceEndpointIsSuccess {
 		if response.Code == "INSTANCE_NOT_EXIST" {
-			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(fmt.Errorf("%v", response), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(fmt.Errorf("%v", response), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}

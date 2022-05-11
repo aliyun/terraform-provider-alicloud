@@ -24,7 +24,6 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CddcSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -156,7 +155,6 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CddcSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -164,8 +162,9 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine": "SQLServer",
-					"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
+					"engine":          "SQLServer",
+					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
+					"open_permission": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -174,16 +173,17 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"disk_allocation_ratio": "110",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"disk_allocation_ratio": "110",
-					}),
-				),
-			},
+			// SQLServer does not support to update disk_allocation_ratio
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"disk_allocation_ratio": "110",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"disk_allocation_ratio": "110",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"allocation_policy": "Intensively",
@@ -236,7 +236,6 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"disk_allocation_ratio":     "111",
 					"allocation_policy":         "Evenly",
 					"host_replace_policy":       "Auto",
 					"mem_allocation_ratio":      "61",
@@ -245,7 +244,6 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"disk_allocation_ratio":     "111",
 						"allocation_policy":         "Evenly",
 						"host_replace_policy":       "Auto",
 						"mem_allocation_ratio":      "61",
@@ -278,7 +276,6 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CddcSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -400,7 +397,6 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic3(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CddcSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -522,7 +518,6 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic4(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CddcSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -644,7 +639,6 @@ func TestAccAlicloudCddcDedicatedHostGroup_basic5(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CddcSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

@@ -52,7 +52,7 @@ The following arguments are supported:
 * `group_id` - (Optional) The ID of the application group.
 * `metric_rule_template_name` - (Required) The name of the alert template.
 * `notify_level` - (Optional) The alert notification method. Valid values:Set the value to 4. The value 4 indicates that alert notifications are sent by using TradeManager and DingTalk chatbots.
-* `rest_version` - (Optional, ForceNew) The version of the alert template to be modified.
+* `rest_version` - (Optional) The version of the alert template to be modified.
 
 -> **NOTE:** The version changes with the number of times that the alert template is modified.
 * `silence_time` - (Optional) The mute period during which notifications are not repeatedly sent for an alert.Valid values: 0 to 86400. Unit: seconds. Default value: `86400`.

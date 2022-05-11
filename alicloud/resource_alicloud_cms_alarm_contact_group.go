@@ -3,6 +3,9 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
@@ -62,15 +65,26 @@ func resourceAlicloudCmsAlarmContactGroupCreate(d *schema.ResourceData, meta int
 	if v, ok := d.GetOkExists("enable_subscribed"); ok {
 		request.EnableSubscribed = requests.NewBoolean(v.(bool))
 	}
-
-	raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.PutContactGroup(request)
+	var response *cms.PutContactGroupResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.PutContactGroup(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		response, _ = raw.(*cms.PutContactGroupResponse)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_alarm_contact_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*cms.PutContactGroupResponse)
 
 	if response.Code != "200" {
 		return WrapError(Error("PutContactGroup failed for " + response.Message))
@@ -118,11 +132,23 @@ func resourceAlicloudCmsAlarmContactGroupUpdate(d *schema.ResourceData, meta int
 		request.EnableSubscribed = requests.NewBoolean(d.Get("enable_subscribed").(bool))
 	}
 	if update {
-		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.PutContactGroup(request)
+		var response *cms.PutContactGroupResponse
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+				return cmsClient.PutContactGroup(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw)
+			response, _ = raw.(*cms.PutContactGroupResponse)
+			return nil
 		})
-		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*cms.PutContactGroupResponse)
 
 		if response.Code != "200" {
 			return WrapError(Error("PutContactGroup failed for " + response.Message))
@@ -137,11 +163,23 @@ func resourceAlicloudCmsAlarmContactGroupDelete(d *schema.ResourceData, meta int
 	client := meta.(*connectivity.AliyunClient)
 	request := cms.CreateDeleteContactGroupRequest()
 	request.ContactGroupName = d.Id()
-	raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.DeleteContactGroup(request)
+	var response *cms.DeleteContactGroupResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.DeleteContactGroup(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		response, _ = raw.(*cms.DeleteContactGroupResponse)
+		return nil
 	})
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*cms.DeleteContactGroupResponse)
 
 	if response.Code != "200" {
 		return WrapError(Error("DeleteContactGroup failed for " + response.Message))

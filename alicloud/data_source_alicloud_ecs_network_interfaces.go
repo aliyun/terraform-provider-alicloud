@@ -217,6 +217,18 @@ func dataSourceAlicloudEcsNetworkInterfaces() *schema.Resource {
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
+						"associated_public_ip": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"public_ip_address": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -395,6 +407,16 @@ func dataSourceAlicloudEcsNetworkInterfacesRead(d *schema.ResourceData, meta int
 			}
 		}
 		mapping["tags"] = tags
+
+		associatedPublicIps := make([]map[string]interface{}, 0)
+		if v, ok := object["AssociatedPublicIp"].(map[string]interface{}); ok && len(v) != 0 {
+			associatedPublicIp := map[string]interface{}{
+				"public_ip_address": v["PublicIpAddress"],
+			}
+			associatedPublicIps = append(associatedPublicIps, associatedPublicIp)
+		}
+		mapping["associated_public_ip"] = associatedPublicIps
+
 		ids = append(ids, fmt.Sprint(object["NetworkInterfaceId"]))
 		names = append(names, object["NetworkInterfaceName"])
 		s = append(s, mapping)

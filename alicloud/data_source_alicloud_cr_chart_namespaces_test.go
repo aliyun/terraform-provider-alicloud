@@ -12,22 +12,22 @@ func TestAccAlicloudCRNameSpaceDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCRNameSpaceDataSourceName(rand, map[string]string{
-			"instance_id": `"${local.instance_id}"`,
+			"instance_id": `"${alicloud_cr_chart_namespace.default.instance_id}"`,
 			"ids":         `["${alicloud_cr_chart_namespace.default.id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudCRNameSpaceDataSourceName(rand, map[string]string{
-			"instance_id": `"${local.instance_id}"`,
+			"instance_id": `"${alicloud_cr_chart_namespace.default.instance_id}"`,
 			"ids":         `["${alicloud_cr_chart_namespace.default.id}_fake"]`,
 		}),
 	}
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCRNameSpaceDataSourceName(rand, map[string]string{
-			"instance_id": `"${local.instance_id}"`,
+			"instance_id": `"${alicloud_cr_chart_namespace.default.instance_id}"`,
 			"name_regex":  `"${alicloud_cr_chart_namespace.default.namespace_name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCRNameSpaceDataSourceName(rand, map[string]string{
-			"instance_id": `"${local.instance_id}"`,
+			"instance_id": `"${alicloud_cr_chart_namespace.default.instance_id}"`,
 			"name_regex":  `"${alicloud_cr_chart_namespace.default.namespace_name}_fake"`,
 		}),
 	}
@@ -69,23 +69,10 @@ variable "name" {
 	default = "tftest%d"
 }
 
-resource "alicloud_cr_ee_instance" "default" {
-  count = length(data.alicloud_cr_ee_instances.default.ids) > 0 ? 0 : 1
-  payment_type  = "Subscription"
-  period        = 1
-  instance_type = "Advanced"
-  instance_name = var.name
-}
-
-data "alicloud_cr_ee_instances" "default" {
-}
-
-locals{
-  instance_id =  length(data.alicloud_cr_ee_instances.default.ids) > 0 ? data.alicloud_cr_ee_instances.default.ids[0] : concat(alicloud_cr_ee_instance.default.*.id, [""])[0]
-}
+data "alicloud_cr_ee_instances" "default" {}
 
 resource "alicloud_cr_chart_namespace" "default" {
-	instance_id        = local.instance_id
+	instance_id        = data.alicloud_cr_ee_instances.default.ids.0
 	namespace_name       = var.name
 }
 

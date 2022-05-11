@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDdosCooSchedulerRule_basic(t *testing.T) {
+func TestAccAlicloudDdoscooSchedulerRule_basic(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
-	var v ddoscoo.SchedulerRule
+	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_scheduler_rule.default"
 	ra := resourceAttrInit(resourceId, DdosCooSchedulerRuleMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -79,27 +78,27 @@ func TestAccAlicloudDdosCooSchedulerRule_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"rule_type": "3",
+					"rule_type": "6",
 					"rules": []map[string]string{
 						{
 							"priority":   "100",
 							"region_id":  "cn-hangzhou",
 							"type":       "A",
 							"value":      "170.33.2.125",
-							"value_type": "3",
+							"value_type": "1",
 						},
 						{
 							"priority":   "50",
 							"region_id":  "cn-hangzhou",
 							"type":       "A",
 							"value":      "170.33.14.193",
-							"value_type": "1",
+							"value_type": "6",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"rule_type": "3",
+						"rule_type": "6",
 						"rules.#":   "2",
 					}),
 				),

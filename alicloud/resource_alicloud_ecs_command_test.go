@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEcsCommand_basic(t *testing.T) {
+func TestAccAlicloudECSCommand_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_command.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsCommandMap)
@@ -66,7 +66,7 @@ func TestAccAlicloudEcsCommand_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsCommand_basic1(t *testing.T) {
+func TestAccAlicloudECSCommand_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_command.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsCommandMap)
@@ -124,7 +124,7 @@ func AlicloudEcsCommandBasicDependence(name string) string {
 	return ""
 }
 
-func TestAccAlicloudEcsCommand_unit(t *testing.T) {
+func TestAccAlicloudECSCommand_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_command"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_command"].Schema).Data(nil, nil)

@@ -61,6 +61,13 @@ func TestAccAlicloudRdsDBInstanceClassesDatasource(t *testing.T) {
 		}),
 	}
 
+	CommodityCodeConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"zone_id":        "${data.alicloud_db_zones.default.zones.0.id}",
+			"commodity_code": "bards",
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":              "${data.alicloud_db_zones.default.zones.0.id}",
@@ -69,6 +76,7 @@ func TestAccAlicloudRdsDBInstanceClassesDatasource(t *testing.T) {
 			"category":             "HighAvailability",
 			"engine":               "MySQL",
 			"engine_version":       "8.0",
+			"commodity_code":       "bards",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"zone_id":              "${data.alicloud_db_zones.default.zones.0.id}",
@@ -102,7 +110,7 @@ func TestAccAlicloudRdsDBInstanceClassesDatasource(t *testing.T) {
 	}
 
 	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, ZoneIDConf, EngineVersionConf, ChargeTypeConfPrepaid,
-		ChargeTypeConfPostpaid, CategoryConf, StorageTypeConf, allConf)
+		ChargeTypeConfPostpaid, CategoryConf, StorageTypeConf, CommodityCodeConf, allConf)
 }
 
 func testAccCheckAlicloudDBInstanceClassesDataSourceConfig(name string) string {

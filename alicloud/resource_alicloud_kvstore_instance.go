@@ -135,7 +135,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"2.8", "4.0", "5.0", "6.0"}, false),
-				Default:      "5.0",
+				Computed:     true,
 			},
 			"force_upgrade": {
 				Type:     schema.TypeBool,
@@ -1061,7 +1061,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				return r_kvstoreClient.ModifyInstanceSpec(&args)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"MissingRedisUsedmemoryUnsupportPerfItem"}) {
+				if IsExpectedErrors(err, []string{"MissingRedisUsedmemoryUnsupportPerfItem", "Task.Conflict"}) {
 					wait()
 					return resource.RetryableError(err)
 				}

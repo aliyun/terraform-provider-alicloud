@@ -127,7 +127,7 @@ func testSweepRouteTable(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVpcRouteTable_basic(t *testing.T) {
+func TestAccAlicloudVPCRouteTable_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_route_table.default"
 	ra := resourceAttrInit(resourceId, AlicloudRouteTableMap0)
@@ -222,7 +222,7 @@ func TestAccAlicloudVpcRouteTable_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcRouteTable_basic1(t *testing.T) {
+func TestAccAlicloudVPCRouteTable_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_route_table.default"
 	ra := resourceAttrInit(resourceId, AlicloudRouteTableMap0)
@@ -277,7 +277,7 @@ func TestAccAlicloudVpcRouteTable_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpcRouteTable_basic2(t *testing.T) {
+func TestAccAlicloudVPCRouteTable_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_route_table.default"
 	ra := resourceAttrInit(resourceId, AlicloudRouteTableMap0)
@@ -347,7 +347,7 @@ resource "alicloud_vpc" "default" {
 `, name)
 }
 
-func TestAccAlicloudVpcRouteTable_unit(t *testing.T) {
+func TestAccAlicloudVPCRouteTable_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_route_table"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_route_table"].Schema).Data(nil, nil)

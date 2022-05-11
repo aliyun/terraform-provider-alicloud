@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEcsAutoSnapshotPolicyAttachmentBasic(t *testing.T) {
+func TestAccAlicloudECSAutoSnapshotPolicyAttachmentBasic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_auto_snapshot_policy_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsAutoSnapshotPolicyAttachmentMap)
@@ -99,7 +99,7 @@ func AlicloudEcsAutoSnapshotPolicyAttachmentBasicDependence(name string) string 
 `, name)
 }
 
-func TestAccAlicloudEcsAutoSnapshotPolicyAttachment_unit(t *testing.T) {
+func TestAccAlicloudECSAutoSnapshotPolicyAttachment_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy_attachment"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy_attachment"].Schema).Data(nil, nil)

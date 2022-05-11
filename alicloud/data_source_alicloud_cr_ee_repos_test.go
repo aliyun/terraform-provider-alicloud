@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCrEEReposDataSource(t *testing.T) {
+func TestAccAlicloudCREEReposDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	repoName := fmt.Sprintf("tf-testacc-cr-ee-repo-%d", rand)
 	resourceId := "data.alicloud_cr_ee_repos.default"

@@ -63,7 +63,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `name` - The network interface name.
     * `network_interface_id` - The network interface id.
     * `network_interface_name` - The network interface name.
-    *  `network_interface_traffic_mode` - The communication mode of the elastic network card.
+    * `network_interface_traffic_mode` - The communication mode of the elastic network card.
     * `owner_id` - The ID of the account to which the ENIC belongs.
     * `primary_ip_address` - The primary private IP address of the ENI. 
     * `private_ip` - The primary private IP address of the ENI.
@@ -83,3 +83,5 @@ The following attributes are exported in addition to the arguments listed above:
     * `vpc_id` - The Vpc Id.
     * `vswitch_id` - The vswitch id.
     * `zone_id` - The zone id.
+    * `associated_public_ip` - The EIP associated with the secondary private IP address of the ENI.  **NOTE:** Available in v1.163.0+.
+      * `public_ip_address` - The EIP of the ENI.

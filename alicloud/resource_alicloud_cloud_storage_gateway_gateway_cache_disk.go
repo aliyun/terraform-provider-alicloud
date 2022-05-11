@@ -139,6 +139,10 @@ func resourceAlicloudCloudStorageGatewayGatewayCacheDiskRead(d *schema.ResourceD
 }
 func resourceAlicloudCloudStorageGatewayGatewayCacheDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewHcsSgwClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	sgwService := SgwService{client}
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 3)
@@ -152,10 +156,6 @@ func resourceAlicloudCloudStorageGatewayGatewayCacheDiskUpdate(d *schema.Resourc
 			"NewSizeInGB":   d.Get("cache_disk_size_in_gb"),
 		}
 		action := "ExpandCacheDisk"
-		conn, err := client.NewHcsSgwClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

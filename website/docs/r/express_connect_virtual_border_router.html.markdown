@@ -67,6 +67,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Virtual Border Router.
+* `route_table_id` - (Available in v1.166.0+) The Route Table ID Of the Virtual Border Router.
 
 ### Timeouts
 

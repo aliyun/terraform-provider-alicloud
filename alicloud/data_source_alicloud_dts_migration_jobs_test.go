@@ -2,16 +2,15 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDtsMigrationJobsDataSource(t *testing.T) {
+func TestAccAlicloudDTSMigrationJobsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.DTSSupportRegions)
 	idConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDtsMigrationJobsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_dts_migration_job.default.id}"]`,
@@ -203,6 +202,6 @@ data "alicloud_dts_migration_jobs" "default" {
 	enable_details = true
 	%s	
 }
-`, rand, defaultRegionToTest, strings.Join(pairs, " \n "))
+`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, " \n "))
 	return config
 }

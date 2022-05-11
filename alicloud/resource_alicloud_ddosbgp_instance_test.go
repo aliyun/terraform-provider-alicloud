@@ -116,7 +116,6 @@ func TestAccAlicloudDdosbgpInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithTime(t, []int{15})
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DdosbgpSupportedRegions)
 		},
@@ -181,13 +180,7 @@ func TestAccAlicloudDdosbgpInstance_basic(t *testing.T) {
 }
 
 func resourceDdosbgpInstanceDependence(name string) string {
-	return `
-    provider "alicloud" {
-       endpoints {
-           bssopenapi = "business.aliyuncs.com"
-       }
-    }
-`
+	return ``
 }
 
 var ddosbgpInstanceBasicMap = map[string]string{

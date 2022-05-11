@@ -95,9 +95,6 @@ func testSweepServiceMeshServiceMesh(region string) error {
 }
 
 func TestAccAlicloudServiceMeshServiceMesh_basic0(t *testing.T) {
-	checkoutAccount(t, true)
-	defer checkoutAccount(t, false)
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_service_mesh_service_mesh.default"
 	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
@@ -106,8 +103,8 @@ func TestAccAlicloudServiceMeshServiceMesh_basic0(t *testing.T) {
 	}, "DescribeServiceMeshServiceMesh")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sservicemeshservicemesh%d", defaultRegionToTest, rand)
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%sservicemesh%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -121,7 +118,7 @@ func TestAccAlicloudServiceMeshServiceMesh_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"service_mesh_name": "${var.name}",
 					"edition":           "Default",
-					"version":           "v1.9.7.31-g24cdcb43-aliyun",
+					"version":           "${data.alicloud_service_mesh_versions.default.versions.0.version}",
 					"network": []map[string]interface{}{
 						{
 							"vpc_id":        "${local.vpc_id}",
@@ -290,25 +287,193 @@ func AlicloudServiceMeshServiceMeshBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
+data "alicloud_service_mesh_versions" "default" {
+	edition = "Default"
+}
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 data "alicloud_vpcs" "default" {
- name_regex = "default-NODELETING"
+	name_regex = "default-NODELETING"
 }
-resource "alicloud_vpc" "default" {
-    count = length(data.alicloud_vpcs.default.ids) > 0 ? 0 : 1
-	vpc_name = var.name
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id     	= data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_log_project" "default_1" {
+  name        = "${var.name}-01"
+  description = "created by terraform"
+}
+resource "alicloud_log_project" "default_2" {
+  name        = "${var.name}-02"
+  description = "created by terraform"
+}
+locals {
+  vswitch_id = data.alicloud_vswitches.default.ids.0
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  log_project_1 = alicloud_log_project.default_1.name
+  log_project_2 = alicloud_log_project.default_2.name
+}
+
+`, name)
+}
+
+func TestAccAlicloudServiceMeshServiceMesh_AddCLusterId(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeServiceMeshServiceMesh")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%sservicemesh%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": "${var.name}",
+					"edition":           "Default",
+					"cluster_spec":      "standard",
+					"version":           "${data.alicloud_service_mesh_versions.default.versions.0.version}",
+					"network": []map[string]interface{}{
+						{
+							"vpc_id":        "${local.vpc_id}",
+							"vswitche_list": []string{"${local.vswitch_id}"},
+						},
+					},
+					"load_balancer": []map[string]interface{}{
+						{
+							"pilot_public_eip":      "false",
+							"api_server_public_eip": "false",
+						},
+					},
+					"mesh_config": []map[string]interface{}{
+						{
+							"customized_zipkin":  "false",
+							"enable_locality_lb": "false",
+							"telemetry":          "true",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+
+							"tracing": "true",
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "true",
+									"trace_sampling": "100",
+								},
+							},
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "true",
+									"log_level":      "info",
+									"request_cpu":    "1",
+									"request_memory": "512Mi",
+									"limit_cpu":      "2",
+									"limit_memory":   "1024Mi",
+								},
+							},
+							"audit": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"project": "${local.log_project_1}",
+								},
+							},
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "128Mi",
+									"limit_memory":   "1024Mi",
+									"request_cpu":    "100m",
+									"limit_cpu":      "2000m",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "false",
+									"request_memory":                "128Mi",
+									"limit_memory":                  "1024Mi",
+									"request_cpu":                   "100m",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "2000m",
+								},
+							},
+							"outbound_traffic_policy": "ALLOW_ANY",
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+						},
+					},
+					"cluster_ids": []string{"${data.alicloud_cs_managed_kubernetes_clusters.default.clusters[0].id}"},
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name": name,
+						"cluster_spec":      "standard",
+						"mesh_config.#":     "1",
+						"cluster_ids.#":     "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_ids": REMOVEKEY,
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_ids.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+		},
+	})
+}
+
+func AlicloudServiceMeshServiceMeshBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+data "alicloud_service_mesh_versions" "default" {
+	edition = "Default"
+}
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
+}
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+  tags = {
+    default=true
+  }
 }
 data "alicloud_vswitches" "default" {
-  vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-}
-resource "alicloud_vswitch" "default" {
-  count         = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id        = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-  cidr_block    = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
+  vpc_id = data.alicloud_vpcs.default.ids.0
   zone_id     	= data.alicloud_zones.default.zones.0.id
-  vswitch_name  = var.name
+}
+data "alicloud_cs_managed_kubernetes_clusters" "default" {
+  name_regex = "default-NODELETING"
 }
 resource "alicloud_log_project" "default_1" {
   name        = "${var.name}-01"
@@ -319,8 +484,8 @@ resource "alicloud_log_project" "default_2" {
   description = "created by terraform"
 }
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : alicloud_vswitch.default[0].id
-  vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
+  vswitch_id = data.alicloud_vswitches.default.ids.0
+  vpc_id = data.alicloud_vpcs.default.ids.0
   log_project_1 = alicloud_log_project.default_1.name
   log_project_2 = alicloud_log_project.default_2.name
 }

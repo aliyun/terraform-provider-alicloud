@@ -105,6 +105,10 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingRead(d *schema.ResourceDat
 func resourceAlicloudCloudStorageGatewayGatewayLoggingUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	sgwService := SgwService{client}
+	conn, err := client.NewHcsSgwClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -120,10 +124,6 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingUpdate(d *schema.ResourceD
 					"GatewayId": d.Id(),
 				}
 				action := "DisableGatewayLogging"
-				conn, err := client.NewHcsSgwClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 
@@ -152,10 +152,6 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingUpdate(d *schema.ResourceD
 					"GatewayId": d.Id(),
 				}
 				action := "EnableGatewayLogging"
-				conn, err := client.NewHcsSgwClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 

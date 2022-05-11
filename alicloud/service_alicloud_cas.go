@@ -1,7 +1,10 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -51,4 +54,19 @@ func (s *CasService) DescribeSslCertificatesServiceCertificate(id string) (objec
 		return object, WrapErrorf(Error(GetNotFoundMessage("Cas.Sertificate", id)), NotFoundWithResponse, response)
 	}
 	return object, nil
+}
+
+func (s *CasService) SslCertificatesServiceCertificateStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeSslCertificatesServiceCertificate(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		return object, fmt.Sprint(object["Id"]), nil
+	}
 }

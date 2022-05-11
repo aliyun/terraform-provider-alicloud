@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudGaAcceleratorsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "data.alicloud_ga_accelerators.default"
 	name := fmt.Sprintf("tf-testAccelerators_datasource-%d", rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceGaAcceleratorsConfigDependence)
@@ -48,10 +51,10 @@ func TestAccAlicloudGaAcceleratorsDataSource(t *testing.T) {
 			"names.#":                                         "1",
 			"accelerators.#":                                  CHECKSET,
 			"accelerators.0.id":                               CHECKSET,
-			"accelerators.0.accelerator_name":                 fmt.Sprintf("tf-testAccelerators_datasource-%d", rand),
+			"accelerators.0.accelerator_name":                 name,
 			"accelerators.0.cen_id":                           "",
 			"accelerators.0.ddos_id":                          "",
-			"accelerators.0.description":                      "",
+			"accelerators.0.description":                      name,
 			"accelerators.0.dns_name":                         CHECKSET,
 			"accelerators.0.expired_time":                     CHECKSET,
 			"accelerators.0.payment_type":                     "PREPAY",
@@ -75,12 +78,8 @@ func TestAccAlicloudGaAcceleratorsDataSource(t *testing.T) {
 		existMapFunc: existMapFunc,
 		fakeMapFunc:  fakeMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckWithTime(t, []int{1})
-	}
 
-	CheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	CheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
 }
 
 func dataSourceGaAcceleratorsConfigDependence(name string) string {
@@ -92,22 +91,8 @@ resource "alicloud_ga_accelerator" "default" {
   duration         = 1
   spec             = "1"
   accelerator_name = var.name
-  auto_use_coupon  = false
+  auto_use_coupon  = true
   description      = var.name
 }
-resource "alicloud_ga_bandwidth_package" "default" {
-   	bandwidth              =  100
-  	type                   = "Basic"
-  	bandwidth_type         = "Basic"
-	payment_type           = "PayAsYouGo"
-  	billing_type           = "PayBy95"
-	ratio       = 30
-	bandwidth_package_name = var.name
-}
-resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  accelerator_id       = alicloud_ga_accelerator.default.id
-  bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
-}
-
 `, name)
 }

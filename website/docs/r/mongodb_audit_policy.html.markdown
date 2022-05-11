@@ -20,7 +20,6 @@ For information about MongoDB Audit Policy and how to use it, see [What is Audit
 Basic Usage
 
 ```terraform
-
 data "alicloud_mongodb_zones" "default" {}
 
 data "alicloud_vpcs" "default" {
@@ -56,7 +55,6 @@ resource "alicloud_mongodb_audit_policy" "example" {
   db_instance_id = alicloud_mongodb_instance.default.id
   audit_status   = "disabled"
 }
-
 ```
 
 ## Argument Reference
@@ -72,6 +70,15 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Audit Policy. Its value is same as `db_instance_id`.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.161.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when create the Audit Policy.
+* `update` - (Defaults to 5 mins) Used when update the Audit Policy.
 
 ## Import
 

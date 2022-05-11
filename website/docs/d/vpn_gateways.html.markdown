@@ -13,16 +13,16 @@ The VPNs data source lists a number of VPNs resource information owned by an Ali
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_vpn_gateways" "vpn_gateways" {
   vpc_id          = "fake-vpc-id"
   ids             = ["fake-vpn-id1", "fake-vpn-id2"]
   status          = "active"
   business_status = "Normal"
   name_regex      = "testAcc*"
+  enable_ipsec    = true
   output_file     = "/tmp/vpns"
 }
-
 ```
 
 ## Argument Reference
@@ -35,6 +35,7 @@ The following arguments are supported:
 * `business_status` - (Optional) Limit search to specific business status - valid value is "Normal", "FinancialLocked".
 * `name_regex` - (Optional) A regex string of VPN name.
 * `output_file` - (Optional) Save the result to the file.
+* `enable_ipsec` - (Optional, Available 1.161.0+) Indicates whether the IPsec-VPN feature is enabled.
 
 ## Attributes Reference
 

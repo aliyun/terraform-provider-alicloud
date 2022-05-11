@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"fmt"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -44,6 +46,10 @@ func dataSourceAlicloudCenPrivateZones() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"access_region_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -110,7 +116,7 @@ func dataSourceAlicloudCenPrivateZonesRead(d *schema.ResourceData, meta interfac
 
 		for _, item := range response.PrivateZoneInfos.PrivateZoneInfo {
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.AccessRegionId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(request.CenId, ":", item.AccessRegionId)]; !ok {
 					continue
 				}
 			}
@@ -132,7 +138,9 @@ func dataSourceAlicloudCenPrivateZonesRead(d *schema.ResourceData, meta interfac
 	ids := make([]string, len(objects))
 	s := make([]map[string]interface{}, len(objects))
 	for i, object := range objects {
+		id := fmt.Sprint(request.CenId, ":", object.AccessRegionId)
 		mapping := map[string]interface{}{
+			"id":                       id,
 			"access_region_id":         object.AccessRegionId,
 			"cen_id":                   response.CenId,
 			"host_region_id":           object.HostRegionId,
@@ -140,7 +148,7 @@ func dataSourceAlicloudCenPrivateZonesRead(d *schema.ResourceData, meta interfac
 			"private_zone_dns_servers": response.PrivateZoneDnsServers,
 			"status":                   object.Status,
 		}
-		ids[i] = object.AccessRegionId
+		ids[i] = id
 		s[i] = mapping
 	}
 

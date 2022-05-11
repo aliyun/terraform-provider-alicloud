@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCloudSsoServiceDataSource(t *testing.T) {
+func TestAccAlicloudCloudSSOServiceDataSource(t *testing.T) {
 	resourceId := "data.alicloud_cloud_sso_service.current"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	checkoutSupportedRegions(t, true, connectivity.CloudSsoSupportRegions)

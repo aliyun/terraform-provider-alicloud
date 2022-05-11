@@ -83,7 +83,6 @@ func TestAccAlicloudLindormInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"upgrade_type":     "upgrade-disk-size",
 					"instance_storage": "2400",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -115,9 +114,10 @@ func TestAccAlicloudLindormInstance_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
 			},
 		},
 	})
@@ -169,21 +169,19 @@ func TestAccAlicloudLindormInstance_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"time_serires_engine_specification": "lindorm.g.2xlarge",
 					"time_series_engine_node_count":     "2",
-					"instance_storage":                  "2400",
-					"upgrade_type":                      "open-tsdb-engine",
+					"instance_storage":                  "4320",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"time_serires_engine_specification": "lindorm.g.2xlarge",
 						"time_series_engine_node_count":     "2",
-						"instance_storage":                  "2400",
+						"instance_storage":                  "4320",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"time_serires_engine_specification": "lindorm.g.4xlarge",
-					"upgrade_type":                      "upgrade-tsdb-engine",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -193,21 +191,21 @@ func TestAccAlicloudLindormInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"upgrade_type":                  "upgrade-tsdb-core-num",
 					"time_series_engine_node_count": "3",
-					"instance_storage":              "2880",
+					"instance_storage":              "5440",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"time_series_engine_node_count": "3",
-						"instance_storage":              "2880",
+						"instance_storage":              "5440",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
 			},
 		},
 	})
@@ -240,7 +238,7 @@ func TestAccAlicloudLindormInstance_basic2(t *testing.T) {
 					"zone_id":                    "${data.alicloud_zones.default.zones.0.id}",
 					"vswitch_id":                 "${data.alicloud_vswitches.default.ids[0]}",
 					"instance_name":              "${var.name}",
-					"table_engine_specification": "lindorm.c.xlarge",
+					"table_engine_specification": "lindorm.g.4xlarge",
 					"table_engine_node_count":    "2",
 					"instance_storage":           "1920",
 				}),
@@ -249,7 +247,7 @@ func TestAccAlicloudLindormInstance_basic2(t *testing.T) {
 						"disk_category":              "cloud_efficiency",
 						"payment_type":               "PayAsYouGo",
 						"instance_name":              name,
-						"table_engine_specification": "lindorm.c.xlarge",
+						"table_engine_specification": "lindorm.g.4xlarge",
 						"table_engine_node_count":    "2",
 						"instance_storage":           "1920",
 					}),
@@ -257,32 +255,31 @@ func TestAccAlicloudLindormInstance_basic2(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"table_engine_specification": "lindorm.g.4xlarge",
-					"upgrade_type":               "upgrade-lindorm-engine",
+					"table_engine_specification": "lindorm.c.8xlarge",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"table_engine_specification": "lindorm.g.4xlarge",
+						"table_engine_specification": "lindorm.c.8xlarge",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"upgrade_type":            "upgrade-lindorm-core-num",
 					"table_engine_node_count": "3",
-					"instance_storage":        "2400",
+					"instance_storage":        "3200",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"table_engine_node_count": "3",
-						"instance_storage":        "2400",
+						"instance_storage":        "3200",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
 			},
 		},
 	})
@@ -334,21 +331,19 @@ func TestAccAlicloudLindormInstance_basic3(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"search_engine_specification": "lindorm.g.2xlarge",
 					"search_engine_node_count":    "2",
-					"instance_storage":            "2400",
-					"upgrade_type":                "open-search-engine",
+					"instance_storage":            "4320",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"search_engine_specification": "lindorm.g.2xlarge",
 						"search_engine_node_count":    "2",
-						"instance_storage":            "2400",
+						"instance_storage":            "4320",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"search_engine_specification": "lindorm.g.4xlarge",
-					"upgrade_type":                "upgrade-search-engine",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -358,21 +353,21 @@ func TestAccAlicloudLindormInstance_basic3(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"upgrade_type":             "upgrade-search-core-num",
 					"search_engine_node_count": "3",
-					"instance_storage":         "2880",
+					"instance_storage":         "5440",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"search_engine_node_count": "3",
-						"instance_storage":         "2880",
+						"instance_storage":         "5440",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
 			},
 		},
 	})

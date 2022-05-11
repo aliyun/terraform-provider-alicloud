@@ -17,9 +17,8 @@ package cms
 
 // ConfigJson is a nested struct in cms response
 type ConfigJson struct {
+	Ak       string `json:"ak" xml:"ak"`
+	Endpoint string `json:"endpoint" xml:"endpoint"`
 	Logstore string `json:"logstore" xml:"logstore"`
 	Project  string `json:"project" xml:"project"`
-	Endpoint string `json:"endpoint" xml:"endpoint"`
-	As       string `json:"as" xml:"as"`
-	Ak       string `json:"ak" xml:"ak"`
 }

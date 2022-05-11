@@ -110,7 +110,7 @@ func resourceAliyunRouteTableAttachmentDelete(d *schema.ResourceData, meta inter
 		})
 		//Waiting for unassociate the route table
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict"}) {
+			if IsExpectedErrors(err, []string{"TaskConflict", "OperationConflict"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

@@ -55,12 +55,14 @@ resource "alicloud_service_mesh_service_mesh" "example" {
 The following arguments are supported:
 
 * `load_balancer` - (Optional, ForceNew) The configuration of the Load Balancer. See the following `Block load_balancer`.
-* `mesh_config` - (Optional, ForceNew) The configuration of the Service grid. See the following `Block mesh_config`.
+* `mesh_config` - (Optional) The configuration of the Service grid. See the following `Block mesh_config`.
 * `network` - (Required, ForceNew) The network configuration of the Service grid. See the following `Block network`.
 * `service_mesh_name` - (Optional, ForceNew) The name of the resource.
 * `version` - (Optional, ForceNew) The version of the resource. Valid values: `v1.8.6.52-g60741c97-aliyun` and `v1.9.7.31-g24cdcb43-aliyun`.
-* `edition` - (Optional) The type  of the resource. Valid values: `Default` and `Pro`. `Default`:the standard. `Pro`:the Pro version.
+* `edition` - (Optional, ForceNew) The type  of the resource. Valid values: `Default` and `Pro`. `Default`:the standard. `Pro`:the Pro version.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
+* `cluster_spec` - (Optional,Available in v1.166.0+.) The service mesh instance specification. Valid values: `standard`,`enterprise`,`ultimate`.
+* `cluster_ids` - (Optional,Available in v1.166.0+.) The array of the cluster ids.
 
 #### Block network
 
@@ -75,7 +77,7 @@ The mesh_config supports the following:
 
 * `access_log` - (Optional) The configuration of the access logging.
 * `audit` - (Optional) The configuration of the audit. See the following `Block audit`.
-* `customized_zipkin` - (Optional) Whether or not to enable the use of a custom zipkin.
+* `customized_zipkin` - (Optional) Whether to enable the use of a custom zipkin.
 * `enable_locality_lb` - (Optional) The enable locality lb.
 * `kiali` - (Optional) The configuration of the Kiali. See the following `Block kiali`.
 * `opa` - (Optional) The open-door policy of agent (OPA) plug-in information. See the following `Block opa`.

@@ -83,8 +83,8 @@ type DescribeSiteMonitorISPCityListResponse struct {
 	*responses.BaseResponse
 	Code        string      `json:"Code" xml:"Code"`
 	Message     string      `json:"Message" xml:"Message"`
-	Success     string      `json:"Success" xml:"Success"`
 	RequestId   string      `json:"RequestId" xml:"RequestId"`
+	Success     string      `json:"Success" xml:"Success"`
 	IspCityList IspCityList `json:"IspCityList" xml:"IspCityList"`
 }
 
@@ -93,7 +93,7 @@ func CreateDescribeSiteMonitorISPCityListRequest() (request *DescribeSiteMonitor
 	request = &DescribeSiteMonitorISPCityListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeSiteMonitorISPCityList", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeSiteMonitorISPCityList", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

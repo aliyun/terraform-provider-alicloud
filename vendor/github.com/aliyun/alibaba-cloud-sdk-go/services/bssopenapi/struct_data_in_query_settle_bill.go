@@ -17,11 +17,11 @@ package bssopenapi
 
 // DataInQuerySettleBill is a nested struct in bssopenapi response
 type DataInQuerySettleBill struct {
-	BillingCycle string                 `json:"BillingCycle" xml:"BillingCycle"`
-	AccountID    string                 `json:"AccountID" xml:"AccountID"`
-	AccountName  string                 `json:"AccountName" xml:"AccountName"`
 	NextToken    string                 `json:"NextToken" xml:"NextToken"`
+	BillingCycle string                 `json:"BillingCycle" xml:"BillingCycle"`
 	MaxResults   int                    `json:"MaxResults" xml:"MaxResults"`
+	AccountID    string                 `json:"AccountID" xml:"AccountID"`
 	TotalCount   int                    `json:"TotalCount" xml:"TotalCount"`
+	AccountName  string                 `json:"AccountName" xml:"AccountName"`
 	Items        ItemsInQuerySettleBill `json:"Items" xml:"Items"`
 }

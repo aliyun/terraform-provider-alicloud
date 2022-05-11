@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"log"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -60,7 +62,11 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 	response, err := conn.DoRequest(StringPointer("DescribeCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
 	addDebug("DescribeCdnService", response, nil)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "DescribeCdnService", AlibabaCloudSdkGoERROR)
+		if IsExpectedErrors(err, []string{"OperationDenied"}) {
+			log.Printf("[DEBUG] Datasource alicloud_cdn_service DescribeCdnService Failed!!! %s", err)
+		} else {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "DescribeCdnService", AlibabaCloudSdkGoERROR)
+		}
 	}
 
 	if response["OpeningTime"] != nil && response["OpeningTime"].(string) != "" {
@@ -71,7 +77,6 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 		if v, ok := d.GetOk("internet_charge_type"); ok {
 			chargeType = v.(string)
 		}
-
 		if chargeType == "" {
 			return WrapError(fmt.Errorf("Field 'internet_charge_type' is required when 'enable' is 'On'."))
 		}
@@ -86,7 +91,6 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 		}
 		if !opened {
 			resp, err := conn.DoRequest(StringPointer("OpenCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
-
 			addDebug("OpenCdnService", resp, nil)
 			if err != nil {
 				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "OpenCdnService", AlibabaCloudSdkGoERROR)
@@ -96,7 +100,11 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 
 		addDebug("DescribeCdnService", response, nil)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "DescribeCdnService", AlibabaCloudSdkGoERROR)
+			if IsExpectedErrors(err, []string{"OperationDenied"}) {
+				log.Printf("[DEBUG] Datasource alicloud_cdn_service DescribeCdnService Failed!!! %s", err)
+			} else {
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "DescribeCdnService", AlibabaCloudSdkGoERROR)
+			}
 		}
 	}
 

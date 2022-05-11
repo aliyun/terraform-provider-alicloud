@@ -92,8 +92,9 @@ type CreateDynamicTagGroupResponse struct {
 	*responses.BaseResponse
 	Code      string `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
-	Success   bool   `json:"Success" xml:"Success"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
+	Id        string `json:"Id" xml:"Id"`
 }
 
 // CreateCreateDynamicTagGroupRequest creates a request to invoke CreateDynamicTagGroup API
@@ -101,7 +102,7 @@ func CreateCreateDynamicTagGroupRequest() (request *CreateDynamicTagGroupRequest
 	request = &CreateDynamicTagGroupRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "CreateDynamicTagGroup", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "CreateDynamicTagGroup", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

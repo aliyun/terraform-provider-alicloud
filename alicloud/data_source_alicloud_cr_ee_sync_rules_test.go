@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCrEESyncRulesDataSource(t *testing.T) {
+func TestAccAlicloudCREESyncRulesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc-cr-ee-sr-%d", rand)
 	resourceId := "data.alicloud_cr_ee_sync_rules.default"
@@ -144,32 +144,17 @@ variable "region" {
 variable "name" {
 	default = "%s"
 }
-data "alicloud_cr_ee_instances" "default" {
-	name_regex = "^tf-testacc"
-}
+data "alicloud_cr_ee_instances" "default" {}
 
-resource "alicloud_cr_ee_instance" "new" {
-	count = length(data.alicloud_cr_ee_instances.default.ids) > 1 ? 0 : length(data.alicloud_cr_ee_instances.default.ids) > 0 ? 1 : 2
-	payment_type = "Subscription"
-	period = "1"
-	renew_period = "0"
-	renewal_status = "ManualRenewal"
-	instance_type = "Advanced"
-	instance_name = "tf-testacc-advanced-1234-${count.index}"
-} 
-
-locals {
-	instance_ids = sort(concat(data.alicloud_cr_ee_instances.default.ids, alicloud_cr_ee_instance.new.*.id))
-}
 resource "alicloud_cr_ee_namespace" "source_ns" {
-	instance_id = local.instance_ids.0
+	instance_id = data.alicloud_cr_ee_instances.default.ids.0
 	name = "${var.name}"
 	auto_create	= true
 	default_visibility = "PRIVATE"
 }
 
 resource "alicloud_cr_ee_namespace" "target_ns" {
-	instance_id = local.instance_ids.1
+	instance_id = data.alicloud_cr_ee_instances.default.ids.1
 	name = "${var.name}"
 	auto_create	= true
 	default_visibility = "PRIVATE"
@@ -204,5 +189,5 @@ resource "alicloud_cr_ee_sync_rule" "default" {
 	repo_name = "${alicloud_cr_ee_repo.source_repo.name}"
 	target_repo_name = "${alicloud_cr_ee_repo.target_repo.name}"
 }
-`, os.Getenv("ALICLOUD_REGION"), name)
+`, defaultRegionToTest, name)
 }

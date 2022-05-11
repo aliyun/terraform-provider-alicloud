@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_log\_etl
 
-The data processing function of the log service is a hosted, highly available, and scalable data processing service, 
+The data transformation of the log service is a hosted, highly available, and scalable data processing service, 
 which is widely applicable to scenarios such as data regularization, enrichment, distribution, aggregation, and index reconstruction.
 [Refer to details](https://www.alibabacloud.com/help/zh/doc-detail/125384.htm).
 
@@ -160,8 +160,8 @@ The following arguments are supported:
 * `kms_encrypted_access_key_secret` - (Optional) An KMS encrypts access key secret used to a log etl job. If the `access_key_secret` is filled in, this field will be ignored.
 * `kms_encryption_access_key_secret_context` - (Optional) An KMS encryption context used to decrypt `kms_encrypted_access_key_secret` before creating or updating an instance with `kms_encrypted_access_key_secret`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set. When it is changed, the instance will reboot to make the change take effect.
 
-* `from_time` - (Optional) The start time of the processing job, the default starts from the current time.
-* `to_time` - (Optional) Deadline of processing job, the default value is None.
+* `from_time` - (Optional) The start time of the processing job, if not set the value is 0, indicates to start processing from the oldest data.
+* `to_time` - (Optional) Deadline of processing job, if not set the value is 0, indicates that new data will be processed continuously.
 * `script` - (Required) Processing operation grammar.
 * `version` - (Optional) Log etl job version. the default value is `2`.
 * `logstore` - (Required) The source logstore of the processing job.
@@ -178,6 +178,8 @@ The following arguments are supported:
     * `logstore` - (Required) Delivery target logstore.
     * `role_arn` - (Optional) Sts role info under delivery target logstore. `role_arn` and `(access_key_id, access_key_secret)` fill in at most one. If you do not fill in both, then you must fill in `(kms_encrypted_access_key_id, kms_encrypted_access_key_secret, kms_encryption_access_key_id_context, kms_encryption_access_key_secret_context)` to use KMS to get the key pair.
     * `type` - (Optional)  ETL sinks type, the default value is AliyunLOG.
+    
+-> **Note:** `from_time` and `to_time` no modification allowed after successful creation.
 
 ## Attributes Reference
 

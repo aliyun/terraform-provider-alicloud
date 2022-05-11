@@ -203,12 +203,12 @@ func resourceAlicloudVpcRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("user_cidrs", object["UserCidrs"].(map[string]interface{})["UserCidr"])
 	d.Set("vpc_name", object["VpcName"])
 	d.Set("name", object["VpcName"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 
 	describeRouteTableListObject, err := vpcService.DescribeRouteTableList(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("resource_group_id", describeRouteTableListObject["ResourceGroupId"])
 	d.Set("route_table_id", describeRouteTableListObject["RouteTableId"])
 	d.Set("router_table_id", describeRouteTableListObject["RouteTableId"])
 	return nil

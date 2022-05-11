@@ -185,6 +185,10 @@ func resourceAlicloudHbrEcsBackupPlanRead(d *schema.ResourceData, meta interface
 }
 func resourceAlicloudHbrEcsBackupPlanUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewHbrClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	hbrService := HbrService{client}
 	var response map[string]interface{}
 	d.Partial(true)
@@ -251,10 +255,6 @@ func resourceAlicloudHbrEcsBackupPlanUpdate(d *schema.ResourceData, meta interfa
 	}
 	if update {
 		action := "UpdateBackupPlan"
-		conn, err := client.NewHbrClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -303,10 +303,6 @@ func resourceAlicloudHbrEcsBackupPlanUpdate(d *schema.ResourceData, meta interfa
 			}
 			request["VaultId"] = d.Get("vault_id")
 			request["SourceType"] = "ECS_FILE"
-			conn, err := client.NewHbrClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCrEndpointAclPoliciesDataSource(t *testing.T) {
+func TestAccAlicloudCREndpointAclPoliciesDataSource(t *testing.T) {
 
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_cr_endpoint_acl_policies.default"
@@ -17,12 +17,12 @@ func TestAccAlicloudCrEndpointAclPoliciesDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id":   "${local.instance_id}",
+			"instance_id":   "${alicloud_cr_endpoint_acl_policy.default.instance_id}",
 			"endpoint_type": "internet",
 			"ids":           []string{"${alicloud_cr_endpoint_acl_policy.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id":   CHECKSET,
+			"instance_id":   "${alicloud_cr_endpoint_acl_policy.default.instance_id}",
 			"endpoint_type": "internet",
 			"ids":           []string{"${alicloud_cr_endpoint_acl_policy.default.id}_fake"},
 		}),
@@ -50,7 +50,6 @@ func TestAccAlicloudCrEndpointAclPoliciesDataSource(t *testing.T) {
 	}
 	preCheck := func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithTime(t, []int{1})
 	}
 	CrEndpointAclPoliciesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
 }
@@ -61,25 +60,14 @@ func dataSourceCrEndpointAclPoliciesConfigDependence(name string) string {
 		  default = "%v"
 		}
 		data "alicloud_cr_ee_instances" "default" {}
-		resource "alicloud_cr_ee_instance" "default" {
-		  count          = length(data.alicloud_cr_ee_instances.default.ids) > 0 ? 0 : 1
-		  payment_type   = "Subscription"
-		  period         = 1
-		  renewal_status = "ManualRenewal"
-		  instance_type  = "Advanced"
-		  instance_name  = var.name
-		}
-		locals {
-		  instance_id = length(data.alicloud_cr_ee_instances.default.ids) > 0 ? data.alicloud_cr_ee_instances.default.ids[0] : concat(alicloud_cr_ee_instance.default.*.id, [""])[0]
-		}
 		data "alicloud_cr_endpoint_acl_service" "default" {
 		  endpoint_type = "internet"
 		  enable        = true
-		  instance_id   = local.instance_id
+		  instance_id   = data.alicloud_cr_ee_instances.default.ids.0
 		  module_name   = "Registry"
 		}
 		resource "alicloud_cr_endpoint_acl_policy" "default" {
-		  instance_id   = local.instance_id
+		  instance_id   = data.alicloud_cr_ee_instances.default.ids.0
 		  entry         = "192.168.1.0/24"
 		  description   = var.name
 		  module_name   = "Registry"

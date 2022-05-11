@@ -327,7 +327,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Running", "Stopped"}, false),
-				Default:      "Running",
+				Computed:     true,
 			},
 
 			"user_data": {
@@ -433,6 +433,11 @@ func resourceAliyunInstance() *schema.Resource {
 			"deployment_set_group_no": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"operator_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"upgrade", "downgrade"}, false),
 			},
 		},
 	}
@@ -799,9 +804,9 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapError(err)
 	}
-	target := d.Get("status").(string)
+	target, targetExist := d.GetOk("status")
 	statusUpdate := d.HasChange("status")
-	if d.IsNewResource() && target == string(Running) {
+	if d.IsNewResource() && targetExist && target.(string) == string(Running) {
 		statusUpdate = false
 	}
 	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate || statusUpdate {
@@ -810,7 +815,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		if errDesc != nil {
 			return WrapError(errDesc)
 		}
-		if (statusUpdate && target == string(Stopped)) || instance.Status == string(Running) {
+		if (statusUpdate && targetExist && target == string(Stopped)) || instance.Status == string(Running) {
 			stopRequest := ecs.CreateStopInstanceRequest()
 			stopRequest.RegionId = client.RegionId
 			stopRequest.InstanceId = d.Id()
@@ -850,7 +855,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			return WrapError(err)
 		}
 
-		if target == string(Running) {
+		if targetExist && target == string(Running) {
 			startRequest := ecs.CreateStartInstanceRequest()
 			startRequest.InstanceId = d.Id()
 
@@ -1709,6 +1714,9 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 			request := ecs.CreateModifyPrepayInstanceSpecRequest()
 			request.InstanceId = d.Id()
 			request.InstanceType = d.Get("instance_type").(string)
+			if v, ok := d.GetOk("operator_type"); ok {
+				request.OperatorType = v.(string)
+			}
 
 			err := resource.Retry(6*time.Minute, func() *resource.RetryError {
 				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {

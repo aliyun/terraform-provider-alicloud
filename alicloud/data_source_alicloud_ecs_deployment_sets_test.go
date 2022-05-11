@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcsDeploymentSetsDataSource(t *testing.T) {
+func TestAccAlicloudECSDeploymentSetsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcsDeploymentSetsDataSourceName(rand, map[string]string{

@@ -26,31 +26,32 @@ variable "transit_router_attachment_description" {
   default = "sdk_rebot_cen_tr_yaochi"
 }
 
-data "alicloud_cen_transit_router_available_resource" "default" {
+data "alicloud_cen_transit_router_available_resources" "default" {
+
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "sdk_rebot_cen_tr_yaochi"
+  vpc_name   = "sdk_rebot_cen_tr_yaochi"
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_vswitch" "default_master" {
-  name              = "sdk_rebot_cen_tr_yaochi"
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "192.168.1.0/24"
-  availability_zone = data.alicloud_cen_transit_router_available_resource.default.zones.0.master_zones.0
+  vswitch_name = "sdk_rebot_cen_tr_yaochi"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.1.0/24"
+  zone_id      = data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[0]
 }
 
 resource "alicloud_vswitch" "default_slave" {
-  name              = "sdk_rebot_cen_tr_yaochi"
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "192.168.2.0/24"
-  availability_zone = data.alicloud_cen_transit_router_available_resource.default.zones.0.slave_zones.0
+  vswitch_name = "sdk_rebot_cen_tr_yaochi"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.2.0/24"
+  zone_id      = data.alicloud_cen_transit_router_available_resources.default.resources[0].slave_zones[0]
 }
 
 resource "alicloud_cen_instance" "default" {
-  name             = "sdk_rebot_cen_tr_yaochi"
-  protection_level = "REDUCED"
+  cen_instance_name = "sdk_rebot_cen_tr_yaochi"
+  protection_level  = "REDUCED"
 }
 
 resource "alicloud_cen_transit_router" "default" {

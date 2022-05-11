@@ -7,9 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -23,81 +25,84 @@ func init() {
 }
 
 func testSweepMongoDBInstances(region string) error {
+
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return WrapError(err)
+		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
 	}
+	action := "DescribeDBInstances"
+	request := map[string]interface{}{}
+	request["RegionId"] = client.RegionId
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	request["ChargeType"] = "PostPaid"
 
-	var insts []dds.DBInstance
-	request := dds.CreateDescribeDBInstancesRequest()
-	request.RegionId = client.RegionId
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
+	var response map[string]interface{}
+	conn, err := client.NewDdsClient()
+	if err != nil {
+		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		return nil
+	}
 	for {
-		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-			return ddsClient.DescribeDBInstances(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "testSweepMongoDBInstances", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		response, _ := raw.(*dds.DescribeDBInstancesResponse)
-		addDebug(request.GetActionName(), response)
-
-		if response == nil || len(response.DBInstances.DBInstance) < 1 {
-			break
-		}
-		insts = append(insts, response.DBInstances.DBInstance...)
-
-		if len(response.DBInstances.DBInstance) < PageSizeLarge {
-			break
-		}
-
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
-		} else {
-			request.PageNumber = page
-		}
-	}
-
-	sweeped := false
-	for _, v := range insts {
-		name := v.DBInstanceDescription
-		id := v.DBInstanceId
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-		}
-
-		if skip {
-			log.Printf("[INFO] Skipping MongoDB instance: %s (%s)\n", name, id)
-			continue
-		}
-		log.Printf("[INFO] Deleting MongoDB instance: %s (%s)\n", name, id)
-		request := dds.CreateDeleteDBInstanceRequest()
-		request.DBInstanceId = id
-		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-			return ddsClient.DeleteDBInstance(request)
+			return nil
 		})
-
+		addDebug(action, response, request)
 		if err != nil {
-			log.Printf("[error] Failed to delete MongoDB instance,ID:%v(%v)\n", id, request.GetActionName())
-		} else {
-			sweeped = true
+			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			return nil
 		}
-		addDebug(request.GetActionName(), raw)
-	}
-	if sweeped {
-		// Waiting 30 seconds to eusure these DB instances have been deleted.
-		time.Sleep(30 * time.Second)
+
+		resp, err := jsonpath.Get("$.DBInstances.DBInstance", response)
+		if err != nil {
+			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.DBInstances.DBInstance", action, err)
+			return nil
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["DBInstanceDescription"])), strings.ToLower(prefix)) {
+					skip = false
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Mongodb Instance: %s", fmt.Sprint(item["DBInstanceDescription"]))
+				continue
+			}
+			action := "DeleteDBInstance"
+			request := map[string]interface{}{
+				"DBInstanceId": item["DBInstanceId"],
+				"RegionId":     client.RegionId,
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Mongodb Instance (%s): %s", fmt.Sprint(item["DBInstanceDescription"]), err)
+			}
+			log.Printf("[INFO] Delete Mongodb Instance success: %s ", fmt.Sprint(item["DBInstanceDescription"]))
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	return nil
 }
@@ -125,7 +130,7 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":             "${data.alicloud_mongodb_zones.default.zones.0.id}",
+					"zone_id":             "${local.zone_id}",
 					"engine_version":      "3.4",
 					"db_instance_storage": "10",
 					"db_instance_class":   "dds.mongo.mid",
@@ -295,6 +300,10 @@ func resourceMongodbInstanceClassicConfig(name string) string {
 
 	data "alicloud_mongodb_zones" "default" {}
 
+	locals {
+  		zone_id = data.alicloud_mongodb_zones.default.zones[length(data.alicloud_mongodb_zones.default.zones) - 1].id
+	}
+
 	resource "alicloud_security_group" "default" {
 		name = var.name
 	}
@@ -324,7 +333,7 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":          "${local.vswitch_id}",
 					"engine_version":      "4.0",
 					"db_instance_storage": "10",
 					"db_instance_class":   "dds.mongo.mid",
@@ -430,10 +439,84 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudMongoDBInstance_vpc1(t *testing.T) {
+	var v dds.DBInstance
+	resourceId := "alicloud_mongodb_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceVpcConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceVpcConfig)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"vswitch_id":          "${local.vswitch_id}",
+					"engine_version":      "4.0",
+					"network_type":        "VPC",
+					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
+					"zone_id":             "${local.zone_id}",
+					"db_instance_storage": "10",
+					"db_instance_class":   "dds.mongo.mid",
+					"name":                name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":       "4.0",
+						"network_type":         "VPC",
+						"db_instance_storage":  "10",
+						"db_instance_class":    "dds.mongo.mid",
+						"name":                 name,
+						"storage_engine":       "WiredTiger",
+						"instance_charge_type": "PostPaid",
+						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
+						"resource_group_id":    CHECKSET,
+						"vpc_id":               CHECKSET,
+						"vswitch_id":           CHECKSET,
+						"zone_id":              CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
 func resourceMongodbInstanceVpcConfig(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
 		default = "%s"
+	}
+	data "alicloud_resource_manager_resource_groups" "default" {
+  		status = "OK"
 	}
 
 	data "alicloud_mongodb_zones" "default" {}
@@ -444,7 +527,12 @@ func resourceMongodbInstanceVpcConfig(name string) string {
 	
 	data "alicloud_vswitches" "default" {
 	  vpc_id = data.alicloud_vpcs.default.ids.0
-	  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
+	  zone_id = local.zone_id
+	}
+
+	locals {
+  		zone_id = data.alicloud_mongodb_zones.default.zones[length(data.alicloud_mongodb_zones.default.zones) - 1].id
+	  	vswitch_id = data.alicloud_vswitches.default.ids[0]
 	}
 `, name)
 }
@@ -472,8 +560,8 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":             "${data.alicloud_mongodb_zones.default.zones.0.id}",
-					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":             "${local.zone_id}",
+					"vswitch_id":          "${local.vswitch_id}",
 					"engine_version":      "3.4",
 					"db_instance_storage": "10",
 					"db_instance_class":   "dds.mongo.mid",
@@ -579,6 +667,7 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 		},
 	})
 }
+
 func resourceMongodbInstanceMultiAZConfig(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -591,12 +680,18 @@ func resourceMongodbInstanceMultiAZConfig(name string) string {
 	data "alicloud_vpcs" "default" {
 		name_regex = "default-NODELETING"
 	}
+
+	locals {
+  		zone_id = data.alicloud_mongodb_zones.default.zones.0.multi_zone_ids[length(data.alicloud_mongodb_zones.default.zones.0.multi_zone_ids) - 1]
+	}
 	
 	data "alicloud_vswitches" "default" {
 	  vpc_id = data.alicloud_vpcs.default.ids.0
-	  zone_id = data.alicloud_mongodb_zones.default.zones.0.multi_zone_ids.0
+	  zone_id = local.zone_id
 	}
-
 	
+	locals {
+	  vswitch_id = data.alicloud_vswitches.default.ids[0]
+	}
 `, name)
 }

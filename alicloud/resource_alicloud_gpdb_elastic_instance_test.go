@@ -108,7 +108,7 @@ func testSweepGpdbElasticInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudGpdbElasticInstanceVpc(t *testing.T) {
+func TestAccAlicloudGPDBElasticInstanceVpc(t *testing.T) {
 	var instance gpdb.DBInstanceAttribute
 	resourceId := "alicloud_gpdb_elastic_instance.default"
 	serverFunc := func() interface{} {
@@ -225,7 +225,7 @@ func resourceGpdbElasticInstanceConfigDependence(name string) string {
         `, name)
 }
 
-func TestAccAlicloudGpdbElasticInstance_basic0(t *testing.T) {
+func TestAccAlicloudGPDBElasticInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_elastic_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudGpdbElasticInstanceMap0)
@@ -252,10 +252,10 @@ func TestAccAlicloudGpdbElasticInstance_basic0(t *testing.T) {
 					"seg_storage_type":        "cloud_essd",
 					"seg_node_num":            "4",
 					"storage_size":            "50",
-					"instance_spec":           "2C8G",
+					"instance_spec":           "2C16G",
 					"db_instance_description": name,
 					"vswitch_id":              "${data.alicloud_vswitches.default.ids[0]}",
-					"db_instance_category":    "Basic",
+					"db_instance_category":    "HighAvailability",
 					"encryption_key":          "${alicloud_kms_key.default.id}",
 					"encryption_type":         "CloudDisk",
 					"tags": map[string]string{
@@ -270,11 +270,11 @@ func TestAccAlicloudGpdbElasticInstance_basic0(t *testing.T) {
 						"seg_storage_type":        "cloud_essd",
 						"seg_node_num":            "4",
 						"storage_size":            "50",
-						"instance_spec":           "2C8G",
+						"instance_spec":           "2C16G",
 						"db_instance_description": name,
 						"instance_network_type":   "VPC",
 						"payment_type":            "PayAsYouGo",
-						"db_instance_category":    "Basic",
+						"db_instance_category":    "HighAvailability",
 						"vswitch_id":              CHECKSET,
 						"tags.%":                  "2",
 					}),

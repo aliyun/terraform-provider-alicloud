@@ -173,6 +173,7 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 					"replicas":        "5",
 					"cpu":             "500",
 					"memory":          "2048",
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "create",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -191,43 +192,40 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"image_url":       fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0", defaultRegionToTest),
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "image_url",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_url":       fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0", defaultRegionToTest),
+						"package_version": CHECKSET,
+					}),
+				),
+			},
+			// todo: The responses of the Update and Get corresponding to mount_desc are inconsistent.
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"nas_id":          "${alicloud_nas_file_system.default.id}",
+			//		"mount_desc":      `[{mountPath: \"/tmp\", nasPath: \"/\"}]`,
+			//		"mount_host":      "${alicloud_nas_mount_target.example.mount_target_domain}",
+			//		"package_version": strconv.FormatInt(time.Now().Unix(), 10),
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"nas_id":          CHECKSET,
+			//			"mount_desc":      CHECKSET,
+			//			"mount_host":      CHECKSET,
+			//			"package_version": CHECKSET,
+			//		}),
+			//	),
+			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"replicas": "4",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"replicas": "4",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"internet": []map[string]interface{}{
-						{
-							"port":        "90",
-							"protocol":    "TCP",
-							"target_port": "8080",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"internet.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"intranet": []map[string]interface{}{
-						{
-							"port":        "34",
-							"protocol":    "TCP",
-							"target_port": "8080",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"intranet.#": "1",
 					}),
 				),
 			},
@@ -244,70 +242,84 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_enable_application_scaling_rule": "true",
+					"package_version":                      strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"auto_enable_application_scaling_rule": "true",
+						"package_version":                      CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"min_ready_instances": "2",
+					"package_version":     strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"min_ready_instances": "2",
+						"package_version":     CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"pre_stop": `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+					"pre_stop":        `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"pre_stop": "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+						"pre_stop":        "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"sls_configs": `[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]`,
+					"sls_configs":     `[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sls_configs": "[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]",
+						"sls_configs":     "[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}`,
+					"readiness":       `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}",
+						"readiness":       "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}`,
+					"liveness":        `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}",
+						"liveness":        "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"timezone": "Asia/Beijing",
+					"timezone":        "Asia/Beijing",
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"timezone": "Asia/Beijing",
+						"timezone":        "Asia/Beijing",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
@@ -334,10 +346,12 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"edas_container_version": "3.5.3",
+					"package_version":        strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"edas_container_version": "3.5.3",
+						"package_version":        CHECKSET,
 					}),
 				),
 			},
@@ -345,122 +359,122 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"php_config_location": "/usr/local/etc/php/php.ini",
 					"php_config":          "k1=v1",
+					"package_version":     strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"php_config_location": "/usr/local/etc/php/php.ini",
 						"php_config":          "k1=v1",
+						"package_version":     CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"min_ready_instances": "2",
+					"package_version":     strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"min_ready_instances": "2",
+						"package_version":     CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_enable_application_scaling_rule": "true",
+					"package_version":                      strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"auto_enable_application_scaling_rule": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"nas_id": "${alicloud_nas_file_system.default.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"nas_id": CHECKSET,
+						"package_version":                      CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"php_arms_config_location": "/usr/local/etc/php/conf.d/arms.ini",
+					"package_version":          strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"php_arms_config_location": "/usr/local/etc/php/conf.d/arms.ini",
+						"package_version":          CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"termination_grace_period_seconds": "30",
+					"package_version":                  strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"termination_grace_period_seconds": "30",
+						"package_version":                  CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"batch_wait_time": "10",
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"batch_wait_time": "10",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"post_start": `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+					"post_start":      `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"post_start": "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+						"post_start":      "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"command": "sleep",
+					"command":         "sleep",
+					"command_args":    `[\"1d\"]`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"command": "sleep",
+						"command_args":    "[\"1d\"]",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"command":      "sleep",
-					"command_args": `[\"1d\"]`,
+					"envs":            `[{\"name\":\"envtmp\",\"value\":\"0\"}]`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"command_args": "[\"1d\"]",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"envs": `[{\"name\":\"envtmp\",\"value\":\"0\"}]`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"envs": "[{\"name\":\"envtmp\",\"value\":\"0\"}]",
+						"envs":            "[{\"name\":\"envtmp\",\"value\":\"0\"}]",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"custom_host_alias": `[{\"hostName\":\"samplehost\",\"ip\":\"127.0.0.1\"}]`,
+					"package_version":   strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"custom_host_alias": "[{\"hostName\":\"samplehost\",\"ip\":\"127.0.0.1\"}]",
+						"package_version":   CHECKSET,
 					}),
 				),
 			},
@@ -471,16 +485,6 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"status": "RUNNING",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"image_url": fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0", defaultRegionToTest),
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"image_url": fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0", defaultRegionToTest),
 					}),
 				),
 			},
@@ -527,6 +531,7 @@ func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 					"replicas":        "5",
 					"cpu":             "500",
 					"memory":          "2048",
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -541,56 +546,67 @@ func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 						"cpu":             "500",
 						"memory":          "2048",
 						"jdk":             "Open JDK 8",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"pre_stop": `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+					"pre_stop":        `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "pre_stop",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"pre_stop": "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+						"pre_stop":        "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"sls_configs": `[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]`,
+					"sls_configs":     `[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "sls_configs",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sls_configs": "[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]",
+						"sls_configs":     "[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}`,
+					"readiness":       `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "readiness",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}",
+						"readiness":       "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}`,
+					"liveness":        `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "liveness",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}",
+						"liveness":        "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"timezone": "Asia/Beijing",
+					"timezone":        "Asia/Beijing",
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "timezone",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"timezone": "Asia/Beijing",
+						"timezone":        "Asia/Beijing",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
@@ -618,122 +634,135 @@ func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"php_config_location": "/usr/local/etc/php/php.ini",
 					"php_config":          "k1=v1",
+					"package_version":     strconv.FormatInt(time.Now().Unix(), 10) + "php_config",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"php_config_location": "/usr/local/etc/php/php.ini",
 						"php_config":          "k1=v1",
+						"package_version":     CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"min_ready_instances": "2",
+					"package_version":     strconv.FormatInt(time.Now().Unix(), 10) + "min_ready_instances",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"min_ready_instances": "2",
+						"package_version":     CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_enable_application_scaling_rule": "true",
+					"package_version":                      strconv.FormatInt(time.Now().Unix(), 10) + "scaling_rule",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"auto_enable_application_scaling_rule": "true",
+						"package_version":                      CHECKSET,
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"nas_id": "${alicloud_nas_file_system.default.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"nas_id": CHECKSET,
-					}),
-				),
-			},
+			// todo: The responses of the Update and Get corresponding to mount_desc are inconsistent.
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"nas_id":          "${alicloud_nas_file_system.default.id}",
+			//		"package_version": strconv.FormatInt(time.Now().Unix(), 10),
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"nas_id":          CHECKSET,
+			//			"package_version": CHECKSET,
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"php_arms_config_location": "/usr/local/etc/php/conf.d/arms.ini",
+					"package_version":          strconv.FormatInt(time.Now().Unix(), 10) + "arms_config",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"php_arms_config_location": "/usr/local/etc/php/conf.d/arms.ini",
+						"package_version":          CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"termination_grace_period_seconds": "30",
+					"package_version":                  strconv.FormatInt(time.Now().Unix(), 10) + "termination_grace_period",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"termination_grace_period_seconds": "30",
+						"package_version":                  CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"post_start": `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+					"post_start":      `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "post_start",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"post_start": "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+						"post_start":      "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"batch_wait_time": "10",
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "batch_wait_time",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"batch_wait_time": "10",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"command": "sleep",
+					"command":         "sleep",
+					"command_args":    `[\"1d\"]`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "command",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"command": "sleep",
+						"command_args":    "[\"1d\"]",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"command":      "sleep",
-					"command_args": `[\"1d\"]`,
+					"envs":            `[{\"name\":\"envtmp\",\"value\":\"0\"}]`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "envs",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"command_args": "[\"1d\"]",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"envs": `[{\"name\":\"envtmp\",\"value\":\"0\"}]`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"envs": "[{\"name\":\"envtmp\",\"value\":\"0\"}]",
+						"envs":            "[{\"name\":\"envtmp\",\"value\":\"0\"}]",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"custom_host_alias": `[{\"hostName\":\"samplehost\",\"ip\":\"127.0.0.1\"}]`,
+					"package_version":   strconv.FormatInt(time.Now().Unix(), 10) + "custom_host_alias",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"custom_host_alias": "[{\"hostName\":\"samplehost\",\"ip\":\"127.0.0.1\"}]",
+						"package_version":   CHECKSET,
 					}),
 				),
 			},
@@ -790,6 +819,7 @@ func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
 					"cpu":             "500",
 					"memory":          "2048",
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -805,56 +835,67 @@ func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 						"vpc_id":          CHECKSET,
 						"cpu":             "500",
 						"memory":          "2048",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"pre_stop": `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+					"pre_stop":        `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "pre_stop",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"pre_stop": "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+						"pre_stop":        "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"sls_configs": `[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]`,
+					"sls_configs":     `[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "sls_configs",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sls_configs": "[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]",
+						"sls_configs":     "[{\"logDir\":\"/root/logs/hsf/hsf.log\"}]",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"readiness": `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}`,
+					"readiness":       `{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "readiness",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"readiness": "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}",
+						"readiness":       "{\"exec\":{\"command\":[\"sleep\",\"6s\"]},\"initialDelaySeconds\":15,\"periodSeconds\":30,\"timeoutSeconds\":12}",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"liveness": `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}`,
+					"liveness":        `{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "liveness",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"liveness": "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}",
+						"liveness":        "{\"exec\":{\"command\":[\"sleep\",\"5s\"]},\"initialDelaySeconds\":10,\"periodSeconds\":30,\"timeoutSeconds\":11}",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"timezone": "Asia/Beijing",
+					"timezone":        "Asia/Beijing",
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "timezone",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"timezone": "Asia/Beijing",
+						"timezone":        "Asia/Beijing",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
@@ -882,122 +923,135 @@ func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"php_config_location": "/usr/local/etc/php/php.ini",
 					"php_config":          "k1=v1",
+					"package_version":     strconv.FormatInt(time.Now().Unix(), 10) + "php_config",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"php_config_location": "/usr/local/etc/php/php.ini",
 						"php_config":          "k1=v1",
+						"package_version":     CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"min_ready_instances": "2",
+					"package_version":     strconv.FormatInt(time.Now().Unix(), 10) + "min_ready_instances",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"min_ready_instances": "2",
+						"package_version":     CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_enable_application_scaling_rule": "true",
+					"package_version":                      strconv.FormatInt(time.Now().Unix(), 10) + "enable",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"auto_enable_application_scaling_rule": "true",
+						"package_version":                      CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"batch_wait_time": "10",
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "batch_wait_time",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"batch_wait_time": "10",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"nas_id": "${alicloud_nas_file_system.default.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"nas_id": CHECKSET,
-					}),
-				),
-			},
+			// todo: The responses of the Update and Get corresponding to mount_desc are inconsistent.
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"nas_id":          "${alicloud_nas_file_system.default.id}",
+			//		"package_version": strconv.FormatInt(time.Now().Unix(), 10),
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"nas_id":          CHECKSET,
+			//			"package_version": CHECKSET,
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"php_arms_config_location": "/usr/local/etc/php/conf.d/arms.ini",
+					"package_version":          strconv.FormatInt(time.Now().Unix(), 10) + "arms_config",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"php_arms_config_location": "/usr/local/etc/php/conf.d/arms.ini",
+						"package_version":          CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"termination_grace_period_seconds": "30",
+					"package_version":                  strconv.FormatInt(time.Now().Unix(), 10) + "termination_grace",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"termination_grace_period_seconds": "30",
+						"package_version":                  CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"post_start": `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+					"post_start":      `{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "post_start",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"post_start": "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+						"post_start":      "{\"exec\":{\"command\":[\"cat\",\"/etc/group\"]}}",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"command": "sleep",
+					"command":         "sleep",
+					"command_args":    `[\"1d\"]`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "command",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"command": "sleep",
+						"command_args":    "[\"1d\"]",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"command":      "sleep",
-					"command_args": `[\"1d\"]`,
+					"envs":            `[{\"name\":\"envtmp\",\"value\":\"0\"}]`,
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "envs",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"command_args": "[\"1d\"]",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"envs": `[{\"name\":\"envtmp\",\"value\":\"0\"}]`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"envs": "[{\"name\":\"envtmp\",\"value\":\"0\"}]",
+						"envs":            "[{\"name\":\"envtmp\",\"value\":\"0\"}]",
+						"package_version": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"custom_host_alias": `[{\"hostName\":\"samplehost\",\"ip\":\"127.0.0.1\"}]`,
+					"package_version":   strconv.FormatInt(time.Now().Unix(), 10) + "custom_host_alias",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"custom_host_alias": "[{\"hostName\":\"samplehost\",\"ip\":\"127.0.0.1\"}]",
+						"package_version":   CHECKSET,
 					}),
 				),
 			},
@@ -1037,12 +1091,19 @@ resource "alicloud_sae_namespace" "default" {
   namespace_name = var.name
 }
 
-resource "alicloud_nas_file_system" "default" {
-  protocol_type = "NFS"
-  storage_type  = "Performance"
-  description   = var.name
-  encrypt_type = "1"
-}
+#resource "alicloud_nas_file_system" "default" {
+ # protocol_type = "NFS"
+  #storage_type  = "Performance"
+  #description   = var.name
+  #encrypt_type = "1"
+  #vpc_id        = data.alicloud_vpcs.default.ids.0
+#}
+
+#resource "alicloud_nas_mount_target" "example" {
+ # file_system_id    = alicloud_nas_file_system.default.id
+  #access_group_name = "DEFAULT_VPC_GROUP_NAME"
+  #vswitch_id        = data.alicloud_vswitches.default.ids.0
+#}
 
 variable "name" {
   default = "%s"

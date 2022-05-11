@@ -38,7 +38,7 @@ func resourceAlicloudDdoscooDomainResource() *schema.Resource {
 				},
 			},
 			"instance_ids": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -95,7 +95,7 @@ func resourceAlicloudDdoscooDomainResourceCreate(d *schema.ResourceData, meta in
 		request["HttpsExt"] = v
 	}
 
-	request["InstanceIds"] = d.Get("instance_ids")
+	request["InstanceIds"] = d.Get("instance_ids").(*schema.Set).List()
 	proxyTypesMaps := make([]map[string]interface{}, 0)
 	for _, proxyTypes := range d.Get("proxy_types").(*schema.Set).List() {
 		proxyTypesMap := make(map[string]interface{})
@@ -168,6 +168,10 @@ func resourceAlicloudDdoscooDomainResourceRead(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudDdoscooDomainResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewDdoscooClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -195,13 +199,9 @@ func resourceAlicloudDdoscooDomainResourceUpdate(d *schema.ResourceData, meta in
 	if d.HasChange("instance_ids") {
 		update = true
 	}
-	request["InstanceIds"] = d.Get("instance_ids")
+	request["InstanceIds"] = d.Get("instance_ids").(*schema.Set).List()
 	if update {
 		action := "ModifyDomainResource"
-		conn, err := client.NewDdoscooClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

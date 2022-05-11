@@ -32,6 +32,7 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 			"endpoint_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Custom", "Primary", "Cluster"}, false),
 				Default:      "Custom",
 			},
@@ -82,6 +83,10 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Enable", "Disable"}, false),
 			},
 			"ssl_certificate_url": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"db_endpoint_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -176,6 +181,7 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	d.Set("db_cluster_id", dbClusterId)
+	d.Set("db_endpoint_id", dbEndpointId)
 	d.Set("endpoint_type", object.EndpointType)
 	nodes := strings.Split(object.Nodes, ",")
 	d.Set("nodes", nodes)

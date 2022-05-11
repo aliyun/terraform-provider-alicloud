@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEcsNetworkInterfaceAttachmentBasic(t *testing.T) {
+func TestAccAlicloudECSNetworkInterfaceAttachmentBasic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceAttachmentMap)
@@ -53,7 +53,7 @@ func TestAccAlicloudEcsNetworkInterfaceAttachmentBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsNetworkInterfaceAttachmentMulti(t *testing.T) {
+func TestAccAlicloudECSNetworkInterfaceAttachmentMulti(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface_attachment.default.1"
 	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceAttachmentMap)
@@ -255,7 +255,7 @@ resource "alicloud_ecs_network_interface_attachment" "default" {
 `, name)
 }
 
-func TestAccAlicloudEcsNetworkInterfaceAttachment_unit(t *testing.T) {
+func TestAccAlicloudECSNetworkInterfaceAttachment_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_network_interface_attachment"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_network_interface_attachment"].Schema).Data(nil, nil)

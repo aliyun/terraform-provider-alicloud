@@ -41,6 +41,12 @@ func dataSourceAlicloudSimpleApplicationServerImages() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"app", "custom", "system"}, false),
 			},
+			"platform": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Linux", "Windows"}, false),
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -67,6 +73,10 @@ func dataSourceAlicloudSimpleApplicationServerImages() *schema.Resource {
 							Computed: true,
 						},
 						"image_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"platform": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -142,6 +152,9 @@ func dataSourceAlicloudSimpleApplicationServerImagesRead(d *schema.ResourceData,
 				continue
 			}
 		}
+		if v, ok := d.GetOk("platform"); ok && v.(string) != "" && v.(string) != fmt.Sprint(item["Platform"]) {
+			continue
+		}
 		objects = append(objects, item)
 	}
 	ids := make([]string, 0)
@@ -154,6 +167,7 @@ func dataSourceAlicloudSimpleApplicationServerImagesRead(d *schema.ResourceData,
 			"image_id":    fmt.Sprint(object["ImageId"]),
 			"image_name":  object["ImageName"],
 			"image_type":  object["ImageType"],
+			"platform":    object["Platform"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["ImageName"])

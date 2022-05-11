@@ -15,6 +15,9 @@ Provides a VPN Route Entry resource.
 
 -> **NOTE:** Available in 1.57.0+.
 
+For information about VPN Route Entry and how to use it, see [What is VPN Route Entry](https://www.alibabacloud.com/help/en/doc-detail/127250.html).
+
+
 ## Example Usage
 
 Basic Usage
@@ -82,6 +85,18 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The combination id of the vpn route entry.
+* `route_entry_type` - (Available in 1.161.0+) The type of the vpn route entry.
+* `status` - (Available in 1.161.0+) The status of the vpn route entry.
+
+#### Timeouts
+
+-> **NOTE:** Available in 1.161.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when create the vpn route entry.
+* `update` - (Defaults to 5 mins) Used when update the vpn route entry.
+* `delete` - (Defaults to 5 mins) Used when delete the vpn route entry.
 
 ## Import
 

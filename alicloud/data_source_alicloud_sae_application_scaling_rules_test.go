@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSaeApplicationScalingRulesDataSource(t *testing.T) {
+func TestAccAlicloudSAEApplicationScalingRulesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1, 1000)
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	idsConf := dataSourceTestAccConfig{

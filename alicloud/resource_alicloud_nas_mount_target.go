@@ -52,6 +52,10 @@ func resourceAlicloudNasMountTarget() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"mount_target_domain": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -135,6 +139,7 @@ func resourceAlicloudNasMountTargetRead(d *schema.ResourceData, meta interface{}
 	d.Set("access_group_name", object["AccessGroup"])
 	d.Set("status", object["Status"])
 	d.Set("vswitch_id", object["VswId"])
+	d.Set("mount_target_domain", object["MountTargetDomain"])
 	return nil
 }
 func resourceAlicloudNasMountTargetUpdate(d *schema.ResourceData, meta interface{}) error {

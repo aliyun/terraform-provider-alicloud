@@ -33,6 +33,8 @@ This resource will help you to manage node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.158.0, Support for specifying the desired size of nodes for the node pool, for more information, visit [Modify the expected number of nodes in a node pool](https://www.alibabacloud.com/help/en/doc-detail/160490.html#title-mpp-3jj-oo3)
 
+-> **NOTE:** From version 1.166.0, Support configuring system disk encryption.
+
 ## Example Usage
 
 The managed cluster configuration,
@@ -372,6 +374,9 @@ The following arguments are supported:
 * `runtime_name` - (Optional, ForceNew, Available in 1.145.0+) The runtime name of containers. If not set, the cluster runtime will be used as the node pool runtime. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm).
 * `runtime_version` - (Optional, ForceNew, Available in 1.145.0+) The runtime version of containers. If not set, the cluster runtime will be used as the node pool runtime.
 * `deployment_set_id` - (Optional, ForceNew, Available in 1.149.0+) The deployment set of node pool. Specify the deploymentSet to ensure that the nodes in the node pool can be distributed on different physical machines.
+* `system_disk_encrypted` - (Optional, Available in 1.166.0+) Whether to enable system disk encryption.
+* `system_disk_kms_key` - (Optional, Available in 1.166.0+) The kms key id used to encrypt the system disk. It takes effect when system_disk_encrypted is true.
+* `system_disk_encrypt_algorithm` - (Optional, Available in 1.166.0+) The encryption Algorithm for Encrypting System Disk. It takes effect when system_disk_encrypted is true. Valid values `aes-256` and `sm4-128`.
 
 #### tags
 

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCloudSsoGroupsDataSource(t *testing.T) {
+func TestAccAlicloudCloudSSOGroupsDataSource(t *testing.T) {
 
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_cloud_sso_groups.default"

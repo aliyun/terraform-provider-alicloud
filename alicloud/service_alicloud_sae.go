@@ -555,6 +555,9 @@ func (s *SaeService) SaeApplicationStateRefreshFunc(id string, failStates []stri
 				return object, fmt.Sprint(object["LastChangeOrderStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["LastChangeOrderStatus"])))
 			}
 		}
+		if fmt.Sprint(object["LastChangeOrderStatus"]) == "RUNNING" && fmt.Sprint(object["SubStatus"]) == "runningButHasError" {
+			return object, fmt.Sprint(object["LastChangeOrderStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["LastChangeOrderStatus"])))
+		}
 		return object, fmt.Sprint(object["LastChangeOrderStatus"]), nil
 	}
 }

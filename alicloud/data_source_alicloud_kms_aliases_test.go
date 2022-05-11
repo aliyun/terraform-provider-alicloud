@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudKmsAliasesDataSource(t *testing.T) {
+func TestAccAlicloudKMSAliasesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_kms_aliases.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 

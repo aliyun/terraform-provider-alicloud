@@ -69,7 +69,7 @@ func testSweepSlbServerCertificate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSlbServerCertificate_basic(t *testing.T) {
+func TestAccAlicloudSLBServerCertificate_basic(t *testing.T) {
 	var v *slb.ServerCertificate
 	resourceId := "alicloud_slb_server_certificate.default"
 	ra := resourceAttrInit(resourceId, serverCertificateMap)
@@ -168,7 +168,7 @@ func TestAccAlicloudSlbServerCertificate_basic(t *testing.T) {
 }
 
 // There is an unknown error for the testcase
-func SkipTestAccAlicloudSlbServerCertificate_aliCloud_server_certificate(t *testing.T) {
+func SkipTestAccAlicloudSLBServerCertificate_aliCloud_server_certificate(t *testing.T) {
 	var v *slb.ServerCertificate
 	resourceId := "alicloud_slb_server_certificate.default"
 	ra := resourceAttrInit(resourceId, serverAliCloudCertificateMap)

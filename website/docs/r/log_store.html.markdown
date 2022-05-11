@@ -102,6 +102,11 @@ The following attributes are exported:
 * `name` - Log store name.
 * `retention_period` - The data retention time.
 * `shard_count` - The number of shards.
+* `shards` - The shard attribute.
+  * `id` - The ID of the shard.
+  * `status` - Shard status, only two status of `readwrite` and `readonly`.
+  * `begin_key` - The begin value of the shard range(MD5), included in the shard range.
+  * `end_key` - The end value of the shard range(MD5), not included in shard range.
 * `auto_split` - Determines whether to automatically split a shard.
 * `max_split_shard_count` - The maximum number of shards for automatic split.
 * `append_meta` - Determines whether to append log meta automatically.

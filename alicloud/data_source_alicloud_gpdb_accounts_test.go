@@ -5,10 +5,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudGpdbAccountsDataSource(t *testing.T) {
+func TestAccAlicloudGPDBAccountsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudGpdbAccountsDataSourceName(rand, map[string]string{
@@ -74,6 +76,7 @@ func TestAccAlicloudGpdbAccountsDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, connectivity.GpdbElasticInstanceSupportRegions)
 	}
 	alicloudGpdbAccountsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, allConf)
 }

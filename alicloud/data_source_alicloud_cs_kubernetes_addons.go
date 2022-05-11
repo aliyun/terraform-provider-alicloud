@@ -63,6 +63,10 @@ func dataSourceAlicloudCSKubernetesAddons() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
+						"current_config": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -144,6 +148,7 @@ func fetchAddonsMetadata(addonsMap map[string]*Component) []map[string]interface
 		state["current_version"] = addon.Version
 		state["next_version"] = addon.NextVersion
 		state["required"] = addon.Required
+		state["current_config"] = addon.Config
 		result = append(result, state)
 	}
 	return result

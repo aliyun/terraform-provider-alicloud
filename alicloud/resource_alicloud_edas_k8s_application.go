@@ -381,7 +381,7 @@ func resourceAlicloudEdasK8sApplicationRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 	d.Set("application_name", response.App.ApplicationName)
-	d.Set("application_descriotion", response.App.Description)
+	d.Set("application_descriotion", response.Description)
 	d.Set("cluster_id", response.App.ClusterId)
 	d.Set("replicas", response.App.Instances)
 	d.Set("package_type", response.App.ApplicationType)

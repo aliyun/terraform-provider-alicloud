@@ -43,7 +43,7 @@ func TestAccAlicloudCRChartNamespace_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"namespace_name": name,
-					"instance_id":    "${local.instance_id}",
+					"instance_id":    "${data.alicloud_cr_ee_instances.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -110,27 +110,14 @@ var AlicloudCRChartNamespaceMap0 = map[string]string{
 }
 
 func AlicloudCRChartNamespaceBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-
-resource "alicloud_cr_ee_instance" "default" {
-  count = length(data.alicloud_cr_ee_instances.default.ids) > 0 ? 0 : 1
-  payment_type  = "Subscription"
-  period        = 1
-  instance_type = "Advanced"
-  instance_name = "%s"
-}
-
-data "alicloud_cr_ee_instances" "default" {
-}
-
-locals{
-  instance_id =  length(data.alicloud_cr_ee_instances.default.ids) > 0 ? data.alicloud_cr_ee_instances.default.ids[0] : concat(alicloud_cr_ee_instance.default.*.id, [""])[0]
-}
-
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
-`, name, name)
+
+data "alicloud_cr_ee_instances" "default" {}
+
+`, name)
 }
 
 func TestAccAlicloudCRChartNamespace_unit(t *testing.T) {

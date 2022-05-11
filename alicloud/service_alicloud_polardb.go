@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -26,8 +27,22 @@ func (s *PolarDBService) DescribePolarDBCluster(id string) (instance *polardb.DB
 	dbClusterIds := []string{}
 	dbClusterIds = append(dbClusterIds, id)
 	request.DBClusterIds = id
-	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-		return polarDBClient.DescribeDBClusters(request)
+	var response *polardb.DescribeDBClustersResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.DescribeDBClusters(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*polardb.DescribeDBClustersResponse)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
@@ -35,8 +50,6 @@ func (s *PolarDBService) DescribePolarDBCluster(id string) (instance *polardb.DB
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*polardb.DescribeDBClustersResponse)
 	if len(response.Items.DBCluster) < 1 {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("Cluster", id)), NotFoundMsg, ProviderERROR)
 	}
@@ -49,8 +62,22 @@ func (s *PolarDBService) DescribePolarDBClusterAttribute(id string) (instance *p
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = id
 
-	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-		return polarDBClient.DescribeDBClusterAttribute(request)
+	var response *polardb.DescribeDBClusterAttributeResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.DescribeDBClusterAttribute(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*polardb.DescribeDBClusterAttributeResponse)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
@@ -58,10 +85,6 @@ func (s *PolarDBService) DescribePolarDBClusterAttribute(id string) (instance *p
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*polardb.DescribeDBClusterAttributeResponse)
-
 	return response, nil
 }
 
@@ -1305,9 +1328,46 @@ func (s *PolarDBService) DescribeDBSecurityGroups(clusterId string) ([]string, e
 	return groups, nil
 }
 
-func (s *PolarDBService) ModifyDBAccessWhitelistSecurityIps(d *schema.ResourceData) error {
-	if l, ok := d.GetOk("db_cluster_ip_array"); ok {
-		for _, e := range l.(*schema.Set).List() {
+func (s *PolarDBService) ModifyDBClusterAccessWhitelist(d *schema.ResourceData) error {
+	if _, ok := d.GetOk("db_cluster_ip_array"); ok {
+		removed, added := d.GetChange("db_cluster_ip_array")
+		for _, e := range removed.(*schema.Set).List() {
+			pack := e.(map[string]interface{})
+			if fmt.Sprint(pack["db_cluster_ip_array_name"]) == "default" {
+				continue
+			}
+			//ips expand string list
+			ipList := expandStringList(pack["security_ips"].(*schema.Set).List())
+			ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
+			request := polardb.CreateModifyDBClusterAccessWhitelistRequest()
+			request.RegionId = s.client.RegionId
+			request.DBClusterId = d.Id()
+			request.SecurityIps = ipstr
+			request.DBClusterIPArrayName = pack["db_cluster_ip_array_name"].(string)
+			request.ModifyMode = "Delete"
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+				raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+					return polarDBClient.ModifyDBClusterAccessWhitelist(request)
+				})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			if err := s.WaitForCluster(d.Id(), Running, DefaultTimeoutMedium); err != nil {
+				return WrapError(err)
+			}
+		}
+		for _, e := range added.(*schema.Set).List() {
 			pack := e.(map[string]interface{})
 			//ips expand string list
 			ipList := expandStringList(pack["security_ips"].(*schema.Set).List())
@@ -1322,52 +1382,60 @@ func (s *PolarDBService) ModifyDBAccessWhitelistSecurityIps(d *schema.ResourceDa
 			request.SecurityIps = ipstr
 			request.DBClusterIPArrayName = pack["db_cluster_ip_array_name"].(string)
 			request.ModifyMode = pack["modify_mode"].(string)
-			raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-				return polarDBClient.ModifyDBClusterAccessWhitelist(request)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+				raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+					return polarDBClient.ModifyDBClusterAccessWhitelist(request)
+				})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
 			})
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			if err := s.WaitForCluster(d.Id(), Running, DefaultTimeoutMedium); err != nil {
 				return WrapError(err)
 			}
 		}
+		d.SetPartial("db_cluster_ip_array")
 	}
-	d.SetPartial("db_cluster_ip_array")
 	return nil
 }
 
-func (s *PolarDBService) DBClusterIPArrays(d *schema.ResourceData, attribute string, dbClusterIPArrayName string) error {
+func (s *PolarDBService) DescribeDBClusterAccessWhitelist(id string) (instance *polardb.DescribeDBClusterAccessWhitelistResponse, err error) {
 	request := polardb.CreateDescribeDBClusterAccessWhitelistRequest()
 	request.RegionId = s.client.RegionId
-	request.DBClusterId = d.Id()
+	request.DBClusterId = id
 
-	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-		return polarDBClient.DescribeDBClusterAccessWhitelist(request)
-	})
-	if err != nil {
-		return WrapError(err)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*polardb.DescribeDBClusterAccessWhitelistResponse)
-
-	dbClusterIPArray := response.Items.DBClusterIPArray
-	var dbClusterIPArrays = make([]map[string]interface{}, 0, len(dbClusterIPArray))
-	for _, i := range dbClusterIPArray {
-		if i.DBClusterIPArrayName == dbClusterIPArrayName {
-			l := map[string]interface{}{
-				"db_cluster_ip_array_name": i.DBClusterIPArrayName,
-				"security_ips":             convertPolarDBIpsSetToString(i.SecurityIps),
+	var response *polardb.DescribeDBClusterAccessWhitelistResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.DescribeDBClusterAccessWhitelist(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
 			}
-			dbClusterIPArrays = append(dbClusterIPArrays, l)
+			return resource.NonRetryableError(err)
 		}
-	}
-	if err := d.Set(attribute, dbClusterIPArrays); err != nil {
-		return WrapError(err)
-	}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*polardb.DescribeDBClusterAccessWhitelistResponse)
+		return nil
+	})
 
-	return nil
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	return response, nil
 }
 
 func convertPolarDBIpsSetToString(sourceIps string) []string {

@@ -18,6 +18,6 @@ package ess
 // VServerGroupAttribute is a nested struct in ess response
 type VServerGroupAttribute struct {
 	VServerGroupId string `json:"VServerGroupId" xml:"VServerGroupId"`
-	Port           int    `json:"Port" xml:"Port"`
 	Weight         int    `json:"Weight" xml:"Weight"`
+	Port           int    `json:"Port" xml:"Port"`
 }

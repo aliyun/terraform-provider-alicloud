@@ -36,8 +36,8 @@ variable "transit_router_attachment_description" {
 }
 
 resource "alicloud_cen_instance" "cen" {
-  name        = var.name
-  description = "terraform01"
+  instance_name = var.name
+  description   = "terraform01"
 }
 
 resource "alicloud_transit_router" "tr" {
@@ -84,9 +84,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 3 mins) Used when creating the cen transit router vbr attachment (until it reaches the initial `Attached` status).
-* `update` - (Defaults to 3 mins) Used when update the cen transit router vbr attachment.
-* `delete` - (Defaults to 3 mins) Used when delete the cen transit router vbr attachment.
+* `create` - (Defaults to 10 mins) Used when creating the cen transit router vbr attachment (until it reaches the initial `Attached` status).
+* `update` - (Defaults to 10 mins) Used when update the cen transit router vbr attachment.
+* `delete` - (Defaults to 10 mins) Used when delete the cen transit router vbr attachment.
 
 ## Import
 

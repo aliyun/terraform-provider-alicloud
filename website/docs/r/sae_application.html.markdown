@@ -13,7 +13,7 @@ Provides a Serverless App Engine (SAE) Application resource.
 
 For information about Serverless App Engine (SAE) Application and how to use it, see [What is Application](https://help.aliyun.com/document_detail/97792.html).
 
--> **NOTE:** Available in v1.133.0+.
+-> **NOTE:** Available in v1.161.0+.
 
 ## Example Usage
 
@@ -77,7 +77,9 @@ The following arguments are supported:
 * `edas_container_version` - (Optional) The operating environment used by the Pandora application.
 * `enable_ahas` - (Optional) The enable ahas.
 * `enable_grey_tag_route` - (Optional) The enable grey tag route.
-* `envs` - (Optional) The virtual switch where the elastic network card of the application instance is located. The switch must be located in the aforementioned VPC. The switch also has a binding relationship with the SAE namespace. If it is left blank, the default is the vSwitch ID bound to the namespace.
+* `envs` - (Optional) Container environment variable parameters. For example,`	[{"name":"envtmp","value":"0"}]`. The value description is as follows: 
+  * `name` - environment variable name.
+  * `value` - Environment variable value or environment variable reference.
 * `image_url` - (Optional) Mirror address. Only Image type applications can configure the mirror address.
 * `jar_start_args` - (Optional) The JAR package starts application parameters. Application default startup command: $JAVA_HOME/bin/java $JarStartOptions -jar $CATALINA_OPTS "$package_path" $JarStartArgs.
 * `jar_start_options` - (Optional) The JAR package starts the application option. Application default startup command: $JAVA_HOME/bin/java $JarStartOptions -jar $CATALINA_OPTS "$package_path" $JarStartArgs.
@@ -101,7 +103,7 @@ The following arguments are supported:
 * `post_start` - (Optional) Execute the script after startup, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}.
 * `pre_stop` - (Optional) Execute the script before stopping, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}.
 * `readiness` - (Optional) Application startup status checks, containers that fail multiple health checks will be shut down and restarted. Containers that do not pass the health check will not receive SLB traffic. For example: {`exec`:{`command`:[`sh`,"-c","cat /home/admin/start.sh"]},`initialDelaySeconds`:30,`periodSeconds`:30,"timeoutSeconds ":2}. Valid values: `command`, `initialDelaySeconds`, `periodSeconds`, `timeoutSeconds`.
-* `replicas` - (Required) Initial number of instances. **NOTE:** the `replicas` supports modification since V1.139.0.
+* `replicas` - (Required) Initial number of instances.
 * `security_group_id` - (Optional) Security group ID.
 * `sls_configs` - (Optional) SLS  configuration.
 * `status` - (Optional, Computed) The status of the resource. Valid values: `RUNNING`, `STOPPED`.
@@ -111,37 +113,18 @@ The following arguments are supported:
 * `update_strategy` - (Optional) The update strategy.
 * `version_id` - (Optional, ForceNew) Application version id.
 * `vswitch_id` - (Optional, ForceNew) The vswitch id.
-* `vpc_id` - (Optional, ForceNew, Available in v1.139+) The vpc id.
+* `vpc_id` - (Optional, ForceNew) The vpc id.
 * `war_start_options` - (Optional) WAR package launch application option. Application default startup command: java $JAVA_OPTS $CATALINA_OPTS [-Options] org.apache.catalina.startup.Bootstrap "$@" start.
 * `web_container` - (Optional) The version of tomcat that the deployment package depends on. Image type applications are not supported.
-* `intranet` - (Optional,Available in v1.139+) Bound public network SLB. The details see Block intranet.
-* `internet` - (Optional,Available in v1.139+) Bound private network SLB. The details see Block internet.
-* `internet_slb_id` - (Optional,Available in v1.139+) public network SLB ID.
-* `intranet_slb_id` - (Optional,Available in v1.139+) private network SLB ID.
-
-#### intranet
-
-The intranet supports the following:
-* `https_cert_id` - (Optional) SSL certificate. `https_cert_id` is required when HTTPS is selected
-* `protocol` - (Optional) Network protocol. Valid values: `TCP` ,`HTTP`,`HTTPS`.
-* `target_port` - (Optional) Container port.
-* `port` - (Optional) SLB Port.
-
-#### internet
-
-The internet supports the following:
-* `https_cert_id` - (Optional) SSL certificate. `https_cert_id` is required when HTTPS is selected
-* `protocol` - (Optional) Network protocol. Valid values: `TCP` ,`HTTP`,`HTTPS`.
-* `target_port` - (Optional) Container port.
-* `port` - (Optional) SLB Port.
+* `min_ready_instance_ratio` - (Optional) Minimum Survival Instance Percentage. **NOTE:** When `min_ready_instances` and `min_ready_instance_ratio` are passed at the same time, and the value of `min_ready_instance_ratio` is not -1, the `min_ready_instance_ratio` parameter shall prevail. Assuming that `min_ready_instances` is 5 and `min_ready_instance_ratio` is 50, 50 is used to calculate the minimum number of surviving instances.The value description is as follows: 
+  * `-1`: Initialization value, indicating that percentages are not used.
+  * `0~100`: The unit is percentage, rounded up. For example, if it is set to 50%, if there are currently 5 instances, the minimum number of surviving instances is 3.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Application.
-* `internet_ip` - Use designated public network SLBs that have been purchased to support non-shared instances. **NOTE:** Available in v1.139+.
-* `intranet_ip` - Use the designated private network SLB that has been purchased to support non-shared instances. **NOTE:** Available in v1.139+.
 
 ## Import
 

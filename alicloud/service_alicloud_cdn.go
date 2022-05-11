@@ -280,3 +280,39 @@ func (s *CdnService) CdnRealTimeLogDeliveryStateRefreshFunc(id string, failState
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
+func (s *CdnService) DescribeCdnFcTrigger(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCdnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeFCTrigger"
+	request := map[string]interface{}{
+		"TriggerARN": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), request, nil, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.FCTrigger", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FCTrigger", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}

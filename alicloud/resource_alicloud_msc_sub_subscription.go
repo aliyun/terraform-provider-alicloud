@@ -27,7 +27,7 @@ func resourceAlicloudMscSubSubscription() *schema.Resource {
 				Computed: true,
 			},
 			"contact_ids": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -105,7 +105,13 @@ func resourceAlicloudMscSubSubscriptionCreate(d *schema.ResourceData, meta inter
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	responseSubscriptionItem := response["SubscriptionItem"].(map[string]interface{})
+	responseSubscriptionItem := make(map[string]interface{}, 0)
+	if v, ok := response["SubscriptionItem"].(map[string]interface{}); ok {
+		responseSubscriptionItem = v
+	}
+	if len(responseSubscriptionItem) == 0 {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_msc_sub_subscription", action, fmt.Sprintf("The item name %s does not support subscription.", request["ItemName"]))
+	}
 	d.SetId(fmt.Sprint(responseSubscriptionItem["ItemId"]))
 
 	return resourceAlicloudMscSubSubscriptionUpdate(d, meta)
@@ -153,6 +159,10 @@ func resourceAlicloudMscSubSubscriptionRead(d *schema.ResourceData, meta interfa
 func resourceAlicloudMscSubSubscriptionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	conn, err := client.NewMscopensubscriptionClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	update := false
 	request := map[string]interface{}{
 		"ItemId": d.Id(),
@@ -190,7 +200,7 @@ func resourceAlicloudMscSubSubscriptionUpdate(d *schema.ResourceData, meta inter
 	if d.HasChange("contact_ids") {
 		update = true
 		if v, ok := d.GetOk("contact_ids"); ok {
-			request["ContactIds"] = convertListToJsonString(v.([]interface{}))
+			request["ContactIds"] = convertListToJsonString(v.(*schema.Set).List())
 		}
 	}
 	request["Locale"] = "en"
@@ -204,10 +214,6 @@ func resourceAlicloudMscSubSubscriptionUpdate(d *schema.ResourceData, meta inter
 
 	if update {
 		action := "UpdateSubscriptionItem"
-		conn, err := client.NewMscopensubscriptionClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("UpdateSubscriptionItem")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)

@@ -116,10 +116,6 @@ data "alicloud_waf_instances" "default" {
 
 }
 
-data "alicloud_waf_domains" "default" {
-  instance_id = data.alicloud_waf_instances.default.ids.0
-}
-
 resource "alicloud_ssl_certificates_service_certificate" "default" {
   certificate_name = "tf-testaccSslCertificate"
   cert = <<EOF

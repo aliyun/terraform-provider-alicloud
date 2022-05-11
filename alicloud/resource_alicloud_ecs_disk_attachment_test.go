@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEcsDiskAttachmentBasic(t *testing.T) {
+func TestAccAlicloudECSDiskAttachmentBasic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsDiskAttachmentMap)
@@ -39,7 +39,7 @@ func TestAccAlicloudEcsDiskAttachmentBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsDiskAttachmentMulti(t *testing.T) {
+func TestAccAlicloudECSDiskAttachmentMulti(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk_attachment.default.1"
 	ra := resourceAttrInit(resourceId, AlicloudEcsDiskAttachmentMap)
@@ -68,7 +68,7 @@ func TestAccAlicloudEcsDiskAttachmentMulti(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEcsDiskAttachmentBasic1(t *testing.T) {
+func TestAccAlicloudECSDiskAttachmentBasic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk_attachment.default.1"
 	ra := resourceAttrInit(resourceId, AlicloudEcsDiskAttachmentMap)

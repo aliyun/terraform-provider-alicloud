@@ -33,7 +33,12 @@ resource "alicloud_ssl_certificates_service_certificate" "example" {
 The following arguments are supported:
 
 * `cert` - (Required, ForceNew) Cert of the Certificate in which the Certificate will add.
-* `certificate_name` - (Required, ForceNew) Name of the Certificate. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix .sh and .tel are not supported.
+* `certificate_name` - (Optional, ForceNew) Name of the Certificate. 
+  This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", 
+  and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. 
+  Suffix .sh and .tel are not supported.
+  **NOTE:** One of `certificate_name` and `name` must be specified.
+* `name` - (Deprecated, Optional, ForceNew) It has been deprecated from version 1.129.0 and using `certificate_name` instead.
 * `key` - (Required, ForceNew) Key of the Certificate in which the Certificate will add.
 * `lang` - (Optional) The lang.
 

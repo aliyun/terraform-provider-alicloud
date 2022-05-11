@@ -204,16 +204,12 @@ func resourceAlicloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta 
 			request["TrafficMirrorSessionName"] = v
 		}
 	}
-	request["TrafficMirrorTargetId"] = d.Get("traffic_mirror_target_id")
-	if d.HasChange("traffic_mirror_target_id") {
+	if d.HasChange("traffic_mirror_target_id") || d.HasChange("traffic_mirror_target_type") {
 		update = true
+		request["TrafficMirrorTargetId"] = d.Get("traffic_mirror_target_id")
+		request["TrafficMirrorTargetType"] = d.Get("traffic_mirror_target_type")
 	}
 
-	request["TrafficMirrorTargetType"] = d.Get("traffic_mirror_target_type")
-
-	if d.HasChange("traffic_mirror_target_type") {
-		update = true
-	}
 	if d.HasChange("virtual_network_id") {
 		update = true
 		if v, ok := d.GetOk("virtual_network_id"); ok {

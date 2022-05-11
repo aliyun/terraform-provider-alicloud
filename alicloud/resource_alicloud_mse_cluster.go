@@ -94,6 +94,10 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"cluster_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -156,7 +160,9 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mse_cluster", action, AlibabaCloudSdkGoERROR)
 	}
-
+	if fmt.Sprint(response["Success"]) == "false" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
 	d.SetId(fmt.Sprint(response["InstanceId"]))
 	stateConf := BuildStateConf([]string{}, []string{"INIT_SUCCESS"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
 	if _, err := stateConf.WaitForState(); err != nil {
@@ -181,6 +187,7 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_count", formatInt(object["InstanceCount"]))
 	d.Set("pub_network_flow", object["PubNetworkFlow"])
 	d.Set("status", object["InitStatus"])
+	d.Set("cluster_id", object["ClusterId"])
 	return nil
 }
 func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -214,6 +221,9 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
 		d.SetPartial("acl_entry_list")
 	}
 	update := false
@@ -245,6 +255,9 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("cluster_alias_name")
 	}
@@ -279,6 +292,9 @@ func resourceAlicloudMseClusterDelete(d *schema.ResourceData, meta interface{}) 
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	stateConf := BuildStateConf([]string{}, []string{"DESTROY_SUCCESS"}, d.Timeout(schema.TimeoutDelete), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"DESTROY_FAILED"}))
 	if _, err := stateConf.WaitForState(); err != nil {

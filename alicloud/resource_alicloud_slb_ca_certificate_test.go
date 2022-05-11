@@ -121,7 +121,7 @@ func testSweepSlbCACertificate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSlbCACertificate_basic(t *testing.T) {
+func TestAccAlicloudSLBCACertificate_basic(t *testing.T) {
 	var sc *slb.CACertificate
 	resourceId := "alicloud_slb_ca_certificate.default"
 	ra := resourceAttrInit(resourceId, ca_certificateMap)
@@ -207,7 +207,7 @@ func TestAccAlicloudSlbCACertificate_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbCACertificate_multi(t *testing.T) {
+func TestAccAlicloudSLBCACertificate_multi(t *testing.T) {
 	var sc *slb.CACertificate
 	resourceId := "alicloud_slb_ca_certificate.default.9"
 	ra := resourceAttrInit(resourceId, ca_certificateMap)
@@ -243,7 +243,7 @@ func TestAccAlicloudSlbCACertificate_multi(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbCACertificate_basic1(t *testing.T) {
+func TestAccAlicloudSLBCACertificate_basic1(t *testing.T) {
 	var sc *slb.CACertificate
 	resourceId := "alicloud_slb_ca_certificate.default"
 	ra := resourceAttrInit(resourceId, ca_certificateMap)
@@ -349,7 +349,7 @@ var ca_certificateMap = map[string]string{
 
 const ca_certificate = `-----BEGIN CERTIFICATE-----\nMIIDRjCCAq+gAwIBAgIJAJn3ox4K13PoMA0GCSqGSIb3DQEBBQUAMHYxCzAJBgNV\nBAYTAkNOMQswCQYDVQQIEwJCSjELMAkGA1UEBxMCQkoxDDAKBgNVBAoTA0FMSTEP\nMA0GA1UECxMGQUxJWVVOMQ0wCwYDVQQDEwR0ZXN0MR8wHQYJKoZIhvcNAQkBFhB0\nZXN0QGhvdG1haWwuY29tMB4XDTE0MTEyNDA2MDQyNVoXDTI0MTEyMTA2MDQyNVow\ndjELMAkGA1UEBhMCQ04xCzAJBgNVBAgTAkJKMQswCQYDVQQHEwJCSjEMMAoGA1UE\nChMDQUxJMQ8wDQYDVQQLEwZBTElZVU4xDTALBgNVBAMTBHRlc3QxHzAdBgkqhkiG\n9w0BCQEWEHRlc3RAaG90bWFpbC5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJ\nAoGBAM7SS3e9+Nj0HKAsRuIDNSsS3UK6b+62YQb2uuhKrp1HMrOx61WSDR2qkAnB\ncoG00Uz38EE+9DLYNUVQBK7aSgLP5M1Ak4wr4GqGyCgjejzzh3DshUzLCCy2rook\nKOyRTlPX+Q5l7rE1fcSNzgepcae5i2sE1XXXzLRIDIvQxcspAgMBAAGjgdswgdgw\nHQYDVR0OBBYEFBdy+OuMsvbkV7R14f0OyoLoh2z4MIGoBgNVHSMEgaAwgZ2AFBdy\n+OuMsvbkV7R14f0OyoLoh2z4oXqkeDB2MQswCQYDVQQGEwJDTjELMAkGA1UECBMC\nQkoxCzAJBgNVBAcTAkJKMQwwCgYDVQQKEwNBTEkxDzANBgNVBAsTBkFMSVlVTjEN\nMAsGA1UEAxMEdGVzdDEfMB0GCSqGSIb3DQEJARYQdGVzdEBob3RtYWlsLmNvbYIJ\nAJn3ox4K13PoMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEFBQADgYEAY7KOsnyT\ncQzfhiiG7ASjiPakw5wXoycHt5GCvLG5htp2TKVzgv9QTliA3gtfv6oV4zRZx7X1\nOfi6hVgErtHaXJheuPVeW6eAW8mHBoEfvDAfU3y9waYrtUevSl07643bzKL6v+Qd\nDUBTxOAvSYfXTtI90EAxEG/bJJyOm5LqoiA=\n-----END CERTIFICATE-----`
 
-func TestAccAlicloudSlbCACertificate_unit(t *testing.T) {
+func TestAccAlicloudSLBCACertificate_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_slb_ca_certificate"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_slb_ca_certificate"].Schema).Data(nil, nil)

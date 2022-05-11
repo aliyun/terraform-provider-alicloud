@@ -76,14 +76,16 @@ func resourceAliyunEssAlbServerGroupAttachmentCreate(d *schema.ResourceData, met
 
 	response, _ := raw.(*ess.AttachAlbServerGroupsResponse)
 
+	d.SetId(fmt.Sprint(scalingGroupId, ":", albServerGroupId, ":", port))
+	if len(response.ScalingActivityId) == 0 {
+		return resourceAliyunEssAlbServerGroupAttachmentRead(d, meta)
+	}
 	essService := EssService{client}
 	stateConf := BuildStateConf([]string{}, []string{"Successful"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, essService.ActivityStateRefreshFunc(response.ScalingActivityId, []string{"Failed", "Rejected"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-
-	d.SetId(fmt.Sprint(scalingGroupId, ":", albServerGroupId, ":", port))
-	return nil
+	return resourceAliyunEssAlbServerGroupAttachmentRead(d, meta)
 }
 
 func resourceAliyunEssAlbServerGroupAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -137,6 +139,10 @@ func resourceAliyunEssAlbServerGroupAttachmentDelete(d *schema.ResourceData, met
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	response, _ := raw.(*ess.DetachAlbServerGroupsResponse)
+
+	if len(response.ScalingActivityId) == 0 {
+		return nil
+	}
 
 	essService := EssService{client}
 	stateConf := BuildStateConf([]string{}, []string{"Successful"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, essService.ActivityStateRefreshFunc(response.ScalingActivityId, []string{"Failed", "Rejected"}))

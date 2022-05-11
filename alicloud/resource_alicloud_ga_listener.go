@@ -243,13 +243,15 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if d.HasChange("certificates") {
 		update = true
-		Certificates := make([]map[string]interface{}, len(d.Get("certificates").([]interface{})))
-		for i, CertificatesValue := range d.Get("certificates").([]interface{}) {
-			CertificatesMap := CertificatesValue.(map[string]interface{})
-			Certificates[i] = make(map[string]interface{})
-			Certificates[i]["Id"] = CertificatesMap["id"]
+		if v, ok := d.GetOk("certificates"); ok {
+			Certificates := make([]map[string]interface{}, len(v.([]interface{})))
+			for i, CertificatesValue := range v.([]interface{}) {
+				CertificatesMap := CertificatesValue.(map[string]interface{})
+				Certificates[i] = make(map[string]interface{})
+				Certificates[i]["Id"] = CertificatesMap["id"]
+			}
+			request["Certificates"] = Certificates
 		}
-		request["Certificates"] = Certificates
 
 	}
 	if d.HasChange("client_affinity") {

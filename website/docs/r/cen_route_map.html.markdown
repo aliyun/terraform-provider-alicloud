@@ -133,7 +133,8 @@ The following arguments are supported:
 
 The RouteMapId attributes are exported:
 
-* `id` - ID of the RouteMap.
+* `id` - ID of the RouteMap. It formats as `<cen_id>:<route_map_id>`
+* `route_map_id` - ID of the RouteMap. It is available in 1.161.0+.
 * `status` - (Computed) The status of route map. Valid values: ["Creating", "Active", "Deleting"].
 
 ## Import
@@ -141,6 +142,6 @@ The RouteMapId attributes are exported:
 CEN RouteMap can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_cen_route_map.default cenrmap-tig1xxxxxx
+$ terraform import alicloud_cen_route_map.default <cen_id>:<route_map_id>.
 ```
 

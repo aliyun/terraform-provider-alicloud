@@ -82,6 +82,14 @@ The following arguments are supported:
 * `domain` - (Required, ForceNew) The domain name specified by the certificate. **NOTE:** You can associate each domain name with only one additional certificate.
 * `listener_id` - (Required, ForceNew) The ID of the listener. **NOTE:** Only HTTPS listeners support this parameter.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins) Used to wait accelerator and listener to be active after creating the Ga additional certificate.
+* `delete` - (Defaults to 1 mins) Used to wait accelerator and listener to be active after deleting the Ga additional certificate
+
+
 ## Attributes Reference
 
 The following attributes are exported:

@@ -43,7 +43,7 @@ func TestAccAlicloudCRChartRepository_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"repo_namespace_name": "${alicloud_cr_chart_namespace.default.namespace_name}",
-					"instance_id":         "${local.instance_id}",
+					"instance_id":         "${alicloud_cr_chart_namespace.default.instance_id}",
 					"repo_name":           name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -102,34 +102,19 @@ var AlicloudCRChartRepositoryMap0 = map[string]string{
 
 func AlicloudCRChartRepositoryBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-
-resource "alicloud_cr_ee_instance" "default" {
-  count = length(data.alicloud_cr_ee_instances.default.ids) > 0 ? 0 : 1
-  payment_type  = "Subscription"
-  period        = 1
-  instance_type = "Advanced"
-  instance_name = "%s"
-}
-
-data "alicloud_cr_ee_instances" "default" {
-}
-
-resource "alicloud_cr_chart_namespace" "default" {
-	instance_id        = local.instance_id
-	namespace_name       = var.name
-}
-
-locals{
-  instance_id =  length(data.alicloud_cr_ee_instances.default.ids) > 0 ? data.alicloud_cr_ee_instances.default.ids[0] : concat(alicloud_cr_ee_instance.default.*.id, [""])[0]
-}
-
-
-
-
 variable "name" {
   default = "%s"
 }
-`, name, name)
+
+data "alicloud_cr_ee_instances" "default" {}
+
+resource "alicloud_cr_chart_namespace" "default" {
+	instance_id        = data.alicloud_cr_ee_instances.default.ids.0
+	namespace_name       = var.name
+}
+
+
+`, name)
 }
 
 func TestAccAlicloudCRChartRepository_unit(t *testing.T) {

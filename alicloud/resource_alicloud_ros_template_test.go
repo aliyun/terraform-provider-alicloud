@@ -93,7 +93,7 @@ func testSweepRosTemplate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRosTemplate_basic(t *testing.T) {
+func TestAccAlicloudROSTemplate_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_template.default"
 	ra := resourceAttrInit(resourceId, AlicloudRosTemplateMap)

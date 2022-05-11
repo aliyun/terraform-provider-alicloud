@@ -48,7 +48,7 @@ func resourceAlicloudHbrRestoreJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ECS_FILE", "NAS", "OSS"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"ECS_FILE", "NAS", "OSS", "OTS_TABLE", "UDM_ECS_ROLLBACK"}, false),
 			},
 			"snapshot_hash": {
 				Type:     schema.TypeString,
@@ -64,7 +64,7 @@ func resourceAlicloudHbrRestoreJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ECS_FILE", "NAS", "OSS"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"ECS_FILE", "NAS", "OSS", "OTS_TABLE", "UDM_ECS"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -79,14 +79,6 @@ func resourceAlicloudHbrRestoreJob() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-			},
-			"target_container": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"target_container_cluster_id": {
-				Type:     schema.TypeString,
-				Optional: true,
 			},
 			"target_create_time": {
 				Type:     schema.TypeString,
@@ -121,6 +113,26 @@ func resourceAlicloudHbrRestoreJob() *schema.Resource {
 			"vault_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
+			},
+			"target_instance_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"target_table_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"target_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"udm_detail": {
+				Type:     schema.TypeString,
+				Optional: true,
 				ForceNew: true,
 			},
 		},
@@ -162,12 +174,6 @@ func resourceAlicloudHbrRestoreJobCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("target_client_id"); ok {
 		request["TargetClientId"] = v
 	}
-	if v, ok := d.GetOk("target_container"); ok {
-		request["TargetContainer"] = v
-	}
-	if v, ok := d.GetOk("target_container_cluster_id"); ok {
-		request["TargetContainerClusterId"] = v
-	}
 	if v, ok := d.GetOk("target_create_time"); ok {
 		request["TargetCreateTime"] = ConvertNasFileSystemStringToUnix(v.(string))
 	}
@@ -189,6 +195,19 @@ func resourceAlicloudHbrRestoreJobCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("vault_id"); ok {
 		request["VaultId"] = v
 	}
+	if v, ok := d.GetOk("target_instance_name"); ok {
+		request["TargetInstanceName"] = v
+	}
+	if v, ok := d.GetOk("target_table_name"); ok {
+		request["TargetTableName"] = v
+	}
+	if v, ok := d.GetOk("target_time"); ok {
+		request["TargetTime"] = v
+	}
+	if v, ok := d.GetOk("udm_detail"); ok {
+		request["UdmDetail"] = v
+	}
+
 	request["ClientToken"] = buildClientToken("CreateRestoreJob")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -256,6 +275,10 @@ func resourceAlicloudHbrRestoreJobRead(d *schema.ResourceData, meta interface{})
 	d.Set("target_path", object["TargetPath"])
 	d.Set("target_prefix", object["TargetPrefix"])
 	d.Set("vault_id", object["VaultId"])
+	d.Set("target_instance_name", object["TargetInstanceName"])
+	d.Set("target_table_name", object["TargetTableName"])
+	d.Set("target_time", object["TargetTime"])
+	d.Set("udm_detail", object["UdmDetail"])
 	return nil
 }
 func resourceAlicloudHbrRestoreJobUpdate(d *schema.ResourceData, meta interface{}) error {

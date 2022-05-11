@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
-
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -204,6 +202,18 @@ func TestAccAlicloudMongodbShardingNetworkPrivateAddress_unit(t *testing.T) {
 				},
 			},
 		},
+		"DBInstances": map[string]interface{}{
+			"DBInstance": []interface{}{
+				map[string]interface{}{
+					"DBInstanceStatus": "Running",
+					"DBInstanceId":     "db_instance_id",
+				},
+				map[string]interface{}{
+					"DBInstanceStatus": "Running",
+					"DBInstanceId":     "db_instance_id",
+				},
+			},
+		},
 	}
 
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
@@ -291,15 +301,9 @@ func TestAccAlicloudMongodbShardingNetworkPrivateAddress_unit(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		patchDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&MongoDBService{}), "DescribeMongoDBInstance", func(*MongoDBService, string) (dds.DBInstance, error) {
-			_, err := responseMock["NoRetryError"]("NoRetryError")
-			var object dds.DBInstance
-			return object, err
-		})
 		err := resourceAlicloudMongodbShardingNetworkPrivateAddressCreate(dCreate, rawClient)
 		patches.Reset()
-		patchDescribe.Reset()
-		assert.NotNil(t, err)
+		assert.Nil(t, err)
 	})
 	t.Run("CreateRetryableError", func(t *testing.T) {
 		retryFlag := false
@@ -380,15 +384,9 @@ func TestAccAlicloudMongodbShardingNetworkPrivateAddress_unit(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		patchDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&MongoDBService{}), "DescribeMongoDBInstance", func(*MongoDBService, string) (dds.DBInstance, error) {
-			_, err := responseMock["NoRetryError"]("NoRetryError")
-			var object dds.DBInstance
-			return object, err
-		})
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressDelete(d, rawClient)
+		err := resourceAlicloudMongodbShardingNetworkPrivateAddressDelete(dCreate, rawClient)
 		patches.Reset()
-		patchDescribe.Reset()
-		assert.NotNil(t, err)
+		assert.Nil(t, err)
 	})
 	t.Run("DeleteNonRetryableError", func(t *testing.T) {
 		retryFlag := false

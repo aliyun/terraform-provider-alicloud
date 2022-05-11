@@ -267,7 +267,7 @@ func TestAccAlicloudCloudSSOUser_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "CreateUser" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -284,6 +284,7 @@ func TestAccAlicloudCloudSSOUser_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoUserCreate(dInit, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -332,7 +333,7 @@ func TestAccAlicloudCloudSSOUser_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "UpdateUserStatus" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -348,6 +349,7 @@ func TestAccAlicloudCloudSSOUser_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoUserUpdate(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -390,7 +392,7 @@ func TestAccAlicloudCloudSSOUser_unit(t *testing.T) {
 		errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "UpdateUser" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -406,6 +408,7 @@ func TestAccAlicloudCloudSSOUser_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoUserUpdate(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -428,7 +431,7 @@ func TestAccAlicloudCloudSSOUser_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "{}"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "GetUser" {
 					switch errorCode {
 					case "{}":
@@ -446,6 +449,7 @@ func TestAccAlicloudCloudSSOUser_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoUserRead(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -477,7 +481,7 @@ func TestAccAlicloudCloudSSOUser_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "DeletionConflict.User.AccessAssigment", "nil", "EntityNotExists.User"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "DeleteUser" {
 					switch errorCode {
 					case "NonRetryableError", "EntityNotExists.User":
@@ -494,6 +498,7 @@ func TestAccAlicloudCloudSSOUser_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudCloudSsoUserDelete(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)

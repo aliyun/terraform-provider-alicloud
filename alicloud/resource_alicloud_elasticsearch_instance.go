@@ -156,6 +156,13 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional: true,
 			},
 
+			// Kibana node configuration
+			"kibana_node_spec": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+			},
+
 			"protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -339,6 +346,8 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	// Client node configuration
 	d.Set("client_node_amount", object["clientNodeConfiguration"].(map[string]interface{})["amount"])
 	d.Set("client_node_spec", object["clientNodeConfiguration"].(map[string]interface{})["spec"])
+	// Kibana node configuration
+	d.Set("kibana_node_spec", object["kibanaConfiguration"].(map[string]interface{})["spec"])
 	// Protocol: HTTP/HTTPS
 	d.Set("protocol", object["protocol"])
 
@@ -482,6 +491,19 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 		d.SetPartial("client_node_spec")
 		d.SetPartial("client_node_amount")
+	}
+
+	if d.HasChange("kibana_node_spec") {
+
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		if err := updateKibanaNode(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("kibana_node_spec")
 	}
 
 	if d.HasChange("protocol") {
@@ -731,9 +753,9 @@ func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{
 	content["nodeSpec"] = dataNodeSpec
 
 	// Master node configuration
-	if d.Get("master_node_spec") != nil && d.Get("master_node_spec") != "" {
+	if v, ok := d.GetOk("master_node_spec"); ok {
 		masterNode := make(map[string]interface{})
-		masterNode["spec"] = d.Get("master_node_spec")
+		masterNode["spec"] = v.(string)
 		masterNode["amount"] = "3"
 		masterNode["disk"] = "20"
 		masterNode["diskType"] = "cloud_ssd"
@@ -742,9 +764,9 @@ func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{
 	}
 
 	// Client node configuration
-	if d.Get("client_node_spec") != nil && d.Get("client_node_spec") != "" {
+	if v, ok := d.GetOk("client_node_spec"); ok {
 		clientNode := make(map[string]interface{})
-		clientNode["spec"] = d.Get("client_node_spec")
+		clientNode["spec"] = v.(string)
 		clientNode["disk"] = "20"
 		clientNode["diskType"] = "cloud_efficiency"
 		if d.Get("client_node_amount") == nil {
@@ -755,6 +777,17 @@ func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{
 
 		content["haveClientNode"] = true
 		content["clientNodeConfiguration"] = clientNode
+	}
+
+	// Kibana node configuration
+
+	if v, ok := d.GetOk("kibana_node_spec"); ok {
+		kibanaNode := make(map[string]interface{})
+		kibanaNode["spec"] = v.(string)
+		kibanaNode["disk"] = "0"
+		kibanaNode["amount"] = 1
+		content["haveKibana"] = true
+		content["kibanaConfiguration"] = kibanaNode
 	}
 
 	// Network configuration
@@ -772,8 +805,8 @@ func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{
 
 	content["networkConfig"] = network
 
-	if d.Get("zone_count") != nil && d.Get("zone_count") != "" {
-		content["zoneCount"] = d.Get("zone_count")
+	if v, ok := d.GetOk("zone_count"); ok {
+		content["zoneCount"] = v
 	}
 
 	return content, nil

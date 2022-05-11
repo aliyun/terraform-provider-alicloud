@@ -133,7 +133,7 @@ func testSweepCenInstances(region string) error {
 		action := "ListTransitRouterVbrAttachments"
 		request := make(map[string]interface{})
 		request["CenId"] = cenId
-		//request["RegionId"] = "cn-hangzhou"
+		request["RegionId"] = client.RegionId
 		request["PageSize"] = PageSizeLarge
 		request["PageNumber"] = 1
 		var response map[string]interface{}
@@ -170,19 +170,8 @@ func testSweepCenInstances(region string) error {
 				item := v.(map[string]interface{})
 				name := fmt.Sprint(item["TransitRouterAttachmentName"])
 				id := fmt.Sprint(item["TransitRouterAttachmentId"])
-				skip := true
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(name, prefix) {
-						skip = false
-						break
-					}
-				}
-				if skip {
-					log.Printf("[DEBUG] Skipping the tr %s", name)
-					continue
-				}
 				action := "DeleteTransitRouterVbrAttachment"
-				log.Printf("[DEBUG] %s %s", action, name)
+				log.Printf("[DEBUG] %s %s:%s", action, id, name)
 
 				request := map[string]interface{}{
 					"TransitRouterAttachmentId": id,
@@ -191,7 +180,7 @@ func testSweepCenInstances(region string) error {
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 					if err != nil {
-						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"Operation.Blocking", "InvalidOperation.ChildInstanceStatus"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -245,19 +234,8 @@ func testSweepCenInstances(region string) error {
 				item := v.(map[string]interface{})
 				name := fmt.Sprint(item["TransitRouterAttachmentName"])
 				id := fmt.Sprint(item["TransitRouterAttachmentId"])
-				skip := true
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(name, prefix) {
-						skip = false
-						break
-					}
-				}
-				if skip {
-					log.Printf("[DEBUG] Skipping the tr %s", name)
-					continue
-				}
 				action := "DeleteTransitRouterVpcAttachment"
-				log.Printf("[DEBUG] %s %s", action, name)
+				log.Printf("[DEBUG] %s %s:%s", action, id, name)
 
 				request := map[string]interface{}{
 					"TransitRouterAttachmentId": id,
@@ -320,20 +298,8 @@ func testSweepCenInstances(region string) error {
 				item := v.(map[string]interface{})
 				name := fmt.Sprint(item["TransitRouterAttachmentName"])
 				id := fmt.Sprint(item["TransitRouterAttachmentId"])
-				skip := true
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(name, prefix) {
-						skip = false
-						break
-					}
-				}
-				if skip {
-					log.Printf("[DEBUG] Skipping the tr %s", name)
-					continue
-				}
-
 				action := "DeleteTransitRouterPeerAttachment"
-				log.Printf("[DEBUG] %s %s", action, name)
+				log.Printf("[DEBUG] %s %s:%s", action, id, name)
 
 				request := map[string]interface{}{
 					"TransitRouterAttachmentId": id,
@@ -450,7 +416,7 @@ func testSweepCenInstances(region string) error {
 				}
 
 				action = "DeleteTransitRouter"
-				log.Printf("[DEBUG] %s %s", action, name)
+				log.Printf("[DEBUG] %s %s", action, id)
 
 				request = map[string]interface{}{
 					"TransitRouterId": id,
@@ -459,7 +425,7 @@ func testSweepCenInstances(region string) error {
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 					if err != nil {
-						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -787,341 +753,339 @@ func TestAccAlicloudCenInstance_unit(t *testing.T) {
 	}
 
 	// Create
-	t.Run("Create", func(t *testing.T) {
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCbnClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCbnClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:    String("loadEndpoint error"),
+			Data:    String("loadEndpoint error"),
+			Message: String("loadEndpoint error"),
+		}
+	})
+	err = resourceAlicloudCenInstanceCreate(dInit, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeCens Response
+		"Cens": map[string]interface{}{
+			"Cen": []interface{}{
+				map[string]interface{}{
+					"CenId": "CreateCenValue",
+				},
+			},
+		},
+	}
+	errorCodes := []string{"NonRetryableError", "Throttling", "Operation.Blocking", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "CreateCen" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						successResponseMock(ReadMockResponseDiff)
+						return CreateMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
 			}
+			return ReadMockResponse, nil
 		})
 		err := resourceAlicloudCenInstanceCreate(dInit, rawClient)
 		patches.Reset()
-		assert.NotNil(t, err)
-		ReadMockResponseDiff = map[string]interface{}{
-			// DescribeCens Response
-			"Cens": map[string]interface{}{
-				"Cen": []interface{}{
-					map[string]interface{}{
-						"CenId": "CreateCenValue",
-					},
-				},
-			},
-		}
-		errorCodes := []string{"NonRetryableError", "Throttling", "Operation.Blocking", "nil"}
-		for index, errorCode := range errorCodes {
-			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-				if *action == "CreateCen" {
-					switch errorCode {
-					case "NonRetryableError":
-						return failedResponseMock(errorCode)
-					default:
-						retryIndex++
-						if retryIndex >= len(errorCodes)-1 {
-							successResponseMock(ReadMockResponseDiff)
-							return CreateMockResponse, nil
-						}
-						return failedResponseMock(errorCodes[retryIndex])
-					}
-				}
-				return ReadMockResponse, nil
-			})
-			err := resourceAlicloudCenInstanceCreate(dInit, rawClient)
-			switch errorCode {
-			case "NonRetryableError":
-				assert.NotNil(t, err)
-			default:
-				assert.Nil(t, err)
-				dCompare, _ := schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dInit.State(), nil)
-				for key, value := range attributes {
-					dCompare.Set(key, value)
-				}
-				assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dInit.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
 			}
-			if retryIndex >= len(errorCodes)-1 {
-				break
-			}
+			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
 		}
-	})
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
 
 	// Update
-	t.Run("Update", func(t *testing.T) {
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCbnClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCbnClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:    String("loadEndpoint error"),
+			Data:    String("loadEndpoint error"),
+			Message: String("loadEndpoint error"),
+		}
+	})
+	err = resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	// ModifyCenAttribute
+	attributesDiff := map[string]interface{}{
+		"cen_instance_name": "ModifyCenAttributeValue",
+		"description":       "ModifyCenAttributeValue",
+		"protection_level":  "ModifyCenAttributeValue",
+	}
+	diff, err := newInstanceDiff("alicloud_cen_instance", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dInit.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeCens Response
+		"Cens": map[string]interface{}{
+			"Cen": []interface{}{
+				map[string]interface{}{
+					"Name":            "ModifyCenAttributeValue",
+					"Description":     "ModifyCenAttributeValue",
+					"ProtectionLevel": "ModifyCenAttributeValue",
+				},
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "ModifyCenAttribute" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
 			}
+			return ReadMockResponse, nil
 		})
 		err := resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
-		assert.NotNil(t, err)
-		// ModifyCenAttribute
-		attributesDiff := map[string]interface{}{
-			"cen_instance_name": "ModifyCenAttributeValue",
-			"description":       "ModifyCenAttributeValue",
-			"protection_level":  "ModifyCenAttributeValue",
-		}
-		diff, err := newInstanceDiff("alicloud_cen_instance", attributes, attributesDiff, dInit.State())
-		if err != nil {
-			t.Error(err)
-		}
-		dExisted, _ = schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dInit.State(), diff)
-		ReadMockResponseDiff = map[string]interface{}{
-			// DescribeCens Response
-			"Cens": map[string]interface{}{
-				"Cen": []interface{}{
-					map[string]interface{}{
-						"Name":            "ModifyCenAttributeValue",
-						"Description":     "ModifyCenAttributeValue",
-						"ProtectionLevel": "ModifyCenAttributeValue",
-					},
-				},
-			},
-		}
-		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
-		for index, errorCode := range errorCodes {
-			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-				if *action == "ModifyCenAttribute" {
-					switch errorCode {
-					case "NonRetryableError":
-						return failedResponseMock(errorCode)
-					default:
-						retryIndex++
-						if retryIndex >= len(errorCodes)-1 {
-							return successResponseMock(ReadMockResponseDiff)
-						}
-						return failedResponseMock(errorCodes[retryIndex])
-					}
-				}
-				return ReadMockResponse, nil
-			})
-			err := resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
-			switch errorCode {
-			case "NonRetryableError":
-				assert.NotNil(t, err)
-			default:
-				assert.Nil(t, err)
-				dCompare, _ := schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dExisted.State(), nil)
-				for key, value := range attributes {
-					dCompare.Set(key, value)
-				}
-				assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
 			}
-			if retryIndex >= len(errorCodes)-1 {
-				break
-			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
 		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
 
-		// TagResources
-		attributesDiff = map[string]interface{}{
-			"tags": map[string]interface{}{
-				"TagResourcesValue_1": "TagResourcesValue_1",
-				"TagResourcesValue_2": "TagResourcesValue_2",
-			},
-		}
-		diff, err = newInstanceDiff("alicloud_cen_instance", attributes, attributesDiff, dExisted.State())
-		if err != nil {
-			t.Error(err)
-		}
-		dExisted, _ = schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dExisted.State(), diff)
-		ReadMockResponseDiff = map[string]interface{}{
-			// DescribeCens Response
-			"Cens": map[string]interface{}{
-				"Cen": []interface{}{
-					map[string]interface{}{
-						"Tags": map[string]interface{}{
-							"Tag": []interface{}{
-								map[string]interface{}{
-									"Key":   "TagResourcesValue_1",
-									"Value": "TagResourcesValue_1",
-								},
-								map[string]interface{}{
-									"Key":   "TagResourcesValue_2",
-									"Value": "TagResourcesValue_2",
-								},
+	// TagResources
+	attributesDiff = map[string]interface{}{
+		"tags": map[string]interface{}{
+			"TagResourcesValue_1": "TagResourcesValue_1",
+			"TagResourcesValue_2": "TagResourcesValue_2",
+		},
+	}
+	diff, err = newInstanceDiff("alicloud_cen_instance", attributes, attributesDiff, dExisted.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dExisted.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeCens Response
+		"Cens": map[string]interface{}{
+			"Cen": []interface{}{
+				map[string]interface{}{
+					"Tags": map[string]interface{}{
+						"Tag": []interface{}{
+							map[string]interface{}{
+								"Key":   "TagResourcesValue_1",
+								"Value": "TagResourcesValue_1",
+							},
+							map[string]interface{}{
+								"Key":   "TagResourcesValue_2",
+								"Value": "TagResourcesValue_2",
 							},
 						},
 					},
 				},
 			},
-		}
-		errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
-		for index, errorCode := range errorCodes {
-			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-				if *action == "TagResources" {
-					switch errorCode {
-					case "NonRetryableError":
-						return failedResponseMock(errorCode)
-					default:
-						retryIndex++
-						if retryIndex >= len(errorCodes)-1 {
-							return successResponseMock(ReadMockResponseDiff)
-						}
-						return failedResponseMock(errorCodes[retryIndex])
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "TagResources" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
 					}
+					return failedResponseMock(errorCodes[retryIndex])
 				}
-				return ReadMockResponse, nil
-			})
-			err := resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
-			switch errorCode {
-			case "NonRetryableError":
-				assert.NotNil(t, err)
-			default:
-				assert.Nil(t, err)
-				dCompare, _ := schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dExisted.State(), nil)
-				for key, value := range attributes {
-					dCompare.Set(key, value)
-				}
-				assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
 			}
-			if retryIndex >= len(errorCodes)-1 {
-				break
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
 			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
 		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
 
-		// UntagResources
-		attributesDiff = map[string]interface{}{
-			"tags": map[string]interface{}{
-				"UntagResourcesValue3_1": "UnTagResourcesValue3_1",
-				"UntagResourcesValue3_2": "UnTagResourcesValue3_2",
-			},
-		}
-		diff, err = newInstanceDiff("alicloud_cen_instance", attributes, attributesDiff, dExisted.State())
-		if err != nil {
-			t.Error(err)
-		}
-		dExisted, _ = schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dExisted.State(), diff)
-		ReadMockResponseDiff = map[string]interface{}{
-			// DescribeCens Response
-			"Cens": map[string]interface{}{
-				"Cen": []interface{}{
-					map[string]interface{}{
-						"Tags": map[string]interface{}{
-							"Tag": []interface{}{
-								map[string]interface{}{
-									"Key":   "UntagResourcesValue3_1",
-									"Value": "UnTagResourcesValue3_1",
-								},
-								map[string]interface{}{
-									"Key":   "UntagResourcesValue3_2",
-									"Value": "UnTagResourcesValue3_2",
-								},
+	// UntagResources
+	attributesDiff = map[string]interface{}{
+		"tags": map[string]interface{}{
+			"UntagResourcesValue3_1": "UnTagResourcesValue3_1",
+			"UntagResourcesValue3_2": "UnTagResourcesValue3_2",
+		},
+	}
+	diff, err = newInstanceDiff("alicloud_cen_instance", attributes, attributesDiff, dExisted.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dExisted.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeCens Response
+		"Cens": map[string]interface{}{
+			"Cen": []interface{}{
+				map[string]interface{}{
+					"Tags": map[string]interface{}{
+						"Tag": []interface{}{
+							map[string]interface{}{
+								"Key":   "UntagResourcesValue3_1",
+								"Value": "UnTagResourcesValue3_1",
+							},
+							map[string]interface{}{
+								"Key":   "UntagResourcesValue3_2",
+								"Value": "UnTagResourcesValue3_2",
 							},
 						},
 					},
 				},
 			},
-		}
-		errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
-		for index, errorCode := range errorCodes {
-			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-				if *action == "UntagResources" {
-					switch errorCode {
-					case "NonRetryableError":
-						return failedResponseMock(errorCode)
-					default:
-						retryIndex++
-						if retryIndex >= len(errorCodes)-1 {
-							return successResponseMock(ReadMockResponseDiff)
-						}
-						return failedResponseMock(errorCodes[retryIndex])
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "UntagResources" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
 					}
+					return failedResponseMock(errorCodes[retryIndex])
 				}
-				return ReadMockResponse, nil
-			})
-			err := resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
-			switch errorCode {
-			case "NonRetryableError":
-				assert.NotNil(t, err)
-			default:
-				assert.Nil(t, err)
-				dCompare, _ := schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dExisted.State(), nil)
-				for key, value := range attributes {
-					dCompare.Set(key, value)
-				}
-				assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
 			}
-			if retryIndex >= len(errorCodes)-1 {
-				break
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudCenInstanceUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
 			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
 		}
-	})
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
 
 	// Read
-	t.Run("Read", func(t *testing.T) {
-		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "{}"}
-		for index, errorCode := range errorCodes {
-			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-				if *action == "DescribeCens" {
-					switch errorCode {
-					case "{}":
-						return notFoundResponseMock(errorCode)
-					case "NonRetryableError":
-						return failedResponseMock(errorCode)
-					default:
-						retryIndex++
-						if errorCodes[retryIndex] == "nil" {
-							return ReadMockResponse, nil
-						}
-						return failedResponseMock(errorCodes[retryIndex])
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DescribeCens" {
+				switch errorCode {
+				case "{}":
+					return notFoundResponseMock(errorCode)
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						return ReadMockResponse, nil
 					}
+					return failedResponseMock(errorCodes[retryIndex])
 				}
-				return ReadMockResponse, nil
-			})
-			err := resourceAlicloudCenInstanceRead(dExisted, rawClient)
-			switch errorCode {
-			case "NonRetryableError":
-				assert.NotNil(t, err)
-			case "{}":
-				assert.Nil(t, err)
 			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudCenInstanceRead(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "{}":
+			assert.Nil(t, err)
 		}
-	})
+	}
 
 	// Delete
-	t.Run("Delete", func(t *testing.T) {
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCbnClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCbnClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:    String("loadEndpoint error"),
+			Data:    String("loadEndpoint error"),
+			Message: String("loadEndpoint error"),
+		}
+	})
+	err = resourceAlicloudCenInstanceDelete(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "ParameterCenInstanceId"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DeleteCen" {
+				switch errorCode {
+				case "NonRetryableError", "ParameterCenInstanceId":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						ReadMockResponse = map[string]interface{}{}
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
 			}
+			return ReadMockResponse, nil
 		})
 		err := resourceAlicloudCenInstanceDelete(dExisted, rawClient)
 		patches.Reset()
-		assert.NotNil(t, err)
-		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "ParameterCenInstanceId"}
-		for index, errorCode := range errorCodes {
-			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-				if *action == "DeleteCen" {
-					switch errorCode {
-					case "NonRetryableError", "ParameterCenInstanceId":
-						return failedResponseMock(errorCode)
-					default:
-						retryIndex++
-						if errorCodes[retryIndex] == "nil" {
-							ReadMockResponse = map[string]interface{}{}
-							return ReadMockResponse, nil
-						}
-						return failedResponseMock(errorCodes[retryIndex])
-					}
-				}
-				return ReadMockResponse, nil
-			})
-			err := resourceAlicloudCenInstanceDelete(dExisted, rawClient)
-			switch errorCode {
-			case "NonRetryableError":
-				assert.NotNil(t, err)
-			case "ParameterCenInstanceId":
-				assert.Nil(t, err)
-			}
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "ParameterCenInstanceId":
+			assert.Nil(t, err)
 		}
-	})
+	}
 }

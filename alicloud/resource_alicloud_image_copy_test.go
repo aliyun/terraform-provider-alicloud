@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEcsImageCopyBasic(t *testing.T) {
+func TestAccAlicloudECSImageCopyBasic(t *testing.T) {
 	var v ecs.Image
 
 	resourceId := "alicloud_image_copy.default"

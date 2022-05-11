@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudVpnConnectionsDataSourceBasic(t *testing.T) {
+func TestAccAlicloudVPNConnectionsDataSourceBasic(t *testing.T) {
 
 	resourceId := "data.alicloud_vpn_connections.default"
 	rand := acctest.RandIntRange(1000, 9999)

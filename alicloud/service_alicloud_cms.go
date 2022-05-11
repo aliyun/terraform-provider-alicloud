@@ -36,39 +36,48 @@ func (s *CmsService) BuildCmsAlarmRequest(id string) *requests.CommonRequest {
 	return request
 }
 
-func (s *CmsService) DescribeAlarm(id string) (alarm cms.AlarmInDescribeMetricRuleList, err error) {
-	request := cms.CreateDescribeMetricRuleListRequest()
-	request.RuleIds = id
+func (s *CmsService) DescribeAlarm(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCmsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeMetricRuleList"
+	request := map[string]interface{}{
+		"RuleIds": id,
+	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	var response *cms.DescribeMetricRuleListResponse
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DescribeMetricRuleList(request)
-		})
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(6*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ = raw.(*cms.DescribeMetricRuleListResponse)
+		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InternalError", "ResourceNotFound"}) {
-			return alarm, WrapErrorf(Error(GetNotFoundMessage("Alarm Rule", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return alarm, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-
-	if len(response.Alarms.Alarm) < 1 {
-		return alarm, GetNotFoundErrorFromString(GetNotFoundMessage("Alarm Rule", id))
+	v, _ := jsonpath.Get("$.Alarms.Alarm", response)
+	if v == nil {
+		return object, nil
 	}
-
-	return response.Alarms.Alarm[0], nil
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
 func (s *CmsService) WaitForCmsAlarm(id string, enabled bool, timeout int) error {
@@ -82,7 +91,7 @@ func (s *CmsService) WaitForCmsAlarm(id string, enabled bool, timeout int) error
 			return err
 		}
 
-		if alarm.EnableState == enabled {
+		if alarm["EnableState"] == enabled {
 			break
 		}
 		timeout = timeout - DefaultIntervalShort
@@ -184,9 +193,22 @@ func (s *CmsService) DescribeCmsAlarmContact(id string) (object cms.Contact, err
 	request.RegionId = s.client.RegionId
 
 	request.ContactName = id
-
-	raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.DescribeContactList(request)
+	var response *cms.DescribeContactListResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.DescribeContactList(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*cms.DescribeContactListResponse)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ContactNotExists", "ResourceNotFound"}) {
@@ -196,8 +218,7 @@ func (s *CmsService) DescribeCmsAlarmContact(id string) (object cms.Contact, err
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*cms.DescribeContactListResponse)
+
 	if response.Code != "200" {
 		err = Error("DescribeContactList failed for " + response.Message)
 		return
@@ -303,7 +324,11 @@ func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]in
 		return object, err
 	}
 	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		err = Error("DescribeMetricRuleList failed for " + response["Message"].(string))
+		if _, ok := response["Message"]; ok {
+			err = Error("DescribeMetricRuleList failed for " + response["Message"].(string))
+		} else {
+			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
 		return object, err
 	}
 	v, err := jsonpath.Get("$.Alarms.Alarm", response)
@@ -489,7 +514,7 @@ func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[s
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Resources.Resource", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CmsMonitorGroupInstances", id)), NotFoundWithResponse, response)
+			break
 		}
 
 		for _, v := range v.([]interface{}) {
@@ -499,6 +524,10 @@ func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[s
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	if len(object) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CmsMonitorGroupInstances", id)), NotFoundWithResponse, response)
 	}
 
 	return object, nil

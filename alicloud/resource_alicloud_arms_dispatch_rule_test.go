@@ -115,7 +115,7 @@ func testSweepArmsDispatchRule(region string) error {
 	return nil
 }
 
-func TestAccAlicloudArmsDispatchRule_basic(t *testing.T) {
+func TestAccAlicloudARMSDispatchRule_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_arms_dispatch_rule.default"
 	ra := resourceAttrInit(resourceId, ArmsDispatchRuleMap)
@@ -359,7 +359,7 @@ resource "alicloud_arms_alert_contact_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudArmsDispatchRule_unit(t *testing.T) {
+func TestAccAlicloudARMSDispatchRule_unit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_arms_dispatch_rule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_arms_dispatch_rule"].Schema).Data(nil, nil)
@@ -513,7 +513,7 @@ func TestAccAlicloudArmsDispatchRule_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "CreateDispatchRule" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -530,6 +530,7 @@ func TestAccAlicloudArmsDispatchRule_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudArmsDispatchRuleCreate(dInit, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -655,7 +656,7 @@ func TestAccAlicloudArmsDispatchRule_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "UpdateDispatchRule" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -671,6 +672,7 @@ func TestAccAlicloudArmsDispatchRule_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudArmsDispatchRuleUpdate(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -693,7 +695,7 @@ func TestAccAlicloudArmsDispatchRule_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil", "{}"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "DescribeDispatchRule" {
 					switch errorCode {
 					case "{}":
@@ -711,6 +713,7 @@ func TestAccAlicloudArmsDispatchRule_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudArmsDispatchRuleRead(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)
@@ -735,7 +738,7 @@ func TestAccAlicloudArmsDispatchRule_unit(t *testing.T) {
 		errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1
-			gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 				if *action == "DeleteDispatchRule" {
 					switch errorCode {
 					case "NonRetryableError":
@@ -752,6 +755,7 @@ func TestAccAlicloudArmsDispatchRule_unit(t *testing.T) {
 				return ReadMockResponse, nil
 			})
 			err := resourceAlicloudArmsDispatchRuleDelete(dExisted, rawClient)
+			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
 				assert.NotNil(t, err)

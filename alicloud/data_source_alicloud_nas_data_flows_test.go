@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudNasDataFlowsDataSource(t *testing.T) {
+func TestAccAlicloudNASDataFlowsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100, 999)
 	checkoutSupportedRegions(t, true, connectivity.NASCPFSSupportRegions)
 	idsConf := dataSourceTestAccConfig{

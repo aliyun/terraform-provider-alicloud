@@ -415,28 +415,22 @@ func TestAccAlicloudCSKubernetesNodePool_PrePaid(t *testing.T) {
 					"instance_charge_type":  "PrePaid",
 					"period":                "1",
 					"period_unit":           "Month",
-					"auto_renew":            "true",
 					"auto_renew_period":     "1",
-					"scaling_config":        []map[string]string{{"min_size": "1", "max_size": "10"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                      name,
-						"cluster_id":                CHECKSET,
-						"password":                  CHECKSET,
-						"vswitch_ids.#":             "1",
-						"instance_types.#":          "1",
-						"system_disk_category":      "cloud_efficiency",
-						"system_disk_size":          "120",
-						"instance_charge_type":      "PrePaid",
-						"install_cloud_monitor":     "false",
-						"period":                    "1",
-						"period_unit":               "Month",
-						"auto_renew":                "true",
-						"auto_renew_period":         "1",
-						"scaling_config.#":          "1",
-						"scaling_config.0.min_size": "1",
-						"scaling_config.0.max_size": "10",
+						"name":                  name,
+						"cluster_id":            CHECKSET,
+						"password":              CHECKSET,
+						"vswitch_ids.#":         "1",
+						"instance_types.#":      "1",
+						"system_disk_category":  "cloud_efficiency",
+						"system_disk_size":      "120",
+						"instance_charge_type":  "PrePaid",
+						"install_cloud_monitor": "false",
+						"period":                "1",
+						"period_unit":           "Month",
+						"auto_renew_period":     "1",
 					}),
 				),
 			},
@@ -451,16 +445,12 @@ func TestAccAlicloudCSKubernetesNodePool_PrePaid(t *testing.T) {
 					"instance_charge_type":  "PrePaid",
 					"auto_renew_period":     "2",
 					"install_cloud_monitor": "true",
-					"scaling_config":        []map[string]string{{"min_size": "2", "max_size": "10"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_charge_type":      "PrePaid",
-						"auto_renew_period":         "2",
-						"install_cloud_monitor":     "true",
-						"scaling_config.#":          "1",
-						"scaling_config.0.min_size": "2",
-						"scaling_config.0.max_size": "10",
+						"instance_charge_type":  "PrePaid",
+						"auto_renew_period":     "2",
+						"install_cloud_monitor": "true",
 					}),
 				),
 			},
@@ -571,6 +561,86 @@ func TestAccAlicloudCSKubernetesNodePool_Spot(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCSKubernetesNodePool_BYOK(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.default"
+	ra := resourceAttrInit(resourceId, csdKubernetesNodePoolBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSNodePoolConfigDependence_BYOK)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ACKSystemDiskEncryptionSupportRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                          name,
+					"cluster_id":                    "${alicloud_cs_managed_kubernetes.default.0.id}",
+					"vswitch_ids":                   []string{"${local.vswitch_id}"},
+					"instance_types":                []string{"ecs.c7.xlarge"},
+					"desired_size":                  "1",
+					"key_name":                      "${alicloud_key_pair.default.key_name}",
+					"system_disk_category":          "cloud_essd",
+					"system_disk_size":              "40",
+					"data_disks":                    []map[string]string{{"size": "100", "category": "cloud_essd"}},
+					"tags":                          map[string]interface{}{"Created": "TF", "Foo": "Bar"},
+					"security_group_ids":            []string{"${alicloud_security_group.group.id}", "${alicloud_security_group.group1.id}"},
+					"image_type":                    "CentOS",
+					"system_disk_encrypted":         "true",
+					"system_disk_kms_key":           "${data.alicloud_kms_keys.default.ids.0}",
+					"system_disk_encrypt_algorithm": "aes-256",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                          name,
+						"cluster_id":                    CHECKSET,
+						"vswitch_ids.#":                 "1",
+						"instance_types.#":              "1",
+						"desired_size":                  "1",
+						"key_name":                      CHECKSET,
+						"system_disk_category":          "cloud_essd",
+						"system_disk_size":              "40",
+						"data_disks.#":                  "1",
+						"data_disks.0.size":             "100",
+						"data_disks.0.category":         "cloud_essd",
+						"tags.%":                        "2",
+						"tags.Created":                  "TF",
+						"tags.Foo":                      "Bar",
+						"security_group_ids.#":          "2",
+						"image_type":                    "CentOS",
+						"system_disk_encrypted":         "true",
+						"system_disk_kms_key":           CHECKSET,
+						"system_disk_encrypt_algorithm": "aes-256",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+		},
+	})
+}
+
 var csdKubernetesNodePoolBasicMap = map[string]string{
 	"system_disk_size":     "40",
 	"system_disk_category": "cloud_efficiency",
@@ -593,6 +663,45 @@ data "alicloud_instance_types" "default" {
 	cpu_core_count             = 2
 	memory_size                = 4
 	kubernetes_node_role       = "Worker"
+}
+
+variable "roles" {
+  type = list(object({
+    name = string
+    policy_document = string
+    description = string
+    policy_name = string
+  }))
+  default = [
+    {
+      name = "AliyunOOSLifecycleHook4CSRole"
+      policy_document="{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"oos.aliyuncs.com\"]}}],\"Version\":\"1\"}"
+      description = "OOS使用此角色来访问您在其他云产品中的资源。"
+      policy_name = "AliyunOOSLifecycleHook4CSRolePolicy"
+    },
+    {
+      name = "AliyunCSManagedAutoScalerRole"
+      policy_document="{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"cs.aliyuncs.com\"]}}],\"Version\":\"1\"}"
+      description = "CS使用此角色来访问您在其他云产品中的资源。"
+      policy_name = "AliyunCSManagedAutoScalerRolePolicy"
+    }
+  ]
+}
+
+resource "alicloud_ram_role" "role" {
+    for_each    = {for r in var.roles:r.name => r}
+    name        = each.value.name
+    document    = each.value.policy_document
+    description = each.value.description
+    force       = true
+}
+
+resource "alicloud_ram_role_policy_attachment" "attach" {
+  for_each    = {for r in var.roles:r.name => r}
+  policy_name = each.value.policy_name
+  policy_type = "System"
+  role_name   = each.value.name
+  depends_on  = [alicloud_ram_role.role]
 }
 
 resource "alicloud_security_group" "group" {
@@ -653,5 +762,85 @@ resource "alicloud_cs_managed_kubernetes" "default" {
     weekly_period     = "Thursday"
   }
 }
+`, name)
+}
+
+// system disk encryption only support region HongKong zones B/C
+func resourceCSNodePoolConfigDependence_BYOK(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+variable "alicloud_zone" {
+    default = "cn-hongkong-b"
+}
+
+data "alicloud_kms_keys" "default" {
+    status = "Enabled"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_instance_types" "default" {
+	availability_zone          = var.alicloud_zone
+	cpu_core_count             = 2
+	memory_size                = 4
+	kubernetes_node_role       = "Worker"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = var.alicloud_zone
+}
+
+resource "alicloud_security_group" "group" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_security_group" "group1" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = var.alicloud_zone
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+
+resource "alicloud_key_pair" "default" {
+	key_pair_name = var.name
+}
+
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name                         = var.name
+  count                        = 1
+  cluster_spec                 = "ack.pro.small"
+  is_enterprise_security_group = true
+  worker_number                = 2
+  password                     = "Hello1234"
+  pod_cidr                     = "10.99.0.0/16"
+  service_cidr                 = "172.16.0.0/16"
+  worker_vswitch_ids           = [local.vswitch_id]
+  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
+  
+  maintenance_window {
+    enable            = true
+    maintenance_time  = "03:00:00Z"
+    duration          = "3h"
+    weekly_period     = "Thursday"
+  }
+}
+
 `, name)
 }
