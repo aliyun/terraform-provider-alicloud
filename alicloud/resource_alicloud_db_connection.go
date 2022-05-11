@@ -47,6 +47,11 @@ func resourceAlicloudDBConnection() *schema.Resource {
 				ValidateFunc: validateDBConnectionPort,
 				Default:      "3306",
 			},
+			"babelfish_port": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"connection_string": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -74,6 +79,10 @@ func resourceAlicloudDBConnectionCreate(d *schema.ResourceData, meta interface{}
 		"ConnectionStringPrefix": prefix,
 		"Port":                   d.Get("port"),
 		"SourceIp":               client.SourceIp,
+	}
+
+	if v, ok := d.GetOk("babelfish_port"); ok {
+		request["BabelfishPort"] = v
 	}
 
 	conn, err := client.NewRdsClient()
@@ -136,7 +145,9 @@ func resourceAlicloudDBConnectionRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("port", object["Port"])
 	d.Set("connection_string", object["ConnectionString"])
 	d.Set("ip_address", object["IPAddress"])
-
+	if object["BabelfishPort"] != nil {
+		d.Set("babelfish_port", object["BabelfishPort"])
+	}
 	return nil
 }
 
@@ -154,7 +165,7 @@ func resourceAlicloudDBConnectionUpdate(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
-	if d.HasChange("port") {
+	if d.HasChange("port") || d.HasChange("babelfish_port") {
 		action := "ModifyDBInstanceConnectionString"
 		request := map[string]interface{}{
 			"RegionId":     client.RegionId,
@@ -168,6 +179,9 @@ func resourceAlicloudDBConnectionUpdate(d *schema.ResourceData, meta interface{}
 		request["CurrentConnectionString"] = object["ConnectionString"]
 		request["ConnectionStringPrefix"] = parts[1]
 		request["Port"] = d.Get("port")
+		if v, ok := d.GetOk("babelfish_port"); ok {
+			request["BabelfishPort"] = v
+		}
 		runtime := util.RuntimeOptions{}
 		conn, err := client.NewRdsClient()
 		if err != nil {
