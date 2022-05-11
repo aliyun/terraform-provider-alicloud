@@ -1075,6 +1075,89 @@ func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSAEApplication_basicTags(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
+	resourceId := "alicloud_sae_application.default"
+	ra := resourceAttrInit(resourceId, AlicloudSAEApplicationMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SaeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSaeApplication")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tftestacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEApplicationBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"app_name":        name,
+					"namespace_id":    "${alicloud_sae_namespace.default.namespace_id}",
+					"package_type":    "Image",
+					"app_description": name + "desc",
+					"vswitch_id":      "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vpc_id":          "${data.alicloud_vpcs.default.ids.0}",
+					"image_url":       fmt.Sprintf("registry-vpc.%s.aliyuncs.com/sae-demo-image/consumer:1.0", defaultRegionToTest),
+					"replicas":        "5",
+					"cpu":             "500",
+					"memory":          "2048",
+					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "create",
+					"tags": map[string]string{
+						"Created": "tfTestAcc1",
+						"For":     "Tftestacc1",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"app_name":        name,
+						"namespace_id":    CHECKSET,
+						"package_type":    "Image",
+						"app_description": name + "desc",
+						"vswitch_id":      CHECKSET,
+						"vpc_id":          CHECKSET,
+						"image_url":       CHECKSET,
+						"replicas":        "5",
+						"cpu":             "500",
+						"memory":          "2048",
+						"tags.%":          "2",
+						"tags.Created":    "tfTestAcc1",
+						"tags.For":        "Tftestacc1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "tfTestAcc7",
+						"For":     "Tftestacc7",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "tfTestAcc7",
+						"tags.For":     "Tftestacc7",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_enable_application_scaling_rule", "batch_wait_time", "config_map_mount_desc"},
+			},
+		},
+	})
+}
+
 func AlicloudSAEApplicationBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 data "alicloud_vpcs" "default"	{

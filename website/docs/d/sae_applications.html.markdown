@@ -136,4 +136,5 @@ The following attributes are exported in addition to the arguments listed above:
     * `vswitch_id` - The vswitch id.
     * `war_start_options` - WAR package launch application option. Application default startup command: java $JAVA_OPTS $CATALINA_OPTS [-Options] org.apache.catalina.startup.Bootstrap "$@" start.
     * `web_container` - The version of tomcat that the deployment package depends on. Image type applications are not supported.
+    * `tags` - A mapping of tags to assign to the resource.
     

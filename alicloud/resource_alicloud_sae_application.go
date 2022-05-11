@@ -265,6 +265,7 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -512,6 +513,8 @@ func resourceAlicloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	d.Set("status", describeApplicationStatusObject["CurrentStatus"])
+	listTagResourcesObject, err := saeService.ListTagResources(d.Id(), "application")
+	d.Set("tags", tagsToMap(listTagResourcesObject))
 	return nil
 }
 func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -524,6 +527,12 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	update := false
 	d.Partial(true)
+	if d.HasChange("tags") {
+		if err := saeService.SetResourceTags(d, "application"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
 	request := map[string]*string{
 		"AppId": StringPointer(d.Id()),
 	}
