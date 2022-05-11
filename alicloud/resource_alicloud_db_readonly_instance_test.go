@@ -16,10 +16,10 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccDBInstance_vpc_%d", rand)
 	var DBReadonlyMap = map[string]string{
-		"instance_storage":      "5",
-		"engine_version":        "5.6",
+		"instance_storage":      "20",
+		"engine_version":        "8.0",
 		"engine":                "MySQL",
-		"port":                  "3306",
+		"port":                  CHECKSET,
 		"instance_name":         name,
 		"instance_type":         CHECKSET,
 		"parameters":            NOSET,
@@ -53,14 +53,15 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 					"master_db_instance_id": "${alicloud_db_instance.default.id}",
 					"zone_id":               "${alicloud_db_instance.default.zone_id}",
 					"engine_version":        "${alicloud_db_instance.default.engine_version}",
-					"instance_type":         "${alicloud_db_instance.default.instance_type}",
+					"instance_type":         "mysqlro.n2.small.1c",
 					"instance_storage":      "${alicloud_db_instance.default.instance_storage}",
 					"instance_name":         "${var.name}",
 					"vswitch_id":            "${local.vswitch_id}",
 					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"deletion_protection":   "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{"deletion_protection": "true"}),
 				),
 			},
 			{
@@ -81,7 +82,7 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 			// upgrade instanceType
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+					"instance_type": "mysqlro.n2.medium.1c",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{"instance_type": CHECKSET}),
@@ -129,7 +130,7 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 					"master_db_instance_id": "${alicloud_db_instance.default.id}",
 					"zone_id":               "${alicloud_db_instance.default.zone_id}",
 					"engine_version":        "${alicloud_db_instance.default.engine_version}",
-					"instance_type":         "${alicloud_db_instance.default.instance_type}",
+					"instance_type":         "mysqlro.n2.medium.1c",
 					"instance_storage":      "${alicloud_db_instance.default.instance_storage + 2*data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
 					"instance_name":         "${var.name}",
 					"vswitch_id":            "${local.vswitch_id}",
@@ -139,6 +140,14 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 						"instance_name":    name,
 						"instance_storage": CHECKSET,
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"deletion_protection": "false"}),
 				),
 			},
 		},

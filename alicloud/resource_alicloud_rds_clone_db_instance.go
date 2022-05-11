@@ -368,6 +368,12 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"deletion_protection": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Only effective when Attribute `instance_charge_type` is set to PostPaid",
+			},
 		},
 	}
 }
@@ -438,6 +444,11 @@ func resourceAlicloudRdsCloneDbInstanceCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
 	}
+
+	if v, ok := d.GetOk("deletion_protection"); ok {
+		request["DeletionProtection"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -541,6 +552,9 @@ func resourceAlicloudRdsCloneDbInstanceRead(d *schema.ResourceData, meta interfa
 		}
 		d.Set("ssl_enabled'", sslEnabled)
 	}
+
+	d.Set("deletion_protection", object["DeletionProtection"])
+
 	return nil
 }
 func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -1105,6 +1119,31 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		d.SetPartial("engine_version")
 		d.SetPartial("zone_id")
 	}
+
+	// only effective post paid type
+	if d.HasChange("deletion_protection") {
+		action := "ModifyDBInstanceDeletionProtection"
+		request := map[string]interface{}{
+			"RegionId":           client.RegionId,
+			"DBInstanceId":       d.Id(),
+			"DeletionProtection": d.Get("deletion_protection"),
+			"ClientToken":        buildClientToken(action),
+			"SourceIp":           client.SourceIp,
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		conn, err := client.NewRdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		d.SetPartial("deletion_protection")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudRdsCloneDbInstanceRead(d, meta)
 }

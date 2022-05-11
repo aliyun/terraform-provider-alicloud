@@ -448,6 +448,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"deletion_protection": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Only effective when Attribute `instance_charge_type` is set to PostPaid",
+			},
 		},
 	}
 }
@@ -1218,6 +1224,28 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	// only effective post paid type
+	if d.HasChange("deletion_protection") && (payType == Postpaid || payType == PostPaid) {
+		action := "ModifyDBInstanceDeletionProtection"
+		request := map[string]interface{}{
+			"RegionId":           client.RegionId,
+			"DBInstanceId":       d.Id(),
+			"DeletionProtection": d.Get("deletion_protection"),
+			"ClientToken":        buildClientToken(action),
+			"SourceIp":           client.SourceIp,
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		log.Printf("DeletionProtection Response: %s", response)
+		addDebug(action, response, request)
+		d.SetPartial("deletion_protection")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudDBInstanceRead(d, meta)
 }
@@ -1375,10 +1403,9 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
-	if len(groups) > 0 {
-		d.Set("security_group_id", strings.Join(groups, COMMA_SEPARATED))
-		d.Set("security_group_ids", groups)
-	}
+
+	d.Set("security_group_id", strings.Join(groups, COMMA_SEPARATED))
+	d.Set("security_group_ids", groups)
 
 	sslAction, err := rdsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
@@ -1407,6 +1434,9 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("ha_config", res["HAConfig"])
 	d.Set("manual_ha_time", res["ManualHATime"])
+
+	// set deletion protection field
+	d.Set("deletion_protection", instance["DeletionProtection"])
 	return nil
 }
 
@@ -1563,6 +1593,10 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 
 	if v, ok := d.GetOk("db_time_zone"); ok {
 		request["DBTimeZone"] = v
+	}
+
+	if v, ok := d.GetOk("deletion_protection"); ok {
+		request["DeletionProtection"] = v
 	}
 
 	uuid, err := uuid.GenerateUUID()

@@ -1085,15 +1085,16 @@ func (s *RdsService) ModifySecurityGroupConfiguration(id string, groupid string)
 	}
 	action := "ModifySecurityGroupConfiguration"
 	request := map[string]interface{}{
-		"RegionId":     s.client.RegionId,
-		"DBInstanceId": id,
-		"SourceIp":     s.client.SourceIp,
+		"RegionId":        s.client.RegionId,
+		"DBInstanceId":    id,
+		"SourceIp":        s.client.SourceIp,
+		"SecurityGroupId": groupid,
 	}
 	//openapi required that input "Empty" if groupid is ""
-	if len(groupid) == 0 {
+	/*if len(groupid) == 0 {
 		groupid = "Empty"
-	}
-	request["SecurityGroupId"] = groupid
+	} */
+	// request["SecurityGroupId"] = groupid
 	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

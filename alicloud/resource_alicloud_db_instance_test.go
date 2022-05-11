@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -164,6 +165,8 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
+	log.Printf("debug info: %q\n", strings.Split(os.Getenv("DEBUG"), ","))
+
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
@@ -293,11 +296,11 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"sql_collector_status": "Enabled",
+					"sql_collector_status": "Disabled",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sql_collector_status": "Enabled",
+						"sql_collector_status": "Disabled",
 					}),
 				),
 			},
@@ -364,7 +367,7 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
 					"db_instance_storage_type":   "cloud_essd",
-					"sql_collector_status":       "Enabled",
+					"sql_collector_status":       "Disabled",
 					"sql_collector_config_value": "30",
 					"instance_name":              "tf-testAccDBInstanceConfig",
 					"monitoring_period":          "60",
@@ -377,16 +380,17 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 							"value": "70",
 						},
 					},
-					"encryption_key": "${alicloud_kms_key.default.id}",
+					"encryption_key":      "${alicloud_kms_key.default.id}",
+					"deletion_protection": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine":                     "MySQL",
 						"engine_version":             "8.0",
 						"instance_type":              CHECKSET,
-						"instance_storage":           "15",
+						"instance_storage":           "60",
 						"db_instance_storage_type":   "cloud_essd",
-						"sql_collector_status":       "Enabled",
+						"sql_collector_status":       "Disabled",
 						"sql_collector_config_value": "30",
 						"instance_name":              "tf-testAccDBInstanceConfig",
 						"monitoring_period":          "60",
@@ -398,6 +402,7 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 						"security_group_ids.#":       "0",
 						"auto_upgrade_minor_version": "Manual",
 						"parameters.#":               "1",
+						"deletion_protection":        "true",
 					}),
 				),
 			},
@@ -422,6 +427,16 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 						"storage_auto_scale":  "Enable",
 						"storage_threshold":   "40",
 						"storage_upper_bound": "1000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
 					}),
 				),
 			},

@@ -123,6 +123,9 @@ The following arguments are supported:
   - verify-ca
   - verify-full (supported only when the instance runs PostgreSQL 12 or later)
 -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
+* `deletion_protection` - (Optional, Available in 1.167.0+) Enable or disable deletion protection on RDS instance
+
+-> **NOTE:** Deletion protection only effective when Attribute `instance_charge_type` is set to PostPaid, supported engine type: MySQL, PostgresSQL, MariaDB, MSSQL
 
 ## Attributes Reference
 

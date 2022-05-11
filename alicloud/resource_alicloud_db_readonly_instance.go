@@ -197,6 +197,12 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
 				Computed:         true,
 			},
+			"deletion_protection": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Only effective when Attribute `instance_charge_type` is set to PostPaid",
+			},
 		},
 	}
 }
@@ -505,6 +511,26 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		}
 	}
 
+	// only effective post paid type
+	if d.HasChange("deletion_protection") {
+		action := "ModifyDBInstanceDeletionProtection"
+		request := map[string]interface{}{
+			"RegionId":           client.RegionId,
+			"DBInstanceId":       d.Id(),
+			"DeletionProtection": d.Get("deletion_protection"),
+			"ClientToken":        buildClientToken(action),
+			"SourceIp":           client.SourceIp,
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		d.SetPartial("deletion_protection")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudDBReadonlyInstanceRead(d, meta)
 }
@@ -562,6 +588,8 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 	if len(tags) > 0 {
 		d.Set("tags", rdsService.tagsToMap(tags))
 	}
+
+	d.Set("deletion_protection", instance["DeletionProtection"])
 
 	return nil
 }
@@ -667,6 +695,10 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (map
 
 	request["PayType"] = Postpaid
 	request["ClientToken"] = buildClientToken("CreateReadOnlyDBInstance")
+
+	if v, ok := d.GetOk("deletion_protection"); ok {
+		request["DeletionProtection"] = v
+	}
 
 	return request, nil
 }

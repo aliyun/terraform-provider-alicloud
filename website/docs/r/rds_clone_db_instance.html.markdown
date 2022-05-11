@@ -182,6 +182,10 @@ The following arguments are supported:
 * `engine` - (Optional, Computed, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, and PPAS.
 * `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm).
 * `force_restart` - (Optional) Set it to true to make some parameter efficient when modifying them. Default to false.
+* `deletion_protection` - (Optional, Available in 1.167.0+) Enable or disable deletion protection on RDS instance
+
+-> **NOTE:** Deletion protection only effective when Attribute `instance_charge_type` is set to PostPaid, supported engine type: MySQL, PostgresSQL, MariaDB, MSSQL
+
 * `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) (documented below).
 
 #### Block pg_hba_conf
