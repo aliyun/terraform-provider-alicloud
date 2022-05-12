@@ -145,6 +145,59 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_same_region(t *testing.T) {
 
 }
 
+func TestAccAlicloudCenRouteMap_basic_transit_router_route_table_id(t *testing.T) {
+	var routeMap cbn.RouteMap
+	resourceId := "alicloud_cen_route_map.default"
+	ra := resourceAttrInit(resourceId, cenRouteMapBasicMap)
+	serviceFunc := func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &routeMap, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccresourceAlicloudCenRouteMap%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCenRouteMapTransitRouterRouteTableIdConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cen_id":                        "${alicloud_cen_instance.default.id}",
+					"cen_region_id":                 defaultRegionToTest,
+					"map_result":                    "Permit",
+					"priority":                      "3",
+					"transmit_direction":            "RegionIn",
+					"transit_router_route_table_id": "${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cen_id":                        CHECKSET,
+						"cen_region_id":                 defaultRegionToTest,
+						"map_result":                    "Permit",
+						"priority":                      "3",
+						"transmit_direction":            "RegionIn",
+						"transit_router_route_table_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+
+}
+
 func TestAccAlicloudCenRouteMap_basic_child_instance_different_region(t *testing.T) {
 	resourceId := "alicloud_cen_route_map.default"
 	var providers []*schema.Provider
@@ -360,6 +413,34 @@ func TestAccAlicloudCenRouteMap_multi(t *testing.T) {
 var cenRouteMapBasicMap = map[string]string{
 	"cen_id":       CHECKSET,
 	"route_map_id": CHECKSET,
+}
+
+func resourceCenRouteMapTransitRouterRouteTableIdConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "child_region" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "default" {
+	cen_instance_name = "${var.name}"
+	protection_level = "REDUCED"
+}
+
+resource "alicloud_cen_transit_router" "default" {
+  cen_id = alicloud_cen_instance.default.id
+}
+
+resource "alicloud_cen_transit_router_route_table" "default" {
+	transit_router_id = alicloud_cen_transit_router.default.transit_router_id
+	transit_router_route_table_name =  var.name
+	transit_router_route_table_description = "description"
+}
+
+`, name, defaultRegionToTest)
 }
 
 func resourceCenRouteMapChildInstanceSameRegionConfigDependence(name string) string {

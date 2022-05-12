@@ -184,6 +184,12 @@ func resourceAlicloudCenRouteMap() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"transit_router_route_table_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"transmit_direction": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -215,6 +221,9 @@ func resourceAlicloudCenRouteMapCreate(d *schema.ResourceData, meta interface{})
 	}
 	if v, ok := d.GetOk("description"); ok {
 		request.Description = v.(string)
+	}
+	if v, ok := d.GetOk("transit_router_route_table_id"); ok {
+		request.TransitRouterRouteTableId = v.(string)
 	}
 	if v, ok := d.GetOk("destination_child_instance_types"); ok {
 		destinationChildInstanceTypes := expandStringList(v.(*schema.Set).List())
@@ -353,6 +362,7 @@ func resourceAlicloudCenRouteMapRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("source_region_ids", object.SourceRegionIds.SourceRegionId)
 	d.Set("source_route_table_ids", object.SourceRouteTableIds.SourceRouteTableId)
 	d.Set("status", object.Status)
+	d.Set("transit_router_route_table_id", object.TransitRouterRouteTableId)
 	d.Set("transmit_direction", object.TransmitDirection)
 	return nil
 }
