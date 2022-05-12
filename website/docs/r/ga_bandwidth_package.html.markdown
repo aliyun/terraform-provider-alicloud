@@ -55,6 +55,11 @@ The following arguments are supported:
 * `payment_type` - (Optional, ForceNew) The payment type of the bandwidth. Valid values: `PayAsYouGo`, `Subscription`. Default value is `Subscription`.
 * `ratio` - (Optional, ForceNew) The minimum percentage for the pay-by-95th-percentile metering method. Valid values: 30 to 100.
 * `type` - (Required, ForceNew) The type of the bandwidth packet. China station only supports return to basic. Valid values: `Basic`, `CrossDomain`.
+* `auto_renew_duration` - (Optional, Available in 1.169.0+) Auto renewal period of a bandwidth packet, in the unit of month. The value range is 1-12.
+* `renewal_status` - (Optional, Computed, Available in 1.169.0+) Whether to renew a bandwidth packet. automatically or not. Valid values:
+  - `AutoRenewal`: Enable auto renewal.
+  - `Normal`: Disable auto renewal.
+  - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
 
 ## Attributes Reference
 
