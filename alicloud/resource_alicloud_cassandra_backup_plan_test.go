@@ -2,7 +2,17 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/agiledragon/gomonkey/v2"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
+	"log"
+	"os"
+	"reflect"
 	"testing"
+
+	"github.com/alibabacloud-go/tea-rpc/client"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -161,4 +171,280 @@ func AlicloudCassandraBackupPlanBasicDependence0(name string) string {
 		  ip_white = "127.0.0.1"
 		}
 	`, name)
+}
+
+func TestUnitAlicloudCassandraBackupPlan(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_cassandra_backup_plan"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_cassandra_backup_plan"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"data_center_id":   "CreateBackupPlanValue",
+		"cluster_id":       "CreateBackupPlanValue",
+		"backup_time":      "CreateBackupPlanValue",
+		"active":           false,
+		"backup_period":    "CreateBackupPlanValue",
+		"retention_period": 1,
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		// DescribeBackupPlans
+		"BackupPlans": map[string]interface{}{
+			"BackupPlan": []interface{}{
+				map[string]interface{}{
+					"ClusterId":       "CreateBackupPlanValue",
+					"DataCenterId":    "CreateBackupPlanValue",
+					"Active":          false,
+					"BackupPeriod":    "CreateBackupPlanValue",
+					"BackupTime":      "CreateBackupPlanValue",
+					"RetentionPeriod": 1,
+				},
+			},
+		},
+	}
+	CreateMockResponse := map[string]interface{}{
+		// CreateBackupPlan
+	}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       String(errorCode),
+			Data:       String(errorCode),
+			Message:    String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_cassandra_backup_plan", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			mapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+
+	// Create
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCdsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudCassandraBackupPlanCreate(dInit, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	ReadMockResponseDiff := map[string]interface{}{
+		// DescribeBackupPlans Response
+	}
+	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "CreateBackupPlan" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						successResponseMock(ReadMockResponseDiff)
+						return CreateMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudCassandraBackupPlanCreate(dInit, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_cassandra_backup_plan"].Schema).Data(dInit.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Update
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCdsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudCassandraBackupPlanUpdate(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	// ModifyBackupPlan
+	attributesDiff := map[string]interface{}{
+		"backup_time":      "ModifyBackupPlanValue",
+		"active":           true,
+		"backup_period":    "ModifyBackupPlanValue",
+		"retention_period": 10,
+	}
+	diff, err := newInstanceDiff("alicloud_cassandra_backup_plan", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_cassandra_backup_plan"].Schema).Data(dInit.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeBackupPlans Response
+		"BackupPlans": map[string]interface{}{
+			"BackupPlan": []interface{}{
+				map[string]interface{}{
+					"Active":          true,
+					"BackupPeriod":    "ModifyBackupPlanValue",
+					"BackupTime":      "ModifyBackupPlanValue",
+					"RetentionPeriod": 10,
+				},
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "ModifyBackupPlan" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudCassandraBackupPlanUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_cassandra_backup_plan"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Read
+	attributesDiff = map[string]interface{}{}
+	diff, err = newInstanceDiff("alicloud_cassandra_backup_plan", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_cassandra_backup_plan"].Schema).Data(dInit.State(), diff)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DescribeBackupPlans" {
+				switch errorCode {
+				case "{}":
+					return notFoundResponseMock(errorCode)
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudCassandraBackupPlanRead(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "{}":
+			assert.Nil(t, err)
+		}
+	}
+
+	// Delete
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCdsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudCassandraBackupPlanDelete(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	attributesDiff = map[string]interface{}{}
+	diff, err = newInstanceDiff("alicloud_cassandra_backup_plan", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_cassandra_backup_plan"].Schema).Data(dInit.State(), diff)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DeleteBackupPlan" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						ReadMockResponse = map[string]interface{}{}
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudCassandraBackupPlanDelete(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "nil":
+			assert.Nil(t, err)
+		}
+	}
+
 }

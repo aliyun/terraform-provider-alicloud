@@ -51,7 +51,19 @@ func resourceAlicloudBrainIndustrialPidOrganizationCreate(d *schema.ResourceData
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("CreatePidOrganization")
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_brain_industrial_pid_organization", action, AlibabaCloudSdkGoERROR)
 	}
