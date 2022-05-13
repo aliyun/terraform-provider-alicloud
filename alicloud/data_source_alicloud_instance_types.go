@@ -193,6 +193,10 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"nvme_support": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"local_storage": {
 							Type:     schema.TypeMap,
 							Computed: true,
@@ -376,6 +380,7 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []instance
 			"memory_size":    t.InstanceType.MemorySize,
 			"family":         t.InstanceType.InstanceTypeFamily,
 			"eni_amount":     t.InstanceType.EniQuantity,
+			"nvme_support":   t.InstanceType.NvmeSupport,
 		}
 		if sortedBy == "Price" {
 			mapping["price"] = fmt.Sprintf("%.4f", t.OriginalPrice)

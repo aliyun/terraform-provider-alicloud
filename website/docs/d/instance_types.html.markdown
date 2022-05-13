@@ -67,14 +67,17 @@ The following attributes are exported in addition to the arguments listed above:
   * `memory_size` - Size of memory, measured in GB.
   * `family` - The instance type family.
   * `availability_zones` - List of availability zones that support the instance type.
+  * `nvme_support` - Indicates whether the cloud disk can be attached by using the nonvolatile memory express (NVMe) protocol. Valid values:
+    - required: The cloud disk can be attached by using the NVMe protocol.
+    - unsupported: The cloud disk cannot be attached by using the NVMe protocol.  
   * `gpu` - The GPU attribution of an instance type:
-    * `amount` - The amount of GPU of an instance type.
-    * `category` - The category of GPU of an instance type.
+    - amount: The amount of GPU of an instance type.
+    - category: The category of GPU of an instance type.
   * `burstable_instance` - The burstable instance attribution:
-    * `initial_credit` - The initial CPU credit of a burstable instance.
-    * `baseline_credit` - The compute performance benchmark CPU credit of a burstable instance.
+    - initial_credit: The initial CPU credit of a burstable instance.
+    - baseline_credit:  The compute performance benchmark CPU credit of a burstable instance.
   * `eni_amount` - The maximum number of network interfaces that an instance type can be attached to.
   * `local_storage` - Local storage of an instance type:
-    * `capacity` - The capacity of a local storage in GB.
-    * `amount` - The number of local storage devices that an instance has been attached to.
-    * `category` - The category of local storage that an instance has been attached to.
+    - capacity: The capacity of a local storage in GB.
+    - amount:  The number of local storage devices that an instance has been attached to.
+    - category: The category of local storage that an instance has been attached to.

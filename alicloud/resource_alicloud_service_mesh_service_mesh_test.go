@@ -464,9 +464,6 @@ data "alicloud_zones" "default" {
 }
 data "alicloud_vpcs" "default" {
   name_regex = "default-NODELETING"
-  tags = {
-    default=true
-  }
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
