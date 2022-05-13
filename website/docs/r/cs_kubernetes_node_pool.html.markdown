@@ -339,6 +339,7 @@ The following arguments are supported:
   * `size` - The size of a data disk, Its valid value range [40~32768] in GB. Default to `40`.
   * `encrypted` - Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
   * `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+  * `kms_key_id` - (Optional, Available in 1.97.0+) The kms key id used to encrypt the data disk. It takes effect when `encrypted` is true.
 * `security_group_id` - (Optional, Deprecated) The security group id for worker node. Field `security_group_id` has been deprecated from provider version 1.145.0. New field `security_group_ids` instead.
 * `platform` - (Optional, Deprecated, Available in 1.127.0+) The platform. One of `AliyunLinux`, `Windows`, `CentOS`, `WindowsCore`. If you select `Windows` or `WindowsCore`, the `passord` is required. Field `platform` has been deprecated from provider version 1.145.0. New field `image_type` instead.
 * `image_id` - (Optional) Custom Image support. Must based on CentOS7 or AliyunLinux2.
