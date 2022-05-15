@@ -27,7 +27,8 @@ func init() {
 func testSweepDdoscooInstances(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		log.Printf("error getting Alicloud client: %s", err)
+		return nil
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	var response map[string]interface{}

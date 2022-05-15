@@ -1,34 +1,35 @@
-## 1.167.0 (Unreleased)
+## 1.168.0 (Unreleased)
+## 1.167.0 (May 15, 2022)
 
-- **New Resource:** `alicloud_ga_accelerator_spare_ip_attachment` [GH-4944]
-- **New Data Source:** `alicloud_ga_accelerator_spare_ip_attachments` [GH-4944]
+- **New Resource:** `alicloud_ga_accelerator_spare_ip_attachment` ([#4944](https://github.com/aliyun/terraform-provider-alicloud/issues/4944))
+- **New Data Source:** `alicloud_ga_accelerator_spare_ip_attachments` ([#4944](https://github.com/aliyun/terraform-provider-alicloud/issues/4944))
 
 ENHANCEMENTS:
 
-- resource/alicloud_cs_kubernetes_node_pool:update nodepool document [GH-4959]
-- resource/alicloud_cen_route_map: Add support for new parameter transit_router_route_table_id. [GH-4957]
-- resource/alicloud_db_readonly_instance、alicloud_rds_clone_db_instance、alicloud_rds_upgrade_db_instance add deletion protection function. [GH-4936]
-- resource/alicloud_sae_application: Add support for new parameter tags. [GH-4953]
-- resource/alicloud_fc_function_async_invoke_config:add field statefulInvocation and update docs [GH-4945]
-- resource/alicloud_msc_sub_contact：modify email validate regex [GH-4933]
-- resource/alicloud_network_acl: request UpdateEgressAclEntries parameter error [GH-4940]
-- datasource/alicloud_instance_types: Supports new output nvme_support [GH-4963]
-- testcase: Improves the vbr testcases [GH-4942]
-- testcase: Adds new unit test case for resource alicloud_privatelink_vpc_endpoint alicloud_privatelink_vpc_endpoint_service alicloud_privatelink_vpc_endpoint_service_user [GH-4926]
-- testcase: Adds new unit test case for resource alicloud_quick_bi_user alicloud_quotas_quota_alarm alicloud_quotas_quota_application [GH-4931]
-- testcase: Adds new unit test case for resource alicloud_resource_manager_account alicloud_rds_parameter_group alicloud_rdc_organization [GH-4935]
-- testcase: Adds new unit test case for resource alicloud_resource_manager_policy_version alicloud_resource_manager_control_policy alicloud_resource_manager_control_policy_attachment [GH-4941]
-- testcase: Adds new unit test case for resource alicloud_resource_manager_resource_share alicloud_resource_manager_resource_directory alicloud_resource_manager_resource_group [GH-4946]
-- testcase: Adds new unit test case for resource alicloud_resource_manager_shared_target alicloud_resource_manager_shared_resource alicloud_resource_manager_role [GH-4951]
-- testcase: Adds new unit test case for resource alicloud_ros_stack alicloud_ros_template alicloud_ros_change_set [GH-4958]
-- testcase: Adds new unit test case for resource alicloud_brain_industr ial_pid_organization alicloud_brain_industrial_pid_project alicloud_cassandra_backup_plan [GH-4961]
+- resource/alicloud_cs_kubernetes_node_pool:update nodepool document ([#4959](https://github.com/aliyun/terraform-provider-alicloud/issues/4959))
+- resource/alicloud_cen_route_map: Add support for new parameter transit_router_route_table_id. ([#4957](https://github.com/aliyun/terraform-provider-alicloud/issues/4957))
+- resource/alicloud_db_readonly_instance、alicloud_rds_clone_db_instance、alicloud_rds_upgrade_db_instance add deletion protection function. ([#4936](https://github.com/aliyun/terraform-provider-alicloud/issues/4936))
+- resource/alicloud_sae_application: Add support for new parameter tags. ([#4953](https://github.com/aliyun/terraform-provider-alicloud/issues/4953))
+- resource/alicloud_fc_function_async_invoke_config:add field statefulInvocation and update docs ([#4945](https://github.com/aliyun/terraform-provider-alicloud/issues/4945))
+- resource/alicloud_msc_sub_contact：modify email validate regex ([#4933](https://github.com/aliyun/terraform-provider-alicloud/issues/4933))
+- resource/alicloud_network_acl: request UpdateEgressAclEntries parameter error ([#4940](https://github.com/aliyun/terraform-provider-alicloud/issues/4940))
+- datasource/alicloud_instance_types: Supports new output nvme_support ([#4963](https://github.com/aliyun/terraform-provider-alicloud/issues/4963))
+- testcase: Improves the vbr testcases ([#4942](https://github.com/aliyun/terraform-provider-alicloud/issues/4942))
+- testcase: Adds new unit test case for resource alicloud_privatelink_vpc_endpoint alicloud_privatelink_vpc_endpoint_service alicloud_privatelink_vpc_endpoint_service_user ([#4926](https://github.com/aliyun/terraform-provider-alicloud/issues/4926))
+- testcase: Adds new unit test case for resource alicloud_quick_bi_user alicloud_quotas_quota_alarm alicloud_quotas_quota_application ([#4931](https://github.com/aliyun/terraform-provider-alicloud/issues/4931))
+- testcase: Adds new unit test case for resource alicloud_resource_manager_account alicloud_rds_parameter_group alicloud_rdc_organization ([#4935](https://github.com/aliyun/terraform-provider-alicloud/issues/4935))
+- testcase: Adds new unit test case for resource alicloud_resource_manager_policy_version alicloud_resource_manager_control_policy alicloud_resource_manager_control_policy_attachment ([#4941](https://github.com/aliyun/terraform-provider-alicloud/issues/4941))
+- testcase: Adds new unit test case for resource alicloud_resource_manager_resource_share alicloud_resource_manager_resource_directory alicloud_resource_manager_resource_group ([#4946](https://github.com/aliyun/terraform-provider-alicloud/issues/4946))
+- testcase: Adds new unit test case for resource alicloud_resource_manager_shared_target alicloud_resource_manager_shared_resource alicloud_resource_manager_role ([#4951](https://github.com/aliyun/terraform-provider-alicloud/issues/4951))
+- testcase: Adds new unit test case for resource alicloud_ros_stack alicloud_ros_template alicloud_ros_change_set ([#4958](https://github.com/aliyun/terraform-provider-alicloud/issues/4958))
+- testcase: Adds new unit test case for resource alicloud_brain_industr ial_pid_organization alicloud_brain_industrial_pid_project alicloud_cassandra_backup_plan ([#4961](https://github.com/aliyun/terraform-provider-alicloud/issues/4961))
 
 BUG FIXES:
 
-- resource/alicloud_sae_application_scaling_rule: Fix scaling_rule_timer.schedules have default values. [GH-4937]
-- resource /alicloud_dts_synchronization_job: Fixed uppercase conversion error and resource /alicloud_mongodb_instance: Removed verification of db_instance_storage [GH-4949]
-- resource/alicloud_slb_backend_server: Fix bugs that do not carry serverIp when updating. [GH-4948]
-- resource/alicloud_db_instance：deletion_protection bug fix. [GH-4960]
+- resource/alicloud_sae_application_scaling_rule: Fix scaling_rule_timer.schedules have default values. ([#4937](https://github.com/aliyun/terraform-provider-alicloud/issues/4937))
+- resource /alicloud_dts_synchronization_job: Fixed uppercase conversion error and resource /alicloud_mongodb_instance: Removed verification of db_instance_storage ([#4949](https://github.com/aliyun/terraform-provider-alicloud/issues/4949))
+- resource/alicloud_slb_backend_server: Fix bugs that do not carry serverIp when updating. ([#4948](https://github.com/aliyun/terraform-provider-alicloud/issues/4948))
+- resource/alicloud_db_instance：deletion_protection bug fix. ([#4960](https://github.com/aliyun/terraform-provider-alicloud/issues/4960))
 
 ## 1.166.0 (May 07, 2022)
 
