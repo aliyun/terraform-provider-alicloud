@@ -220,7 +220,8 @@ func resourceAlicloudFCAsyncInvokeConfigUpdate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("maximum_event_age_in_seconds"); ok {
 		request.MaxAsyncEventAgeInSeconds = Int64Pointer(int64(v.(int)))
 	}
-	if v, ok := d.GetOk("stateful_invocation"); ok {
+
+	if v, ok := d.GetOkExists("stateful_invocation"); ok {
 		request.StatefulInvocation = BoolPointer(v.(bool))
 	}
 
