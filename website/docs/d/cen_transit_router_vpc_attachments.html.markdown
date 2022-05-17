@@ -50,6 +50,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `id` -  The ID of the transit router.
     * `vpc_owner_id` - The Owner ID of the VPC.     
     * `transit_router_id` - ID of the transit router.
+    * `payment_type` - The payment type of the resource.
     * `zone_mappings` - The mappings of zone
         * `vswitch_id` - The VSwitch ID.
         * `zone_id` - The zone ID.
