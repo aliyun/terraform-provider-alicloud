@@ -169,6 +169,7 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic1(t *testing.T) {
 					"route_table_association_enabled": "false",
 					"route_table_propagation_enabled": "false",
 					"vpc_owner_id":                    "${data.alicloud_account.default.id}",
+					"payment_type":                    "PayAsYouGo",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -186,6 +187,7 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic1(t *testing.T) {
 						"route_table_association_enabled":       "false",
 						"route_table_propagation_enabled":       "false",
 						"vpc_owner_id":                          CHECKSET,
+						"payment_type":                          "PayAsYouGo",
 					}),
 				),
 			},
@@ -261,9 +263,9 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_unit(t *testing.T) {
 		"transit_router_attachment_description": "transit_router_attachment_description",
 		"vpc_id":                                "vpc_id",
 		"vpc_owner_id":                          "vpc_owner_id",
-		"auto_create_vpc_route":                 false,
 		"dry_run":                               false,
 		"resource_type":                         "VPC",
+		"payment_type":                          "PayAsYouGo",
 		"route_table_association_enabled":       false,
 		"route_table_propagation_enabled":       false,
 		"zone_mappings": []map[string]interface{}{
@@ -298,6 +300,7 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_unit(t *testing.T) {
 				"VpcOwnerId":                         "vpc_owner_id",
 				"CenId":                              "cen_id",
 				"TransitRouterAttachmentId":          "MockTransitRouterAttachmentId",
+				"ChargeType":                         "POSTPAY",
 				"ZoneMappings": []interface{}{
 					map[string]interface{}{
 						"VSwitchId": "vswitch_id",

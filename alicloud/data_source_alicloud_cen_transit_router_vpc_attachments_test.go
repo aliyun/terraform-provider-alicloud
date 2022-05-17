@@ -48,6 +48,7 @@ func TestAccAlicloudCenTransitRouterVpcAttachmentsDataSource(t *testing.T) {
 			"attachments.0.transit_router_attachment_name":        fmt.Sprintf("tf-testAccDataTransitRouterVpcAttachment-%d", rand),
 			"attachments.0.vpc_id":                                CHECKSET,
 			"attachments.0.resource_type":                         "VPC",
+			"attachments.0.payment_type":                          "PayAsYouGo",
 			"attachments.0.vpc_owner_id":                          CHECKSET,
 			"attachments.0.zone_mappings.0.vswitch_id":            CHECKSET,
 			"attachments.0.zone_mappings.0.zone_id":               CHECKSET,

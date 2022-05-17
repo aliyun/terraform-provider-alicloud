@@ -79,15 +79,16 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
 The following arguments are supported:
 
 * `dry_run` - (Optional) The dry run.
-* `cen_id` - (Optional, ForceNew) The ID of the CEN.
+* `cen_id` - (Required, ForceNew) The ID of the CEN.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC.
 * `transit_router_id` - (Optional, ForceNew) The ID of the transit router.
 * `transit_router_attachment_name` - (Optional) The name of the transit router vbr attachment.
 * `transit_router_attachment_description` - (Optional) The description of the transit router vbr attachment.
-* `resource_type` - (Optional,ForceNew) The resource type of transit router vpc attachment. Valid value `VPC`. Default value is `VPC`.
+* `resource_type` - (Optional) The resource type of transit router vpc attachment. Valid value `VPC`. Default value is `VPC`.
 * `route_table_association_enabled` - (Optional) Whether to enabled route table association. The system default value is `true`.
 * `route_table_propagation_enabled` - (Optional) Whether to enabled route table propagation. The system default value is `true`.
 * `vpc_owner_id` - (Optional,ForceNew) The owner id of vpc.
+* `payment_type` - (Optional, ForceNew, Available in 1.168.0+) The payment type of the resource. Valid values: `PayAsYouGo`.
 * `zone_mappings` - (Required, ForceNew) The list of zone mapping of the VPC.
 
 -> **NOTE:** The Zone of CEN has MasterZone and SlaveZone, first zone_id of zone_mapping need be MasterZone. We have a API to describeZones[API](https://help.aliyun.com/document_detail/261356.html)
