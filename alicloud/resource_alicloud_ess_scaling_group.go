@@ -47,6 +47,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 			"scaling_group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"default_cooldown": {
 				Type:         schema.TypeInt,
