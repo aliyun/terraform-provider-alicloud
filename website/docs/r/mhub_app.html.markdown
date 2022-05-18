@@ -42,8 +42,8 @@ The following arguments are supported:
 * `bundle_id` - (Optional) The app id of iOS. **NOTE:** Either `bundle_id` or `package_name` must be set.
 * `encoded_icon` - (Optional) Base64 string of picture.
 * `product_id` - (Required)  The ID of the Product.
-* `type` - (Optional, ForceNew) The type of the Product. Valid values: `Android` and `iOS`.  
-* `industry_id` - The Industry ID of the app. For information about Industry and how to use it, MHUB[Industry](https://help.aliyun.com/document_detail/201638.html).
+* `type` - (Required) The type of the Product. Valid values: `Android` and `iOS`.  
+* `industry_id` - (Optional) The Industry ID of the app. For information about Industry and how to use it, MHUB[Industry](https://help.aliyun.com/document_detail/201638.html).
 * `package_name` - (Optional) Android App package name. **NOTE:** Either `bundle_id` or `package_name` must be set.
 
 
