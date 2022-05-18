@@ -99,11 +99,21 @@ func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+				ForceNew: true,
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -129,6 +139,15 @@ func resourceAlicloudGraphDatabaseDbInstanceCreate(d *schema.ResourceData, meta 
 	request["DBInstanceVersion"] = d.Get("db_version")
 	request["PayType"] = convertGraphDatabaseDbInstancePaymentTypeRequest(d.Get("payment_type").(string))
 	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VSwitchId"] = v
+	}
+	if v, ok := d.GetOk("zone_id"); ok {
+		request["ZoneId"] = v
+	}
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VPCId"] = v
+	}
 	request["ClientToken"] = buildClientToken("CreateDBInstance")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -181,6 +200,7 @@ func resourceAlicloudGraphDatabaseDbInstanceRead(d *schema.ResourceData, meta in
 	d.Set("status", object["DBInstanceStatus"])
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
+	d.Set("vpc_id", object["VpcId"])
 	if DBInstanceIPArray, ok := object["DBInstanceIPArray"]; ok {
 		DBInstanceIPArrayAry, ok := DBInstanceIPArray.([]interface{})
 		if ok && len(DBInstanceIPArrayAry) > 0 {

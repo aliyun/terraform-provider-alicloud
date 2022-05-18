@@ -211,3 +211,4 @@ var BastionhostSupportRegions = []Region{CnNorth2Gov1, Qingdao, ShanghaiFinance,
 var ACKSystemDiskEncryptionSupportRegions = []Region{Hongkong}
 var DdosBasicSupportRegions = []Region{WuLanChaBu, APSouth1, HeYuan, Shenzhen, MEEast1, APSouthEast1, Huhehaote, CnNorth2Gov1, ChengDu, USEast1, Hangzhou, ShanghaiFinance, ShenZhenFinance1, GuangZhou, APSouthEast2, Beijing, EUCentral1, USWest1, APNorthEast1, Qingdao, APSouthEast3, APSouthEast5, APSouthEast6, Shanghai, Hongkong, Zhangjiakou, EUWest1}
 var TagSupportRegions = []Region{Huhehaote, APSouthEast5, CnNorth2Gov1, HeYuan, APSouthEast2, Beijing, APSouthEast3, USWest1, WuLanChaBu, GuangZhou, MEEast1, ShenZhenFinance1, Shanghai, ShanghaiFinance, EUCentral1, APSouthEast1, USEast1, Hangzhou, Hongkong, Qingdao, Zhangjiakou, Shenzhen, EUWest1, APNorthEast1, APSouth1, ChengDu}
+var GraphDatabaseDbInstanceSupportRegions = []Region{Hangzhou}

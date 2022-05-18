@@ -46,6 +46,9 @@ The following arguments are supported:
 * `db_version` - (Required, ForceNew) Kernel Version. Valid values: `1.0` or `1.0-OpenCypher`. `1.0`: represented as gremlin, `1.0-OpenCypher`: said opencypher.
 * `payment_type` - (Required, ForceNew) The paymen type of the resource. Valid values: `PayAsYouGo`.
 * `db_instance_ip_array` - (Optional, Computed) IP ADDRESS whitelist for the instance group list. See the following `Block db_instance_ip_array`.
+* `vswitch_id` - (Optional, Computed, ForceNew, Available in 1.171.0+) The ID of attaching vswitch to instance.
+* `vpc_id` - (Optional, Computed, ForceNew, Available in 1.171.0+) ID of the VPC.
+* `zone_id` - (Optional, Computed, ForceNew, Available in 1.171.0+) The zone ID of the resource.
 
 #### Block db_instance_ip_array
 
