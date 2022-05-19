@@ -690,6 +690,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_accelerator_spare_ip_attachments":         dataSourceAlicloudGaAcceleratorSpareIpAttachments(),
 			"alicloud_smartag_flow_logs":                           dataSourceAlicloudSmartagFlowLogs(),
 			"alicloud_ecs_invocations":                             dataSourceAlicloudEcsInvocations(),
+			"alicloud_ecd_snapshots":                               dataSourceAlicloudEcdSnapshots(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1279,6 +1280,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_smartag_flow_log":                                     resourceAlicloudSmartagFlowLog(),
 			"alicloud_ecs_invocation":                                       resourceAlicloudEcsInvocation(),
 			"alicloud_ddos_basic_defense_threshold":                         resourceAlicloudDdosBasicDefenseThreshold(),
+			"alicloud_ecd_snapshot":                                         resourceAlicloudEcdSnapshot(),
 		},
 
 		ConfigureFunc: providerConfigure,
