@@ -688,6 +688,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_network_interface_permissions":           dataSourceAlicloudEcsNetworkInterfacePermissions(),
 			"alicloud_mse_engine_namespaces":                       dataSourceAlicloudMseEngineNamespaces(),
 			"alicloud_ga_accelerator_spare_ip_attachments":         dataSourceAlicloudGaAcceleratorSpareIpAttachments(),
+			"alicloud_smartag_flow_logs":                           dataSourceAlicloudSmartagFlowLogs(),
 			"alicloud_ecs_invocations":                             dataSourceAlicloudEcsInvocations(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -1275,6 +1276,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_network_interface_permission":                     resourceAlicloudEcsNetworkInterfacePermission(),
 			"alicloud_mse_engine_namespace":                                 resourceAlicloudMseEngineNamespace(),
 			"alicloud_ga_accelerator_spare_ip_attachment":                   resourceAlicloudGaAcceleratorSpareIpAttachment(),
+			"alicloud_smartag_flow_log":                                     resourceAlicloudSmartagFlowLog(),
 			"alicloud_ecs_invocation":                                       resourceAlicloudEcsInvocation(),
 			"alicloud_ddos_basic_defense_threshold":                         resourceAlicloudDdosBasicDefenseThreshold(),
 		},
@@ -1493,6 +1495,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EdsuserEndpoint = strings.TrimSpace(endpoints["edsuser"].(string))
 		config.GaplusEndpoint = strings.TrimSpace(endpoints["gaplus"].(string))
 		config.DdosbasicEndpoint = strings.TrimSpace(endpoints["ddosbasic"].(string))
+		config.SmartagEndpoint = strings.TrimSpace(endpoints["smartag"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1805,6 +1808,8 @@ func init() {
 		"gaplus_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom gaplus endpoints.",
 
 		"ddosbasic_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ddosbasic endpoints.",
+
+		"smartag_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom smartag endpoints.",
 	}
 }
 
@@ -1854,6 +1859,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["ddosbasic_endpoint"],
+				},
+
+				"smartag": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["smartag_endpoint"],
 				},
 
 				"gaplus": {
@@ -2672,6 +2684,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["edsuser"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["gaplus"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ddosbasic"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["smartag"].(string)))
 	return hashcode.String(buf.String())
 }
 
