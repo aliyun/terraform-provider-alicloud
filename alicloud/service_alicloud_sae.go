@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -129,6 +130,8 @@ func (s *SaeService) DescribeApplicationStatus(id string) (object map[string]int
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
+	var lastChangeOrderStatus string
+	var body map[string]interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 		if err != nil {
@@ -138,23 +141,37 @@ func (s *SaeService) DescribeApplicationStatus(id string) (object map[string]int
 			}
 			return resource.NonRetryableError(err)
 		}
-		return nil
+		log.Println("response:", response)
+		if respBody, isExist := response["body"]; isExist {
+			body = respBody.(map[string]interface{})
+			if t, ok := body["Data"]; ok {
+				data := t.(map[string]interface{})
+				log.Println("LastChangeOrderStatus of the application is", data["LastChangeOrderStatus"])
+				switch lastChangeOrderStatus := data["LastChangeOrderStatus"]; lastChangeOrderStatus {
+				case "READY", "RUNNING", "WAIT_BATCH_CONFIRM", "AUTO_BATCH_WAIT":
+					return resource.RetryableError(fmt.Errorf("%s failed, response: %v", action, response))
+				case "SUCCESS", "FAIL", "ABORT", "SYSTEM_FAIL":
+					return nil
+				}
+			}
+		} else {
+			return resource.RetryableError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
+		}
+
+		return resource.RetryableError(fmt.Errorf("%s failed, response: %v", action, response))
 	})
 	addDebug(action, response, request)
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if respBody, isExist := response["body"]; isExist {
-		response = respBody.(map[string]interface{})
-	} else {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
+
+	switch lastChangeOrderStatus {
+	case "FAIL", "ABORT", "SYSTEM_FAIL":
+		return object, WrapError(fmt.Errorf("%s failed, LastChangeOrderStatus: %s, response: %v", action, lastChangeOrderStatus, response))
 	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
-	v, err := jsonpath.Get("$.Data", response)
+	v, err := jsonpath.Get("$.Data", body)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", body)
 	}
 	object = v.(map[string]interface{})
 	return object, nil
