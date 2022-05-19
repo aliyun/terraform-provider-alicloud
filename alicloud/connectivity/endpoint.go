@@ -160,12 +160,10 @@ func loadEndpoint(region string, serviceCode ServiceCode) string {
 
 // NOTE: The productCode must be lower.
 func (client *AliyunClient) loadEndpoint(productCode string) error {
-	loadSdkEndpointMutex.Lock()
-	defer loadSdkEndpointMutex.Unlock()
 	// Firstly, load endpoint from environment variables
 	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", strings.ToUpper(productCode))))
 	if endpoint != "" {
-		client.config.Endpoints[productCode] = endpoint
+		client.config.Endpoints.Store(productCode, endpoint)
 		return nil
 	}
 
@@ -183,7 +181,7 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 	}
 	endpoint, err := client.describeEndpointForService(serviceCode)
 	if err == nil {
-		client.config.Endpoints[strings.ToLower(serviceCode)] = endpoint
+		client.config.Endpoints.Store(strings.ToLower(serviceCode), endpoint)
 	}
 	return err
 }
@@ -206,7 +204,7 @@ func (config *Config) loadEndpointFromLocal() error {
 	for _, endpoint := range endpoints.Endpoint {
 		if endpoint.RegionIds.RegionId == string(config.RegionId) {
 			for _, product := range endpoint.Products.Product {
-				config.Endpoints[strings.ToLower(product.ProductName)] = strings.TrimSpace(product.DomainName)
+				config.Endpoints.Store(strings.ToLower(product.ProductName), strings.TrimSpace(product.DomainName))
 			}
 		}
 	}

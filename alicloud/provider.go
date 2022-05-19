@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -1281,6 +1282,7 @@ func Provider() terraform.ResourceProvider {
 }
 
 var providerConfig map[string]interface{}
+var EndpointConfig sync.Map
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
@@ -1377,12 +1379,11 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	endpointsSet := d.Get("endpoints").(*schema.Set)
-	endpointInit := make(map[string]interface{})
-	config.Endpoints = endpointInit
+	config.Endpoints = &EndpointConfig
 
 	for _, endpointsSetI := range endpointsSet.List() {
 		endpoints := endpointsSetI.(map[string]interface{})
-		config.Endpoints = endpoints
+		convertSyncMap(endpoints)
 		config.EcsEndpoint = strings.TrimSpace(endpoints["ecs"].(string))
 		config.RdsEndpoint = strings.TrimSpace(endpoints["rds"].(string))
 		config.SlbEndpoint = strings.TrimSpace(endpoints["slb"].(string))

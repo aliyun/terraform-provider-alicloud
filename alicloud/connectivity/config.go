@@ -3,6 +3,7 @@ package connectivity
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	roa "github.com/alibabacloud-go/tea-roa/client"
 
@@ -41,7 +42,7 @@ type Config struct {
 	RamRoleSessionName       string
 	RamRolePolicy            string
 	RamRoleSessionExpiration int
-	Endpoints                map[string]interface{}
+	Endpoints                *sync.Map
 	RKvstoreEndpoint         string
 	EcsEndpoint              string
 	RdsEndpoint              string
