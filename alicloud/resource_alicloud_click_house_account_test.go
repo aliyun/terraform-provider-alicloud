@@ -176,14 +176,14 @@ func TestAccAlicloudClickHouseAccount_basic1(t *testing.T) {
 					"allow_databases":    "db1",
 					"dml_authority":      "all",
 					"allow_dictionaries": "dt1",
-					"ddl_authority":      "true",
+					"ddl_authority":      "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"allow_databases":    "db1",
 						"dml_authority":      "all",
 						"allow_dictionaries": "dt1",
-						"ddl_authority":      "true",
+						"ddl_authority":      "false",
 					}),
 				),
 			},

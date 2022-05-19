@@ -251,7 +251,7 @@ func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interf
 	if d.HasChange("ddl_authority") {
 		update = true
 	}
-	if v, ok := d.GetOk("ddl_authority"); ok {
+	if v, ok := d.GetOkExists("ddl_authority"); ok {
 		request["DdlAuthority"] = v
 	}
 
