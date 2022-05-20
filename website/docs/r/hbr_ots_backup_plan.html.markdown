@@ -68,35 +68,36 @@ resource "alicloud_hbr_ots_backup_plan" "example" {
 The following arguments are supported:
 
 * `backup_type` - (Required) Backup type. Valid values: `COMPLETE`.
-* `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
+* `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`. Default values: `false`.
 * `ots_backup_plan_name` - (Required) The name of the backup plan. 1~64 characters, the backup plan name of each data source type in a single warehouse required to be unique.
 * `retention` - (Required) Backup retention days, the minimum is 1.
 * `schedule` - (Optional, Deprecated) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
   - `startTime` Backup start time, UNIX time seconds.
   - `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
 * `vault_id` - (Required) The ID of backup vault.
-* `instance_name` - (Optional) The name of the Table store instance.
-* `ots_detail` - (Optional) The details about the Table store instance. See the following `Block ots_detail`.
-* `rules` - (Optional,Available in v1.164.0+) The backup plan rule. See the following `Block rules`.
+* `instance_name` - (Optional) The name of the Table store instance. **Note:** Required while source_type equals `OTS_TABLE`.
+* `ots_detail` - (Optional) The details about the Table store instance. See the following `Block ots_detail`. **Note:** Required while source_type equals `OTS_TABLE`.
+* `rules` - (Optional,Available in v1.164.0+) The backup plan rule. See the following `Block rules`. **Note:** Required while source_type equals `OTS_TABLE`.
 
 
 ### Block ots_detail
 
 The ots_detail supports the following:
 
-* `table_names` - (Optional) The names of the destination tables in the Tablestore instance.
+* `table_names` - (Optional) The names of the destination tables in the Tablestore instance. **Note:** Required while source_type equals `OTS_TABLE`.
 
 ### Block rules
 
-The rules supports the following:
+The rules support the following:
 
-* `schedule` - (Optional) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
-* `retention` - (Optional) Backup retention days, the minimum is 1.
+* `schedule` - (Optional) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered. **Note:** Required while source_type equals `OTS_TABLE`.
   - `startTime` Backup start time, UNIX time seconds.
   - `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
+* `retention` - (Optional) Backup retention days, the minimum is 1. **Note:** Required while source_type equals `OTS_TABLE`.
+* `rule_name` - (Optional)  The name of the backup rule.**Note:** Required while source_type equals `OTS_TABLE`. `rule_name` should be unique for the specific user.
+* `backup_type` - (Optional) The name of the tableStore instance. Valid values: `COMPLETE`, `INCREMENTAL`. **Note:** Required while source_type equals `OTS_TABLE`.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: true, false.
-* `rule_name` - (Optional)  The name of the backup rule.
-* `backup_type` - (Optional) The name of the tableStore instance.
+
 
 ## Attributes Reference
 

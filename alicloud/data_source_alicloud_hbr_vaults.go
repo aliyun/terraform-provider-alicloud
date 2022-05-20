@@ -46,7 +46,7 @@ func dataSourceAlicloudHbrVaults() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "STANDARD",
-				ValidateFunc: validation.StringInSlice([]string{"STANDARD"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"STANDARD", "OTS_BACKUP"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
