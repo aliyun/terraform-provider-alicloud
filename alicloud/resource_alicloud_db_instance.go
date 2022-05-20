@@ -452,9 +452,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"deletion_protection": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("instance_charge_type") != string(Postpaid)
-				},
+				Default:  false,
+			},
+			"db_is_ignore_case": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -1587,6 +1590,9 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 
 	if v, ok := d.GetOk("db_time_zone"); ok {
 		request["DBTimeZone"] = v
+	}
+	if v, ok := d.GetOk("db_is_ignore_case"); ok {
+		request["DBIsIgnoreCase"] = v
 	}
 
 	uuid, err := uuid.GenerateUUID()
