@@ -98,6 +98,7 @@ The following arguments are supported:
 -> **NOTE:** `encrypt_new_tables` Polardb MySQL 8.0 cluster, after TDE and Automatic Encryption are enabled, all newly created tables are automatically encrypted in the cluster.
 * `security_group_ids` - (Optional, Available in 1.128.0+) The ID of the security group. Separate multiple security groups with commas (,). You can add a maximum of three security groups to a cluster.
 -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~20 minutes. Please make full preparation before changing them.
+* `backup_retention_policy_on_cluster_deletion` - (Optional, Available in 1.168.0+) The retention policy for the backup sets when you delete the cluster.  Valid values are `ALL`, `LATEST`, `NONE`. Value options can refer to the latest docs [DeleteDBCluster](https://help.aliyun.com/document_detail/98170.html)
 
 ### Block db_cluster_ip_array
 

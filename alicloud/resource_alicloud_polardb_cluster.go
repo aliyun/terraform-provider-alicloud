@@ -190,6 +190,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+			"backup_retention_policy_on_cluster_deletion": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ALL", "LATEST", "NONE"}, false),
+			},
 
 			"tags": tagsSchema(),
 		},
@@ -688,6 +694,9 @@ func resourceAlicloudPolarDBClusterDelete(d *schema.ResourceData, meta interface
 	request := polardb.CreateDeleteDBClusterRequest()
 	request.RegionId = client.RegionId
 	request.DBClusterId = d.Id()
+	if v, ok := d.GetOk("backup_retention_policy_on_cluster_deletion"); ok && v.(string) != "" {
+		request.BackupRetentionPolicyOnClusterDeletion = v.(string)
+	}
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.DeleteDBCluster(request)
