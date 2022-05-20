@@ -26,8 +26,8 @@ data "alicloud_hbr_ots_snapshots" "snapshots" {
 
 The following arguments are supported:
 
-* `start_time` - (Optional, ForceNew)  The start time of the backup. This value must be a UNIX timestamp. Unit: seconds.
-* `end_time` - (Optional, ForceNew)  The end time of the backup. This value must be a UNIX timestamp. Unit: seconds
+* `start_time` - (Optional, ForceNew)  The start time of the backup. This value must be a UNIX timestamp. Unit: milliseconds.
+* `end_time` - (Optional, ForceNew)  The end time of the backup. This value must be a UNIX timestamp. Unit: milliseconds
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Argument Reference
@@ -54,6 +54,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `job_id` - The ID of the backup job.
   * `instance_name` - The name of the Table store instance.
   * `table_name` - The name of the table in the Table store instance.
-  * `range_start` - The time when the backup job started. This value is a UNIX timestamp. Unit: seconds.
-  * `range_end` - The time when the backup job ended. This value is a UNIX timestamp. Unit: seconds.
+  * `range_start` - The time when the backup job started. This value is a UNIX timestamp. Unit: milliseconds.
+  * `range_end` - The time when the backup job ended. This value is a UNIX timestamp. Unit: milliseconds.
 

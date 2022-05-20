@@ -167,7 +167,7 @@ func dataSourceAlicloudHbrOtsSnapshotsRead(d *schema.ResourceData, meta interfac
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &runtime)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2017-09-08"), StringPointer("AK"), request, nil, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
