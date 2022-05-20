@@ -1276,6 +1276,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mse_engine_namespace":                                 resourceAlicloudMseEngineNamespace(),
 			"alicloud_ga_accelerator_spare_ip_attachment":                   resourceAlicloudGaAcceleratorSpareIpAttachment(),
 			"alicloud_ecs_invocation":                                       resourceAlicloudEcsInvocation(),
+			"alicloud_ddos_basic_defense_threshold":                         resourceAlicloudDdosBasicDefenseThreshold(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1491,6 +1492,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.AcrEndpoint = strings.TrimSpace(endpoints["acr"].(string))
 		config.EdsuserEndpoint = strings.TrimSpace(endpoints["edsuser"].(string))
 		config.GaplusEndpoint = strings.TrimSpace(endpoints["gaplus"].(string))
+		config.DdosbasicEndpoint = strings.TrimSpace(endpoints["ddosbasic"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1801,6 +1803,8 @@ func init() {
 		"edsuser_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom edsuser endpoints.",
 
 		"gaplus_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom gaplus endpoints.",
+
+		"ddosbasic_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ddosbasic endpoints.",
 	}
 }
 
@@ -1845,6 +1849,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"ddosbasic": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ddosbasic_endpoint"],
+				},
+
 				"gaplus": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2660,6 +2671,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["acr"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["edsuser"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["gaplus"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ddosbasic"].(string)))
 	return hashcode.String(buf.String())
 }
 
