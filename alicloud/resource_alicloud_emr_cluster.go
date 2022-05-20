@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -128,6 +129,14 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 						},
 						"instance_list": {
 							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"enable_graceful_decommission": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"decommission_timeout": {
+							Type:     schema.TypeInt,
 							Optional: true,
 						},
 					},
@@ -646,8 +655,15 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 					continue
 				}
 
-				hostGroupId := resp.([]interface{})[0].(map[string]interface{})["HostGroupId"].(string)
-				oldNodeCount := resp.([]interface{})[0].(map[string]interface{})["NodeCount"].(int)
+				respHostGroupId := resp.([]interface{})[0].(map[string]interface{})["HostGroupId"]
+				var hostGroupId string
+				switch val := respHostGroupId.(type) {
+				case string:
+					hostGroupId = val
+				case json.Number:
+					hostGroupId = val.String()
+				}
+				oldNodeCount := formatInt(resp.([]interface{})[0].(map[string]interface{})["NodeCount"])
 
 				// scala up
 				if oldNodeCount < newNodeCount {
@@ -668,15 +684,34 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 
 					resizeHostGroups = append(resizeHostGroups, resizeHostGroup)
 				} else if oldNodeCount > newNodeCount { //scale down
+					// EMR cluster can only scale down 'TASK' node group.
+					if v1["host_group_type"].(string) != "TASK" {
+						return WrapError(Error("EMR cluster can only scale down the node group type of [TASK]."))
+					}
+
+					// EMR cluster type of HADOOP support graceful decommission.
+					clusterType, ok := d.GetOk("cluster_type")
+					if ok && clusterType.(string) == "HADOOP" && v1["enable_graceful_decommission"] != nil {
+						egd := v1["enable_graceful_decommission"].(bool)
+						if egd {
+							releaseRequest["EnableGracefulDecommission"] = egd
+							releaseRequest["DecommissionTimeout"] = 3600
+							if timeout, ok := v1["decommission_timeout"]; ok && timeout != 0 {
+								releaseRequest["DecommissionTimeout"] = timeout.(int)
+							}
+						}
+					}
+
 					releaseRequest["HostGroupId"] = hostGroupId
 					releaseRequest["InstanceIdList"] = v1["instance_list"]
+					releaseRequest["ReleaseNumber"] = oldNodeCount - newNodeCount
 
 					action := "ReleaseClusterHostGroup"
 					runtime := util.RuntimeOptions{}
 					runtime.SetAutoretry(true)
 					wait := incrementalWait(3*time.Second, 5*time.Second)
 					err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, resizeRequest, &runtime)
+						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, releaseRequest, &runtime)
 						if err != nil {
 							if NeedRetry(err) {
 								wait()
