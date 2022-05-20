@@ -21,6 +21,7 @@ func TestAccAlicloudEmrInstanceTypesDataSource(t *testing.T) {
 			"cluster_type":          "HADOOP",
 			"support_local_storage": "false",
 			"instance_charge_type":  "PostPaid",
+			"support_node_type":     []string{"CORE"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"destination_resource":  "Zone",
