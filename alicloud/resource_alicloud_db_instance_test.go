@@ -214,7 +214,7 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart"},
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -539,7 +539,7 @@ func TestAccAlicloudRdsDBInstanceHighAvailabilityInstance(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart"},
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case"},
 			},
 		},
 	})
@@ -1047,7 +1047,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart"},
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1583,7 +1583,7 @@ func TestAccAlicloudRdsDBInstanceBasic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "zone_id_slave_b"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "db_is_ignore_case", "zone_id_slave_b"},
 			},
 		},
 	})

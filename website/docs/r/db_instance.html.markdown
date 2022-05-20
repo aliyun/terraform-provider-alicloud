@@ -33,15 +33,15 @@ data "alicloud_zones" "example" {
 }
 
 resource "alicloud_vpc" "example" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "example" {
-  vpc_id     = alicloud_vpc.example.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.example.zones[0].id
-  name       = var.name
+  vpc_id       = alicloud_vpc.example.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.example.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_db_instance" "example" {
@@ -60,15 +60,15 @@ resource "alicloud_db_instance" "example" {
 
 ```terraform
 resource "alicloud_vpc" "example" {
-  name       = "vpc-123456"
+  vpc_name   = "vpc-123456"
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "example" {
-  vpc_id     = alicloud_vpc.example.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.example.zones.0.id
-  name       = "vpc-123456"
+  vpc_id       = alicloud_vpc.example.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.example.zones.0.id
+  vswitch_name = "vpc-123456"
 }
 
 resource "alicloud_db_instance" "default" {
@@ -106,16 +106,16 @@ data "alicloud_zones" "example" {
 }
 
 resource "alicloud_vpc" "example" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "example" {
-  count      = 2
-  vpc_id     = alicloud_vpc.example.id
-  cidr_block = format("172.16.%d.0/24", count.index + 1)
-  zone_id    = data.alicloud_zones.example.zones[count.index].id
-  name       = format("vswich_%d", var.name, count.index)
+  count        = 2
+  vpc_id       = alicloud_vpc.example.id
+  cidr_block   = format("172.16.%d.0/24", count.index + 1)
+  zone_id      = data.alicloud_zones.example.zones[count.index].id
+  vswitch_name = format("vswich_%d", var.name, count.index)
 }
 
 resource "alicloud_db_instance" "example" {
@@ -146,16 +146,16 @@ data "alicloud_zones" "example" {
 }
 
 resource "alicloud_vpc" "example" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "example" {
-  count      = length(data.alicloud_zones.example.zones.0.multi_zone_ids)
-  vpc_id     = alicloud_vpc.example.id
-  cidr_block = format("172.16.%d.0/24", count.index + 1)
-  zone_id    = data.alicloud_zones.example.zones.0.multi_zone_ids[count.index]
-  name       = format("vswitch_%d", count.index)
+  count        = length(data.alicloud_zones.example.zones.0.multi_zone_ids)
+  vpc_id       = alicloud_vpc.example.id
+  cidr_block   = format("172.16.%d.0/24", count.index + 1)
+  zone_id      = data.alicloud_zones.example.zones.0.multi_zone_ids[count.index]
+  vswitch_name = format("vswitch_%d", count.index)
 }
 
 resource "alicloud_db_instance" "this" {
@@ -182,16 +182,16 @@ data "alicloud_zones" "example" {
 }
 
 resource "alicloud_vpc" "example" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "example" {
-  count      = 3
-  vpc_id     = alicloud_vpc.example.id
-  cidr_block = format("172.16.%d.0/24", count.index + 1)
-  zone_id    = data.alicloud_zones.example.zones[count.index].id
-  name       = format("vswich_%d", var.name, count.index)
+  count        = 3
+  vpc_id       = alicloud_vpc.example.id
+  cidr_block   = format("172.16.%d.0/24", count.index + 1)
+  zone_id      = data.alicloud_zones.example.zones[count.index].id
+  vswitch_name = format("vswich_%d", var.name, count.index)
 }
 
 resource "alicloud_db_instance" "example" {
@@ -275,6 +275,9 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 
 -> **NOTE:** The IP address whitelists that have the hidden attribute are not displayed in the ApsaraDB RDS console. These IP address whitelists are used to access Alibaba Cloud services, such as Data Transmission Service (DTS).
 * `security_ip_type` - (Optional, Available in 1.125.0+) The type of IP address in the IP address whitelist.
+* `db_is_ignore_case` - (Optional, Available in 1.168.0+) Specifies whether table names on the instance are case-sensitive. Valid values: `true`, `false`.
+  * `true` - Table names are not case-sensitive. This is the default value.
+  * `false` - Table names are case-sensitive.
 * `whitelist_network_type` - (Optional, Available in 1.125.0+) The network type of the IP address whitelist. Default value: MIX. Valid values:
     - Classic: classic network in enhanced whitelist mode
     - VPC: virtual private cloud (VPC) in enhanced whitelist mode
