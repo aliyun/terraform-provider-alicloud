@@ -85,6 +85,10 @@ func resourceAlicloudKmsAliasRead(d *schema.ResourceData, meta interface{}) erro
 }
 func resourceAlicloudKmsAliasUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewKmsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	if d.HasChange("key_id") {
 		request := map[string]interface{}{
@@ -92,10 +96,6 @@ func resourceAlicloudKmsAliasUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 		request["KeyId"] = d.Get("key_id")
 		action := "UpdateAlias"
-		conn, err := client.NewKmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
