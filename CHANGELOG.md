@@ -1,4 +1,24 @@
 ## 1.168.0 (Unreleased)
+
+- **New Resource:** `alicloud_ecs_invocation` [GH-4971]
+- **New Resource:** `alicloud_ddos_basic_defense_threshold` [GH-4973]	
+- **New Resource:** `alicloud_smartag_flow_log` [GH-4982]
+- **New Data Source:** `alicloud_smartag_flow_logs` [GH-4982]	
+- **New Data Source:** `alicloud_ecs_invocations` [GH-4971]
+
+ENHANCEMENTS:
+
+- resource/alicloud_db_instance: add the field [GH-4932]
+- resource/alicloud_cen_transit_router_vpc_attachment: Add support for new parameter payment_type. [GH-4968]
+- testcase: Adds new unit test case for alicloud_mhub_product alicloud_mhub_app alicloud_database_gateway_gateway [GH-4977]
+
+BUG FIXES:
+
+- resource/alicloud_hbr_ots_backup_plan: fix the field type [GH-4955]
+- resource/alicloud_click_house_account: Fixes updating the attribute ddl_authority is not working bug [GH-4979]
+- resource/alicloud_fc_function_async_invoke_config:add field statefullnvocation bug fix [GH-4965]
+- resource/alicloud_ess_scaling_group: Fix desired_capacity [GH-4967]
+
 ## 1.167.0 (May 15, 2022)
 
 - **New Resource:** `alicloud_ga_accelerator_spare_ip_attachment` ([#4944](https://github.com/aliyun/terraform-provider-alicloud/issues/4944))
