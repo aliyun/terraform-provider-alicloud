@@ -190,14 +190,14 @@ func TestAccAlicloudSmartagFlowLog_basic_sls(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"logstore_name": "${var.name}",
 					"project_name":  "${var.name}",
-					"sls_region_id": "cn-hangzhou",
+					"sls_region_id": defaultRegionToTest,
 					"output_type":   "sls",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"logstore_name": name,
 						"project_name":  name,
-						"sls_region_id": "cn-hangzhou",
+						"sls_region_id": defaultRegionToTest,
 						"output_type":   "sls",
 					}),
 				),
@@ -243,7 +243,7 @@ func TestAccAlicloudSmartagFlowLog_basic_all(t *testing.T) {
 					"netflow_version":     "V9",
 					"inactive_aging":      "15",
 					"flow_log_name":       "${var.name}",
-					"sls_region_id":       "cn-hangzhou",
+					"sls_region_id":       defaultRegionToTest,
 					"output_type":         "all",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -257,7 +257,7 @@ func TestAccAlicloudSmartagFlowLog_basic_all(t *testing.T) {
 						"netflow_version":     "V9",
 						"inactive_aging":      "15",
 						"flow_log_name":       name,
-						"sls_region_id":       "cn-hangzhou",
+						"sls_region_id":       defaultRegionToTest,
 						"output_type":         "all",
 					}),
 				),
@@ -273,7 +273,7 @@ func TestAccAlicloudSmartagFlowLog_basic_all(t *testing.T) {
 					"netflow_version":     "V10",
 					"inactive_aging":      "20",
 					"flow_log_name":       "${var.name}_update",
-					"sls_region_id":       "cn-shanghai",
+					"sls_region_id":       defaultRegionToTest,
 					"output_type":         "all",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -287,7 +287,7 @@ func TestAccAlicloudSmartagFlowLog_basic_all(t *testing.T) {
 						"netflow_version":     "V10",
 						"inactive_aging":      "20",
 						"flow_log_name":       name + "_update",
-						"sls_region_id":       "cn-shanghai",
+						"sls_region_id":       defaultRegionToTest,
 						"output_type":         "all",
 					}),
 				),

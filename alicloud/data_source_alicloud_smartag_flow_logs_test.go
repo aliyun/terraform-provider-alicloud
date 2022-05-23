@@ -83,7 +83,7 @@ func TestAccAlicloudSmartagFlowLogsDataSource(t *testing.T) {
 			"logs.0.netflow_version":     "V9",
 			"logs.0.output_type":         "all",
 			"logs.0.project_name":        fmt.Sprintf("tf-testAccFlowLog-%d", rand),
-			"logs.0.sls_region_id":       "cn-hangzhou",
+			"logs.0.sls_region_id":       defaultRegionToTest,
 		}
 	}
 	var fakeAlicloudSmartagFlowLogsDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -125,13 +125,13 @@ resource "alicloud_smartag_flow_log" "default" {
 	netflow_version =     "V9"
 	inactive_aging =      15
 	flow_log_name =       var.name
-	sls_region_id =       "cn-hangzhou"
+	sls_region_id =       "%s"
 	output_type =         "all"
 }
 
 data "alicloud_smartag_flow_logs" "default" {	
 	%s
 }
-`, rand, strings.Join(pairs, " \n "))
+`, rand, strings.Join(pairs, " \n "), defaultRegionToTest)
 	return config
 }
