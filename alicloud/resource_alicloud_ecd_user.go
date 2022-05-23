@@ -69,16 +69,15 @@ func resourceAlicloudEcdUserCreate(d *schema.ResourceData, meta interface{}) err
 
 	requestUsers["Email"] = d.Get("email")
 	requestUsers["EndUserId"] = d.Get("end_user_id")
-	if v, ok := d.GetOk("password"); ok {
-		requestUsers["Password"] = v
-	}
 	if v, ok := d.GetOk("phone"); ok {
 		requestUsers["Phone"] = v
 	}
 
 	requestUsersMap = append(requestUsersMap, requestUsers)
 	request["Users"] = requestUsersMap
-
+	if v, ok := d.GetOk("password"); ok {
+		request["Password"] = v
+	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
