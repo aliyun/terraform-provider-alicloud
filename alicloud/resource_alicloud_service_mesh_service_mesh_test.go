@@ -320,7 +320,7 @@ locals {
 `, name)
 }
 
-func TestAccAlicloudServiceMeshServiceMesh_AddCLusterId(t *testing.T) {
+func TestAccAlicloudServiceMeshServiceMesh_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_service_mesh_service_mesh.default"
 	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
@@ -419,14 +419,20 @@ func TestAccAlicloudServiceMeshServiceMesh_AddCLusterId(t *testing.T) {
 						},
 					},
 					"cluster_ids": []string{"${data.alicloud_cs_managed_kubernetes_clusters.default.clusters[0].id}"},
+					"extra_configuration": []map[string]interface{}{
+						{
+							"cr_aggregation_enabled": "true",
+						},
+					},
 				}),
 
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"service_mesh_name": name,
-						"cluster_spec":      "standard",
-						"mesh_config.#":     "1",
-						"cluster_ids.#":     "1",
+						"service_mesh_name":     name,
+						"cluster_spec":          "standard",
+						"mesh_config.#":         "1",
+						"cluster_ids.#":         "1",
+						"extra_configuration.#": "1",
 					}),
 				),
 			},
@@ -438,6 +444,21 @@ func TestAccAlicloudServiceMeshServiceMesh_AddCLusterId(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_ids.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"extra_configuration": []map[string]interface{}{
+						{
+							"cr_aggregation_enabled": "false",
+						},
+					},
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"extra_configuration.#": "1",
 					}),
 				),
 			},
@@ -464,6 +485,9 @@ data "alicloud_zones" "default" {
 }
 data "alicloud_vpcs" "default" {
   name_regex = "default-NODELETING"
+  tags = {
+    For = "Terraform-CI-Test"
+  }
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0

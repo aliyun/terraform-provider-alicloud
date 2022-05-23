@@ -321,6 +321,21 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"extra_configuration": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: 1,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cr_aggregation_enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -598,6 +613,16 @@ func resourceAlicloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 					}
 					meshConfigMap["pilot"] = pilotSli
 
+					extraConfigSli := make([]map[string]interface{}, 0)
+					if raw, ok := meshConfigArg["ExtraConfiguration"]; ok {
+						if extraConfigArg, ok := raw.(map[string]interface{}); ok && len(extraConfigArg) > 0 {
+							extraConfigMap := make(map[string]interface{})
+							extraConfigMap["cr_aggregation_enabled"] = extraConfigArg["CRAggregationConfiguration"].(map[string]interface{})["Enabled"]
+							extraConfigSli = append(extraConfigSli, extraConfigMap)
+						}
+					}
+					d.Set("extra_configuration", extraConfigSli)
+
 					proxySli := make([]map[string]interface{}, 0)
 					if proxy, ok := meshConfigArg["Proxy"]; ok {
 						if proxyArg, ok := proxy.(map[string]interface{}); ok && len(proxyArg) > 0 {
@@ -821,6 +846,46 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, updateMeshFeatureReq, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, updateMeshFeatureReq)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	update = false
+	UpdateMeshCRAggregationReq := map[string]interface{}{
+		"ServiceMeshId": d.Id(),
+	}
+	if d.HasChange("extra_configuration") {
+		update = true
+		if extraConfig, ok := d.GetOk("extra_configuration"); ok {
+			for _, extraConfigMap := range extraConfig.(*schema.Set).List() {
+				if extraConfigArg, ok := extraConfigMap.(map[string]interface{}); ok {
+					if v, ok := extraConfigArg["cr_aggregation_enabled"]; ok {
+						UpdateMeshCRAggregationReq["Enabled"] = v
+					}
+				}
+			}
+		}
+	}
+	if update {
+		action := "UpdateMeshCRAggregation"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-01-11"), StringPointer("AK"), UpdateMeshCRAggregationReq, nil, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
