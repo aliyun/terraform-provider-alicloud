@@ -93,7 +93,7 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_emr_cluster" "default" {
-  name = "terraform-resize-test-0926"
+  name = "terraform-create-cluster-test"
 
   emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 
@@ -233,7 +233,7 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_emr_cluster" "default" {
-  name = "terraform-resize-test-0926"
+  name = "terraform-resize-cluster-test"
 
   emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 
@@ -254,7 +254,7 @@ resource "alicloud_emr_cluster" "default" {
   host_group {
     host_group_name   = "core_group"
     host_group_type   = "CORE"
-    node_count        = "2"
+    node_count        = "3"
     instance_type     = data.alicloud_emr_instance_types.default.types.0.id
     disk_type         = data.alicloud_emr_disk_types.data_disk.types.0.value
     disk_capacity     = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
@@ -290,6 +290,8 @@ resource "alicloud_emr_cluster" "default" {
 #### 3. Scale Down
 
 In the case of scaling down a cluster, we need to specified the host group and the instance list. 
+
+-> **NOTE:** Graceful decommission of hadoop cluster has been supported Available in 1.168.0+.
 
 The following is an example. We scale down the cluster by decreasing the node count by 2, and specifying the scale-down instance list.
 
@@ -369,7 +371,7 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_emr_cluster" "default" {
-  name = "terraform-resize-test-0926"
+  name = "terraform-resize-cluster-test"
 
   emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 
@@ -390,7 +392,7 @@ resource "alicloud_emr_cluster" "default" {
   host_group {
     host_group_name   = "core_group"
     host_group_type   = "CORE"
-    node_count        = "2"
+    node_count        = "3"
     instance_type     = data.alicloud_emr_instance_types.default.types.0.id
     disk_type         = data.alicloud_emr_disk_types.data_disk.types.0.value
     disk_capacity     = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
@@ -501,7 +503,7 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_emr_cluster" "gateway" {
-  name = "terraform-gateway-test-1101"
+  name = "terraform-gateway-cluster-test"
 
   emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 
@@ -578,8 +580,10 @@ The host_group mapping supports the following:
 * `disk_count` - (Required) Data disk count.
 * `sys_disk_type` - (Required) System disk type. Supported value: cloud,cloud_efficiency,cloud_ssd,cloud_essd.
 * `sys_disk_capacity` - (Required) System disk capacity.
-* `auto_renew` - (Optional) Auto renew for prepaid, true of false. Default is false.
+* `auto_renew` - (Optional) Auto renew for prepaid, ’true’ or ‘false’ . Default value: false.
 * `instance_list` - (Optional) Instance list for cluster scale down. This value follows the json format, e.g. ["instance_id1","instance_id2"]. escape character for " is \".
+* `enable_graceful_decommission` - (Optional, Available in 1.168.0+) Enable hadoop cluster of task node graceful decommission, ’true’ or ‘false’ . Default value: false.
+* `decommission_timeout` - (Optional, Available in 1.168.0+) Graceful decommission timeout, unit: seconds.
 
 #### Block bootstrap_action
 

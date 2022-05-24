@@ -110,7 +110,7 @@ The following arguments are supported:
 * `period` - (Optional, Available in 1.45.0+) The duration that you will buy the resource, in month. It is valid when `payment_type` is `Subscription`. Valid values: [1-9, 12, 24, 36]. At present, the provider does not support modify "period" and you can do that via web console. **NOTE:** International station only supports `Subscription`.
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `nat_type` - (Optional, Available in 1.102.0+) The type of NAT gateway. Valid values: `Normal` and `Enhanced`. **NOTE:** From 1.137.0+,  The `Normal` has been deprecated.
-* `vswitch_id` - (Optional, Available in 1.102.0+) The id of VSwitch.
+* `vswitch_id` - (Required, Available in 1.102.0+) The id of VSwitch.
 * `internet_charge_type` - (Optional, ForceNew, Computed,Available in 1.121.0+) The internet charge type. Valid values `PayByLcu` and `PayBySpec`. The `PayByLcu` is only support enhanced NAT. **NOTE:** From 1.137.0+, The `PayBySpec` has been deprecated. 
 * `tags` - (Optional, Available in 1.121.0+) The tags of NAT gateway.
 * `deletion_protection` - (Optional, Available in v1.124.4+) Whether enable the deletion protection or not. Default value: `false`.

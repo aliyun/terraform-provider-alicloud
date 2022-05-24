@@ -80,6 +80,10 @@ func dataSourceAlicloudCenTransitRouterVpcAttachments() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"payment_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"zone_mappings": {
 							Type:     schema.TypeList,
 							Computed: true,
@@ -187,6 +191,7 @@ func dataSourceAlicloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData
 			"vpc_id":                                object["VpcId"],
 			"vpc_owner_id":                          fmt.Sprint(object["VpcOwnerId"]),
 			"resource_type":                         object["ResourceType"],
+			"payment_type":                          convertCenTransitRouterVpcAttachmentPaymentTypeResponse(object["ChargeType"].(string)),
 		}
 
 		zoneMappings := make([]map[string]interface{}, 0)

@@ -33,7 +33,7 @@ data "alicloud_hbr_restore_jobs" "default" {
 
 The following arguments are supported:
 
-* `restore_type` - (Required, ForceNew) The Recovery Destination Types. Valid values: `ECS_FILE`, `NAS`, `OSS`.
+* `restore_type` - (Required, ForceNew) The Recovery Destination Types. Valid values: `ECS_FILE`, `NAS`, `OSS`,`OTS_TABLE`, `UDM_ECS_ROLLBACK`.
 * `restore_id` - (Optional, ForceNew) The list of restore job IDs.
 * `vault_id` - (Optional, ForceNew) The list of backup vault IDs.
 * `source_type` - (Optional, ForceNew) The list of data source types. Valid values: `ECS_FILE`, `NAS`, `OSS`, `OTS_TABLE`,`UDM_ECS_ROLLBACK`.

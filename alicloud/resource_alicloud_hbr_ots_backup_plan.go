@@ -49,10 +49,12 @@ func resourceAlicloudHbrOtsBackupPlan() *schema.Resource {
 			},
 			"vault_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				ForceNew: true,
+				Optional: true,
 			},
 			"instance_name": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Optional: true,
 			},
 			"ots_detail": {

@@ -105,13 +105,16 @@ func resourceAlicloudMhubAppRead(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*connectivity.AliyunClient)
 	mhubService := MhubService{client}
 	object, err := mhubService.DescribeMhubApp(d.Id())
-	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_mhub_app mhubService.DescribeMhubApp Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
+		return WrapError(err)
+	}
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
 		return WrapError(err)
 	}
 	d.Set("app_name", object["Name"])
@@ -126,6 +129,10 @@ func resourceAlicloudMhubAppRead(d *schema.ResourceData, meta interface{}) error
 }
 func resourceAlicloudMhubAppUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewMhubClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -153,10 +160,6 @@ func resourceAlicloudMhubAppUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 	if update {
 		action := "ModifyApp"
-		conn, err := client.NewMhubClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-25"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

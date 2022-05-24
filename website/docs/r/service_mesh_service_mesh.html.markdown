@@ -63,6 +63,8 @@ The following arguments are supported:
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
 * `cluster_spec` - (Optional,Available in v1.166.0+.) The service mesh instance specification. Valid values: `standard`,`enterprise`,`ultimate`.
 * `cluster_ids` - (Optional,Available in v1.166.0+.) The array of the cluster ids.
+* `extra_configuration` - (Optional, Available in v1.169.0+.) The configurations of additional features for the ASM instance. See the following `Block extra_configuration`.
+
 
 #### Block network
 
@@ -70,6 +72,13 @@ The network supports the following:
 
 * `vpc_id` - (Required) The ID of the VPC.
 * `vswitche_list` - (Required) The list of Virtual Switch.
+
+#### Block extra_configuration
+
+The extra_configuration supports the following:
+
+* `cr_aggregation_enabled` - (Optional, Available in v1.169.0+.) Indicates whether the Kubernetes API of clusters on the data plane is used to access Istio resources. A value of `true` indicates that the Kubernetes API is used.
+
 
 #### Block mesh_config
 

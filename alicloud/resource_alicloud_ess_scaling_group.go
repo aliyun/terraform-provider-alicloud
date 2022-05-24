@@ -288,7 +288,9 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		request.MaxSize = requests.NewInteger(d.Get("max_size").(int))
 	}
 	if d.HasChange("desired_capacity") {
-		request.DesiredCapacity = requests.NewInteger(d.Get("desired_capacity").(int))
+		if v, ok := d.GetOkExists("desired_capacity"); ok {
+			request.DesiredCapacity = requests.NewInteger(v.(int))
+		}
 	}
 	if d.HasChange("default_cooldown") {
 		request.DefaultCooldown = requests.NewInteger(d.Get("default_cooldown").(int))

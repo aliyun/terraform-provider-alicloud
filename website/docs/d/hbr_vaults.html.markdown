@@ -33,7 +33,9 @@ The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of Vault IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Vault name.
-* `vault_type` - (Optional, ForceNew) VaultType. Valid values: `STANDARD`.
+* `vault_type` - (Optional, ForceNew) VaultType. Valid values: `STANDARD`,`OTS_BACKUP`.
+  - `STANDARD` - used in OSS, NAS and ECS File backup.
+  - `OTS_BACKUP` -  used in OTS backup.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew, Computed) The status of Vault. Valid values: `CREATED`, `ERROR`, `UNKNOWN`.
 
