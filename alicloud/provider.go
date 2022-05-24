@@ -692,6 +692,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_smartag_flow_logs":                           dataSourceAlicloudSmartagFlowLogs(),
 			"alicloud_ecs_invocations":                             dataSourceAlicloudEcsInvocations(),
 			"alicloud_ecd_snapshots":                               dataSourceAlicloudEcdSnapshots(),
+			"alicloud_tag_meta_tags":                               dataSourceAlicloudTagMetaTags(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1499,6 +1500,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.GaplusEndpoint = strings.TrimSpace(endpoints["gaplus"].(string))
 		config.DdosbasicEndpoint = strings.TrimSpace(endpoints["ddosbasic"].(string))
 		config.SmartagEndpoint = strings.TrimSpace(endpoints["smartag"].(string))
+		config.TagEndpoint = strings.TrimSpace(endpoints["tag"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1813,6 +1815,8 @@ func init() {
 		"ddosbasic_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ddosbasic endpoints.",
 
 		"smartag_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom smartag endpoints.",
+
+		"tag_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom tag endpoints.",
 	}
 }
 
@@ -1857,6 +1861,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"tag": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["tag_endpoint"],
+				},
+
 				"ddosbasic": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2688,6 +2699,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["gaplus"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ddosbasic"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["smartag"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["tag"].(string)))
 	return hashcode.String(buf.String())
 }
 

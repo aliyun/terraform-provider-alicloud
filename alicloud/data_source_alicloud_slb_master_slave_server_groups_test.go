@@ -48,7 +48,7 @@ func TestAccAlicloudSLBMasterSlaveServerGroupsDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existSLBMasterSlaveServerGroupsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"groups.#":                       "1",
 			"ids.#":                          "1",
@@ -61,7 +61,7 @@ func TestAccAlicloudSLBMasterSlaveServerGroupsDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeSLBMasterSlaveServerGroupsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"groups.#": "0",
 			"ids.#":    "0",
@@ -71,8 +71,8 @@ func TestAccAlicloudSLBMasterSlaveServerGroupsDataSource_basic(t *testing.T) {
 
 	var slbServerGroupsCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_master_slave_server_groups.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existSLBMasterSlaveServerGroupsMapFunc,
+		fakeMapFunc:  fakeSLBMasterSlaveServerGroupsMapFunc,
 	}
 
 	slbServerGroupsCheckInfo.dataSourceTestCheck(t, -1, allConf, basicConf, nameRegexConf, idsConf)

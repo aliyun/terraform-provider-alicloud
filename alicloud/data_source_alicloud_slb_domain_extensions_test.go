@@ -29,7 +29,7 @@ func TestAccAlicloudSLBDomainExtensionsDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existSLBDomainExtensionsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"extensions.#":                       "1",
 			"ids.#":                              "1",
@@ -39,7 +39,7 @@ func TestAccAlicloudSLBDomainExtensionsDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeSLBDomainExtensionsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_rules.#": "0",
 			"ids.#":       "0",
@@ -49,8 +49,8 @@ func TestAccAlicloudSLBDomainExtensionsDataSource_basic(t *testing.T) {
 
 	var slbDomainExtensionsCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_domain_extensions.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existSLBDomainExtensionsMapFunc,
+		fakeMapFunc:  fakeSLBDomainExtensionsMapFunc,
 	}
 
 	slbDomainExtensionsCheckInfo.dataSourceTestCheck(t, rand, basicConf, allConf)

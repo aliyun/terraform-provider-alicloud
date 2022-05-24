@@ -163,6 +163,7 @@ type Config struct {
 	GaplusEndpoint              string
 	DdosbasicEndpoint           string
 	SmartagEndpoint             string
+	TagEndpoint                 string
 }
 
 func (c *Config) loadAndValidate() error {
