@@ -1205,3 +1205,9 @@ func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]
 	}
 	return diff, nil
 }
+
+func convertSyncMap(raw map[string]interface{}) {
+	for key, val := range raw {
+		EndpointConfig.Store(key, val)
+	}
+}

@@ -168,8 +168,6 @@ const Provider = "Terraform-Provider"
 const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
-var loadSdkfromRemoteMutex = sync.Mutex{}
-var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
 var providerVersion = "1.168.0"
@@ -395,12 +393,12 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 func (client *AliyunClient) NewEcsClient() (*rpc.Client, error) {
 	productCode := "ecs"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 		if endpoint == "ecs-cn-hangzhou.aliyuncs.com" {
 			endpoint = "ecs.aliyuncs.com"
@@ -424,12 +422,12 @@ func (client *AliyunClient) NewEcsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewVpcClient() (*rpc.Client, error) {
 	productCode := "vpc"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -450,12 +448,12 @@ func (client *AliyunClient) NewVpcClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewRdsClient() (*rpc.Client, error) {
 	productCode := "rds"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -476,12 +474,12 @@ func (client *AliyunClient) NewRdsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewPolarDBClient() (*rpc.Client, error) {
 	productCode := "polardb"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -900,14 +898,14 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 		endpoint := client.config.CmsEndpoint
 		if endpoint == "" {
 			productCode := "cms"
-			if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+			if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 				if err := client.loadEndpoint(productCode); err != nil {
 					endpoint = fmt.Sprintf("metrics.%s.aliyuncs.com", client.RegionId)
-					client.config.Endpoints[productCode] = endpoint
+					client.config.Endpoints.Store(productCode, endpoint)
 					log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 				}
 			}
-			if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+			if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 				endpoint = v.(string)
 			}
 		}
@@ -1096,12 +1094,12 @@ func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, e
 func (client *AliyunClient) NewGpdbClient() (*rpc.Client, error) {
 	productCode := "gpdb"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -1335,13 +1333,13 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 func (client *AliyunClient) NewElasticsearchClient() (*roa.Client, error) {
 	productCode := "elasticsearch"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
 
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -1427,13 +1425,13 @@ func (client *AliyunClient) WithCsProjectClient(clusterId, endpoint string, clus
 func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string, apiVersion ApiVersion) (*requests.CommonRequest, error) {
 	endpoint := ""
 	product = strings.ToLower(product)
-	if client.config.Endpoints[product] == nil {
+	if _, exist := client.config.Endpoints.Load(product); !exist {
 		if err := client.loadEndpoint(product); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[product] != nil && client.config.Endpoints[product].(string) != "" {
-		endpoint = client.config.Endpoints[product].(string)
+	if v, exist := client.config.Endpoints.Load(product); exist && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	request := requests.NewCommonRequest()
 	// Use product code to find product domain
@@ -1835,16 +1833,16 @@ func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{},
 func (client *AliyunClient) NewAdbClient() (*rpc.Client, error) {
 	productCode := "ads"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if _, exist := client.config.Endpoints.Load(productCode); !exist {
 		if v := client.config.AdbEndpoint; v != "" {
-			client.config.Endpoints[productCode] = v
+			client.config.Endpoints.Store(productCode, v)
 		}
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, exist := client.config.Endpoints.Load(productCode); exist && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -1893,12 +1891,12 @@ func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, err
 func (client *AliyunClient) NewCbnClient() (*rpc.Client, error) {
 	productCode := "cbn"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2115,12 +2113,12 @@ func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (inter
 func (client *AliyunClient) NewOnsClient() (*rpc.Client, error) {
 	productCode := "ons"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2138,12 +2136,12 @@ func (client *AliyunClient) NewOnsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewCmsClient() (*rpc.Client, error) {
 	productCode := "cms"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2161,14 +2159,14 @@ func (client *AliyunClient) NewCmsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewConfigClient() (*rpc.Client, error) {
 	productCode := "config"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "config.cn-shanghai.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2186,12 +2184,12 @@ func (client *AliyunClient) NewConfigClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewWafClient() (*rpc.Client, error) {
 	productCode := "waf"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2222,12 +2220,12 @@ func (client *AliyunClient) NewBssopenapiClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewFnfClient() (*rpc.Client, error) {
 	productCode := "fnf"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2245,12 +2243,12 @@ func (client *AliyunClient) NewFnfClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewRosClient() (*rpc.Client, error) {
 	productCode := "ros"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2268,14 +2266,14 @@ func (client *AliyunClient) NewRosClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewPvtzClient() (*rpc.Client, error) {
 	productCode := "pvtz"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint := "pvtz.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2293,12 +2291,12 @@ func (client *AliyunClient) NewPvtzClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewPrivatelinkClient() (*rpc.Client, error) {
 	productCode := "privatelink"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2316,14 +2314,14 @@ func (client *AliyunClient) NewPrivatelinkClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewDcdnClient() (*rpc.Client, error) {
 	productCode := "dcdn"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "dcdn.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2341,12 +2339,12 @@ func (client *AliyunClient) NewDcdnClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewOdpsClient() (*rpc.Client, error) {
 	productCode := "odps"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2364,12 +2362,12 @@ func (client *AliyunClient) NewOdpsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewRessharingClient() (*rpc.Client, error) {
 	productCode := "ressharing"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2387,14 +2385,14 @@ func (client *AliyunClient) NewRessharingClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewGaplusClient() (*rpc.Client, error) {
 	productCode := "gaplus"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "ga.cn-hangzhou.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2412,12 +2410,12 @@ func (client *AliyunClient) NewGaplusClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewEciClient() (*rpc.Client, error) {
 	productCode := "eci"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2435,12 +2433,12 @@ func (client *AliyunClient) NewEciClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewActiontrailClient() (*rpc.Client, error) {
 	productCode := "actiontrail"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2458,13 +2456,13 @@ func (client *AliyunClient) NewActiontrailClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewMseClient() (*rpc.Client, error) {
 	productCode := "mse"
 	endpoint := ""
-	if client.config.Endpoints[productCode] == nil {
+	if _, exist := client.config.Endpoints.Load(productCode); exist {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
-		endpoint = client.config.Endpoints[productCode].(string)
+	if v, exist := client.config.Endpoints.Load(productCode); exist && v.(string) != "" {
+		endpoint = v.(string)
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
@@ -2481,12 +2479,12 @@ func (client *AliyunClient) NewMseClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewHitsdbClient() (*rpc.Client, error) {
 	productCode := "hitsdb"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2504,14 +2502,14 @@ func (client *AliyunClient) NewHitsdbClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewAistudioClient() (*rpc.Client, error) {
 	productCode := "aistudio"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "brain-industrial.cn-hangzhou.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2529,14 +2527,14 @@ func (client *AliyunClient) NewAistudioClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewEipanycastClient() (*rpc.Client, error) {
 	productCode := "eipanycast"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "eipanycast.cn-hangzhou.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2554,12 +2552,12 @@ func (client *AliyunClient) NewEipanycastClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewOosClient() (*rpc.Client, error) {
 	productCode := "oos"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2577,14 +2575,14 @@ func (client *AliyunClient) NewOosClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewImsClient() (*rpc.Client, error) {
 	productCode := "ims"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "ims.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2602,14 +2600,14 @@ func (client *AliyunClient) NewImsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewRamClient() (*rpc.Client, error) {
 	productCode := "ram"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "ram.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2627,14 +2625,14 @@ func (client *AliyunClient) NewRamClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewResourcemanagerClient() (*rpc.Client, error) {
 	productCode := "resourcemanager"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "resourcemanager.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2652,14 +2650,14 @@ func (client *AliyunClient) NewResourcemanagerClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewQuotasClient() (*rpc.Client, error) {
 	productCode := "quotas"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "quotas.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2677,12 +2675,12 @@ func (client *AliyunClient) NewQuotasClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewNasClient() (*rpc.Client, error) {
 	productCode := "nas"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2700,14 +2698,14 @@ func (client *AliyunClient) NewNasClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewDmsenterpriseClient() (*rpc.Client, error) {
 	productCode := "dmsenterprise"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "dms-enterprise.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2725,12 +2723,12 @@ func (client *AliyunClient) NewDmsenterpriseClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewHcsSgwClient() (*rpc.Client, error) {
 	productCode := "hcs_sgw"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2748,12 +2746,12 @@ func (client *AliyunClient) NewHcsSgwClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewAdsClient() (*rpc.Client, error) {
 	productCode := "ads"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2771,12 +2769,12 @@ func (client *AliyunClient) NewAdsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewDdoscooClient() (*rpc.Client, error) {
 	productCode := "ddoscoo"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2794,12 +2792,12 @@ func (client *AliyunClient) NewDdoscooClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewSlbClient() (*rpc.Client, error) {
 	productCode := "slb"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2817,14 +2815,14 @@ func (client *AliyunClient) NewSlbClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewKmsClient() (*rpc.Client, error) {
 	productCode := "kms"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "kms.cn-beijing.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2842,14 +2840,14 @@ func (client *AliyunClient) NewKmsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewAlidnsClient() (*rpc.Client, error) {
 	productCode := "alidns"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "alidns.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2867,12 +2865,12 @@ func (client *AliyunClient) NewAlidnsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewHbaseClient() (*rpc.Client, error) {
 	productCode := "hbase"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2890,12 +2888,12 @@ func (client *AliyunClient) NewHbaseClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewDmClient() (*rpc.Client, error) {
 	productCode := "dm"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2913,12 +2911,12 @@ func (client *AliyunClient) NewDmClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewEventbridgeClient() (*rpc.Client, error) {
 	productCode := "eventbridge"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2936,12 +2934,12 @@ func (client *AliyunClient) NewEventbridgeClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewOnsproxyClient() (*rpc.Client, error) {
 	productCode := "onsproxy"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2959,14 +2957,14 @@ func (client *AliyunClient) NewOnsproxyClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewCdsClient() (*rpc.Client, error) {
 	productCode := "cds"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "cassandra.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -2984,14 +2982,14 @@ func (client *AliyunClient) NewCdsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewHbrClient() (*rpc.Client, error) {
 	productCode := "hbr"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("hbr.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3009,17 +3007,17 @@ func (client *AliyunClient) NewHbrClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewCasClient() (*rpc.Client, error) {
 	productCode := "cas"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		// Currently, the cas is not regional
 		//if err := client.loadEndpoint(productCode); err != nil {
 		//	endpoint = "cas.aliyuncs.com"
-		//	client.config.Endpoints[productCode] = endpoint
+		//	client.config.Endpoints.Store(productCode,endpoint)
 		//	log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		//}
 		endpoint = "cas.aliyuncs.com"
-		client.config.Endpoints[productCode] = endpoint
+		client.config.Endpoints.Store(productCode, endpoint)
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3037,14 +3035,14 @@ func (client *AliyunClient) NewCasClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewArmsClient() (*rpc.Client, error) {
 	productCode := "arms"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("arms.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3062,14 +3060,14 @@ func (client *AliyunClient) NewArmsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewCloudfwClient() (*rpc.Client, error) {
 	productCode := "cloudfw"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "cloudfw.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3087,14 +3085,14 @@ func (client *AliyunClient) NewCloudfwClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewServerlessClient() (*roa.Client, error) {
 	productCode := "serverless"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("serverless.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3112,12 +3110,12 @@ func (client *AliyunClient) NewServerlessClient() (*roa.Client, error) {
 func (client *AliyunClient) NewAlbClient() (*rpc.Client, error) {
 	productCode := "alb"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3135,14 +3133,14 @@ func (client *AliyunClient) NewAlbClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewRedisaClient() (*rpc.Client, error) {
 	productCode := "redisa"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "r-kvstore.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3160,14 +3158,14 @@ func (client *AliyunClient) NewRedisaClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewGwsecdClient() (*rpc.Client, error) {
 	productCode := "gwsecd"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("gwsecd.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3185,14 +3183,14 @@ func (client *AliyunClient) NewGwsecdClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewCloudphoneClient() (*rpc.Client, error) {
 	productCode := "cloudphone"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("cloudphone.%s.aliyuncs.com", client.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3210,14 +3208,14 @@ func (client *AliyunClient) NewCloudphoneClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewScdnClient() (*rpc.Client, error) {
 	productCode := "scdn"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "scdn.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3235,14 +3233,14 @@ func (client *AliyunClient) NewScdnClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewDataworkspublicClient() (*rpc.Client, error) {
 	productCode := "dataworkspublic"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("dataworks.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3260,14 +3258,14 @@ func (client *AliyunClient) NewDataworkspublicClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewCdnClient() (*rpc.Client, error) {
 	productCode := "cdn"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "cdn.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3286,14 +3284,14 @@ func (client *AliyunClient) NewCdnClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewCddcClient() (*rpc.Client, error) {
 	productCode := "cddc"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("cddc.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3311,14 +3309,14 @@ func (client *AliyunClient) NewCddcClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewMscopensubscriptionClient() (*rpc.Client, error) {
 	productCode := "mscsub"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "mscopensubscription.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3337,14 +3335,14 @@ func (client *AliyunClient) NewSddpClient() (*rpc.Client, error) {
 	productCode := "sddp"
 	endpoint := "sddp.cn-zhangjiakou.aliyuncs.com"
 	//todo : Fix after Cloud Product fixing Location Configuration
-	//if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	//if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 	//	if err := client.loadEndpoint(productCode); err != nil {
 	//		endpoint = fmt.Sprintf("sddp.%s.aliyuncs.com", client.config.RegionId)
-	//		client.config.Endpoints[productCode] = endpoint
+	//		client.config.Endpoints.Store(productCode,endpoint)
 	//		log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 	//	}
 	//}
-	//if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	//if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 	//	endpoint = v.(string)
 	//}
 
@@ -3360,14 +3358,14 @@ func (client *AliyunClient) NewSddpClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewBastionhostClient() (*rpc.Client, error) {
 	productCode := "bastionhost"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("bastionhost.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3385,14 +3383,14 @@ func (client *AliyunClient) NewBastionhostClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewSasClient() (*rpc.Client, error) {
 	productCode := "sas"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "sas.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3410,14 +3408,14 @@ func (client *AliyunClient) NewSasClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewAlidfsClient() (*rpc.Client, error) {
 	productCode := "alidfs"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("alidfs.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3435,14 +3433,14 @@ func (client *AliyunClient) NewAlidfsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewEhpcClient() (*rpc.Client, error) {
 	productCode := "ehpc"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("ehpc.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3460,14 +3458,14 @@ func (client *AliyunClient) NewEhpcClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewEnsClient() (*rpc.Client, error) {
 	productCode := "ens"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "ens.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3485,14 +3483,14 @@ func (client *AliyunClient) NewEnsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewIotClient() (*rpc.Client, error) {
 	productCode := "iot"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("iot.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3510,14 +3508,14 @@ func (client *AliyunClient) NewIotClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewImmClient() (*rpc.Client, error) {
 	productCode := "imm"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("imm.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3535,14 +3533,14 @@ func (client *AliyunClient) NewImmClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewClickhouseClient() (*rpc.Client, error) {
 	productCode := "clickhouse"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("clickhouse.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3560,14 +3558,14 @@ func (client *AliyunClient) NewClickhouseClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewDtsClient() (*rpc.Client, error) {
 	productCode := "dts"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("dts.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3585,14 +3583,14 @@ func (client *AliyunClient) NewDtsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewDgClient() (*rpc.Client, error) {
 	productCode := "dg"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("dg.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3610,14 +3608,14 @@ func (client *AliyunClient) NewDgClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewCloudssoClient() (*rpc.Client, error) {
 	productCode := "cloudsso"
 	endpoint := "cloudsso"
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("cloudsso.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3635,14 +3633,14 @@ func (client *AliyunClient) NewCloudssoClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewSwasClient() (*rpc.Client, error) {
 	productCode := "swas"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("swas.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3660,14 +3658,14 @@ func (client *AliyunClient) NewSwasClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewVsClient() (*rpc.Client, error) {
 	productCode := "vs"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("vs.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3685,14 +3683,14 @@ func (client *AliyunClient) NewVsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewQuickbiClient() (*rpc.Client, error) {
 	productCode := "quickbi"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("quickbi.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3710,14 +3708,14 @@ func (client *AliyunClient) NewQuickbiClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewDevopsrdcClient() (*rpc.Client, error) {
 	productCode := "rdcdevops"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("api-devops.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3735,14 +3733,14 @@ func (client *AliyunClient) NewDevopsrdcClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewVodClient() (*rpc.Client, error) {
 	productCode := "vod"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("vod.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3760,14 +3758,14 @@ func (client *AliyunClient) NewVodClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewOpensearchClient() (*roa.Client, error) {
 	productCode := "opensearch"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("opensearch.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3785,14 +3783,14 @@ func (client *AliyunClient) NewOpensearchClient() (*roa.Client, error) {
 func (client *AliyunClient) NewGdsClient() (*rpc.Client, error) {
 	productCode := "gds"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("gds.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3810,14 +3808,14 @@ func (client *AliyunClient) NewGdsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewDbfsClient() (*rpc.Client, error) {
 	productCode := "dbfs"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("dbfs.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3835,14 +3833,14 @@ func (client *AliyunClient) NewDbfsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewEaisClient() (*rpc.Client, error) {
 	productCode := "eais"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("eais.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3860,14 +3858,14 @@ func (client *AliyunClient) NewEaisClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewCloudauthClient() (*rpc.Client, error) {
 	productCode := "cloudauth"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "cloudauth.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3885,14 +3883,14 @@ func (client *AliyunClient) NewCloudauthClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewImpClient() (*rpc.Client, error) {
 	productCode := "imp"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "imp.aliyuncs.com"
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3910,12 +3908,12 @@ func (client *AliyunClient) NewImpClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewMhubClient() (*rpc.Client, error) {
 	productCode := "emas"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, fmt.Errorf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.\"", productCode, err, fmt.Sprintf("mhub.%s.aliyuncs.com", client.config.RegionId))
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3932,14 +3930,14 @@ func (client *AliyunClient) NewMhubClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewServicemeshClient() (*rpc.Client, error) {
 	productCode := "servicemesh"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("servicemesh.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3957,14 +3955,14 @@ func (client *AliyunClient) NewServicemeshClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewAcrClient() (*rpc.Client, error) {
 	productCode := "acr"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("acr.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -3982,14 +3980,14 @@ func (client *AliyunClient) NewAcrClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewEdsuserClient() (*rpc.Client, error) {
 	productCode := "eds-user"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("eds-user.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -4007,14 +4005,14 @@ func (client *AliyunClient) NewEdsuserClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewEmrClient() (*rpc.Client, error) {
 	productCode := "emr"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("emr.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -4032,14 +4030,14 @@ func (client *AliyunClient) NewEmrClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewDdsClient() (*rpc.Client, error) {
 	productCode := "dds"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("dds.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints[productCode] = endpoint
+			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -4057,12 +4055,12 @@ func (client *AliyunClient) NewDdsClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewAlikafkaClient() (*rpc.Client, error) {
 	productCode := "alikafka"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {
@@ -4083,12 +4081,12 @@ func (client *AliyunClient) NewAlikafkaClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewEssClient() (*rpc.Client, error) {
 	productCode := "ess"
 	endpoint := ""
-	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
 	}
-	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
 	if endpoint == "" {

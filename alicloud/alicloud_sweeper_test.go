@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -13,6 +14,8 @@ import (
 func TestMain(m *testing.M) {
 	resource.TestMain(m)
 }
+
+var endpoints sync.Map
 
 // sharedClientForRegion returns a common AlicloudClient setup needed for the sweeper
 // functions for a given region
@@ -64,7 +67,7 @@ func sharedClientForRegion(region string) (interface{}, error) {
 		AccessKey: accessKey,
 		SecretKey: secretKey,
 		Protocol:  "HTTPS",
-		Endpoints: make(map[string]interface{}),
+		Endpoints: &endpoints,
 	}
 	if accountId := os.Getenv("ALICLOUD_ACCOUNT_ID"); accountId != "" {
 		conf.AccountId = accountId
