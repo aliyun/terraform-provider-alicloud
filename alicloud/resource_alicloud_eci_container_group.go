@@ -518,6 +518,18 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"auto_create_eip": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"eip_bandwidth": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"eip_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -769,6 +781,15 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 
 	if v, ok := d.GetOk("auto_match_image_cache"); ok {
 		request["AutoMatchImageCache"] = v
+	}
+	if v, ok := d.GetOkExists("auto_create_eip"); ok {
+		request["AutoCreateEip"] = v
+	}
+	if v, ok := d.GetOkExists("eip_bandwidth"); ok {
+		request["EipBandwidth"] = v
+	}
+	if v, ok := d.GetOk("eip_instance_id"); ok {
+		request["EipInstanceId"] = v
 	}
 
 	if v, ok := d.GetOk("plain_http_registry"); ok {
