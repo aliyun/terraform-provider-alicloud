@@ -98,8 +98,9 @@ The following arguments are supported:
 * `auto_match_image_cache` - (Optional, Available in 1.166.0+) Specifies whether to automatically match the image cache. Default value: false.
 * `insecure_registry` - (Optional, Available in 1.170.0+) The address of the self-built mirror warehouse. When creating an image cache using an image in a self-built image repository with a self-signed certificate, you need to configure this parameter to skip certificate authentication to avoid image pull failure due to certificate authentication failure.
 * `plain_http_registry` - (Optional, Available in 1.170.0+) The address of the self-built mirror warehouse. When creating an image cache from an image in a self-built image repository using the HTTP protocol, you need to configure this parameter so that the ECI uses the HTTP protocol to pull the image to avoid image pull failure due to different protocols.
-
-
+* `auto_create_eip` - (Optional, Available in 1.170.0+) Specifies whether to automatically create an EIP and bind the EIP to the elastic container instance.
+* `eip_bandwidth` - (Optional, Available in 1.170.0+) The bandwidth of the EIP. The default value is `5`.
+* `eip_instance_id` - (Optional, Available in 1.170.0+) The ID of the elastic IP address (EIP).
 * `tags` - (Optional) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
