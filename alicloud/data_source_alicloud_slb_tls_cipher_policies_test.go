@@ -74,7 +74,7 @@ func TestAccAlicloudSLBTlsCipherPoliciesDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existSLBTlsCipherPoliciesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                             "1",
 			"names.#":                           "1",
@@ -84,7 +84,7 @@ func TestAccAlicloudSLBTlsCipherPoliciesDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeSLBTlsCipherPoliciesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":      "0",
 			"names.#":    "0",
@@ -94,8 +94,8 @@ func TestAccAlicloudSLBTlsCipherPoliciesDataSource_basic(t *testing.T) {
 
 	var slbTlsCipherPoliciesCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_tls_cipher_policies.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existSLBTlsCipherPoliciesMapFunc,
+		fakeMapFunc:  fakeSLBTlsCipherPoliciesMapFunc,
 	}
 
 	slbTlsCipherPoliciesCheckInfo.dataSourceTestCheck(t, -1, nameRegexConf, policyNameConf, idsConf, statusConf, includeListenerConf, allConf)

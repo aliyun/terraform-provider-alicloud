@@ -79,13 +79,13 @@ func TestAccAlicloudSLBListenersDataSource_http(t *testing.T) {
 		}
 	}
 
-	var slbListenersRecordsCheckInfo = dataSourceAttr{
+	var slbListenersCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_listeners.default",
 		existMapFunc: existSlbRecordsMapFunc,
 		fakeMapFunc:  fakeSlbRecordsMapFunc,
 	}
 
-	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
+	slbListenersCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
 func TestAccAlicloudSLBListenersDataSource_https(t *testing.T) {
@@ -157,13 +157,13 @@ func TestAccAlicloudSLBListenersDataSource_https(t *testing.T) {
 		}
 	}
 
-	var slbListenersRecordsCheckInfo = dataSourceAttr{
+	var slbListenersCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_listeners.default",
 		existMapFunc: existSlbRecordsMapFunc,
 		fakeMapFunc:  fakeSlbRecordsMapFunc,
 	}
 
-	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
+	slbListenersCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
 func TestAccAlicloudSLBListenersDataSource_tcp(t *testing.T) {
@@ -199,7 +199,7 @@ func TestAccAlicloudSLBListenersDataSource_tcp(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existSLBListenersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_listeners.#":                           "1",
 			"slb_listeners.0.backend_port":              "22",
@@ -221,19 +221,19 @@ func TestAccAlicloudSLBListenersDataSource_tcp(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeSLBListenersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_listeners.#": "0",
 		}
 	}
 
-	var slbListenersRecordsCheckInfo = dataSourceAttr{
+	var slbListenersCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_listeners.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existSLBListenersMapFunc,
+		fakeMapFunc:  fakeSLBListenersMapFunc,
 	}
 
-	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
+	slbListenersCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
 func TestAccAlicloudSLBListenersDataSource_udp(t *testing.T) {
@@ -268,7 +268,7 @@ func TestAccAlicloudSLBListenersDataSource_udp(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existSLBListenersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_listeners.#":                              "1",
 			"slb_listeners.0.backend_port":                 "10",
@@ -288,19 +288,19 @@ func TestAccAlicloudSLBListenersDataSource_udp(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeSLBListenersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_listeners.#": "0",
 		}
 	}
 
-	var slbListenersRecordsCheckInfo = dataSourceAttr{
+	var slbListenersCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_listeners.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existSLBListenersMapFunc,
+		fakeMapFunc:  fakeSLBListenersMapFunc,
 	}
 
-	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
+	slbListenersCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
 func testAccCheckAlicloudSlbListenersDataSourceConfig(rand int, attrMap map[string]string) string {

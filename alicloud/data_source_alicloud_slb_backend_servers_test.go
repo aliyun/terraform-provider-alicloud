@@ -27,7 +27,7 @@ func TestAccAlicloudSLBBackendServersDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existSLBBackendServersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                         "1",
 			"backend_servers.#":             "1",
@@ -37,7 +37,7 @@ func TestAccAlicloudSLBBackendServersDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeSLBBackendServersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"backend_servers.#": "0",
 			"ids.#":             "0",
@@ -46,8 +46,8 @@ func TestAccAlicloudSLBBackendServersDataSource_basic(t *testing.T) {
 
 	var slbServerGroupsCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_backend_servers.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existSLBBackendServersMapFunc,
+		fakeMapFunc:  fakeSLBBackendServersMapFunc,
 	}
 
 	slbServerGroupsCheckInfo.dataSourceTestCheck(t, acctest.RandInt(), idsConf, allConf)

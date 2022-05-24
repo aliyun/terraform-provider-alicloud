@@ -27,7 +27,7 @@ func TestAccAlicloudSLBAttachmentsDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existSLBAttachmentsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_attachments.#":             "1",
 			"slb_attachments.0.instance_id": CHECKSET,
@@ -35,7 +35,7 @@ func TestAccAlicloudSLBAttachmentsDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeSLBAttachmentsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_attachments.#": "0",
 		}
@@ -43,8 +43,8 @@ func TestAccAlicloudSLBAttachmentsDataSource_basic(t *testing.T) {
 
 	var slbAttachmentCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_attachments.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existSLBAttachmentsMapFunc,
+		fakeMapFunc:  fakeSLBAttachmentsMapFunc,
 	}
 
 	slbAttachmentCheckInfo.dataSourceTestCheck(t, rand, idsConf, allConf)

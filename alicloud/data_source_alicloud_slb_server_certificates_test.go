@@ -50,7 +50,7 @@ func TestAccAlicloudSLBServerCertificatesDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existSLBServerCertificatesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"certificates.#":                         "1",
 			"ids.#":                                  "1",
@@ -69,7 +69,7 @@ func TestAccAlicloudSLBServerCertificatesDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeSLBServerCertificatesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"certificates.#": "0",
 			"ids.#":          "0",
@@ -79,8 +79,8 @@ func TestAccAlicloudSLBServerCertificatesDataSource_basic(t *testing.T) {
 
 	var slbServerCertificatesCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_server_certificates.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existSLBServerCertificatesMapFunc,
+		fakeMapFunc:  fakeSLBServerCertificatesMapFunc,
 	}
 
 	slbServerCertificatesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, tagsConf, idsConf, allConf)

@@ -40,7 +40,7 @@ func TestAccAlicloudCloudConnectNetworkDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existConnectNetworkMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"networks.#":             "1",
 			"ids.#":                  "1",
@@ -53,7 +53,7 @@ func TestAccAlicloudCloudConnectNetworkDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeConnectNetworkMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"networks.#": "0",
 			"ids.#":      "0",
@@ -61,17 +61,17 @@ func TestAccAlicloudCloudConnectNetworkDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var ccnInstancesCheckInfo = dataSourceAttr{
+	var connectNetworkCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_cloud_connect_networks.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existConnectNetworkMapFunc,
+		fakeMapFunc:  fakeConnectNetworkMapFunc,
 	}
 
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.SmartagSupportedRegions)
 	}
 
-	ccnInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+	connectNetworkCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
 
 func testAccCheckAlicloudCloudConnectNetworkDataSourceConfig(rand int, attrMap map[string]string) string {
