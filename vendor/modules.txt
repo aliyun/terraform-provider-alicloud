@@ -173,9 +173,10 @@ github.com/cenkalti/backoff
 github.com/davecgh/go-spew/spew
 # github.com/deckarep/golang-set v1.8.0
 github.com/deckarep/golang-set
-# github.com/denverdino/aliyungo v0.0.0-20220419071826-816031062a6e
+# github.com/denverdino/aliyungo v0.0.0-20220525075659-0d15bf3044b4
 github.com/denverdino/aliyungo/cdn
 github.com/denverdino/aliyungo/common
+github.com/denverdino/aliyungo/common/utils
 github.com/denverdino/aliyungo/cs
 github.com/denverdino/aliyungo/ecs
 github.com/denverdino/aliyungo/util
@@ -385,6 +386,10 @@ github.com/modern-go/concurrent
 github.com/modern-go/reflect2
 # github.com/oklog/run v1.0.0
 github.com/oklog/run
+# github.com/opentracing/opentracing-go v1.2.0
+github.com/opentracing/opentracing-go
+github.com/opentracing/opentracing-go/ext
+github.com/opentracing/opentracing-go/log
 # github.com/pierrec/lz4 v2.6.1+incompatible
 github.com/pierrec/lz4
 github.com/pierrec/lz4/internal/xxh32
@@ -406,7 +411,7 @@ github.com/spf13/afero
 github.com/spf13/afero/mem
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/stretchr/testify v1.7.0
+# github.com/stretchr/testify v1.7.1
 github.com/stretchr/testify/assert
 # github.com/tjfoc/gmsm v1.3.2
 github.com/tjfoc/gmsm/sm3
@@ -504,7 +509,7 @@ golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d
 golang.org/x/term
-# golang.org/x/text v0.3.5
+# golang.org/x/text v0.3.7
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi

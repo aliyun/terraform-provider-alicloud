@@ -3,9 +3,10 @@ package cs
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/denverdino/aliyungo/ecs"
 	"net/http"
 	"time"
+
+	"github.com/denverdino/aliyungo/ecs"
 
 	"github.com/denverdino/aliyungo/common"
 )
