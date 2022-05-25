@@ -31,7 +31,7 @@ func resourceAlicloudMscSubContact() *schema.Resource {
 			"email": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z0-9+_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$`), "The email must has correct format."),
+				ValidateFunc: validation.StringMatch(regexp.MustCompile("^[\u4e00-\u9fa5a-zA-Z0-9+_.-]+@[a-zA-Z0-9_-]+(.[\u4e00-\u9fa5a-zA-Z0-9_-]+)+$"), "The email must has correct format."),
 			},
 			"mobile": {
 				Type:         schema.TypeString,
