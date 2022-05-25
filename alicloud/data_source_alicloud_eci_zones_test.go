@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 )
 
 func TestAccAlicloudEciZonesDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	allConf := dataSourceTestAccConfig{

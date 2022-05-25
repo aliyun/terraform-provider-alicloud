@@ -2,12 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudEciImageCachesDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testacceci-%d", rand)
 	testAccConfig := dataSourceTestAccConfigFunc("data.alicloud_eci_image_caches.default", name, dataSourceEciImageCachesConfigDependence)
