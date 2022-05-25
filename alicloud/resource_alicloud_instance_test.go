@@ -2015,6 +2015,18 @@ func TestAccAlicloudECSInstance_StatusUpdated(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":       "Stopped",
+					"stopped_mode": "KeepCharging",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":       "Stopped",
+						"stopped_mode": "KeepCharging",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,

@@ -617,8 +617,10 @@ func resourceAlicloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 					if raw, ok := meshConfigArg["ExtraConfiguration"]; ok {
 						if extraConfigArg, ok := raw.(map[string]interface{}); ok && len(extraConfigArg) > 0 {
 							extraConfigMap := make(map[string]interface{})
-							extraConfigMap["cr_aggregation_enabled"] = extraConfigArg["CRAggregationConfiguration"].(map[string]interface{})["Enabled"]
-							extraConfigSli = append(extraConfigSli, extraConfigMap)
+							if v, ok := extraConfigArg["CRAggregationConfiguration"].(map[string]interface{}); ok {
+								extraConfigMap["cr_aggregation_enabled"] = v["Enabled"]
+								extraConfigSli = append(extraConfigSli, extraConfigMap)
+							}
 						}
 					}
 					d.Set("extra_configuration", extraConfigSli)
