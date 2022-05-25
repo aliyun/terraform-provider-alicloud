@@ -63,6 +63,7 @@ func testSweepEciImageCache(region string) error {
 
 func TestAccAlicloudEciImageCache_basic(t *testing.T) {
 	var v eci.DescribeImageCachesImageCache0
+	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	resourceId := "alicloud_eci_image_cache.default"
 	ra := resourceAttrInit(resourceId, EciOpenapiImageCacheMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
