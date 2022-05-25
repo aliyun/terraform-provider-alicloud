@@ -219,7 +219,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `taints` - (Optional, Available in 1.103.2+) Taints ensure pods are not scheduled onto inappropriate nodes. One or more taints are applied to a node; this marks that the node should not accept any pods that do not tolerate the taints. For more information, see [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Detailed below.
 * `worker_disk_performance_level` - (Optional, Available in 1.120.0+) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
 * `worker_disk_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node system disk auto snapshot policy.
-* `security_reinforcement` - (Optional) Whether enable worker node to support cis/soc reinforcement, its valid values `cis_enabled` and `soc_enabled`. Default to `""`, see [CIS Reinforcement](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/cis-reinforcement) and [SOC Reinforcement]().
+* `security_reinforcement` - (Optional) Whether enable worker node to support cis/soc reinforcement, its valid values `cis_enabled` and `soc_enabled`. Default to `""`, see [CIS Reinforcement](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/cis-reinforcement).
 
 ##### worker_vswtich_ids
 
