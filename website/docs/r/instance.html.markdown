@@ -115,7 +115,7 @@ Terraform will autogenerate a default name is `ECS-Instance`.
 * `system_disk_description` - (Optional, Available in 1.101.0+) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `system_disk_size` - (Optional) Size of the system disk, measured in GiB. Value range: [20, 500]. The specified value must be equal to or greater than max{20, Imagesize}. Default value: max{40, ImageSize}. 
 * `system_disk_performance_level` (Optional) The performance level of the ESSD used as the system disk, Valid values: `PL0`, `PL1`, `PL2`, `PL3`, Default to `PL1`;For more information about ESSD, See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/122389.htm).
-* `system_disk_auto_snapshot_policy_id` - (Optional, ForceNew, Available in 1.73.0+) The ID of the automatic snapshot policy applied to the system disk.
+* `system_disk_auto_snapshot_policy_id` - (Optional, Available in 1.73.0+, Modifiable in 1.169.0+) The ID of the automatic snapshot policy applied to the system disk.
 * `description` - (Optional) Description of the instance, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `internet_charge_type` - (Optional) Internet charge type of the instance, Valid values are `PayByBandwidth`, `PayByTraffic`. Default is `PayByTraffic`. At present, 'PrePaid' instance cannot change the value to "PayByBandwidth" from "PayByTraffic".
 * `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.

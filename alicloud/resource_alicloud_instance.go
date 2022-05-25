@@ -180,7 +180,6 @@ func resourceAliyunInstance() *schema.Resource {
 			"system_disk_auto_snapshot_policy_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"data_disks": {
 				Type:     schema.TypeList,
@@ -1118,6 +1117,37 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("deployment_set_id")
+	}
+
+	if !d.IsNewResource() && d.HasChange("system_disk_auto_snapshot_policy_id") {
+		Disk, err := ecsService.DescribeEcsSystemDisk(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "ApplyAutoSnapshotPolicy"
+		var response map[string]interface{}
+		request := map[string]interface{}{
+			"RegionId": client.RegionId,
+		}
+		request["autoSnapshotPolicyId"] = d.Get("system_disk_auto_snapshot_policy_id")
+		request["diskIds"] = convertListToJsonString([]interface{}{Disk["DiskId"]})
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("system_disk_auto_snapshot_policy_id")
 	}
 
 	d.Partial(false)
