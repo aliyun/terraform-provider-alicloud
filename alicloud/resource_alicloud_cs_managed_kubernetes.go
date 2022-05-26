@@ -678,6 +678,14 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"cis_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"soc_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }

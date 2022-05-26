@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -762,6 +763,14 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"cis_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"soc_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -1509,6 +1518,21 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	}
 	if resourceGroupId, ok := d.GetOk("resource_group_id"); ok {
 		creationArgs.ClusterArgs.ResourceGroupId = resourceGroupId.(string)
+	}
+
+	cisEnabled, socEnabled := false, false
+	if v, ok := d.GetOk("cis_enabled"); ok {
+		cisEnabled = v.(bool)
+	}
+	if v, ok := d.GetOk("soc_enabled"); ok {
+		socEnabled = v.(bool)
+	}
+	if cisEnabled && socEnabled {
+		return creationArgs, errors.New("Setting SOC and CIS together is not supported")
+	} else if cisEnabled {
+		creationArgs.CisEnabled = true
+	} else if socEnabled {
+		creationArgs.SocEnabled = true
 	}
 
 	if v := d.Get("user_data").(string); v != "" {
