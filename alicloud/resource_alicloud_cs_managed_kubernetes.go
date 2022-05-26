@@ -3,6 +3,8 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -315,6 +317,10 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"enable_rrsa": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"timezone": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -330,7 +336,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"platform": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "CentOS",
+				Computed: true,
 				ForceNew: true,
 			},
 			"node_port_range": {
@@ -818,4 +824,91 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	return nil
+}
+
+func updateKubernetesClusterRRSA(d *schema.ResourceData, meta interface{}, invoker *Invoker) error {
+	// check version
+	clusterVersion := d.Get("version").(string)
+	if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, clusterVersion); res < 0 || err != nil {
+		return fmt.Errorf("RRSA is not supported in current version: %s", clusterVersion)
+	}
+
+	action := "ModifyClusterRRSA"
+	client := meta.(*connectivity.AliyunClient)
+
+	var requestInfo cs.ModifyClusterArgs
+	if v, ok := d.GetOk("enable_rrsa"); ok {
+		requestInfo.EnableRRSA = v.(bool)
+	}
+
+	var response interface{}
+	if err := invoker.Run(func() error {
+		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.ModifyCluster(d.Id(), &requestInfo)
+		})
+		return err
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = d.Id()
+		requestMap["enable_rrsa"] = requestInfo.EnableRRSA
+		addDebug(action, response, requestInfo, requestMap)
+	}
+	d.SetPartial("enable_rrsa")
+	return nil
+}
+
+//versionCompare check version,
+//if cueVersion is newer than neededVersion return 1
+//if curVersion is equal neededVersion return 0
+//if curVersion is older than neededVersion return -1
+//example: neededVersion = 1.20.11-aliyun.1, curVersion = 1.22.3-aliyun.1, it will return 1
+func versionCompare(neededVersion, curVersion string) (int, error) {
+	if neededVersion == "" || curVersion == "" {
+		if neededVersion == "" && curVersion == "" {
+			return 0, nil
+		} else {
+			if neededVersion == "" {
+				return 1, nil
+			} else {
+				return -1, nil
+			}
+		}
+	}
+
+	// 取出版本号
+	regx := regexp.MustCompile(`[0-9]+\\.[0-9]+\\.[0-9]+`)
+	neededVersion = regx.FindString(neededVersion)
+	curVersion = regx.FindString(curVersion)
+
+	currentVersions := strings.Split(neededVersion, ".")
+	newVersions := strings.Split(curVersion, ".")
+
+	compare := 0
+
+	for index, val := range currentVersions {
+		newVal := newVersions[index]
+		v1, err1 := strconv.Atoi(val)
+		v2, err2 := strconv.Atoi(newVal)
+
+		if err1 != nil || err2 != nil {
+			return -2, fmt.Errorf("NotSupport, current cluster version is not support: %s", curVersion)
+		}
+
+		if v1 > v2 {
+			compare = -1
+		} else if v1 == v2 {
+			compare = 0
+		} else {
+			compare = 1
+		}
+
+		if compare != 0 {
+			break
+		}
+	}
+
+	return compare, nil
 }

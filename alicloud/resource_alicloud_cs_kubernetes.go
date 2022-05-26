@@ -35,6 +35,8 @@ const (
 	KubernetesClusterNetworkTypeTerway  = "terway"
 
 	KubernetesClusterLoggingTypeSLS = "SLS"
+
+	KubernetesClusterRRSASupportedVersion = "1.22.3-aliyun.1"
 )
 
 var (
@@ -438,7 +440,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"platform": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "CentOS",
+				Computed: true,
 				ForceNew: true,
 			},
 			"node_port_range": {
@@ -1068,6 +1070,13 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		}
 	}
 
+	// modify cluster rrsa policy
+	if d.HasChange("enable_rrsa") {
+		if err := updateKubernetesClusterRRSA(d, meta, &invoker); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterRRSA", DenverdinoAliyungo)
+		}
+	}
+
 	// migrate cluster to pro form standard
 	if d.HasChange("cluster_spec") {
 		oldValue, newValue := d.GetChange("cluster_spec")
@@ -1116,6 +1125,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("resource_group_id", object.ResourceGroupId)
 	d.Set("cluster_spec", object.ClusterSpec)
 	d.Set("deletion_protection", object.DeletionProtection)
+	d.Set("enable_rrsa", object.EnableRRSA)
 
 	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
 		return WrapError(err)
@@ -1472,6 +1482,10 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			Addons:                    addons,
 			ApiAudiences:              apiAudiences,
 		},
+	}
+
+	if enableRRSA, ok := d.GetOk("enable_rrsa"); ok {
+		creationArgs.EnableRRSA = enableRRSA.(bool)
 	}
 
 	if lbSpec, ok := d.GetOk("load_balancer_spec"); ok {
