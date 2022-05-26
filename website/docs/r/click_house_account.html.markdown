@@ -64,7 +64,7 @@ The following arguments are supported:
 * `account_name` - (Required, ForceNew) Account name: lowercase letters, numbers, underscores, lowercase letter; length no more than 16 characters.
 * `account_password` - (Required) The account password: uppercase letters, lowercase letters, lowercase letters, numbers, and special characters (special character! #$%^& author (s):_+-=) in a length of 8-32 bit.
 * `db_cluster_id` - (Required, ForceNew) The db cluster id.
-* `dml_authority` - (Optional, Available in v1.163.0+) Specifies whether to grant DML permissions to the database account. Valid values: `all` and `readonly,modify`.
+* `dml_authority` - (Optional, Available in v1.163.0+) Specifies whether to grant DML permissions to the database account. Valid values: `all` and `readOnly,modify`.
 * `ddl_authority` - (Optional, Available in v1.163.0+) Specifies whether to grant DDL permissions to the database account. Valid values: `true` and `false`.
   -`true`: grants DDL permissions to the database account.
   -`false`: does not grant DDL permissions to the database account.
