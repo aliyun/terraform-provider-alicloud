@@ -61,7 +61,7 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"all", "readonly,modify"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"all", "readOnly,modify"}, false),
 			},
 			"ddl_authority": {
 				Type:     schema.TypeBool,
