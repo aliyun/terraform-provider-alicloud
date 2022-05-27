@@ -50,7 +50,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `vault_name` - The name of vault.
     * `description` - The description of the vault.
     * `vault_storage_class` - The storage class of vault. Valid values: `STANDARD`.
-    * `vault_type` - The type of Vault. Valid values: `STANDARD`.
+    * `vault_type` - The type of Vault. Valid values: `STANDARD`,`OTS_BACKUP`.
     * `vault_status_message` - Error status information of Vault. Only valid for remote backup warehouses. Only the remote backup warehouse is valid.
     * `storage_size` - Backup vault storage usage. The unit is Byte.
     * `bucket_name` - The name of the OSS bucket of the Vault.
