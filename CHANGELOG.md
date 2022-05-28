@@ -1,4 +1,30 @@
 ## 1.169.0 (Unreleased)
+
+- **New Resource:** `alicloud_ecd_snapshot` [GH-4981]
+- **New Data Source:** `alicloud_ecd_snapshots` [GH-4981]
+- **New Data Source:** `data_source_alicloud_cs_kubernetes_metadatda` [GH-4981]
+- **New Data Source:** `alicloud_tag_meta_tags` [GH-5000]
+
+ENHANCEMENTS:
+
+- resource/alicloud_ga_bandwidth_package: Add support for new parameter auto_renew_duration and renewal_status [GH-4978]
+- resource/alicloud_bastionhost_instance: Support for new parameters ad_auth_server and ldap_auth_server. [GH-4904]
+- resource/alicloud_emr_cluster:support graceful decommission of hadoop [GH-4972]
+- resource/alicloud_service_mesh_service_mesh: add the field extra_configuration [GH-4989]	
+- testcase: Adds new unit test case for alicloud_ecp_instance alicloud_kms_key_version alicloud_kms_alias [GH-4993]
+- CS client support header x-acs-source-ip and x-acs-secure-transport [GH-4954]
+
+BUG FIXES:
+
+- resource/alicloud_nas_mount_target: Fixes Invalid param mount target domain for nas mount target [GH-5005]
+- resource/alicloud_eci_container_group_test: Fixed region not support errors for ECI [GH-5001]
+- resource/alicloud_smartag_flow_log_test: fix ci test error. [GH-4991]
+- resource/alicloud_slb_listener: Fix errors bandwidth missing Computed [GH-4992]
+- resource/alicloud_instance: Fixed an issue where updating the property system_disk_auto_snapshot_policy_id caused the instance to be recreated [GH-5003]
+- resource/alicloud_click_house_account: Fix the value range of the dml_authority attribute. [GH-5008]
+- resource/alicloud_ecd_user: Fix error setting default password [GH-4988]
+- resource/alicloud_msc_sub_contact: fix email regex [GH-5004]
+
 ## 1.168.0 (May 22, 2022)
 
 - **New Resource:** `alicloud_ecs_invocation` ([#4971](https://github.com/aliyun/terraform-provider-alicloud/issues/4971))
