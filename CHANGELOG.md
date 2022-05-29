@@ -1,29 +1,31 @@
-## 1.169.0 (Unreleased)
+## 1.170.0 (Unreleased)
+## 1.169.0 (May 29, 2022)
 
-- **New Resource:** `alicloud_ecd_snapshot` [GH-4981]
-- **New Data Source:** `alicloud_ecd_snapshots` [GH-4981]
-- **New Data Source:** `data_source_alicloud_cs_kubernetes_metadatda` [GH-4981]
-- **New Data Source:** `alicloud_tag_meta_tags` [GH-5000]
+- **New Resource:** `alicloud_ecd_snapshot` ([#4981](https://github.com/aliyun/terraform-provider-alicloud/issues/4981))
+- **New Data Source:** `alicloud_ecd_snapshots` ([#4981](https://github.com/aliyun/terraform-provider-alicloud/issues/4981))
+- **New Data Source:** `data_source_alicloud_cs_kubernetes_metadatda` ([#4981](https://github.com/aliyun/terraform-provider-alicloud/issues/4981))
+- **New Data Source:** `alicloud_tag_meta_tags` ([#5000](https://github.com/aliyun/terraform-provider-alicloud/issues/5000))
 
 ENHANCEMENTS:
 
-- resource/alicloud_ga_bandwidth_package: Add support for new parameter auto_renew_duration and renewal_status [GH-4978]
-- resource/alicloud_bastionhost_instance: Support for new parameters ad_auth_server and ldap_auth_server. [GH-4904]
-- resource/alicloud_emr_cluster:support graceful decommission of hadoop [GH-4972]
-- resource/alicloud_service_mesh_service_mesh: add the field extra_configuration [GH-4989]	
-- testcase: Adds new unit test case for alicloud_ecp_instance alicloud_kms_key_version alicloud_kms_alias [GH-4993]
-- CS client support header x-acs-source-ip and x-acs-secure-transport [GH-4954]
+- resource/resource_alicloud_polardb_cluster:Add new attribute deletion_lock ([#4985](https://github.com/aliyun/terraform-provider-alicloud/issues/4985))
+- resource/alicloud_ga_bandwidth_package: Add support for new parameter auto_renew_duration and renewal_status ([#4978](https://github.com/aliyun/terraform-provider-alicloud/issues/4978))
+- resource/alicloud_bastionhost_instance: Support for new parameters ad_auth_server and ldap_auth_server. ([#4904](https://github.com/aliyun/terraform-provider-alicloud/issues/4904))
+- resource/alicloud_emr_cluster:support graceful decommission of hadoop ([#4972](https://github.com/aliyun/terraform-provider-alicloud/issues/4972))
+- resource/alicloud_service_mesh_service_mesh: add the field extra_configuration ([#4989](https://github.com/aliyun/terraform-provider-alicloud/issues/4989))	
+- testcase: Adds new unit test case for alicloud_ecp_instance alicloud_kms_key_version alicloud_kms_alias ([#4993](https://github.com/aliyun/terraform-provider-alicloud/issues/4993))
+- CS client support header x-acs-source-ip and x-acs-secure-transport ([#4954](https://github.com/aliyun/terraform-provider-alicloud/issues/4954))
 
 BUG FIXES:
 
-- resource/alicloud_nas_mount_target: Fixes Invalid param mount target domain for nas mount target [GH-5005]
-- resource/alicloud_eci_container_group_test: Fixed region not support errors for ECI [GH-5001]
-- resource/alicloud_smartag_flow_log_test: fix ci test error. [GH-4991]
-- resource/alicloud_slb_listener: Fix errors bandwidth missing Computed [GH-4992]
-- resource/alicloud_instance: Fixed an issue where updating the property system_disk_auto_snapshot_policy_id caused the instance to be recreated [GH-5003]
-- resource/alicloud_click_house_account: Fix the value range of the dml_authority attribute. [GH-5008]
-- resource/alicloud_ecd_user: Fix error setting default password [GH-4988]
-- resource/alicloud_msc_sub_contact: fix email regex [GH-5004]
+- resource/alicloud_nas_mount_target: Fixes Invalid param mount target domain for nas mount target ([#5005](https://github.com/aliyun/terraform-provider-alicloud/issues/5005))
+- resource/alicloud_eci_container_group_test: Fixed region not support errors for ECI ([#5001](https://github.com/aliyun/terraform-provider-alicloud/issues/5001))
+- resource/alicloud_smartag_flow_log_test: fix ci test error. ([#4991](https://github.com/aliyun/terraform-provider-alicloud/issues/4991))
+- resource/alicloud_slb_listener: Fix errors bandwidth missing Computed ([#4992](https://github.com/aliyun/terraform-provider-alicloud/issues/4992))
+- resource/alicloud_instance: Fixed an issue where updating the property system_disk_auto_snapshot_policy_id caused the instance to be recreated ([#5003](https://github.com/aliyun/terraform-provider-alicloud/issues/5003))
+- resource/alicloud_click_house_account: Fix the value range of the dml_authority attribute. ([#5008](https://github.com/aliyun/terraform-provider-alicloud/issues/5008))
+- resource/alicloud_ecd_user: Fix error setting default password ([#4988](https://github.com/aliyun/terraform-provider-alicloud/issues/4988))
+- resource/alicloud_msc_sub_contact: fix email regex ([#5004](https://github.com/aliyun/terraform-provider-alicloud/issues/5004))
 
 ## 1.168.0 (May 22, 2022)
 
