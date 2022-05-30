@@ -50,9 +50,10 @@ resource "alicloud_polardb_cluster" "default" {
 }
 
 resource "alicloud_polardb_backup_policy" "policy" {
-  db_cluster_id           = alicloud_polardb_cluster.default.id
-  preferred_backup_period = ["Tuesday", "Wednesday"]
-  preferred_backup_time   = "10:00Z-11:00Z"
+  db_cluster_id                               = alicloud_polardb_cluster.default.id
+  preferred_backup_period                     = ["Tuesday", "Wednesday"]
+  preferred_backup_time                       = "10:00Z-11:00Z"
+  backup_retention_policy_on_cluster_deletion = "NONE"
 }
 ```
 ### Removing alicloud_polardb_cluster from your configuration
@@ -66,6 +67,7 @@ The following arguments are supported:
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster that can run database.
 * `preferred_backup_period` - (Optional) PolarDB Cluster backup period. Valid values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]. Default to ["Tuesday", "Thursday", "Saturday"].
 * `preferred_backup_time` - (Optional) PolarDB Cluster backup time, in the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. Default to "02:00Z-03:00Z". China time is 8 hours behind it.
+* `backup_retention_policy_on_cluster_deletion` - (Optional, Available in 1.170.0+) Specifies whether to retain backups when you delete a cluster. Valid values are `ALL`, `LATEST`, `NONE`. Default to `NONE`. Value options can refer to the latest docs [ModifyBackupPolicy](https://help.aliyun.com/document_detail/98103.html)
 
 ## Attributes Reference
 

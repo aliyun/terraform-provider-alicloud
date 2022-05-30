@@ -78,6 +78,16 @@ func TestAccAlicloudPolarDBBackupPolicy(t *testing.T) {
 						"preferred_backup_time":     "17:00Z-18:00Z",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_retention_policy_on_cluster_deletion": "LATEST",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_retention_policy_on_cluster_deletion": "LATEST",
+					}),
+				),
 			}},
 	})
 }

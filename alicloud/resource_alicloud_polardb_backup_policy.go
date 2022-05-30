@@ -48,6 +48,12 @@ func resourceAlicloudPolarDBBackupPolicy() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"backup_retention_policy_on_cluster_deletion": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ALL", "LATEST", "NONE"}, false),
+			},
 		},
 	}
 }
@@ -75,6 +81,7 @@ func resourceAlicloudPolarDBBackupPolicyRead(d *schema.ResourceData, meta interf
 	d.Set("backup_retention_period", object.BackupRetentionPeriod)
 	d.Set("preferred_backup_period", strings.Split(object.PreferredBackupPeriod, ","))
 	d.Set("preferred_backup_time", object.PreferredBackupTime)
+	d.Set("backup_retention_policy_on_cluster_deletion", object.BackupRetentionPolicyOnClusterDeletion)
 
 	return nil
 }
@@ -84,17 +91,21 @@ func resourceAlicloudPolarDBBackupPolicyUpdate(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	polardbService := PolarDBService{client}
 
-	if d.HasChange("preferred_backup_period") || d.HasChange("preferred_backup_time") {
+	if d.HasChange("preferred_backup_period") || d.HasChange("preferred_backup_time") ||
+		d.HasChange("backup_retention_policy_on_cluster_deletion") {
 		periodList := expandStringList(d.Get("preferred_backup_period").(*schema.Set).List())
 		preferredBackupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
 		preferredBackupTime := d.Get("preferred_backup_time").(string)
-
+		var backupRetentionPolicyOnClusterDeletion string
+		if v, ok := d.GetOk("backup_retention_policy_on_cluster_deletion"); ok && v.(string) != "" {
+			backupRetentionPolicyOnClusterDeletion = v.(string)
+		}
 		// wait instance running before modifying
 		if err := polardbService.WaitForCluster(d.Id(), Running, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
 		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			if err := polardbService.ModifyDBBackupPolicy(d.Id(), preferredBackupTime, preferredBackupPeriod); err != nil {
+			if err := polardbService.ModifyDBBackupPolicy(d.Id(), preferredBackupTime, preferredBackupPeriod, backupRetentionPolicyOnClusterDeletion); err != nil {
 				if IsExpectedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(err)
 				}
