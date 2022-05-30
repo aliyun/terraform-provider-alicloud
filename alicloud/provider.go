@@ -743,6 +743,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_public_ip_address_pools":                 dataSourceAlicloudVpcPublicIpAddressPools(),
 			"alicloud_nlb_server_groups":                           dataSourceAlicloudNlbServerGroups(),
 			"alicloud_vpc_peer_connections":                        dataSourceAlicloudVpcPeerConnections(),
+			"alicloud_ecd_desktop_groups":                          dataSourceAlicloudEcdDesktopGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1379,6 +1380,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dcdn_waf_policy_domain_attachment":                    resourceAlicloudDcdnWafPolicyDomainAttachment(),
 			"alicloud_nlb_server_group":                                     resourceAlicloudNlbServerGroup(),
 			"alicloud_vpc_peer_connection":                                  resourceAlicloudVpcPeerConnection(),
+			"alicloud_ecd_desktop_group":                                    resourceAlicloudEcdDesktopGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
