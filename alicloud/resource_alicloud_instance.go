@@ -438,6 +438,12 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"upgrade", "downgrade"}, false),
 			},
+			"stopped_mode": {
+				Type:         schema.TypeString,
+				Computed:     true,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"StopCharging", "KeepCharging"}, false),
+			},
 		},
 	}
 }
@@ -549,6 +555,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("hpc_cluster_id", instance.HpcClusterId)
 	d.Set("deployment_set_id", instance.DeploymentSetId)
 	d.Set("deployment_set_group_no", instance.DeploymentSetGroupNo)
+	d.Set("stopped_mode", instance.StoppedMode)
 	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
 	} else {
@@ -810,15 +817,14 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate || statusUpdate {
 		run = true
-		instance, errDesc := ecsService.DescribeInstance(d.Id())
-		if errDesc != nil {
-			return WrapError(errDesc)
-		}
-		if (statusUpdate && targetExist && target == string(Stopped)) || instance.Status == string(Running) {
+		if statusUpdate && targetExist && target == string(Stopped) {
 			stopRequest := ecs.CreateStopInstanceRequest()
 			stopRequest.RegionId = client.RegionId
 			stopRequest.InstanceId = d.Id()
 			stopRequest.ForceStop = requests.NewBoolean(false)
+			if v, ok := d.GetOk("stopped_mode"); ok {
+				stopRequest.StoppedMode = v.(string)
+			}
 			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 					return ecsClient.StopInstance(stopRequest)
