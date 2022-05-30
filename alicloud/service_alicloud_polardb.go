@@ -1094,13 +1094,14 @@ func (s *PolarDBService) DescribeBackupPolicy(id string) (policy *polardb.Descri
 	return raw.(*polardb.DescribeBackupPolicyResponse), nil
 }
 
-func (s *PolarDBService) ModifyDBBackupPolicy(clusterId, backupTime, backupPeriod string) error {
+func (s *PolarDBService) ModifyDBBackupPolicy(clusterId, backupTime, backupPeriod, backupRetentionPolicyOnClusterDeletion string) error {
 
 	request := polardb.CreateModifyBackupPolicyRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = clusterId
 	request.PreferredBackupPeriod = backupPeriod
 	request.PreferredBackupTime = backupTime
+	request.BackupRetentionPolicyOnClusterDeletion = backupRetentionPolicyOnClusterDeletion
 
 	raw, err := s.client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
 		return polardbClient.ModifyBackupPolicy(request)
