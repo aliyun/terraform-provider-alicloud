@@ -153,6 +153,15 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+			"metrics_config": {
+				Type:     schema.TypeSet,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("engine").(string) != string(PostgreSQL)
+				},
+			},
 			"db_instance_ip_array_name": {
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -988,6 +997,46 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if d.HasChange("metrics_config") {
+		metricsConfig := expandStringList(d.Get("metrics_config").(*schema.Set).List())
+		metricsConfigStr := strings.Join(metricsConfig[:], COMMA_SEPARATED)
+		action := "ModifyDBInstanceMetrics"
+		request := map[string]interface{}{
+			"RegionId":       client.RegionId,
+			"DBInstanceName": d.Id(),
+			"MetricsConfig":  metricsConfigStr,
+			"Scope":          "instance",
+			"SourceIp":       client.SourceIp,
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("metrics_config")
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudDBInstanceRead(d, meta)
@@ -1434,6 +1483,13 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("ha_config", res["HAConfig"])
 	d.Set("manual_ha_time", res["ManualHATime"])
+	if _, ok := d.GetOk("metrics_config"); ok {
+		metricsConfig, err := rdsService.GetMetrics(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("metrics_config", metricsConfig)
+	}
 	return nil
 }
 

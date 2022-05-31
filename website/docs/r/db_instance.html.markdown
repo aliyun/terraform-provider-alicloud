@@ -390,6 +390,9 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
   - false: no delete protect.
 
 -> **NOTE:** `deletion_protection` is valid only when attribute `instance_charge_type` is set to `Postpaid`, supported engine type: **MySQL**, **PostgresSQL**, **MariaDB**, **MSSQL**.
+* `metrics_config` - (Optional, Available in 1.169.0+) List of the key of the Enhanced Monitoring metrics that you want to display for the instance. You can enter a maximum of 30 metric keys. You can call the [DescribeAvailableMetrics](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/query-available-enhanced-monitoring-metrics) operation to query the keys of metrics.
+
+-> **NOTE:** This parameter is supported only when the instance runs the PostgreSQL database engine.
 
 -> **NOTE:** `zone_id_slave_a` and `zone_id_slave_b` can specify slave zone ids when creating the high-availability or enterprise edition instances. Meanwhile, `vswitch_id` needs to pass in the corresponding vswitch id to the slave zone by order (If the `vswitch_id` is not specified, the classic network version will be created). For example, `zone_id` = "zone-a" and `zone_id_slave_a` = "zone-c", `zone_id_slave_b` = "zone-b", then the `vswitch_id` must be "vsw-zone-a,vsw-zone-c,vsw-zone-b". Of course, you can also choose automatic allocation , for example, `zone_id` = "zone-a" and `zone_id_slave_a` = "Auto",`zone_id_slave_b` = "Auto", then the `vswitch_id` must be "vsw-zone-a,Auto,Auto". The list contains up to 2 slave zone ids , separated by commas.
 * `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) (documented below).

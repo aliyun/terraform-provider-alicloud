@@ -2135,6 +2135,55 @@ func (s *RdsService) DescribePGHbaConfig(id string) (object map[string]interface
 	return object, nil
 }
 
+func (s *RdsService) GetMetrics(instanceId string) (metrics []string, err error) {
+	object, err := s.DescribeDBInstanceMetrics(instanceId)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	for _, obj := range object {
+		obj := obj.(map[string]interface{})
+		metrics = append(metrics, obj["MetricsKey"].(string))
+	}
+	return metrics, err
+}
+
+func (s *RdsService) DescribeDBInstanceMetrics(id string) (object []interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDBInstanceMetrics"
+	request := map[string]interface{}{
+		"SourceIp":       s.client.SourceIp,
+		"DBInstanceName": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})["Items"].([]interface{})
+	return object, nil
+}
+
 func (s *RdsService) DescribeUpgradeMajorVersionPrecheckTask(id string, taskId int) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewRdsClient()

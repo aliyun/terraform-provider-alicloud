@@ -1144,6 +1144,16 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"metrics_config": []string{"os.cpu_usage.sys.avg"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"metrics_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"ssl_action": "Open",
 				}),
 				Check: resource.ComposeTestCheckFunc(
