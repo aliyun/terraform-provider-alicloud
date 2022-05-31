@@ -693,6 +693,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_invocations":                             dataSourceAlicloudEcsInvocations(),
 			"alicloud_ecd_snapshots":                               dataSourceAlicloudEcdSnapshots(),
 			"alicloud_tag_meta_tags":                               dataSourceAlicloudTagMetaTags(),
+			"alicloud_ecd_desktop_types":                           dataSourceAlicloudEcdDesktopTypes(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
