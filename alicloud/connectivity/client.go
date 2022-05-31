@@ -728,6 +728,8 @@ func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error
 			}
 			csconn.SetEndpoint(endpoint)
 		}
+		csconn.SetSourceIp(client.config.SourceIp)
+		csconn.SetSecureTransport(client.config.SecureTransport)
 		client.csconn = csconn
 	}
 
@@ -740,8 +742,8 @@ func (client *AliyunClient) NewRoaCsClient() (*roaCS.Client, error) {
 		endpoint = OpenAckService
 	}
 	header := map[string]*string{
-		"x-acs-source-ip":        tea.String(client.SourceIp),
-		"x-acs-secure-transport": tea.String(client.SecureTransport),
+		"x-acs-source-ip":        tea.String(client.config.SourceIp),
+		"x-acs-secure-transport": tea.String(client.config.SecureTransport),
 	}
 	param := &openapi.GlobalParameters{Headers: header}
 	// Initialize the CS client if necessary

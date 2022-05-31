@@ -3,7 +3,7 @@
 
 - **New Resource:** `alicloud_ecd_snapshot` ([#4981](https://github.com/aliyun/terraform-provider-alicloud/issues/4981))
 - **New Data Source:** `alicloud_ecd_snapshots` ([#4981](https://github.com/aliyun/terraform-provider-alicloud/issues/4981))
-- **New Data Source:** `data_source_alicloud_cs_kubernetes_metadatda` ([#4981](https://github.com/aliyun/terraform-provider-alicloud/issues/4981))
+- **New Data Source:** `data_source_alicloud_cs_kubernetes_version` ([#4981](https://github.com/aliyun/terraform-provider-alicloud/issues/4981))
 - **New Data Source:** `alicloud_tag_meta_tags` ([#5000](https://github.com/aliyun/terraform-provider-alicloud/issues/5000))
 
 ENHANCEMENTS:
