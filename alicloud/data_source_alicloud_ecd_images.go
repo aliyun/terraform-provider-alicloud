@@ -41,6 +41,17 @@ func dataSourceAlicloudEcdImages() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"CUSTOM", "SYSTEM"}, false),
 			},
+			"os_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Windows", "Linux"}, false),
+			},
+			"desktop_instance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -119,6 +130,12 @@ func dataSourceAlicloudEcdImagesRead(d *schema.ResourceData, meta interface{}) e
 
 	if v, ok := d.GetOk("image_type"); ok {
 		request["ImageType"] = v
+	}
+	if v, ok := d.GetOk("os_type"); ok {
+		request["OsType"] = v
+	}
+	if v, ok := d.GetOk("desktop_instance_type"); ok {
+		request["DesktopInstanceType"] = v
 	}
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("status"); ok {
