@@ -143,17 +143,15 @@ func TestAccAlicloudOnsTopic_basic(t *testing.T) {
 					"topic":        "${var.topic}",
 					"message_type": "1",
 					"remark":       "alicloud_ons_topic_remark",
-					"perm":         "6",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"topic":  fmt.Sprintf("tf-testacc%sonstopicbasic%v", defaultRegionToTest, rand),
-						"remark": "alicloud_ons_topic_remark",
-						"perm":   "6",
+						"topic":        fmt.Sprintf("tf-testacc%sonstopicbasic%v", defaultRegionToTest, rand),
+						"remark":       "alicloud_ons_topic_remark",
+						"message_type": "1",
 					}),
 				),
 			},
-
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
@@ -173,19 +171,8 @@ func TestAccAlicloudOnsTopic_basic(t *testing.T) {
 					}),
 				),
 			},
-			// TODO: there is an openapi bug that OnsTopicUpdate updating perm does not work
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"perm": "4",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{"perm": "4"}),
-			//	),
-			//},
-
 			{
 				Config: testAccConfig(map[string]interface{}{
-					//"perm": "2",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -193,7 +180,6 @@ func TestAccAlicloudOnsTopic_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						//"perm":         "2",
 						"tags.%":       "2",
 						"tags.Created": "TF",
 						"tags.For":     "Test",
@@ -220,7 +206,6 @@ variable "topic" {
 var onsTopicBasicMap = map[string]string{
 	"message_type": "1",
 	"remark":       "alicloud_ons_topic_remark",
-	"perm":         "6",
 }
 
 func TestAccAlicloudOnsTopic_unit(t *testing.T) {
@@ -233,7 +218,6 @@ func TestAccAlicloudOnsTopic_unit(t *testing.T) {
 		"topic":        "OnsTopicCreateValue",
 		"message_type": 1,
 		"remark":       "OnsTopicCreateValue",
-		"perm":         6,
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -362,69 +346,19 @@ func TestAccAlicloudOnsTopic_unit(t *testing.T) {
 	err = resourceAlicloudOnsTopicUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
-	// OnsTopicUpdate
+
+	//TagResources
 	attributesDiff := map[string]interface{}{
-		"perm": 2,
+		"tags": map[string]interface{}{
+			"TagResourcesValue_1": "TagResourcesValue_1",
+			"TagResourcesValue_2": "TagResourcesValue_2",
+		},
 	}
 	diff, err := newInstanceDiff("alicloud_ons_topic", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
 	dExisted, _ = schema.InternalMap(p["alicloud_ons_topic"].Schema).Data(dInit.State(), diff)
-	ReadMockResponseDiff = map[string]interface{}{
-		// OnsTopicList Response
-		"Data": map[string]interface{}{
-			"Perm": 2,
-		},
-	}
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "OnsTopicUpdate" {
-				switch errorCode {
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if retryIndex >= len(errorCodes)-1 {
-						return successResponseMock(ReadMockResponseDiff)
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAlicloudOnsTopicUpdate(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		default:
-			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_ons_topic"].Schema).Data(dExisted.State(), nil)
-			for key, value := range attributes {
-				dCompare.Set(key, value)
-			}
-			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
-		}
-		if retryIndex >= len(errorCodes)-1 {
-			break
-		}
-	}
-
-	//TagResources
-	attributesDiff = map[string]interface{}{
-		"tags": map[string]interface{}{
-			"TagResourcesValue_1": "TagResourcesValue_1",
-			"TagResourcesValue_2": "TagResourcesValue_2",
-		},
-	}
-	diff, err = newInstanceDiff("alicloud_ons_topic", attributes, attributesDiff, dExisted.State())
-	if err != nil {
-		t.Error(err)
-	}
-	dExisted, _ = schema.InternalMap(p["alicloud_ons_topic"].Schema).Data(dExisted.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// OnsGroupList Response
 		"Data": map[string]interface{}{

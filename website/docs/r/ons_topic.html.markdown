@@ -50,7 +50,7 @@ The following arguments are supported:
 * `topic_name` - (Optional, Available in v1.97.0+) Name of the topic. Two topics on a single instance cannot have the same name and the name cannot start with 'GID' or 'CID'. The length cannot exceed 64 characters.
 * `message_type` - (Required) The type of the message. Read [Ons Topic Create](https://www.alibabacloud.com/help/doc-detail/29591.html) for further details.
 * `remark` - (Optional) This attribute is a concise description of topic. The length cannot exceed 128.
-* `perm` - (Optional) This attribute is used to set the read-write mode for the topic. Read [Request parameters](https://www.alibabacloud.com/help/doc-detail/56880.html) for further details.
+* `perm` - (Deprecated) This attribute has been deprecated.
 * `tags` - (Optional, Available in v1.97.0+) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
