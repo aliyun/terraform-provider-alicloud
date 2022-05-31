@@ -156,6 +156,10 @@ func resourceAlicloudSimpleApplicationServerInstanceRead(d *schema.ResourceData,
 func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	swasOpenService := SwasOpenService{client}
+	conn, err := client.NewSwasClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -170,10 +174,6 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 	request["RegionId"] = client.RegionId
 	if update {
 		action := "ResetSystem"
-		conn, err := client.NewSwasClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("ResetSystem")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -210,10 +210,6 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 	upgradeInstanceReq["RegionId"] = client.RegionId
 	if update {
 		action := "UpgradeInstance"
-		conn, err := client.NewSwasClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("UpgradeInstance")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -258,10 +254,6 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 	}
 	if update {
 		action := "UpdateInstanceAttribute"
-		conn, err := client.NewSwasClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("UpdateInstanceAttribute")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -301,10 +293,6 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 				}
 				request["RegionId"] = client.RegionId
 				action := "RebootInstance"
-				conn, err := client.NewSwasClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request["ClientToken"] = buildClientToken("RebootInstance")
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
@@ -335,10 +323,6 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 				}
 				request["RegionId"] = client.RegionId
 				action := "StartInstance"
-				conn, err := client.NewSwasClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request["ClientToken"] = buildClientToken("StartInstance")
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
@@ -369,10 +353,6 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 				}
 				request["RegionId"] = client.RegionId
 				action := "StopInstance"
-				conn, err := client.NewSwasClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request["ClientToken"] = buildClientToken("StopInstance")
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
