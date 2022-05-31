@@ -12,7 +12,7 @@ description: |-
 
 This data source provides the details of the Kubernetes version supported by ACK.
 
--> **NOTE:** Available in 1.169.0+.
+-> **NOTE:** Available in 1.170.0+.
 
 ## Example Usage
 

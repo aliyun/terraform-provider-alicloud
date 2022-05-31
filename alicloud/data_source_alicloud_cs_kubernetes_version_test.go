@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccAlicloudCSKubernetesVersionDataSource(t *testing.T) {
-	resourceId := "data.alicloud_cs_kubernetes_metadata.default"
+	resourceId := "data.alicloud_cs_kubernetes_version.default"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -31,7 +31,7 @@ func TestAccAlicloudCSKubernetesVersionDataSource(t *testing.T) {
 func dataSourceCSKubernetesVersion() string {
 	return fmt.Sprintf(`
 # return all kubernetes version
-data "alicloud_cs_kubernetes_metadata" "default" {
+data "alicloud_cs_kubernetes_version" "default" {
   cluster_type = "ManagedKubernetes"
   kubernetes_version = "1.22.3-aliyun.1"
   profile = "Default"
