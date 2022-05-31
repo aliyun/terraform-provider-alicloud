@@ -502,6 +502,14 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"plain_http_registry": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"insecure_registry": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -753,6 +761,14 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 
 	if v, ok := d.GetOk("auto_match_image_cache"); ok {
 		request["AutoMatchImageCache"] = v
+	}
+
+	if v, ok := d.GetOk("plain_http_registry"); ok {
+		request["PlainHttpRegistry"] = v
+	}
+
+	if v, ok := d.GetOk("insecure_registry"); ok {
+		request["InsecureRegistry"] = v
 	}
 
 	runtime := util.RuntimeOptions{}
