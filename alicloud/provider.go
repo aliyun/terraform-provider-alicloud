@@ -1284,6 +1284,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_invocation":                                       resourceAlicloudEcsInvocation(),
 			"alicloud_ddos_basic_defense_threshold":                         resourceAlicloudDdosBasicDefenseThreshold(),
 			"alicloud_ecd_snapshot":                                         resourceAlicloudEcdSnapshot(),
+			"alicloud_ecd_bundle":                                           resourceAlicloudEcdBundle(),
 		},
 
 		ConfigureFunc: providerConfigure,
