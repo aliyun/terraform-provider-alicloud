@@ -1,0 +1,24 @@
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  name                 = var.name
+  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  key_name             = alicloud_key_pair.default.key_name
+  # management node pool configuration.
+  management {
+    auto_repair     = true
+    auto_upgrade    = true
+    surge           = 1
+    max_unavailable = 1
+  }
+  # enable auto-scaling
+  scaling_config {
+    min_size = 1
+    max_size = 10
+    type     = "cpu"
+  }
+  # Rely on auto-scaling configuration, please create auto-scaling configuration through alicloud_cs_autoscaling_config first.
+  depends_on = [alicloud_cs_autoscaling_config.default]
+}
