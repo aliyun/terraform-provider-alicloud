@@ -60,6 +60,11 @@ func TestAccAlicloudECDPolicyGroupDataSource(t *testing.T) {
 			"groups.0.local_drive":    "read",
 			"groups.0.authorize_access_policy_rules.#":   "1",
 			"groups.0.authorize_security_policy_rules.#": "1",
+			"groups.0.recording":                         "off",
+			"groups.0.recording_start_time":              "",
+			"groups.0.recording_end_time":                "",
+			"groups.0.recording_fps":                     "0",
+			"groups.0.camera_redirect":                   "on",
 		}
 	}
 	var fakeAlicloudEcdPolicyGroupDataSourceNameMapFunc = func(rand int) map[string]string {

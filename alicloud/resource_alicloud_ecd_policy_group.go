@@ -140,6 +140,44 @@ func resourceAlicloudEcdPolicyGroup() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"EndUserId", "HostName"}, false),
 			},
+			"recording": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"off", "alltime", "period"}, false),
+			},
+			"recording_start_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("recording"); ok && v.(string) == "period" {
+						return false
+					}
+					return true
+				},
+			},
+			"recording_end_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("recording"); ok && v.(string) == "period" {
+						return false
+					}
+					return true
+				},
+			},
+			"recording_fps": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntInSlice([]int{2, 5, 10, 15}),
+			},
+			"camera_redirect": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
+			},
 		},
 	}
 }
@@ -205,6 +243,21 @@ func resourceAlicloudEcdPolicyGroupCreate(d *schema.ResourceData, meta interface
 	}
 	if v, ok := d.GetOk("watermark_type"); ok {
 		request["WatermarkType"] = v
+	}
+	if v, ok := d.GetOk("recording"); ok {
+		request["Recording"] = v
+	}
+	if v, ok := d.GetOk("recording_start_time"); ok {
+		request["RecordingStartTime"] = v
+	}
+	if v, ok := d.GetOk("recording_end_time"); ok {
+		request["RecordingEndTime"] = v
+	}
+	if v, ok := d.GetOk("recording_fps"); ok {
+		request["RecordingFps"] = v
+	}
+	if v, ok := d.GetOk("camera_redirect"); ok {
+		request["CameraRedirect"] = v
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -283,11 +336,18 @@ func resourceAlicloudEcdPolicyGroupRead(d *schema.ResourceData, meta interface{}
 	d.Set("watermark", object["Watermark"])
 	d.Set("watermark_transparency", object["WatermarkTransparency"])
 	d.Set("watermark_type", object["WatermarkType"])
+	d.Set("recording", object["Recording"])
+	d.Set("recording_fps", formatInt(object["RecordingFps"]))
+	d.Set("camera_redirect", object["CameraRedirect"])
 	return nil
 }
 func resourceAlicloudEcdPolicyGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecdService := EcdService{client}
+	conn, err := client.NewGwsecdClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -418,12 +478,38 @@ func resourceAlicloudEcdPolicyGroupUpdate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("watermark_type"); ok {
 		request["WatermarkType"] = v
 	}
+	if d.HasChange("recording") {
+		update = true
+	}
+	if v, ok := d.GetOk("recording"); ok {
+		request["Recording"] = v
+	}
+	if d.HasChange("recording_start_time") {
+		update = true
+	}
+	if v, ok := d.GetOk("recording_start_time"); ok {
+		request["RecordingStartTime"] = v
+	}
+	if d.HasChange("recording_end_time") {
+		update = true
+	}
+	if v, ok := d.GetOk("recording_end_time"); ok {
+		request["RecordingEndTime"] = v
+	}
+	if d.HasChange("recording_fps") {
+		update = true
+	}
+	if v, ok := d.GetOk("recording_fps"); ok {
+		request["RecordingFps"] = v
+	}
+	if d.HasChange("camera_redirect") {
+		update = true
+	}
+	if v, ok := d.GetOk("camera_redirect"); ok {
+		request["CameraRedirect"] = v
+	}
 	if update {
 		action := "ModifyPolicyGroup"
-		conn, err := client.NewGwsecdClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

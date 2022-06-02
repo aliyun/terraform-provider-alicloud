@@ -65,7 +65,11 @@ The following arguments are supported:
 * `watermark` - (Optional, Computed) The watermark policy. Valid values: `off`, `on`.
 * `watermark_transparency` - (Optional, Computed) The watermark transparency. Valid values: `DARK`, `LIGHT`, `MIDDLE`.
 * `watermark_type` - (Optional) The type of watemark. Valid values: `EndUserId`, `HostName`.
-
+* `recording` - (Optional, Computed, Available in 1.171.0+) Whether to enable screen recording. Valid values: `off`, `alltime`, `period`.
+* `recording_start_time` - (Optional, Available in 1.171.0+) The start time of recording, value: `HH:MM:SS`. This return value is meaningful only when the value of `recording` is `period`.
+* `recording_end_time` - (Optional, Available in 1.171.0+) The end time of recording, value: `HH:MM:SS`. This return value is meaningful only when the value of `recording` is `period`.
+* `recording_fps` - (Optional, Computed, Available in 1.171.0+) The fps of recording. Valid values: `2`, `5`, `10`, `15`.
+* `camera_redirect` - (Optional, Computed, Available in 1.171.0+) Whether to enable local camera redirection. Valid values: `on`, `off`.
 
 #### Block authorize_security_policy_rules
 
