@@ -376,6 +376,14 @@ func dataSourceAlicloudServiceMeshServiceMeshes() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"istio_operator_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"sidecar_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -653,6 +661,51 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 				}
 				mapping["network"] = networkSli
 			}
+		}
+		request = make(map[string]interface{})
+		request["ServiceMeshId"] = id
+		action = "DescribeUpgradeVersion"
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-01-11"), StringPointer("AK"), request, nil, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_service_mesh_service_meshes", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err = jsonpath.Get("$.Version", response)
+		if v, ok := resp.(map[string]interface{}); ok {
+			mapping["istio_operator_version"] = v["IstioOperatorVersion"]
+		}
+
+		request = make(map[string]interface{})
+		request["ServiceMeshId"] = id
+		action = "DescribeASMSidecarExpectedVersion"
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-01-11"), StringPointer("AK"), request, nil, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_service_mesh_versions", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err = jsonpath.Get("$", response)
+		if v, ok := resp.(map[string]interface{}); ok {
+			mapping["sidecar_version"] = v["Version"]
 		}
 
 		s = append(s, mapping)

@@ -59,6 +59,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `meshes` - A list of Service Mesh Service Meshes. Each element contains the following attributes:
     * `clusters` - Cluster List.
     * `create_time` - The created time of the resource.
+    * `istio_operator_version` - The Istio Operator Version. **Note:** the `istio_operator_version` is available from the version v1.170.0.
+    * `sidecar_version` - The SideCar Version. **Note:** the `sidecar_version` is available from the version v1.170.0.
     * `endpoints` - The endpoint details.
         * `intranet_api_server_endpoint` - The internal address of the API Server.
         * `intranet_pilot_endpoint` - The internal address of the Istio Pilot.

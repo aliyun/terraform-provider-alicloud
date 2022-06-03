@@ -58,7 +58,7 @@ The following arguments are supported:
 * `mesh_config` - (Optional) The configuration of the Service grid. See the following `Block mesh_config`.
 * `network` - (Required, ForceNew) The network configuration of the Service grid. See the following `Block network`.
 * `service_mesh_name` - (Optional, ForceNew) The name of the resource.
-* `version` - (Optional, ForceNew) The version of the resource. Valid values: `v1.8.6.52-g60741c97-aliyun` and `v1.9.7.31-g24cdcb43-aliyun`.
+* `version` - (Optional) The version of the resource. you can look up the version using `alicloud_service_mesh_versions`. **Note:** The `version` supports updating from v1.170.0, the relevant version can be obtained via `istio_operator_version` in `alicloud_service_mesh_service_meshes`.
 * `edition` - (Optional, ForceNew) The type  of the resource. Valid values: `Default` and `Pro`. `Default`:the standard. `Pro`:the Pro version.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
 * `cluster_spec` - (Optional,Available in v1.166.0+.) The service mesh instance specification. Valid values: `standard`,`enterprise`,`ultimate`.
