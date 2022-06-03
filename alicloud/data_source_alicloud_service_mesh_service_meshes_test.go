@@ -24,43 +24,51 @@ func TestAccAlicloudServiceMeshServiceMeshesDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudServiceMeshServiceMeshDataSourceName(rand, map[string]string{
-			"name_regex": `"${alicloud_service_mesh_service_mesh.default.service_mesh_name}"`,
+			"name_regex":     `"${alicloud_service_mesh_service_mesh.default.service_mesh_name}"`,
+			"enable_details": "true",
 		}),
 		fakeConfig: testAccCheckAlicloudServiceMeshServiceMeshDataSourceName(rand, map[string]string{
-			"name_regex": `"${alicloud_service_mesh_service_mesh.default.service_mesh_name}_fake"`,
+			"name_regex":     `"${alicloud_service_mesh_service_mesh.default.service_mesh_name}_fake"`,
+			"enable_details": "true",
 		}),
 	}
 
 	statusRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudServiceMeshServiceMeshDataSourceName(rand, map[string]string{
-			"ids":    `["${alicloud_service_mesh_service_mesh.default.id}"]`,
-			"status": `"running"`,
+			"ids":            `["${alicloud_service_mesh_service_mesh.default.id}"]`,
+			"status":         `"running"`,
+			"enable_details": "true",
 		}),
 		fakeConfig: testAccCheckAlicloudServiceMeshServiceMeshDataSourceName(rand, map[string]string{
-			"ids":    `["${alicloud_service_mesh_service_mesh.default.id}"]`,
-			"status": `"initial"`,
+			"ids":            `["${alicloud_service_mesh_service_mesh.default.id}"]`,
+			"status":         `"initial"`,
+			"enable_details": "true",
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudServiceMeshServiceMeshDataSourceName(rand, map[string]string{
-			"ids":        `["${alicloud_service_mesh_service_mesh.default.id}"]`,
-			"name_regex": `"${alicloud_service_mesh_service_mesh.default.service_mesh_name}"`,
-			"status":     `"running"`,
+			"ids":            `["${alicloud_service_mesh_service_mesh.default.id}"]`,
+			"name_regex":     `"${alicloud_service_mesh_service_mesh.default.service_mesh_name}"`,
+			"status":         `"running"`,
+			"enable_details": "true",
 		}),
 		fakeConfig: testAccCheckAlicloudServiceMeshServiceMeshDataSourceName(rand, map[string]string{
-			"ids":        `["${alicloud_service_mesh_service_mesh.default.id}_fake"]`,
-			"name_regex": `"${alicloud_service_mesh_service_mesh.default.service_mesh_name}_fake"`,
-			"status":     `"initial"`,
+			"ids":            `["${alicloud_service_mesh_service_mesh.default.id}_fake"]`,
+			"name_regex":     `"${alicloud_service_mesh_service_mesh.default.service_mesh_name}_fake"`,
+			"status":         `"initial"`,
+			"enable_details": "true",
 		}),
 	}
 
 	var existDataAlicloudServiceMeshServiceMeshesSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                      "1",
-			"meshes.#":                   "1",
-			"meshes.0.status":            "running",
-			"meshes.0.service_mesh_name": fmt.Sprintf("tf-testaccservicemeshservicemesh-%d", rand),
+			"ids.#":                           "1",
+			"meshes.#":                        "1",
+			"meshes.0.status":                 "running",
+			"meshes.0.istio_operator_version": CHECKSET,
+			"meshes.0.sidecar_version":        CHECKSET,
+			"meshes.0.service_mesh_name":      fmt.Sprintf("tf-testaccservicemeshservicemesh-%d", rand),
 		}
 	}
 	var fakeDataAlicloudServiceMeshServiceMeshesSourceNameMapFunc = func(rand int) map[string]string {
