@@ -1,4 +1,30 @@
 ## 1.170.0 (Unreleased)
+
+- **New Resource:** `alicloud_ecd_bundle` [GH-5029]	
+- **New Data Source:** `alicloud_ecd_desktop_types` [GH-5021]
+
+ENHANCEMENTS:
+
+- resource/alicloud_service_mesh_service_mesh: support updating the field version [gh-5034]
+- resource_alicloud_eci_container_group: Add support for new parameter auto_create_eip, eip_bandwidth, eip_instance_id [GH-5011]
+- resource/alicloud_ons_topic: perm attribute no longer supports updates. [GH-5019]
+- resource/alicloud_slb_backend_server: Supports adding eci backend servers resource/alicloud_eci_container_group: add the field internet_ip and intranet_ip [GH-5018]
+- resource/alicloud_eci_container_group: Adds new attribute plain_http_registry insecure_registry [GH-5020]
+- resource/alicloud_instance: add the field stopped_mode [GH-5012]
+- resource/alicloud_polardb_backup_policy: Adds new attribute backup_retention_policy_on_cluster_deletion [GH-4997]
+- datasource/alicloud_hbr_vaults: removed the vault_type's default value [GH-5013]
+- datasource/alicloud_ecd_images: add the query field os_type and desktop_instance_type. [GH-5029]
+- testcase: Adds new unit test case for resource alicloud_simple_application_server_snapshot alicloud_simple_application_server_firewall_rule alicloud_simple_application_server_custom_image [GH-5015]
+- testcase: Adds new unit test case for resource alicloud_dms_enterprise_instance alicloud_bastionhost_host_share_key alicloud_simple_application_server_instance [GH-5026]	
+- CS client supports header security_transport [GH-5024]
+- region: add the available regions: cn-hangzhou-finance,ap-northeast-2 [GH-5028]
+
+BUG FIXES:
+
+- resource/alicloud_service_mesh_service_mesh: fix the issue when cr_aggregation_enabled is empty [GH-5014]
+- data source/alicloud_nas_filesets: Fixed the attribute name of the field from UpdateTiem to UpdateTime [GH-5017]
+- data source/alicloud_bastionhost_instances_test: Fixed ci test error [GH-5023]
+
 ## 1.169.0 (May 29, 2022)
 
 - **New Resource:** `alicloud_ecd_snapshot` ([#4981](https://github.com/aliyun/terraform-provider-alicloud/issues/4981))
