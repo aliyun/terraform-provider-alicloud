@@ -1,4 +1,5 @@
-## 1.170.0 (Unreleased)
+## 1.171.0 (Unreleased)
+## 1.170.0 (June 05, 2022)
 
 - **New Resource:** `alicloud_ecd_bundle` ([#5029](https://github.com/aliyun/terraform-provider-alicloud/issues/5029))	
 - **New Data Source:** `alicloud_ecd_desktop_types` ([#5021](https://github.com/aliyun/terraform-provider-alicloud/issues/5021))
