@@ -1,12 +1,11 @@
-## 1.171.0 (Unreleased)
-## 1.170.0 (June 05, 2022)
+## 1.170.0 (Unreleased)
 
-- **New Resource:** `alicloud_ecd_bundle` [[#5029](https://github.com/aliyun/terraform-provider-alicloud/issues/5029)]	
+- **New Resource:** `alicloud_ecd_bundle` ([#5029](https://github.com/aliyun/terraform-provider-alicloud/issues/5029))	
 - **New Data Source:** `alicloud_ecd_desktop_types` ([#5021](https://github.com/aliyun/terraform-provider-alicloud/issues/5021))
 
 ENHANCEMENTS:
 
-- resource/alicloud_service_mesh_service_mesh: support updating the field version [gh-5034]
+- resource/alicloud_service_mesh_service_mesh: support updating the field version ([#5034](https://github.com/aliyun/terraform-provider-alicloud/issues/5034))
 - resource_alicloud_eci_container_group: Add support for new parameter auto_create_eip, eip_bandwidth, eip_instance_id ([#5011](https://github.com/aliyun/terraform-provider-alicloud/issues/5011))
 - resource/alicloud_ons_topic: perm attribute no longer supports updates. ([#5019](https://github.com/aliyun/terraform-provider-alicloud/issues/5019))
 - resource/alicloud_slb_backend_server: Supports adding eci backend servers resource/alicloud_eci_container_group: add the field internet_ip and intranet_ip ([#5018](https://github.com/aliyun/terraform-provider-alicloud/issues/5018))
@@ -16,7 +15,7 @@ ENHANCEMENTS:
 - datasource/alicloud_hbr_vaults: removed the vault_type's default value ([#5013](https://github.com/aliyun/terraform-provider-alicloud/issues/5013))
 - datasource/alicloud_ecd_images: add the query field os_type and desktop_instance_type. ([#5029](https://github.com/aliyun/terraform-provider-alicloud/issues/5029))
 - testcase: Adds new unit test case for resource alicloud_simple_application_server_snapshot alicloud_simple_application_server_firewall_rule alicloud_simple_application_server_custom_image ([#5015](https://github.com/aliyun/terraform-provider-alicloud/issues/5015))
-- testcase: Adds new unit test case for resource alicloud_dms_enterprise_instance alicloud_bastionhost_host_share_key alicloud_simple_application_server_instance [[#5026](https://github.com/aliyun/terraform-provider-alicloud/issues/5026)]	
+- testcase: Adds new unit test case for resource alicloud_dms_enterprise_instance alicloud_bastionhost_host_share_key alicloud_simple_application_server_instance ([#5026](https://github.com/aliyun/terraform-provider-alicloud/issues/5026))	
 - CS client supports header security_transport ([#5024](https://github.com/aliyun/terraform-provider-alicloud/issues/5024))
 - region: add the available regions: cn-hangzhou-finance,ap-northeast-2 ([#5028](https://github.com/aliyun/terraform-provider-alicloud/issues/5028))
 
