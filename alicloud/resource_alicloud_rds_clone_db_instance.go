@@ -375,6 +375,12 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 					return d.Get("payment_type") != "PayAsYouGo"
 				},
 			},
+			"tcp_connection_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"SHORT", "LONG"}, false),
+			},
 		},
 	}
 }
@@ -549,6 +555,11 @@ func resourceAlicloudRdsCloneDbInstanceRead(d *schema.ResourceData, meta interfa
 		}
 		d.Set("ssl_enabled'", sslEnabled)
 	}
+	res, err := rdsService.DescribeHADiagnoseConfig(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tcp_connection_type", res["TcpConnectionType"])
 	return nil
 }
 func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -570,6 +581,12 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 	}
 	if d.HasChange("deletion_protection") && d.Get("payment_type") == "PayAsYouGo" {
 		err := rdsService.ModifyDBInstanceDeletionProtection(d, "deletion_protection")
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+	if d.HasChange("tcp_connection_type") {
+		err := rdsService.ModifyHADiagnoseConfig(d, "tcp_connection_type")
 		if err != nil {
 			return WrapError(err)
 		}

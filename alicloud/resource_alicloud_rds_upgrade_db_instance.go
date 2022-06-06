@@ -351,6 +351,12 @@ func resourceAlicloudRdsUpgradeDbInstance() *schema.Resource {
 					return d.Get("payment_type") != "PayAsYouGo"
 				},
 			},
+			"tcp_connection_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"SHORT", "LONG"}, false),
+			},
 		},
 	}
 }
@@ -543,6 +549,11 @@ func resourceAlicloudRdsUpgradeDbInstanceRead(d *schema.ResourceData, meta inter
 		}
 		d.Set("ssl_enabled'", sslEnabled)
 	}
+	res, err := rdsService.DescribeHADiagnoseConfig(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tcp_connection_type", res["TcpConnectionType"])
 	return nil
 }
 func resourceAlicloudRdsUpgradeDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -564,6 +575,12 @@ func resourceAlicloudRdsUpgradeDbInstanceUpdate(d *schema.ResourceData, meta int
 	}
 	if d.HasChange("pg_hba_conf") {
 		err := rdsService.ModifyPgHbaConfig(d, "pg_hba_conf")
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+	if d.HasChange("tcp_connection_type") {
+		err := rdsService.ModifyHADiagnoseConfig(d, "tcp_connection_type")
 		if err != nil {
 			return WrapError(err)
 		}
