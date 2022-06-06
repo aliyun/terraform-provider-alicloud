@@ -192,12 +192,12 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_url":       fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0", defaultRegionToTest),
+					"image_url":       fmt.Sprintf("registry-vpc.%s.aliyuncs.com/lxepoo/apache-php5", defaultRegionToTest),
 					"package_version": strconv.FormatInt(time.Now().Unix(), 10) + "image_url",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"image_url":       fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0", defaultRegionToTest),
+						"image_url":       fmt.Sprintf("registry-vpc.%s.aliyuncs.com/lxepoo/apache-php5", defaultRegionToTest),
 						"package_version": CHECKSET,
 					}),
 				),
