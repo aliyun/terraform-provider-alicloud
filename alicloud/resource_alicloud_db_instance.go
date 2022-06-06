@@ -459,6 +459,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"tcp_connection_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"SHORT", "LONG"}, false),
+			},
 		},
 	}
 }
@@ -518,6 +524,13 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if d.HasChange("deletion_protection") && d.Get("instance_charge_type") == string(Postpaid) {
 		err := rdsService.ModifyDBInstanceDeletionProtection(d, "deletion_protection")
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
+	if d.HasChange("tcp_connection_type") {
+		err := rdsService.ModifyHADiagnoseConfig(d, "tcp_connection_type")
 		if err != nil {
 			return WrapError(err)
 		}
@@ -1434,6 +1447,13 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("ha_config", res["HAConfig"])
 	d.Set("manual_ha_time", res["ManualHATime"])
+
+	res, err = rdsService.DescribeHADiagnoseConfig(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tcp_connection_type", res["TcpConnectionType"])
+
 	return nil
 }
 
