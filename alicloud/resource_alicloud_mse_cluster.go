@@ -104,6 +104,13 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"mse_version": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"mse_basic", "mse_pro"}, false),
+			},
 		},
 	}
 }
@@ -135,6 +142,9 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("pub_slb_specification"); ok {
 		request["PubSlbSpecification"] = v
+	}
+	if v, ok := d.GetOk("mse_version"); ok {
+		request["MseVersion"] = v
 	}
 
 	request["Region"] = client.RegionId
@@ -192,6 +202,11 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("pub_network_flow", object["PubNetworkFlow"])
 	d.Set("status", object["InitStatus"])
 	d.Set("cluster_id", object["ClusterId"])
+	d.Set("mse_version", object["MseVersion"])
+	d.Set("net_type", object["NetType"])
+	d.Set("vswitch_id", object["VSwitchId"])
+	d.Set("cluster_version", object["OrderClusterVersion"])
+	d.Set("cluster_alias_name", object["ClusterAliasName"])
 	return nil
 }
 func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) error {
