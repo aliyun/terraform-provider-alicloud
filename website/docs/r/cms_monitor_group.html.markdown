@@ -43,6 +43,7 @@ The following arguments are supported:
 * `monitor_group_name` - (Optional) The name of the application group.
 * `resource_group_id` - (Optional, Available in v1.141.0+) The ID of the resource group.
 * `resource_group_name` - (Optional, Available in v1.141.0+) The name of the resource group.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
