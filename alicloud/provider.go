@@ -694,6 +694,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_snapshots":                               dataSourceAlicloudEcdSnapshots(),
 			"alicloud_tag_meta_tags":                               dataSourceAlicloudTagMetaTags(),
 			"alicloud_ecd_desktop_types":                           dataSourceAlicloudEcdDesktopTypes(),
+			"alicloud_config_deliveries":                           dataSourceAlicloudConfigDeliveries(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1285,6 +1286,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ddos_basic_defense_threshold":                         resourceAlicloudDdosBasicDefenseThreshold(),
 			"alicloud_ecd_snapshot":                                         resourceAlicloudEcdSnapshot(),
 			"alicloud_ecd_bundle":                                           resourceAlicloudEcdBundle(),
+			"alicloud_config_delivery":                                      resourceAlicloudConfigDelivery(),
 		},
 
 		ConfigureFunc: providerConfigure,

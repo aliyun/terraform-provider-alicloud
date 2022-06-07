@@ -9,7 +9,10 @@ description: |-
 
 # alicloud\_config\_delivery\_channel
 
-Provides a a Alicloud Config Delivery Channel resource. You can receive configuration audit event changes by configuring OSS, MNS and SLS services provided by Alibaba Cloud.
+-> **DEPRECATED:**  This resource is based on Config's old version OpenAPI, and it has been deprecated from version `1.171.0`.
+Please use new resource [alicloud_config_deliveries](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/config_delivery.html) instead.
+
+Provides an Alicloud Config Delivery Channel resource. You can receive configuration audit event changes by configuring OSS, MNS and SLS services provided by Alibaba Cloud.
 For information about Alicloud Config Delivery Channel and how to use it, see [What is Delivery Channel](https://www.alibabacloud.com/help/en/doc-detail/307022.html).
 
 -> **NOTE:** Available in v1.99.0+.
