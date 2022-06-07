@@ -50,6 +50,7 @@ The following arguments are supported:
 * `pub_network_flow` - (Required from 1.173.0, ForceNew) The public network bandwidth. `0` means no access to the public network.
 * `pub_slb_specification` - (Optional, ForceNew) The specification of public network SLB.
 * `vswitch_id` - (Optional, ForceNew) The id of VSwitch.
+* `mse_version` - (Optional, ForceNew, Computed, Available in v1.177.0+) The version of MSE. Valid values: `mse_basic` or `mse_pro`.
                     
 ## Attributes Reference
 
