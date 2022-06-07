@@ -137,6 +137,10 @@ func resourceAlicloudCmsMonitorGroupRead(d *schema.ResourceData, meta interface{
 func resourceAlicloudCmsMonitorGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
+	conn, err := client.NewCmsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -154,10 +158,6 @@ func resourceAlicloudCmsMonitorGroupUpdate(d *schema.ResourceData, meta interfac
 	}
 	if update {
 		action := "ModifyMonitorGroup"
-		conn, err := client.NewCmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
