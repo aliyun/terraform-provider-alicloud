@@ -257,6 +257,7 @@ func TestAccAlicloudEssScalingGroup_desiredCapacity(t *testing.T) {
 				Config: testAccEssScalingGroupUpdateDesiredCapacity(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"max_size":         "5",
 						"desired_capacity": "3",
 					}),
 				),
@@ -265,6 +266,7 @@ func TestAccAlicloudEssScalingGroup_desiredCapacity(t *testing.T) {
 				Config: testAccEssScalingGroupUpdateDesiredCapacitySetZero(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"min_size":         "0",
 						"desired_capacity": "0",
 					}),
 				),
@@ -951,7 +953,7 @@ func testAccEssScalingGroupUpdateDesiredCapacitySetZero(common string, rand int)
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
-		min_size = 1
+		min_size = 0
 		max_size = 5
         desired_capacity = 0
 		scaling_group_name = "${var.name}"
