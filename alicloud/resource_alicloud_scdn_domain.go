@@ -30,6 +30,7 @@ func resourceAlicloudScdnDomain() *schema.Resource {
 			"biz_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Deprecated:   "Attribute biz_name has been deprecated and suggest removing it from your template.",
 				ValidateFunc: validation.StringInSlice([]string{"download", "image", "scdn", "video"}, false),
 			},
 			"cert_infos": {
@@ -243,40 +244,6 @@ func resourceAlicloudScdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 	d.Partial(true)
 
 	update := false
-	request := map[string]interface{}{
-		"DomainName": d.Id(),
-	}
-	if d.HasChange("biz_name") {
-		update = true
-	}
-	if v, ok := d.GetOk("biz_name"); ok {
-		request["BizName"] = v
-	}
-	if update {
-		action := "SetScdnDomainBizInfo"
-		conn, err := client.NewScdnClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2017-11-15"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		d.SetPartial("biz_name")
-	}
-	update = false
 	setScdnDomainCertificateReq := map[string]interface{}{
 		"DomainName": d.Id(),
 	}
