@@ -695,6 +695,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_tag_meta_tags":                               dataSourceAlicloudTagMetaTags(),
 			"alicloud_ecd_desktop_types":                           dataSourceAlicloudEcdDesktopTypes(),
 			"alicloud_config_deliveries":                           dataSourceAlicloudConfigDeliveries(),
+			"alicloud_cms_namespaces":                              dataSourceAlicloudCmsNamespaces(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1287,6 +1288,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_snapshot":                                         resourceAlicloudEcdSnapshot(),
 			"alicloud_ecd_bundle":                                           resourceAlicloudEcdBundle(),
 			"alicloud_config_delivery":                                      resourceAlicloudConfigDelivery(),
+			"alicloud_cms_namespace":                                        resourceAlicloudCmsNamespace(),
 		},
 
 		ConfigureFunc: providerConfigure,
