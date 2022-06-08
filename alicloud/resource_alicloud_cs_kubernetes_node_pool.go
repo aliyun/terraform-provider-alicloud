@@ -1170,9 +1170,9 @@ func setNodePoolTags(scalingGroup *cs.ScalingGroup, d *schema.ResourceData) erro
 }
 
 func setNodePoolLabels(config *cs.KubernetesConfig, d *schema.ResourceData) error {
+	labels := make([]cs.Label, 0)
 	if v, ok := d.GetOk("labels"); ok && len(v.([]interface{})) > 0 {
 		vl := v.([]interface{})
-		labels := make([]cs.Label, 0)
 		for _, i := range vl {
 			if m, ok := i.(map[string]interface{}); ok {
 				labels = append(labels, cs.Label{
@@ -1182,8 +1182,8 @@ func setNodePoolLabels(config *cs.KubernetesConfig, d *schema.ResourceData) erro
 			}
 
 		}
-		config.Labels = labels
 	}
+	config.Labels = labels
 
 	return nil
 }
@@ -1213,9 +1213,9 @@ func setNodePoolDataDisks(scalingGroup *cs.ScalingGroup, d *schema.ResourceData)
 }
 
 func setNodePoolTaints(config *cs.KubernetesConfig, d *schema.ResourceData) error {
+	taints := make([]cs.Taint, 0)
 	if v, ok := d.GetOk("taints"); ok && len(v.([]interface{})) > 0 {
 		vl := v.([]interface{})
-		taints := make([]cs.Taint, 0)
 		for _, i := range vl {
 			if m, ok := i.(map[string]interface{}); ok {
 				taints = append(taints, cs.Taint{
@@ -1224,10 +1224,9 @@ func setNodePoolTaints(config *cs.KubernetesConfig, d *schema.ResourceData) erro
 					Effect: cs.Effect(m["effect"].(string)),
 				})
 			}
-
 		}
-		config.Taints = taints
 	}
+	config.Taints = taints
 
 	return nil
 }
