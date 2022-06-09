@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_ots_tunnels"
 sidebar_current: "docs-alicloud-datasource-ots-tunnels"
 description: |- 
-  Provides a list of ots tables to the user.
+  Provides a list of ots tunnels to the user.
 ---
 
 # alicloud\_ots\_tunnels
