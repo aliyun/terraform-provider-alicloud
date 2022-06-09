@@ -19,4 +19,16 @@ type TableStoreApi interface {
 	DescribeStream(request *DescribeStreamRequest) (*DescribeStreamResponse, error)
 	GetShardIterator(request *GetShardIteratorRequest) (*GetShardIteratorResponse, error)
 	GetStreamRecord(request *GetStreamRecordRequest) (*GetStreamRecordResponse, error)
+
+	// search related
+	CreateSearchIndex(request *CreateSearchIndexRequest) (*CreateSearchIndexResponse, error)
+	UpdateSearchIndex(request *UpdateSearchIndexRequest) (*UpdateSearchIndexResponse, error)
+	DeleteSearchIndex(request *DeleteSearchIndexRequest) (*DeleteSearchIndexResponse, error)
+	ListSearchIndex(request *ListSearchIndexRequest) (*ListSearchIndexResponse, error)
+	DescribeSearchIndex(request *DescribeSearchIndexRequest) (*DescribeSearchIndexResponse, error)
+	Search(request *SearchRequest) (*SearchResponse, error)
+
+	ComputeSplits(request *ComputeSplitsRequest) (*ComputeSplitsResponse, error)
+	ParallelScan(request *ParallelScanRequest) (*ParallelScanResponse, error)
+	SQLQuery(req *SQLQueryRequest) (*SQLQueryResponse, error)
 }

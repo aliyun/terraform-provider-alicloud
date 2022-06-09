@@ -20,7 +20,7 @@ enum PrimaryKeyOption {
 message PrimaryKeySchema {
     required string name = 1;
     required PrimaryKeyType type = 2;
-    optional PrimaryKeyOption option = 3; 
+    optional PrimaryKeyOption option = 3;
 }
 
 message PartitionRange {
@@ -40,6 +40,7 @@ message TableOptions {
     optional BloomFilterType bloom_filter_type = 3; // 可以动态更改
     optional int32 block_size = 4; // 可以动态更改
     optional int64 deviation_cell_version_in_sec = 5; // 可以动态修改
+    optional bool allow_update = 6;
 }
 
 message TableMeta {
@@ -97,6 +98,7 @@ message ConsumedCapacity {
 message StreamSpecification {
     required bool enable_stream = 1;
     optional int32 expiration_time = 2;
+    repeated string columns_to_get = 3;
 }
 
 message StreamDetails {
@@ -104,6 +106,26 @@ message StreamDetails {
     optional string stream_id = 2;
     optional int32 expiration_time = 3;
     optional int64 last_enable_time = 4;
+    repeated string columns_to_get = 5;
+}
+
+enum SSEKeyType {
+    SSE_KMS_SERVICE = 1;
+    SSE_BYOK = 2;
+}
+
+message SSESpecification {
+    required bool enable = 1;
+    optional SSEKeyType key_type = 2;
+    optional bytes key_id = 3; // only useful when key_type is SSE_BYOK
+    optional bytes role_arn = 4; // only useful when key_type is SSE_BYOK
+}
+
+message SSEDetails {
+    required bool enable = 1;
+    optional SSEKeyType key_type = 2;
+    optional bytes key_id = 3;
+    optional bytes role_arn = 4; // only useful when key_type is SSE_BYOK
 }
 
 /* #############################################  CreateTable  ############################################# */
@@ -124,6 +146,7 @@ message CreateTableRequest {
     optional TableOptions table_options = 3;
     repeated PartitionRange partitions = 4;
     optional StreamSpecification stream_spec = 5;
+    optional SSESpecification sse_spec = 6;
     repeated IndexMeta index_metas = 7;
 }
 
@@ -160,6 +183,7 @@ message DescribeTableResponse {
     required TableStatus table_status = 4;
     optional StreamDetails stream_details = 5;
     repeated bytes shard_splits = 6;
+    optional SSEDetails sse_details = 7;
     repeated IndexMeta index_metas = 8;
 }
 /* ########################################################################################################### */
@@ -372,6 +396,7 @@ message TableInBatchWriteRowRequest {
 message BatchWriteRowRequest {
     repeated TableInBatchWriteRowRequest tables = 1;
     optional string transaction_id = 2;
+    optional bool is_atomic = 3;
 }
 
 message RowInBatchWriteRowResponse {
@@ -497,6 +522,7 @@ message GetStreamRecordResponse {
     message StreamRecord {
         required ActionType action_type = 1;
         required bytes record = 2;
+        optional bytes origin_record = 3;
     }
     repeated StreamRecord stream_records = 1;
     optional string next_shard_iterator = 2;
@@ -506,6 +532,8 @@ message GetStreamRecordResponse {
 message ComputeSplitPointsBySizeRequest {
     required string table_name = 1;
     required int64 split_size = 2; // in 100MB
+    optional int64 split_size_unit_in_byte = 3;
+    optional int32 split_point_limit = 4;
 }
 
 message ComputeSplitPointsBySizeResponse {
@@ -518,7 +546,7 @@ message ComputeSplitPointsBySizeResponse {
      * A split is a consecutive range of primary keys,
      * whose data size is about split_size specified in the request.
      * The size could be hard to be precise.
-     * 
+     *
      * A split point is an array of primary-key column w.r.t. table schema,
      * which is never longer than that of table schema.
      * Tailing -inf will be omitted to reduce transmission payloads.
@@ -589,6 +617,22 @@ message DropIndexRequest {
 message DropIndexResponse {
 }
 
+message AddDefinedColumnRequest {
+    required string table_name = 1;
+    repeated DefinedColumnSchema columns = 2;
+}
+
+message AddDefinedColumnResponse {
+}
+
+message DeleteDefinedColumnRequest {
+    required string table_name = 1;
+    repeated string columns = 2;
+}
+
+message DeleteDefinedColumnResponse {
+}
+
 /* ###########################################  LocalTransaction  ########################################### */
 message StartLocalTransactionRequest {
     required string table_name = 1;
@@ -614,3 +658,60 @@ message AbortTransactionResponse {
 };
 
 /* ######################################################################################################### */
+
+/* computeSplits */
+message ComputeSplitsRequest {
+    optional string table_name = 1;
+    optional SearchIndexSplitsOptions search_index_splits_options = 2;
+}
+
+message SearchIndexSplitsOptions{
+    optional string index_name = 1;
+}
+
+message ComputeSplitsResponse {
+    optional bytes session_id = 1;
+    optional int32 splits_size = 2;
+}
+
+/* SQLQuery */
+enum SQLPayloadVersion {
+    SQL_PLAIN_BUFFER = 1;
+    SQL_FLAT_BUFFERS = 2;
+}
+
+enum SQLStatementType {
+    SQL_SELECT = 1;
+    SQL_CREATE_TABLE = 2;
+    SQL_SHOW_TABLE = 3;
+    SQL_DESCRIBE_TABLE = 4;
+    SQL_DROP_TABLE = 5;
+    SQL_ALTER_TABLE = 6;
+}
+
+message SQLQueryRequest {
+    required string query = 1;
+    optional SQLPayloadVersion version = 2;
+}
+
+message TableConsumedCapacity {
+    optional string table_name = 1;
+    optional ConsumedCapacity consumed = 2;
+    optional ReservedThroughput reserved_throughput = 3;
+    optional bool is_timeseries_meta = 4;
+}
+
+message SearchConsumedCapacity {
+    optional string table_name = 1;
+    optional string index_name = 2;
+    optional ConsumedCapacity consumed = 3;
+    optional ReservedThroughput reserved_throughput = 4;
+}
+
+message SQLQueryResponse {
+    repeated TableConsumedCapacity consumes = 1;
+    optional bytes rows = 2;
+    optional SQLPayloadVersion version = 3;
+    optional SQLStatementType type = 4;
+    repeated SearchConsumedCapacity search_consumes = 5;
+}

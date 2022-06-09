@@ -49,6 +49,7 @@ import (
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/cs"
@@ -116,6 +117,7 @@ type AliyunClient struct {
 	cloudapiconn                 *cloudapi.Client
 	teaConn                      *rpc.Client
 	tablestoreconnByInstanceName map[string]*tablestore.TableStoreClient
+	otsTunnelConnByInstanceName  map[string]otsTunnel.TunnelClient
 	csprojectconnByKey           map[string]*cs.ProjectClient
 	drdsconn                     *drds.Client
 	elasticsearchconn            *elasticsearch.Client
@@ -237,6 +239,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		OtsInstanceName:              c.OtsInstanceName,
 		accountId:                    c.AccountId,
 		tablestoreconnByInstanceName: make(map[string]*tablestore.TableStoreClient),
+		otsTunnelConnByInstanceName:  make(map[string]otsTunnel.TunnelClient),
 		csprojectconnByKey:           make(map[string]*cs.ProjectClient),
 	}, nil
 }
@@ -1409,6 +1412,31 @@ func (client *AliyunClient) WithTableStoreClient(instanceName string, do func(*t
 	}
 
 	return do(tableStoreClient)
+}
+
+func (client *AliyunClient) WithTableStoreTunnelClient(instanceName string, do func(otsTunnel.TunnelClient) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the TABLESTORE tunnel client if necessary
+	tunnelClient, ok := client.otsTunnelConnByInstanceName[instanceName]
+	if !ok {
+		endpoint := client.config.OtsEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.RegionId, OTSCode)
+		}
+		if endpoint == "" {
+			endpoint = fmt.Sprintf("%s.%s.ots.aliyuncs.com", instanceName, client.RegionId)
+		}
+		if !strings.HasPrefix(endpoint, "https") && !strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", endpoint)
+		}
+
+		tunnelClient = otsTunnel.NewTunnelClientWithToken(endpoint, instanceName, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, otsTunnel.DefaultTunnelConfig)
+		client.otsTunnelConnByInstanceName[instanceName] = tunnelClient
+	}
+
+	return do(tunnelClient)
 }
 
 func (client *AliyunClient) WithCsProjectClient(clusterId, endpoint string, clusterCerts cs.ClusterCerts, do func(*cs.ProjectClient) (interface{}, error)) (interface{}, error) {

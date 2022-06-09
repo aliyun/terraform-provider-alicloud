@@ -1,16 +1,18 @@
 package search
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/otsprotocol"
+	"strings"
 )
 
 type GeoDistanceType int8
 
 const (
 	GeoDistanceType_ARC   GeoDistanceType = 0
-	GeoDistanceType_PLANE GeoDistanceType = 0
+	GeoDistanceType_PLANE GeoDistanceType = 1
 )
 
 func (t *GeoDistanceType) ProtoBuffer() (*otsprotocol.GeoDistanceType, error) {
@@ -74,4 +76,45 @@ func (s *GeoDistanceSort) ProtoBuffer() (*otsprotocol.Sorter, error) {
 		GeoDistanceSort: pbGeoDistanceSort,
 	}
 	return pbSorter, nil
+}
+
+func (t GeoDistanceType) String() string {
+	switch t {
+	case GeoDistanceType_ARC:
+		return "ARC"
+	case GeoDistanceType_PLANE:
+		return "PLANE"
+	default:
+		return fmt.Sprintf("%d", t)
+	}
+}
+
+func ToGeoDistanceType(t string) (GeoDistanceType, error) {
+	switch strings.ToUpper(t) {
+	case "ARC":
+		return GeoDistanceType_ARC, nil
+	case "PLANE":
+		return GeoDistanceType_PLANE, nil
+	default:
+		return GeoDistanceType_ARC, errors.New("Invalid type: " + t)
+	}
+}
+
+func (t *GeoDistanceType) UnmarshalJSON(data []byte) (err error) {
+	var opStr string
+	err = json.Unmarshal(data, &opStr)
+	if err != nil {
+		return
+	}
+
+	*t, err = ToGeoDistanceType(opStr)
+	if err != nil {
+		return err
+	}
+	return
+}
+
+func (op *GeoDistanceType) MarshalJSON() (data []byte, err error) {
+	data, err = json.Marshal(op.String())
+	return
 }

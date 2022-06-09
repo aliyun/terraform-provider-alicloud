@@ -89,3 +89,17 @@ func convertOtsInstanceStatusConvert(status int) Status {
 		return ""
 	}
 }
+
+type TunnelTypeString string
+
+const (
+	BaseAndStream = TunnelTypeString("BaseAndStream")
+	BaseData      = TunnelTypeString("BaseData")
+	Stream        = TunnelTypeString("Stream")
+)
+
+type SseKeyTypeString string
+
+const (
+	SseKMSService = SseKeyTypeString("SSE_KMS_SERVICE")
+)
