@@ -24,6 +24,14 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
+			"acr_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"acr_assume_role_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"app_description": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -282,6 +290,12 @@ func resourceAlicloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 	request["AppName"] = StringPointer(d.Get("app_name").(string))
 	request["PackageType"] = StringPointer(d.Get("package_type").(string))
 	request["Replicas"] = StringPointer(strconv.Itoa(d.Get("replicas").(int)))
+	if v, ok := d.GetOk("acr_assume_role_arn"); ok {
+		request["AcrAssumeRoleArn"] = StringPointer(v.(string))
+	}
+	if v, ok := d.GetOk("acr_instance_id"); ok {
+		request["AcrInstanceId"] = StringPointer(v.(string))
+	}
 	if v, ok := d.GetOk("app_description"); ok {
 		request["AppDescription"] = StringPointer(v.(string))
 	}
@@ -444,6 +458,8 @@ func resourceAlicloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 		}
 		return WrapError(err)
 	}
+	d.Set("acr_assume_role_arn", object["AcrAssumeRoleArn"])
+	d.Set("acr_instance_id", object["AcrInstanceId"])
 	d.Set("app_description", object["AppDescription"])
 	d.Set("app_name", object["AppName"])
 	d.Set("command", object["Command"])
@@ -576,6 +592,20 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	//DeployApplication
 	request = map[string]*string{
 		"AppId": StringPointer(d.Id()),
+	}
+
+	if !d.IsNewResource() && d.HasChange("acr_assume_role_arn") {
+		update = true
+	}
+	if v, ok := d.GetOk("acr_assume_role_arn"); ok {
+		request["AcrAssumeRoleArn"] = StringPointer(v.(string))
+	}
+
+	if !d.IsNewResource() && d.HasChange("acr_instance_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("acr_instance_id"); ok {
+		request["AcrInstanceId"] = StringPointer(v.(string))
 	}
 
 	if !d.IsNewResource() && d.HasChange("command") {
@@ -876,6 +906,8 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 		}
+		d.SetPartial("acr_assume_role_arn")
+		d.SetPartial("acr_instance_id")
 		d.SetPartial("command")
 		d.SetPartial("command_args")
 		d.SetPartial("config_map_mount_desc")

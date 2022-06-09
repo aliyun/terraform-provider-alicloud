@@ -87,6 +87,14 @@ func dataSourceAlicloudSaeApplications() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"acr_assume_role_arn": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"acr_instance_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"command": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -453,6 +461,7 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 		mapping["acr_assume_role_arn"] = getResp["AcrAssumeRoleArn"]
+		mapping["acr_instance_id"] = getResp["AcrInstanceId"]
 		mapping["command"] = getResp["Command"]
 		mapping["command_args"] = getResp["CommandArgs"]
 		config_map_mount_desc, _ := convertArrayObjectToJsonString(getResp["ConfigMapMountDesc"])
