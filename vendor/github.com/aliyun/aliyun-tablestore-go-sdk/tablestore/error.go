@@ -13,6 +13,10 @@ var (
 		return errors.New("[tablestore] table name: \"" + name + "\" too long")
 	}
 
+	errInvalidSSEKeyType = func(sseType string) error {
+		return errors.New(fmt.Sprintf("[tablestore] unknown server side encryption key type: %s", sseType))
+	}
+
 	errInvalidPartitionType    = errors.New("[tablestore] invalid partition key")
 	errMissPrimaryKey          = errors.New("[tablestore] missing primary key")
 	errPrimaryKeyTooMuch       = errors.New("[tablestore] primary key too much")
@@ -26,7 +30,7 @@ var (
 )
 
 const (
-	OTS_CLIENT_UNKNOWN       = "OTSClientUnknownError"
+	OTS_CLIENT_UNKNOWN = "OTSClientUnknownError"
 
 	ROW_OPERATION_CONFLICT   = "OTSRowOperationConflict"
 	NOT_ENOUGH_CAPACITY_UNIT = "OTSNotEnoughCapacityUnit"
@@ -42,8 +46,8 @@ const (
 )
 
 type OtsError struct {
-	Code string
-	Message string
+	Code      string
+	Message   string
 	RequestId string
 
 	HttpStatusCode int

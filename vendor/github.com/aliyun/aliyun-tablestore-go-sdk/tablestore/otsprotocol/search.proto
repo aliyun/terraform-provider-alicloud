@@ -1,6 +1,9 @@
 syntax = "proto2";
 package otsprotocol;
 
+import "table_store.proto";
+
+/* query */
 enum QueryType {
     MATCH_QUERY = 1;
     MATCH_PHRASE_QUERY = 2;
@@ -197,12 +200,15 @@ message SearchQuery {
     optional Sort sort = 6;
     optional bool getTotalCount = 8;
     optional bytes token = 9;
+    optional Aggregations aggs = 10;
+    optional GroupBys group_bys = 11;
 }
 
 enum ColumnReturnType {
     RETURN_ALL = 1;
     RETURN_SPECIFIED = 2;
     RETURN_NONE = 3;
+    RETURN_ALL_FROM_INDEX = 4;
 }
 
 message ColumnsToGet {
@@ -216,6 +222,7 @@ message SearchRequest {
     optional ColumnsToGet columns_to_get = 3;
     optional bytes search_query = 4;
     repeated bytes routing_values = 5;
+    optional int32 timeoutMs = 6;
 }
 
 /**
@@ -227,6 +234,10 @@ message SearchResponse {
     repeated bytes rows = 2;
     optional bool is_all_succeeded = 3;
     optional bytes next_token = 6;
+    optional bytes aggs = 7;
+    optional bytes group_bys = 8;
+    optional ConsumedCapacity consumed = 9;
+    optional ConsumedCapacity reserved_consumed = 10;
 }
 
 /* Create Search Index */
@@ -246,6 +257,21 @@ enum FieldType {
     TEXT = 5;
     NESTED = 6;
     GEO_POINT = 7;
+    DATE = 8;
+}
+
+message SingleWordAnalyzerParameter {
+    optional bool case_sensitive = 1;
+    optional bool delimit_word = 2;
+}
+
+message SplitAnalyzerParameter {
+    optional string delimiter = 1;
+}
+
+message FuzzyAnalyzerParameter {
+    optional int32 min_chars = 1;
+    optional int32 max_chars = 2;
 }
 
 message FieldSchema {
@@ -254,10 +280,14 @@ message FieldSchema {
     optional IndexOptions index_options = 3;
     optional string analyzer = 4;
     optional bool index = 5;
-    optional bool doc_values = 6;
+    optional bool sort_and_agg = 6;
     optional bool store = 7;
     repeated FieldSchema field_schemas = 8; // only for nested type
     optional bool is_array = 9;
+    optional bytes analyzer_parameter = 10;
+    optional bool is_virtual_field = 11;
+    repeated string source_field_names = 12;
+    repeated string date_formats = 13;
 }
 
 message IndexSchema {
@@ -276,9 +306,28 @@ message CreateSearchIndexRequest {
     required string table_name = 1;
     required string index_name = 2;
     optional IndexSchema schema = 3;
+    optional string source_index_name = 4; // It is not recommended to use the SDK directly
+    optional int32 time_to_live = 5; // unit is seconds
 }
 
 message CreateSearchIndexResponse {
+}
+
+/* Update Search Index */
+message QueryFlowWeight {
+    optional string index_name = 1;
+    optional int32 weight = 2;
+}
+
+message UpdateSearchIndexRequest {
+    optional string table_name = 1;
+    optional string index_name = 2;
+    optional string switch_index_name = 3;
+    repeated QueryFlowWeight query_flow_weight = 4;
+    optional int32 time_to_live = 5;  // unit is seconds
+}
+
+message UpdateSearchIndexResponse {
 }
 
 /* List Search Index */
@@ -317,6 +366,13 @@ message SyncStat {
     optional int64 current_sync_timestamp = 2; // 同步进度，参考TunnelService。
 }
 
+message MeteringInfo {
+    optional int64 storage_size = 1;
+    optional int64 row_count = 2;
+    optional int64 reserved_read_cu = 3;
+    optional int64 timestamp = 4;
+}
+
 message DescribeSearchIndexRequest {
     optional string table_name = 1;
     optional string index_name = 2;
@@ -325,4 +381,303 @@ message DescribeSearchIndexRequest {
 message DescribeSearchIndexResponse {
     optional IndexSchema schema = 1;
     optional SyncStat sync_stat = 2;
+    optional MeteringInfo metering_info = 3;
+
+    optional string brother_index_name = 4;
+    repeated QueryFlowWeight query_flow_weight = 5;
+    optional int64 create_time = 6;
+    optional int32 time_to_live = 7;  // unit is seconds
+}
+
+
+/* aggregation & group by */
+enum AggregationType {
+    AGG_AVG = 1;
+    AGG_DISTINCT_COUNT = 6;
+    AGG_MAX = 2;
+    AGG_MIN = 3;
+    AGG_SUM = 4;
+    AGG_COUNT = 5;
+    AGG_TOP_ROWS = 7;
+    AGG_PERCENTILES = 8;
+}
+
+enum GroupByType {
+    GROUP_BY_FIELD = 1;
+    GROUP_BY_RANGE = 2;
+    GROUP_BY_FILTER = 3;
+    GROUP_BY_GEO_DISTANCE = 4;
+    GROUP_BY_HISTOGRAM = 5;
+}
+
+// agg & group by
+message Aggregation {
+    optional string name = 1;
+    optional AggregationType type = 2;
+    optional bytes body = 3;
+}
+message Aggregations {
+    repeated Aggregation aggs = 1;
+}
+
+message GroupBy {
+    optional string name = 1;
+    optional GroupByType type = 2;
+    optional bytes body = 3;
+}
+message GroupBys {
+    repeated GroupBy group_bys = 1;
+}
+
+// single agg
+message AvgAggregation {
+    optional string field_name = 1;
+    optional bytes missing = 2; //encoded as SQLVariant, check in SearchProxy
+}
+
+message MaxAggregation {
+    optional string field_name = 1;
+    optional bytes missing = 2;
+}
+
+message MinAggregation {
+    optional string field_name = 1;
+    optional bytes missing = 2;
+}
+
+message SumAggregation {
+    optional string field_name = 1;
+    optional bytes missing = 2;
+}
+
+message CountAggregation {
+    optional string field_name = 1;
+}
+
+message DistinctCountAggregation {
+    optional string field_name = 1;
+    optional bytes missing = 2;
+}
+
+message TopRowsAggregation {
+    optional int32 limit = 1;
+    optional Sort sort = 2;
+}
+
+message PercentilesAggregation {
+    optional string field_name = 1;
+    repeated double percentiles = 2;
+    optional bytes missing = 3;
+}
+
+message FieldRange {
+    optional bytes min = 1;
+    optional bytes max = 2;
+}
+
+message GroupByHistogram {
+    optional string field_name = 1;
+    optional bytes interval = 2;
+    optional bytes missing = 3;
+    optional int64  min_doc_count = 4;
+    optional GroupBySort sort = 5;
+    optional FieldRange field_range = 6;
+    optional Aggregations sub_aggs = 7;
+    optional GroupBys sub_group_bys = 8;
+}
+// group agg
+message GroupKeySort {
+    optional SortOrder order = 1;
+}
+
+message RowCountSort {
+    optional SortOrder order = 1;
+}
+
+message SubAggSort {
+    optional string sub_agg_name = 1;
+    optional SortOrder order = 2;
+}
+
+message GroupBySorter {
+    optional GroupKeySort group_key_sort = 1;
+    optional RowCountSort row_count_sort = 2;
+    optional SubAggSort sub_agg_sort = 3;
+}
+
+message GroupBySort {
+    repeated GroupBySorter sorters = 1;
+}
+
+message GroupByField {
+    optional string field_name = 1;
+    optional int32 size = 2;
+    optional GroupBySort sort = 3;
+    optional Aggregations sub_aggs = 4;
+    optional GroupBys sub_group_bys = 5;
+}
+
+message Range {
+    optional double from = 1;
+    optional double to = 2;
+}
+
+message GroupByRange {
+    optional string field_name = 1;
+    repeated Range ranges = 2;
+    optional Aggregations sub_aggs = 3;
+    optional GroupBys sub_group_bys = 4;
+}
+
+message GroupByFilter {
+    repeated Query filters = 1;
+    optional Aggregations sub_aggs = 2;
+    optional GroupBys sub_group_bys = 3;
+}
+
+message GeoPoint {
+    optional double lat = 1;
+    optional double lon = 2;
+}
+
+message GroupByGeoDistance {
+    optional string field_name = 1;
+    optional GeoPoint origin = 2;
+    repeated Range ranges = 3;
+    optional Aggregations sub_aggs = 4;
+    optional GroupBys sub_group_bys = 5;
+}
+//single agg result
+message AvgAggregationResult {
+    optional double value = 1;
+}
+
+message DistinctCountAggregationResult {
+    optional int64 value = 1;
+}
+
+message MaxAggregationResult {
+    optional double value = 1;
+}
+
+message MinAggregationResult {
+    optional double value = 1;
+}
+
+message SumAggregationResult {
+    optional double value = 1;
+}
+
+message CountAggregationResult {
+    optional int64 value = 1;
+}
+
+message TopRowsAggregationResult {
+    repeated bytes rows = 1;
+}
+
+message PercentilesAggregationItem {
+    optional double key = 1;
+    optional bytes value = 2;
+}
+
+message PercentilesAggregationResult {
+    repeated PercentilesAggregationItem percentiles_aggregation_items = 1;
+}
+
+message AggregationResult {
+    optional string name = 1;
+    optional AggregationType type = 2;
+    optional bytes agg_result = 3; // encoded by XxxAggregationResult
+}
+
+message AggregationsResult {
+    repeated AggregationResult agg_results = 1;
+}
+
+//group by result
+message GroupByFieldResultItem {
+    optional string key = 1;
+    optional int64 row_count = 2;
+    optional AggregationsResult sub_aggs_result = 3;
+    optional GroupBysResult sub_group_bys_result = 4;
+}
+message GroupByFieldResult {
+    repeated GroupByFieldResultItem group_by_field_result_items = 1;
+}
+
+message GroupByRangeResultItem {
+    optional double from = 1;
+    optional double to = 2;
+    optional int64 row_count = 3;
+    optional AggregationsResult sub_aggs_result = 4;
+    optional GroupBysResult sub_group_bys_result = 5;
+}
+message GroupByRangeResult {
+    repeated GroupByRangeResultItem group_by_range_result_items = 1;
+}
+
+message GroupByGeoDistanceResultItem {
+    optional double from = 1;
+    optional double to = 2;
+    optional int64 row_count = 3;
+    optional AggregationsResult sub_aggs_result = 4;
+    optional GroupBysResult sub_group_bys_result = 5;
+}
+message GroupByGeoDistanceResult {
+    repeated GroupByGeoDistanceResultItem group_by_geo_distance_result_items = 1;
+}
+
+message GroupByFilterResultItem {
+    optional int64 row_count = 1;
+    optional AggregationsResult sub_aggs_result = 2;
+    optional GroupBysResult sub_group_bys_result = 3;
+}
+message GroupByFilterResult {
+    repeated GroupByFilterResultItem group_by_filter_result_items = 1;
+}
+
+message GroupByResult {
+    optional string name = 1;
+    optional GroupByType type = 2;
+    optional bytes group_by_result = 3; //encoded by XxxGroupByResult
+}
+
+message GroupBysResult {
+    repeated GroupByResult group_by_results = 1;
+}
+
+message GroupByHistogramItem {
+    optional bytes key = 1;
+    optional int64 value = 2;
+    optional AggregationsResult sub_aggs_result = 3;
+    optional GroupBysResult sub_group_bys_result = 4;
+}
+
+message GroupByHistogramResult {
+    repeated GroupByHistogramItem group_by_histogra_items = 1;
+}
+
+/* ParallelScan API, same to Search API */
+message ScanQuery {
+    optional Query query = 1;
+    optional int32 limit = 2;
+    optional int32 alive_time = 3;  //unit is second
+    optional bytes token = 4;
+    optional int32 current_parallel_id = 5;
+    optional int32 max_parallel = 6;
+}
+
+message ParallelScanRequest {
+    optional string table_name = 1;
+    optional string index_name = 2;
+    optional ColumnsToGet columns_to_get = 3;
+    optional bytes session_id = 4;
+    optional bytes scan_query = 5;
+    optional int32 timeoutMs = 6;
+}
+
+message ParallelScanResponse {
+    repeated bytes rows = 1;
+    optional bytes next_token = 2;
 }
