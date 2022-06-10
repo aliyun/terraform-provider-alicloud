@@ -59,6 +59,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 					"image_type":            "AliyunLinux",
 					"deployment_set_id":     "${alicloud_ecs_deployment_set.default.id}",
 					"cis_enabled":           "true",
+					"rds_instances":         []string{"${alicloud_db_instance.default.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -88,6 +89,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"image_type":                   "AliyunLinux",
 						"deployment_set_id":            CHECKSET,
 						"cis_enabled":                  "true",
+						"rds_instances.#":              "1",
 					}),
 				),
 			},
@@ -765,6 +767,10 @@ resource "alicloud_security_group" "group1" {
 
 
 
+data "alicloud_db_instances" "default" {
+	engine = "MySQL"
+}
+
 resource "alicloud_vswitch" "vswitch" {
   count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
   vpc_id            = data.alicloud_vpcs.default.ids.0
@@ -786,6 +792,15 @@ resource "alicloud_ecs_deployment_set" "default" {
   domain              = "Default"
   granularity         = "Host"
   deployment_set_name = var.name
+}
+
+resource "alicloud_db_instance" "default" {
+  engine           = data.alicloud_db_instances.default.instances.0.engine
+  engine_version   = data.alicloud_db_instances.default.instances.0.engine_version
+  instance_type    = data.alicloud_db_instances.default.instances.0.instance_type
+  instance_storage = "10"
+  vswitch_id       = alicloud_vswitch.default.id
+  instance_name    = var.name
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {

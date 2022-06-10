@@ -123,8 +123,9 @@ func CompatibilityRule(prev, current map[string]map[string]interface{}, fileName
 			log.Errorf("[Incompatible Change]: there should not to change the type of attribute %v in the file %v!", fileName, filedName)
 		}
 
+		_, exist1 = obj["ForceNew"]
 		_, exist2 = current[filedName]["ForceNew"]
-		if exist2 {
+		if !exist1 && exist2 {
 			res = true
 			log.Errorf("[Incompatible Change]: there should not to change attribute %v to ForceNew from normal in the file %v!", fileName, filedName)
 		}
@@ -233,7 +234,7 @@ func parseResource(resourceName string) (*Resource, error) {
 
 	argsRegex := regexp.MustCompile("## Argument Reference")
 	attribRegex := regexp.MustCompile("## Attributes Reference")
-	secondLevelRegex := regexp.MustCompile("^\\#+")
+	secondLevelRegex := regexp.MustCompile("^#+")
 	argumentsFieldRegex := regexp.MustCompile("^\\* `([a-zA-Z_0-9]*)`[ ]*-? ?(\\(.*\\)) ?(.*)")
 	attributeFieldRegex := regexp.MustCompile("^\\* `([a-zA-Z_0-9]*)`[ ]*-?(.*)")
 
@@ -244,45 +245,41 @@ func parseResource(resourceName string) (*Resource, error) {
 	log.Infof("the resourceName = %s\n", resourceName)
 
 	scanner := bufio.NewScanner(file)
-	argumentFlag := false
-	attrFlag := false
+	phase := "Argument"
+	record := false
 	for scanner.Scan() {
 		line := scanner.Text()
 		if argsRegex.MatchString(line) {
-			argumentFlag = true
+			record = true
+			phase = "Argument"
 			continue
 		}
 		if attribRegex.MatchString(line) {
-			argumentFlag = false
-			attrFlag = true
+			record = true
+			phase = "Attribute"
 			continue
 		}
-		if argumentFlag {
-			if secondLevelRegex.MatchString(line) {
-				argumentFlag = false
+		if secondLevelRegex.MatchString(line) && strings.HasSuffix(line, "params") {
+			record = true
+			continue
+		}
+		if record {
+			if secondLevelRegex.MatchString(line) && !strings.HasSuffix(line, "params") {
+				record = false
 				continue
 			}
-			argumentsMatched := argumentsFieldRegex.FindAllStringSubmatch(line, 1)
-			for _, argumentMatched := range argumentsMatched {
-				Field := parseMatchLine(argumentMatched, true)
-				Field["Type"] = "Argument"
+			var matched [][]string
+			if phase == "Argument" {
+				matched = argumentsFieldRegex.FindAllStringSubmatch(line, 1)
+			} else if phase == "Attribute" {
+				matched = attributeFieldRegex.FindAllStringSubmatch(line, 1)
+			}
+
+			for _, m := range matched {
+				Field := parseMatchLine(m, phase)
+				Field["Type"] = phase
 				if v, exist := Field["Name"]; exist {
 					result.Arguments[v.(string)] = Field
-				}
-			}
-		}
-
-		if attrFlag {
-			if secondLevelRegex.MatchString(line) {
-				attrFlag = false
-				break
-			}
-			attributesMatched := attributeFieldRegex.FindAllStringSubmatch(line, 1)
-			for _, attributeParsed := range attributesMatched {
-				Field := parseMatchLine(attributeParsed, false)
-				Field["Type"] = "Attribute"
-				if v, exist := Field["Name"]; exist {
-					result.Attributes[v.(string)] = Field
 				}
 			}
 		}
@@ -290,9 +287,9 @@ func parseResource(resourceName string) (*Resource, error) {
 	return result, nil
 }
 
-func parseMatchLine(words []string, argumentFlag bool) map[string]interface{} {
+func parseMatchLine(words []string, phase string) map[string]interface{} {
 	result := make(map[string]interface{}, 0)
-	if argumentFlag && len(words) >= 4 {
+	if phase == "Argument" && len(words) >= 4 {
 		result["Name"] = words[1]
 		result["Description"] = words[3]
 		if strings.Contains(words[2], "Optional") {
@@ -306,7 +303,7 @@ func parseMatchLine(words []string, argumentFlag bool) map[string]interface{} {
 		}
 		return result
 	}
-	if !argumentFlag && len(words) >= 3 {
+	if phase == "Attribute" && len(words) >= 3 {
 		result["Name"] = words[1]
 		result["Description"] = words[2]
 		return result
