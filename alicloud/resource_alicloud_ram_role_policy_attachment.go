@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
