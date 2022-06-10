@@ -35,6 +35,8 @@ This resource will help you to manage node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.166.0, Support configuring system disk encryption.
 
+-> **NOTE:** From version 1.177.0+, Support `kms_encryption_context`, `rds_instances`, `system_disk_snapshot_policy_id` and `cpu_policy`.
+
 ## Example Usage
 
 The managed cluster configuration,
@@ -70,12 +72,9 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   count                        = 1
   cluster_spec                 = "ack.pro.small"
   is_enterprise_security_group = true
-  worker_number                = 2
-  password                     = "Hello1234"
   pod_cidr                     = "172.20.0.0/16"
   service_cidr                 = "172.21.0.0/20"
   worker_vswitch_ids           = [alicloud_vswitch.default.id]
-  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
 }
 ```
 
@@ -328,7 +327,8 @@ The following arguments are supported:
 * `instance_types` (Required) The instance type of worker node.
 * `password` - (Optional, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `key_name` - (Optional) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. Only `key_name` is supported in the management node pool.
-* `kms_encrypted_password` - (Optional) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
+* `kms_encrypted_password` - (Optional, Available in 1.177.0) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
+* `kms_encryption_context` - (Optional, Available in 1.177.0) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `node_count` (Optional, Deprecated) The worker node number of the node pool. From version 1.111.0, `node_count` is not required.
 * `desired_size` (Optional, Available in 1.158.0+) The desired size of nodes of the node pool. From version 1.158.0, `desired_size` is not required.
 * `system_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
@@ -381,12 +381,15 @@ The following arguments are supported:
 * `cis_enabled` - (Optional, Available in 1.173.0+) Whether enable worker node to support cis security reinforcement, its valid value `true` or `false`. Default to `false` and apply to `image_type/platform=AliyunLinux`, see [CIS Reinforcement](https://help.aliyun.com/document_detail/223744.html).
 * `soc_enabled` - (Optional, Available in 1.173.0+) Whether enable worker node to support soc security reinforcement, its valid value `true` or `false`. Default to `false` and apply to `image_type/platform=AliyunLinux`, see [SOC Reinforcement](https://help.aliyun.com/document_detail/196148.html).  
   -> **NOTE:** It is forbidden to set both `cis_enabled` and `soc_enabled` to `true`at the same time.
+* `rds_instances` - (Optional, Available in 1.177.0+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
+* `system_disk_snapshot_policy_id` - (Optional, Available in 1.177.0+) The system disk snapshot policy id.
+* `cpu_policy` - (Optional, Available in 1.177.0+) Kubelet cpu policy. For Kubernetes 1.12.6 and later, its valid value is either `static` or `none`. Default to `none` and modification is not supported.
 
 #### tags
 
 The tags example：
 ```
-tags {
+tags = {
   "key-a" = "value-a"
   "key-b" = "value-b"
   "env"   = "prod"

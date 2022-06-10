@@ -37,10 +37,10 @@ resource "alicloud_vpc" "vpc" {
 
 # According to the vswitch cidr blocks to launch several vswitches
 resource "alicloud_vswitch" "vswitches" {
-  count             = length(var.vswitch_ids) > 0 ? 0 : length(var.vswitch_cidrs)
-  vpc_id            = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
-  cidr_block        = element(var.vswitch_cidrs, count.index)
-  availability_zone = element(var.availability_zone, count.index)
+  count      = length(var.vswitch_ids) > 0 ? 0 : length(var.vswitch_cidrs)
+  vpc_id     = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
+  cidr_block = element(var.vswitch_cidrs, count.index)
+  zone_id    = element(var.availability_zone, count.index)
 }
 
 resource "alicloud_cs_edge_kubernetes" "k8s" {
@@ -55,17 +55,17 @@ resource "alicloud_cs_edge_kubernetes" "k8s" {
   password              = var.password
   service_cidr          = var.service_cidr
   pod_cidr              = var.pod_cidr
-  # version can not be defined in variables.tf. Options: 1.14.8-aliyunedge.1|1.12.6-aliyunedge.2
-  version               = "1.12.6-aliyunedge.2"
+  # version can not be defined in variables.tf.
+  version               = "1.20.11-aliyunedge.1"
 
   dynamic "addons" {
       for_each = var.cluster_addons
       content {
-        name                    = lookup(addons.value, "name", var.cluster_addons)
-        config                  = lookup(addons.value, "config", var.cluster_addons)
+        name   = lookup(addons.value, "name", var.cluster_addons)
+        config = lookup(addons.value, "config", var.cluster_addons)
       }
   }
-  slb_internet_enabled = var.slb_enabled
+  slb_internet_enabled         = var.slb_enabled
   is_enterprise_security_group = var.enterprise_sg
 }
 

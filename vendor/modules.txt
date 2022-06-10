@@ -183,7 +183,7 @@ github.com/clbanning/mxj/v2
 github.com/davecgh/go-spew/spew
 # github.com/deckarep/golang-set v1.8.0
 github.com/deckarep/golang-set
-# github.com/denverdino/aliyungo v0.0.0-20220531124911-7183b75c63d4
+# github.com/denverdino/aliyungo v0.0.0-20220610083100-ab5f747cb559
 github.com/denverdino/aliyungo/cdn
 github.com/denverdino/aliyungo/common
 github.com/denverdino/aliyungo/common/utils

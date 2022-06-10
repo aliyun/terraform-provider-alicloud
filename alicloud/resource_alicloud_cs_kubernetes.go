@@ -157,57 +157,63 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			// worker configurations
 			"worker_vswitch_ids": {
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MinItems: 1,
+				Deprecated: "Field 'worker_vswitch_ids' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'vswitch_ids' to replace it",
+				MinItems:   1,
 			},
 			"worker_instance_types": {
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				MinItems: 1,
-				MaxItems: 10,
+				MinItems:   1,
+				MaxItems:   10,
+				Deprecated: "Field 'worker_instance_types' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'instance_types' to replace it",
 			},
 			"worker_number": {
-				Type:     schema.TypeInt,
-				Required: true,
+				Type:       schema.TypeInt,
+				Optional:   true,
+				Deprecated: "Field 'worker_number' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'desired_size' to replace it",
 			},
 			"worker_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				Default:      40,
 				ValidateFunc: validation.IntBetween(20, 32768),
+				Deprecated:   "Field 'worker_disk_size' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_size' to replace it",
 			},
 			"worker_disk_category": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  DiskCloudEfficiency,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'worker_disk_category' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_category' to replace it",
 			},
 			"worker_disk_performance_level": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 				DiffSuppressFunc: workerDiskPerformanceLevelDiffSuppressFunc,
+				Deprecated:       "Field 'worker_disk_performance_level' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_performance_level' to replace it",
 			},
 			"worker_disk_snapshot_policy_id": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'worker_disk_snapshot_policy_id' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_snapshot_policy_id' to replace it",
 			},
 			"worker_data_disk_size": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				Default:          40,
 				ValidateFunc:     validation.IntBetween(20, 32768),
 				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
+				Deprecated:       "Field 'worker_data_disk_size' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks.size' to replace it",
 			},
 			"worker_data_disk_category": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'worker_data_disk_category' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks.category' to replace it",
 			},
 			"worker_data_disks": {
 				Optional: true,
@@ -253,46 +259,47 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						},
 					},
 				},
+				Deprecated: "Field 'worker_data_disks' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks' to replace it",
 			},
 			"worker_instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
-				Default:      PostPaid,
+				Deprecated:   "Field 'worker_instance_charge_type' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'instance_charge_type' to replace it",
 			},
 			"worker_period_unit": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				Default:          Month,
 				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
+				Deprecated:       "Field 'worker_period_unit' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'period_unit' to replace it",
 			},
 			"worker_period": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  1,
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
+				Deprecated:       "Field 'worker_period' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'period' to replace it",
 			},
 			"worker_auto_renew": {
 				Type:             schema.TypeBool,
-				Default:          false,
 				Optional:         true,
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
+				Deprecated:       "Field 'worker_auto_renew' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'auto_renew' to replace it",
 			},
 			"worker_auto_renew_period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				Default:          1,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
+				Deprecated:       "Field 'worker_auto_renew_period' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'auto_renew_period' to replace it",
 			},
 			"exclude_autoscaler_nodes": {
-				Type:     schema.TypeBool,
-				Default:  false,
-				Optional: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field 'exclude_autoscaler_nodes' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
 			},
 			// global configurations
 			// Terway network
@@ -384,6 +391,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"none", "static"}, false),
+				Deprecated:   "Field 'cpu_policy' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'cpu_policy' to replace it",
 			},
 			"proxy_mode": {
 				Type:         schema.TypeString,
@@ -444,10 +452,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ForceNew: true,
 			},
 			"node_port_range": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "30000-32767",
-				ForceNew: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Deprecated: "Field 'node_port_range' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
 			},
 			"runtime": {
 				Type:     schema.TypeMap,
@@ -494,6 +502,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						},
 					},
 				},
+				Deprecated: "Field 'taints' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'taints' to replace it",
 			},
 			"rds_instances": {
 				Type:     schema.TypeList,
@@ -639,6 +648,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						},
 					},
 				},
+				Deprecated: "Field 'worker_nodes' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
 			},
 			// remove parameters below
 			// mix vswitch_ids between master and worker is not a good guidance to create cluster
@@ -727,8 +737,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Removed:      "Field 'cluster_network_type' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
 			"user_data": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'user_data' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'user_data' to replace it",
 			},
 			"node_name_mode": {
 				Type:         schema.TypeString,
@@ -1151,16 +1162,61 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("load_balancer_spec", "slb.s1.small")
 	}
 
-	// d.Set("os_type", object.OSType)
-	// d.Set("platform", object.Platform)
-	// d.Set("timezone", object.TimeZone)
-	// d.Set("cluster_domain", object.ClusterDomin)
-	// d.Set("custom_san",object.CustomSAN)
-	// d.Set("runtime", object.Runtime)
-	// d.Set("taints", object.Taits)
-	// d.Set("rds_instances", object.RdsInstances)
-	// d.Set("node_port_range", object.NodePortRange)
+	// TODO: A better way to deal with default value?
+	//if _, ok := d.GetOk("name_prefix"); !ok {
+	//	d.Set("name_prefix", "Terraform-Creation")
+	//}
+	//if _, ok := d.GetOk("node_cidr_mask"); !ok {
+	//	d.Set("node_cidr_mask", KubernetesClusterNodeCIDRMasksByDefault)
+	//}
+	//if _, ok := d.GetOk("worker_disk_category"); !ok {
+	//	d.Set("worker_disk_category", DiskCloudEfficiency)
+	//}
+	//if _, ok := d.GetOk("worker_disk_size"); !ok {
+	//	d.Set("worker_disk_size", 40)
+	//}
+	//if _, ok := d.GetOk("cpu_policy"); !ok {
+	//	d.Set("cpu_policy", "none")
+	//}
 	d.Set("maintenance_window", flattenMaintenanceWindowConfig(&object.MaintenanceWindow))
+
+	//request.Parameters
+	if v, ok := object.Parameters["WorkerInstanceChargeType"]; ok {
+		d.Set("worker_instance_charge_type", Interface2String(v))
+	}
+	if v, ok := object.Parameters["MasterVSwitchIds"]; ok {
+		d.Set("master_vswitch_ids", strings.Split(Interface2String(v), ","))
+	}
+	if v, ok := object.Parameters["WorkerVSwitchIds"]; ok {
+		d.Set("worker_vswitch_ids", strings.Split(Interface2String(v), ","))
+	}
+	if v, ok := object.Parameters["WorkerPeriodUnit"]; ok {
+		d.Set("worker_period_unit", Interface2String(v))
+	}
+	if v, ok := object.Parameters["WorkerPeriod"]; ok {
+		d.Set("worker_period", formatInt(v))
+	}
+	if v, ok := object.Parameters["WorkerAutoRenewPeriod"]; ok {
+		d.Set("worker_auto_renew_period", formatInt(v))
+	}
+	if v, ok := object.Parameters["WorkerAutoRenew"]; ok {
+		d.Set("worker_auto_renew", Interface2Bool(v))
+	}
+	if v, ok := object.Parameters["SNatEntry"]; ok {
+		d.Set("new_nat_gateway", Interface2Bool(v))
+	}
+	if v, ok := object.Parameters["CloudMonitorFlags"]; ok {
+		d.Set("install_cloud_monitor", Interface2Bool(v))
+	}
+	if v, ok := object.Parameters["ProxyMode"]; ok {
+		d.Set("proxy_mode", Interface2String(v))
+	}
+
+	// Cluster capabilities
+	capabilities := fetchClusterCapabilities(object.MetaData)
+	if v, ok := capabilities["PublicSLB"]; ok {
+		d.Set("slb_internet_enabled", Interface2Bool(v))
+	}
 
 	var masterNodes []map[string]interface{}
 	var workerNodes []map[string]interface{}
@@ -1989,4 +2045,24 @@ func getApiServerSlbID(d *schema.ResourceData, meta interface{}) (string, error)
 	}
 
 	return "", fmt.Errorf("cannot found api server SLB information for cluster: %s", d.Id())
+}
+
+func fetchClusterCapabilities(meta string) map[string]interface{} {
+	metadata := make(map[string]interface{}, 0)
+	capabilities := make(map[string]interface{}, 0)
+	if meta != "" {
+		err := json.Unmarshal([]byte(meta), &metadata)
+		if err != nil {
+			log.Printf("[DEBUG] Failed to unmarshal metadata due to %++v", err)
+		}
+	}
+	if v, ok := metadata["Capabilities"]; ok {
+		if IsEmpty(v) {
+			return capabilities
+		}
+		if m, ok := v.(map[string]interface{}); ok {
+			return m
+		}
+	}
+	return capabilities
 }

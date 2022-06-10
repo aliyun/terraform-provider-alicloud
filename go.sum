@@ -178,6 +178,8 @@ github.com/deckarep/golang-set v1.8.0 h1:sk9/l/KqpunDwP7pSjUg0keiOOLEnOBHzykLrsP
 github.com/deckarep/golang-set v1.8.0/go.mod h1:5nI87KwE7wgsBU1F4GKAw2Qod7p5kyS383rP6+o6qqo=
 github.com/denverdino/aliyungo v0.0.0-20220531124911-7183b75c63d4 h1:4ruUw6pWpdnpAEwMUqcTtsNIYJIILWSXRPOINvoI5to=
 github.com/denverdino/aliyungo v0.0.0-20220531124911-7183b75c63d4/go.mod h1:TK05uvk4XXfK2kdvRwfcZ1NaxjDxmm7H3aQLko0mJxA=
+github.com/denverdino/aliyungo v0.0.0-20220610083100-ab5f747cb559 h1:DUSQLfEOG+8LbQ4tmN8CpM+TEsWa9CnjGlISAWQm4zM=
+github.com/denverdino/aliyungo v0.0.0-20220610083100-ab5f747cb559/go.mod h1:TK05uvk4XXfK2kdvRwfcZ1NaxjDxmm7H3aQLko0mJxA=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
