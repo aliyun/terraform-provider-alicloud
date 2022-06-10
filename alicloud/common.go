@@ -359,6 +359,28 @@ func convertJsonStringToStringList(src interface{}) (result []interface{}) {
 	return
 }
 
+func encodeToBase64String(configured []string) string {
+	result := ""
+	for i, v := range configured {
+		result += v
+		if i < len(configured)-1 {
+			result += ","
+		}
+	}
+	return base64.StdEncoding.EncodeToString([]byte(result))
+}
+
+func decodeFromBase64String(configured string) (result []string, err error) {
+
+	decodeString, err := base64.StdEncoding.DecodeString(configured)
+	if err != nil {
+		return result, err
+	}
+
+	result = strings.Split(string(decodeString), ",")
+	return result, nil
+}
+
 func convertJsonStringToMap(configured string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 	if err := json.Unmarshal([]byte(configured), &result); err != nil {

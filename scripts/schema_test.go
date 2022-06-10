@@ -43,6 +43,7 @@ var (
 		"alicloud_instance":                 {"subnet_id"},
 		"alicloud_hbr_ots_backup_plan":      {"vault_id"},
 		"alicloud_nat_gateway":              {"vswitch_id"},
+		"alicloud_ecs_disk":                 {"advanced_features", "encrypt_algorithm", "dedicated_block_storage_cluster_id"},
 	}
 )
 
