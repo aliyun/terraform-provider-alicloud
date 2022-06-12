@@ -460,6 +460,14 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"cis_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"soc_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -864,6 +872,8 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("runtime_name", object.Runtime)
 	d.Set("runtime_version", object.RuntimeVersion)
 	d.Set("deployment_set_id", object.DeploymentSetId)
+	d.Set("cis_enabled", tea.BoolValue(object.CisEnabled))
+	d.Set("soc_enabled", tea.BoolValue(object.SocEnabled))
 
 	if object.DesiredSize != nil {
 		d.Set("desired_size", *object.DesiredSize)
@@ -1135,6 +1145,24 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 
 	if v, ok := d.GetOk("runtime_version"); ok {
 		creationArgs.RuntimeVersion = v.(string)
+	}
+
+	cisEnabled, socEnabled := false, false
+	if v, ok := d.GetOkExists("cis_enabled"); ok {
+		cisEnabled = v.(bool)
+	}
+	if v, ok := d.GetOkExists("soc_enabled"); ok {
+		socEnabled = v.(bool)
+	}
+	if (cisEnabled || socEnabled) && creationArgs.Platform != "AliyunLinux" && creationArgs.ImageType != "AliyunLinux" {
+		return creationArgs, fmt.Errorf("SOC/CIS security reinforcement is not supported for current platform/image_type")
+	}
+	if cisEnabled && socEnabled {
+		return creationArgs, fmt.Errorf("setting SOC and CIS together is not supported")
+	} else if cisEnabled {
+		creationArgs.CisEnabled = tea.Bool(cisEnabled)
+	} else if socEnabled {
+		creationArgs.SocEnabled = tea.Bool(socEnabled)
 	}
 
 	return creationArgs, nil

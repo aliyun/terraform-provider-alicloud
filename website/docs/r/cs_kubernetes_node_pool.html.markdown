@@ -378,6 +378,9 @@ The following arguments are supported:
 * `system_disk_encrypted` - (Optional, Available in 1.166.0+) Whether to enable system disk encryption.
 * `system_disk_kms_key` - (Optional, Available in 1.166.0+) The kms key id used to encrypt the system disk. It takes effect when system_disk_encrypted is true.
 * `system_disk_encrypt_algorithm` - (Optional, Available in 1.166.0+) The encryption Algorithm for Encrypting System Disk. It takes effect when system_disk_encrypted is true. Valid values `aes-256` and `sm4-128`.
+* `cis_enabled` - (Optional, Available in 1.173.0+) Whether enable worker node to support cis security reinforcement, its valid value `true` or `false`. Default to `false` and apply to `image_type/platform=AliyunLinux`, see [CIS Reinforcement](https://help.aliyun.com/document_detail/223744.html).
+* `soc_enabled` - (Optional, Available in 1.173.0+) Whether enable worker node to support soc security reinforcement, its valid value `true` or `false`. Default to `false` and apply to `image_type/platform=AliyunLinux`, see [SOC Reinforcement](https://help.aliyun.com/document_detail/196148.html).  
+  -> **NOTE:** It is forbidden to set both `cis_enabled` and `soc_enabled` to `true`at the same time.
 
 #### tags
 
