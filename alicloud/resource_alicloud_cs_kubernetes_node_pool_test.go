@@ -55,8 +55,9 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 					"security_group_ids":    []string{"${alicloud_security_group.group.id}", "${alicloud_security_group.group1.id}"},
 					"runtime_name":          "containerd",
 					"runtime_version":       "1.4.8",
-					"image_type":            "CentOS",
+					"image_type":            "AliyunLinux",
 					"deployment_set_id":     "${alicloud_ecs_deployment_set.default.id}",
+					"cis_enabled":           "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -83,8 +84,9 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"security_group_ids.#":         "2",
 						"runtime_name":                 "containerd",
 						"runtime_version":              "1.4.8",
-						"image_type":                   "CentOS",
+						"image_type":                   "AliyunLinux",
 						"deployment_set_id":            CHECKSET,
+						"cis_enabled":                  "true",
 					}),
 				),
 			},
