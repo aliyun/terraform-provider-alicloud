@@ -9,3 +9,5 @@ func main() {
 	plugin.Serve(&plugin.ServeOpts{
 		ProviderFunc: alicloud.Provider})
 }
+
+// this is for testing ci
