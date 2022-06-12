@@ -1,27 +1,29 @@
-## 1.171.0 (Unreleased)
+## 1.172.0 (Unreleased)
+## 1.171.0 (June 12, 2022)
 
-- **New Resource:** `alicloud_config_delivery` [GH-5046]
-- **New Resource:** `alicloud_cms_namespace` [GH-5050]
-- **New Resource:** `alicloud_cms_sls_group` [GH-5055]
-- **New Data Source:** `alicloud_cms_sls_groups` [GH-5055]	
-- **New Data Source:** `alicloud_cms_namespaces` [GH-5050]	
-- **New Data Source:** `alicloud_config_deliveries` [GH-5046]
+- **New Resource:** `alicloud_config_delivery` ([#5046](https://github.com/aliyun/terraform-provider-alicloud/issues/5046))
+- **New Resource:** `alicloud_cms_namespace` ([#5050](https://github.com/aliyun/terraform-provider-alicloud/issues/5050))
+- **New Resource:** `alicloud_cms_sls_group` ([#5055](https://github.com/aliyun/terraform-provider-alicloud/issues/5055))
+- **New Data Source:** `alicloud_cms_sls_groups` ([#5055](https://github.com/aliyun/terraform-provider-alicloud/issues/5055))	
+- **New Data Source:** `alicloud_cms_namespaces` ([#5050](https://github.com/aliyun/terraform-provider-alicloud/issues/5050))	
+- **New Data Source:** `alicloud_config_deliveries` ([#5046](https://github.com/aliyun/terraform-provider-alicloud/issues/5046))
 
 ENHANCEMENTS:
 
-- resource/alicloud_mongodb_sharding_network_private_address:Added retry stragety for error code OperationDenied.DBInstanceStatus [GH-5033]
-- resource/alicloud_mongodb_instance:Added retry stragety for error code OperationDenied.DBInstanceStatus [GH-5030]
-- resource/alicloud_ecd_policy_group: Adds new attribute recording recording_start_time recording_end_time recording_fps camera_redirect [GH-5048]
-- resource alicloud_db_instance, alicloud_rds_clone_db_instance,alicloud_rds_upgrade_db_instance add attribute tcp_connection_type to support changing the availability check method of the instance [GH-5037]
-- resource/alicloud_scdn_domain: Field biz_name has been deprecated from provider. [GH-5040]
-- resource/alicloud_graph_database_db_instance: Add support for new parameter vpc_id, vswitch_id and zone_id [GH-4975]	
-- region: add the available regions: cn-beijing-finance-1,cn-beijing-finance-1-pub,cn-szfinance,cn-hzfinance,cn-hzjbp,cn-shenzhen-finance [GH-5043]
-- testcase: Adds new unit test case for resource alicloud_cms_dynamic_tag_group alicloud_cms_monitor_group_instances alicloud_cms_monitor_group [GH-5039]
+- resource/alicloud_cs_managed_kubernetes, alicloud_cs_serverless_kubernetes: ACK and ASK support rrsa ([#5009](https://github.com/aliyun/terraform-provider-alicloud/issues/5009))
+- resource/alicloud_mongodb_sharding_network_private_address:Added retry stragety for error code OperationDenied.DBInstanceStatus ([#5033](https://github.com/aliyun/terraform-provider-alicloud/issues/5033))
+- resource/alicloud_mongodb_instance:Added retry stragety for error code OperationDenied.DBInstanceStatus ([#5030](https://github.com/aliyun/terraform-provider-alicloud/issues/5030))
+- resource/alicloud_ecd_policy_group: Adds new attribute recording recording_start_time recording_end_time recording_fps camera_redirect ([#5048](https://github.com/aliyun/terraform-provider-alicloud/issues/5048))
+- resource alicloud_db_instance, alicloud_rds_clone_db_instance,alicloud_rds_upgrade_db_instance add attribute tcp_connection_type to support changing the availability check method of the instance ([#5037](https://github.com/aliyun/terraform-provider-alicloud/issues/5037))
+- resource/alicloud_scdn_domain: Field biz_name has been deprecated from provider. ([#5040](https://github.com/aliyun/terraform-provider-alicloud/issues/5040))
+- resource/alicloud_graph_database_db_instance: Add support for new parameter vpc_id, vswitch_id and zone_id ([#4975](https://github.com/aliyun/terraform-provider-alicloud/issues/4975))	
+- region: add the available regions: cn-beijing-finance-1,cn-beijing-finance-1-pub,cn-szfinance,cn-hzfinance,cn-hzjbp,cn-shenzhen-finance ([#5043](https://github.com/aliyun/terraform-provider-alicloud/issues/5043))
+- testcase: Adds new unit test case for resource alicloud_cms_dynamic_tag_group alicloud_cms_monitor_group_instances alicloud_cms_monitor_group ([#5039](https://github.com/aliyun/terraform-provider-alicloud/issues/5039))
 
 BUG FIXES:
 
-- resource/alicloud_sae_application:Fixed ci test error [GH-5038]
-- resource/alicloud_ess_scaling_group:Fixed ci test error [GH-5041]
+- resource/alicloud_sae_application:Fixed ci test error ([#5038](https://github.com/aliyun/terraform-provider-alicloud/issues/5038))
+- resource/alicloud_ess_scaling_group:Fixed ci test error ([#5041](https://github.com/aliyun/terraform-provider-alicloud/issues/5041))
 
 ## 1.170.0 (June 05, 2022)
 
