@@ -1126,6 +1126,12 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("cluster_spec", object.ClusterSpec)
 	d.Set("deletion_protection", object.DeletionProtection)
 
+	slbId, err := getApiServerSlbID(d, meta)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeClusterResources", AlibabaCloudSdkGoERROR)
+	}
+	d.Set("slb_id", slbId)
+
 	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
 		return WrapError(err)
 	}
@@ -1963,4 +1969,24 @@ func modifyMaintenanceWindow(d *schema.ResourceData, meta interface{}, mw cs.Mai
 	d.SetPartial("maintenance_window")
 
 	return nil
+}
+
+// getApiServerSlbID gets cluster's API server SLB ID.
+func getApiServerSlbID(d *schema.ResourceData, meta interface{}) (string, error) {
+	rosClient, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return "", err
+	}
+	clusterResources, err := rosClient.DescribeClusterResources(tea.String(d.Id()))
+	if err != nil {
+		return "", err
+	}
+
+	for _, clusterResource := range clusterResources.Body {
+		if tea.StringValue(clusterResource.ResourceType) == "SLB" {
+			return tea.StringValue(clusterResource.InstanceId), nil
+		}
+	}
+
+	return "", fmt.Errorf("cannot found api server SLB information for cluster: %s", d.Id())
 }
