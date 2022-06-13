@@ -13,7 +13,7 @@ This data source provides the ots tunnels of the current Alibaba Cloud user.
 
 For information about OTS tunnel and how to use it, see [Tunnel overview](https://www.alibabacloud.com/help/en/tablestore/latest/tunnel-service-overview).
 
--> **NOTE:** Available in v1.170.0+.
+-> **NOTE:** Available in v1.172.0+.
 
 ## Example Usage
 
@@ -34,8 +34,8 @@ output "first_tunnel_id" {
 
 The following arguments are supported:
 
-* `instance_name` - The name of OTS instance.
-* `table_name` - The name of OTS table.
+* `instance_name` - (Required) The name of OTS instance.
+* `table_name` - (Required) The name of OTS table.
 * `ids` - (Optional) A list of tunnel IDs.
 * `name_regex` - (Optional) A regex string to filter results by tunnel name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).

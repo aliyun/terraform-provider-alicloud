@@ -67,8 +67,8 @@ The following arguments are supported:
 * `time_to_live` - (Required) The retention time of data stored in this table (unit: second). The value maximum is 2147483647 and -1 means never expired.
 * `max_version` - (Required) The maximum number of versions stored in this table. The valid value is 1-2147483647.
 * `deviation_cell_version_in_sec` - (Optional, Available in 1.42.0+) The max version offset of the table. The valid value is 1-9223372036854775807. Defaults to 86400.
-* `enable_sse` - (Optional, Available in 1.170.0+) Whether enable OTS server side encryption. Default value is false.
-* `sse_key_type` - (Optional, Available in 1.170.0+) The key type of OTS server side encryption. Only `SSE_KMS_SERVICE` is allowed.
+* `enable_sse` - (Optional, Available in 1.172.0+) Whether enable OTS server side encryption. Default value is false.
+* `sse_key_type` - (Optional, Available in 1.172.0+) The key type of OTS server side encryption. Only `SSE_KMS_SERVICE` is allowed.
 
 ## Attributes Reference
 
