@@ -699,6 +699,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_namespaces":                              dataSourceAlicloudCmsNamespaces(),
 			"alicloud_cms_sls_groups":                              dataSourceAlicloudCmsSlsGroups(),
 			"alicloud_config_aggregate_deliveries":                 dataSourceAlicloudConfigAggregateDeliveries(),
+			"alicloud_edas_namespaces":                             dataSourceAlicloudEdasNamespaces(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1295,6 +1296,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_namespace":                                        resourceAlicloudCmsNamespace(),
 			"alicloud_cms_sls_group":                                        resourceAlicloudCmsSlsGroup(),
 			"alicloud_config_aggregate_delivery":                            resourceAlicloudConfigAggregateDelivery(),
+			"alicloud_edas_namespace":                                       resourceAlicloudEdasNamespace(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1513,6 +1515,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DdosbasicEndpoint = strings.TrimSpace(endpoints["ddosbasic"].(string))
 		config.SmartagEndpoint = strings.TrimSpace(endpoints["smartag"].(string))
 		config.TagEndpoint = strings.TrimSpace(endpoints["tag"].(string))
+		config.EdasEndpoint = strings.TrimSpace(endpoints["edas"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1829,6 +1832,8 @@ func init() {
 		"smartag_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom smartag endpoints.",
 
 		"tag_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom tag endpoints.",
+
+		"edas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom edas endpoints.",
 	}
 }
 
@@ -1873,6 +1878,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"edas": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["edas_endpoint"],
+				},
+
 				"tag": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2712,6 +2724,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["ddosbasic"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["smartag"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["tag"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["edas"].(string)))
 	return hashcode.String(buf.String())
 }
 
