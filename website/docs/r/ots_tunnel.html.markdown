@@ -13,7 +13,7 @@ Provides an OTS tunnel resource.
 
 For information about OTS tunnel and how to use it, see [Tunnel overview](https://www.alibabacloud.com/help/en/tablestore/latest/tunnel-service-overview).
 
--> **NOTE:** Available in v1.170.0+.
+-> **NOTE:** Available in v1.172.0+.
 
 ## Example Usage
 
@@ -89,6 +89,13 @@ The following attributes are exported:
   * `channel_status` - The status of the channel, valid values: `WAIT`, `OPEN`, `CLOSING`, `CLOSE`, `TERMINATED`.
   * `client_id` - The client id of the channel.
   * `channel_rpo` - The latest consumption time of the channel, unix time in nanosecond.
+  
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when create the OTS tunnel.
+* `delete` - (Defaults to 10 mins) Used when delete the OTS tunnel.
 
 ## Import
 

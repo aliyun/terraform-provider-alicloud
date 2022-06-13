@@ -31,7 +31,6 @@ func dataSourceAlicloudOtsTunnels() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 				ForceNew: true,
-				MinItems: 1,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
