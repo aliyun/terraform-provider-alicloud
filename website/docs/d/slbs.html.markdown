@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_slbs
 
--> **DEPRECATED:** This datasource has been renamed to [alicloud_slb_load_balancers](https://www.terraform.io/docs/providers/alicloud/d/slb_load_balancers.html) from version 1.123.1.
+-> **DEPRECATED:** This datasource has been renamed to [alicloud_slb_load_balancers](https://www.terraform.io/docs/providers/alicloud/d/slb_load_balancers) from version 1.123.1.
 
 This data source provides the server load balancers of the current Alibaba Cloud user.
 

@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_disks
 
--> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_disks](https://www.terraform.io/docs/providers/alicloud/d/ecs_disks.html) from version 1.122.0.
+-> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_disks](https://www.terraform.io/docs/providers/alicloud/d/ecs_disks) from version 1.122.0.
 
 This data source provides the disks of the current Alibaba Cloud user.
 
