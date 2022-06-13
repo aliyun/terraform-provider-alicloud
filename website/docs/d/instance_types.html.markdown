@@ -48,8 +48,8 @@ The following arguments are supported:
 * `network_type` - (Optional) Filter the results by network type. Valid values: `Classic` and `Vpc`.
 * `spot_strategy` - (Optional) Filter the results by ECS spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
 * `eni_amount` - (Optional) Filter the result whose network interface number is no more than `eni_amount`.
-* `kubernetes_node_role` - (Optional) Filter the result which is used to create a [kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_kubernetes.html)
- and [managed kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_managed_kubernetes.html). Optional Values: `Master` and `Worker`.
+* `kubernetes_node_role` - (Optional) Filter the result which is used to create a [kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_kubernetes)
+ and [managed kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_managed_kubernetes). Optional Values: `Master` and `Worker`.
 * `is_outdated` - (Optional, type: bool) If true, outdated instance types are included in the results. Default to false.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `system_disk_category` - (Optional, Available in 1.120.0+) Filter the results by system disk category. Valid values: `cloud`, `ephemeral_ssd`, `cloud_essd`, `cloud_efficiency`, `cloud_ssd`. 

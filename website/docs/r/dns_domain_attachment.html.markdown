@@ -13,7 +13,7 @@ Provides bind the domain name to the DNS instance resource.
 
 -> **NOTE:** Available in v1.80.0+.
 
--> **DEPRECATED:**  This resource has been deprecated from version `1.99.0`. Please use new resource [alicloud_alidns_domain_attachment](https://www.terraform.io/docs/providers/alicloud/r/alidns_domain_attachment.html).
+-> **DEPRECATED:**  This resource has been deprecated from version `1.99.0`. Please use new resource [alicloud_alidns_domain_attachment](https://www.terraform.io/docs/providers/alicloud/r/alidns_domain_attachment).
 
 ## Example Usage
 
