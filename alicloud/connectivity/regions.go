@@ -213,3 +213,4 @@ var DdosBasicSupportRegions = []Region{WuLanChaBu, APSouth1, HeYuan, Shenzhen, M
 var TagSupportRegions = []Region{Huhehaote, APSouthEast5, CnNorth2Gov1, HeYuan, APSouthEast2, Beijing, APSouthEast3, USWest1, WuLanChaBu, GuangZhou, MEEast1, ShenZhenFinance1, Shanghai, ShanghaiFinance, EUCentral1, APSouthEast1, USEast1, Hangzhou, Hongkong, Qingdao, Zhangjiakou, Shenzhen, EUWest1, APNorthEast1, APSouth1, ChengDu}
 var GraphDatabaseDbInstanceSupportRegions = []Region{Hangzhou}
 var SchedulerxSupportRegions = []Region{Hangzhou, Shenzhen, Beijing, Shanghai, USEast1, Zhangjiakou}
+var EhpcSupportRegions = []Region{Qingdao, HeYuan, Hongkong, APSouthEast1, Huhehaote, Shenzhen, WuLanChaBu, APNorthEast1, EUCentral1, Zhangjiakou, Hangzhou, Beijing, Shanghai, APSouthEast2}
