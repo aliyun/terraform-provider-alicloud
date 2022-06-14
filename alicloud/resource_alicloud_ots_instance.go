@@ -26,7 +26,7 @@ func resourceAlicloudOtsInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(3, 16),
+				ValidateFunc: validateOTSInstanceName,
 			},
 
 			"accessed_by": {
