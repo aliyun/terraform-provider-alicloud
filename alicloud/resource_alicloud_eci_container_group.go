@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"log"
 	"time"
 
@@ -383,9 +384,10 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				ForceNew: true,
 			},
 			"restart_policy": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "Always",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Always", "Never", "OnFailure"}, false),
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
