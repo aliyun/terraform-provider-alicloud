@@ -16,14 +16,16 @@ func dataSourceAlicloudOtsTunnels() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"instance_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validateOTSInstanceName,
 			},
 			"table_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validateOTSTableName,
 			},
 			"ids": {
 				Type:     schema.TypeList,
@@ -116,7 +118,7 @@ func dataSourceAlicloudOtsTunnels() *schema.Resource {
 										Computed: true,
 									},
 									"channel_rpo": {
-										Type:     schema.TypeString,
+										Type:     schema.TypeInt,
 										Computed: true,
 									},
 								},

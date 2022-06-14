@@ -301,3 +301,48 @@ func validateNormalName(v interface{}, k string) (ws []string, errors []error) {
 	}
 	return
 }
+
+// The instance name cannot contain the words ali, ay, ots, taobao, and admin.
+// The instance name must be composed of a~z, A~Z, 0~9 and a hyphen (-),
+// the first character must be a letter and the last character cannot be a hyphen (-),
+// the legal length range is 3~16 bytes.
+func validateOTSInstanceName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	invalidWords := []string{"ali", "ay", "ots", "taobao", "admin"}
+	for _, w := range invalidWords {
+		if strings.Contains(value, w) {
+			errors = append(errors, fmt.Errorf("instance name is invalid, it cannot contains %s", w))
+			return
+		}
+	}
+	reg := regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9-]{1,14}[a-zA-Z0-9]$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("the instance name must consist of a~z, A~Z, 0~9 and a hyphen (-), "+
+			"the first character must be a letter and the last character cannot be a hyphen (-), the legal length range is 3~16 bytes"))
+	}
+	return
+}
+
+// The table name must consist of a~z, A~Z, 0~9 and an underscore (_), the first character must be a letter or underscore (_),
+// the legal length range is 1~255 bytes.
+func validateOTSTableName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	reg := regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,254}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("the table name must consist of a~z, A~Z, 0~9 and an underscore (_), "+
+			"the first character must be a letter or underscore (_), the legal length range is 1~255 bytes"))
+	}
+	return
+}
+
+// The tunnel name must consist of a~z, A~Z, 0~9 and an underscore (_), the first character must be a letter or underscore (_),
+// the legal length range is 1~255 bytes.
+func validateOTSTunnelName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	reg := regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,254}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("the tunnel name must consist of a~z, A~Z, 0~9 and an underscore (_), "+
+			"the first character must be a letter or underscore (_), the legal length range is 1~255 bytes"))
+	}
+	return
+}
