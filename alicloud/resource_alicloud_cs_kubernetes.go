@@ -1125,7 +1125,6 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("resource_group_id", object.ResourceGroupId)
 	d.Set("cluster_spec", object.ClusterSpec)
 	d.Set("deletion_protection", object.DeletionProtection)
-	d.Set("enable_rrsa", object.EnableRRSA)
 
 	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
 		return WrapError(err)
@@ -1145,6 +1144,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if d.Get("load_balancer_spec") == "" {
 		d.Set("load_balancer_spec", "slb.s1.small")
 	}
+
 	// d.Set("os_type", object.OSType)
 	// d.Set("platform", object.Platform)
 	// d.Set("timezone", object.TimeZone)
