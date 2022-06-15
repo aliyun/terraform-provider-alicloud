@@ -827,7 +827,17 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 }
 
 func updateKubernetesClusterRRSA(d *schema.ResourceData, meta interface{}, invoker *Invoker) error {
-	// check version
+	enableRRSA := false
+	if v, ok := d.GetOk("enable_rrsa"); ok {
+		enableRRSA = v.(bool)
+	}
+	// it's not allowed to disable rrsa
+	if !enableRRSA {
+		return fmt.Errorf("It's not supported to disable RRSA! " +
+			"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file.")
+	}
+
+	// version check
 	clusterVersion := d.Get("version").(string)
 	if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, clusterVersion); res < 0 || err != nil {
 		return fmt.Errorf("RRSA is not supported in current version: %s", clusterVersion)
@@ -837,9 +847,7 @@ func updateKubernetesClusterRRSA(d *schema.ResourceData, meta interface{}, invok
 	client := meta.(*connectivity.AliyunClient)
 
 	var requestInfo cs.ModifyClusterArgs
-	if v, ok := d.GetOk("enable_rrsa"); ok {
-		requestInfo.EnableRRSA = v.(bool)
-	}
+	requestInfo.EnableRRSA = enableRRSA
 
 	var response interface{}
 	if err := invoker.Run(func() error {
@@ -879,7 +887,7 @@ func versionCompare(neededVersion, curVersion string) (int, error) {
 	}
 
 	// 取出版本号
-	regx := regexp.MustCompile(`[0-9]+\\.[0-9]+\\.[0-9]+`)
+	regx := regexp.MustCompile(`[0-9]+\.[0-9]+\.[0-9]+`)
 	neededVersion = regx.FindString(neededVersion)
 	curVersion = regx.FindString(curVersion)
 

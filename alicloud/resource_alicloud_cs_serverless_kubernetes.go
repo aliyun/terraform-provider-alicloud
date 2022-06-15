@@ -428,7 +428,6 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	d.Set("vswitch_ids", vswitchIds)
 	d.Set("security_group_id", object.SecurityGroupId)
 	d.Set("deletion_protection", object.DeletionProtection)
-	d.Set("enable_rrsa", object.EnableRRSA)
 	d.Set("version", object.CurrentVersion)
 	d.Set("resource_group_id", object.ResourceGroupId)
 	d.Set("cluster_spec", object.ClusterSpec)
@@ -560,16 +559,35 @@ func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta i
 }
 
 func modifyKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
-	var update bool
+	update := false
 	action := "ModifyCluster"
 	client := meta.(*connectivity.AliyunClient)
 	csService := CsService{client}
 
 	var modifyClusterRequest cs.ModifyClusterArgs
-	if d.HasChange("deletion_protection") || d.HasChange("enable_rrsa") {
+
+	if d.HasChange("deletion_protection") {
 		update = true
 		modifyClusterRequest.DeletionProtection = d.Get("deletion_protection").(bool)
-		modifyClusterRequest.EnableRRSA = d.Get("enable_rrsa").(bool)
+	}
+
+	if d.HasChange("enable_rrsa") {
+		enableRRSA := false
+		if v, ok := d.GetOk("enable_rrsa"); ok {
+			enableRRSA = v.(bool)
+		}
+		// it's not allowed to disable rrsa
+		if !enableRRSA {
+			return fmt.Errorf("It's not supported to disable RRSA! " +
+				"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file")
+		}
+		// version check
+		version := d.Get("version").(string)
+		if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, version); res < 0 || err != nil {
+			return fmt.Errorf("RRSA is not supported in current version: %s", version)
+		}
+		update = true
+		modifyClusterRequest.EnableRRSA = enableRRSA
 	}
 
 	if update {

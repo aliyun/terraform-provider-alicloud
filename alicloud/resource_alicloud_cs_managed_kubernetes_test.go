@@ -59,7 +59,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"cluster_spec":                "ack.pro.small",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"deletion_protection":         "true",
-					"enable_rrsa":                 "false",
+					"enable_rrsa":                 "true",
 					"timezone":                    "Asia/Shanghai",
 					"os_type":                     "Linux",
 					"platform":                    "CentOS",
@@ -87,7 +87,6 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 						"cluster_spec":                          "ack.pro.small",
 						"resource_group_id":                     CHECKSET,
 						"deletion_protection":                   "true",
-						"enable_rrsa":                           "false",
 						"timezone":                              "Asia/Shanghai",
 						"os_type":                               "Linux",
 						"platform":                              "CentOS",
@@ -156,7 +155,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"enable_rrsa": "true",
+						"enable_rrsa": "null",
 					}),
 				),
 			},
