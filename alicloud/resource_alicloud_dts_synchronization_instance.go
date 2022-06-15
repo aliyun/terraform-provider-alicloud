@@ -50,10 +50,35 @@ func resourceAlicloudDtsSynchronizationInstance() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"bidirectional", "oneway"}, false),
 			},
 			"destination_endpoint_engine_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "clickhouse", "DB2", "as400", "Tablestore"}, false),
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice(
+					[]string{
+						"MySQL",
+						"PolarDB",
+						"polardb_o",
+						"polardb_pg",
+						"Redis",
+						"DRDS",
+						"PostgreSQL",
+						"odps",
+						"oracle",
+						"MongoDB",
+						"tidb",
+						"ADS",
+						"ADB30",
+						"Greenplum",
+						"MSSQL",
+						"kafka",
+						"DataHub",
+						"clickhouse",
+						"DB2",
+						"as400",
+						"Tablestore",
+					},
+					false,
+				),
 			},
 			"destination_endpoint_region": {
 				Type:     schema.TypeString,
@@ -61,10 +86,35 @@ func resourceAlicloudDtsSynchronizationInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"source_endpoint_engine_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "clickhouse", "DB2", "as400", "Tablestore"}, false),
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice(
+					[]string{
+						"MySQL",
+						"PolarDB",
+						"polardb_o",
+						"polardb_pg",
+						"Redis",
+						"DRDS",
+						"PostgreSQL",
+						"odps",
+						"oracle",
+						"MongoDB",
+						"tidb",
+						"ADS",
+						"ADB30",
+						"Greenplum",
+						"MSSQL",
+						"kafka",
+						"DataHub",
+						"clickhouse",
+						"DB2",
+						"as400",
+						"Tablestore",
+					},
+					false,
+				),
 			},
 			"source_endpoint_region": {
 				Type:     schema.TypeString,
@@ -72,10 +122,13 @@ func resourceAlicloudDtsSynchronizationInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"instance_class": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"xxlarge", "xlarge", "large", "medium", "small", "micro"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ValidateFunc: validation.StringInSlice(
+					[]string{"xxlarge", "xlarge", "large", "medium", "small", "micro"},
+					false,
+				),
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
@@ -159,7 +212,16 @@ func resourceAlicloudDtsSynchronizationInstanceCreate(d *schema.ResourceData, me
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(
+			StringPointer(action),
+			nil,
+			StringPointer("POST"),
+			StringPointer("2020-01-01"),
+			StringPointer("AK"),
+			nil,
+			request,
+			&util.RuntimeOptions{},
+		)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -178,13 +240,17 @@ func resourceAlicloudDtsSynchronizationInstanceCreate(d *schema.ResourceData, me
 
 	return resourceAlicloudDtsSynchronizationInstanceRead(d, meta)
 }
+
 func resourceAlicloudDtsSynchronizationInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dtsService := DtsService{client}
 	object, err := dtsService.DescribeDtsSynchronizationInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_dts_synchronization_instance dtsService.DescribeDtsSynchronizationInstance Failed!!! %s", err)
+			log.Printf(
+				"[DEBUG] Resource alicloud_dts_synchronization_instance dtsService.DescribeDtsSynchronizationInstance Failed!!! %s",
+				err,
+			)
 			d.SetId("")
 			return nil
 		}
@@ -203,15 +269,18 @@ func resourceAlicloudDtsSynchronizationInstanceRead(d *schema.ResourceData, meta
 	}
 	return nil
 }
+
 func resourceAlicloudDtsSynchronizationInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
 	return resourceAlicloudDtsSynchronizationInstanceRead(d, meta)
 }
-func resourceAlicloudDtsSynchronizationInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
+func resourceAlicloudDtsSynchronizationInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("payment_type"); ok {
 		if v.(string) == "Subscription" {
-			log.Printf("[WARN] Cannot destroy resource: alicloud_dts_synchronization_job because it's s. Terraform will remove this resource from the state file, however resources may remain.")
+			log.Printf(
+				"[WARN] Cannot destroy resource: alicloud_dts_synchronization_job because it's s. Terraform will remove this resource from the state file, however resources may remain.",
+			)
 			return nil
 		}
 	}
@@ -230,7 +299,16 @@ func resourceAlicloudDtsSynchronizationInstanceDelete(d *schema.ResourceData, me
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(
+			StringPointer(action),
+			nil,
+			StringPointer("POST"),
+			StringPointer("2020-01-01"),
+			StringPointer("AK"),
+			nil,
+			request,
+			&util.RuntimeOptions{},
+		)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -259,6 +337,7 @@ func convertDtsSyncPaymentTypeResponse(source interface{}) interface{} {
 	}
 	return source
 }
+
 func convertDtsSyncPaymentTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":
