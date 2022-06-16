@@ -697,6 +697,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_deliveries":                           dataSourceAlicloudConfigDeliveries(),
 			"alicloud_cms_namespaces":                              dataSourceAlicloudCmsNamespaces(),
 			"alicloud_cms_sls_groups":                              dataSourceAlicloudCmsSlsGroups(),
+			"alicloud_config_aggregate_deliveries":                 dataSourceAlicloudConfigAggregateDeliveries(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1291,6 +1292,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_delivery":                                      resourceAlicloudConfigDelivery(),
 			"alicloud_cms_namespace":                                        resourceAlicloudCmsNamespace(),
 			"alicloud_cms_sls_group":                                        resourceAlicloudCmsSlsGroup(),
+			"alicloud_config_aggregate_delivery":                            resourceAlicloudConfigAggregateDelivery(),
 		},
 
 		ConfigureFunc: providerConfigure,

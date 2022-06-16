@@ -593,3 +593,49 @@ func (s *ConfigService) DescribeConfigDelivery(id string) (object map[string]int
 	object = v.(map[string]interface{})
 	return object, nil
 }
+
+func (s *ConfigService) DescribeConfigAggregateDelivery(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewConfigClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetAggregateConfigDeliveryChannel"
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"AggregatorId":      parts[0],
+		"DeliveryChannelId": parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Invalid.AggregatorId.Value"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("ConfigDeliveryChannel", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.DeliveryChannel", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DeliveryChannel", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
