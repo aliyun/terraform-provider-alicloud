@@ -93,9 +93,9 @@ func convertOtsInstanceStatusConvert(status int) Status {
 type TunnelTypeString string
 
 const (
-	BaseAndStream = TunnelTypeString("BaseAndStream")
-	BaseData      = TunnelTypeString("BaseData")
-	Stream        = TunnelTypeString("Stream")
+	BaseAndStreamTunnel = TunnelTypeString("BaseAndStream")
+	BaseDataTunnel      = TunnelTypeString("BaseData")
+	StreamTunnel        = TunnelTypeString("Stream")
 )
 
 type SseKeyTypeString string

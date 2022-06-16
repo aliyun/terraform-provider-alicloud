@@ -46,17 +46,7 @@ func TestAccAlicloudOtsTunnel_basic(t *testing.T) {
 					"tunnel_type":   randTunnelType,
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name": "tf-" + name,
-						"table_name":    name,
-						"tunnel_name":   name,
-						"tunnel_id":     CHECKSET,
-						"tunnel_type":   randTunnelType,
-						"tunnel_stage":  "InitBaseDataAndStreamShard",
-						"tunnel_rpo":    CHECKSET,
-						"expired":       "false",
-						"create_time":   CHECKSET,
-					}),
+					testAccCheck(getCheckMapWithTunnelType(name, randTunnelType)),
 				),
 			},
 			{
@@ -105,10 +95,48 @@ var otsTunnelBasicMap = map[string]string{}
 func getRandomTunnelType() TunnelTypeString {
 	r := acctest.RandInt() % 3
 	if r == 1 {
-		return BaseData
+		return BaseDataTunnel
 	} else if r == 2 {
-		return Stream
+		return StreamTunnel
 	} else {
-		return BaseAndStream
+		return BaseAndStreamTunnel
 	}
+}
+
+func getCheckMapWithTunnelType(name string, tunnelType string) map[string]string {
+	accMap := make(map[string]string)
+	accMap["instance_name"] = "tf-" + name
+	accMap["table_name"] = name
+	accMap["tunnel_name"] = name
+	accMap["tunnel_id"] = CHECKSET
+	accMap["tunnel_type"] = tunnelType
+	if tunnelType == string(StreamTunnel) {
+		accMap["tunnel_stage"] = "ProcessStream"
+	} else {
+		accMap["tunnel_stage"] = "ProcessBaseData"
+	}
+	accMap["tunnel_rpo"] = "0"
+	accMap["expired"] = "false"
+	accMap["create_time"] = CHECKSET
+	if tunnelType == string(BaseAndStreamTunnel) {
+		accMap["channels.#"] = "2"
+		accMap["channels.0.channel_id"] = CHECKSET
+		accMap["channels.0.channel_type"] = CHECKSET
+		accMap["channels.0.channel_status"] = CHECKSET
+		accMap["channels.0.client_id"] = ""
+		accMap["channels.0.channel_rpo"] = "0"
+		accMap["channels.1.channel_id"] = CHECKSET
+		accMap["channels.1.channel_type"] = CHECKSET
+		accMap["channels.1.channel_status"] = CHECKSET
+		accMap["channels.1.client_id"] = ""
+		accMap["channels.1.channel_rpo"] = "0"
+	} else {
+		accMap["channels.#"] = "1"
+		accMap["channels.0.channel_id"] = CHECKSET
+		accMap["channels.0.channel_type"] = CHECKSET
+		accMap["channels.0.channel_status"] = CHECKSET
+		accMap["channels.0.client_id"] = ""
+		accMap["channels.0.channel_rpo"] = "0"
+	}
+	return accMap
 }

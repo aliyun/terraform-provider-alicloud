@@ -359,6 +359,10 @@ func (s *OtsService) DescribeOtsTunnel(id string) (resp *otsTunnel.DescribeTunne
 			}
 			return resource.NonRetryableError(err)
 		}
+		resp, _ := raw.(*otsTunnel.DescribeTunnelResponse)
+		if resp != nil && resp.Tunnel != nil && resp.Tunnel.Stage == "InitBaseDataAndStreamShard" {
+			return resource.RetryableError(WrapError(Error("ots tunnel is initial")))
+		}
 		addDebug("DescribeTunnel", raw, requestInfo, request)
 		return nil
 	})

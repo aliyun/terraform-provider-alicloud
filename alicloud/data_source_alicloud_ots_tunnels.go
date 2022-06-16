@@ -44,8 +44,6 @@ func dataSourceAlicloudOtsTunnels() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
-			// Computed values
 			"names": {
 				Type:     schema.TypeList,
 				Computed: true,

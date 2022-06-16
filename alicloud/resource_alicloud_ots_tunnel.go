@@ -49,10 +49,8 @@ func resourceAlicloudOtsTunnel() *schema.Resource {
 				Optional: true,
 				Default:  "BaseAndStream",
 				ValidateFunc: validation.StringInSlice([]string{
-					string(BaseAndStream), string(BaseData), string(Stream)}, false),
+					string(BaseAndStreamTunnel), string(BaseDataTunnel), string(StreamTunnel)}, false),
 			},
-
-			// Computed values
 			"tunnel_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -239,11 +237,11 @@ func resourceAliyunOtsTunnelDelete(d *schema.ResourceData, meta interface{}) err
 
 func parseTunnelType(orig string) (otsTunnel.TunnelType, error) {
 	switch orig {
-	case string(BaseAndStream):
+	case string(BaseAndStreamTunnel):
 		return otsTunnel.TunnelTypeBaseStream, nil
-	case string(BaseData):
+	case string(BaseDataTunnel):
 		return otsTunnel.TunnelTypeBaseData, nil
-	case string(Stream):
+	case string(StreamTunnel):
 		return otsTunnel.TunnelTypeStream, nil
 	default:
 		return "", WrapError(Error("unknown ots tunnel type: " + orig))
