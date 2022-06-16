@@ -5,36 +5,37 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudConfigDelivery_OSS(t *testing.T) {
+func TestAccAlicloudConfigAggregateDelivery_OSS(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_config_delivery.default"
+	resourceId := "alicloud_config_aggregate_delivery.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudConfigSupportedRegions)
-	ra := resourceAttrInit(resourceId, AlicloudConfigDeliveryMap0)
+	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateDeliveryMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeConfigDelivery")
+	}, "DescribeConfigAggregateDelivery")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sconfigdelivery%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigDeliveryBasicDependenceOSS)
+	name := fmt.Sprintf("tf-testacc%sconfigaggregatedelivery%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateDeliveryBasicDependenceOSS)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -48,6 +49,7 @@ func TestAccAlicloudConfigDelivery_OSS(t *testing.T) {
 					"description":                            "${var.name}",
 					"configuration_snapshot":                 "true",
 					"configuration_item_change_notification": "true",
+					"aggregator_id":                          "${alicloud_config_aggregator.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -57,6 +59,7 @@ func TestAccAlicloudConfigDelivery_OSS(t *testing.T) {
 						"description":                            name,
 						"configuration_snapshot":                 "true",
 						"configuration_item_change_notification": "true",
+						"aggregator_id":                          CHECKSET,
 					}),
 				),
 			},
@@ -123,26 +126,6 @@ func TestAccAlicloudConfigDelivery_OSS(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"delivery_channel_name":                  "${var.name}",
-					"delivery_channel_target_arn":            "${local.bucket}",
-					"description":                            "${var.name}",
-					"configuration_snapshot":                 "true",
-					"configuration_item_change_notification": "true",
-					"status":                                 "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"delivery_channel_name":                  name,
-						"delivery_channel_target_arn":            CHECKSET,
-						"description":                            name,
-						"configuration_snapshot":                 "true",
-						"configuration_item_change_notification": "true",
-						"status":                                 "1",
-					}),
-				),
-			},
-			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -151,22 +134,23 @@ func TestAccAlicloudConfigDelivery_OSS(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudConfigDelivery_MNS(t *testing.T) {
+func TestAccAlicloudConfigAggregateDelivery_SLS(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_config_delivery.default"
+	resourceId := "alicloud_config_aggregate_delivery.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudConfigSupportedRegions)
-	ra := resourceAttrInit(resourceId, AlicloudConfigDeliveryMap0)
+	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateDeliveryMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeConfigDelivery")
+	}, "DescribeConfigAggregateDelivery")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sconfigdelivery%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigDeliveryBasicDependenceMNS)
+	name := fmt.Sprintf("tf-testacc%sconfigaggregatedelivery%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateDeliveryBasicDependenceSLS)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -174,140 +158,7 @@ func TestAccAlicloudConfigDelivery_MNS(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"delivery_channel_name":                  "${var.name}",
-					"delivery_channel_type":                  "MNS",
-					"delivery_channel_target_arn":            "${local.mns}",
-					"description":                            "${var.name}",
-					"configuration_item_change_notification": "true",
-					"non_compliant_notification":             "true",
-					"delivery_channel_condition":             configDeliveryChannelCondition,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"delivery_channel_name":                  name,
-						"delivery_channel_type":                  "MNS",
-						"delivery_channel_target_arn":            CHECKSET,
-						"description":                            name,
-						"configuration_item_change_notification": "true",
-						"non_compliant_notification":             "true",
-						"delivery_channel_condition":             strings.Replace(strings.Replace(configDeliveryChannelCondition, `\n`, "\n", -1), `\"`, "\"", -1),
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"delivery_channel_name": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"delivery_channel_name": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"delivery_channel_target_arn": "${local.mns_change}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"delivery_channel_target_arn": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"non_compliant_notification": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"non_compliant_notification": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"non_compliant_notification":             "true",
-					"configuration_item_change_notification": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"non_compliant_notification":             "true",
-						"configuration_item_change_notification": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"delivery_channel_name":                  "${var.name}",
-					"delivery_channel_target_arn":            "${local.mns}",
-					"description":                            "${var.name}",
-					"configuration_item_change_notification": "true",
-					"non_compliant_notification":             "true",
-					"status":                                 "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"delivery_channel_name":                  name,
-						"delivery_channel_target_arn":            CHECKSET,
-						"description":                            name,
-						"configuration_item_change_notification": "true",
-						"non_compliant_notification":             "true",
-						"status":                                 "1",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func TestAccAlicloudConfigDelivery_SLS(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_config_delivery.default"
-	checkoutSupportedRegions(t, true, connectivity.CloudConfigSupportedRegions)
-	ra := resourceAttrInit(resourceId, AlicloudConfigDeliveryMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeConfigDelivery")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sconfigdelivery%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigDeliveryBasicDependenceSLS)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
+					"aggregator_id":                          "${alicloud_config_aggregator.default.id}",
 					"delivery_channel_name":                  "${var.name}",
 					"delivery_channel_type":                  "SLS",
 					"delivery_channel_target_arn":            "${local.sls}",
@@ -317,6 +168,7 @@ func TestAccAlicloudConfigDelivery_SLS(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"aggregator_id":                          CHECKSET,
 						"delivery_channel_name":                  name,
 						"delivery_channel_type":                  "SLS",
 						"delivery_channel_target_arn":            CHECKSET,
@@ -397,13 +249,13 @@ func TestAccAlicloudConfigDelivery_SLS(t *testing.T) {
 	})
 }
 
-var AlicloudConfigDeliveryMap0 = map[string]string{
-	"configuration_item_change_notification": CHECKSET,
+var AlicloudConfigAggregateDeliveryMap0 = map[string]string{
+	"aggregator_id": CHECKSET,
 }
 
 // Because the bucket cannot be deleted after being used by the delivery channel.
 // Use pre-created Oss bucket in this test.
-func AlicloudConfigDeliveryBasicDependenceOSS(name string) string {
+func AlicloudConfigAggregateDeliveryBasicDependenceOSS(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
@@ -411,34 +263,25 @@ variable "name" {
 data "alicloud_account" "this" {}
 locals {
   uid          	   = data.alicloud_account.this.id
-  bucket	       = format("acs:oss:cn-shanghai:%%s:tf-test-bucket-for-config",local.uid)
-  bucket_change	   = format("acs:oss:cn-shanghai:%%s:tf-test-bucket-for-config-update",local.uid)
+  bucket	       = format("acs:oss:cn-shanghai:%%s:tf-test-bucket-for-config1",local.uid)
+  bucket_change	   = format("acs:oss:cn-shanghai:%%s:tf-test-bucket-for-config1-update",local.uid)
+}
+data "alicloud_resource_manager_accounts" "default" {
+  status  = "CreateSuccess"
+}
+resource "alicloud_config_aggregator" "default" {
+	aggregator_accounts {
+		account_id   =  data.alicloud_resource_manager_accounts.default.accounts.1.account_id
+		account_name =  data.alicloud_resource_manager_accounts.default.accounts.1.display_name
+		account_type = "ResourceDirectory"
+	}
+	aggregator_name = var.name
+	description = var.name
 }
 `, name)
 }
 
-func AlicloudConfigDeliveryBasicDependenceMNS(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_account" "this" {}
-locals {
-  uid          = data.alicloud_account.this.id
-  mns	       = format("acs:mns:%[2]s:%%s:/topics/%%s",local.uid,alicloud_mns_topic.default.name)
-  mns_change   = format("acs:mns:%[2]s:%%s:/topics/%%s",local.uid,alicloud_mns_topic.change.name)
-}
-resource "alicloud_mns_topic" "default" {
-  name = var.name
-}
-resource "alicloud_mns_topic" "change" {
-  name = format("%%s-change",var.name)
-}
-
-`, name, defaultRegionToTest)
-}
-
-func AlicloudConfigDeliveryBasicDependenceSLS(name string) string {
+func AlicloudConfigAggregateDeliveryBasicDependenceSLS(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
@@ -460,17 +303,28 @@ resource "alicloud_log_store" "change" {
   name = format("%%s-change",var.name)
   project = alicloud_log_project.this.name
 }
+data "alicloud_resource_manager_accounts" "default" {
+  status  = "CreateSuccess"
+}
+resource "alicloud_config_aggregator" "default" {
+	aggregator_accounts {
+		account_id   =  data.alicloud_resource_manager_accounts.default.accounts.0.account_id
+		account_name =  data.alicloud_resource_manager_accounts.default.accounts.0.display_name
+		account_type = "ResourceDirectory"
+	}
+	aggregator_name = var.name
+	description = var.name
+}
 `, name, defaultRegionToTest)
 }
 
-const configDeliveryChannelCondition = `[\n{\n\"filterType\":\"ResourceType\",\n\"values\":[\n\"ACS::CEN::CenInstance\",\n],\n\"multiple\":true\n}\n]\n`
-
-func TestUnitAlicloudConfigDelivery(t *testing.T) {
+func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_config_delivery"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_config_delivery"].Schema).Data(nil, nil)
+	dInit, _ := schema.InternalMap(p["alicloud_config_aggregate_delivery"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_config_aggregate_delivery"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
+		"aggregator_id":                          "CreateConfigDeliveryValue",
 		"delivery_channel_name":                  "CreateConfigDeliveryValue",
 		"delivery_channel_type":                  "CreateConfigDeliveryValue",
 		"delivery_channel_target_arn":            "CreateConfigDeliveryValue",
@@ -503,6 +357,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 		"DeliveryChannel": map[string]interface{}{
 			"Status":                              1,
 			"OversizedDataOSSTargetArn":           "CreateConfigDeliveryValue",
+			"AggregatorId":                        "CreateConfigDeliveryValue",
 			"ConfigurationSnapshot":               true,
 			"Description":                         "CreateConfigDeliveryValue",
 			"DeliveryChannelId":                   "CreateConfigDeliveryValue",
@@ -527,7 +382,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_config_delivery", errorCode))
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_config_aggregate_delivery", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
@@ -544,7 +399,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigDeliveryCreate(dInit, rawClient)
+	err = resourceAlicloudConfigAggregateDeliveryCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -552,7 +407,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
 		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "CreateConfigDeliveryChannel" {
+			if *action == "CreateAggregateConfigDeliveryChannel" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -567,14 +422,14 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigDeliveryCreate(dInit, rawClient)
+		err := resourceAlicloudConfigAggregateDeliveryCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_config_delivery"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(p["alicloud_config_aggregate_delivery"].Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -594,7 +449,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigDeliveryUpdate(dExisted, rawClient)
+	err = resourceAlicloudConfigAggregateDeliveryUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -608,11 +463,11 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 		"non_compliant_notification":             false,
 		"status":                                 0,
 	}
-	diff, err := newInstanceDiff("alicloud_config_delivery", attributes, attributesDiff, dInit.State())
+	diff, err := newInstanceDiff("alicloud_config_aggregate_delivery", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_config_delivery"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(p["alicloud_config_aggregate_delivery"].Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		"DeliveryChannel": map[string]interface{}{
 			"Status":                              0,
@@ -631,7 +486,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "UpdateConfigDeliveryChannel" {
+			if *action == "UpdateAggregateConfigDeliveryChannel" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -645,14 +500,14 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigDeliveryUpdate(dExisted, rawClient)
+		err := resourceAlicloudConfigAggregateDeliveryUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_config_delivery"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(p["alicloud_config_aggregate_delivery"].Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -664,16 +519,16 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 	}
 
 	// Read
-	diff, err = newInstanceDiff("alicloud_config_delivery", attributes, attributesDiff, dInit.State())
+	diff, err = newInstanceDiff("alicloud_config_aggregate_delivery", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_config_delivery"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(p["alicloud_config_aggregate_delivery"].Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "GetConfigDeliveryChannel" {
+			if *action == "GetAggregateConfigDeliveryChannel" {
 				switch errorCode {
 				case "{}":
 					return notFoundResponseMock(errorCode)
@@ -689,7 +544,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigDeliveryRead(dExisted, rawClient)
+		err := resourceAlicloudConfigAggregateDeliveryRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -708,20 +563,20 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigDeliveryDelete(dExisted, rawClient)
+	err = resourceAlicloudConfigAggregateDeliveryDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_config_delivery", attributes, attributesDiff, dInit.State())
+	diff, err = newInstanceDiff("alicloud_config_aggregate_delivery", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_config_delivery"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(p["alicloud_config_aggregate_delivery"].Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "DeleteConfigDeliveryChannel" {
+			if *action == "DeleteAggregateConfigDeliveryChannel" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -736,7 +591,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigDeliveryDelete(dExisted, rawClient)
+		err := resourceAlicloudConfigAggregateDeliveryDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
