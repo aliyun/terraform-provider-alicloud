@@ -493,17 +493,16 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 
 	if d.HasChange("local_subnet") {
 		update = true
-		if v, ok := d.GetOk("local_subnet"); ok {
-			request["LocalSubnet"] = convertListToCommaSeparate(v.(*schema.Set).List())
-		}
+	}
+	if v, ok := d.GetOk("local_subnet"); ok {
+		request["LocalSubnet"] = convertListToCommaSeparate(v.(*schema.Set).List())
 	}
 
 	if d.HasChange("remote_subnet") {
 		update = true
-		if v, ok := d.GetOk("remote_subnet"); ok {
-			request["RemoteSubnet"] = convertListToCommaSeparate(v.(*schema.Set).List())
-		}
-
+	}
+	if v, ok := d.GetOk("remote_subnet"); ok {
+		request["RemoteSubnet"] = convertListToCommaSeparate(v.(*schema.Set).List())
 	}
 
 	if d.HasChange("effect_immediately") {
