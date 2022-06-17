@@ -67,7 +67,7 @@ The following arguments are supported:
 * `instance_name` - (Required, ForceNew) The name of the OTS instance in which table will located.
 * `table_name` - (Required, ForceNew) The name of the OTS table. If changed, a new table would be created.
 * `tunnel_name` - (Required, ForceNew) The name of the OTS tunnel. If changed, a new tunnel would be created. 
-* `tunnel_type` - (Optional) The type of the OTS tunnel. Only `BaseAndStream`, `BaseData` or `Stream` is allowed, default value is `BaseAndStream`.
+* `tunnel_type` - (Required, ForceNew) The type of the OTS tunnel. Only `BaseAndStream`, `BaseData` or `Stream` is allowed.
 
 ## Attributes Reference
 

@@ -11,11 +11,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
+// resourceAlicloudOtsTunnel Tablestore tunnel not support update
 func resourceAlicloudOtsTunnel() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunOtsTunnelCreate,
 		Read:   resourceAliyunOtsTunnelRead,
-		Update: resourceAliyunOtsTunnelUpdate,
 		Delete: resourceAliyunOtsTunnelDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -46,8 +46,8 @@ func resourceAlicloudOtsTunnel() *schema.Resource {
 			},
 			"tunnel_type": {
 				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "BaseAndStream",
+				Required: true,
+				ForceNew: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					string(BaseAndStreamTunnel), string(BaseDataTunnel), string(StreamTunnel)}, false),
 			},
