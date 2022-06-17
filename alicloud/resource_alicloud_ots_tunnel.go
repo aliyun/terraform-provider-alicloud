@@ -195,10 +195,6 @@ func resourceAliyunOtsTunnelRead(d *schema.ResourceData, meta interface{}) error
 	return nil
 }
 
-func resourceAliyunOtsTunnelUpdate(d *schema.ResourceData, meta interface{}) error {
-	return WrapError(Error("Tablestore tunnel not support update"))
-}
-
 func resourceAliyunOtsTunnelDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
