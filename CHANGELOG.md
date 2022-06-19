@@ -1,18 +1,20 @@
-## 1.172.0 (Unreleased)
+## 1.173.0 (Unreleased)
+## 1.172.0 (June 19, 2022)
 
-- **New Resource:** `alicloud_config_aggregate_delivery` [GH-5077]
-- **New Resource:** `alicloud_ots_tunnel` [GH-5051]
-- **New Data Source:** `alicloud_ots_tunnels` [GH-5051]	
-- **New Data Source:** `alicloud_config_aggregate_deliveries` [GH-5077]
+- **New Resource:** `alicloud_config_aggregate_delivery` ([#5077](https://github.com/aliyun/terraform-provider-alicloud/issues/5077))
+- **New Resource:** `alicloud_ots_tunnel` ([#5051](https://github.com/aliyun/terraform-provider-alicloud/issues/5051))
+- **New Data Source:** `alicloud_ots_tunnels` ([#5051](https://github.com/aliyun/terraform-provider-alicloud/issues/5051))	
+- **New Data Source:** `alicloud_config_aggregate_deliveries` ([#5077](https://github.com/aliyun/terraform-provider-alicloud/issues/5077))
 
 ENHANCEMENTS:
 
-- resource/alicloud_ots_table: Support server side encryption [GH-5051]
-- testcase: Adds new unit test case for resource alicloud_ddoscoo_scheduler_rule alicloud_config_configuration_recorder alicloud_data_works_folder [GH-5070]
+- resource/alicloud_ots_table: Support server side encryption ([#5051](https://github.com/aliyun/terraform-provider-alicloud/issues/5051))
+- testcase: Adds new unit test case for resource alicloud_ddoscoo_scheduler_rule alicloud_config_configuration_recorder alicloud_data_works_folder ([#5070](https://github.com/aliyun/terraform-provider-alicloud/issues/5070))
 
 BUG FIXES:
 
-- docs: Fix errors in link addresses in documents [GH-5062]
+- resource/alicloud_vpn_connection: Fix attribute ike_config update error. ([#5078](https://github.com/aliyun/terraform-provider-alicloud/issues/5078))
+- docs: Fix errors in link addresses in documents ([#5062](https://github.com/aliyun/terraform-provider-alicloud/issues/5062))
 
 ## 1.171.0 (June 12, 2022)
 
