@@ -700,6 +700,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_sls_groups":                              dataSourceAlicloudCmsSlsGroups(),
 			"alicloud_config_aggregate_deliveries":                 dataSourceAlicloudConfigAggregateDeliveries(),
 			"alicloud_edas_namespaces":                             dataSourceAlicloudEdasNamespaces(),
+			"alicloud_cdn_blocked_regions":                         dataSourceAlicloudCdnBlockedRegions(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
