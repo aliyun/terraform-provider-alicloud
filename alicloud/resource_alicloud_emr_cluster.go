@@ -38,9 +38,10 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 				Required: true,
 			},
 			"cluster_type": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"HADOOP", "KAFKA", "DRUID", "GATEWAY", "FLINK", "DATA_SCIENCE", "PRESTO", "SECURITY_CENTER", "DSW", "SHUFFLE_SERVICE", "EMR_STUDIO", "KUDU", "ZOOKEEPER"}, false),
 			},
 			"emr_ver": {
 				Type:     schema.TypeString,
@@ -158,6 +159,20 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 						"arg": {
 							Type:     schema.TypeString,
 							Optional: true,
+						},
+						"execution_target": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"execution_moment": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"BEFORE_INSTALL", "AFTER_STARTED"}, false),
+						},
+						"execution_fail_strategy": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"FAILED_BLOCKED", "FAILED_CONTINUE"}, false),
 						},
 					},
 				},
@@ -457,6 +472,18 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 
 			if v, ok := kv["arg"]; ok {
 				bootstrapAction["Arg"] = v
+			}
+
+			if v, ok := kv["execution_target"]; ok {
+				bootstrapAction["ExecutionTarget"] = v
+			}
+
+			if v, ok := kv["execution_moment"]; ok {
+				bootstrapAction["ExecutionMoment"] = v
+			}
+
+			if v, ok := kv["execution_fail_strategy"]; ok {
+				bootstrapAction["ExecutionFailStrategy"] = v
 			}
 
 			bootstrapActions = append(bootstrapActions, bootstrapAction)

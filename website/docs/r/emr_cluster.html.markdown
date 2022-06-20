@@ -592,6 +592,9 @@ The bootstrap_action mapping supports the following:
 * `name` - (Optional, Available in 1.71.2+) bootstrap action name.
 * `path` - (Optional, Available in 1.71.2+) bootstrap action path, e.g. "oss://bucket/path".
 * `arg` - (Optional, Available in 1.71.2+) bootstrap action args, e.g. "--a=b".
+* `execution_target` - (Optional, Available in 1.173.0+) bootstrap action execution target, you can specify the host group name, e.g. "core_group". If this is not specified, the bootstrap action execution target is whole cluster.
+* `execution_moment` - (Optional, Available in 1.173.0+) bootstrap action execution moment, ’BEFORE_INSTALL’ or ‘AFTER_STARTED’ . Default value: "BEFORE_INSTALL".
+* `execution_fail_strategy` - (Optional, Available in 1.173.0+) bootstrap action execution fail strategy, ’FAILED_BLOCKED’ or ‘FAILED_CONTINUE’ . Default value: "FAILED_BLOCKED
 
 #### Timeouts
 
