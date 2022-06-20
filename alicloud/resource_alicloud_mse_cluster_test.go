@@ -162,7 +162,7 @@ func TestAccAlicloudMSECluster_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_alias_name": name,
-					"acl_entry_list":     []string{"127.0.0.1/10"},
+					"acl_entry_list":     []string{"127.0.0.0/10"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -248,7 +248,7 @@ func TestAccAlicloudMSECluster_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_alias_name": name,
-					"acl_entry_list":     []string{"127.0.0.1/10"},
+					"acl_entry_list":     []string{"127.0.0.0/10"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
