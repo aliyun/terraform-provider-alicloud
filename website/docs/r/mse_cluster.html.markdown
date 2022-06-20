@@ -33,7 +33,7 @@ resource "alicloud_mse_cluster" "example" {
 
 The following arguments are supported:
 
-* `acl_entry_list` - (Optional) The whitelist.
+* `acl_entry_list` - (Optional) The whitelist. **NOTE:** This attribute is invalid when the value of `pub_network_flow` is `0` and the value of `net_type` is `privatenet`.
 * `cluster_alias_name` - (Optional) The alias of MSE Cluster.
 * `cluster_specification` - (Required, ForceNew) The engine specification of MSE Cluster. Valid values:
   `MSE_SC_1_2_200_c`：1C2G
@@ -47,7 +47,7 @@ The following arguments are supported:
 * `instance_count` - (Required, ForceNew) The count of instance.
 * `net_type` - (Required, ForceNew) The type of network. Valid values: "privatenet" and "pubnet".
 * `private_slb_specification` - (Optional, ForceNew) The specification of private network SLB.
-* `pub_network_flow` - (Optional, ForceNew) The public network bandwidth. `0` means no access to the public network.
+* `pub_network_flow` - (Required from 1.173.0, ForceNew) The public network bandwidth. `0` means no access to the public network.
 * `pub_slb_specification` - (Optional, ForceNew) The specification of public network SLB.
 * `vswitch_id` - (Optional, ForceNew) The id of VSwitch.
                     

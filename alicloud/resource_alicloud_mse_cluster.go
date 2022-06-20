@@ -32,6 +32,12 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if d.Get("pub_network_flow").(string) == "0" && d.Get("net_type").(string) == "privatenet" {
+						return true
+					}
+					return false
+				},
 			},
 			"cluster_alias_name": {
 				Type:     schema.TypeString,
@@ -77,7 +83,7 @@ func resourceAlicloudMseCluster() *schema.Resource {
 			},
 			"pub_network_flow": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"pub_slb_specification": {
@@ -125,9 +131,7 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 		request["PrivateSlbSpecification"] = v
 	}
 
-	if v, ok := d.GetOk("pub_network_flow"); ok {
-		request["PubNetworkFlow"] = v
-	}
+	request["PubNetworkFlow"] = d.Get("pub_network_flow")
 
 	if v, ok := d.GetOk("pub_slb_specification"); ok {
 		request["PubSlbSpecification"] = v
