@@ -1414,32 +1414,19 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	var config *cs.ClusterConfig
-	if err := invoker.Run(func() error {
-		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			requestInfo = csClient
-			return csClient.DescribeClusterUserConfig(d.Id(), false)
-		})
-		response = raw
-		return err
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterConfig", DenverdinoAliyungo)
+	var kubeConfig *cs.ClusterConfig
+	if kubeConfig, err = csService.DescribeClusterKubeConfig(d.Id(), true); err != nil {
+		return WrapError(err)
 	}
-	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["Id"] = d.Id()
-		addDebug("GetClusterConfig", response, requestInfo, requestMap)
-	}
-	config, _ = response.(*cs.ClusterConfig)
 
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		if err := writeToFile(file.(string), config.Config); err != nil {
+		if err := writeToFile(file.(string), kubeConfig.Config); err != nil {
 			return WrapError(err)
 		}
 	}
 
 	// write cluster conn authority to tf state
-	if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(config)); err != nil {
+	if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(kubeConfig)); err != nil {
 		return fmt.Errorf("error setting certificate_authority: %s", err)
 	}
 

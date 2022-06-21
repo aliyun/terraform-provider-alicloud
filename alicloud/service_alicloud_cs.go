@@ -200,6 +200,35 @@ func (s *CsService) DescribeCsKubernetes(id string) (cluster *cs.KubernetesClust
 	return
 }
 
+// DescribeClusterKubeConfig return cluster kube_config credential.
+// It's used for kubernetes/managed_kubernetes/serverless_kubernetes.
+func (s *CsService) DescribeClusterKubeConfig(clusterId string, isResource bool) (*cs.ClusterConfig, error) {
+	invoker := NewInvoker()
+	var response interface{}
+	var requestInfo *cs.Client
+	var config *cs.ClusterConfig
+	if err := invoker.Run(func() error {
+		raw, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			requestInfo = csClient
+			return csClient.DescribeClusterUserConfig(clusterId, false)
+		})
+		response = raw
+		return err
+	}); err != nil {
+		if isResource {
+			return nil, WrapErrorf(err, DefaultErrorMsg, clusterId, "DescribeClusterUserConfig", DenverdinoAliyungo)
+		}
+		return nil, WrapErrorf(err, DataDefaultErrorMsg, clusterId, "DescribeClusterUserConfig", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["Id"] = clusterId
+		addDebug("DescribeClusterUserConfig", response, requestInfo, requestMap)
+	}
+	config, _ = response.(*cs.ClusterConfig)
+	return config, nil
+}
+
 // This function returns the latest addon status information
 func (s *CsClient) DescribeCsKubernetesAddonStatus(clusterId string, addonName string) (*Component, error) {
 	result := &Component{}
