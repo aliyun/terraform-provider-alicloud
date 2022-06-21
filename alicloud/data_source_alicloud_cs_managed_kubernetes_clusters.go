@@ -2,10 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"regexp"
-	"strings"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
@@ -13,6 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"regexp"
+	"strings"
+	"time"
 )
 
 func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
@@ -39,6 +38,10 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 				Default:  false,
 			},
 			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"kube_config_file_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -335,6 +338,10 @@ func dataSourceAlicloudCSManagerKubernetesClustersRead(d *schema.ResourceData, m
 }
 
 func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTypes []cs.KubernetesCluster, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
+	invoker := NewInvoker()
+
 	var ids, names []string
 	var s []map[string]interface{}
 	for _, ct := range clusterTypes {
@@ -356,13 +363,11 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 
 		var workerNodes []map[string]interface{}
 
-		invoker := NewInvoker()
-		client := meta.(*connectivity.AliyunClient)
+		var requestInfo *cs.Client
 		pageNumber := 1
 		for {
 			var result []cs.KubernetesNodeType
 			var pagination *cs.PaginationResult
-			var requestInfo *cs.Client
 			var response interface{}
 
 			if err := invoker.Run(func() error {
@@ -486,6 +491,19 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 		nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
 		if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
 			mapping["nat_gateway_id"] = nat.NatGateways.NatGateway[0].NatGatewayId
+		}
+
+		// kube_config
+		var kubeConfig *cs.ClusterConfig
+		filePath := fmt.Sprintf("%s-kubeconfig", ct.ClusterID)
+		if kubeConfig, err = csService.DescribeClusterKubeConfig(ct.ClusterID, false); err != nil {
+			return WrapError(err)
+		}
+		if filePrefix, ok := d.GetOk("kube_config_file_prefix"); ok && filePrefix.(string) != "" {
+			filePath = fmt.Sprintf("%s-%s-kubeconfig", filePrefix.(string), ct.ClusterID)
+		}
+		if err = writeToFile(filePath, kubeConfig.Config); err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "write kubeconfig file", "")
 		}
 
 		ids = append(ids, ct.ClusterID)

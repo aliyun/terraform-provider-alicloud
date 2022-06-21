@@ -477,28 +477,12 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		}
 	}
 
-	var config *cs.ClusterConfig
+	var kubeConfig *cs.ClusterConfig
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		var requestInfo *cs.Client
-
-		if err := invoker.Run(func() error {
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				requestInfo = csClient
-				return csClient.DescribeClusterUserConfig(d.Id(), !d.Get("endpoint_public_access_enabled").(bool))
-			})
-			response = raw
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterConfig", DenverdinoAliyungo)
+		if kubeConfig, err = csService.DescribeClusterKubeConfig(d.Id(), true); err != nil {
+			return WrapError(err)
 		}
-		if debugOn() {
-			requestMap := make(map[string]interface{})
-			requestMap["ClusterId"] = d.Id()
-			addDebug("GetClusterConfig", response, requestInfo, requestMap)
-		}
-		config, _ = response.(*cs.ClusterConfig)
-
-		if err := writeToFile(file.(string), config.Config); err != nil {
+		if err := writeToFile(file.(string), kubeConfig.Config); err != nil {
 			return WrapError(err)
 		}
 	}
