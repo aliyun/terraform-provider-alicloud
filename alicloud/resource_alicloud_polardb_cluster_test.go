@@ -158,7 +158,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type"},
+				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -183,6 +183,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_node_count": "3",
+					"imci_switch":   "ON",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
