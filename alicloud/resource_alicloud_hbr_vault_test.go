@@ -100,6 +100,67 @@ func TestAccAlicloudHBRVault_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"encrypt_type": "HBR_PRIVATE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encrypt_type": "HBR_PRIVATE",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAlicloudHBRVault_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_hbr_vault.default"
+	ra := resourceAttrInit(resourceId, AlicloudHBRVaultMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HbrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHbrVault")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%shbrvault%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHBRVaultBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vault_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vault_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encrypt_type": "KMS",
+					"kms_key_id":   "${alicloud_kms_key.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encrypt_type": "KMS",
+						"kms_key_id":   CHECKSET,
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -117,6 +178,18 @@ func AlicloudHBRVaultBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
+}
+`, name)
+}
+
+func AlicloudHBRVaultBasicDependence1(name string) string {
+	return fmt.Sprintf(` 
+variable "name" {
+  default = "%s"
+}
+resource "alicloud_kms_key" "default" {
+  pending_window_in_days  = "7"
+  status                  = "Enabled"
 }
 `, name)
 }
