@@ -37,11 +37,11 @@ resource "alicloud_graph_database_db_instance" "example" {
 
 The following arguments are supported:
 
-* `db_instance_category` - (Required, ForceNew) The category of the db instance. Valid values: `HA`.
+* `db_instance_category` - (Required, ForceNew) The category of the db instance. Valid values: `HA`, `SINGLE`(Available in 1.173.0+).
 * `db_instance_description` - (Optional) According to the practical example or notes.
 * `db_instance_network_type` - (Required, ForceNew) The network type of the db instance. Valid values: `vpc`.
 * `db_instance_storage_type` - (Required) Disk storage type. Valid values: `cloud_essd`, `cloud_ssd`. Modification is not supported.
-* `db_node_class` - (Required) The class of the db node. Valid values: `gdb.r.xlarge`, `gdb.r.2xlarge`, `gdb.r.4xlarge`, `gdb.r.8xlarge`, `gdb.r.16xlarge`.
+* `db_node_class` - (Required) The class of the db node. Valid values: `gdb.r.xlarge`, `gdb.r.2xlarge`, `gdb.r.4xlarge`, `gdb.r.8xlarge`, `gdb.r.16xlarge`, `gdb.r.xlarge_basic`, `gdb.r.2xlarge_basic`, `gdb.r.4xlarge_basic`, `gdb.r.8xlarge_basic`, `gdb.r.16xlarge_basic`.
 * `db_node_storage` - (Required) Instance storage space, which is measured in GB.
 * `db_version` - (Required, ForceNew) Kernel Version. Valid values: `1.0` or `1.0-OpenCypher`. `1.0`: represented as gremlin, `1.0-OpenCypher`: said opencypher.
 * `payment_type` - (Required, ForceNew) The paymen type of the resource. Valid values: `PayAsYouGo`.
