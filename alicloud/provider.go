@@ -701,6 +701,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_aggregate_deliveries":                 dataSourceAlicloudConfigAggregateDeliveries(),
 			"alicloud_edas_namespaces":                             dataSourceAlicloudEdasNamespaces(),
 			"alicloud_cdn_blocked_regions":                         dataSourceAlicloudCdnBlockedRegions(),
+			"alicloud_schedulerx_namespaces":                       dataSourceAlicloudSchedulerxNamespaces(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1298,6 +1299,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_sls_group":                                        resourceAlicloudCmsSlsGroup(),
 			"alicloud_config_aggregate_delivery":                            resourceAlicloudConfigAggregateDelivery(),
 			"alicloud_edas_namespace":                                       resourceAlicloudEdasNamespace(),
+			"alicloud_schedulerx_namespace":                                 resourceAlicloudSchedulerxNamespace(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1517,6 +1519,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.SmartagEndpoint = strings.TrimSpace(endpoints["smartag"].(string))
 		config.TagEndpoint = strings.TrimSpace(endpoints["tag"].(string))
 		config.EdasEndpoint = strings.TrimSpace(endpoints["edas"].(string))
+		config.EdasschedulerxEndpoint = strings.TrimSpace(endpoints["edasschedulerx"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1835,6 +1838,8 @@ func init() {
 		"tag_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom tag endpoints.",
 
 		"edas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom edas endpoints.",
+
+		"edasschedulerx_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom edasschedulerx endpoints.",
 	}
 }
 
@@ -1884,6 +1889,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["edas_endpoint"],
+				},
+
+				"edasschedulerx": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["edasschedulerx_endpoint"],
 				},
 
 				"tag": {
@@ -2726,6 +2738,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["smartag"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["tag"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["edas"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["edasschedulerx"].(string)))
 	return hashcode.String(buf.String())
 }
 
