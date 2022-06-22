@@ -263,6 +263,12 @@ const (
 	Gre   = Protocol("gre")
 )
 
+const (
+	// HeaderEnableEBTrigger header key for enabling eventbridge trigger
+	// TODO: delete the header after eventbridge trigger is totally exposed to user
+	HeaderEnableEBTrigger = "x-fc-enable-eventbridge-trigger"
+)
+
 // ValidProtocols network protocol list
 var ValidProtocols = []Protocol{Http, Https, Tcp, Udp}
 
