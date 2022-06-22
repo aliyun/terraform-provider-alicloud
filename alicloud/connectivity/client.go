@@ -247,12 +247,21 @@ func (c *Config) Client() (*AliyunClient, error) {
 func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the ECS client if necessary
 	if client.ecsconn == nil {
-		endpoint := client.config.EcsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, ECSCode)
-			if endpoint == "" {
-				endpoint = EndpointMap[client.config.RegionId]
+		productCode := "ecs"
+		endpoint := ""
+		if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+			if err := client.loadEndpoint(productCode); err != nil {
+				return nil, err
 			}
+		}
+		if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+			endpoint = v.(string)
+			if endpoint == "ecs-cn-hangzhou.aliyuncs.com" {
+				endpoint = "ecs.aliyuncs.com"
+			}
+		}
+		if endpoint == "" {
+			return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
 		}
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(ECSCode), endpoint)
@@ -261,10 +270,11 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
 		}
+		ecs.SetClientProperty(ecsconn, "EndpointMap", map[string]string{
+			client.RegionId: endpoint,
+		})
+		ecs.SetEndpointDataToClient(ecsconn)
 
-		//if _, err := ecsconn.DescribeRegions(ecs.CreateDescribeRegionsRequest()); err != nil {
-		//	return nil, err
-		//}
 		ecsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		ecsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		ecsconn.SourceIp = client.config.SourceIp
