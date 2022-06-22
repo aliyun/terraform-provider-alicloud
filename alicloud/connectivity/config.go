@@ -165,6 +165,7 @@ type Config struct {
 	SmartagEndpoint             string
 	TagEndpoint                 string
 	EdasEndpoint                string
+	EdasschedulerxEndpoint      string
 }
 
 func (c *Config) loadAndValidate() error {
