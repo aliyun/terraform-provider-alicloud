@@ -9,3 +9,5 @@ import:
   - mock
   - require
   - suite
+- package: github.com/gorilla/websocket
+  version: c3dd95aea9779669bb3daafbd84ee0530c8ce1c1

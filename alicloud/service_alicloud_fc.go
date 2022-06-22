@@ -128,6 +128,7 @@ func (s *FcService) DescribeFcTrigger(id string) (*fc.GetTriggerOutput, error) {
 	}
 	service, function, name := parts[0], parts[1], parts[2]
 	request := fc.NewGetTriggerInput(service, function, name)
+	request.WithHeader(HeaderEnableEBTrigger, "enable")
 	var requestInfo *fc.Client
 	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 		requestInfo = fcClient
@@ -214,6 +215,56 @@ func resolveFcTriggerConfig(s string) (string, error) {
 	var raw map[string]interface{}
 	if err := json.Unmarshal(in, &raw); err != nil {
 		return s, err
+	}
+
+	out, err := json.Marshal(raw)
+	return string(out), err
+}
+
+func delNilEventSourceParams(s string) (string, error) {
+	if s == "" {
+		return s, nil
+	}
+	in := []byte(s)
+	var raw map[string]interface{}
+	if err := json.Unmarshal(in, &raw); err != nil {
+		return s, err
+	}
+	if v, ok := raw["eventSourceConfig"]; ok {
+		if eventSourceConfig, ok := v.(map[string]interface{}); ok {
+			if v1, ok := eventSourceConfig["eventSourceParameters"]; ok {
+				if eventSourceParams, ok := v1.(map[string]interface{}); ok {
+					if vMNS, ok := eventSourceParams["sourceMNSParameters"]; ok {
+						if _, ok := vMNS.(map[string]interface{}); ok {
+
+						} else if vMNS == nil {
+							// sourceMNSParameters is nil
+							delete(eventSourceParams, "sourceMNSParameters")
+						}
+
+					}
+					if vRocketMQ, ok := eventSourceParams["sourceRocketMQParameters"]; ok {
+						if _, ok := vRocketMQ.(map[string]interface{}); ok {
+
+						} else if vRocketMQ == nil {
+							// sourceRocketMQParameters is nil
+							delete(eventSourceParams, "sourceRocketMQParameters")
+						}
+					}
+					if vRabbitMQ, ok := eventSourceParams["sourceRabbitMQParameters"]; ok {
+						if _, ok := vRabbitMQ.(map[string]interface{}); ok {
+
+						} else if vRabbitMQ == nil {
+							// sourceRabbitMQParameters is nil
+							delete(eventSourceParams, "sourceRabbitMQParameters")
+						}
+					}
+				} else if v1 == nil {
+					// eventSourceParams is nil
+					delete(eventSourceConfig, "eventSourceParameters")
+				}
+			}
+		}
 	}
 	out, err := json.Marshal(raw)
 	return string(out), err
