@@ -1525,7 +1525,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	if config.RamRoleArn != "" {
-		config.AccessKey, config.SecretKey, config.SecurityToken, err = getAssumeRoleAK(config.AccessKey, config.SecretKey, config.SecurityToken, region, config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration, config.StsEndpoint)
+		config.AccessKey, config.SecretKey, config.SecurityToken, err = getAssumeRoleAK(config)
 		if err != nil {
 			return nil, err
 		}
@@ -2798,27 +2798,30 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 	return providerConfig[ProfileKey], nil
 }
 
-func getAssumeRoleAK(accessKey, secretKey, stsToken, region, roleArn, sessionName, policy string, sessionExpiration int, stsEndpoint string) (string, string, string, error) {
+func getAssumeRoleAK(config *connectivity.Config) (string, string, string, error) {
+
 	request := sts.CreateAssumeRoleRequest()
-	request.RoleArn = roleArn
-	request.RoleSessionName = sessionName
-	request.DurationSeconds = requests.NewInteger(sessionExpiration)
-	request.Policy = policy
+	request.RoleArn = config.RamRoleArn
+	request.RoleSessionName = config.RamRoleSessionName
+	request.DurationSeconds = requests.NewInteger(config.RamRoleSessionExpiration)
+	request.Policy = config.RamRolePolicy
 	request.Scheme = "https"
-	request.Domain = stsEndpoint
+	request.Domain = config.StsEndpoint
 
 	var client *sts.Client
 	var err error
-	if stsToken == "" {
-		client, err = sts.NewClientWithAccessKey(region, accessKey, secretKey)
+	if config.StsEndpoint == "" {
+		client, err = sts.NewClientWithAccessKey(config.RegionId, config.AccessKey, config.SecretKey)
 	} else {
-		client, err = sts.NewClientWithStsToken(region, accessKey, secretKey, stsToken)
+		client, err = sts.NewClientWithStsToken(config.RegionId, config.AccessKey, config.SecretKey, config.SecurityToken)
 	}
 
 	if err != nil {
 		return "", "", "", err
 	}
 
+	client.SourceIp = config.SourceIp
+	client.SecureTransport = config.SecureTransport
 	response, err := client.AssumeRole(request)
 	if err != nil {
 		return "", "", "", err
