@@ -230,6 +230,81 @@ func TestAccAlicloudDTSSynchronizationJob_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudDTSSynchronizationJob_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dts_synchronization_job.default"
+	ra := resourceAttrInit(resourceId, AlicloudDTSSynchronizationJobMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDtsSynchronizationJob")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtssynchronizationjob%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSSynchronizationJobBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dts_instance_id":                    "${alicloud_dts_synchronization_instance.default.id}",
+					"dts_job_name":                       "tf-testAccCase",
+					"source_endpoint_instance_type":      "RDS",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
+					"source_endpoint_engine_name":        "MySQL",
+					"source_endpoint_region":             "${var.region_id}",
+					"source_endpoint_database_name":      "test_database",
+					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
+					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
+					"destination_endpoint_instance_type": "RDS",
+					"destination_endpoint_instance_id":   "${alicloud_db_instance.target.id}",
+					"destination_endpoint_engine_name":   "MySQL",
+					"destination_endpoint_region":        "${var.region_id}",
+					"destination_endpoint_database_name": "test_database",
+					"destination_endpoint_user_name":     "${alicloud_rds_account.target_account.account_name}",
+					"destination_endpoint_password":      "${alicloud_rds_account.target_account.account_password}",
+					"db_list":                            "{\\\"tfaccountpri_0\\\":{\\\"name\\\":\\\"tfaccountpri_0\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
+					"structure_initialization":           "true",
+					"data_initialization":                "true",
+					"data_synchronization":               "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dts_job_name":                       "tf-testAccCase",
+						"source_endpoint_instance_type":      "RDS",
+						"source_endpoint_engine_name":        "MySQL",
+						"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
+						"destination_endpoint_instance_type": "RDS",
+						"destination_endpoint_engine_name":   "MySQL",
+						"destination_endpoint_region":        os.Getenv("ALICLOUD_REGION"),
+						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_list": "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_list": "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password"},
+			},
+		},
+	})
+}
+
 var AlicloudDTSSynchronizationJobMap0 = map[string]string{
 	"error_phone":                      NOSET,
 	"error_notice":                     NOSET,
