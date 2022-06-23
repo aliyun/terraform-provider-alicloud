@@ -199,8 +199,10 @@ func delEmptyPayloadIfExist(s string) (string, error) {
 		return s, err
 	}
 
-	if _, ok := raw["payload"]; ok {
-		delete(raw, "payload")
+	if v, ok := raw["payload"]; ok {
+		if vStr, ok := v.(string); ok && vStr == "" {
+			delete(raw, "payload")
+		}
 	}
 
 	out, err := json.Marshal(raw)
