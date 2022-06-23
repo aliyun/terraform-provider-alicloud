@@ -703,6 +703,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cdn_blocked_regions":                         dataSourceAlicloudCdnBlockedRegions(),
 			"alicloud_schedulerx_namespaces":                       dataSourceAlicloudSchedulerxNamespaces(),
 			"alicloud_ehpc_clusters":                               dataSourceAlicloudEhpcClusters(),
+			"alicloud_cen_traffic_marking_policies":                dataSourceAlicloudCenTrafficMarkingPolicies(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1302,6 +1303,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_edas_namespace":                                       resourceAlicloudEdasNamespace(),
 			"alicloud_schedulerx_namespace":                                 resourceAlicloudSchedulerxNamespace(),
 			"alicloud_ehpc_cluster":                                         resourceAlicloudEhpcCluster(),
+			"alicloud_cen_traffic_marking_policy":                           resourceAlicloudCenTrafficMarkingPolicy(),
 		},
 
 		ConfigureFunc: providerConfigure,
