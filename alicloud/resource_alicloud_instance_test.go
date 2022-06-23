@@ -2750,3 +2750,124 @@ resource "alicloud_ecs_auto_snapshot_policy" "default1" {
 
 `, name)
 }
+
+func TestAccAlicloudECSInstanceSystemDisk(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceSystemDisk%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceSystemDiskDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_essd",
+					"instance_name":                 "${var.name}",
+					"key_name":                      "${alicloud_key_pair.default.key_name}",
+					"spot_strategy":                 "NoSpot",
+					"spot_price_limit":              "0",
+					"instance_charge_type":          "PostPaid",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"force_delete":                  "true",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+					"system_disk_encrypted":         "true",
+					"system_disk_kms_key_id":        "${alicloud_kms_key.key.id}",
+					"system_disk_encrypt_algorithm": "aes-256",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":          name,
+						"key_name":               name,
+						"system_disk_encrypted":  "true",
+						"system_disk_kms_key_id": CHECKSET,
+						"system_disk_category":   "cloud_essd",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "security_enhancement_strategy", "dry_run", "system_disk_encrypt_algorithm"},
+			},
+		},
+	})
+}
+
+func resourceInstanceSystemDiskDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_instance_types" "default" {
+	system_disk_category = "cloud_essd"
+}
+
+data "alicloud_images" "default" {
+  	name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  	owners     = "system"
+}
+
+resource "alicloud_vpc" "default" {
+  	vpc_name   = var.name
+  	cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  	vpc_id       = alicloud_vpc.default.id
+  	cidr_block   = "172.16.0.0/24"
+  	zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  	vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+  	count  = "2"
+  	name   = var.name
+  	vpc_id = alicloud_vpc.default.id
+}
+
+resource "alicloud_security_group_rule" "default" {
+  	count             = 2
+  	type              = "ingress"
+  	ip_protocol       = "tcp"
+  	nic_type          = "intranet"
+  	policy            = "accept"
+  	port_range        = "22/22"
+  	priority          = 1
+  	security_group_id = element(alicloud_security_group.default.*.id, count.index)
+  	cidr_ip           = "172.16.0.0/24"
+}
+
+variable "name" {
+  	default = "%s"
+}
+
+resource "alicloud_key_pair" "default" {
+  	key_pair_name = var.name
+}
+
+resource "alicloud_kms_key" "key" {
+  	description            = var.name
+  	pending_window_in_days = "7"
+  	key_state              = "Enabled"
+}
+`, name)
+}

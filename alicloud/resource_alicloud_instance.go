@@ -181,6 +181,28 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"system_disk_storage_cluster_id": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Optional: true,
+			},
+			"system_disk_encrypted": {
+				Type:     schema.TypeBool,
+				ForceNew: true,
+				Optional: true,
+				Default:  false,
+			},
+			"system_disk_kms_key_id": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Optional: true,
+			},
+			"system_disk_encrypt_algorithm": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Optional: true,
+				Default:  "aes-256",
+			},
 			"data_disks": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -460,20 +482,237 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 	//if err := ecsService.InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
 	//	return WrapError(Error("%s. RequestId: %s", err, requestId))
 	//}
-
-	request, err := buildAliyunInstanceArgs(d, meta)
+	var response map[string]interface{}
+	action := "RunInstances"
+	request := make(map[string]interface{})
+	conn, err := client.NewEcsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request.IoOptimized = "optimized"
-	if d.Get("is_outdated").(bool) == true {
-		request.IoOptimized = "none"
+
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOk("instance_type"); ok {
+		request["InstanceType"] = v
 	}
+
+	if v, ok := d.GetOk("image_id"); ok {
+		request["ImageId"] = v
+	}
+
+	if v, ok := d.GetOk("availability_zone"); ok {
+		request["ZoneId"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_name"); ok {
+		request["SystemDisk.DiskName"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_description"); ok {
+		request["SystemDisk.Description"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_performance_level"); ok {
+		request["SystemDisk.PerformanceLevel"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_category"); ok {
+		request["SystemDisk.Category"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_size"); ok {
+		request["SystemDisk.Size"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_auto_snapshot_policy_id"); ok {
+		request["SystemDisk.AutoSnapshotPolicyId"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_storage_cluster_id"); ok {
+		request["SystemDisk.StorageClusterId"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_encrypted"); ok {
+		request["SystemDisk.Encrypted"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_kms_key_id"); ok {
+		request["SystemDisk.KMSKeyId"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_encrypt_algorithm"); ok {
+		request["SystemDisk.EncryptAlgorithm"] = v
+	}
+
+	if v, ok := d.GetOk("security_groups"); ok {
+		// At present, the classic network instance does not support multi sg in runInstances
+		sgs := expandStringList(v.(*schema.Set).List())
+		if d.Get("vswitch_id").(string) == "" && len(sgs) > 0 {
+			request["SecurityGroupId"] = sgs[0]
+		} else {
+			request["SecurityGroupIds"] = sgs
+		}
+	}
+
+	if v, ok := d.GetOk("instance_name"); ok {
+		request["InstanceName"] = v
+	}
+
+	if v, ok := d.GetOk("credit_specification"); ok {
+		request["CreditSpecification"] = v
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+
+	if v, ok := d.GetOk("internet_charge_type"); ok {
+		request["InternetChargeType"] = v
+	}
+
+	if v, ok := d.GetOk("internet_max_bandwidth_out"); ok {
+		request["InternetMaxBandwidthOut"] = v
+	}
+
+	if v, ok := d.GetOk("internet_max_bandwidth_in"); ok {
+		request["InternetMaxBandwidthIn"] = v
+	}
+
+	if v, ok := d.GetOk("host_name"); ok {
+		request["HostName"] = v
+	}
+
+	if v, ok := d.GetOk("password"); ok {
+		request["Password"] = v
+	}
+
+	if v, ok := d.GetOk("kms_encrypted_password"); ok {
+		kmsService := KmsService{client}
+		decryptResp, err := kmsService.Decrypt(v.(string), d.Get("kms_encryption_context").(map[string]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Password"] = decryptResp
+	}
+
+	vswitchValue := d.Get("subnet_id")
+	if vswitchValue == "" {
+		vswitchValue = d.Get("vswitch_id")
+	}
+	if vswitchValue != "" {
+		request["VSwitchId"] = vswitchValue
+		if v, ok := d.GetOk("private_ip"); ok {
+			request["PrivateIpAddress"] = v
+		}
+	}
+
+	if v, ok := d.GetOk("instance_charge_type"); ok {
+		request["InstanceChargeType"] = v
+	}
+
+	if request["InstanceChargeType"] == string(PrePaid) {
+		if v, ok := d.GetOk("period"); ok {
+			request["Period"] = v
+		}
+		if v, ok := d.GetOk("period_unit"); ok {
+			request["PeriodUnit"] = v
+		}
+	} else {
+		if v, ok := d.GetOk("spot_strategy"); ok {
+			request["SpotStrategy"] = v
+		}
+		if v, ok := d.GetOk("spot_price_limit"); ok {
+			request["SpotPriceLimit"] = v
+		}
+	}
+
+	if v, ok := d.GetOk("user_data"); ok {
+		_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
+		if base64DecodeError == nil {
+			request["UserData"] = v
+		} else {
+			request["UserData"] = base64.StdEncoding.EncodeToString([]byte(v.(string)))
+		}
+	}
+
+	if v, ok := d.GetOk("role_name"); ok {
+		request["RamRoleName"] = v
+	}
+
+	if v, ok := d.GetOk("key_name"); ok {
+		request["KeyPairName"] = v
+	}
+
+	if v, ok := d.GetOk("security_enhancement_strategy"); ok {
+		request["SecurityEnhancementStrategy"] = v
+	}
+
+	if v, ok := d.GetOk("auto_release_time"); ok && v.(string) != "" {
+		request["AutoReleaseTime"] = v
+	}
+
+	if v, ok := d.GetOk("dry_run"); ok {
+		request["DryRun"] = v
+	}
+
+	if v, ok := d.GetOk("deletion_protection"); ok {
+		request["DeletionProtection"] = v
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		count := 1
+		for key, value := range v.(map[string]interface{}) {
+			request[fmt.Sprintf("Tag.%d.Key", count)] = key
+			request[fmt.Sprintf("Tag.%d.Value", count)] = value
+			count++
+		}
+	}
+
+	if v, ok := d.GetOk("data_disks"); ok {
+		disksMaps := make([]map[string]interface{}, 0)
+		disks := v.([]interface{})
+		for _, rew := range disks {
+			disksMap := make(map[string]interface{})
+			item := rew.(map[string]interface{})
+			disksMap["DiskName"] = item["name"]
+			disksMap["Size"] = item["size"]
+			disksMap["Category"] = item["category"]
+			disksMap["DeleteWithInstance"] = item["delete_with_instance"]
+			if disksMap["Category"] == string(DiskEphemeralSSD) {
+				disksMap["DeleteWithInstance"] = ""
+			}
+			disksMap["Encrypted"] = item["encrypted"]
+			disksMap["KMSKeyId"] = item["kms_key_id"]
+			disksMap["SnapshotId"] = item["snapshot_id"]
+			disksMap["AutoSnapshotPolicyId"] = item["auto_snapshot_policy_id"]
+			disksMap["Description"] = item["description"]
+			disksMap["PerformanceLevel"] = item["performance_level"]
+			disksMaps = append(disksMaps, disksMap)
+		}
+		request["DataDisk"] = disksMaps
+	}
+
+	if v, ok := d.GetOk("hpc_cluster_id"); ok {
+		request["HpcClusterId"] = v
+	}
+
+	if v, ok := d.GetOk("deployment_set_id"); ok {
+		request["DeploymentSetId"] = v
+	}
+
+	request["IoOptimized"] = "optimized"
+	if d.Get("is_outdated").(bool) == true {
+		request["IoOptimized"] = "none"
+	}
+
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.RunInstances(request)
-		})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -481,14 +720,13 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*ecs.RunInstancesResponse)
-		d.SetId(response.InstanceIdSets.InstanceIdSet[0])
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_instance", action, AlibabaCloudSdkGoERROR)
 	}
+	d.SetId(fmt.Sprint(response["InstanceIdSets"].(map[string]interface{})["InstanceIdSet"].([]interface{})[0]))
 
 	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{"Stopping"}))
 
@@ -530,6 +768,10 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("system_disk_category", disk.Category)
 	d.Set("system_disk_size", disk.Size)
 	d.Set("system_disk_auto_snapshot_policy_id", disk.AutoSnapshotPolicyId)
+	d.Set("system_disk_storage_cluster_id", disk.StorageClusterId)
+	d.Set("system_disk_encrypted", disk.Encrypted)
+	d.Set("system_disk_kms_key_id", disk.KMSKeyId)
+
 	d.Set("volume_tags", ecsService.tagsToMap(disk.Tags.Tag))
 	d.Set("system_disk_performance_level", disk.PerformanceLevel)
 	d.Set("instance_name", instance.InstanceName)
@@ -817,7 +1059,11 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate || statusUpdate {
 		run = true
-		if statusUpdate && targetExist && target == string(Stopped) {
+		instance, errDesc := ecsService.DescribeInstance(d.Id())
+		if errDesc != nil {
+			return WrapError(errDesc)
+		}
+		if statusUpdate && targetExist && target == string(Stopped) || instance.Status == string(Running) {
 			stopRequest := ecs.CreateStopInstanceRequest()
 			stopRequest.RegionId = client.RegionId
 			stopRequest.InstanceId = d.Id()
