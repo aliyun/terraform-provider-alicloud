@@ -18,19 +18,17 @@ require (
 	github.com/aliyun/aliyun-tablestore-go-sdk v1.7.6
 	github.com/aliyun/credentials-go v1.1.2
 	github.com/aliyun/fc-go-sdk v0.0.0-20220622030011-bc7ded2a9050
-	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/deckarep/golang-set v1.8.0
 	github.com/denverdino/aliyungo v0.0.0-20220531124911-7183b75c63d4
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/gogap/errors v0.0.0-20160523102334-149c546090d0 // indirect
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/google/uuid v1.1.2
-	github.com/hashicorp/go-uuid v1.0.1
-	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/terraform-plugin-sdk v1.4.0
-	github.com/hashicorp/vault v0.10.4
+	github.com/hashicorp/vault v1.7.6
 	github.com/imdario/mergo v0.3.8 // indirect
-	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
+	github.com/jmespath/go-jmespath v0.4.0
 	github.com/keybase/go-crypto v0.0.0-20190416182011-b785b22cc757 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
@@ -40,7 +38,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/valyala/fasthttp v1.22.0 // indirect
 	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d
-	golang.org/x/net v0.0.0-20210226101413-39120d07d75e
+	golang.org/x/net v0.0.0-20210510120150-4163338589ed
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0
