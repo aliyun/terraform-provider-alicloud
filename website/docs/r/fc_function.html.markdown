@@ -131,7 +131,10 @@ The following arguments are supported:
 * `ca_port` - (Optional, available in 1.96.0+) The port that the function listen to, only valid for [custom runtime](https://www.alibabacloud.com/help/doc-detail/132044.htm) and [custom container runtime](https://www.alibabacloud.com/help/doc-detail/179368.htm).
 * `custom_container_config` - (Optional, available in 1.96.0+) The configuration for custom container runtime.
 
-**custom_container_config** requires following arguments:
+#### Block custom_container_config
+
+The custom_container_config following arguments:
+
 * `image` - (Required) The container image address.
 * `command` - (Optional) The entry point of the container, which specifies the actual command run by the container.
 * `args` - (Optional) The args field specifies the arguments passed to the command.

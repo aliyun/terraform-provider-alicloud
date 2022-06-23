@@ -398,10 +398,8 @@ func resourceAlicloudFCFunctionDelete(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapError(err)
 	}
-	request := &fc.DeleteFunctionInput{
-		ServiceName:  StringPointer(parts[0]),
-		FunctionName: StringPointer(parts[1]),
-	}
+	request := fc.NewDeleteFunctionInput(parts[0], parts[1])
+	request.WithHeader(HeaderEnableEBTrigger, "enable")
 	var requestInfo *fc.Client
 	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 		requestInfo = fcClient

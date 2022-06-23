@@ -3,12 +3,20 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 
+	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -496,4 +504,689 @@ status = "OK"
 
 data "alicloud_ecs_snapshots" "default" {}
 `, name)
+}
+
+func TestUnitECSDisk(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"advanced_features": "CreateDiskValue",
+		"disk_name":         "CreateDiskValue",
+		"description":       "CreateDiskValue",
+		"zone_id":           "CreateDiskValue",
+		"size":              500,
+		"payment_type":      "PayAsYouGo",
+		"category":          "CreateDiskValue",
+		"resource_group_id": "CreateDiskValue",
+		"snapshot_id":       "CreateDiskValue",
+		"tags": map[string]string{
+			"TagResourcesValue_1": "CreateDiskValue",
+			"TagResourcesValue_2": "CreateDiskValue",
+		},
+		"encrypt_algorithm":                  "CreateDiskValue",
+		"instance_id":                        "CreateDiskValue",
+		"kms_key_id":                         "CreateDiskValue",
+		"performance_level":                  "CreateDiskValue",
+		"storage_set_id":                     "CreateDiskValue",
+		"storage_set_partition_number":       1,
+		"dedicated_block_storage_cluster_id": "CreateDiskValue",
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		// DescribeDisks
+		"Disks": map[string]interface{}{
+			"Disk": []interface{}{
+				map[string]interface{}{
+					"DiskId":             "CreateDiskValue",
+					"Category":           "CreateDiskValue",
+					"DeleteAutoSnapshot": true,
+					"DeleteWithInstance": true,
+					"Description":        "CreateDiskValue",
+					"DiskName":           "CreateDiskValue",
+					"EnableAutoSnapshot": false,
+					"Encrypted":          "CreateDiskValue",
+					"InstanceId":         "CreateDiskValue",
+					"KMSKeyId":           "CreateDiskValue",
+					"DiskChargeType":     "PostPaid",
+					"PerformanceLevel":   "CreateDiskValue",
+					"ResourceGroupId":    "CreateDiskValue",
+					"Size":               500,
+					"SourceSnapshotId":   "CreateDiskValue",
+					"Status":             "Available",
+					"ZoneId":             "CreateDiskValue",
+					"Tags": map[string]interface{}{
+						"Tag": []interface{}{
+							map[string]interface{}{
+								"Key":   "TagResourcesValue_1",
+								"Value": "CreateDiskValue",
+							},
+							map[string]interface{}{
+								"Key":   "TagResourcesValue_2",
+								"Value": "CreateDiskValue",
+							},
+						},
+					},
+				},
+			},
+		},
+		"DiskId": "CreateDiskValue",
+	}
+	CreateMockResponse := map[string]interface{}{
+		// CreateDisk
+		"DiskId": "CreateDiskValue",
+	}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       String(errorCode),
+			Data:       String(errorCode),
+			Message:    String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_ecs_disk", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			mapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+
+	// Create
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEcsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudEcsDiskCreate(dInit, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	ReadMockResponseDiff := map[string]interface{}{
+		// DescribeDisks Response
+		"DiskId": "CreateDiskValue",
+	}
+	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "CreateDisk" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						successResponseMock(ReadMockResponseDiff)
+						return CreateMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudEcsDiskCreate(dInit, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dInit.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Update
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEcsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	// ResizeDisk
+	attributesDiff := map[string]interface{}{
+		"size": 600,
+		"type": "ResizeDiskValue",
+	}
+	diff, err := newInstanceDiff("alicloud_ecs_disk", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dInit.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeDisks Response
+		"Disks": map[string]interface{}{
+			"Disk": []interface{}{
+				map[string]interface{}{
+					"Size": 600,
+				},
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "ResizeDisk" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+	// JoinResourceGroup
+	attributesDiff = map[string]interface{}{
+		"resource_group_id": "JoinResourceGroupValue",
+	}
+	diff, err = newInstanceDiff("alicloud_ecs_disk", attributes, attributesDiff, dExisted.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeDisks Response
+		"Disks": map[string]interface{}{
+			"Disk": []interface{}{
+				map[string]interface{}{
+					"ResourceGroupId": "JoinResourceGroupValue",
+				},
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "JoinResourceGroup" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+	// ModifyDiskSpec
+	attributesDiff = map[string]interface{}{
+		"category":          "ModifyDiskSpecValue",
+		"performance_level": "ModifyDiskSpecValue",
+		"dry_run":           false,
+	}
+	diff, err = newInstanceDiff("alicloud_ecs_disk", attributes, attributesDiff, dExisted.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeDisks Response
+		"Disks": map[string]interface{}{
+			"Disk": []interface{}{
+				map[string]interface{}{
+					"Category":         "ModifyDiskSpecValue",
+					"PerformanceLevel": "ModifyDiskSpecValue",
+				},
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "ModifyDiskSpec" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+	// ModifyDiskChargeType
+	attributesDiff = map[string]interface{}{
+		"instance_id":  "ModifyDiskChargeTypeValue",
+		"payment_type": "Subscription",
+	}
+	diff, err = newInstanceDiff("alicloud_ecs_disk", attributes, attributesDiff, dExisted.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeDisks Response
+		"Disks": map[string]interface{}{
+			"Disk": []interface{}{
+				map[string]interface{}{
+					"InstanceId":     "ModifyDiskChargeTypeValue",
+					"DiskChargeType": "PrePaid",
+				},
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "ModifyDiskChargeType" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+	// ModifyDiskAttribute
+	attributesDiff = map[string]interface{}{
+		"delete_auto_snapshot": false,
+		"delete_with_instance": false,
+		"disk_name":            "ModifyDiskAttributeValue",
+		"name":                 "ModifyDiskAttributeValue",
+		"description":          "ModifyDiskAttributeValue",
+		"enable_auto_snapshot": true,
+	}
+	diff, err = newInstanceDiff("alicloud_ecs_disk", attributes, attributesDiff, dExisted.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeDisks Response
+		"Disks": map[string]interface{}{
+			"Disk": []interface{}{
+				map[string]interface{}{
+					"DeleteAutoSnapshot": false,
+					"DeleteWithInstance": false,
+					"Description":        "ModifyDiskAttributeValue",
+					"DiskName":           "ModifyDiskAttributeValue",
+					"EnableAutoSnapshot": true,
+				},
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "ModifyDiskAttribute" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+	// TagResources
+	attributesDiff = map[string]interface{}{
+		"tags": map[string]interface{}{
+			"TagResourcesValue_1": "TagResourcesValue_1",
+			"TagResourcesValue_2": "TagResourcesValue_2",
+		},
+	}
+	diff, err = newInstanceDiff("alicloud_ecs_disk", attributes, attributesDiff, dExisted.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeDisks Response
+		"Disks": map[string]interface{}{
+			"Disk": []interface{}{
+				map[string]interface{}{
+					"Tags": map[string]interface{}{
+						"Tag": []interface{}{
+							map[string]interface{}{
+								"Key":   "TagResourcesValue_1",
+								"Value": "TagResourcesValue_1",
+							},
+							map[string]interface{}{
+								"Key":   "TagResourcesValue_2",
+								"Value": "TagResourcesValue_2",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "TagResources" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// UntagResources
+	attributesDiff = map[string]interface{}{
+		"tags": map[string]interface{}{
+			"UntagResourcesValue3_1": "UnTagResourcesValue3_1",
+			"UntagResourcesValue3_2": "UnTagResourcesValue3_2",
+		},
+	}
+	diff, err = newInstanceDiff("alicloud_ecs_disk", attributes, attributesDiff, dExisted.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeDisks Response
+		"Disks": map[string]interface{}{
+			"Disk": []interface{}{
+				map[string]interface{}{
+					"Tags": map[string]interface{}{
+						"Tag": []interface{}{
+							map[string]interface{}{
+								"Key":   "UntagResourcesValue3_1",
+								"Value": "UnTagResourcesValue3_1",
+							},
+							map[string]interface{}{
+								"Key":   "UntagResourcesValue3_2",
+								"Value": "UnTagResourcesValue3_2",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "UntagResources" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Read
+	attributesDiff = map[string]interface{}{}
+	diff, err = newInstanceDiff("alicloud_ecs_disk", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dInit.State(), diff)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DescribeDisks" {
+				switch errorCode {
+				case "{}":
+					return notFoundResponseMock(errorCode)
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudEcsDiskRead(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "{}":
+			assert.Nil(t, err)
+		}
+	}
+
+	// Delete
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEcsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudEcsDiskDelete(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	attributesDiff = map[string]interface{}{}
+	diff, err = newInstanceDiff("alicloud_ecs_disk", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(dInit.State(), diff)
+	errorCodes = []string{"NonRetryableError", "Throttling", "IncorrectDiskStatus.Initializing", "nil", "InvalidDiskId.NotFound"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DeleteDisk" {
+				switch errorCode {
+				case "NonRetryableError", "InvalidDiskId.NotFound":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						ReadMockResponse = map[string]interface{}{
+							"Disks": map[string]interface{}{
+								"Disk": []interface{}{
+									map[string]interface{}{
+										"DiskId": "CreateDiskValue",
+									},
+								},
+							},
+						}
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudEcsDiskDelete(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "InvalidDiskId.NotFound":
+			assert.Nil(t, err)
+		}
+	}
 }

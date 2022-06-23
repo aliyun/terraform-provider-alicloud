@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -271,7 +272,38 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Default:  false,
 			},
 			"tags": tagsSchema(),
-
+			"babelfish_config": {
+				Type: schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"babelfish_enabled": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"migration_mode": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringInSlice([]string{"single-db", "multi-db"}, false),
+						},
+						"master_username": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"master_user_password": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"babelfish_port": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"maintain_time": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -958,6 +990,9 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	if d.HasChange("connection_string_prefix") {
 		connectUpdate = true
 	}
+	if d.HasChange("babelfish_port") {
+		connectUpdate = true
+	}
 	if connectUpdate {
 		instance, err := rdsService.DescribeDBInstance(d.Id())
 		if err != nil {
@@ -974,6 +1009,10 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if v, ok := d.GetOk("connection_string_prefix"); ok && v != connectionStringPrefix {
 			connectRequest["ConnectionStringPrefix"] = v
 		}
+		if v, ok := d.GetOk("babelfish_port"); ok {
+			connectRequest["BabelfishPort"] = v
+		}
+
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -995,7 +1034,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("port")
 		d.SetPartial("connection_string")
 		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -1420,6 +1459,13 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("security_group_ids", groups)
 	}
 
+	connection, err := rdsService.DescribeDBConnection(d.Id() + ":" + d.Get("connection_string_prefix").(string))
+	if err != nil {
+		return WrapError(err)
+	}
+	if connection["BabelfishPort"] != nil {
+		d.Set("babelfish_port", connection["BabelfishPort"])
+	}
 	sslAction, err := rdsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
 		return WrapError(err)
@@ -1613,6 +1659,26 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 	if v, ok := d.GetOk("db_is_ignore_case"); ok {
 		request["DBIsIgnoreCase"] = v
+	}
+
+	if request["Engine"] == string(PostgreSQL) {
+		if v, ok := d.GetOk("babelfish_config"); ok {
+			v := v.(*schema.Set).List()[0].(map[string]interface{})
+			babelfishConfig, err := json.Marshal(struct {
+				BabelfishEnabled   string `json:"babelfishEnabled"`
+				MigrationMode      string `json:"migrationMode"`
+				MasterUsername     string `json:"masterUsername"`
+				MasterUserPassword string `json:"masterUserPassword"`
+			}{v["babelfish_enabled"].(string),
+				v["migration_mode"].(string),
+				v["master_username"].(string),
+				v["master_user_password"].(string),
+			})
+			if err != nil {
+				return nil, err
+			}
+			request["BabelfishConfig"] = string(babelfishConfig)
+		}
 	}
 
 	uuid, err := uuid.GenerateUUID()

@@ -89,7 +89,7 @@ The following arguments are supported:
 * `memory` - (Optional) The amount of memory resources allocated to the container group.
 * `ram_role_name` - (Optional, ForceNew) The RAM role that the container group assumes. ECI and ECS share the same RAM role.
 * `resource_group_id` - (Optional, Computed, ForceNew) The ID of the resource group.
-* `restart_policy` - (Optional) The restart policy of the container group. Default to `Always`.
+* `restart_policy` - (Optional, Computed) The restart policy of the container group. Valid values: `Always`, `Never`, `OnFailure`.
 * `security_group_id` - (Required, ForceNew) The ID of the security group to which the container group belongs. Container groups within the same security group can access each other.
 * `volumes` - (Optional) The list of volumes.
 * `vswitch_id` - (Required, ForceNew) The ID of the VSwitch. Currently, container groups can only be deployed in VPC networks. The number of IP addresses in the VSwitch CIDR block determines the maximum number of container groups that can be created in the VSwitch. Before you can create an ECI instance, plan the CIDR block of the VSwitch.

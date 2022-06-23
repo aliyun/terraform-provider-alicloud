@@ -34,7 +34,7 @@ The following arguments are supported:
 * `account_name_prefix` - (Optional, ForceNew, Available in v1.114.0) The name prefix of account.
 * `display_name` - (Required) Member name. The length is 2 ~ 50 characters or Chinese characters, which can include Chinese characters, English letters, numbers, underscores (_), dots (.) And dashes (-).
 * `folder_id` - (Optional) The ID of the parent folder.
-* `payer_account_id` - (Optional, ForceNew) Settlement account ID. If the value is empty, the current account will be used for settlement.
+* `payer_account_id` - (Optional, ForceNew) The ID of the billing account. If you leave this parameter empty, the current account is used as the billing account.
 
 -> **NOTE:** The member name must be unique within the resource directory.
 

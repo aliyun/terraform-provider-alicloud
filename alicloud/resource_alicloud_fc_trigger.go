@@ -53,7 +53,7 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("type").(string) == "timer"
+					return (d.Get("type").(string) == "timer") || (d.Get("type").(string) == fc.TRIGGER_TYPE_EVENTBRIDGE)
 				},
 			},
 
@@ -61,6 +61,15 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if d.Get("type").(string) == string(fc.TRIGGER_TYPE_EVENTBRIDGE) {
+						if new == "" && old != "" {
+							// source_arn is optional
+							return true
+						}
+					}
+					return old == new
+				},
 			},
 
 			"config": {
@@ -77,6 +86,19 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 							panic(err)
 						}
 						resolvedOld, err := delEmptyPayloadIfExist(removeSpaceAndEnter(old))
+						if err != nil {
+							panic(err)
+						}
+
+						return resolvedOld == resolvedNew
+					}
+
+					if d.Get("type").(string) == string(fc.TRIGGER_TYPE_EVENTBRIDGE) {
+						resolvedNew, err := delNilEventSourceParams(removeSpaceAndEnter(new))
+						if err != nil {
+							panic(err)
+						}
+						resolvedOld, err := delNilEventSourceParams(removeSpaceAndEnter(old))
 						if err != nil {
 							panic(err)
 						}
@@ -111,7 +133,7 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{fc.TRIGGER_TYPE_HTTP, fc.TRIGGER_TYPE_LOG, fc.TRIGGER_TYPE_OSS, fc.TRIGGER_TYPE_TIMER, fc.TRIGGER_TYPE_MNS_TOPIC, fc.TRIGGER_TYPE_CDN_EVENTS}, false),
+				ValidateFunc: validation.StringInSlice([]string{fc.TRIGGER_TYPE_HTTP, fc.TRIGGER_TYPE_LOG, fc.TRIGGER_TYPE_OSS, fc.TRIGGER_TYPE_TIMER, fc.TRIGGER_TYPE_MNS_TOPIC, fc.TRIGGER_TYPE_CDN_EVENTS, fc.TRIGGER_TYPE_EVENTBRIDGE}, false),
 			},
 
 			"last_modified": {
@@ -165,10 +187,10 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("source_arn"); ok && v.(string) != "" {
 		object.SourceARN = StringPointer(v.(string))
 	}
-	request := &fc.CreateTriggerInput{
-		ServiceName:         StringPointer(serviceName),
-		FunctionName:        StringPointer(fcName),
-		TriggerCreateObject: object,
+	request := fc.NewCreateTriggerInput(serviceName, fcName)
+	request.TriggerCreateObject = object
+	if d.Get("type").(string) == fc.TRIGGER_TYPE_EVENTBRIDGE {
+		request.WithHeader(HeaderEnableEBTrigger, "enable")
 	}
 	var response *fc.CreateTriggerOutput
 	var requestInfo *fc.Client
@@ -243,9 +265,13 @@ func resourceAlicloudFCTriggerRead(d *schema.ResourceData, meta interface{}) err
 
 func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	parts, err := ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return WrapError(err)
+	}
 
-	updateInput := &fc.UpdateTriggerInput{}
-
+	updateInput := fc.NewUpdateTriggerInput(parts[0], parts[1], parts[2])
+	updateInput.WithHeader(HeaderEnableEBTrigger, "enable")
 	if d.HasChange("role") {
 		updateInput.InvocationRole = StringPointer(d.Get("role").(string))
 	}
@@ -258,13 +284,6 @@ func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if updateInput != nil {
-		parts, err := ParseResourceId(d.Id(), 3)
-		if err != nil {
-			return WrapError(err)
-		}
-		updateInput.ServiceName = StringPointer(parts[0])
-		updateInput.FunctionName = StringPointer(parts[1])
-		updateInput.TriggerName = StringPointer(parts[2])
 		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
@@ -287,11 +306,8 @@ func resourceAlicloudFCTriggerDelete(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapError(err)
 	}
-	request := &fc.DeleteTriggerInput{
-		ServiceName:  StringPointer(parts[0]),
-		FunctionName: StringPointer(parts[1]),
-		TriggerName:  StringPointer(parts[2]),
-	}
+	request := fc.NewDeleteTriggerInput(parts[0], parts[1], parts[2])
+	request.WithHeader(HeaderEnableEBTrigger, "enable")
 	var requestInfo *fc.Client
 	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 		requestInfo = fcClient

@@ -53,7 +53,7 @@ func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"HA"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"HA", "SINGLE"}, false),
 			},
 			"db_instance_description": {
 				Type:     schema.TypeString,
@@ -74,7 +74,7 @@ func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
 			"db_node_class": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"gdb.r.xlarge", "gdb.r.2xlarge", "gdb.r.4xlarge", "gdb.r.8xlarge", "gdb.r.16xlarge"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"gdb.r.xlarge", "gdb.r.2xlarge", "gdb.r.4xlarge", "gdb.r.8xlarge", "gdb.r.16xlarge", "gdb.r.xlarge_basic", "gdb.r.2xlarge_basic", "gdb.r.4xlarge_basic", "gdb.r.8xlarge_basic", "gdb.r.16xlarge_basic"}, false),
 			},
 			"db_node_storage": {
 				Type:         schema.TypeInt,

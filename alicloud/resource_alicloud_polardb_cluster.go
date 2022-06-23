@@ -201,7 +201,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ALL", "LATEST", "NONE"}, false),
 			},
-
+			"imci_switch": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
+				Optional:     true,
+				Computed:     true,
+			},
 			"tags": tagsSchema(),
 		},
 	}
@@ -383,6 +388,9 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			request.RegionId = client.RegionId
 			request.DBClusterId = d.Id()
 			request.DBNode = expandDbNodes
+			if v, ok := d.GetOk("imci_switch"); ok && v.(string) != "" {
+				request.ImciSwitch = v.(string)
+			}
 			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 				return polarDBClient.CreateDBNodes(request)
 			})

@@ -129,6 +129,26 @@ func dataSourceAlicloudServiceMeshServiceMeshes() *schema.Resource {
 													Type:     schema.TypeBool,
 													Computed: true,
 												},
+												"project": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+											},
+										},
+									},
+									"control_plane_log": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"enabled": {
+													Type:     schema.TypeBool,
+													Computed: true,
+												},
+												"project": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
 											},
 										},
 									},
@@ -517,10 +537,21 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 							if accessLogArg, ok := accessLog.(map[string]interface{}); ok && len(accessLogArg) > 0 {
 								accessLogMap := make(map[string]interface{})
 								accessLogMap["enabled"] = accessLogArg["Enabled"]
+								accessLogMap["project"] = accessLogArg["Project"]
 								accessLogSli = append(accessLogSli, accessLogMap)
 							}
 						}
 						meshConfigMap["access_log"] = accessLogSli
+						controlPlaneLogSli := make([]map[string]interface{}, 0)
+						if controlPlaneLog, ok := meshConfigArg["ControlPlaneLogInfo"]; ok {
+							if controlPlaneLogArg, ok := controlPlaneLog.(map[string]interface{}); ok && len(controlPlaneLogArg) > 0 {
+								controlPlaneLogMap := make(map[string]interface{})
+								controlPlaneLogMap["enabled"] = controlPlaneLogArg["Enabled"]
+								controlPlaneLogMap["project"] = controlPlaneLogArg["Project"]
+								controlPlaneLogSli = append(controlPlaneLogSli, controlPlaneLogMap)
+							}
+						}
+						meshConfigMap["control_plane_log"] = controlPlaneLogSli
 						auditSli := make([]map[string]interface{}, 0)
 						if audit, ok := meshConfigArg["Audit"]; ok {
 							auditMap := make(map[string]interface{})

@@ -228,6 +228,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_db_instance_engines":                         dataSourceAlicloudDBInstanceEngines(),
 			"alicloud_db_instance_classes":                         dataSourceAlicloudDBInstanceClasses(),
 			"alicloud_rds_backups":                                 dataSourceAlicloudRdsBackups(),
+			"alicloud_rds_modify_parameter_logs":                   dataSourceAlicloudRdsModifyParameterLogs(),
 			"alicloud_pvtz_zones":                                  dataSourceAlicloudPvtzZones(),
 			"alicloud_pvtz_zone_records":                           dataSourceAlicloudPvtzZoneRecords(),
 			"alicloud_router_interfaces":                           dataSourceAlicloudRouterInterfaces(),
@@ -699,6 +700,14 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_namespaces":                              dataSourceAlicloudCmsNamespaces(),
 			"alicloud_cms_sls_groups":                              dataSourceAlicloudCmsSlsGroups(),
 			"alicloud_config_aggregate_deliveries":                 dataSourceAlicloudConfigAggregateDeliveries(),
+			"alicloud_edas_namespaces":                             dataSourceAlicloudEdasNamespaces(),
+			"alicloud_cdn_blocked_regions":                         dataSourceAlicloudCdnBlockedRegions(),
+			"alicloud_schedulerx_namespaces":                       dataSourceAlicloudSchedulerxNamespaces(),
+			"alicloud_ehpc_clusters":                               dataSourceAlicloudEhpcClusters(),
+			"alicloud_cen_traffic_marking_policies":                dataSourceAlicloudCenTrafficMarkingPolicies(),
+			"alicloud_ecd_ram_directories":                         dataSourceAlicloudEcdRamDirectories(),
+			"alicloud_ecd_zones":                                   dataSourceAlicloudEcdZones(),
+			"alicloud_ecd_ad_connector_directories":                dataSourceAlicloudEcdAdConnectorDirectories(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1295,6 +1304,14 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_namespace":                                        resourceAlicloudCmsNamespace(),
 			"alicloud_cms_sls_group":                                        resourceAlicloudCmsSlsGroup(),
 			"alicloud_config_aggregate_delivery":                            resourceAlicloudConfigAggregateDelivery(),
+			"alicloud_edas_namespace":                                       resourceAlicloudEdasNamespace(),
+			"alicloud_schedulerx_namespace":                                 resourceAlicloudSchedulerxNamespace(),
+			"alicloud_ehpc_cluster":                                         resourceAlicloudEhpcCluster(),
+			"alicloud_cen_traffic_marking_policy":                           resourceAlicloudCenTrafficMarkingPolicy(),
+			"alicloud_ecs_instance_set":                                     resourceAlicloudEcsInstanceSet(),
+			"alicloud_ecd_ram_directory":                                    resourceAlicloudEcdRamDirectory(),
+			"alicloud_service_mesh_user_permission":                         resourceAlicloudServiceMeshUserPermission(),
+			"alicloud_ecd_ad_connector_directory":                           resourceAlicloudEcdAdConnectorDirectory(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1513,6 +1530,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DdosbasicEndpoint = strings.TrimSpace(endpoints["ddosbasic"].(string))
 		config.SmartagEndpoint = strings.TrimSpace(endpoints["smartag"].(string))
 		config.TagEndpoint = strings.TrimSpace(endpoints["tag"].(string))
+		config.EdasEndpoint = strings.TrimSpace(endpoints["edas"].(string))
+		config.EdasschedulerxEndpoint = strings.TrimSpace(endpoints["edasschedulerx"].(string))
+		config.EhsEndpoint = strings.TrimSpace(endpoints["ehs"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1522,7 +1542,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	if config.RamRoleArn != "" {
-		config.AccessKey, config.SecretKey, config.SecurityToken, err = getAssumeRoleAK(config.AccessKey, config.SecretKey, config.SecurityToken, region, config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration, config.StsEndpoint)
+		config.AccessKey, config.SecretKey, config.SecurityToken, err = getAssumeRoleAK(config)
 		if err != nil {
 			return nil, err
 		}
@@ -1829,6 +1849,12 @@ func init() {
 		"smartag_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom smartag endpoints.",
 
 		"tag_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom tag endpoints.",
+
+		"edas_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom edas endpoints.",
+
+		"edasschedulerx_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom edasschedulerx endpoints.",
+
+		"ehs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ehs endpoints.",
 	}
 }
 
@@ -1873,6 +1899,27 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"edas": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["edas_endpoint"],
+				},
+
+				"edasschedulerx": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["edasschedulerx_endpoint"],
+				},
+
+				"ehs": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ehs_endpoint"],
+				},
+
 				"tag": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2712,6 +2759,9 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["ddosbasic"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["smartag"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["tag"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["edas"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["edasschedulerx"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ehs"].(string)))
 	return hashcode.String(buf.String())
 }
 
@@ -2785,27 +2835,30 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 	return providerConfig[ProfileKey], nil
 }
 
-func getAssumeRoleAK(accessKey, secretKey, stsToken, region, roleArn, sessionName, policy string, sessionExpiration int, stsEndpoint string) (string, string, string, error) {
+func getAssumeRoleAK(config *connectivity.Config) (string, string, string, error) {
+
 	request := sts.CreateAssumeRoleRequest()
-	request.RoleArn = roleArn
-	request.RoleSessionName = sessionName
-	request.DurationSeconds = requests.NewInteger(sessionExpiration)
-	request.Policy = policy
+	request.RoleArn = config.RamRoleArn
+	request.RoleSessionName = config.RamRoleSessionName
+	request.DurationSeconds = requests.NewInteger(config.RamRoleSessionExpiration)
+	request.Policy = config.RamRolePolicy
 	request.Scheme = "https"
-	request.Domain = stsEndpoint
+	request.Domain = config.StsEndpoint
 
 	var client *sts.Client
 	var err error
-	if stsToken == "" {
-		client, err = sts.NewClientWithAccessKey(region, accessKey, secretKey)
+	if config.StsEndpoint == "" {
+		client, err = sts.NewClientWithAccessKey(config.RegionId, config.AccessKey, config.SecretKey)
 	} else {
-		client, err = sts.NewClientWithStsToken(region, accessKey, secretKey, stsToken)
+		client, err = sts.NewClientWithStsToken(config.RegionId, config.AccessKey, config.SecretKey, config.SecurityToken)
 	}
 
 	if err != nil {
 		return "", "", "", err
 	}
 
+	client.SourceIp = config.SourceIp
+	client.SecureTransport = config.SecureTransport
 	response, err := client.AssumeRole(request)
 	if err != nil {
 		return "", "", "", err

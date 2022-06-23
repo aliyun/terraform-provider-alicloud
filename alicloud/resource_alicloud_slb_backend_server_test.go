@@ -430,6 +430,7 @@ var slb_vpc = map[string]string{
 
 func TestAccAlicloudSLBBackendServers_eci(t *testing.T) {
 	var v *slb.DescribeLoadBalancerAttributeResponse
+	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	resourceId := "alicloud_slb_backend_server.default"
 	ra := resourceAttrInit(resourceId, nil)
 	rc := resourceCheckInit(resourceId, &v, func() interface{} {

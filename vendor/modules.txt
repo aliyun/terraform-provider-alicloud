@@ -121,7 +121,7 @@ github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/request
 github.com/aliyun/credentials-go/credentials/response
 github.com/aliyun/credentials-go/credentials/utils
-# github.com/aliyun/fc-go-sdk v0.0.0-20210528065454-8211fa9cbd72
+# github.com/aliyun/fc-go-sdk v0.0.0-20220622030011-bc7ded2a9050
 github.com/aliyun/fc-go-sdk
 # github.com/andybalholm/brotli v1.0.1
 github.com/andybalholm/brotli
@@ -241,6 +241,8 @@ github.com/googleapis/gax-go/v2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
 github.com/googleapis/gnostic/openapiv2
+# github.com/gorilla/websocket v1.4.2
+github.com/gorilla/websocket
 # github.com/hashicorp/errwrap v1.0.0
 github.com/hashicorp/errwrap
 # github.com/hashicorp/go-cleanhttp v0.5.1

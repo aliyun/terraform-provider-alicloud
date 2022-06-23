@@ -45,7 +45,7 @@ func TestAccAlicloudResourceManagerSharedResource_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"resource_share_id": "${alicloud_resource_manager_resource_share.default.id}",
-					"resource_id":       "${alicloud_vswitch.default.id}",
+					"resource_id":       "${data.alicloud_vswitches.default.ids.0}",
 					"resource_type":     "VSwitch",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -77,14 +77,12 @@ variable "name" {
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
-resource "alicloud_vpc" "default" {
-  name = var.name
-  cidr_block = "192.168.0.0/16"
+data "alicloud_vpcs" "default"{
+  name_regex = "default-NODELETING"
 }
-resource "alicloud_vswitch" "default" {
-  availability_zone = data.alicloud_zones.default.ids.0
-  cidr_block = "192.168.0.0/16"
-  vpc_id = alicloud_vpc.default.id
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.ids.0
 }
 resource "alicloud_resource_manager_resource_share" "default" {
 	resource_share_name = var.name

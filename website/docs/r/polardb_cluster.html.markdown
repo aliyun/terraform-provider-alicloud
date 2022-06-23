@@ -101,6 +101,9 @@ The following arguments are supported:
 * `deletion_lock` - (Optional, Available in 1.169.0+) turn on table deletion_lock. Valid values are 0, 1. 1 means to open the cluster protection lock, 0 means to close the cluster protection lock
 -> **NOTE:**  Cannot modify after created when `pay_type` is `Prepaid` .`deletion_lock` the cluster protection lock can be turned on or off when `pay_type` is `Postpaid`.
 * `backup_retention_policy_on_cluster_deletion` - (Optional, Available in 1.170.0+) The retention policy for the backup sets when you delete the cluster.  Valid values are `ALL`, `LATEST`, `NONE`. Value options can refer to the latest docs [DeleteDBCluster](https://help.aliyun.com/document_detail/98170.html)
+* `imci_switch` - (Optional, Available in 1.173.0+) Specifies whether to enable the In-Memory Column Index (IMCI) feature. Valid values are `ON`, `OFF`.
+-> **NOTE:**  Only polardb MySQL Cluster version is available. The cluster with minor version number of 8.0.1 supports the column index feature, and the specific kernel version must be 8.0.1.1.22 or above.
+-> **NOTE:**  The single node, the single node version of the history library, and the cluster version of the history library do not support column save indexes.
 
 ### Block db_cluster_ip_array
 

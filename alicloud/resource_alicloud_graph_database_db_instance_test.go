@@ -302,6 +302,66 @@ func TestAccAlicloudGraphDatabaseDbInstance_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudGraphDatabaseDbInstance_single(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_graph_database_db_instance.default"
+	checkoutSupportedRegions(t, true, connectivity.GraphDatabaseDbInstanceSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudGraphDatabaseDbInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGraphDatabaseDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgraphdatabasedbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGraphDatabaseDbInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_class":            "gdb.r.xlarge_basic",
+					"db_instance_network_type": "vpc",
+					"db_version":               "1.0",
+					"db_instance_category":     "SINGLE",
+					"db_instance_storage_type": "cloud_essd",
+					"db_node_storage":          "50",
+					"payment_type":             "PayAsYouGo",
+					"db_instance_description":  "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"vpc_id":                   "${data.alicloud_vpcs.default.ids.0}",
+					"zone_id":                  "${local.zone_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_node_class":            "gdb.r.xlarge_basic",
+						"db_instance_network_type": "vpc",
+						"db_version":               "1.0",
+						"db_instance_category":     "SINGLE",
+						"db_instance_storage_type": "cloud_essd",
+						"db_node_storage":          "50",
+						"payment_type":             "PayAsYouGo",
+						"db_instance_description":  name,
+						"vswitch_id":               CHECKSET,
+						"vpc_id":                   CHECKSET,
+						"zone_id":                  CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudGraphDatabaseDbInstanceMap0 = map[string]string{}
 
 func AlicloudGraphDatabaseDbInstanceBasicDependence0(name string) string {

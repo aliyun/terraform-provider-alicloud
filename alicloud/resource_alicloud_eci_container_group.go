@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -383,9 +385,10 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				ForceNew: true,
 			},
 			"restart_policy": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "Always",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Always", "Never", "OnFailure"}, false),
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,

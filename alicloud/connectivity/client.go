@@ -174,7 +174,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.172.0"
+var providerVersion = "1.174.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Temporarily maintain map for old ecs client methods and store special endpoint information
@@ -247,12 +247,21 @@ func (c *Config) Client() (*AliyunClient, error) {
 func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the ECS client if necessary
 	if client.ecsconn == nil {
-		endpoint := client.config.EcsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, ECSCode)
-			if endpoint == "" {
-				endpoint = EndpointMap[client.config.RegionId]
+		productCode := "ecs"
+		endpoint := ""
+		if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+			if err := client.loadEndpoint(productCode); err != nil {
+				return nil, err
 			}
+		}
+		if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+			endpoint = v.(string)
+			if endpoint == "ecs-cn-hangzhou.aliyuncs.com" {
+				endpoint = "ecs.aliyuncs.com"
+			}
+		}
+		if endpoint == "" {
+			return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
 		}
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(ECSCode), endpoint)
@@ -261,10 +270,11 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
 		}
+		ecs.SetClientProperty(ecsconn, "EndpointMap", map[string]string{
+			client.RegionId: endpoint,
+		})
+		ecs.SetEndpointDataToClient(ecsconn)
 
-		//if _, err := ecsconn.DescribeRegions(ecs.CreateDescribeRegionsRequest()); err != nil {
-		//	return nil, err
-		//}
 		ecsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		ecsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		ecsconn.SourceIp = client.config.SourceIp
@@ -4199,6 +4209,82 @@ func (client *AliyunClient) NewTagClient() (*rpc.Client, error) {
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = fmt.Sprintf("tag.%s.aliyuncs.com", client.config.RegionId)
+			client.config.Endpoints[productCode] = endpoint
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewEdasClient() (*roa.Client, error) {
+	productCode := "edas"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = fmt.Sprintf("edas.%s.aliyuncs.com", client.config.RegionId)
+			client.config.Endpoints[productCode] = endpoint
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaRoaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := roa.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewEdasschedulerxClient() (*rpc.Client, error) {
+	productCode := "edasschedulerx"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = fmt.Sprintf("edasschedulerx.%s.aliyuncs.com", client.config.RegionId)
+			client.config.Endpoints[productCode] = endpoint
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewEhsClient() (*rpc.Client, error) {
+	productCode := "ehs"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = fmt.Sprintf("ehs.%s.aliyuncs.com", client.config.RegionId)
 			client.config.Endpoints[productCode] = endpoint
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}

@@ -49,10 +49,19 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				ForceNew: true,
 			},
 			"dimensions": {
-				Type:     schema.TypeMap,
-				Required: true,
-				ForceNew: true,
-				Elem:     schema.TypeString,
+				Type:          schema.TypeMap,
+				Optional:      true,
+				Computed:      true,
+				Elem:          schema.TypeString,
+				ConflictsWith: []string{"metric_dimensions"},
+				Deprecated:    "Field 'dimensions' has been deprecated from version 1.173.0. Use 'metric_dimensions' instead.",
+			},
+			"metric_dimensions": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ConflictsWith:    []string{"dimensions"},
+				DiffSuppressFunc: CmsAlarmDiffSuppressFunc,
 			},
 			"period": {
 				Type:     schema.TypeInt,
@@ -319,14 +328,30 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("webhook", alarm["Webhook"])
 	d.Set("contact_groups", strings.Split(alarm["ContactGroups"].(string), ","))
 
-	var dims []string
-	if fmt.Sprint(alarm["Dimensions"]) != "" {
-		if err := json.Unmarshal([]byte(alarm["Dimensions"].(string)), &dims); err != nil {
+	dims := make([]map[string]interface{}, 0)
+	if fmt.Sprint(alarm["Resources"]) != "" {
+		if err := json.Unmarshal([]byte(alarm["Resources"].(string)), &dims); err != nil {
 			return fmt.Errorf("Unmarshaling Dimensions got an error: %#v.", err)
 		}
 	}
-	d.Set("dimensions", dims)
 
+	dimensionList := make(map[string]interface{}, 0)
+	for _, raw := range dims {
+		for k, v := range raw {
+			if dimensionListValue, ok := dimensionList[k]; ok {
+				dimensionList[k] = fmt.Sprint(dimensionListValue.(string), ",", v.(string))
+			} else {
+				dimensionList[k] = v
+			}
+		}
+	}
+
+	if err := d.Set("dimensions", dimensionList); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("metric_dimensions", alarm["Resources"]); err != nil {
+		return WrapError(err)
+	}
 	return nil
 }
 
@@ -427,6 +452,11 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 			request["Resources"] = string(bytes[:])
 		}
 	}
+
+	if v, ok := d.GetOk("metric_dimensions"); ok && v.(string) != "" {
+		request["Resources"] = v.(string)
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

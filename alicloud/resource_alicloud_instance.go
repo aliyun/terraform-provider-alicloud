@@ -1106,6 +1106,11 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		if v, ok := d.GetOk("deployment_set_id"); ok {
 			request["DeploymentSetId"] = v
 		}
+		if v := d.Get("deployment_set_id"); len(v.(string)) == 0 {
+			oldDeploymentSetId, _ := d.GetChange("deployment_set_id")
+			request["DeploymentSetId"] = oldDeploymentSetId
+			request["RemoveFromDeploymentSet"] = true
+		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

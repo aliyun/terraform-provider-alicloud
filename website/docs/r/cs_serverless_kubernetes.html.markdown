@@ -107,7 +107,7 @@ The following arguments are supported:
 * `deletion_protection` - (Optional, ForceNew) Whether enable the deletion protection or not.
     - true: Enable deletion protection.
     - false: Disable deletion protection.
-* `enable_rrsa` - (Optional, Available in 1.171.0+) Whether to enable cluster to support rrsa. Default to `false`. See [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
+* `enable_rrsa` - (Optional, Available in 1.171.0+) Whether to enable cluster to support rrsa for version 1.22.3+. Default to `false`. Once the rrsa function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
 * `force_update` - (Optional) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
 * `tags` - (Optional) Default nil, A map of tags assigned to the kubernetes cluster and work nodes.
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.

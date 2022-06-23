@@ -263,6 +263,12 @@ const (
 	Gre   = Protocol("gre")
 )
 
+const (
+	// HeaderEnableEBTrigger header key for enabling eventbridge trigger
+	// TODO: delete the header after eventbridge trigger is totally exposed to user
+	HeaderEnableEBTrigger = "x-fc-enable-eventbridge-trigger"
+)
+
 // ValidProtocols network protocol list
 var ValidProtocols = []Protocol{Http, Https, Tcp, Udp}
 
@@ -351,6 +357,28 @@ func convertJsonStringToStringList(src interface{}) (result []interface{}) {
 		result = append(result, fmt.Sprint(formatInt(v)))
 	}
 	return
+}
+
+func encodeToBase64String(configured []string) string {
+	result := ""
+	for i, v := range configured {
+		result += v
+		if i < len(configured)-1 {
+			result += ","
+		}
+	}
+	return base64.StdEncoding.EncodeToString([]byte(result))
+}
+
+func decodeFromBase64String(configured string) (result []string, err error) {
+
+	decodeString, err := base64.StdEncoding.DecodeString(configured)
+	if err != nil {
+		return result, err
+	}
+
+	result = strings.Split(string(decodeString), ",")
+	return result, nil
 }
 
 func convertJsonStringToMap(configured string) (map[string]interface{}, error) {

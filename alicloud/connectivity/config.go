@@ -164,6 +164,9 @@ type Config struct {
 	DdosbasicEndpoint           string
 	SmartagEndpoint             string
 	TagEndpoint                 string
+	EdasEndpoint                string
+	EdasschedulerxEndpoint      string
+	EhsEndpoint                 string
 }
 
 func (c *Config) loadAndValidate() error {

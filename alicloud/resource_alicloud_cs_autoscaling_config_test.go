@@ -76,7 +76,7 @@ variable "name" {
 	default = "%s"
 }
 
-data "alicloud_zones" default {
+data "alicloud_zones" "default" {
   available_resource_creation  = "VSwitch"
 }
 
