@@ -20,10 +20,13 @@ Basic Usage
 resource "alicloud_cms_alarm" "basic" {
   name    = "tf-testAccCmsAlarm_basic"
   project = "acs_ecs_dashboard"
-  metric  = "disk_writebytes"
-  dimensions = {
-    instanceId = "i-bp1247,i-bp11gd"
-    device     = "/dev/vda1,/dev/vdb1"
+  metric_dimensions {
+    key   = "instanceId"
+    value = "i-bp1247jeep0y53nu3bnk"
+  }
+  metric_dimensions {
+    key   = "device"
+    value = "/dev/vda1"
   }
   escalations_critical {
     statistics          = "Average"
@@ -45,7 +48,7 @@ The following arguments are supported:
 * `name` - (Required) The alarm rule name.
 * `project` - (Required, ForceNew) Monitor project name, such as "acs_ecs_dashboard" and "acs_rds_dashboard". For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
 * `metric` - (Required, ForceNew) Name of the monitoring metrics corresponding to a project, such as "CPUUtilization" and "networkin_rate". For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
-* `dimensions` - (Required, ForceNew) Map of the resources associated with the alarm rule, such as "instanceId", "device" and "port". Each key's value is a string and it uses comma to split multiple items. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
+* `dimensions` - (Optional, Computed, Deprecated from 1.173.0+) Field `dimensions` has been deprecated from version 1.95.0. Use `metric_dimensions` instead.
 * `period` - (Optional) Index query cycle, which must be consistent with that defined for metrics. Default to 300, in seconds.
 * `escalations_critical` - (Optional, Available in 1.94.0+) A configuration of critical alarm (documented below).
 * `escalations_warn` - (Optional, Available in 1.94.0+) A configuration of critical warn (documented below).
@@ -62,8 +65,16 @@ The following arguments are supported:
 * `notify_type` - Notification type. Valid value [0, 1]. The value 0 indicates TradeManager+email, and the value 1 indicates that TradeManager+email+SMS
 * `enabled` - (Optional) Whether to enable alarm rule. Default to true.
 * `webhook`- (Optional, Available in 1.46.0+) The webhook that should be called when the alarm is triggered. Currently, only http protocol is supported. Default is empty string.
+* `metric_dimensions` - (Optional, Computed, Available in 1.173.0+) Map of the resources associated with the alarm rule, such as "instanceId", "device" and "port". Each key's value is a string, and it uses comma to split multiple items. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
 
 -> **NOTE:** Each resource supports the creation of one of the following three levels.
+
+#### Block metric_dimensions
+
+The metric_dimensions supports the following:
+
+* `key` - (Optional) The Key of metric_dimensions.
+* `value` - (Optional) The Value of metric_dimensions.
 
 #### Block escalations critical alarm
 
