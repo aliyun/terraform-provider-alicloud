@@ -135,6 +135,42 @@ func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCmsAlarm_basic1(t *testing.T) {
+	var alarm map[string]interface{}
+	resourceName := "alicloud_cms_alarm.basic"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sCmsAlarmContactGroup%d", defaultRegionToTest, rand)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceName,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCmsAlarmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCmsAlarm_basic1(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCmsAlarmExists("alicloud_cms_alarm.basic", alarm),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "name", "tf-testAccCmsAlarm_basic"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "metric_dimensions.#", "2"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_critical.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_warn.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_info.#", "1"),
+				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"start_time", "end_time"},
+			},
+		},
+	})
+}
+
 func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 	var alarm map[string]interface{}
 	rand := acctest.RandIntRange(1000000, 9999999)
@@ -278,6 +314,54 @@ func testAccCmsAlarm_basic(name string) string {
 	  dimensions = {
 	    instanceId = "i-bp1247jeep0y53nu3bnk,i-bp11gdcik8z6dl5jm84p"
 	    device = "/dev/vda1,/dev/vdb1"
+	  }
+	  period = 900
+	  escalations_critical {
+		statistics = "Average"
+		comparison_operator = "<="
+		threshold = 35
+		times = 2
+	  }
+	  escalations_warn {
+		statistics = "Average"
+		comparison_operator = "<="
+		threshold = 35
+		times = 2
+	  }
+	  escalations_info {
+		statistics = "Average"
+		comparison_operator = "<="
+		threshold = 35
+		times = 2
+	  }
+	  contact_groups = [alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
+      effective_interval = "06:00-20:00"
+	}
+	`, name)
+}
+
+func testAccCmsAlarm_basic1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	resource "alicloud_cms_alarm_contact_group" "default" {
+	  alarm_contact_group_name = "${var.name}"
+	  describe = "Test For Alarm."  
+	}
+
+	resource "alicloud_cms_alarm" "basic" {
+	  name = "tf-testAccCmsAlarm_basic"
+	  project = "acs_ecs_dashboard"
+	  metric = "disk_writebytes"
+      metric_dimensions {
+			key   = "instanceId"
+			value = "i-bp1247jeep0y53nu3bnk"
+	  }
+      metric_dimensions {
+			key   = "device"
+			value = "/dev/vda1"
 	  }
 	  period = 900
 	  escalations_critical {
