@@ -96,11 +96,10 @@ func TestValidateOTSInstanceName(t *testing.T) {
 	_, errors = validateOTSInstanceName("abcdefghijklmnj", "")
 	assert.Nil(t, errors)
 
-	invalidWords := []string{"ali", "ay", "ots", "taobao", "admin"}
-	for _, w := range invalidWords {
+	words := []string{"ali", "ots", "taobao", "admin"}
+	for _, w := range words {
 		_, errors = validateOTSInstanceName(w, "")
-		assert.NotNil(t, errors)
-		assert.True(t, strings.Contains(errors[0].Error(), "instance name is invalid, it cannot contains"))
+		assert.Nil(t, errors)
 	}
 	_, errors = validateOTSInstanceName("aa", "")
 	assert.NotNil(t, errors)

@@ -302,19 +302,11 @@ func validateNormalName(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
-// The instance name cannot contain the words ali, ay, ots, taobao, and admin.
 // The instance name must be composed of a~z, A~Z, 0~9 and a hyphen (-),
 // the first character must be a letter and the last character cannot be a hyphen (-),
 // the legal length range is 3~16 bytes.
 func validateOTSInstanceName(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
-	invalidWords := []string{"ali", "ay", "ots", "taobao", "admin"}
-	for _, w := range invalidWords {
-		if strings.Contains(value, w) {
-			errors = append(errors, fmt.Errorf("instance name is invalid, it cannot contains %s", w))
-			return
-		}
-	}
 	reg := regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9-]{1,14}[a-zA-Z0-9]$")
 	if !reg.MatchString(value) {
 		errors = append(errors, fmt.Errorf("the instance name must consist of a~z, A~Z, 0~9 and a hyphen (-), "+
