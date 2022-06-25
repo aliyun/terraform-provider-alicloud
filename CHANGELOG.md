@@ -1,4 +1,42 @@
 ## 1.173.0 (Unreleased)
+
+- **New Resource:** `alicloud_edas_namespace` [GH-5064]
+- **New Resource:** `alicloud_schedulerx_namespace` [GH-5094]
+- **New Resource:** `alicloud_ehpc_cluster` [GH-5086]
+- **New Data Source:** `alicloud_ehpc_clusters` [GH-5086]
+- **New Data Source:** `alicloud_schedulerx_namespaces` [GH-5094]	
+- **New Data Source:** `alicloud_edas_namespaces` [GH-5064]
+- **New Data Source:** `alicloud_cdn_blocked_regions` [GH-5084]
+
+ENHANCEMENTS:
+
+- resource/alicloud_cs_kubernetes_node_pool: support cis/soc security reinforcement [GH-5061]
+- resource/alicloud_cs_kubernetes: add apiserver slb id output [GH-5060]
+- resource/alicloud_polardb_cluster: Adds new attribute imci_switch [GH-5087]
+- resource/resource_alicloud_dts_synchronization_job: Removed the field 'db_list' forceNew and supports modifying it online [GH-5103]
+- resource/resource_alicloud_hbr_vault: Added support for new parameter encrypt_type and kms_key_id [GH-5085]
+- resource/alicloud_cms_alarm: Adds new attribute metric_dimensions [GH-5012]
+- resource/alicloud_resource_manager_shared_resource: The resource_type attribute supports the option of ROSTemplate and ServiceCatalogPortfolio [GH-5095]
+- resource_alicloud_mse_cluster: Modify the parameter pub_network_flow as required; Adds DiffSuppressFunc for acl_entry_list [GH-5083]
+- resource/alicloud_fc_trigger,data_source/alicloud_fc_trigger: support eventbridge trigger type [GH-5092]
+- resource/alicloud_graph_database_db_instance: The db_instance_category attribute supports the option of SINGLE. [GH-5091]
+- resource/alicloud_eci_container_group: Adds the enumeration value of the attribute restart_polic [GH-5066]
+- resource/alicloud_emr_cluster: support bootstrap action specify execution strategy [GH-5071]
+- datasource/alicloud_ecd_network_packages: Supports new output eip_addresses. [GH-5080]
+- doc/config_delivery_channels: Add DEPRECATED identity; docs_website: Remove the link address of the alicloud_cdn_domain. [GH-5105]	
+- provider: Supports setting source_ip while invoking assumeRole [GH-5098]
+
+BUG FIXES:
+
+- resource/alicloud_cs_managed_kubernetes: Fix regx compile bug, update doc and error message. [GH-5072]
+- resource/alicloud_ots_instance: fix validate ots instance name [GH-5104]
+- resource/alicloud_cs_kubernetes_node_pool: fix-bug nodepool labels and taints cannot be annotated [GH-5059]
+- resource/resource_alicloud_slb_backend_server: Fixed ci test error [GH-5076]
+- resource/alicloud_fc_trigger: fix timer trigger payload diff func [GH-5099]	
+- data source/alicloud_kvstore_instances: Fixed ci test error [GH-5073]
+- data source/alicloud_kvstore_connections: Fixed ci test error [GH-5074]
+- doc/alicloud_cs_kubernetes_node_pool: fix import doc error [GH-5082]
+
 ## 1.172.0 (June 19, 2022)
 
 - **New Resource:** `alicloud_config_aggregate_delivery` ([#5077](https://github.com/aliyun/terraform-provider-alicloud/issues/5077))
