@@ -1,41 +1,46 @@
-## 1.173.0 (Unreleased)
+## 1.174.0 (Unreleased)
+## 1.173.0 (June 26, 2022)
 
-- **New Resource:** `alicloud_edas_namespace` [GH-5064]
-- **New Resource:** `alicloud_schedulerx_namespace` [GH-5094]
-- **New Resource:** `alicloud_ehpc_cluster` [GH-5086]
-- **New Data Source:** `alicloud_ehpc_clusters` [GH-5086]
-- **New Data Source:** `alicloud_schedulerx_namespaces` [GH-5094]	
-- **New Data Source:** `alicloud_edas_namespaces` [GH-5064]
-- **New Data Source:** `alicloud_cdn_blocked_regions` [GH-5084]
+- **New Resource:** `alicloud_edas_namespace` ([#5064](https://github.com/aliyun/terraform-provider-alicloud/issues/5064))
+- **New Resource:** `alicloud_schedulerx_namespace` ([#5094](https://github.com/aliyun/terraform-provider-alicloud/issues/5094))
+- **New Resource:** `alicloud_ehpc_cluster` ([#5086](https://github.com/aliyun/terraform-provider-alicloud/issues/5086))
+- **New Resource:** `alicloud_cen_traffic_marking_policy` ([#5100](https://github.com/aliyun/terraform-provider-alicloud/issues/5100))
+- **New Resource:** `alicloud_ecs_instance_set` ([#5063](https://github.com/aliyun/terraform-provider-alicloud/issues/5063))  
+- **New Data Source:** `alicloud_cen_traffic_marking_policies` ([#5100](https://github.com/aliyun/terraform-provider-alicloud/issues/5100))
+- **New Data Source:** `alicloud_ehpc_clusters` ([#5086](https://github.com/aliyun/terraform-provider-alicloud/issues/5086))
+- **New Data Source:** `alicloud_schedulerx_namespaces` ([#5094](https://github.com/aliyun/terraform-provider-alicloud/issues/5094))	
+- **New Data Source:** `alicloud_edas_namespaces` ([#5064](https://github.com/aliyun/terraform-provider-alicloud/issues/5064))
+- **New Data Source:** `alicloud_cdn_blocked_regions` ([#5084](https://github.com/aliyun/terraform-provider-alicloud/issues/5084))
 
 ENHANCEMENTS:
 
-- resource/alicloud_cs_kubernetes_node_pool: support cis/soc security reinforcement [GH-5061]
-- resource/alicloud_cs_kubernetes: add apiserver slb id output [GH-5060]
-- resource/alicloud_polardb_cluster: Adds new attribute imci_switch [GH-5087]
-- resource/resource_alicloud_dts_synchronization_job: Removed the field 'db_list' forceNew and supports modifying it online [GH-5103]
-- resource/resource_alicloud_hbr_vault: Added support for new parameter encrypt_type and kms_key_id [GH-5085]
-- resource/alicloud_cms_alarm: Adds new attribute metric_dimensions [GH-5012]
-- resource/alicloud_resource_manager_shared_resource: The resource_type attribute supports the option of ROSTemplate and ServiceCatalogPortfolio [GH-5095]
-- resource_alicloud_mse_cluster: Modify the parameter pub_network_flow as required; Adds DiffSuppressFunc for acl_entry_list [GH-5083]
-- resource/alicloud_fc_trigger,data_source/alicloud_fc_trigger: support eventbridge trigger type [GH-5092]
-- resource/alicloud_graph_database_db_instance: The db_instance_category attribute supports the option of SINGLE. [GH-5091]
-- resource/alicloud_eci_container_group: Adds the enumeration value of the attribute restart_polic [GH-5066]
-- resource/alicloud_emr_cluster: support bootstrap action specify execution strategy [GH-5071]
-- datasource/alicloud_ecd_network_packages: Supports new output eip_addresses. [GH-5080]
-- doc/config_delivery_channels: Add DEPRECATED identity; docs_website: Remove the link address of the alicloud_cdn_domain. [GH-5105]	
-- provider: Supports setting source_ip while invoking assumeRole [GH-5098]
+- resource/alicloud_cs_kubernetes_node_pool: support cis/soc security reinforcement ([#5061](https://github.com/aliyun/terraform-provider-alicloud/issues/5061))
+- resource/alicloud_cs_kubernetes: add apiserver slb id output ([#5060](https://github.com/aliyun/terraform-provider-alicloud/issues/5060))
+- resource/alicloud_polardb_cluster: Adds new attribute imci_switch ([#5087](https://github.com/aliyun/terraform-provider-alicloud/issues/5087))
+- resource/resource_alicloud_dts_synchronization_job: Removed the field 'db_list' forceNew and supports modifying it online ([#5103](https://github.com/aliyun/terraform-provider-alicloud/issues/5103))
+- resource/resource_alicloud_hbr_vault: Added support for new parameter encrypt_type and kms_key_id ([#5085](https://github.com/aliyun/terraform-provider-alicloud/issues/5085))
+- resource/alicloud_cms_alarm: Adds new attribute metric_dimensions ([#5012](https://github.com/aliyun/terraform-provider-alicloud/issues/5012))
+- resource/alicloud_resource_manager_shared_resource: The resource_type attribute supports the option of ROSTemplate and ServiceCatalogPortfolio ([#5095](https://github.com/aliyun/terraform-provider-alicloud/issues/5095))
+- resource_alicloud_mse_cluster: Modify the parameter pub_network_flow as required; Adds DiffSuppressFunc for acl_entry_list ([#5083](https://github.com/aliyun/terraform-provider-alicloud/issues/5083))
+- resource/alicloud_fc_trigger,data_source/alicloud_fc_trigger: support eventbridge trigger type ([#5092](https://github.com/aliyun/terraform-provider-alicloud/issues/5092))
+- resource/alicloud_graph_database_db_instance: The db_instance_category attribute supports the option of SINGLE. ([#5091](https://github.com/aliyun/terraform-provider-alicloud/issues/5091))
+- resource/alicloud_eci_container_group: Adds the enumeration value of the attribute restart_polic ([#5066](https://github.com/aliyun/terraform-provider-alicloud/issues/5066))
+- resource/alicloud_emr_cluster: support bootstrap action specify execution strategy ([#5071](https://github.com/aliyun/terraform-provider-alicloud/issues/5071))
+- datasource/alicloud_ecd_network_packages: Supports new output eip_addresses. ([#5080](https://github.com/aliyun/terraform-provider-alicloud/issues/5080))
+- doc/config_delivery_channels: Add DEPRECATED identity; docs_website: Remove the link address of the alicloud_cdn_domain. ([#5105](https://github.com/aliyun/terraform-provider-alicloud/issues/5105))	
+- provider: Supports setting source_ip while invoking assumeRole ([#5098](https://github.com/aliyun/terraform-provider-alicloud/issues/5098))
+- connectivity/client: fix the sdk region in WithEcsClient ([#5093](https://github.com/aliyun/terraform-provider-alicloud/issues/5093))
 
 BUG FIXES:
 
-- resource/alicloud_cs_managed_kubernetes: Fix regx compile bug, update doc and error message. [GH-5072]
-- resource/alicloud_ots_instance: fix validate ots instance name [GH-5104]
-- resource/alicloud_cs_kubernetes_node_pool: fix-bug nodepool labels and taints cannot be annotated [GH-5059]
-- resource/resource_alicloud_slb_backend_server: Fixed ci test error [GH-5076]
-- resource/alicloud_fc_trigger: fix timer trigger payload diff func [GH-5099]	
-- data source/alicloud_kvstore_instances: Fixed ci test error [GH-5073]
-- data source/alicloud_kvstore_connections: Fixed ci test error [GH-5074]
-- doc/alicloud_cs_kubernetes_node_pool: fix import doc error [GH-5082]
+- resource/alicloud_cs_managed_kubernetes: Fix regx compile bug, update doc and error message. ([#5072](https://github.com/aliyun/terraform-provider-alicloud/issues/5072))
+- resource/alicloud_ots_instance: fix validate ots instance name ([#5104](https://github.com/aliyun/terraform-provider-alicloud/issues/5104))
+- resource/alicloud_cs_kubernetes_node_pool: fix-bug nodepool labels and taints cannot be annotated ([#5059](https://github.com/aliyun/terraform-provider-alicloud/issues/5059))
+- resource/resource_alicloud_slb_backend_server: Fixed ci test error ([#5076](https://github.com/aliyun/terraform-provider-alicloud/issues/5076))
+- resource/alicloud_fc_trigger: fix timer trigger payload diff func ([#5099](https://github.com/aliyun/terraform-provider-alicloud/issues/5099))	
+- data source/alicloud_kvstore_instances: Fixed ci test error ([#5073](https://github.com/aliyun/terraform-provider-alicloud/issues/5073))
+- data source/alicloud_kvstore_connections: Fixed ci test error ([#5074](https://github.com/aliyun/terraform-provider-alicloud/issues/5074))
+- doc/alicloud_cs_kubernetes_node_pool: fix import doc error ([#5082](https://github.com/aliyun/terraform-provider-alicloud/issues/5082))
 
 ## 1.172.0 (June 19, 2022)
 
