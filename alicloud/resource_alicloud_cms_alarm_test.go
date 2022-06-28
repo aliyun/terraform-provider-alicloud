@@ -118,7 +118,7 @@ func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.basic", alarm),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "name", "tf-testAccCmsAlarm_basic"),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "metric_dimensions.#", "2"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "metric_dimensions", "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_critical.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_warn.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_info.#", "1"),
@@ -154,7 +154,7 @@ func TestAccAlicloudCmsAlarm_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.basic", alarm),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "name", "tf-testAccCmsAlarm_basic"),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "metric_dimensions.#", "2"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "metric_dimensions", "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_critical.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_warn.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_info.#", "1"),
@@ -192,7 +192,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_critical.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_warn.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_info.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "metric_dimensions.#", "2"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "metric_dimensions", "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"),
 					resource.TestMatchResourceAttr("alicloud_cms_alarm.update", "webhook", regexp.MustCompile("^https://[0-9]+.eu-central-1.fc.aliyuncs.com/[0-9-]+/proxy/Terraform/AlarmEndpointMock/$")),
 				),
 			},
@@ -204,7 +204,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_critical.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_warn.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_info.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "metric_dimensions.#", "2"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "metric_dimensions", "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"),
 					resource.TestMatchResourceAttr("alicloud_cms_alarm.update", "webhook", regexp.MustCompile("^https://[0-9]+.eu-central-1.fc.aliyuncs.com/[0-9-]+/proxy/Terraform/AlarmEndpointMock/updated$")),
 				),
 			},
@@ -308,14 +308,7 @@ func testAccCmsAlarm_basic(name string) string {
 	  name               = "tf-testAccCmsAlarm_basic"
 	  project            = "acs_ecs_dashboard"
 	  metric             = "disk_writebytes"
-	  metric_dimensions {
-		key   = "instanceId"
-		value = "i-bp1247jeep0y53nu3bnk"
-	  }
-	  metric_dimensions {
-		key   = "device"
-		value = "/dev/vda1"
-	  }
+	  metric_dimensions  = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
 	  period             = 900
 	  escalations_critical {
 		statistics          = "Average"
@@ -357,14 +350,7 @@ func testAccCmsAlarm_basic1(name string) string {
 	  name               = "tf-testAccCmsAlarm_basic"
 	  project            = "acs_ecs_dashboard"
 	  metric             = "disk_writebytes"
-	  metric_dimensions {
-		key   = "instanceId"
-		value = "i-bp1247jeep0y53nu3bnk"
-	  }
-	  metric_dimensions {
-		key   = "device"
-		value = "/dev/vda1"
-	  }
+	  metric_dimensions  = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
 	  period             = 900
 	  escalations_critical {
 		statistics          = "Average"
@@ -409,14 +395,7 @@ func testAccCmsAlarm_update(name string) string {
 	  name               = "tf-testAccCmsAlarm_update"
 	  project            = "acs_ecs_dashboard"
 	  metric             = "disk_writebytes"
-	  metric_dimensions {
-		key   = "instanceId"
-		value = "i-bp1247jeep0y53nu3bnk"
-	  }
-	  metric_dimensions {
-		key   = "device"
-		value = "/dev/vda1"
-	  }
+	  metric_dimensions  = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
 	  period             = 900
 	  escalations_critical {
 		statistics          = "Average"
@@ -462,14 +441,7 @@ func testAccCmsAlarm_updateAfter(name string) string {
 	  name               = "tf-testAccCmsAlarm_update"
 	  project            = "acs_ecs_dashboard"
 	  metric             = "disk_writebytes"
-	  metric_dimensions {
-		key   = "instanceId"
-		value = "i-bp1247jeep0y53nu3bnk"
-	  }
-	  metric_dimensions {
-		key   = "device"
-		value = "/dev/vda1"
-	  }
+	  metric_dimensions  = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
 	  period             = 900
 	  escalations_critical {
 		statistics          = "Average"
@@ -515,14 +487,7 @@ func testAccCmsAlarm_disable(name string) string {
 	  name               = "tf-testAccCmsAlarm_disable"
 	  project            = "acs_ecs_dashboard"
 	  metric             = "disk_writebytes"
-	  metric_dimensions {
-		key   = "instanceId"
-		value = "i-bp1247jeep0y53nu3bnk"
-	  }
-	  metric_dimensions {
-		key   = "device"
-		value = "/dev/vda1"
-	  }
+	  metric_dimensions  = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
 	  period             = 900
 	  escalations_critical {
 		statistics          = "Average"

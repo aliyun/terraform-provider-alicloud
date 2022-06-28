@@ -57,21 +57,9 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Deprecated:    "Field 'dimensions' has been deprecated from version 1.173.0. Use 'metric_dimensions' instead.",
 			},
 			"metric_dimensions": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"key": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"value": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
 				ConflictsWith: []string{"dimensions"},
 			},
 			"period": {
@@ -357,20 +345,10 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	metricDimensionList := make([]map[string]interface{}, 0)
-	for _, raw := range dims {
-		for k, v := range raw {
-			dimensionMap := make(map[string]interface{})
-			dimensionMap["key"] = k
-			dimensionMap["value"] = v
-			metricDimensionList = append(metricDimensionList, dimensionMap)
-		}
-	}
-
 	if err := d.Set("dimensions", dimensionList); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("metric_dimensions", metricDimensionList); err != nil {
+	if err := d.Set("metric_dimensions", alarm["Resources"]); err != nil {
 		return WrapError(err)
 	}
 	return nil
@@ -474,19 +452,8 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
-	var metricList []map[string]string
-	if v, ok := d.GetOk("metric_dimensions"); ok {
-		for _, dimensions := range v.(*schema.Set).List() {
-			dimensionsArg := dimensions.(map[string]interface{})
-			metricList = append(metricList, map[string]string{dimensionsArg["key"].(string): dimensionsArg["value"].(string)})
-		}
-	}
-	if len(metricList) > 0 {
-		if bytes, err := json.Marshal(metricList); err != nil {
-			return fmt.Errorf("marshaling metric_dimensions to json string got an error: %#v", err)
-		} else {
-			request["Resources"] = string(bytes[:])
-		}
+	if v, ok := d.GetOk("metric_dimensions"); ok && v.(string) != "" {
+		request["Resources"] = v.(string)
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)

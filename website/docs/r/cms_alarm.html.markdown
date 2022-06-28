@@ -18,16 +18,9 @@ Basic Usage
 
 ```terraform 
 resource "alicloud_cms_alarm" "basic" {
-  name    = "tf-testAccCmsAlarm_basic"
-  project = "acs_ecs_dashboard"
-  metric_dimensions {
-    key   = "instanceId"
-    value = "i-bp1247jeep0y53nu3bnk"
-  }
-  metric_dimensions {
-    key   = "device"
-    value = "/dev/vda1"
-  }
+  name              = "tf-testAccCmsAlarm_basic"
+  project           = "acs_ecs_dashboard"
+  metric_dimensions = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
   escalations_critical {
     statistics          = "Average"
     comparison_operator = "<="
@@ -65,16 +58,9 @@ The following arguments are supported:
 * `notify_type` - Notification type. Valid value [0, 1]. The value 0 indicates TradeManager+email, and the value 1 indicates that TradeManager+email+SMS
 * `enabled` - (Optional) Whether to enable alarm rule. Default to true.
 * `webhook`- (Optional, Available in 1.46.0+) The webhook that should be called when the alarm is triggered. Currently, only http protocol is supported. Default is empty string.
-* `metric_dimensions` - (Optional, Computed, Available in 1.173.0+) Map of the resources associated with the alarm rule, such as "instanceId", "device" and "port". Each key's value is a string, and it uses comma to split multiple items. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
+* `metric_dimensions` - (Optional, Computed, Available in 1.174.0+) Map of the resources associated with the alarm rule, such as "instanceId", "device" and "port". Each key's value is a string, and it uses comma to split multiple items. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
 
 -> **NOTE:** Each resource supports the creation of one of the following three levels.
-
-#### Block metric_dimensions
-
-The metric_dimensions supports the following:
-
-* `key` - (Optional) The Key of metric_dimensions.
-* `value` - (Optional) The Value of metric_dimensions.
 
 #### Block escalations critical alarm
 
