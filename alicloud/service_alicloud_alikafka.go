@@ -1081,3 +1081,48 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 	}
 	return object, nil
 }
+
+func (s *AlikafkaService) DescribeAliKafkaInstancesReadObject(id string) (object map[string]interface{}, err error) {
+
+	action := "GetInstanceList"
+	request := make(map[string]interface{})
+	conn, err := s.client.NewAlikafkaClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request["RegionId"] = s.client.RegionId
+	var response map[string]interface{}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alikafka_instance", action, AlibabaCloudSdkGoERROR)
+	}
+	resp, err := jsonpath.Get("$.InstanceList.InstanceVO", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceList.InstanceVO", response)
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if strings.EqualFold(id, fmt.Sprint(item["InstanceId"])) {
+			return item, nil
+		}
+	}
+
+	return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
+}
